@@ -27,7 +27,7 @@ services:
       failure_threshold: 5
     envs:
       - key: NEXT_PUBLIC_API_BASE_URL
-        value: https://api.carawaylabs.com
+        value: https://one-health-lyme-gap-atlas-api-lzpqa.ondigitalocean.app
         scope: BUILD_TIME
     alerts:
       - rule: CPU_UTILIZATION
