@@ -45,15 +45,20 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 0 0 5rem rgba(255,255,255,.025), 0 0 0 10rem rgba(255,255,255,.018);
 }
 .topbar {
-  position: relative;
-  z-index: 2;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
   display: flex;
   max-width: 1440px;
-  margin: auto;
+  margin: 0 auto;
   padding: 1.25rem 3rem;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255,255,255,.12);
+  background: rgba(7, 31, 61, .96);
+  backdrop-filter: blur(12px);
 }
 .brand { display: inline-flex; align-items: center; gap: .75rem; font-weight: 750; letter-spacing: -.02em; }
 .brand-mark {
@@ -76,7 +81,7 @@ a { color: inherit; text-decoration: none; }
   gap: 5rem;
   max-width: 1440px;
   margin: auto;
-  padding: 6.5rem 3rem 7rem;
+  padding: 9rem 3rem 7rem;
   align-items: end;
 }
 .eyebrow, .kicker {

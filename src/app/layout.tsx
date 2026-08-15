@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { Providers } from "./providers";
+import { SiteNav } from "@/components/site-nav";
 
 export const metadata: Metadata = {
   title: "One Health Lyme Gap Atlas",
@@ -11,6 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><Providers>{children}</Providers></body></html>;
+  return <html lang="en"><body><SiteNav /><Providers>{children}</Providers></body></html>;
 }
-

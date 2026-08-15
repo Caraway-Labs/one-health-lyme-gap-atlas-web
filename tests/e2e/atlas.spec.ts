@@ -39,6 +39,9 @@ test.beforeEach(async ({ page }) => {
 
 test("renders the atlas and full non-map results", async ({ page }) => {
   await page.goto("/");
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(navigation).toBeVisible();
+  await expect(navigation).toHaveCSS("position", "fixed");
   await expect(page.getByRole("heading", { name: /Find the places/ })).toBeVisible();
   await expect(page.getByText("Adams, CO").first()).toBeVisible();
   await page.getByRole("button", { name: "View full results table" }).click();
@@ -46,4 +49,3 @@ test("renders the atlas and full non-map results", async ({ page }) => {
   const results = await new AxeBuilder({ page }).exclude(".maplibre-atlas").analyze();
   expect(results.violations).toEqual([]);
 });
-
