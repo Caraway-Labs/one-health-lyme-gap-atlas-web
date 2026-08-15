@@ -1,0 +1,43 @@
+name: Quality and deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run generate:api
+      - run: git diff --exit-code -- contracts src/generated
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env: { NEXT_PUBLIC_API_BASE_URL: https://api.carawaylabs.com }
+      - run: docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.carawaylabs.com .
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+  deploy:
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      vars.DIGITALOCEAN_APP_ID != ''
+    needs: quality
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://carawaylabs.com
+    concurrency: { group: web-production, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: digitalocean/app_action/deploy@v2
+        with: { token: "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" }
