@@ -1,14 +1,5 @@
 name: one-health-lyme-gap-atlas-web
 region: sfo
-domains:
-  - domain: carawaylabs.com
-    type: PRIMARY
-    zone: carawaylabs.com
-    minimum_tls_version: "1.2"
-  - domain: www.carawaylabs.com
-    type: ALIAS
-    zone: carawaylabs.com
-    minimum_tls_version: "1.2"
 alerts:
   - rule: DEPLOYMENT_FAILED
   - rule: DOMAIN_FAILED
@@ -40,6 +31,10 @@ services:
         scope: BUILD_TIME
     alerts:
       - rule: CPU_UTILIZATION
+        operator: GREATER_THAN
+        value: 80
+        window: FIVE_MINUTES
+      - rule: MEM_UTILIZATION
         operator: GREATER_THAN
         value: 80
         window: FIVE_MINUTES
