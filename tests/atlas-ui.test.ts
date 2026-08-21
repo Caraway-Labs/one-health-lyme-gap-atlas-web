@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { contiguousUsGeometry, isContiguousUsCounty } from "../src/lib/atlas-geometry";
 import { matchesEvidence, numericParam, reasonsFor } from "../src/lib/atlas-ui";
 
 const county = {
@@ -9,6 +10,20 @@ const county = {
 };
 
 describe("atlas UI rules", () => {
+  it("keeps Alaska and Hawaii out of the contiguous map geometry", () => {
+    const geometry: GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }> = {
+      type: "FeatureCollection",
+      features: [
+        { type: "Feature", properties: { fips: "06037" }, geometry: { type: "Point", coordinates: [-118, 34] } },
+        { type: "Feature", properties: { fips: "02013" }, geometry: { type: "Point", coordinates: [-150, 60] } },
+        { type: "Feature", properties: { fips: "15001" }, geometry: { type: "Point", coordinates: [-157, 21] } },
+      ],
+    };
+
+    expect(isContiguousUsCounty("06037")).toBe(true);
+    expect(contiguousUsGeometry(geometry).features.map((feature) => feature.properties.fips)).toEqual(["06037"]);
+  });
+
   it("validates shareable scoring parameters", () => {
     expect(numericParam("65", 0, 40, 85, 5)).toBe(65);
     expect(numericParam("66", 65, 40, 85, 5)).toBe(65);

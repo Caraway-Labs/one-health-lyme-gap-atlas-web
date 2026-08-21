@@ -3,6 +3,7 @@
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import type { CountyScoreSummary } from "@/generated/models";
+import { CONTIGUOUS_US_INITIAL_VIEW, contiguousUsGeometry } from "@/lib/atlas-geometry";
 
 type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>;
 
@@ -26,9 +27,10 @@ export function AtlasMap({
 
   const enriched = (): GeoJSON.FeatureCollection => {
     const byFips = new Map(scores.map((county) => [county.fips, county]));
+    const contiguousGeometry = contiguousUsGeometry(geometry);
     return {
-      ...geometry,
-      features: geometry.features.map((feature) => {
+      ...contiguousGeometry,
+      features: contiguousGeometry.features.map((feature) => {
         const county = byFips.get(feature.properties.fips);
         return {
           ...feature,
@@ -47,8 +49,7 @@ export function AtlasMap({
     const instance = new maplibregl.Map({
       container: container.current,
       style: { version: 8, sources: {}, layers: [] },
-      center: [-98.5, 38.5],
-      zoom: 2.6,
+      ...CONTIGUOUS_US_INITIAL_VIEW,
       minZoom: 2,
       maxZoom: 8,
       attributionControl: false,
