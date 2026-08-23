@@ -60,7 +60,7 @@ a { color: inherit; text-decoration: none; }
   background: rgba(7, 31, 61, .96);
   backdrop-filter: blur(12px);
 }
-.brand { display: inline-flex; align-items: center; gap: .75rem; font-weight: 750; letter-spacing: -.02em; }
+.brand { display: inline-flex; align-items: center; gap: .75rem; color: var(--white); font-weight: 750; letter-spacing: -.02em; }
 .brand-mark {
   display: grid;
   width: 2.35rem;

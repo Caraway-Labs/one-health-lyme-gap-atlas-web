@@ -42,6 +42,7 @@ test("renders the atlas and full non-map results", async ({ page }) => {
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
   await expect(navigation).toBeVisible();
   await expect(navigation).toHaveCSS("position", "fixed");
+  await expect(page.getByRole("link", { name: "One Health Lyme Gap Atlas home" })).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(page.getByRole("heading", { name: /Find the places/ })).toBeVisible();
   await expect(page.getByText("Adams, CO").first()).toBeVisible();
   await page.getByRole("button", { name: "View full results table" }).click();
