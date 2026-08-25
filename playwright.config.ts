@@ -6,6 +6,7 @@ export default defineConfig({
   webServer: {
     command: "npm run dev",
     url: "http://localhost:3000",
+    env: { NEXT_PUBLIC_KG_CHAT_ENABLED: "true" },
     reuseExistingServer: !process.env.CI,
   },
   projects: [

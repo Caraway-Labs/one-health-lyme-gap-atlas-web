@@ -6,4 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ScoreCollectionSettings = {[key: string]: number};
+export type ChatHistoryTurnRole = typeof ChatHistoryTurnRole[keyof typeof ChatHistoryTurnRole];
+
+
+export const ChatHistoryTurnRole = {
+  user: 'user',
+  assistant: 'assistant',
+} as const;

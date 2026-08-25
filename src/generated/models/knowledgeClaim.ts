@@ -6,4 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ScoreCollectionSettings = {[key: string]: number};
+export interface KnowledgeClaim {
+  claim_id: string;
+  text: string;
+  /** @minItems 1 */
+  citation_ids: string[];
+}

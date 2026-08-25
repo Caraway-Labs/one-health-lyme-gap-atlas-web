@@ -32,9 +32,31 @@ test.beforeEach(async ({ page }) => {
     else if (url.pathname.endsWith("/geometry")) body = { type: "FeatureCollection", features: [{ type: "Feature", id: "08001", properties: { fips: "08001" }, geometry: { type: "Polygon", coordinates: [[[-105, 39], [-104, 39], [-104, 40], [-105, 40], [-105, 39]]] } }] };
     else if (url.pathname.endsWith("/scores")) body = { release_id: metadata.release_id, methodology_version: metadata.methodology_version, settings: {}, counties: [summary] };
     else if (url.pathname.includes("/counties/")) body = { ...summary, population: 500000, case_count_floor_2023: null, incidence_floor_2023: null, state_unallocated_records_2023: 1, scapularis_status: "Established", pacificus_status: "No records", svi_percentile: 0.5, uninsured_percentile: 0.5, uninsured_percent: 8, rucc_2023: 2, release: metadata };
+    else if (url.pathname.endsWith("/knowledge-graph/chat")) body = {
+      request_id: "request-1", conversation_id: "conversation-1", conversation_token: "opaque-token",
+      configuration_version: "kg-v1.0.0", status: "answered", answer: "Reviewed evidence answer.",
+      claims: [{ claim_id: "claim-1", text: "Reviewed claim.", citation_ids: ["pmid:12345678"] }],
+      citations: [{ citation_id: "pmid:12345678", pmid: "12345678", title: "Reviewed paper", pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345678/", claim_ids: ["claim-1"], passage_ids: ["passage-1"], source_label: "PubMed / PMC Open Access" }],
+    };
     else if (url.pathname.endsWith("ranking.csv")) { body = "rank,fips,county\n1,08001,Adams"; contentType = "text/csv"; }
     await route.fulfill({ status: 200, contentType, body: typeof body === "string" ? body : JSON.stringify(body) });
   });
+});
+
+test("drawer hands the local conversation to the accessible workspace", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Ask the evidence" }).click();
+  const dialog = page.getByRole("dialog", { name: "Ask the evidence" });
+  await expect(dialog).toContainText("not medical advice");
+  await dialog.getByLabel("Your question").fill("What evidence is reviewed?");
+  await dialog.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(dialog).toContainText("Reviewed evidence answer.");
+  await expect(dialog.getByRole("link", { name: /Reviewed paper/ })).toHaveAttribute("rel", "noopener noreferrer");
+  await dialog.getByRole("link", { name: "Open full workspace" }).click();
+  await expect(page).toHaveURL(/\/knowledge-graph\?conversation=conversation-1/);
+  await expect(page.getByText("Reviewed evidence answer.")).toBeVisible();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test("renders the atlas and full non-map results", async ({ page }) => {
