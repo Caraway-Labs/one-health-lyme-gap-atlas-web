@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { countyV1CountiesFipsGet, geometryV1AtlasGeometryGet, metadataV1AtlasMetadataGet, scoresV1AtlasScoresGet } from "@/generated/atlas";
@@ -36,7 +37,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [evidence, setEvidence] = useState<EvidenceView>(EVIDENCE_VIEWS.has(params.get("evidence") ?? "") ? params.get("evidence") as EvidenceView : "all");
   const [selectedFips, setSelectedFips] = useState(params.get("county")?.match(/^\d{5}$/)?.[0] ?? "06037");
-  const [settings, setSettings] = useState<ScoreSettings>({ ecological_share: numericParam(params.get("eco"), 65, 40, 85, 5), low_incidence_breakpoint: numericParam(params.get("breakpoint"), 10, 5, 25), missing_human_weakness: numericParam(params.get("missing"), 75, 40, 90, 5) });
+  const [settings] = useState<ScoreSettings>({ ecological_share: numericParam(params.get("eco"), 65, 40, 85, 5), low_incidence_breakpoint: numericParam(params.get("breakpoint"), 10, 5, 25), missing_human_weakness: numericParam(params.get("missing"), 75, 40, 90, 5) });
   const [showTable, setShowTable] = useState(false);
   const [step, setStep] = useState(0);
   const [comparisonFips, setComparisonFips] = useState("");
@@ -71,7 +72,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   return <main className={`experiment experiment-${variant}`}>
     <header className="experiment-header">
       <div><span className="eyebrow">{title.eyebrow}</span><h1>{title.title}</h1><p>{title.description}</p></div>
-      <a className="experiment-control-link" href="/">View current Atlas control</a>
+      <Link className="experiment-control-link" href="/">View current Atlas control</Link>
     </header>
     <p className="experiment-boundary"><strong>For surveillance follow-up—not personal risk.</strong> This does not diagnose people, identify exposure locations, estimate true incidence, or show whether an individual is safe.</p>
     <ExperimentFilters metadata={metadataQuery.data} stateFilter={stateFilter} query={query} evidence={evidence} onStateChange={setStateFilter} onQueryChange={setQuery} onEvidenceChange={setEvidence} />
