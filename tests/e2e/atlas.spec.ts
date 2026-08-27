@@ -75,11 +75,11 @@ test("renders the atlas and full non-map results", async ({ page }) => {
 
 test("renders every interview variant with selected county evidence in the first experience", async ({ page }) => {
   const variants = [
-    ["/variant_1?county=08001", "A clear starting point for surveillance follow-up"],
-    ["/variant_2?county=08001", "Understand a county in three short steps"],
-    ["/variant_3?county=08001", "Keep the evidence, map, and county detail together"],
-    ["/variant_4?county=08001", "Understand the evidence before trusting the score"],
-    ["/variant_5?county=08001", "Place a county in context before acting"],
+    ["/variant_1?county=08001", "A clear starting point for county review"],
+    ["/variant_2?county=08001", "Explore a county, one step at a time"],
+    ["/variant_3?county=08001", "Explore county evidence in one place"],
+    ["/variant_4?county=08001", "Understand what the score means"],
+    ["/variant_5?county=08001", "Compare county evidence before deciding"],
   ] as const;
 
   for (const [path, heading] of variants) {
@@ -88,6 +88,7 @@ test("renders every interview variant with selected county evidence in the first
     await expect(page.getByText("Adams, Colorado").first()).toBeVisible();
     await expect(page.getByText("For surveillance follow-up—not personal risk.")).toBeVisible();
     await expect(page.getByText("Current governed snapshot")).toBeVisible();
+    await expect(page.getByText(/Variant \d/)).toHaveCount(0);
   }
 });
 
@@ -96,6 +97,10 @@ test("keeps definitions close to the evidence in the explain-the-score variant",
   await expect(page.getByText("Published human surveillance signal").first()).toBeVisible();
   await expect(page.getByText("Tick and pathogen evidence").first()).toBeVisible();
   await expect(page.getByText("Missing published records are not zero cases.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How this follow-up priority score is calculated" })).toBeVisible();
+  await expect(page.getByLabel("Tick and pathogen share")).toBeVisible();
+  await page.getByText("See this county’s score components and source values").click();
+  await expect(page.getByText("Rurality (RUCC)")).toBeVisible();
   const results = await new AxeBuilder({ page }).exclude(".maplibre-atlas").analyze();
   expect(results.violations).toEqual([]);
 });
