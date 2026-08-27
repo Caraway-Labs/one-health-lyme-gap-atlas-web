@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -13,5 +14,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" data-scroll-behavior="smooth"><body><SiteNav /><Providers>{children}<ChatLauncher /></Providers></body></html>;
+  return <html lang="en" data-scroll-behavior="smooth"><body><Suspense fallback={null}><SiteNav /></Suspense><Providers>{children}<ChatLauncher /></Providers></body></html>;
 }

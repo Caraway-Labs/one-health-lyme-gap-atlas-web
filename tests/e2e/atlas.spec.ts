@@ -80,6 +80,7 @@ test("renders every interview variant with selected county evidence in the first
     ["/variant_3?county=08001", "Explore county evidence in one place"],
     ["/variant_4?county=08001", "Understand what the score means"],
     ["/variant_5?county=08001", "Compare county evidence before deciding"],
+    ["/variant_6?county=08001", "Explore county evidence in one place"],
   ] as const;
 
   for (const [path, heading] of variants) {
@@ -90,6 +91,30 @@ test("renders every interview variant with selected county evidence in the first
     await expect(page.getByText("Current governed snapshot")).toBeVisible();
     await expect(page.getByText(/Variant \d/)).toHaveCount(0);
   }
+});
+
+test("offers page-aware navigation and a shared data dictionary", async ({ page }) => {
+  await page.goto("/variant_6?county=08001");
+  await expect(page.getByRole("link", { name: "Atlas" })).toHaveAttribute("href", "/variant_6?county=08001#atlas");
+  await expect(page.getByRole("link", { name: "Scoring lab" })).toHaveAttribute("href", "/variant_6?county=08001#scoring");
+  await page.getByText("Variants", { exact: true }).click();
+  await expect(page.getByRole("link", { name: "Wide evidence workspace" })).toHaveAttribute("href", "/variant_6");
+  await page.getByRole("button", { name: "Data dictionary" }).click();
+  const dialog = page.getByRole("dialog", { name: "Data dictionary" });
+  await expect(dialog).toContainText("Follow-up priority score");
+  await dialog.getByRole("button", { name: "Close data dictionary" }).click();
+});
+
+test("keeps the wide workspace score calculation above the county panels and collapsed until requested", async ({ page }) => {
+  await page.goto("/variant_6?county=08001");
+  const scoreAccordion = page.locator("#scoring");
+  await expect(scoreAccordion).not.toHaveAttribute("open", "");
+  await expect(page.getByRole("heading", { name: "How this follow-up priority score is calculated" })).not.toBeVisible();
+  await scoreAccordion.getByText("Scoring calculation", { exact: true }).click();
+  await expect(scoreAccordion).toHaveAttribute("open", "");
+  await page.getByLabel("Tick and pathogen share").fill("70");
+  await expect(page).toHaveURL(/eco=70/);
+  await expect(page.getByText("Selected county", { exact: true })).toHaveCount(1);
 });
 
 test("keeps definitions close to the evidence in the explain-the-score variant", async ({ page }) => {
