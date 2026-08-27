@@ -72,3 +72,30 @@ test("renders the atlas and full non-map results", async ({ page }) => {
   const results = await new AxeBuilder({ page }).exclude(".maplibre-atlas").analyze();
   expect(results.violations).toEqual([]);
 });
+
+test("renders every interview variant with selected county evidence in the first experience", async ({ page }) => {
+  const variants = [
+    ["/variant_1?county=08001", "A clear starting point for surveillance follow-up"],
+    ["/variant_2?county=08001", "Understand a county in three short steps"],
+    ["/variant_3?county=08001", "Keep the evidence, map, and county detail together"],
+    ["/variant_4?county=08001", "Understand the evidence before trusting the score"],
+    ["/variant_5?county=08001", "Place a county in context before acting"],
+  ] as const;
+
+  for (const [path, heading] of variants) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    await expect(page.getByText("Adams, Colorado").first()).toBeVisible();
+    await expect(page.getByText("For surveillance follow-up—not personal risk.")).toBeVisible();
+    await expect(page.getByText("Current governed snapshot")).toBeVisible();
+  }
+});
+
+test("keeps definitions close to the evidence in the explain-the-score variant", async ({ page }) => {
+  await page.goto("/variant_4?county=08001");
+  await expect(page.getByText("Published human surveillance signal").first()).toBeVisible();
+  await expect(page.getByText("Tick and pathogen evidence").first()).toBeVisible();
+  await expect(page.getByText("Missing published records are not zero cases.")).toBeVisible();
+  const results = await new AxeBuilder({ page }).exclude(".maplibre-atlas").analyze();
+  expect(results.violations).toEqual([]);
+});

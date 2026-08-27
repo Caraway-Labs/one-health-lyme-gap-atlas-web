@@ -1,0 +1,128 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { countyV1CountiesFipsGet, geometryV1AtlasGeometryGet, metadataV1AtlasMetadataGet, scoresV1AtlasScoresGet } from "@/generated/atlas";
+import type { AtlasMetadata, CountyDetail, CountyScoreSummary, ScoreCollection } from "@/generated/models";
+import { AtlasFilters } from "@/components/atlas-filters";
+import { AtlasMap } from "@/components/atlas-map";
+import { ResultsTable } from "@/components/results-table";
+import { EVIDENCE_VIEWS, type EvidenceView, type ScoreSettings, matchesEvidence, numericParam, reasonsFor } from "@/lib/atlas-ui";
+
+export type ExperimentVariant = "decision" | "guided" | "workbench" | "explain" | "compare";
+
+type ExperimentProps = { variant: ExperimentVariant };
+
+const copy = {
+  decision: { eyebrow: "Variant 1 · decision brief", title: "A clear starting point for surveillance follow-up", description: "See the selected county, the evidence behind it, and the guardrails before opening the full Atlas." },
+  guided: { eyebrow: "Variant 2 · guided explorer", title: "Understand a county in three short steps", description: "Choose a place, read the evidence, then decide what question to investigate next." },
+  workbench: { eyebrow: "Variant 3 · persistent workbench", title: "Keep the evidence, map, and county detail together", description: "A single working surface for exploring without repeatedly travelling up and down the page." },
+  explain: { eyebrow: "Variant 4 · explain the score", title: "Understand the evidence before trusting the score", description: "Plain-language definitions, sources, and limitations sit beside the county result." },
+  compare: { eyebrow: "Variant 5 · compare before deciding", title: "Place a county in context before acting", description: "Compare the selected county with another county already in the same governed release." },
+} as const;
+
+function useDebounced<T>(value: T, delay = 180) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => { const timer = window.setTimeout(() => setDebounced(value), delay); return () => window.clearTimeout(timer); }, [value, delay]);
+  return debounced;
+}
+
+export function ExperimentAtlas({ variant }: ExperimentProps) {
+  const params = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [stateFilter, setStateFilter] = useState(params.get("state") ?? "ALL");
+  const [query, setQuery] = useState(params.get("q") ?? "");
+  const [evidence, setEvidence] = useState<EvidenceView>(EVIDENCE_VIEWS.has(params.get("evidence") ?? "") ? params.get("evidence") as EvidenceView : "all");
+  const [selectedFips, setSelectedFips] = useState(params.get("county")?.match(/^\d{5}$/)?.[0] ?? "06037");
+  const [settings] = useState<ScoreSettings>({ ecological_share: numericParam(params.get("eco"), 65, 40, 85, 5), low_incidence_breakpoint: numericParam(params.get("breakpoint"), 10, 5, 25), missing_human_weakness: numericParam(params.get("missing"), 75, 40, 90, 5) });
+  const [showTable, setShowTable] = useState(false);
+  const [step, setStep] = useState(0);
+  const [comparisonFips, setComparisonFips] = useState("");
+  const debouncedSettings = useDebounced(settings);
+
+  const metadataQuery = useQuery({ queryKey: ["metadata"], queryFn: async () => (await metadataV1AtlasMetadataGet()).data as AtlasMetadata });
+  const geometryQuery = useQuery({ queryKey: ["geometry", metadataQuery.data?.release_id], enabled: Boolean(metadataQuery.data), queryFn: async () => (await geometryV1AtlasGeometryGet({ dataset_version: metadataQuery.data!.release_id })).data as GeoJSON.FeatureCollection, staleTime: Infinity });
+  const scoresQuery = useQuery({ queryKey: ["scores", metadataQuery.data?.release_id, debouncedSettings], enabled: Boolean(metadataQuery.data), placeholderData: (previous) => previous, queryFn: async () => (await scoresV1AtlasScoresGet({ dataset_version: metadataQuery.data!.release_id, ...debouncedSettings })).data as ScoreCollection });
+  const detailQuery = useQuery({ queryKey: ["county", selectedFips, metadataQuery.data?.release_id, debouncedSettings], enabled: Boolean(metadataQuery.data && selectedFips), placeholderData: (previous) => previous, queryFn: async () => (await countyV1CountiesFipsGet(selectedFips, { dataset_version: metadataQuery.data!.release_id, ...debouncedSettings })).data as CountyDetail });
+
+  const filtered = useMemo(() => (scoresQuery.data?.counties ?? []).filter((county) => {
+    const needle = query.trim().toLowerCase();
+    return county.in_contiguous_tick_scope && (stateFilter === "ALL" || county.state === stateFilter) && (!needle || `${county.county} ${county.state} ${county.fips}`.toLowerCase().includes(needle)) && matchesEvidence(county, evidence);
+  }), [scoresQuery.data, stateFilter, query, evidence]);
+  const comparison = useMemo(() => scoresQuery.data?.counties.find((county) => county.fips === comparisonFips) ?? filtered.find((county) => county.fips !== selectedFips) ?? null, [scoresQuery.data, comparisonFips, filtered, selectedFips]);
+
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (metadataQuery.data?.release_id) next.set("dataset", metadataQuery.data.release_id);
+    if (stateFilter !== "ALL") next.set("state", stateFilter);
+    if (query) next.set("q", query);
+    if (evidence !== "all") next.set("evidence", evidence);
+    next.set("county", selectedFips); next.set("eco", String(settings.ecological_share)); next.set("breakpoint", String(settings.low_incidence_breakpoint)); next.set("missing", String(settings.missing_human_weakness));
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  }, [metadataQuery.data?.release_id, stateFilter, query, evidence, selectedFips, settings, router, pathname]);
+
+  if (metadataQuery.isPending) return <main className="experiment-load"><h1>Loading the Atlas experiment</h1><p>Retrieving the current governed county release.</p></main>;
+  if (metadataQuery.error || geometryQuery.error || scoresQuery.error || !metadataQuery.data) return <main className="experiment-load"><h1>This experiment is temporarily unavailable</h1><p>Unable to retrieve the current governed release.</p><button className="button primary" onClick={() => location.reload()}>Try again</button></main>;
+
+  const detail = detailQuery.data;
+  const title = copy[variant];
+  return <main className={`experiment experiment-${variant}`}>
+    <header className="experiment-header">
+      <div><span className="eyebrow">{title.eyebrow}</span><h1>{title.title}</h1><p>{title.description}</p></div>
+      <Link className="experiment-control-link" href="/">View current Atlas control</Link>
+    </header>
+    <p className="experiment-boundary"><strong>For surveillance follow-up—not personal risk.</strong> This does not diagnose people, identify exposure locations, estimate true incidence, or show whether an individual is safe.</p>
+    <ExperimentFilters metadata={metadataQuery.data} stateFilter={stateFilter} query={query} evidence={evidence} onStateChange={setStateFilter} onQueryChange={setQuery} onEvidenceChange={setEvidence} />
+    {detail ? <VariantBody variant={variant} detail={detail} counties={filtered} geometry={geometryQuery.data} selectedFips={selectedFips} comparison={comparison} step={step} showTable={showTable} onStep={setStep} onSelect={setSelectedFips} onComparison={setComparisonFips} onToggleTable={() => setShowTable((open) => !open)} /> : <section className="experiment-card"><p>Loading the selected county…</p></section>}
+    <ReleaseStamp metadata={metadataQuery.data} />
+  </main>;
+}
+
+function ExperimentFilters(props: Omit<Parameters<typeof AtlasFilters>[0], "onDownload">) {
+  return <AtlasFilters {...props} onDownload={() => undefined} />;
+}
+
+function VariantBody({ variant, detail, counties, geometry, selectedFips, comparison, step, showTable, onStep, onSelect, onComparison, onToggleTable }: { variant: ExperimentVariant; detail: CountyDetail; counties: CountyScoreSummary[]; geometry?: GeoJSON.FeatureCollection; selectedFips: string; comparison: CountyScoreSummary | null; step: number; showTable: boolean; onStep: (step: number) => void; onSelect: (fips: string) => void; onComparison: (fips: string) => void; onToggleTable: () => void }) {
+  if (variant === "guided") return <Guided detail={detail} counties={counties} geometry={geometry} selectedFips={selectedFips} step={step} onStep={onStep} onSelect={onSelect} />;
+  if (variant === "workbench") return <Workbench detail={detail} counties={counties} geometry={geometry} selectedFips={selectedFips} onSelect={onSelect} />;
+  if (variant === "explain") return <Explain detail={detail} counties={counties} geometry={geometry} selectedFips={selectedFips} onSelect={onSelect} />;
+  if (variant === "compare") return <Compare detail={detail} counties={counties} comparison={comparison} onComparison={onComparison} />;
+  return <Decision detail={detail} counties={counties} geometry={geometry} selectedFips={selectedFips} showTable={showTable} onSelect={onSelect} onToggleTable={onToggleTable} />;
+}
+
+function Decision({ detail, counties, geometry, selectedFips, showTable, onSelect, onToggleTable }: { detail: CountyDetail; counties: CountyScoreSummary[]; geometry?: GeoJSON.FeatureCollection; selectedFips: string; showTable: boolean; onSelect: (fips: string) => void; onToggleTable: () => void }) {
+  return <><section className="decision-brief experiment-card"><DecisionSummary detail={detail} /><WhyPanel detail={detail} /><div className="next-action"><span className="eyebrow">Next useful question</span><p>Which local surveillance partner can help validate the pattern before resources are moved?</p></div></section><section className="experiment-data-grid"><MapPanel geometry={geometry} counties={counties} selectedFips={selectedFips} onSelect={onSelect} /><CountyList counties={counties} selectedFips={selectedFips} onSelect={onSelect} /></section><button className="table-toggle experiment-table-toggle" onClick={onToggleTable} aria-expanded={showTable}>{showTable ? "Hide accessible county table" : "View accessible county table"}</button>{showTable && <ResultsTable counties={counties} onSelect={onSelect} />}</>;
+}
+
+function Guided({ detail, counties, geometry, selectedFips, step, onStep, onSelect }: { detail: CountyDetail; counties: CountyScoreSummary[]; geometry?: GeoJSON.FeatureCollection; selectedFips: string; step: number; onStep: (step: number) => void; onSelect: (fips: string) => void }) {
+  const steps = ["Choose a county", "Understand why", "Decide what to do next"];
+  return <section className="guided-layout"><div className="guided-steps" role="tablist" aria-label="Explore this county in steps">{steps.map((label, index) => <button key={label} role="tab" aria-selected={step === index} onClick={() => onStep(index)}><span>{index + 1}</span>{label}</button>)}</div><div className="guided-stage experiment-card">{step === 0 && <><DecisionSummary detail={detail} /><h2>Choose a county to review</h2><p>Start with the ranked list or select a county on the map. The selected county stays in view as you learn more.</p><section className="guided-map"><MapPanel geometry={geometry} counties={counties} selectedFips={selectedFips} onSelect={onSelect} /></section></>}{step === 1 && <><h2>Why {detail.county} surfaced</h2><p>Read these as reasons to investigate, not conclusions about disease risk.</p><WhyPanel detail={detail} /><DefinitionCards /></>}{step === 2 && <><h2>Turn evidence into a follow-up question</h2><DecisionSummary detail={detail} /><div className="next-action"><strong>Suggested next step</strong><p>Ask whether local case reporting, tick sampling, testing access, or a data-publication limit could explain this pattern.</p></div></>}</div></section>;
+}
+
+function Workbench({ detail, counties, geometry, selectedFips, onSelect }: { detail: CountyDetail; counties: CountyScoreSummary[]; geometry?: GeoJSON.FeatureCollection; selectedFips: string; onSelect: (fips: string) => void }) {
+  return <section className="workbench-layout" aria-label="County exploration workspace"><aside className="workbench-pane workbench-list"><span className="eyebrow">Counties</span><h2>Choose a county</h2><CountyList counties={counties} selectedFips={selectedFips} onSelect={onSelect} /></aside><section className="workbench-pane workbench-map"><span className="eyebrow">Pattern</span><h2>Where does it appear?</h2><MapPanel geometry={geometry} counties={counties} selectedFips={selectedFips} onSelect={onSelect} /></section><aside className="workbench-pane workbench-detail"><span className="eyebrow">Selected county</span><DecisionSummary detail={detail} /><WhyPanel detail={detail} /><details><summary>What these labels mean</summary><DefinitionCards /></details></aside></section>;
+}
+
+function Explain({ detail, counties, geometry, selectedFips, onSelect }: { detail: CountyDetail; counties: CountyScoreSummary[]; geometry?: GeoJSON.FeatureCollection; selectedFips: string; onSelect: (fips: string) => void }) {
+  return <><section className="explain-hero experiment-card"><div><span className="eyebrow">Plain-language county readout</span><h2>{detail.county} needs a closer surveillance look.</h2><p>Its score is driven by a combination of lower published human surveillance signals, tick and pathogen evidence, and community context. That combination is a prompt to validate—not proof of disease burden.</p></div><DecisionSummary detail={detail} /></section><section className="explain-grid"><section className="experiment-card"><h2>What the score is built from</h2><DefinitionCards detail={detail} /></section><section className="experiment-card"><h2>Evidence for this county</h2><WhyPanel detail={detail} /><p className="definition-note">Missing published records are not zero cases. They can reflect sampling, testing, reporting, suppression, or publication limits.</p></section></section><section className="experiment-data-grid explain-map"><MapPanel geometry={geometry} counties={counties} selectedFips={selectedFips} onSelect={onSelect} /><CountyList counties={counties} selectedFips={selectedFips} onSelect={onSelect} /></section></>;
+}
+
+function Compare({ detail, counties, comparison, onComparison }: { detail: CountyDetail; counties: CountyScoreSummary[]; comparison: CountyScoreSummary | null; onComparison: (fips: string) => void }) {
+  return <><section className="compare-grid"><section className="experiment-card"><span className="eyebrow">Selected county</span><DecisionSummary detail={detail} /></section><section className="experiment-card"><label className="comparison-select"><span>Compare with</span><select value={comparison?.fips ?? ""} onChange={(event) => onComparison(event.target.value)}>{counties.filter((county) => county.fips !== detail.fips).slice(0, 40).map((county) => <option key={county.fips} value={county.fips}>{county.county}, {county.state} · {county.score.score}</option>)}</select></label>{comparison ? <><h2>{comparison.county}, {comparison.state}</h2><p className="comparison-score">{comparison.score.score}<small>/ 100</small></p><p>{comparison.priority}</p></> : <p>Choose another county to compare.</p>}</section></section><section className="experiment-card comparison-takeaway"><h2>What is different?</h2>{comparison ? <ul><li><strong>Priority score:</strong> {scoreDifference(detail.score.score, comparison.score.score)}</li><li><strong>Published human surveillance signal:</strong> {scoreDifference(detail.score.human_weakness, comparison.score.human_weakness)}</li><li><strong>Tick and pathogen evidence:</strong> {scoreDifference(detail.score.ecological, comparison.score.ecological)}</li></ul> : null}<p>Use comparison to frame follow-up questions. It does not establish which county has more Lyme disease or where exposure occurred.</p></section><section className="experiment-card"><h2>Why the selected county surfaced</h2><WhyPanel detail={detail} /></section></>;
+}
+
+function DecisionSummary({ detail }: { detail: CountyDetail }) { return <div className="decision-summary"><div><span className="eyebrow">Selected county</span><h2>{detail.county}, {detail.state_name}</h2><p>FIPS {detail.fips} · Population {detail.population?.toLocaleString() ?? "unavailable"}</p></div><div className="experiment-score"><span>{detail.priority}</span><strong>{detail.score.score}</strong><small>follow-up priority score / 100</small></div></div>; }
+
+function WhyPanel({ detail }: { detail: CountyDetail }) { return <div className="why-panel experiment-why"><h3>Why it surfaced</h3><ol>{reasonsFor(detail).map((reason, index) => <li key={reason}><span>{index + 1}</span><p>{reason}</p></li>)}</ol></div>; }
+
+function DefinitionCards({ detail }: { detail?: CountyDetail }) { return <div className="definition-cards"><article><strong>Published human surveillance signal</strong><p>A lower or unavailable county-level published record can indicate a reason to look closer. It does not mean zero cases.</p>{detail && <small>Current component: {detail.score.human_weakness}</small>}</article><article><strong>Tick and pathogen evidence</strong><p>Published tick and pathogen records help identify places where surveillance evidence may not align.</p>{detail && <small>Current component: {detail.score.ecological}</small>}</article><article><strong>Community context</strong><p>Social vulnerability, insurance access, and rurality can affect how surveillance data is observed and used.</p>{detail && <small>Current component: {detail.score.community}</small>}</article></div>; }
+
+function MapPanel({ geometry, counties, selectedFips, onSelect }: { geometry?: GeoJSON.FeatureCollection; counties: CountyScoreSummary[]; selectedFips: string; onSelect: (fips: string) => void }) { return <section className="experiment-map"><div className="map-wrap">{geometry ? <AtlasMap geometry={geometry as never} scores={counties} selectedFips={selectedFips} onSelect={onSelect} /> : <div className="map-loading">Loading map…</div>}</div><p>Map colors show a follow-up priority score, not individual risk. Gray counties are outside the scored comparison.</p></section>; }
+
+function CountyList({ counties, selectedFips, onSelect }: { counties: CountyScoreSummary[]; selectedFips: string; onSelect: (fips: string) => void }) { return <div className="experiment-county-list" role="list" aria-label="Counties to review">{counties.slice(0, 20).map((county, index) => <div role="listitem" key={county.fips}><button className={county.fips === selectedFips ? "active" : ""} onClick={() => onSelect(county.fips)}><span>{index + 1}</span><strong>{county.county}, {county.state}</strong><em style={{ background: county.color }}>{county.score.score}</em></button></div>)}</div>; }
+
+function ReleaseStamp({ metadata }: { metadata: AtlasMetadata }) { return <footer className="experiment-release"><strong>Current governed snapshot</strong><span>{metadata.release_id} · {metadata.methodology_version} · Sources dated {metadata.sources.map((source) => source.vintage).join(", ")}</span><p>{metadata.limitations}</p></footer>; }
+function scoreDifference(a: number, b: number) { const difference = Math.round((a - b) * 10) / 10; return difference === 0 ? "The same in this release." : `${Math.abs(difference)} points ${difference > 0 ? "higher" : "lower"} for the selected county.`; }
