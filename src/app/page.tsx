@@ -8,7 +8,6 @@ import type { AtlasMetadata, CountyDetail, ScoreCollection } from "@/generated/m
 import { AtlasDashboard } from "@/components/atlas-dashboard";
 import { AtlasFilters } from "@/components/atlas-filters";
 import { AtlasHero } from "@/components/atlas-hero";
-import { CountyProfile } from "@/components/county-profile";
 import { MethodsSection } from "@/components/methods-section";
 import { ResultsTable } from "@/components/results-table";
 import { ScoringLab } from "@/components/scoring-lab";
