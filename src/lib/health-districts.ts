@@ -9,3 +9,9 @@ export const HEALTH_DISTRICTS: Record<string, { id: string; name: string; counti
     { id: "ID-7", name: "Eastern Idaho Public Health", counties: ["Bonneville", "Clark", "Custer", "Fremont", "Jefferson", "Lemhi", "Madison", "Teton"] },
   ],
 };
+
+export function countyBelongsToDistrict(state: string, county: string, selectedState: string, districtId: string) {
+  const district = HEALTH_DISTRICTS[selectedState]?.find((item) => item.id === districtId);
+  const normalize = (value: string) => value.replace(/\s+County$/i, "").trim().toLowerCase();
+  return state === selectedState && Boolean(district?.counties.some((name) => normalize(name) === normalize(county)));
+}

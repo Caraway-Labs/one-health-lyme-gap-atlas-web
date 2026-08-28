@@ -4,7 +4,7 @@ import maplibregl, { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import type { CountyScoreSummary } from "@/generated/models";
 import { CONTIGUOUS_US_INITIAL_VIEW, contiguousUsGeometry } from "@/lib/atlas-geometry";
-import { HEALTH_DISTRICTS } from "@/lib/health-districts";
+import { HEALTH_DISTRICTS, countyBelongsToDistrict } from "@/lib/health-districts";
 
 type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>;
 
@@ -32,8 +32,6 @@ export function AtlasMap({
 
   const enriched = (): GeoJSON.FeatureCollection => {
     const byFips = new Map(scores.map((county) => [county.fips, county]));
-    const district = HEALTH_DISTRICTS[selectedState]?.find((item) => item.id === selectedDistrict);
-    const normalizeCounty = (name: string) => name.replace(/\s+County$/i, "").trim().toLowerCase();
     const contiguousGeometry = contiguousUsGeometry(geometry);
     return {
       ...contiguousGeometry,
@@ -46,7 +44,7 @@ export function AtlasMap({
             color: county?.color ?? "#e4e9ea",
             selected: feature.properties.fips === selectedFips,
             selectedState: selectedState !== "ALL" && county?.state === selectedState,
-            selectedDistrict: Boolean(county?.state === selectedState && district?.counties.some((name) => normalizeCounty(name) === normalizeCounty(county?.county ?? ""))),
+            selectedDistrict: Boolean(county && countyBelongsToDistrict(county.state, county.county, selectedState, selectedDistrict)),
           },
         };
       }),
