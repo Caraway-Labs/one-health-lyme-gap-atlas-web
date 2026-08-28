@@ -33,6 +33,7 @@ export function AtlasMap({
   const enriched = (): GeoJSON.FeatureCollection => {
     const byFips = new Map(scores.map((county) => [county.fips, county]));
     const district = HEALTH_DISTRICTS[selectedState]?.find((item) => item.id === selectedDistrict);
+    const normalizeCounty = (name: string) => name.replace(/\s+County$/i, "").trim().toLowerCase();
     const contiguousGeometry = contiguousUsGeometry(geometry);
     return {
       ...contiguousGeometry,
@@ -45,7 +46,7 @@ export function AtlasMap({
             color: county?.color ?? "#e4e9ea",
             selected: feature.properties.fips === selectedFips,
             selectedState: selectedState !== "ALL" && county?.state === selectedState,
-            selectedDistrict: Boolean(district?.counties.includes(county?.county ?? "")),
+            selectedDistrict: Boolean(district?.counties.some((name) => normalizeCounty(name) === normalizeCounty(county?.county ?? ""))),
           },
         };
       }),
@@ -76,11 +77,18 @@ export function AtlasMap({
         },
       });
       instance.addLayer({
+        id: "selected-district-fill",
+        type: "fill",
+        source: "counties",
+        filter: ["==", ["get", "selectedDistrict"], true],
+        paint: { "fill-color": "#f08c46", "fill-opacity": 0.2 },
+      });
+      instance.addLayer({
         id: "selected-district-outline",
         type: "line",
         source: "counties",
         filter: ["==", ["get", "selectedDistrict"], true],
-        paint: { "line-color": "#f08c46", "line-width": 3.5 },
+        paint: { "line-color": "#d9480f", "line-width": 5 },
       });
       instance.addLayer({
         id: "selected-state-outline",
