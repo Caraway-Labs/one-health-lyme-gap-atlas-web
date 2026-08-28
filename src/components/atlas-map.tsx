@@ -11,11 +11,13 @@ export function AtlasMap({
   geometry,
   scores,
   selectedFips,
+  selectedState = "ALL",
   onSelect,
 }: {
   geometry: FeatureCollection;
   scores: CountyScoreSummary[];
   selectedFips: string;
+  selectedState?: string;
   onSelect: (fips: string) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -38,6 +40,7 @@ export function AtlasMap({
             ...feature.properties,
             color: county?.color ?? "#e4e9ea",
             selected: feature.properties.fips === selectedFips,
+            selectedState: selectedState !== "ALL" && county?.state === selectedState,
           },
         };
       }),
@@ -68,6 +71,13 @@ export function AtlasMap({
         },
       });
       instance.addLayer({
+        id: "selected-state-outline",
+        type: "line",
+        source: "counties",
+        filter: ["==", ["get", "selectedState"], true],
+        paint: { "line-color": "#0b7285", "line-width": 2.5 },
+      });
+      instance.addLayer({
         id: "selected-outline",
         type: "line",
         source: "counties",
@@ -91,6 +101,7 @@ export function AtlasMap({
     const source = map.current?.getSource("counties") as GeoJSONSource | undefined;
     if (!source || !map.current?.getLayer("selected-outline")) return;
     source.setData(enriched());
+    map.current.setFilter("selected-state-outline", ["==", ["get", "selectedState"], true]);
     map.current.setFilter("selected-outline", ["==", ["get", "selected"], true]);
   });
 
