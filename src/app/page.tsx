@@ -58,7 +58,7 @@ function AtlasPage() {
   async function copyBriefing() {
     if (!detailQuery.data) return;
     const detail = detailQuery.data;
-    const narrative = `${detail.county} County, ${detail.state_name} has a Surveillance Gap Score of ${detail.score.score}. ${reasonsFor(detail).join(" ")} This is a population-level hypothesis for follow-up, not an individual-risk or causal finding.`;
+    const narrative = `${detail.county} County, ${detail.state_name} has a County Review Priority of ${detail.score.score}. ${reasonsFor(detail).join(" ")} This summary supports follow-up review; it is not an individual-risk or causal finding.`;
     try { await navigator.clipboard.writeText(narrative); setCopied(true); window.setTimeout(() => setCopied(false), 2_000); } catch { setCopied(false); }
   }
 

@@ -99,7 +99,7 @@ export function AtlasMap({
       ref={container}
       className="maplibre-atlas"
       role="img"
-      aria-label="County map colored by Surveillance Gap Score. Use the ranked list or results table for keyboard selection."
+      aria-label="County map colored by County Review Priority. Use the county list or results table for keyboard selection."
     />
   );
 }
