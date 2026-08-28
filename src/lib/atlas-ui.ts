@@ -44,3 +44,49 @@ export function reasonsFor(county: CountyDetail): string[] {
       : "The published pathogen table has no county record; this does not establish pathogen absence.",
   ];
 }
+
+export type FollowUpPlan = {
+  level: string;
+  timeframe: string;
+  summary: string;
+  actions: Array<{ owner: string; task: string }>;
+};
+
+const FOLLOW_UP_LEVELS: Record<string, Omit<FollowUpPlan, "actions">> = {
+  "#a9d2db": { level: "Maintain annual awareness", timeframe: "Review annually", summary: "Keep a documented baseline and repeat the dashboard review when new surveillance data are released." },
+  "#55a8a3": { level: "Verify county records", timeframe: "Complete within 90 days", summary: "Confirm that the published case and tick records accurately reflect what local and state programs have available." },
+  "#87b982": { level: "Review local conditions", timeframe: "Complete within 60–90 days", summary: "Compare the county with nearby counties and decide whether reporting, provider outreach, or tick monitoring needs attention." },
+  "#efc64a": { level: "Conduct targeted follow-up", timeframe: "Begin within 60 days", summary: "Ask local surveillance, clinical, laboratory, and vector partners to examine the specific signals that raised the county's ranking." },
+  "#f49a32": { level: "Coordinate a local assessment", timeframe: "Begin within 30 days", summary: "Convene county and state partners, document the surveillance gaps, and assign a short-term field or outreach plan." },
+  "#e9602b": { level: "Prioritize prompt review", timeframe: "Contact partners within 2 weeks", summary: "Start a structured review with named owners, deadlines, and measures of progress across human and tick surveillance." },
+};
+
+export function followUpPlanFor(county: CountyDetail): FollowUpPlan {
+  const level = FOLLOW_UP_LEVELS[county.color.toLowerCase()] ?? FOLLOW_UP_LEVELS["#55a8a3"];
+  const actions: FollowUpPlan["actions"] = [];
+
+  actions.push({
+    owner: "County epidemiology or surveillance staff",
+    task: county.human_status === "published_count_floor"
+      ? "Review recent case reports and compare the county rate with prior years and neighboring counties."
+      : "Ask the state program whether county records were absent, suppressed, unallocated, or not reported; document the answer without treating missing data as zero cases.",
+  });
+  actions.push({
+    owner: "State vector-borne disease program",
+    task: county.tick_status === "No records"
+      ? "Check for unpublished or newer tick records and decide whether targeted tick identification or standardized field collection is feasible."
+      : "Review when, where, and how the county's tick evidence was collected and whether updated sampling is needed.",
+  });
+  actions.push({
+    owner: "Clinical and laboratory liaison",
+    task: county.burgdorferi_status === "Present"
+      ? "Confirm reporting pathways with local laboratories and share current diagnostic and reporting guidance with clinicians."
+      : "Confirm whether pathogen testing has been performed locally; record no testing separately from testing with no detections.",
+  });
+
+  if (county.uninsured_percent != null && county.uninsured_percent >= 10) {
+    actions.push({ owner: "Community health or access partner", task: "Identify practical barriers to evaluation, testing, and reporting, and include accessible prevention outreach in the follow-up plan." });
+  }
+
+  return { ...level, actions };
+}
