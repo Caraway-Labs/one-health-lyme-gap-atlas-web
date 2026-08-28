@@ -46,7 +46,7 @@ export function AtlasMap({
             color: county?.color ?? "#e4e9ea",
             selected: feature.properties.fips === selectedFips,
             selectedState: selectedState !== "ALL" && county?.state === selectedState,
-            selectedDistrict: Boolean(district?.counties.some((name) => normalizeCounty(name) === normalizeCounty(county?.county ?? ""))),
+            selectedDistrict: Boolean(county?.state === selectedState && district?.counties.some((name) => normalizeCounty(name) === normalizeCounty(county?.county ?? ""))),
           },
         };
       }),
