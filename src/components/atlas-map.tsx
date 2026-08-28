@@ -4,6 +4,7 @@ import maplibregl, { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import type { CountyScoreSummary } from "@/generated/models";
 import { CONTIGUOUS_US_INITIAL_VIEW, contiguousUsGeometry } from "@/lib/atlas-geometry";
+import { HEALTH_DISTRICTS } from "@/lib/health-districts";
 
 type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>;
 
@@ -12,12 +13,14 @@ export function AtlasMap({
   scores,
   selectedFips,
   selectedState = "ALL",
+  selectedDistrict = "ALL",
   onSelect,
 }: {
   geometry: FeatureCollection;
   scores: CountyScoreSummary[];
   selectedFips: string;
   selectedState?: string;
+  selectedDistrict?: string;
   onSelect: (fips: string) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -29,6 +32,7 @@ export function AtlasMap({
 
   const enriched = (): GeoJSON.FeatureCollection => {
     const byFips = new Map(scores.map((county) => [county.fips, county]));
+    const district = HEALTH_DISTRICTS[selectedState]?.find((item) => item.id === selectedDistrict);
     const contiguousGeometry = contiguousUsGeometry(geometry);
     return {
       ...contiguousGeometry,
@@ -41,6 +45,7 @@ export function AtlasMap({
             color: county?.color ?? "#e4e9ea",
             selected: feature.properties.fips === selectedFips,
             selectedState: selectedState !== "ALL" && county?.state === selectedState,
+            selectedDistrict: Boolean(district?.counties.includes(county?.county ?? "")),
           },
         };
       }),
@@ -69,6 +74,13 @@ export function AtlasMap({
           "fill-opacity": 0.92,
           "fill-outline-color": "rgba(255,255,255,.9)",
         },
+      });
+      instance.addLayer({
+        id: "selected-district-outline",
+        type: "line",
+        source: "counties",
+        filter: ["==", ["get", "selectedDistrict"], true],
+        paint: { "line-color": "#f08c46", "line-width": 3.5 },
       });
       instance.addLayer({
         id: "selected-state-outline",
@@ -102,6 +114,7 @@ export function AtlasMap({
     if (!source || !map.current?.getLayer("selected-outline")) return;
     source.setData(enriched());
     map.current.setFilter("selected-state-outline", ["==", ["get", "selectedState"], true]);
+    map.current.setFilter("selected-district-outline", ["==", ["get", "selectedDistrict"], true]);
     map.current.setFilter("selected-outline", ["==", ["get", "selected"], true]);
   });
 
