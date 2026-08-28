@@ -4,6 +4,7 @@ import maplibregl, { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import type { CountyScoreSummary } from "@/generated/models";
 import { CONTIGUOUS_US_INITIAL_VIEW, contiguousUsGeometry } from "@/lib/atlas-geometry";
+import { countyBelongsToDistrict } from "@/lib/health-districts";
 
 type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>;
 
@@ -11,11 +12,15 @@ export function AtlasMap({
   geometry,
   scores,
   selectedFips,
+  selectedState = "ALL",
+  selectedDistrict = "ALL",
   onSelect,
 }: {
   geometry: FeatureCollection;
   scores: CountyScoreSummary[];
   selectedFips: string;
+  selectedState?: string;
+  selectedDistrict?: string;
   onSelect: (fips: string) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -38,6 +43,8 @@ export function AtlasMap({
             ...feature.properties,
             color: county?.color ?? "#e4e9ea",
             selected: feature.properties.fips === selectedFips,
+            selectedState: selectedState !== "ALL" && county?.state === selectedState,
+            selectedDistrict: Boolean(county && countyBelongsToDistrict(county.state, county.county, selectedState, selectedDistrict)),
           },
         };
       }),
@@ -68,6 +75,27 @@ export function AtlasMap({
         },
       });
       instance.addLayer({
+        id: "selected-district-fill",
+        type: "fill",
+        source: "counties",
+        filter: ["==", ["get", "selectedDistrict"], true],
+        paint: { "fill-color": "#f08c46", "fill-opacity": 0.2 },
+      });
+      instance.addLayer({
+        id: "selected-district-outline",
+        type: "line",
+        source: "counties",
+        filter: ["==", ["get", "selectedDistrict"], true],
+        paint: { "line-color": "#d9480f", "line-width": 5 },
+      });
+      instance.addLayer({
+        id: "selected-state-outline",
+        type: "line",
+        source: "counties",
+        filter: ["==", ["get", "selectedState"], true],
+        paint: { "line-color": "#0b7285", "line-width": 2.5 },
+      });
+      instance.addLayer({
         id: "selected-outline",
         type: "line",
         source: "counties",
@@ -91,6 +119,8 @@ export function AtlasMap({
     const source = map.current?.getSource("counties") as GeoJSONSource | undefined;
     if (!source || !map.current?.getLayer("selected-outline")) return;
     source.setData(enriched());
+    map.current.setFilter("selected-state-outline", ["==", ["get", "selectedState"], true]);
+    map.current.setFilter("selected-district-outline", ["==", ["get", "selectedDistrict"], true]);
     map.current.setFilter("selected-outline", ["==", ["get", "selected"], true]);
   });
 
@@ -99,7 +129,7 @@ export function AtlasMap({
       ref={container}
       className="maplibre-atlas"
       role="img"
-      aria-label="County map colored by Surveillance Gap Score. Use the ranked list or results table for keyboard selection."
+      aria-label="County map colored by County Review Priority. Use the county list or results table for keyboard selection."
     />
   );
 }

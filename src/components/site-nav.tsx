@@ -15,7 +15,7 @@ export function SiteNav() {
     <nav className="topbar" aria-label="Main navigation">
       <Link className="brand" href="/#atlas" aria-label="One Health Lyme Gap Atlas home"><span className="brand-mark">+</span><span>One Health Lyme Gap Atlas</span></Link>
       <div className="nav-links">
-        <div className="section-links"><Link href={sectionHref("atlas")}>Atlas</Link><Link href={sectionHref("scoring")}>Scoring lab</Link><Link href={sectionHref("methods")}>Data & methods</Link></div>
+        <div className="section-links"><Link href={sectionHref("atlas")}>Atlas</Link><Link href={sectionHref("scoring")}>How counties are prioritized</Link><Link href={sectionHref("methods")}>How to interpret the Atlas</Link></div>
         <details className="variant-menu"><summary>Variants</summary><div><Link href="/variant_1">County review starting point</Link><Link href="/variant_2">Guided county review</Link><Link href="/variant_3">County evidence workspace</Link><Link href="/variant_4">Score explained</Link><Link href="/variant_5">County comparison</Link><Link href="/variant_6">Wide evidence workspace</Link></div></details>
         <button className="dictionary-button" type="button" onClick={() => dictionaryDialog.current?.showModal()}>Data dictionary</button>
         {process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true" && <Link href="/knowledge-graph">Evidence chat</Link>}

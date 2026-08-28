@@ -1,0 +1,45 @@
+state_fips,state,county_fips,county_name,health_district_id,health_district_name,source_url,source_vintage
+16,ID,16009,Benewah,ID-1,Panhandle Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16017,Bonner,ID-1,Panhandle Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16021,Boundary,ID-1,Panhandle Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16055,Kootenai,ID-1,Panhandle Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16079,Shoshone,ID-1,Panhandle Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16035,Clearwater,ID-2,Idaho North Central Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16049,Idaho,ID-2,Idaho North Central Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16057,Latah,ID-2,Idaho North Central Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16061,Lewis,ID-2,Idaho North Central Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16069,Nez Perce,ID-2,Idaho North Central Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16003,Adams,ID-3,Southwest District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16027,Canyon,ID-3,Southwest District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16045,Gem,ID-3,Southwest District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16073,Owyhee,ID-3,Southwest District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16075,Payette,ID-3,Southwest District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16087,Washington,ID-3,Southwest District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16001,Ada,ID-4,Central District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16015,Boise,ID-4,Central District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16039,Elmore,ID-4,Central District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16085,Valley,ID-4,Central District Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16013,Blaine,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16025,Camas,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16031,Cassia,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16047,Gooding,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16053,Jerome,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16063,Lincoln,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16067,Minidoka,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16083,Twin Falls,ID-5,South Central Public Health District,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16005,Bannock,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16007,Bear Lake,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16011,Bingham,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16023,Butte,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16029,Caribou,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16041,Franklin,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16071,Oneida,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16077,Power,ID-6,Southeastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16019,Bonneville,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16033,Clark,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16037,Custer,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16043,Fremont,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16051,Jefferson,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16059,Lemhi,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16065,Madison,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23
+16,ID,16081,Teton,ID-7,Eastern Idaho Public Health,https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety,2026-07-23

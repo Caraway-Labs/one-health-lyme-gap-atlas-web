@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { contiguousUsGeometry, isContiguousUsCounty } from "../src/lib/atlas-geometry";
-import { matchesEvidence, numericParam, reasonsFor } from "../src/lib/atlas-ui";
+import { followUpPlanFor, matchesEvidence, numericParam, reasonsFor } from "../src/lib/atlas-ui";
+import { countyBelongsToDistrict } from "../src/lib/health-districts";
 
 const county = {
   fips: "08001", county: "Adams", state: "CO", state_name: "Colorado", in_contiguous_tick_scope: true,
@@ -40,5 +41,20 @@ describe("atlas UI rules", () => {
   it("keeps missing human records distinct from zero cases", () => {
     const detail = { ...county, population: 1, case_count_floor_2023: null, incidence_floor_2023: null, state_unallocated_records_2023: null, scapularis_status: "Established", pacificus_status: null, svi_percentile: null, uninsured_percentile: null, uninsured_percent: null, rucc_2023: null, release: { release_id: "test", schema_version: "test", generated_at: "2026-01-01", loaded_at: "2026-01-01", scope: "test", bundle_sha256: "test", score_defaults: {}, methodology_version: "test", limitations: "test", sources: [], states: [] } };
     expect(reasonsFor(detail).join(" ")).toContain("not as zero cases");
+  });
+
+  it("maps all six chart colors to distinct follow-up levels", () => {
+    const detail = { ...county, population: 1, case_count_floor_2023: null, incidence_floor_2023: null, state_unallocated_records_2023: null, scapularis_status: "Established", pacificus_status: null, svi_percentile: null, uninsured_percentile: null, uninsured_percent: null, rucc_2023: null, release: { release_id: "test", schema_version: "test", generated_at: "2026-01-01", loaded_at: "2026-01-01", scope: "test", bundle_sha256: "test", score_defaults: {}, methodology_version: "test", limitations: "test", sources: [], states: [] } };
+    const colors = ["#a9d2db", "#55a8a3", "#87b982", "#efc64a", "#f49a32", "#e9602b"];
+    const plans = colors.map((color) => followUpPlanFor({ ...detail, color }));
+    expect(new Set(plans.map((plan) => plan.level)).size).toBe(6);
+    expect(plans.at(-1)?.timeframe).toContain("2 weeks");
+    expect(plans.every((plan) => plan.actions.length >= 3)).toBe(true);
+  });
+
+  it("keeps district highlights inside the selected state", () => {
+    expect(countyBelongsToDistrict("ID", "Adams", "ID", "ID-3")).toBe(true);
+    expect(countyBelongsToDistrict("WA", "Adams", "ID", "ID-3")).toBe(false);
+    expect(countyBelongsToDistrict("ID", "Washington County", "ID", "ID-3")).toBe(true);
   });
 });
