@@ -4,7 +4,7 @@ import maplibregl, { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import type { CountyScoreSummary } from "@/generated/models";
 import { CONTIGUOUS_US_INITIAL_VIEW, contiguousUsGeometry } from "@/lib/atlas-geometry";
-import { HEALTH_DISTRICTS, countyBelongsToDistrict } from "@/lib/health-districts";
+import { countyBelongsToDistrict } from "@/lib/health-districts";
 
 type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>;
 
