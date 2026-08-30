@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { SiteNav } from "@/components/site-nav";
 import { ChatLauncher } from "@/components/chat-launcher";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
   title: "One Health Lyme Gap Atlas",
@@ -14,5 +15,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" data-scroll-behavior="smooth"><body><Suspense fallback={null}><SiteNav /></Suspense><Providers>{children}<ChatLauncher /></Providers></body></html>;
+  return <html lang="en" data-scroll-behavior="smooth"><body><TooltipProvider><Suspense fallback={null}><SiteNav /></Suspense><Providers>{children}<ChatLauncher /></Providers></TooltipProvider></body></html>;
 }
