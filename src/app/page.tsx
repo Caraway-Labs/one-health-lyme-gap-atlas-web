@@ -12,6 +12,7 @@ import { MethodsSection } from "@/components/methods-section";
 import { ResultsTable } from "@/components/results-table";
 import { ScoringLab } from "@/components/scoring-lab";
 import { SiteFooter } from "@/components/site-footer";
+import { Button } from "@/components/ui/button";
 import { EVIDENCE_VIEWS, type EvidenceView, type ScoreSettings, matchesEvidence, numericParam, reasonsFor } from "@/lib/atlas-ui";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -67,7 +68,7 @@ function AtlasPage() {
   }
 
   if (metadataQuery.isPending) return <main className="load-state"><div><div className="loading-mark" aria-hidden="true"><span /><span /><span /></div><h1>Loading the Atlas</h1><p>Retrieving the governed county release through the public API.</p></div></main>;
-  if (metadataQuery.error || geometryQuery.error || scoresQuery.error || !metadataQuery.data) return <main className="load-state"><div><h1>The Atlas is temporarily unavailable</h1><p>Unable to retrieve the current governed release.</p><button className="button primary" onClick={() => location.reload()}>Try again</button></div></main>;
+  if (metadataQuery.error || geometryQuery.error || scoresQuery.error || !metadataQuery.data) return <main className="load-state"><div><h1>The Atlas is temporarily unavailable</h1><p>Unable to retrieve the current governed release.</p><Button onClick={() => location.reload()}>Try again</Button></div></main>;
 
   const metadata = metadataQuery.data;
   const selectedCountyState = scoresQuery.data?.counties.find((county) => county.fips === selectedFips)?.state;
