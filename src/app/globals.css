@@ -134,7 +134,7 @@ a { color: inherit; text-decoration: none; }
 .nav-links a:hover { color: white; }
 .nav-action { color: inherit; font-size: inherit; font-weight: inherit; }.nav-action:hover { color: white; }
 .nav-menu-content { width: 15.5rem; border: 1px solid rgba(255,255,255,.14); background: var(--navy); color: var(--white); box-shadow: var(--shadow); }.nav-menu-content [data-slot="dropdown-menu-item"] { padding: .6rem .7rem; font-size: .8rem; }.nav-menu-content [data-slot="dropdown-menu-item"]:focus { background: rgba(255,255,255,.1); color: var(--white); }
-.dictionary-content { width: min(42rem, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); max-height: min(42rem, calc(100vh - 2rem)); color: var(--ink); box-shadow: 0 1.5rem 4rem rgba(0,0,0,.35); }.dictionary-content h2 { margin: .25rem 0 0; color: var(--navy); font-family: Georgia, serif; font-size: 2rem; font-weight: 500; }.dictionary-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }.dictionary-list div { padding: .85rem; border-radius: .6rem; background: var(--pale); }.dictionary-list dt { color: var(--navy); font-size: .78rem; font-weight: 800; }.dictionary-list dd { margin: .35rem 0 0; color: var(--muted-foreground); font-size: .76rem; line-height: 1.5; }
+.dictionary-content { width: min(42rem, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); max-height: min(42rem, calc(100dvh - 2rem)); overflow-y: auto; color: var(--ink); box-shadow: 0 1.5rem 4rem rgba(0,0,0,.35); }.dictionary-content h2 { margin: .25rem 0 0; color: var(--navy); font-family: Georgia, serif; font-size: 2rem; font-weight: 500; }.dictionary-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }.dictionary-list div { padding: .85rem; border-radius: .6rem; background: var(--pale); }.dictionary-list dt { color: var(--navy); font-size: .78rem; font-weight: 800; }.dictionary-list dd { margin: .35rem 0 0; color: var(--muted-foreground); font-size: .76rem; line-height: 1.5; }
 .hero-content {
   position: relative;
   z-index: 1;
@@ -237,13 +237,13 @@ a { color: inherit; text-decoration: none; }
 .rank-card { display: flex; min-height: 0; max-height: 690px; padding: 1.15rem 0 .8rem; flex-direction: column; overflow: hidden; }
 .card-title-row.compact { padding: 0 1rem .8rem; }
 .result-count { display: grid; min-width: 2.4rem; height: 2.4rem; padding: 0 .55rem; place-items: center; border-radius: 50%; background: var(--pale); color: var(--teal-dark); font-size: .72rem; font-weight: 800; }
-.rank-list { overflow-y: auto; border-top: 1px solid var(--line); }
+.rank-list { min-height: 0; flex: 1 1 auto; overflow-y: auto; border-top: 1px solid var(--line); }
 .rank-row { display: grid; width: 100%; grid-template-columns: 1.8rem minmax(0, 1fr) auto; gap: .55rem; padding: .7rem .9rem; align-items: center; border: 0; border-bottom: 1px solid #edf1ef; background: white; color: var(--ink); text-align: left; cursor: pointer; }
 .rank-row:hover { background: #f6faf8; }.rank-row.active { background: #edf7f4; box-shadow: inset 3px 0 0 var(--teal); }
 .rank-number { color: #92a2a7; font-family: Georgia, serif; font-size: .78rem; }
 .rank-name { min-width: 0; }.rank-name strong { display: block; overflow: hidden; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }.rank-name small { color: var(--muted-foreground); font-size: .64rem; }
 .rank-score { display: grid; width: 2.75rem; height: 1.8rem; place-items: center; border-radius: .4rem; color: #092842; font-size: .71rem; font-weight: 850; }
-.list-note { margin: .7rem 1rem 0; color: var(--muted-foreground); font-size: .66rem; line-height: 1.45; }
+.list-note { margin: .7rem 1rem 0; flex: 0 0 auto; color: var(--muted-foreground); font-size: .66rem; line-height: 1.45; }
 
 .profile-card { margin-top: 1rem; padding: 1.5rem; }
 .profile-header { display: flex; padding-bottom: 1.25rem; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); gap: 1rem; }
@@ -352,7 +352,7 @@ footer { display: grid; grid-template-columns: 1fr 1.3fr auto; padding: 2rem max
 .maplibre-atlas { width: 100%; height: 100%; min-height: 360px; }
 .maplibre-atlas .maplibregl-canvas:focus-visible { outline: 3px solid var(--teal); outline-offset: -3px; }
 .map-loading { display: grid; height: 100%; place-items: center; color: var(--muted-foreground); }
-.table-toggle { margin: .7rem 1rem 0; padding: .55rem; border: 1px solid var(--line); border-radius: .45rem; background: white; color: var(--teal-dark); font: inherit; font-size: .72rem; font-weight: 750; cursor: pointer; }
+.table-toggle { margin: .7rem 1rem 0; flex: 0 0 auto; padding: .55rem; border: 1px solid var(--line); border-radius: .45rem; background: white; color: var(--teal-dark); font: inherit; font-size: .72rem; font-weight: 750; cursor: pointer; }
 .full-table { margin-top: 1rem; padding: 1.5rem; }
 .full-table h3 { margin-top: 0; color: var(--navy); font-family: Georgia, serif; font-size: 1.55rem; font-weight: 500; }
 .table-scroll { max-height: 36rem; overflow: auto; }
