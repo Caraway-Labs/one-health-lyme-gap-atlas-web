@@ -37,7 +37,7 @@ export function SiteNav() {
           <DialogContent className="dictionary-content" aria-labelledby="data-dictionary-title">
             <DialogHeader><span className="eyebrow">Reference</span><DialogTitle id="data-dictionary-title">Data dictionary</DialogTitle><DialogDescription>Definitions used throughout the Atlas release.</DialogDescription></DialogHeader>
             <dl className="dictionary-list">{DATA_DICTIONARY.map(({ term, definition }) => <div key={term}><dt>{term}</dt><dd>{definition}</dd></div>)}</dl>
-            <DialogFooter><DialogClose render={<Button variant="secondary" />}>Close</DialogClose></DialogFooter>
+            <DialogFooter><DialogClose render={<Button variant="secondary" aria-label="Close data dictionary" />}>Close</DialogClose></DialogFooter>
           </DialogContent>
         </Dialog>
         {process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true" && <Link href="/knowledge-graph">Evidence chat</Link>}
