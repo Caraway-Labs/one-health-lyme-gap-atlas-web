@@ -6,7 +6,8 @@ import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
-import type { KnowledgeChatResponse } from "@/generated/models";
+import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
+import { validateApiResponse } from "@/lib/api-response-validation";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 import {
   CHAT_STORAGE_EVENT,
@@ -63,7 +64,11 @@ export function EvidenceChat({
         conversation_token: active?.token,
         message: question,
       });
-      const response = result.data as KnowledgeChatResponse;
+      const response = validateApiResponse(
+        "Evidence chat response",
+        KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
+        result.data
+      );
       const conversation = active ?? createConversation(response, question);
       const now = new Date().toISOString();
       const updated: LocalConversation = {

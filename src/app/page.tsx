@@ -19,11 +19,12 @@ import {
   metadataV1AtlasMetadataGet,
   scoresV1AtlasScoresGet,
 } from "@/generated/atlas";
-import type {
-  AtlasMetadata,
-  CountyDetail,
-  ScoreCollection,
-} from "@/generated/models";
+import {
+  CountyV1CountiesFipsGetResponse,
+  MetadataV1AtlasMetadataGetResponse,
+  ScoresV1AtlasScoresGetResponse,
+} from "@/generated/zod/atlas";
+import { validateApiResponse } from "@/lib/api-response-validation";
 import {
   EVIDENCE_VIEWS,
   matchesEvidence,
@@ -68,7 +69,11 @@ function AtlasPage() {
 
   const metadataQuery = useQuery({
     queryFn: async () =>
-      (await metadataV1AtlasMetadataGet()).data as AtlasMetadata,
+      validateApiResponse(
+        "Atlas metadata",
+        MetadataV1AtlasMetadataGetResponse,
+        (await metadataV1AtlasMetadataGet()).data
+      ),
     queryKey: ["metadata"],
   });
   const geometryQuery = useQuery({
@@ -86,24 +91,32 @@ function AtlasPage() {
     enabled: Boolean(metadataQuery.data),
     placeholderData: (previous) => previous,
     queryFn: async () =>
-      (
-        await scoresV1AtlasScoresGet({
-          dataset_version: metadataQuery.data!.release_id,
-          ...debouncedSettings,
-        })
-      ).data as ScoreCollection,
+      validateApiResponse(
+        "Atlas scores",
+        ScoresV1AtlasScoresGetResponse,
+        (
+          await scoresV1AtlasScoresGet({
+            dataset_version: metadataQuery.data!.release_id,
+            ...debouncedSettings,
+          })
+        ).data
+      ),
     queryKey: ["scores", metadataQuery.data?.release_id, debouncedSettings],
   });
   const detailQuery = useQuery({
     enabled: Boolean(metadataQuery.data && selectedFips),
     placeholderData: (previous) => previous,
     queryFn: async () =>
-      (
-        await countyV1CountiesFipsGet(selectedFips, {
-          dataset_version: metadataQuery.data!.release_id,
-          ...debouncedSettings,
-        })
-      ).data as CountyDetail,
+      validateApiResponse(
+        "County detail",
+        CountyV1CountiesFipsGetResponse,
+        (
+          await countyV1CountiesFipsGet(selectedFips, {
+            dataset_version: metadataQuery.data!.release_id,
+            ...debouncedSettings,
+          })
+        ).data
+      ),
     queryKey: [
       "county",
       selectedFips,

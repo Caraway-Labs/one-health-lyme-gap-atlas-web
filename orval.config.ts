@@ -14,4 +14,16 @@ export default defineConfig({
       target: "./src/generated/atlas.ts",
     },
   },
+  atlasZod: {
+    input: "./contracts/openapi.json",
+    output: {
+      client: "zod",
+      mode: "split",
+      schemas: {
+        path: "./src/generated/zod",
+        type: "zod",
+      },
+      target: "./src/generated/zod/atlas.ts",
+    },
+  },
 });
