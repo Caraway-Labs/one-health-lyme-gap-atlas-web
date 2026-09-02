@@ -1,4 +1,7 @@
+import { z } from "zod";
+
 import type { KnowledgeChatResponse } from "@/generated/models";
+import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
 
 export const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
 export const CHAT_STORAGE_EVENT = "atlas-knowledge-chat-storage";
@@ -23,42 +26,56 @@ export interface LocalConversation {
   turns: LocalChatTurn[];
 }
 
-interface ChatStore {
+export interface ChatStore {
   version: 1;
   conversations: LocalConversation[];
 }
 
-function validConversation(
-  value: unknown,
-  now: number
-): value is LocalConversation {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const item = value as Partial<LocalConversation>;
-  return Boolean(
-    item.id &&
-    item.token &&
-    item.title &&
-    item.expiresAt &&
-    Date.parse(item.expiresAt) > now &&
-    Array.isArray(item.turns)
-  );
-}
+const timestamp = z.iso.datetime({ offset: true });
+
+const localChatTurnSchema = z.object({
+  createdAt: timestamp,
+  id: z.string(),
+  response: KnowledgeGraphChatV1KnowledgeGraphChatPostResponse.optional(),
+  role: z.enum(["user", "assistant"]),
+  text: z.string(),
+});
+
+const localConversationSchema = z.object({
+  createdAt: timestamp,
+  expiresAt: timestamp,
+  id: z.string(),
+  title: z.string(),
+  token: z.string(),
+  turns: z.array(localChatTurnSchema),
+  updatedAt: timestamp,
+});
+
+const chatStoreSchema = z.object({
+  conversations: z.array(z.unknown()),
+  version: z.literal(1),
+});
 
 export function loadConversations(now = Date.now()): LocalConversation[] {
   if (typeof window === "undefined") {
     return [];
   }
   try {
-    const parsed = JSON.parse(
-      localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}"
-    ) as Partial<ChatStore>;
-    const conversations = (parsed.conversations ?? [])
-      .filter((item) => validConversation(item, now))
+    const parsed = chatStoreSchema.safeParse(
+      JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}")
+    );
+    if (!parsed.success) {
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+      return [];
+    }
+    const conversations = parsed.data.conversations
+      .map((item) => localConversationSchema.safeParse(item))
+      .filter((item) => item.success)
+      .map((item) => item.data)
+      .filter((item) => Date.parse(item.expiresAt) > now)
       .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
       .slice(0, MAX_CONVERSATIONS);
-    if (conversations.length !== (parsed.conversations ?? []).length) {
+    if (conversations.length !== parsed.data.conversations.length) {
       saveConversations(conversations);
     }
     return conversations;
