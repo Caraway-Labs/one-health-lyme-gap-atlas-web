@@ -1,17 +1,30 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from "vitest";
+
+import type { LocalConversation } from "../src/lib/knowledge-chat-storage";
 import {
   CHAT_STORAGE_KEY,
-  LocalConversation,
   clearConversations,
   loadConversations,
   removeConversation,
   saveConversations,
 } from "../src/lib/knowledge-chat-storage";
 
-function conversation(id: string, updatedAt: string, expiresAt: string): LocalConversation {
-  return { id, token: `token-${id}`, title: id, createdAt: updatedAt, updatedAt, expiresAt, turns: [] };
+function conversation(
+  id: string,
+  updatedAt: string,
+  expiresAt: string
+): LocalConversation {
+  return {
+    createdAt: updatedAt,
+    expiresAt,
+    id,
+    title: id,
+    token: `token-${id}`,
+    turns: [],
+    updatedAt,
+  };
 }
 
 describe("knowledge chat local storage", () => {
@@ -27,17 +40,33 @@ describe("knowledge chat local storage", () => {
       conversation("2", "2026-08-02T00:00:00.000Z", future),
       conversation("1", "2026-08-01T00:00:00.000Z", future),
     ]);
-    expect(loadConversations(Date.parse("2026-08-25T00:00:00.000Z"))).toHaveLength(5);
+    expect(
+      loadConversations(Date.parse("2026-08-25T00:00:00.000Z"))
+    ).toHaveLength(5);
   });
 
   it("purges expired conversations and supports deletion", () => {
     saveConversations([
-      conversation("live", "2026-08-25T00:00:00.000Z", "2026-09-24T00:00:00.000Z"),
-      conversation("old", "2026-07-01T00:00:00.000Z", "2026-08-01T00:00:00.000Z"),
+      conversation(
+        "live",
+        "2026-08-25T00:00:00.000Z",
+        "2026-09-24T00:00:00.000Z"
+      ),
+      conversation(
+        "old",
+        "2026-07-01T00:00:00.000Z",
+        "2026-08-01T00:00:00.000Z"
+      ),
     ]);
-    expect(loadConversations(Date.parse("2026-08-25T00:00:00.000Z")).map((item) => item.id)).toEqual(["live"]);
-    expect(removeConversation("live")).toEqual([]);
+    expect(
+      loadConversations(Date.parse("2026-08-25T00:00:00.000Z")).map(
+        (item) => item.id
+      )
+    ).toStrictEqual(["live"]);
+    expect(removeConversation("live")).toStrictEqual([]);
     clearConversations();
-    expect(JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}").conversations).toEqual([]);
+    expect(
+      JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}").conversations
+    ).toStrictEqual([]);
   });
 });

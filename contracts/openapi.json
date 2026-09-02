@@ -8,9 +8,7 @@
   "paths": {
     "/health/live": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Live",
         "operationId": "live_health_live_get",
         "responses": {
@@ -33,9 +31,7 @@
     },
     "/health/ready": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Ready",
         "operationId": "ready_health_ready_get",
         "responses": {
@@ -58,9 +54,7 @@
     },
     "/v1/atlas/metadata": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Metadata",
         "operationId": "metadata_v1_atlas_metadata_get",
         "parameters": [
@@ -107,9 +101,7 @@
     },
     "/v1/atlas/geometry": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Geometry",
         "operationId": "geometry_v1_atlas_geometry_get",
         "parameters": [
@@ -154,9 +146,7 @@
     },
     "/v1/atlas/scores": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Scores",
         "operationId": "scores_v1_atlas_scores_get",
         "parameters": [
@@ -241,9 +231,7 @@
     },
     "/v1/counties/{fips}": {
       "get": {
-        "tags": [
-          "counties"
-        ],
+        "tags": ["counties"],
         "summary": "County",
         "operationId": "county_v1_counties__fips__get",
         "parameters": [
@@ -338,9 +326,7 @@
     },
     "/v1/atlas/ranking.csv": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Ranking Csv",
         "operationId": "ranking_csv_v1_atlas_ranking_csv_get",
         "parameters": [
@@ -371,12 +357,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": [
-                "all",
-                "ecological",
-                "human",
-                "complete"
-              ],
+              "enum": ["all", "ecological", "human", "complete"],
               "type": "string",
               "default": "all",
               "title": "Evidence"
@@ -445,9 +426,7 @@
     },
     "/v1/knowledge-graph/chat": {
       "post": {
-        "tags": [
-          "knowledge graph"
-        ],
+        "tags": ["knowledge graph"],
         "summary": "Knowledge Graph Chat",
         "operationId": "knowledge_graph_chat_v1_knowledge_graph_chat_post",
         "requestBody": {
@@ -593,10 +572,7 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": [
-              "user",
-              "assistant"
-            ],
+            "enum": ["user", "assistant"],
             "title": "Role"
           },
           "content": {
@@ -607,10 +583,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "role",
-          "content"
-        ],
+        "required": ["role", "content"],
         "title": "ChatHistoryTurn"
       },
       "CountyDetail": {
@@ -927,9 +900,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "KnowledgeChatRequest"
       },
       "KnowledgeChatResponse": {
@@ -1069,11 +1040,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "claim_id",
-          "text",
-          "citation_ids"
-        ],
+        "required": ["claim_id", "text", "citation_ids"],
         "title": "KnowledgeClaim"
       },
       "ProblemDetails": {
@@ -1258,13 +1225,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "key",
-          "label",
-          "vintage",
-          "url",
-          "note"
-        ],
+        "required": ["key", "label", "vintage", "url", "note"],
         "title": "SourceMetadata"
       },
       "ValidationError": {
@@ -1300,11 +1261,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       }
     }

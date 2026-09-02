@@ -1,12 +1,20 @@
 "use client";
 
-import maplibregl, { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import { useEffect, useRef } from "react";
+
 import type { CountyScoreSummary } from "@/generated/models";
-import { CONTIGUOUS_US_INITIAL_VIEW, contiguousUsGeometry } from "@/lib/atlas-geometry";
+import {
+  CONTIGUOUS_US_INITIAL_VIEW,
+  contiguousUsGeometry,
+} from "@/lib/atlas-geometry";
 import { countyBelongsToDistrict } from "@/lib/health-districts";
 
-type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>;
+type FeatureCollection = GeoJSON.FeatureCollection<
+  GeoJSON.Geometry,
+  { fips: string }
+>;
 
 export function AtlasMap({
   geometry,
@@ -43,8 +51,17 @@ export function AtlasMap({
             ...feature.properties,
             color: county?.color ?? "#e4e9ea",
             selected: feature.properties.fips === selectedFips,
-            selectedState: selectedState !== "ALL" && county?.state === selectedState,
-            selectedDistrict: Boolean(county && countyBelongsToDistrict(county.state, county.county, selectedState, selectedDistrict)),
+            selectedDistrict: Boolean(
+              county &&
+              countyBelongsToDistrict(
+                county.state,
+                county.county,
+                selectedState,
+                selectedDistrict
+              )
+            ),
+            selectedState:
+              selectedState !== "ALL" && county?.state === selectedState,
           },
         };
       }),
@@ -52,76 +69,106 @@ export function AtlasMap({
   };
 
   useEffect(() => {
-    if (!container.current || map.current) return;
+    if (!container.current || map.current) {
+      return;
+    }
     const instance = new maplibregl.Map({
       container: container.current,
-      style: { version: 8, sources: {}, layers: [] },
+      style: { layers: [], sources: {}, version: 8 },
       ...CONTIGUOUS_US_INITIAL_VIEW,
       minZoom: 2,
       maxZoom: 8,
       attributionControl: false,
     });
-    instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    instance.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      "top-right"
+    );
     instance.on("load", () => {
-      instance.addSource("counties", { type: "geojson", data: enriched() });
+      instance.addSource("counties", { data: enriched(), type: "geojson" });
       instance.addLayer({
         id: "counties-fill",
-        type: "fill",
-        source: "counties",
         paint: {
           "fill-color": ["coalesce", ["get", "color"], "#e4e9ea"],
           "fill-opacity": 0.92,
           "fill-outline-color": "rgba(255,255,255,.9)",
         },
-      });
-      instance.addLayer({
-        id: "selected-district-fill",
+        source: "counties",
         type: "fill",
-        source: "counties",
+      });
+      instance.addLayer({
         filter: ["==", ["get", "selectedDistrict"], true],
+        id: "selected-district-fill",
         paint: { "fill-color": "#f08c46", "fill-opacity": 0.2 },
+        source: "counties",
+        type: "fill",
       });
       instance.addLayer({
-        id: "selected-district-outline",
-        type: "line",
-        source: "counties",
         filter: ["==", ["get", "selectedDistrict"], true],
+        id: "selected-district-outline",
         paint: { "line-color": "#d9480f", "line-width": 5 },
+        source: "counties",
+        type: "line",
       });
       instance.addLayer({
-        id: "selected-state-outline",
-        type: "line",
-        source: "counties",
         filter: ["==", ["get", "selectedState"], true],
+        id: "selected-state-outline",
         paint: { "line-color": "#0b7285", "line-width": 2.5 },
+        source: "counties",
+        type: "line",
       });
       instance.addLayer({
-        id: "selected-outline",
-        type: "line",
-        source: "counties",
         filter: ["==", ["get", "selected"], true],
+        id: "selected-outline",
         paint: { "line-color": "#061f3d", "line-width": 3 },
+        source: "counties",
+        type: "line",
       });
       instance.on("click", "counties-fill", (event) => {
         const fips = event.features?.[0]?.properties?.fips;
-        if (typeof fips === "string") selectRef.current(fips);
+        if (typeof fips === "string") {
+          selectRef.current(fips);
+        }
       });
-      instance.on("mouseenter", "counties-fill", () => { instance.getCanvas().style.cursor = "pointer"; });
-      instance.on("mouseleave", "counties-fill", () => { instance.getCanvas().style.cursor = ""; });
+      instance.on("mouseenter", "counties-fill", () => {
+        instance.getCanvas().style.cursor = "pointer";
+      });
+      instance.on("mouseleave", "counties-fill", () => {
+        instance.getCanvas().style.cursor = "";
+      });
     });
     map.current = instance;
-    return () => { instance.remove(); map.current = null; };
+    return () => {
+      instance.remove();
+      map.current = null;
+    };
     // The source is initialized once and refreshed by the effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    const source = map.current?.getSource("counties") as GeoJSONSource | undefined;
-    if (!source || !map.current?.getLayer("selected-outline")) return;
+    const source = map.current?.getSource("counties") as
+      | GeoJSONSource
+      | undefined;
+    if (!source || !map.current?.getLayer("selected-outline")) {
+      return;
+    }
     source.setData(enriched());
-    map.current.setFilter("selected-state-outline", ["==", ["get", "selectedState"], true]);
-    map.current.setFilter("selected-district-outline", ["==", ["get", "selectedDistrict"], true]);
-    map.current.setFilter("selected-outline", ["==", ["get", "selected"], true]);
+    map.current.setFilter("selected-state-outline", [
+      "==",
+      ["get", "selectedState"],
+      true,
+    ]);
+    map.current.setFilter("selected-district-outline", [
+      "==",
+      ["get", "selectedDistrict"],
+      true,
+    ]);
+    map.current.setFilter("selected-outline", [
+      "==",
+      ["get", "selected"],
+      true,
+    ]);
   });
 
   return (

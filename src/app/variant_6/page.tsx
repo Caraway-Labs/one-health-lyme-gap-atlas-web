@@ -1,6 +1,17 @@
 import { Suspense } from "react";
+
 import { ExperimentAtlas } from "@/components/experiment-atlas";
 
 export default function VariantSixPage() {
-  return <Suspense fallback={<main className="experiment-load"><h1>Loading experiment</h1></main>}><ExperimentAtlas variant="wide-workbench" /></Suspense>;
+  return (
+    <Suspense
+      fallback={
+        <main className="experiment-load">
+          <h1>Loading experiment</h1>
+        </main>
+      }
+    >
+      <ExperimentAtlas variant="wide-workbench" />
+    </Suspense>
+  );
 }

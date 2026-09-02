@@ -11,10 +11,12 @@ export function isContiguousUsCounty(fips: string): boolean {
 }
 
 export function contiguousUsGeometry(
-  geometry: GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>,
+  geometry: GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>
 ): GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }> {
   return {
     ...geometry,
-    features: geometry.features.filter((feature) => isContiguousUsCounty(feature.properties.fips)),
+    features: geometry.features.filter((feature) =>
+      isContiguousUsCounty(feature.properties.fips)
+    ),
   };
 }

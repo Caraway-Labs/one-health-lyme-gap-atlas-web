@@ -5,14 +5,13 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.carawaylabs.com" }],
         destination: "https://carawaylabs.com/:path*",
+        has: [{ type: "host", value: "www.carawaylabs.com" }],
         permanent: true,
+        source: "/:path*",
       },
     ];
   },
 };
 
 export default nextConfig;
-
