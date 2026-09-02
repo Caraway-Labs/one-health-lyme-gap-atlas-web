@@ -69,4 +69,72 @@ describe("knowledge chat local storage", () => {
       JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}").conversations
     ).toStrictEqual([]);
   });
+
+  it("safely clears malformed roots and discards invalid persisted conversations", () => {
+    localStorage.setItem(CHAT_STORAGE_KEY, "not json");
+    expect(loadConversations()).toStrictEqual([]);
+
+    localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({
+        conversations: [
+          conversation(
+            "valid",
+            "2026-08-25T00:00:00.000Z",
+            "2026-09-24T00:00:00.000Z"
+          ),
+          {
+            ...conversation(
+              "bad-role",
+              "2026-08-25T00:00:00.000Z",
+              "2026-09-24T00:00:00.000Z"
+            ),
+            turns: [
+              {
+                createdAt: "2026-08-25T00:00:00.000Z",
+                id: "turn",
+                role: "system",
+                text: "no",
+              },
+            ],
+          },
+          {
+            ...conversation(
+              "bad-time",
+              "not-a-time",
+              "2026-09-24T00:00:00.000Z"
+            ),
+          },
+        ],
+        version: 1,
+      })
+    );
+    expect(
+      loadConversations(Date.parse("2026-08-26T00:00:00.000Z")).map(
+        (item) => item.id
+      )
+    ).toStrictEqual(["valid"]);
+  });
+
+  it("rejects malformed nested assistant responses", () => {
+    const stored = conversation(
+      "bad-response",
+      "2026-08-25T00:00:00.000Z",
+      "2026-09-24T00:00:00.000Z"
+    );
+    stored.turns = [
+      {
+        createdAt: "2026-08-25T00:00:00.000Z",
+        id: "assistant",
+        role: "assistant",
+        response: { answer: "text", conversation_id: "id" } as never,
+        text: "text",
+      },
+    ];
+    localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({ conversations: [stored], version: 1 })
+    );
+    expect(loadConversations()).toStrictEqual([]);
+  });
 });
