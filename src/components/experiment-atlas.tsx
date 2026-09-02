@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 
 import { AtlasFilters } from "@/components/atlas-filters";
@@ -26,11 +26,11 @@ import {
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
-  EVIDENCE_VIEWS,
-  matchesEvidence,
-  numericParam,
-  reasonsFor,
-} from "@/lib/atlas-ui";
+  atlasSearchParams,
+  synchronizeGovernedDataset,
+  toScoreSettings,
+} from "@/lib/atlas-search-params";
+import { matchesEvidence, reasonsFor } from "@/lib/atlas-ui";
 import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
 
 export type ExperimentVariant =
@@ -93,27 +93,32 @@ function useDebounced<T>(value: T, delay = 180) {
 }
 
 export function ExperimentAtlas({ variant }: ExperimentProps) {
-  const params = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
-  const [stateFilter, setStateFilter] = useState(params.get("state") ?? "ALL");
-  const [query, setQuery] = useState(params.get("q") ?? "");
-  const [evidence, setEvidence] = useState<EvidenceView>(
-    EVIDENCE_VIEWS.has(params.get("evidence") ?? "")
-      ? (params.get("evidence") as EvidenceView)
-      : "all"
-  );
-  const [selectedFips, setSelectedFips] = useState(
-    params.get("county")?.match(/^\d{5}$/)?.[0] ?? "06037"
-  );
-  const [settings, setSettings] = useState<ScoreSettings>({
-    ecological_share: numericParam(params.get("eco"), 65, 40, 85, 5),
-    low_incidence_breakpoint: numericParam(params.get("breakpoint"), 10, 5, 25),
-    missing_human_weakness: numericParam(params.get("missing"), 75, 40, 90, 5),
+  const [urlState, setUrlState] = useQueryStates(atlasSearchParams, {
+    history: "replace",
+    scroll: false,
+    shallow: true,
   });
+  const {
+    compare: comparisonFips = "",
+    county: selectedFips,
+    evidence,
+    q: query,
+    state: stateFilter,
+  } = urlState;
+  const settings = toScoreSettings(urlState);
+  const setStateFilter = (state: string) => setUrlState({ state });
+  const setQuery = (q: string) => setUrlState({ q });
+  const setEvidence = (evidence: EvidenceView) => setUrlState({ evidence });
+  const setSelectedFips = (county: string) => setUrlState({ county });
+  const setSettings = (next: ScoreSettings) =>
+    setUrlState({
+      breakpoint: next.low_incidence_breakpoint,
+      eco: next.ecological_share,
+      missing: next.missing_human_weakness,
+    });
+  const setComparisonFips = (compare: string) => setUrlState({ compare });
   const [showTable, setShowTable] = useState(false);
   const [step, setStep] = useState(0);
-  const [comparisonFips, setComparisonFips] = useState("");
   const debouncedSettings = useDebounced(settings);
 
   const metadataQuery = useQuery({
@@ -201,34 +206,10 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   );
 
   useEffect(() => {
-    const next = new URLSearchParams();
     if (metadataQuery.data?.release_id) {
-      next.set("dataset", metadataQuery.data.release_id);
+      synchronizeGovernedDataset(metadataQuery.data.release_id);
     }
-    if (stateFilter !== "ALL") {
-      next.set("state", stateFilter);
-    }
-    if (query) {
-      next.set("q", query);
-    }
-    if (evidence !== "all") {
-      next.set("evidence", evidence);
-    }
-    next.set("county", selectedFips);
-    next.set("eco", String(settings.ecological_share));
-    next.set("breakpoint", String(settings.low_incidence_breakpoint));
-    next.set("missing", String(settings.missing_human_weakness));
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-  }, [
-    metadataQuery.data?.release_id,
-    stateFilter,
-    query,
-    evidence,
-    selectedFips,
-    settings,
-    router,
-    pathname,
-  ]);
+  }, [metadataQuery.data?.release_id]);
 
   if (metadataQuery.isPending) {
     return (

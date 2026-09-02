@@ -90,7 +90,9 @@ function EnabledChatLauncher() {
             </button>
             <EvidenceChat
               mode="drawer"
-              onOpenWorkspace={() => setOpen(false)}
+              onOpenWorkspace={() => {
+                window.setTimeout(() => setOpen(false), 0);
+              }}
             />
           </div>
         </div>
