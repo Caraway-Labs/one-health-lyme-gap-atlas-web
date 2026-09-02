@@ -1,8 +1,124 @@
+import { CountyActionPlan } from "@/components/county-action-plan";
 import type { CountyDetail } from "@/generated/models";
 import { plainPriority, reasonsFor } from "@/lib/atlas-ui";
-import { CountyActionPlan } from "@/components/county-action-plan";
 
-export function CountyProfile({ detail, copied, onCopy }: { detail: CountyDetail; copied: boolean; onCopy: () => void }) {
-  const components = [["Low or missing published case data", detail.score.human_weakness], ["Tick and pathogen evidence", detail.score.ecological], ["Potential barriers to diagnosis and reporting", detail.score.community]];
-  return <article className="card profile-card"><div className="profile-header"><div><span className="eyebrow">Selected county</span><h3>{detail.county}, {detail.state_name}</h3><p>FIPS {detail.fips} · Population {detail.population?.toLocaleString() ?? "unavailable"}</p></div><div className="score-lockup"><span className="priority-pill review">{plainPriority(detail.priority)}</span><strong>{detail.score.score}</strong><span>/ 100</span></div></div><div className="profile-grid"><div className="why-panel"><h4>Why this county appears in the ranking</h4><ol>{reasonsFor(detail).map((reason, index) => <li key={reason}><span>{index + 1}</span><div><h5>{["Published Lyme case data", "Tick presence", "Lyme bacterium detection"][index]}</h5><p>{reason}</p></div></li>)}</ol><div className="briefing-actions"><button className="button secondary" onClick={onCopy}>{copied ? "Summary copied" : "Copy county summary"}</button><a href="#scoring">Change scoring assumptions</a></div></div><div className="signals-panel"><h4>What influenced the ranking</h4>{components.map(([label, value]) => <div className="signal-row" key={label as string}><div className="signal-copy"><span>{label}</span><strong>{value}</strong></div><div className="signal-track"><span style={{ width: `${value}%` }} /></div></div>)}</div><div className="ledger-panel"><h4>Data used for this county</h4><dl><div><dt>Published 2023 Lyme case count</dt><dd>{detail.human_status.replaceAll("_", " ")}</dd></div><div><dt>Blacklegged tick status</dt><dd>{detail.tick_status}</dd></div><div><dt>Lyme bacterium detected in ticks</dt><dd>{detail.burgdorferi_status}</dd></div><div><dt>Social Vulnerability Index</dt><dd>{detail.svi_percentile == null ? "Unavailable" : `${Math.round(detail.svi_percentile * 100)}th percentile`}</dd></div><div><dt>Uninsured rate</dt><dd>{detail.uninsured_percent == null ? "Unavailable" : `${detail.uninsured_percent}%`}</dd></div><div><dt>Rural–urban classification (2023)</dt><dd>{detail.rucc_2023 ?? "Unavailable"}</dd></div></dl></div></div><CountyActionPlan detail={detail} /></article>;
+export function CountyProfile({
+  detail,
+  copied,
+  onCopy,
+}: {
+  detail: CountyDetail;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  const components = [
+    ["Low or missing published case data", detail.score.human_weakness],
+    ["Tick and pathogen evidence", detail.score.ecological],
+    ["Potential barriers to diagnosis and reporting", detail.score.community],
+  ];
+  return (
+    <article className="card profile-card">
+      <div className="profile-header">
+        <div>
+          <span className="eyebrow">Selected county</span>
+          <h3>
+            {detail.county}, {detail.state_name}
+          </h3>
+          <p>
+            FIPS {detail.fips} · Population{" "}
+            {detail.population?.toLocaleString() ?? "unavailable"}
+          </p>
+        </div>
+        <div className="score-lockup">
+          <span className="priority-pill review">
+            {plainPriority(detail.priority)}
+          </span>
+          <strong>{detail.score.score}</strong>
+          <span>/ 100</span>
+        </div>
+      </div>
+      <div className="profile-grid">
+        <div className="why-panel">
+          <h4>Why this county appears in the ranking</h4>
+          <ol>
+            {reasonsFor(detail).map((reason, index) => (
+              <li key={reason}>
+                <span>{index + 1}</span>
+                <div>
+                  <h5>
+                    {
+                      [
+                        "Published Lyme case data",
+                        "Tick presence",
+                        "Lyme bacterium detection",
+                      ][index]
+                    }
+                  </h5>
+                  <p>{reason}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="briefing-actions">
+            <button className="button secondary" onClick={onCopy}>
+              {copied ? "Summary copied" : "Copy county summary"}
+            </button>
+            <a href="#scoring">Change scoring assumptions</a>
+          </div>
+        </div>
+        <div className="signals-panel">
+          <h4>What influenced the ranking</h4>
+          {components.map(([label, value]) => (
+            <div className="signal-row" key={label as string}>
+              <div className="signal-copy">
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </div>
+              <div className="signal-track">
+                <span style={{ width: `${value}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="ledger-panel">
+          <h4>Data used for this county</h4>
+          <dl>
+            <div>
+              <dt>Published 2023 Lyme case count</dt>
+              <dd>{detail.human_status.replaceAll("_", " ")}</dd>
+            </div>
+            <div>
+              <dt>Blacklegged tick status</dt>
+              <dd>{detail.tick_status}</dd>
+            </div>
+            <div>
+              <dt>Lyme bacterium detected in ticks</dt>
+              <dd>{detail.burgdorferi_status}</dd>
+            </div>
+            <div>
+              <dt>Social Vulnerability Index</dt>
+              <dd>
+                {detail.svi_percentile == null
+                  ? "Unavailable"
+                  : `${Math.round(detail.svi_percentile * 100)}th percentile`}
+              </dd>
+            </div>
+            <div>
+              <dt>Uninsured rate</dt>
+              <dd>
+                {detail.uninsured_percent == null
+                  ? "Unavailable"
+                  : `${detail.uninsured_percent}%`}
+              </dd>
+            </div>
+            <div>
+              <dt>Rural–urban classification (2023)</dt>
+              <dd>{detail.rucc_2023 ?? "Unavailable"}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+      <CountyActionPlan detail={detail} />
+    </article>
+  );
 }

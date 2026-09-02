@@ -1,14 +1,15 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({
+vi.mock(import("next/navigation"), async (importOriginal) => ({
+  ...(await importOriginal()),
   usePathname: () => "/",
-  useSearchParams: () => new URLSearchParams("state=CO"),
+  useSearchParams: () => new URLSearchParams("state=CO") as never,
 }));
 
 import { SiteNav } from "../src/components/site-nav";
 
-describe("SiteNav", () => {
+describe("Site navigation", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllEnvs();
@@ -30,15 +31,27 @@ describe("SiteNav", () => {
     trigger.focus();
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
 
-    expect(screen.getByRole("menuitem", { name: "County review starting point" }).getAttribute("href")).toBe("/variant_1");
-    expect(screen.getByRole("menuitem", { name: "Wide evidence workspace" }).getAttribute("href")).toBe("/variant_6");
-    expect(screen.getByRole("link", { name: "Atlas" }).getAttribute("href")).toBe("/?state=CO#atlas");
+    expect(
+      screen
+        .getByRole("menuitem", { name: "County review starting point" })
+        .getAttribute("href")
+    ).toBe("/variant_1");
+    expect(
+      screen
+        .getByRole("menuitem", { name: "Wide evidence workspace" })
+        .getAttribute("href")
+    ).toBe("/variant_6");
+    expect(
+      screen.getByRole("link", { name: "Atlas" }).getAttribute("href")
+    ).toBe("/?state=CO#atlas");
   });
 
   it("retains the conditional Evidence Chat route", () => {
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
     render(<SiteNav />);
 
-    expect(screen.getByRole("link", { name: "Evidence chat" }).getAttribute("href")).toBe("/knowledge-graph");
+    expect(
+      screen.getByRole("link", { name: "Evidence chat" }).getAttribute("href")
+    ).toBe("/knowledge-graph");
   });
 });

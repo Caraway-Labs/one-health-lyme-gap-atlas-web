@@ -1,0 +1,8 @@
+.next/
+coverage/
+node_modules/
+node_modules.broken-*/
+playwright-report/
+src/generated/
+test-results/
+*.tsbuildinfo

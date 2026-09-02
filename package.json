@@ -2,18 +2,17 @@
   "name": "one-health-lyme-gap-atlas-web",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": ">=22.13.0"
-  },
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
-    "lint": "eslint src tests *.ts *.mjs",
+    "lint": "ultracite check",
     "typecheck": "tsc --noEmit",
     "generate:api": "orval --config orval.config.ts",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format": "ultracite fix"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -39,12 +38,17 @@
     "@types/node": "^22.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "eslint": "^9.39.0",
     "eslint-config-next": "16.3.1",
     "jsdom": "^26.0.0",
     "orval": "^8.2.0",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.80.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",
+    "ultracite": "^7.10.7",
     "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

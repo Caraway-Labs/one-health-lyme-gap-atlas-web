@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import {
   getMetadataV1AtlasMetadataGetUrl,
   getScoresV1AtlasScoresGetUrl,
@@ -12,7 +13,7 @@ describe("generated API client", () => {
         ecological_share: 65,
         low_incidence_breakpoint: 10,
         missing_human_weakness: 75,
-      }),
+      })
     ).toContain("dataset_version=alpha-2026-08-06");
   });
 
@@ -20,4 +21,3 @@ describe("generated API client", () => {
     expect(getMetadataV1AtlasMetadataGetUrl()).toBe("/v1/atlas/metadata");
   });
 });
-
