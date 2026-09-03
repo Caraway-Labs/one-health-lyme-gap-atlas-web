@@ -170,6 +170,23 @@ test("drawer hands the local conversation to the accessible workspace", async ({
   expect(results.violations).toEqual([]);
 });
 
+test("runs the feature-gated assistant demo without a live model", async ({
+  page,
+}) => {
+  await page.goto("/assistant");
+  await expect(
+    page.getByRole("heading", { name: "Talk with the Atlas" })
+  ).toBeVisible();
+  await page.getByLabel("Ask the Atlas demo").fill("What should I review?");
+  await page.getByRole("button", { name: "Send demo question" }).click();
+  await expect(page.getByText(/Demo response: Atlas questions/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Open CDC Lyme surveillance" })
+  ).toHaveAttribute("rel", "noopener noreferrer");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test("renders the atlas and full non-map results", async ({ page }) => {
   await page.goto("/");
   const navigation = page.getByRole("navigation", { name: "Main navigation" });

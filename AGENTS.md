@@ -19,9 +19,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 Before material work, read the workspace [AGENTS.md](../AGENTS.md), the [technology and governance baseline](../TECHNOLOGY_AND_GOVERNANCE.md), this repository's `README.md`, and the applicable workspace ADRs—especially [0001 frontend platform](../docs/adr/0001-frontend-platform.md), [0002 public API and Snowflake access](../docs/adr/0002-public-api-and-snowflake-access.md), and [0003 geospatial delivery](../docs/adr/0003-geospatial-delivery.md).
 
 - `contracts/openapi.json` and `src/generated/` are generated from the API's OpenAPI contract. Do not hand-edit generated output or make handwritten API models authoritative. Run `npm run generate:api` for contract changes and review the resulting diff.
-- Preserve the browser-to-Python-API boundary. `NEXT_PUBLIC_API_BASE_URL` is the only public configuration; never add credentials, Snowflake access, or query logic to browser code.
+- Preserve the browser-to-Python-API boundary. `NEXT_PUBLIC_API_BASE_URL` is the only public service configuration; non-secret boolean feature gates may follow the existing `NEXT_PUBLIC_KG_CHAT_ENABLED` convention. Never add credentials, Snowflake access, or query logic to browser code.
 - Keep atlas state reproducible in validated URL parameters. Affected map findings must retain equivalent table, text, or download access, plus provenance, freshness, methodology, and limitation information.
 - Add focused Vitest coverage and, for user-visible flows, Playwright coverage including axe checks for map/filter, URL state, provenance, and non-map parity as applicable.
+- Extend `src/features/assistant` for conversational UI work; do not create another chat framework or put model/provider SDKs in browser code.
+- Keep assistant sources structured and attributable, never render hidden reasoning or arbitrary model-provided UI, and use an explicit allowlist before adding generated Atlas UI.
+- The assistant demo is feature-gated and fixture-only until a governed backend adapter is approved; never add AI secrets to public configuration.
 
 Run the CI-equivalent checks before handoff:
 
