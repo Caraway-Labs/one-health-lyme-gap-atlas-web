@@ -19,3 +19,7 @@ npm run dev
 ```
 
 Only `NEXT_PUBLIC_API_BASE_URL` is public configuration. Never add Snowflake configuration or secrets to this repository.
+
+## Feature-gated assistant demo
+
+`/assistant` is a local, fixture-only assistant-ui demonstration. Enable it locally with `NEXT_PUBLIC_ATLAS_ASSISTANT_DEMO_ENABLED=true`. It has no model/provider SDK or live Atlas request; future work must extend `src/features/assistant`, retain structured sources, and register rich UI through an explicit allowlist.
