@@ -16,10 +16,9 @@ const deployedNodeEnv = process.env.NODE_ENV;
 
 type PublicEnvironment = Record<string, string | undefined>;
 
-export function getPublicConfig(
-  environment?: PublicEnvironment
-) {
-  const apiBaseUrl = environment?.NEXT_PUBLIC_API_BASE_URL ?? deployedApiBaseUrl;
+export function getPublicConfig(environment?: PublicEnvironment) {
+  const apiBaseUrl =
+    environment?.NEXT_PUBLIC_API_BASE_URL ?? deployedApiBaseUrl;
   const nodeEnv = environment?.NODE_ENV ?? deployedNodeEnv;
   if (!apiBaseUrl && nodeEnv !== "production") {
     return { apiBaseUrl: localApiBaseUrl };

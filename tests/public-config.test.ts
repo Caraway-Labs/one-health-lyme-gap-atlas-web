@@ -10,7 +10,7 @@ describe("public runtime configuration", () => {
     const modulePath = fileURLToPath(
       new URL("../src/lib/public-config.ts", import.meta.url)
     );
-    const source = await readFile(modulePath, "utf8");
+    const source = await readFile(modulePath, "utf-8");
 
     expect(source).toContain("process.env.NEXT_PUBLIC_API_BASE_URL");
     expect(source).not.toContain("= process.env\n");
