@@ -174,11 +174,13 @@ a {
   color: white;
 }
 .nav-action {
-  color: inherit;
+  background: var(--navy);
+  color: var(--white);
   font-size: inherit;
   font-weight: inherit;
 }
 .nav-action:hover {
+  background: var(--navy-2);
   color: white;
 }
 .nav-menu-content {

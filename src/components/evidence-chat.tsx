@@ -21,11 +21,9 @@ import {
 export function EvidenceChat({
   mode = "workspace",
   initialConversationId,
-  onOpenWorkspace,
 }: {
   mode?: "drawer" | "workspace";
   initialConversationId?: string;
-  onOpenWorkspace?: () => void;
 }) {
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeId, setActiveId] = useState(
@@ -253,7 +251,6 @@ export function EvidenceChat({
           Data supplied by the NCBI. NCBI does not endorse this product.{" "}
           {mode === "drawer" && (
             <Link
-              onClick={onOpenWorkspace}
               href={
                 active
                   ? `/knowledge-graph?conversation=${encodeURIComponent(active.id)}`
