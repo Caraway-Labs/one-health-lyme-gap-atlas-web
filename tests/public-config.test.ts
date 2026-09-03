@@ -1,8 +1,21 @@
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { getPublicConfig } from "../src/lib/public-config";
 
 describe("public runtime configuration", () => {
+  it("uses a statically analyzable public environment reference for browser bundles", async () => {
+    const modulePath = fileURLToPath(
+      new URL("../src/lib/public-config.ts", import.meta.url)
+    );
+    const source = await readFile(modulePath, "utf8");
+
+    expect(source).toContain("process.env.NEXT_PUBLIC_API_BASE_URL");
+    expect(source).not.toContain("= process.env\n");
+  });
+
   it("accepts an HTTPS API URL", () => {
     expect(
       getPublicConfig({
