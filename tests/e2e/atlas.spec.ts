@@ -54,7 +54,7 @@ test("drawer hands the local conversation to the accessible workspace", async ({
   await expect(dialog.getByRole("link", { name: /Reviewed paper/ })).toHaveAttribute("rel", "noopener noreferrer");
   await dialog.getByRole("link", { name: "Open full workspace" }).click();
   await expect(page).toHaveURL(/\/knowledge-graph\?conversation=conversation-1/);
-  await expect(page.getByText("Reviewed evidence answer.")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Reviewed evidence answer.")).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
@@ -65,12 +65,49 @@ test("renders the atlas and full non-map results", async ({ page }) => {
   await expect(navigation).toBeVisible();
   await expect(navigation).toHaveCSS("position", "fixed");
   await expect(page.getByRole("link", { name: "One Health Lyme Gap Atlas home" })).toHaveCSS("color", "rgb(255, 255, 255)");
-  await expect(page.getByRole("heading", { name: /Find the places/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find counties that may deserve a closer look." })).toBeVisible();
   await expect(page.getByText("Adams, CO").first()).toBeVisible();
-  await page.getByRole("button", { name: "View full results table" }).click();
+  await page.getByRole("button", { name: "View full county list" }).click();
   await expect(page.getByRole("table")).toContainText("08001");
   const results = await new AxeBuilder({ page }).exclude(".maplibre-atlas").analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("keeps filters and score settings in the shareable URL", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("combobox", { name: "State" }).click();
+  await page.getByRole("option", { name: "Colorado" }).click();
+  await page.getByLabel("County name or FIPS code").fill("Adams");
+  await page.getByRole("combobox", { name: "Filter counties by available data" }).click();
+  await page.getByRole("option", { name: "Tick or pathogen evidence available" }).click();
+  await page.getByLabel("Weight given to tick and pathogen evidence").fill("70");
+
+  await expect(page).toHaveURL(/state=CO/);
+  await expect(page).toHaveURL(/q=Adams/);
+  await expect(page).toHaveURL(/evidence=ecological/);
+  await expect(page).toHaveURL(/eco=70/);
+});
+
+test("normalizes an unsupported state from a shared Atlas URL", async ({ page }) => {
+  await page.goto("/?state=ZZ");
+
+  await expect(page).not.toHaveURL(/state=ZZ/);
+  await expect(page.getByRole("combobox", { name: "State" })).toContainText("ALL");
+});
+
+test("shows a recoverable status when the governed API release is unavailable", async ({ page }) => {
+  await page.unroute("http://localhost:8000/**");
+  await page.route("http://localhost:8000/**", async (route) => {
+    if (new URL(route.request().url()).pathname.endsWith("/metadata")) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "Temporarily unavailable" }) });
+      return;
+    }
+    await route.abort();
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "The Atlas is temporarily unavailable" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 });
 
 test("renders every interview variant with selected county evidence in the first experience", async ({ page }) => {
@@ -93,15 +130,18 @@ test("renders every interview variant with selected county evidence in the first
   }
 });
 
-test("offers page-aware navigation and a shared data dictionary", async ({ page }) => {
+test("offers page-aware navigation and a shared data dictionary", async ({ page }, testInfo) => {
   await page.goto("/variant_6?county=08001");
-  await expect(page.getByRole("link", { name: "Atlas" })).toHaveAttribute("href", "/variant_6?county=08001#atlas");
-  await expect(page.getByRole("link", { name: "Scoring lab" })).toHaveAttribute("href", "/variant_6?county=08001#scoring");
+  if (testInfo.project.name === "desktop") {
+    const sectionLinks = page.getByRole("navigation", { name: "Main navigation" }).locator(".section-links");
+    await expect(sectionLinks.getByRole("link", { name: "Atlas", exact: true })).toHaveAttribute("href", /\/variant_6\?.*county=08001.*#atlas/);
+    await expect(sectionLinks.getByRole("link", { name: "How counties are prioritized", exact: true })).toHaveAttribute("href", /\/variant_6\?.*county=08001.*#scoring/);
+  }
   await page.getByText("Variants", { exact: true }).click();
-  await expect(page.getByRole("link", { name: "Wide evidence workspace" })).toHaveAttribute("href", "/variant_6");
+  await expect(page.getByRole("menuitem", { name: "Wide evidence workspace" })).toHaveAttribute("href", "/variant_6");
   await page.getByRole("button", { name: "Data dictionary" }).click();
   const dialog = page.getByRole("dialog", { name: "Data dictionary" });
-  await expect(dialog).toContainText("Follow-up priority score");
+  await expect(dialog).toContainText("County Review Priority");
   await dialog.getByRole("button", { name: "Close data dictionary" }).click();
 });
 
@@ -120,7 +160,7 @@ test("keeps the wide workspace score calculation above the county panels and col
 test("keeps definitions close to the evidence in the explain-the-score variant", async ({ page }) => {
   await page.goto("/variant_4?county=08001");
   await expect(page.getByText("Published human surveillance signal").first()).toBeVisible();
-  await expect(page.getByText("Tick and pathogen evidence").first()).toBeVisible();
+  await expect(page.locator(".explain-grid .definition-cards").getByText("Tick and pathogen evidence", { exact: true })).toBeVisible();
   await expect(page.getByText("Missing published records are not zero cases.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "How this follow-up priority score is calculated" })).toBeVisible();
   await expect(page.getByLabel("Tick and pathogen share")).toBeVisible();

@@ -15,7 +15,7 @@ import {
   saveConversations,
 } from "@/lib/knowledge-chat-storage";
 
-export function EvidenceChat({ mode = "workspace", initialConversationId, onOpenWorkspace }: { mode?: "drawer" | "workspace"; initialConversationId?: string; onOpenWorkspace?: () => void }) {
+export function EvidenceChat({ mode = "workspace", initialConversationId }: { mode?: "drawer" | "workspace"; initialConversationId?: string }) {
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [activeId, setActiveId] = useState(initialConversationId ?? "__latest__");
   const [message, setMessage] = useState("");
@@ -118,7 +118,7 @@ export function EvidenceChat({ mode = "workspace", initialConversationId, onOpen
           <textarea id={`chat-message-${mode}`} ref={inputRef} value={message} maxLength={1000} onChange={(event) => setMessage(event.target.value)} disabled={pending} placeholder="What does reviewed evidence say about…" />
           <div><small>{message.length}/1,000</small><button className="button primary" disabled={!message.trim() || pending}>Ask</button></div>
         </form>
-        <footer className="chat-attribution">Data supplied by the NCBI. NCBI does not endorse this product. {mode === "drawer" && <Link onClick={onOpenWorkspace} href={active ? `/knowledge-graph?conversation=${encodeURIComponent(active.id)}` : "/knowledge-graph"}>Open full workspace</Link>}</footer>
+        <footer className="chat-attribution">Data supplied by the NCBI. NCBI does not endorse this product. {mode === "drawer" && <Link href={active ? `/knowledge-graph?conversation=${encodeURIComponent(active.id)}` : "/knowledge-graph"}>Open full workspace</Link>}</footer>
       </section>
     </div>
   );

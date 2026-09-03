@@ -39,21 +39,22 @@ function AtlasPage() {
   const geometryQuery = useQuery({ queryKey: ["geometry", metadataQuery.data?.release_id], enabled: Boolean(metadataQuery.data), queryFn: async () => (await geometryV1AtlasGeometryGet({ dataset_version: metadataQuery.data!.release_id })).data as GeoJSON.FeatureCollection, staleTime: Infinity });
   const scoresQuery = useQuery({ queryKey: ["scores", metadataQuery.data?.release_id, debouncedSettings], enabled: Boolean(metadataQuery.data), placeholderData: (previous) => previous, queryFn: async () => (await scoresV1AtlasScoresGet({ dataset_version: metadataQuery.data!.release_id, ...debouncedSettings })).data as ScoreCollection });
   const detailQuery = useQuery({ queryKey: ["county", selectedFips, metadataQuery.data?.release_id, debouncedSettings], enabled: Boolean(metadataQuery.data && selectedFips), placeholderData: (previous) => previous, queryFn: async () => (await countyV1CountiesFipsGet(selectedFips, { dataset_version: metadataQuery.data!.release_id, ...debouncedSettings })).data as CountyDetail });
+  const activeStateFilter = metadataQuery.data && stateFilter !== "ALL" && !metadataQuery.data.states.some((state) => state.code === stateFilter) ? "ALL" : stateFilter;
 
   const filtered = useMemo(() => (scoresQuery.data?.counties ?? []).filter((county) => {
     const needle = query.trim().toLowerCase();
-    return county.in_contiguous_tick_scope && (stateFilter === "ALL" || county.state === stateFilter) && (!needle || `${county.county} ${county.state} ${county.fips}`.toLowerCase().includes(needle)) && matchesEvidence(county, evidence);
-  }), [scoresQuery.data, stateFilter, query, evidence]);
+    return county.in_contiguous_tick_scope && (activeStateFilter === "ALL" || county.state === activeStateFilter) && (!needle || `${county.county} ${county.state} ${county.fips}`.toLowerCase().includes(needle)) && matchesEvidence(county, evidence);
+  }), [scoresQuery.data, activeStateFilter, query, evidence]);
 
   useEffect(() => {
     const next = new URLSearchParams();
     if (metadataQuery.data?.release_id) next.set("dataset", metadataQuery.data.release_id);
-    if (stateFilter !== "ALL") next.set("state", stateFilter);
+    if (activeStateFilter !== "ALL") next.set("state", activeStateFilter);
     if (query) next.set("q", query);
     if (evidence !== "all") next.set("evidence", evidence);
     next.set("county", selectedFips); next.set("eco", String(settings.ecological_share)); next.set("breakpoint", String(settings.low_incidence_breakpoint)); next.set("missing", String(settings.missing_human_weakness));
     router.replace(`/?${next.toString()}`, { scroll: false });
-  }, [metadataQuery.data?.release_id, stateFilter, query, evidence, selectedFips, settings, router]);
+  }, [metadataQuery.data?.release_id, activeStateFilter, query, evidence, selectedFips, settings, router]);
 
   async function copyBriefing() {
     if (!detailQuery.data) return;
@@ -72,7 +73,7 @@ function AtlasPage() {
 
   const metadata = metadataQuery.data;
   const selectedCountyState = scoresQuery.data?.counties.find((county) => county.fips === selectedFips)?.state;
-  return <main><AtlasHero /><section className="stat-strip" aria-label="Atlas summary"><div><strong>3,144</strong><span>County and county-equivalent profiles</span></div><div><strong>5</strong><span>Public One Health signal groups</span></div><div><strong>2022–25</strong><span>Source vintages in this Alpha release</span></div><div><strong>v0.2.0</strong><span>Transparent deterministic methodology</span></div></section><section className="atlas-shell section" id="atlas"><div className="section-heading"><div><span className="eyebrow">Interactive county atlas</span><h2>Where should surveillance partners look next?</h2><p>Filter the ranked counties, select a place, and review the evidence before taking action.</p></div><div className="data-stamp"><span><i className="pulse" />Current governed snapshot</span><small>{metadata.release_id} · {metadata.methodology_version}</small></div></div><AtlasFilters metadata={metadata} stateFilter={stateFilter} query={query} evidence={evidence} onStateChange={setStateFilter} onQueryChange={setQuery} onEvidenceChange={setEvidence} onDownload={downloadCsv} /><AtlasDashboard geometry={geometryQuery.data} scores={scoresQuery.data?.counties} counties={filtered} detail={detailQuery.data} copied={copied} onCopy={copyBriefing} selectedFips={selectedFips} selectedState={stateFilter} highlightState={selectedCountyState} showTable={showTable} onSelect={setSelectedFips} onToggleTable={() => setShowTable((open) => !open)} />{showTable && <ResultsTable counties={filtered} onSelect={(fips) => { setSelectedFips(fips); document.getElementById("atlas")?.scrollIntoView(); }} />}<p className="sr-status" aria-live="polite">{scoresQuery.isFetching ? "Updating county scores." : `${filtered.length} counties match the current filters.`}</p></section><ScoringLab settings={settings} onChange={setSettings} /><MethodsSection metadata={metadata} /><SiteFooter /></main>;
+  return <main><AtlasHero /><section className="stat-strip" aria-label="Atlas summary"><div><strong>3,144</strong><span>County and county-equivalent profiles</span></div><div><strong>5</strong><span>Public One Health signal groups</span></div><div><strong>2022–25</strong><span>Source vintages in this Alpha release</span></div><div><strong>v0.2.0</strong><span>Transparent deterministic methodology</span></div></section><section className="atlas-shell section" id="atlas"><div className="section-heading"><div><span className="eyebrow">Interactive county atlas</span><h2>Where should surveillance partners look next?</h2><p>Filter the ranked counties, select a place, and review the evidence before taking action.</p></div><div className="data-stamp"><span><i className="pulse" />Current governed snapshot</span><small>{metadata.release_id} · {metadata.methodology_version}</small></div></div><AtlasFilters metadata={metadata} stateFilter={activeStateFilter} query={query} evidence={evidence} onStateChange={setStateFilter} onQueryChange={setQuery} onEvidenceChange={setEvidence} onDownload={downloadCsv} /><AtlasDashboard geometry={geometryQuery.data} scores={scoresQuery.data?.counties} counties={filtered} detail={detailQuery.data} copied={copied} onCopy={copyBriefing} selectedFips={selectedFips} selectedState={activeStateFilter} highlightState={selectedCountyState} showTable={showTable} onSelect={setSelectedFips} onToggleTable={() => setShowTable((open) => !open)} />{showTable && <ResultsTable counties={filtered} onSelect={(fips) => { setSelectedFips(fips); document.getElementById("atlas")?.scrollIntoView(); }} />}<p className="sr-status" aria-live="polite">{scoresQuery.isFetching ? "Updating county scores." : `${filtered.length} counties match the current filters.`}</p></section><ScoringLab settings={settings} onChange={setSettings} /><MethodsSection metadata={metadata} /><SiteFooter /></main>;
 }
 
 export default function Page() { return <Suspense fallback={<main className="load-state"><h1>Loading the Atlas</h1></main>}><AtlasPage /></Suspense>; }
