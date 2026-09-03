@@ -48,6 +48,15 @@ const summary = {
   tick_status: "Established",
 };
 
+const comparisonSummary = {
+  ...summary,
+  county: "Los Angeles",
+  fips: "06037",
+  score: { ...summary.score, score: 54.2 },
+  state: "CA",
+  state_name: "California",
+};
+
 test.beforeEach(async ({ page }) => {
   await page.route("http://localhost:8000/**", async (route) => {
     const url = new URL(route.request().url());
@@ -83,7 +92,7 @@ test.beforeEach(async ({ page }) => {
         release_id: metadata.release_id,
         methodology_version: metadata.methodology_version,
         settings: {},
-        counties: [summary],
+        counties: [summary, comparisonSummary],
       };
     } else if (url.pathname.includes("/counties/")) {
       body = {
@@ -208,6 +217,19 @@ test("keeps filters and score settings in the shareable URL", async ({
   await expect(page).toHaveURL(/q=Adams/);
   await expect(page).toHaveURL(/evidence=ecological/);
   await expect(page).toHaveURL(/eco=70/);
+});
+
+test("persists an explicit comparison county in the compare variant URL", async ({
+  page,
+}) => {
+  await page.goto("/variant_5?county=08001");
+  const comparison = page.getByLabel("Compare with");
+  await comparison.selectOption("06037");
+  await expect(page).toHaveURL(/compare=06037/);
+  await expect(comparison).toHaveValue("06037");
+
+  await page.reload();
+  await expect(page.getByLabel("Compare with")).toHaveValue("06037");
 });
 
 test("shows a recoverable status when the governed API release is unavailable", async ({
