@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { EvidenceChat } from "./evidence-chat";
@@ -13,6 +14,8 @@ export function ChatLauncher() {
 
 function EnabledChatLauncher() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const previousPathname = useRef(pathname);
   const launcher = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
 
@@ -46,6 +49,13 @@ function EnabledChatLauncher() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  useEffect(() => {
+    if (previousPathname.current !== pathname) {
+      setOpen(false);
+    }
+    previousPathname.current = pathname;
+  }, [pathname]);
 
   return (
     <>
@@ -88,12 +98,7 @@ function EnabledChatLauncher() {
             >
               ×
             </button>
-            <EvidenceChat
-              mode="drawer"
-              onOpenWorkspace={() => {
-                window.setTimeout(() => setOpen(false), 0);
-              }}
-            />
+            <EvidenceChat mode="drawer" />
           </div>
         </div>
       )}
