@@ -262,6 +262,84 @@ export const CountyV1CountiesFipsGetResponse = zod.object({
 
 
 /**
+ * @summary County Report Pdf
+ */
+export const countyReportPdfV1CountiesFipsReportPdfGetPathFipsRegExp = new RegExp('^\\d{5}$');
+
+
+export const CountyReportPdfV1CountiesFipsReportPdfGetParams = zod.object({
+  "fips": zod.string().regex(countyReportPdfV1CountiesFipsReportPdfGetPathFipsRegExp)
+})
+
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateDefault = `county-v1`;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareDefault = 65;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMin = 40;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMax = 85;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMultipleOf = 5;
+
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryLowIncidenceBreakpointDefault = 10;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryLowIncidenceBreakpointMin = 5;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryLowIncidenceBreakpointMax = 25;
+
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessDefault = 75;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMin = 40;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMax = 90;
+export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMultipleOf = 5;
+
+
+
+export const CountyReportPdfV1CountiesFipsReportPdfGetQueryParams = zod.object({
+  "dataset_version": zod.union([zod.string(),zod.null()]).optional(),
+  "template": zod.string().regex(countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateRegExp).default(countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateDefault),
+  "ecological_share": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMin).max(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareDefault),
+  "low_incidence_breakpoint": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQueryLowIncidenceBreakpointMin).max(countyReportPdfV1CountiesFipsReportPdfGetQueryLowIncidenceBreakpointMax).default(countyReportPdfV1CountiesFipsReportPdfGetQueryLowIncidenceBreakpointDefault),
+  "missing_human_weakness": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMin).max(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessDefault)
+})
+
+export const CountyReportPdfV1CountiesFipsReportPdfGetResponse = zod.unknown()
+
+
+/**
+ * @summary State Report Pdf
+ */
+export const stateReportPdfV1StatesStateReportPdfGetPathStateRegExp = new RegExp('^[A-Z]{2}$');
+
+
+export const StateReportPdfV1StatesStateReportPdfGetParams = zod.object({
+  "state": zod.string().regex(stateReportPdfV1StatesStateReportPdfGetPathStateRegExp)
+})
+
+export const stateReportPdfV1StatesStateReportPdfGetQueryTemplateDefault = `state-v1`;
+export const stateReportPdfV1StatesStateReportPdfGetQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
+export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareDefault = 65;
+export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMin = 40;
+export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMax = 85;
+export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMultipleOf = 5;
+
+export const stateReportPdfV1StatesStateReportPdfGetQueryLowIncidenceBreakpointDefault = 10;
+export const stateReportPdfV1StatesStateReportPdfGetQueryLowIncidenceBreakpointMin = 5;
+export const stateReportPdfV1StatesStateReportPdfGetQueryLowIncidenceBreakpointMax = 25;
+
+export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessDefault = 75;
+export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMin = 40;
+export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMax = 90;
+export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMultipleOf = 5;
+
+
+
+export const StateReportPdfV1StatesStateReportPdfGetQueryParams = zod.object({
+  "dataset_version": zod.union([zod.string(),zod.null()]).optional(),
+  "template": zod.string().regex(stateReportPdfV1StatesStateReportPdfGetQueryTemplateRegExp).default(stateReportPdfV1StatesStateReportPdfGetQueryTemplateDefault),
+  "ecological_share": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMin).max(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareDefault),
+  "low_incidence_breakpoint": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQueryLowIncidenceBreakpointMin).max(stateReportPdfV1StatesStateReportPdfGetQueryLowIncidenceBreakpointMax).default(stateReportPdfV1StatesStateReportPdfGetQueryLowIncidenceBreakpointDefault),
+  "missing_human_weakness": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMin).max(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessDefault)
+})
+
+export const StateReportPdfV1StatesStateReportPdfGetResponse = zod.unknown()
+
+
+/**
  * @summary Ranking Csv
  */
 export const rankingCsvV1AtlasRankingCsvGetQueryStateDefault = `ALL`;

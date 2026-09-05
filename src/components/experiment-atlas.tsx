@@ -257,6 +257,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
           incidence, or show whether an individual is safe.
         </p>
         <ExperimentFilters
+          datasetVersion={metadataQuery.data.release_id}
           metadata={metadataQuery.data}
           stateFilter={stateFilter}
           query={query}
@@ -264,6 +265,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
           onStateChange={setStateFilter}
           onQueryChange={setQuery}
           onEvidenceChange={setEvidence}
+          settings={settings}
         />
         {detail ? (
           <>

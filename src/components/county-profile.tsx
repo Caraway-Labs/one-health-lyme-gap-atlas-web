@@ -1,15 +1,20 @@
 import { CountyActionPlan } from "@/components/county-action-plan";
+import { PdfExportButton } from "@/components/pdf-export-button";
 import type { CountyDetail } from "@/generated/models";
-import { plainPriority, reasonsFor } from "@/lib/atlas-ui";
+import { plainPriority, reasonsFor, type ScoreSettings } from "@/lib/atlas-ui";
 
 export function CountyProfile({
   detail,
   copied,
   onCopy,
+  settings,
+  datasetVersion,
 }: {
   detail: CountyDetail;
   copied: boolean;
   onCopy: () => void;
+  settings: ScoreSettings;
+  datasetVersion: string;
 }) {
   const components = [
     ["Low or missing published case data", detail.score.human_weakness],
@@ -64,6 +69,11 @@ export function CountyProfile({
               {copied ? "Summary copied" : "Copy county summary"}
             </button>
             <a href="#scoring">Change scoring assumptions</a>
+            <PdfExportButton
+              datasetVersion={datasetVersion}
+              geography={{ identifier: detail.fips, level: "county" }}
+              settings={settings}
+            />
           </div>
         </div>
         <div className="signals-panel">

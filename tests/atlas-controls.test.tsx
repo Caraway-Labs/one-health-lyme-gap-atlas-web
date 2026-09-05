@@ -25,10 +25,16 @@ describe("Atlas shared controls", () => {
         stateFilter="ALL"
         query=""
         evidence="all"
+        datasetVersion="alpha-2026-08-06"
         onStateChange={onStateChange}
         onQueryChange={onQueryChange}
         onEvidenceChange={onEvidenceChange}
         onDownload={onDownload}
+        settings={{
+          ecological_share: 65,
+          low_incidence_breakpoint: 10,
+          missing_human_weakness: 75,
+        }}
       />
     );
 
