@@ -305,6 +305,7 @@ export function GeographicExplorer() {
           {VIEWS.map((view) => (
             <Button
               key={view}
+              className={view === state.view ? "hover:bg-primary" : undefined}
               variant={view === state.view ? "default" : "secondary"}
               aria-pressed={view === state.view}
               onClick={() => setState({ view })}
