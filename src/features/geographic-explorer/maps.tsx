@@ -102,7 +102,11 @@ function ExplorerMapRuntime(props: Props & { onRetry: () => void }) {
             const fips = event.features?.[0]?.properties?.fips;
             if (typeof fips === "string") latest.current.onSelect(fips);
           });
-          setReady((count) => count + 1);
+          // Source loading finishes after the style's load event. Wait for the
+          // first rendered idle frame before claiming county geometry is ready.
+          map.once("idle", () => {
+            if (!lifecycle.disposed) setReady((count) => count + 1);
+          });
         });
         map.on("move", () => {
           if (lifecycle.syncing) return;

@@ -56,7 +56,7 @@ export function SiteNav() {
           </Link>
           <Link href={sectionHref("methods")}>How to interpret the Atlas</Link>
         </div>
-        <DropdownMenu modal={false}>
+        <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button variant="ghost" className="nav-action" />}
           >

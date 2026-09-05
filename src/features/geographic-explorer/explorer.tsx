@@ -69,7 +69,7 @@ export function GeographicExplorer() {
         MetadataV1AtlasMetadataGetResponse,
         (
           await metadataV1AtlasMetadataGet(
-            { dataset_version: state.dataset },
+            { dataset_version: state.dataset ?? undefined },
             { signal }
           )
         ).data

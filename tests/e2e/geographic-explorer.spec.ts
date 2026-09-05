@@ -62,7 +62,10 @@ counties.push({
 async function mockApi(page: Page) {
   await page.route("http://localhost:8000/**", async (route) => {
     const url = new URL(route.request().url());
-    if (url.searchParams.get("dataset_version") === "old-release")
+    if (
+      url.searchParams.has("dataset_version") &&
+      url.searchParams.get("dataset_version") !== metadata.release_id
+    )
       return route.fulfill({
         status: 404,
         json: { detail: "Release unavailable" },

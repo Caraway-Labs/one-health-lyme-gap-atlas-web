@@ -53,6 +53,9 @@ const engine = vi.hoisted(() => {
     emit(event: string, payload?: unknown) {
       for (const handler of this.handlers.get(event) ?? []) handler(payload);
     }
+    once(event: string, handler: (event?: unknown) => void) {
+      this.on(event, handler);
+    }
     addControl() {
       this.layers.add("navigation-control");
     }
@@ -159,7 +162,9 @@ describe("geographic map behavior", () => {
     const [left, right] = engine.instances;
     act(() => {
       left.emit("load");
+      left.emit("idle");
       right.emit("load");
+      right.emit("idle");
     });
     left.center = { lng: -105, lat: 40 };
     left.zoom = 6;
@@ -198,7 +203,9 @@ describe("geographic map behavior", () => {
     const [left, right] = engine.instances;
     act(() => {
       left.emit("load");
+      left.emit("idle");
       right.emit("load");
+      right.emit("idle");
       left.emit("click:county-fill", {
         features: [{ properties: { fips: "08001" } }],
       });
