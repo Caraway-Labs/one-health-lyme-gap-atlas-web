@@ -27,6 +27,7 @@ import type {
 import type {
   AtlasMetadata,
   CountyDetail,
+  CountyReportPdfV1CountiesFipsReportPdfGetParams,
   CountyV1CountiesFipsGetParams,
   GeometryV1AtlasGeometryGetParams,
   HTTPValidationError,
@@ -38,7 +39,8 @@ import type {
   RankingCsvV1AtlasRankingCsvGetParams,
   ReadyHealthReadyGet200,
   ScoreCollection,
-  ScoresV1AtlasScoresGetParams
+  ScoresV1AtlasScoresGetParams,
+  StateReportPdfV1StatesStateReportPdfGetParams
 } from './models';
 
 import { apiMutator } from '../lib/api-mutator';
@@ -793,6 +795,306 @@ export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof cou
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCountyV1CountiesFipsGetQueryOptions(fips,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type countyReportPdfV1CountiesFipsReportPdfGetResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type countyReportPdfV1CountiesFipsReportPdfGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type countyReportPdfV1CountiesFipsReportPdfGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type countyReportPdfV1CountiesFipsReportPdfGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type countyReportPdfV1CountiesFipsReportPdfGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type countyReportPdfV1CountiesFipsReportPdfGetResponseSuccess = (countyReportPdfV1CountiesFipsReportPdfGetResponse200) & {
+  headers: Headers;
+};
+export type countyReportPdfV1CountiesFipsReportPdfGetResponseError = (countyReportPdfV1CountiesFipsReportPdfGetResponse404 | countyReportPdfV1CountiesFipsReportPdfGetResponse413 | countyReportPdfV1CountiesFipsReportPdfGetResponse422 | countyReportPdfV1CountiesFipsReportPdfGetResponse503) & {
+  headers: Headers;
+};
+
+export type countyReportPdfV1CountiesFipsReportPdfGetResponse = (countyReportPdfV1CountiesFipsReportPdfGetResponseSuccess | countyReportPdfV1CountiesFipsReportPdfGetResponseError)
+
+export const getCountyReportPdfV1CountiesFipsReportPdfGetUrl = (fips: string,
+    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/counties/${fips}/report.pdf?${stringifiedParams}` : `/v1/counties/${fips}/report.pdf`
+}
+
+/**
+ * @summary County Report Pdf
+ */
+export const countyReportPdfV1CountiesFipsReportPdfGet = async (fips: string,
+    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<countyReportPdfV1CountiesFipsReportPdfGetResponse> => {
+
+  return apiMutator<countyReportPdfV1CountiesFipsReportPdfGetResponse>(getCountyReportPdfV1CountiesFipsReportPdfGetUrl(fips,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCountyReportPdfV1CountiesFipsReportPdfGetQueryKey = (fips: string,
+    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams,) => {
+    return [
+    `/v1/counties/${fips}/report.pdf`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCountyReportPdfV1CountiesFipsReportPdfGetQueryOptions = <TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = ProblemDetails>(fips: string,
+    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCountyReportPdfV1CountiesFipsReportPdfGetQueryKey(fips,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>> = ({ signal }) => countyReportPdfV1CountiesFipsReportPdfGet(fips,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CountyReportPdfV1CountiesFipsReportPdfGetQueryResult = NonNullable<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>>
+export type CountyReportPdfV1CountiesFipsReportPdfGetQueryError = ProblemDetails
+
+
+export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = ProblemDetails>(
+ fips: string,
+    params: undefined |  CountyReportPdfV1CountiesFipsReportPdfGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>,
+          TError,
+          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = ProblemDetails>(
+ fips: string,
+    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>,
+          TError,
+          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = ProblemDetails>(
+ fips: string,
+    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary County Report Pdf
+ */
+
+export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = ProblemDetails>(
+ fips: string,
+    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCountyReportPdfV1CountiesFipsReportPdfGetQueryOptions(fips,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type stateReportPdfV1StatesStateReportPdfGetResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type stateReportPdfV1StatesStateReportPdfGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type stateReportPdfV1StatesStateReportPdfGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type stateReportPdfV1StatesStateReportPdfGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type stateReportPdfV1StatesStateReportPdfGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type stateReportPdfV1StatesStateReportPdfGetResponseSuccess = (stateReportPdfV1StatesStateReportPdfGetResponse200) & {
+  headers: Headers;
+};
+export type stateReportPdfV1StatesStateReportPdfGetResponseError = (stateReportPdfV1StatesStateReportPdfGetResponse404 | stateReportPdfV1StatesStateReportPdfGetResponse413 | stateReportPdfV1StatesStateReportPdfGetResponse422 | stateReportPdfV1StatesStateReportPdfGetResponse503) & {
+  headers: Headers;
+};
+
+export type stateReportPdfV1StatesStateReportPdfGetResponse = (stateReportPdfV1StatesStateReportPdfGetResponseSuccess | stateReportPdfV1StatesStateReportPdfGetResponseError)
+
+export const getStateReportPdfV1StatesStateReportPdfGetUrl = (state: string,
+    params?: StateReportPdfV1StatesStateReportPdfGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/states/${state}/report.pdf?${stringifiedParams}` : `/v1/states/${state}/report.pdf`
+}
+
+/**
+ * @summary State Report Pdf
+ */
+export const stateReportPdfV1StatesStateReportPdfGet = async (state: string,
+    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<stateReportPdfV1StatesStateReportPdfGetResponse> => {
+
+  return apiMutator<stateReportPdfV1StatesStateReportPdfGetResponse>(getStateReportPdfV1StatesStateReportPdfGetUrl(state,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStateReportPdfV1StatesStateReportPdfGetQueryKey = (state: string,
+    params?: StateReportPdfV1StatesStateReportPdfGetParams,) => {
+    return [
+    `/v1/states/${state}/report.pdf`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getStateReportPdfV1StatesStateReportPdfGetQueryOptions = <TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = ProblemDetails>(state: string,
+    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStateReportPdfV1StatesStateReportPdfGetQueryKey(state,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>> = ({ signal }) => stateReportPdfV1StatesStateReportPdfGet(state,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: state !== null && state !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type StateReportPdfV1StatesStateReportPdfGetQueryResult = NonNullable<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>>
+export type StateReportPdfV1StatesStateReportPdfGetQueryError = ProblemDetails
+
+
+export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = ProblemDetails>(
+ state: string,
+    params: undefined |  StateReportPdfV1StatesStateReportPdfGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>,
+          TError,
+          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = ProblemDetails>(
+ state: string,
+    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>,
+          TError,
+          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = ProblemDetails>(
+ state: string,
+    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary State Report Pdf
+ */
+
+export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = ProblemDetails>(
+ state: string,
+    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getStateReportPdfV1StatesStateReportPdfGetQueryOptions(state,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

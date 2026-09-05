@@ -1,3 +1,4 @@
+import { PdfExportButton } from "@/components/pdf-export-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { AtlasMetadata } from "@/generated/models";
-import type { EvidenceView } from "@/lib/atlas-ui";
+import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
 
 export function AtlasFilters({
   metadata,
@@ -19,6 +20,8 @@ export function AtlasFilters({
   onQueryChange,
   onEvidenceChange,
   onDownload,
+  settings,
+  datasetVersion,
 }: {
   metadata: AtlasMetadata;
   stateFilter: string;
@@ -28,6 +31,8 @@ export function AtlasFilters({
   onQueryChange: (value: string) => void;
   onEvidenceChange: (value: EvidenceView) => void;
   onDownload?: () => void;
+  settings: ScoreSettings;
+  datasetVersion: string;
 }) {
   return (
     <div className="filter-bar">
@@ -101,6 +106,13 @@ export function AtlasFilters({
         <Button className="h-11" onClick={onDownload}>
           Download county list
         </Button>
+      )}
+      {stateFilter !== "ALL" && (
+        <PdfExportButton
+          datasetVersion={datasetVersion}
+          geography={{ identifier: stateFilter, level: "state" }}
+          settings={settings}
+        />
       )}
     </div>
   );

@@ -15,8 +15,9 @@ export async function apiMutator<T>(
     );
   }
   const contentType = response.headers.get("content-type") ?? "";
-  const data =
-    contentType.includes("json") || contentType.includes("geo+json")
+  const data = contentType.includes("application/pdf")
+    ? await response.blob()
+    : contentType.includes("json") || contentType.includes("geo+json")
       ? await response.json()
       : await response.text();
   return { data, headers: response.headers, status: response.status } as T;

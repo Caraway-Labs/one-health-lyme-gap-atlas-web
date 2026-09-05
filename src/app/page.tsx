@@ -267,6 +267,8 @@ function AtlasPage() {
           onQueryChange={setQuery}
           onEvidenceChange={setEvidence}
           onDownload={downloadCsv}
+          datasetVersion={metadata.release_id}
+          settings={settings}
         />
         <AtlasDashboard
           geometry={geometryQuery.data}
@@ -275,6 +277,8 @@ function AtlasPage() {
           detail={detailQuery.data}
           copied={copied}
           onCopy={copyBriefing}
+          datasetVersion={metadata.release_id}
+          settings={settings}
           selectedFips={selectedFips}
           selectedState={stateFilter}
           highlightState={selectedCountyState}

@@ -289,6 +289,7 @@ export function GeographicExplorer() {
           records do not mean zero cases.
         </p>
         <AtlasFilters
+          datasetVersion={metadata.data.release_id}
           metadata={metadata.data}
           stateFilter={validState}
           query={state.q}
@@ -296,6 +297,7 @@ export function GeographicExplorer() {
           onStateChange={(value) => setState({ state: value, page: 1 })}
           onQueryChange={(q) => setState({ q, page: 1 })}
           onEvidenceChange={(evidence) => setState({ evidence, page: 1 })}
+          settings={settings}
         />
         <div
           className="geo-view-switch"

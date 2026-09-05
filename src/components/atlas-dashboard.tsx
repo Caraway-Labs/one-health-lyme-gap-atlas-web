@@ -10,6 +10,8 @@ export function AtlasDashboard({
   detail,
   copied,
   onCopy,
+  settings,
+  datasetVersion,
   selectedFips,
   selectedState,
   highlightState,
@@ -24,6 +26,8 @@ export function AtlasDashboard({
   detail?: import("@/generated/models").CountyDetail;
   copied: boolean;
   onCopy: () => void;
+  settings: import("@/lib/atlas-ui").ScoreSettings;
+  datasetVersion: string;
   selectedFips: string;
   selectedState: string;
   highlightState?: string;
@@ -86,7 +90,13 @@ export function AtlasDashboard({
       </article>
       <div className="dashboard-profile">
         {detail ? (
-          <CountyProfile detail={detail} copied={copied} onCopy={onCopy} />
+          <CountyProfile
+            datasetVersion={datasetVersion}
+            detail={detail}
+            copied={copied}
+            onCopy={onCopy}
+            settings={settings}
+          />
         ) : (
           <div className="card profile-card">
             <p>Select a county to see its details.</p>

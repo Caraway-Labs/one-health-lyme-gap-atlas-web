@@ -62,6 +62,7 @@ test.beforeEach(async ({ page }) => {
     const url = new URL(route.request().url());
     let body: unknown = {};
     let contentType = "application/json";
+    let headers: Record<string, string> | undefined;
     if (url.pathname.endsWith("/metadata")) {
       body = metadata;
     } else if (url.pathname.endsWith("/geometry")) {
@@ -93,6 +94,13 @@ test.beforeEach(async ({ page }) => {
         methodology_version: metadata.methodology_version,
         settings: {},
         counties: [summary, comparisonSummary],
+      };
+    } else if (url.pathname.endsWith("/report.pdf")) {
+      body = "%PDF-1.7 mock Atlas report";
+      contentType = "application/pdf";
+      headers = {
+        "Access-Control-Expose-Headers": "Content-Disposition",
+        "Content-Disposition": `attachment; filename="${url.pathname.includes("/counties/") ? "adams-county.pdf" : "colorado-state.pdf"}"`,
       };
     } else if (url.pathname.includes("/counties/")) {
       body = {
@@ -143,6 +151,7 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       body: typeof body === "string" ? body : JSON.stringify(body),
       contentType,
+      headers,
       status: 200,
     });
   });
@@ -211,6 +220,21 @@ test("renders the atlas and full non-map results", async ({ page }) => {
     .exclude(".maplibre-atlas")
     .analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("downloads county and state PDF reports with server filenames", async ({
+  page,
+}) => {
+  await page.goto("/?county=08001&state=CO");
+  await expect(page.getByText("Adams, Colorado")).toBeVisible();
+
+  const countyDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PDF" }).last().click();
+  expect((await countyDownload).suggestedFilename()).toBe("adams-county.pdf");
+
+  const stateDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PDF" }).first().click();
+  expect((await stateDownload).suggestedFilename()).toBe("colorado-state.pdf");
 });
 
 test("keeps filters and score settings in the shareable URL", async ({
