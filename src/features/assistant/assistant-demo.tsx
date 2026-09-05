@@ -2,14 +2,13 @@
 
 import {
   AssistantRuntimeProvider,
-  ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
   useLocalRuntime,
   type ChatModelAdapter,
 } from "@assistant-ui/react";
 
-import { Button } from "@/components/ui/button";
+import { AssistantDemoComposer } from "./assistant-demo-composer";
 
 const demoAdapter: ChatModelAdapter = {
   async *run({ abortSignal }) {
@@ -102,31 +101,7 @@ function AssistantThread() {
             Open CDC Lyme surveillance
           </a>
         </section>
-        <ComposerPrimitive.Root className="grid gap-2">
-          <label
-            className="text-sm font-medium"
-            htmlFor="atlas-assistant-message"
-          >
-            Ask the Atlas demo
-          </label>
-          <ComposerPrimitive.Input
-            id="atlas-assistant-message"
-            className="border-input bg-background min-h-24 rounded-lg border p-3"
-            placeholder="For example: What should I review for this county?"
-          />
-          <div className="flex gap-2">
-            <ComposerPrimitive.Send
-              render={<Button type="submit">Send demo question</Button>}
-            />
-            <ComposerPrimitive.Cancel
-              render={
-                <Button type="button" variant="outline">
-                  Stop
-                </Button>
-              }
-            />
-          </div>
-        </ComposerPrimitive.Root>
+        <AssistantDemoComposer />
       </ThreadPrimitive.Root>
     </AssistantRuntimeProvider>
   );

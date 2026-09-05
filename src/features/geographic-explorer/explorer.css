@@ -1,0 +1,334 @@
+.geo-explorer {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 110px 32px 48px;
+  color: var(--foreground);
+}
+.geo-header {
+  padding: 24px 0 30px;
+  max-width: 850px;
+}
+.geo-header h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1.1;
+  margin: 12px 0;
+}
+.geo-header p {
+  font-size: 1.1rem;
+  color: var(--muted-foreground);
+  margin: 10px 0;
+}
+.geo-release {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  padding: 18px 0;
+  border-block: 1px solid var(--border);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.geo-boundary {
+  padding: 16px 0;
+  max-width: 1000px;
+}
+.geo-view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0;
+}
+.geo-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: start;
+}
+.geo-main-panel {
+  min-width: 0;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.geo-main-panel h2,
+.geo-results h2 {
+  margin: 8px 0 16px;
+  font-size: 1.6rem;
+}
+.geo-main-panel p {
+  margin: 12px 0;
+}
+.geo-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.geo-grid-scroll,
+.geo-table-scroll {
+  overflow: auto;
+  max-width: 100%;
+}
+.geo-state-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(65px, 1fr));
+  gap: 5px;
+  min-width: 840px;
+  padding: 16px 0;
+}
+.geo-state-tile {
+  background: var(--muted);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.geo-state-tile button {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: auto;
+  min-height: 70px;
+  padding: 8px 3px;
+  gap: 3px;
+  font-size: 11px;
+  white-space: normal;
+}
+.geo-state-tile strong {
+  font-size: 15px;
+}
+.geo-state-tile svg {
+  width: 100%;
+}
+.geo-selection {
+  background: var(--secondary);
+  color: var(--foreground);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+}
+.geo-selection h2 {
+  font-size: 1.4rem;
+  margin: 10px 0;
+}
+.geo-selection p {
+  margin: 12px 0;
+}
+.geo-selection dl,
+.geo-comparison dl {
+  display: grid;
+  gap: 5px;
+  margin: 18px 0;
+}
+.geo-selection dt,
+.geo-comparison dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 8px;
+}
+.geo-selection dd,
+.geo-comparison dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.geo-score {
+  font-size: 2.5rem;
+}
+.geo-score small {
+  font-size: 1rem;
+}
+.geo-results {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.geo-results > p {
+  margin-bottom: 16px;
+}
+.geo-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 880px;
+  font-size: 0.875rem;
+}
+.geo-table caption {
+  text-align: left;
+  padding: 12px 0;
+  color: var(--muted-foreground);
+}
+.geo-table th,
+.geo-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.geo-table thead {
+  background: var(--muted);
+}
+.geo-table th button {
+  height: auto;
+  text-align: left;
+  white-space: normal;
+}
+.geo-table tr[aria-selected="true"] {
+  background: var(--secondary);
+}
+.geo-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 20px 0;
+}
+.geo-dot-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 2fr 45px;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.geo-dot-row button {
+  white-space: normal;
+  height: auto;
+  justify-content: flex-start;
+  text-align: left;
+}
+.geo-dot-row svg {
+  width: 100%;
+}
+.geo-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+.geo-scatter {
+  width: 100%;
+  height: auto;
+}
+.geo-scatter circle {
+  cursor: pointer;
+}
+.geo-scatter circle:focus {
+  outline: 2px solid var(--foreground);
+}
+.geo-map-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.geo-map-pair section {
+  min-width: 0;
+}
+.geo-map-canvas {
+  height: 340px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+}
+.geo-map-pair h3,
+.geo-map-single h3 {
+  margin-bottom: 12px;
+}
+.geo-map-pair p,
+.geo-map-single p {
+  font-size: 0.85rem;
+}
+.geo-priority-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 0.8rem;
+}
+.geo-priority-legend span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.geo-priority-legend i {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+}
+.geo-completeness-ramp {
+  display: inline-block;
+  width: 80px;
+  height: 12px;
+  background: linear-gradient(to right, var(--mint), var(--teal-dark));
+}
+.geo-comparisons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+.geo-comparison h3 {
+  font-size: 1.1rem;
+}
+.geo-comparison {
+  min-width: 0;
+}
+.geo-measure {
+  margin: 12px 0;
+}
+.geo-measure > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+.geo-measure meter {
+  width: 100%;
+  height: 16px;
+  accent-color: var(--teal);
+}
+.geo-history-empty {
+  margin: 24px 0;
+  padding: 20px;
+  background: var(--muted);
+  border-radius: var(--radius);
+}
+.geo-scoring {
+  padding: 30px 0;
+  border-top: 1px solid var(--border);
+}
+.geo-scoring p {
+  margin-top: 14px;
+}
+@media (max-width: 1100px) {
+  .geo-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .geo-selection {
+    display: block;
+  }
+  .geo-selection dl {
+    grid-template-columns: 1fr 2fr;
+  }
+  .geo-selection dt {
+    margin: 0;
+  }
+}
+@media (max-width: 650px) {
+  .geo-explorer {
+    padding: 90px 16px 32px;
+  }
+  .geo-main-panel {
+    padding: 16px;
+  }
+  .geo-map-pair {
+    grid-template-columns: 1fr;
+  }
+  .geo-dot-row {
+    grid-template-columns: minmax(100px, 1fr) 1fr 36px;
+    gap: 4px;
+  }
+  .geo-pagination {
+    justify-content: flex-start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .geo-explorer * {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

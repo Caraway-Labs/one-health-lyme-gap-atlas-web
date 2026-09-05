@@ -29,6 +29,7 @@ const variants = [
   ["/variant_4", "Score explained"],
   ["/variant_5", "County comparison"],
   ["/variant_6", "Wide evidence workspace"],
+  ["/variant_7", "Geographic explorer"],
 ] as const;
 
 export function SiteNav() {
