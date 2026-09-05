@@ -29,6 +29,7 @@ const variants = [
   ["/variant_4", "Score explained"],
   ["/variant_5", "County comparison"],
   ["/variant_6", "Wide evidence workspace"],
+  ["/variant_7", "Geographic explorer"],
 ] as const;
 
 export function SiteNav() {
@@ -55,7 +56,7 @@ export function SiteNav() {
           </Link>
           <Link href={sectionHref("methods")}>How to interpret the Atlas</Link>
         </div>
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger
             render={<Button variant="ghost" className="nav-action" />}
           >
