@@ -56,3 +56,5 @@ Privacy settings is available from every page footer without account creation. T
 ## Change control
 
 Changes to this inventory require product and engineering review. A new third-party telemetry processor, browser identifier, public API contract, identity linkage, or change to data classification requires the corresponding governed decision/ADR before implementation.
+
+The pre-launch contract for authenticated account export and deletion is maintained in [Data Export and Deletion Workflow](data-rights-workflow.md). It is not an active self-service request channel until its launch gates are complete.
