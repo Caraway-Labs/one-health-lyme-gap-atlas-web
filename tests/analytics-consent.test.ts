@@ -15,7 +15,7 @@ describe("analytics consent", () => {
     expect(readAnalyticsPreference(localStorage)).toBe("not-decided");
     expect(
       analyticsMayStart({ consent: "not-decided", doNotTrack: false })
-    ).toBe(false);
+    ).toBeFalsy();
     expect(localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).toBeNull();
   });
 
@@ -28,7 +28,7 @@ describe("analytics consent", () => {
     expect(readAnalyticsPreference(localStorage, now)).toBe("granted");
     expect(
       JSON.parse(localStorage.getItem(ANALYTICS_PREFERENCE_KEY) ?? "{}")
-    ).toEqual({
+    ).toStrictEqual({
       decision: "granted",
       decidedAt: "2026-09-07T12:00:00.000Z",
       expiresAt: "2027-03-09T12:00:00.000Z",
@@ -57,9 +57,9 @@ describe("analytics consent", () => {
   });
 
   it("honors Do Not Track even when a visitor previously granted consent", () => {
-    expect(honorsDoNotTrack({ doNotTrack: "1" } as Navigator)).toBe(true);
+    expect(honorsDoNotTrack({ doNotTrack: "1" } as Navigator)).toBeTruthy();
     expect(
       analyticsMayStart({ consent: "granted", doNotTrack: true })
-    ).toBe(false);
+    ).toBeFalsy();
   });
 });

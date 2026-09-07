@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,13 +24,17 @@ export function PrivacyPreferences() {
     useState<AnalyticsConsentState>("not-decided");
   const [doNotTrack, setDoNotTrack] = useState(false);
 
-  useEffect(() => {
-    setDoNotTrack(honorsDoNotTrack(navigator));
-    setConsent(readAnalyticsPreference(localStorage));
-  }, []);
-
   const saveChoice = (decision: "granted" | "denied") => {
     setConsent(writeAnalyticsPreference(localStorage, decision));
+  };
+
+  const refreshPreference = (isOpen: boolean) => {
+    if (!isOpen) {
+      return;
+    }
+
+    setDoNotTrack(honorsDoNotTrack(navigator));
+    setConsent(readAnalyticsPreference(localStorage));
   };
 
   const choiceSummary = doNotTrack
@@ -44,7 +48,7 @@ export function PrivacyPreferences() {
           : "Optional analytics are off until you make a choice.";
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={refreshPreference}>
       <DialogTrigger render={<Button variant="link" className="footer-link" />}>
         Privacy settings
       </DialogTrigger>
