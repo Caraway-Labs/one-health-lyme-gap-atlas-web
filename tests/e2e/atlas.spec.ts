@@ -247,6 +247,11 @@ test("publishes an accessible, clear privacy summary without analytics claims", 
   ).toBeVisible();
   await expect(page.getByText("Export my data")).toBeVisible();
   await expect(page.getByText("Remove all data")).toBeVisible();
+  await expect(
+    page.getByText(
+      /When optional accounts are available, account settings will include/
+    )
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => localStorage.getItem("atlas.analytics-preference.v1"))
