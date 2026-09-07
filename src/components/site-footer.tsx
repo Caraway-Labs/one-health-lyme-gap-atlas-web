@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function SiteFooter() {
   return (
     <footer>
@@ -9,7 +11,10 @@ export function SiteFooter() {
         Independent Caraway Labs prototype. Views do not represent an employer
         or public health laboratory.
       </p>
-      <a href="#atlas">Back to Atlas ↑</a>
+      <nav className="footer-links" aria-label="Footer navigation">
+        <Link href="/privacy">Privacy</Link>
+        <a href="#atlas">Back to Atlas ↑</a>
+      </nav>
     </footer>
   );
 }
