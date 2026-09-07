@@ -62,7 +62,10 @@ The export is a UTF-8 JSON document wrapped in a versioned envelope. It is gener
   "request_id": "opaque-request-id",
   "subject": { "account_id": "opaque-account-id" },
   "sources": [
-    { "system": "atlas-account-service", "retrieved_at": "2026-09-07T00:00:00Z" }
+    {
+      "system": "atlas-account-service",
+      "retrieved_at": "2026-09-07T00:00:00Z"
+    }
   ],
   "data": {
     "account": {},
