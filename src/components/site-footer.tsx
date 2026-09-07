@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { PrivacyPreferences } from "@/components/privacy-preferences";
+
 export function SiteFooter() {
   return (
     <footer>
@@ -13,6 +15,7 @@ export function SiteFooter() {
       </p>
       <nav className="footer-links" aria-label="Footer navigation">
         <Link href="/privacy">Privacy</Link>
+        <PrivacyPreferences />
         <a href="#atlas">Back to Atlas ↑</a>
       </nav>
     </footer>
