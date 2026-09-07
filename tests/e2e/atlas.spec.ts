@@ -312,6 +312,9 @@ test("renders every interview variant with selected county evidence in the first
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
     await expect(page.getByText("Adams, Colorado").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
+      1
+    );
     await expect(
       page.getByText("For surveillance follow-up—not personal risk.")
     ).toBeVisible();
