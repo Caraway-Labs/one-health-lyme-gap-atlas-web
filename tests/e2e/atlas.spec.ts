@@ -222,15 +222,29 @@ test("renders the atlas and full non-map results", async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
-test("publishes an accessible, clear privacy summary without analytics claims", async ({ page }) => {
+test("publishes an accessible, clear privacy summary without analytics claims", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Privacy" }).click();
 
   await expect(page).toHaveURL(/\/privacy$/);
-  await expect(page.getByRole("heading", { name: "Privacy without the fine print." })).toBeVisible();
-  await expect(page.getByText("Atlas does not currently use a third-party product-analytics service or browser tracking SDK.")).toBeVisible();
-  await expect(page.getByText(/We do not sell, rent, or share personal data for advertising/)).toBeVisible();
-  await expect(page.getByText(/chat prompts or answers, feedback text, raw search text/)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Privacy without the fine print." })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Atlas does not currently use a third-party product-analytics service or browser tracking SDK."
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      /We do not sell, rent, or share personal data for advertising/
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText(/chat prompts or answers, feedback text, raw search text/)
+  ).toBeVisible();
   await expect(page.getByText("Export my data")).toBeVisible();
   await expect(page.getByText("Remove all data")).toBeVisible();
 
