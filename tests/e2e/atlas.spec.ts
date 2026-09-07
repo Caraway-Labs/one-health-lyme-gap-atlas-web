@@ -249,9 +249,7 @@ test("publishes an accessible, clear privacy summary without analytics claims", 
   await expect(page.getByText("Remove all data")).toBeVisible();
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        localStorage.getItem("atlas.analytics-preference.v1")
-      )
+      page.evaluate(() => localStorage.getItem("atlas.analytics-preference.v1"))
     )
     .toBeNull();
 
@@ -271,9 +269,7 @@ test("publishes an accessible, clear privacy summary without analytics claims", 
     .click();
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        localStorage.getItem("atlas.analytics-preference.v1")
-      )
+      page.evaluate(() => localStorage.getItem("atlas.analytics-preference.v1"))
     )
     .toContain('"decision":"denied"');
 

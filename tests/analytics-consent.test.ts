@@ -47,7 +47,10 @@ describe("analytics consent", () => {
       })
     );
     expect(
-      readAnalyticsPreference(localStorage, new Date("2026-01-03T00:00:00.000Z"))
+      readAnalyticsPreference(
+        localStorage,
+        new Date("2026-01-03T00:00:00.000Z")
+      )
     ).toBe("not-decided");
     expect(localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).toBeNull();
 

@@ -20,8 +20,7 @@ import {
 } from "@/lib/analytics-consent";
 
 export function PrivacyPreferences() {
-  const [consent, setConsent] =
-    useState<AnalyticsConsentState>("not-decided");
+  const [consent, setConsent] = useState<AnalyticsConsentState>("not-decided");
   const [doNotTrack, setDoNotTrack] = useState(false);
 
   const saveChoice = (decision: "granted" | "denied") => {
@@ -55,10 +54,13 @@ export function PrivacyPreferences() {
       <DialogContent aria-labelledby="privacy-settings-title">
         <DialogHeader>
           <span className="eyebrow">Your choice</span>
-          <DialogTitle id="privacy-settings-title">Privacy settings</DialogTitle>
+          <DialogTitle id="privacy-settings-title">
+            Privacy settings
+          </DialogTitle>
           <DialogDescription>
             Public Atlas exploration works the same whether you allow or decline
-            optional product analytics. Atlas does not use product analytics yet.
+            optional product analytics. Atlas does not use product analytics
+            yet.
           </DialogDescription>
         </DialogHeader>
         <p>{choiceSummary}</p>
@@ -71,10 +73,7 @@ export function PrivacyPreferences() {
           <Button onClick={() => saveChoice("denied")} variant="secondary">
             Keep optional analytics off
           </Button>
-          <Button
-            disabled={doNotTrack}
-            onClick={() => saveChoice("granted")}
-          >
+          <Button disabled={doNotTrack} onClick={() => saveChoice("granted")}>
             Allow optional analytics
           </Button>
         </DialogFooter>
