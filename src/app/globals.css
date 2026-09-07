@@ -1218,6 +1218,7 @@ footer {
   font-size: 0.68rem;
 }
 .footer a,
+.footer-link,
 footer > a {
   color: #79d4c9;
   font-size: 0.72rem;
