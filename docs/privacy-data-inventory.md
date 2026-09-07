@@ -22,7 +22,7 @@ Product analytics must never contain private health information, medical history
 | Browser URL state | Make a selected geography and Atlas controls reproducible/shareable | State, county FIPS, controlled evidence filter, score settings, dataset version | Browser address bar only | Visitor controls it through the URL | Live |
 | Evidence-chat request | Retrieve reviewed evidence through the controlled Atlas API | Question, conversation ID/token, response/citations | Atlas API and knowledge-graph service | Server policy is 30 days; do not treat chat content as product analytics | Feature-gated |
 | Evidence-chat local history | Let a visitor resume recent chats in the same browser | Up to five conversation transcripts, titles, timestamps, response metadata, token | Browser local storage | Expires after 30 days; visitor can clear the local history in the chat workspace | Feature-gated |
-| Product analytics | Understand feature adoption and improve Atlas | None | None | None | Not implemented |
+| Product analytics | Understand aggregate feature adoption and improve Atlas | None | None | None | Design contract approved; implementation not enabled |
 | In-product feedback | Receive voluntary usability/data/feature feedback | None | None | None | Planned: web #63, API #42-43, data #129-130 |
 | Optional accounts and personalization | Save user-owned views, preferences, and jurisdictions | None | None | None | Planned: web #77-84 |
 
@@ -57,4 +57,4 @@ Privacy settings is available from every page footer without account creation. T
 
 Changes to this inventory require product and engineering review. A new third-party telemetry processor, browser identifier, public API contract, identity linkage, or change to data classification requires the corresponding governed decision/ADR before implementation.
 
-The pre-launch contract for authenticated account export and deletion is maintained in [Data Export and Deletion Workflow](data-rights-workflow.md). It is not an active self-service request channel until its launch gates are complete.
+The pre-launch contract for authenticated account export and deletion is maintained in [Data Export and Deletion Workflow](data-rights-workflow.md). It is not an active self-service request channel until its launch gates are complete. The approved, still-disabled Amplitude design is maintained in [Privacy-safe Amplitude product analytics contract](amplitude-analytics-contract.md) and [ADR 0014](adr/0014-privacy-safe-amplitude-browser-analytics.md).
