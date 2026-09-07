@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AtlasFilters } from "@/components/atlas-filters";
 import { AtlasMap } from "@/components/atlas-map";
+import { PdfExportButton } from "@/components/pdf-export-button";
 import { ResultsTable } from "@/components/results-table";
 import {
   countyV1CountiesFipsGet,
@@ -283,6 +284,8 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
               counties={filtered}
               geometry={geometryQuery.data}
               selectedFips={selectedFips}
+              datasetVersion={metadataQuery.data.release_id}
+              settings={settings}
               comparison={comparison}
               step={step}
               showTable={showTable}
@@ -322,6 +325,8 @@ function VariantBody({
   counties,
   geometry,
   selectedFips,
+  datasetVersion,
+  settings,
   comparison,
   step,
   showTable,
@@ -335,6 +340,8 @@ function VariantBody({
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
   selectedFips: string;
+  datasetVersion: string;
+  settings: ScoreSettings;
   comparison: CountyScoreSummary | null;
   step: number;
   showTable: boolean;
@@ -350,6 +357,8 @@ function VariantBody({
         counties={counties}
         geometry={geometry}
         selectedFips={selectedFips}
+        datasetVersion={datasetVersion}
+        settings={settings}
         step={step}
         onStep={onStep}
         onSelect={onSelect}
@@ -363,6 +372,8 @@ function VariantBody({
         counties={counties}
         geometry={geometry}
         selectedFips={selectedFips}
+        datasetVersion={datasetVersion}
+        settings={settings}
         onSelect={onSelect}
       />
     );
@@ -374,6 +385,8 @@ function VariantBody({
         counties={counties}
         geometry={geometry}
         selectedFips={selectedFips}
+        datasetVersion={datasetVersion}
+        settings={settings}
         onSelect={onSelect}
       />
     );
@@ -383,6 +396,8 @@ function VariantBody({
       <Compare
         detail={detail}
         counties={counties}
+        datasetVersion={datasetVersion}
+        settings={settings}
         comparison={comparison}
         onComparison={onComparison}
       />
@@ -394,6 +409,8 @@ function VariantBody({
       counties={counties}
       geometry={geometry}
       selectedFips={selectedFips}
+      datasetVersion={datasetVersion}
+      settings={settings}
       showTable={showTable}
       onSelect={onSelect}
       onToggleTable={onToggleTable}
@@ -406,6 +423,8 @@ function Decision({
   counties,
   geometry,
   selectedFips,
+  datasetVersion,
+  settings,
   showTable,
   onSelect,
   onToggleTable,
@@ -414,6 +433,8 @@ function Decision({
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
   selectedFips: string;
+  datasetVersion: string;
+  settings: ScoreSettings;
   showTable: boolean;
   onSelect: (fips: string) => void;
   onToggleTable: () => void;
@@ -421,7 +442,11 @@ function Decision({
   return (
     <>
       <section className="decision-brief experiment-card">
-        <DecisionSummary detail={detail} />
+        <DecisionSummary
+          detail={detail}
+          datasetVersion={datasetVersion}
+          settings={settings}
+        />
         <WhyPanel detail={detail} />
         <div className="next-action">
           <span className="eyebrow">Next useful question</span>
@@ -463,6 +488,8 @@ function Guided({
   counties,
   geometry,
   selectedFips,
+  datasetVersion,
+  settings,
   step,
   onStep,
   onSelect,
@@ -471,6 +498,8 @@ function Guided({
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
   selectedFips: string;
+  datasetVersion: string;
+  settings: ScoreSettings;
   step: number;
   onStep: (step: number) => void;
   onSelect: (fips: string) => void;
@@ -498,7 +527,11 @@ function Guided({
       <div className="guided-stage experiment-card">
         {step === 0 && (
           <>
-            <DecisionSummary detail={detail} />
+            <DecisionSummary
+              detail={detail}
+              datasetVersion={datasetVersion}
+              settings={settings}
+            />
             <h2>Choose a county to review</h2>
             <p>
               Start with the ranked list or select a county on the map. The
@@ -528,7 +561,11 @@ function Guided({
         {step === 2 && (
           <>
             <h2>Turn evidence into a follow-up question</h2>
-            <DecisionSummary detail={detail} />
+            <DecisionSummary
+              detail={detail}
+              datasetVersion={datasetVersion}
+              settings={settings}
+            />
             <div className="next-action">
               <strong>Suggested next step</strong>
               <p>
@@ -548,12 +585,16 @@ function Workbench({
   counties,
   geometry,
   selectedFips,
+  datasetVersion,
+  settings,
   onSelect,
 }: {
   detail: CountyDetail;
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
   selectedFips: string;
+  datasetVersion: string;
+  settings: ScoreSettings;
   onSelect: (fips: string) => void;
 }) {
   return (
@@ -581,7 +622,11 @@ function Workbench({
         />
       </section>
       <aside className="workbench-pane workbench-detail">
-        <DecisionSummary detail={detail} />
+        <DecisionSummary
+          detail={detail}
+          datasetVersion={datasetVersion}
+          settings={settings}
+        />
         <WhyPanel detail={detail} />
         <details>
           <summary>What these labels mean</summary>
@@ -597,12 +642,16 @@ function Explain({
   counties,
   geometry,
   selectedFips,
+  datasetVersion,
+  settings,
   onSelect,
 }: {
   detail: CountyDetail;
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
   selectedFips: string;
+  datasetVersion: string;
+  settings: ScoreSettings;
   onSelect: (fips: string) => void;
 }) {
   return (
@@ -618,7 +667,11 @@ function Explain({
             disease burden.
           </p>
         </div>
-        <DecisionSummary detail={detail} />
+        <DecisionSummary
+          detail={detail}
+          datasetVersion={datasetVersion}
+          settings={settings}
+        />
       </section>
       <section className="explain-grid">
         <section className="experiment-card">
@@ -654,11 +707,15 @@ function Explain({
 function Compare({
   detail,
   counties,
+  datasetVersion,
+  settings,
   comparison,
   onComparison,
 }: {
   detail: CountyDetail;
   counties: CountyScoreSummary[];
+  datasetVersion: string;
+  settings: ScoreSettings;
   comparison: CountyScoreSummary | null;
   onComparison: (fips: string) => void;
 }) {
@@ -667,7 +724,11 @@ function Compare({
       <section className="compare-grid">
         <section className="experiment-card">
           <span className="eyebrow">Selected county</span>
-          <DecisionSummary detail={detail} />
+          <DecisionSummary
+            detail={detail}
+            datasetVersion={datasetVersion}
+            settings={settings}
+          />
         </section>
         <section className="experiment-card">
           <label className="comparison-select">
@@ -739,7 +800,15 @@ function Compare({
   );
 }
 
-function DecisionSummary({ detail }: { detail: CountyDetail }) {
+function DecisionSummary({
+  detail,
+  datasetVersion,
+  settings,
+}: {
+  detail: CountyDetail;
+  datasetVersion: string;
+  settings: ScoreSettings;
+}) {
   return (
     <div className="decision-summary">
       <div>
@@ -757,6 +826,11 @@ function DecisionSummary({ detail }: { detail: CountyDetail }) {
         <strong>{detail.score.score}</strong>
         <small>follow-up priority score / 100</small>
       </div>
+      <PdfExportButton
+        datasetVersion={datasetVersion}
+        geography={{ identifier: detail.fips, level: "county" }}
+        settings={settings}
+      />
     </div>
   );
 }
