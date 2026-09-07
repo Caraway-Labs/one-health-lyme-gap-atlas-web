@@ -112,6 +112,21 @@ export default function PrivacyPage() {
           </p>
         </div>
         <div className="privacy-section">
+          <h2>Optional analytics choices</h2>
+          <p>
+            Optional analytics are off by default. If they are introduced, you
+            will be able to allow them or keep them off from Privacy settings in
+            the footer. We honor browser Do Not Track by keeping optional
+            analytics off, and we will not show a consent wall or limit public
+            Atlas exploration when you decline.
+          </p>
+          <p>
+            A choice is stored only in your browser, expires after six months,
+            and can be changed at any time. If Atlas cannot save that choice,
+            optional analytics stay off.
+          </p>
+        </div>
+        <div className="privacy-section">
           <h2>Your future data controls</h2>
           <p>
             When optional accounts are available, account settings will include{" "}

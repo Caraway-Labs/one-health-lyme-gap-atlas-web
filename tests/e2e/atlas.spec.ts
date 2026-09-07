@@ -247,6 +247,31 @@ test("publishes an accessible, clear privacy summary without analytics claims", 
   ).toBeVisible();
   await expect(page.getByText("Export my data")).toBeVisible();
   await expect(page.getByText("Remove all data")).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem("atlas.analytics-preference.v1"))
+    )
+    .toBeNull();
+
+  await page.getByRole("button", { name: "Privacy settings" }).click();
+  const privacySettings = page.getByRole("dialog", {
+    name: "Privacy settings",
+  });
+  await expect(privacySettings).toContainText(
+    "Optional analytics are off until you make a choice."
+  );
+  await expect(privacySettings).toContainText("six months");
+  await expect(
+    privacySettings.getByRole("button", { name: "Keep optional analytics off" })
+  ).toBeVisible();
+  await privacySettings
+    .getByRole("button", { name: "Keep optional analytics off" })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem("atlas.analytics-preference.v1"))
+    )
+    .toContain('"decision":"denied"');
 
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);

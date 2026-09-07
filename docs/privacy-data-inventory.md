@@ -37,6 +37,22 @@ Before product analytics, feedback, or accounts launch, the owning stories must 
 5. authenticated export and deletion workflows, including deletion propagation to approved processors; and
 6. automated tests that reject prohibited telemetry fields and prove no non-essential telemetry leaves the browser before consent or after opt-out.
 
+## Optional analytics consent contract
+
+This contract governs any future non-essential browser product analytics. It does not authorize a vendor, browser SDK, analytics identifier, cookie, or event transmission.
+
+| State | Entry condition | Browser analytics behavior | Visitor control |
+| --- | --- | --- | --- |
+| Not decided | First visit, expired preference, or corrupted preference | Off. No SDK initialization, identifier, cookie, local-storage analytics item, or event egress. | Privacy settings offers an equally prominent allow or decline decision. |
+| Denied | Visitor declines or withdraws | Off. A later vendor integration must not initialize or transmit. | Visitor can revisit Privacy settings. |
+| Granted | Visitor explicitly selects allow and Do Not Track is not enabled | Still off until the separately approved analytics implementation is released. That implementation may start only after this state is read. | Visitor can withdraw in Privacy settings at any time. |
+| Do Not Track | Browser sends `doNotTrack` as `1` or `yes` | Off, including when a previously saved grant exists. | Browser setting controls this state; Atlas keeps its own optional analytics off. |
+| Storage unavailable | Browser blocks storage or storage access throws | Off; Atlas does not substitute identifiers, cookies, or a server-side profile. | Public exploration remains available. |
+
+The first-party preference record is created only after the visitor chooses allow or decline. It contains a decision, decision time, expiry time, and format version—no identifier, route history, or behavior data. It expires after 183 days and is removed if malformed or expired. It is not synchronized across browsers or devices, because Atlas has no account linkage today.
+
+Privacy settings is available from every page footer without account creation. The contract applies to every visitor regardless of location; no consent wall, regional dark pattern, or degraded public exploration is permitted. The owning engineering team is accountable for the implementation and this inventory; future processor access, retention, deletion, and audit evidence must be defined by the vendor and governance story before data collection begins.
+
 ## Change control
 
 Changes to this inventory require product and engineering review. A new third-party telemetry processor, browser identifier, public API contract, identity linkage, or change to data classification requires the corresponding governed decision/ADR before implementation.
