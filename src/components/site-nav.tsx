@@ -20,6 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  trackMethodologyOpened,
+  trackProvenanceOpened,
+} from "@/lib/atlas-analytics";
 import { DATA_DICTIONARY } from "@/lib/data-dictionary";
 
 const variants = [
@@ -66,6 +70,9 @@ export function SiteNav() {
           <Link
             data-atlas-analytics-control="nav_methods"
             href={sectionHref("methods")}
+            onClick={() =>
+              trackMethodologyOpened(pathname, "methods_navigation")
+            }
           >
             How to interpret the Atlas
           </Link>
@@ -77,6 +84,9 @@ export function SiteNav() {
                 data-atlas-analytics-control="nav_variants"
                 variant="ghost"
                 className="nav-action"
+                onClick={() =>
+                  trackProvenanceOpened(pathname, "data_dictionary")
+                }
               />
             }
           >

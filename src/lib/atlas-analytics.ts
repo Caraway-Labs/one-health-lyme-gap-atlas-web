@@ -47,6 +47,7 @@ export const uiControlIds = [
   "nav_variant_link",
   "nav_data_dictionary_close",
   "results_table_county_select",
+  "methods_source_open",
 ] as const;
 
 export type UiControlId = (typeof uiControlIds)[number];
@@ -67,6 +68,11 @@ export const scoreControlIds = [
 ] as const;
 
 export type ScoreControlId = (typeof scoreControlIds)[number];
+
+export type ContentSurface =
+  | "methods_navigation"
+  | "source_card"
+  | "data_dictionary";
 
 type AnalyticsEvent =
   | {
@@ -111,6 +117,14 @@ type AnalyticsEvent =
         score_value: number;
         change_source: "range_control";
       };
+    }
+  | {
+      eventType: "atlas_methodology_opened";
+      properties: { route_id: RouteId; content_surface: ContentSurface };
+    }
+  | {
+      eventType: "atlas_provenance_opened";
+      properties: { route_id: RouteId; content_surface: ContentSurface };
     }
   | {
       eventType: "atlas_csv_export_requested";
@@ -284,6 +298,32 @@ export function trackScoreChangeCommitted(
       score_control: scoreControl,
       score_value: scoreValue,
       change_source: "range_control",
+    },
+  });
+}
+
+export function trackMethodologyOpened(
+  pathname: string,
+  contentSurface: ContentSurface
+): void {
+  atlasAnalytics.track({
+    eventType: "atlas_methodology_opened",
+    properties: {
+      route_id: routeIdForPathname(pathname),
+      content_surface: contentSurface,
+    },
+  });
+}
+
+export function trackProvenanceOpened(
+  pathname: string,
+  contentSurface: ContentSurface
+): void {
+  atlasAnalytics.track({
+    eventType: "atlas_provenance_opened",
+    properties: {
+      route_id: routeIdForPathname(pathname),
+      content_surface: contentSurface,
     },
   });
 }

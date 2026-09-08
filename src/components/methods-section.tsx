@@ -1,4 +1,7 @@
+"use client";
+
 import type { AtlasMetadata } from "@/generated/models";
+import { trackProvenanceOpened } from "@/lib/atlas-analytics";
 
 export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
   return (
@@ -25,6 +28,10 @@ export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
             href={source.url}
             target="_blank"
             rel="noreferrer"
+            data-atlas-analytics-control="methods_source_open"
+            onClick={() =>
+              trackProvenanceOpened(window.location.pathname, "source_card")
+            }
           >
             <span>0{index + 1}</span>
             <h3>{source.label}</h3>
