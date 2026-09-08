@@ -27,7 +27,9 @@ describe("AI Ethics content baseline", () => {
     expect(aiEthicsContent.boundaries.join(" ")).toMatch(
       /not present its score as a disease-risk prediction/i
     );
-    expect(aiEthicsContent.statements[0].summary).toMatch(/non-predictive/i);
+    expect(aiEthicsContent.statements[0].summary).toMatch(
+      /not a predictive model/i
+    );
   });
 
   it("does not turn unresolved commitments into privacy promises", () => {
