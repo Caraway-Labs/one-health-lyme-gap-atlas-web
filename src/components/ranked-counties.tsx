@@ -1,6 +1,6 @@
 import type { CountyScoreSummary } from "@/generated/models";
-import { plainPriority } from "@/lib/atlas-ui";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
+import { plainPriority } from "@/lib/atlas-ui";
 
 export function RankedCounties({
   counties,

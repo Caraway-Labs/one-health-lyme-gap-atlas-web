@@ -5,12 +5,12 @@ import maplibregl from "maplibre-gl";
 import { useEffect, useRef } from "react";
 
 import type { CountyScoreSummary } from "@/generated/models";
+import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   CONTIGUOUS_US_INITIAL_VIEW,
   contiguousUsGeometry,
 } from "@/lib/atlas-geometry";
 import { countyBelongsToDistrict } from "@/lib/health-districts";
-import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 
 type FeatureCollection = GeoJSON.FeatureCollection<
   GeoJSON.Geometry,

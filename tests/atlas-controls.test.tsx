@@ -134,7 +134,7 @@ describe("Atlas shared controls", () => {
         selectedFips=""
         showTable={false}
         onSelect={onSelect}
-        onToggleTable={vi.fn()}
+        onToggleTable={vi.fn<() => void>()}
       />
     );
 

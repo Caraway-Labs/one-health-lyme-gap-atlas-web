@@ -118,7 +118,7 @@ describe("Atlas Amplitude boundary", () => {
       county_fips: "08001",
       selection_surface: "map",
     });
-    expect(isCountyFips("08001")).toBe(true);
-    expect(isCountyFips("Adams County")).toBe(false);
+    expect(isCountyFips("08001")).toBeTruthy();
+    expect(isCountyFips("Adams County")).toBeFalsy();
   });
 });
