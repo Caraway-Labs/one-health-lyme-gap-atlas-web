@@ -466,6 +466,59 @@ test("focus mode compacts the shared shell without changing the analytical route
   await expect(page).toHaveURL(/variant_6\?county=08001/);
 });
 
+test("keeps the shared shell responsive and preserves deep links during keyboard navigation", async ({
+  page,
+}, testInfo) => {
+  const routes = [
+    "/",
+    "/variant_1?county=08001",
+    "/variant_2?county=08001",
+    "/variant_3?county=08001",
+    "/variant_4?county=08001",
+    "/variant_5?county=08001",
+    "/variant_6?county=08001",
+  ];
+
+  for (const route of routes) {
+    await page.goto(route);
+    await expect(
+      page.getByRole("navigation", { name: "Primary navigation" })
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth
+      )
+    ).toBe(true);
+  }
+
+  await page.goto("/variant_6?county=08001");
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
+
+  const geographicExplorer = page
+    .getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Geographic Explorer" });
+  await geographicExplorer.focus();
+  await expect(geographicExplorer).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/geographic_explorer\?/);
+  expect(new URL(page.url()).pathname).toBe("/geographic_explorer");
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/variant_6\?.*county=08001/);
+});
+
+test("reduces shell motion when the user requests it", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/variant_6?county=08001");
+
+  await expect(page.locator(".app-sidebar")).toHaveCSS(
+    "transition-duration",
+    "1e-05s"
+  );
+});
+
 test("keeps the wide workspace score calculation above the county panels and collapsed until requested", async ({
   page,
 }) => {
