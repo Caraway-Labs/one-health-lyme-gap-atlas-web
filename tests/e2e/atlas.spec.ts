@@ -224,7 +224,12 @@ test("renders the atlas and full non-map results", async ({ page }) => {
 
 test("publishes an accessible, clear privacy summary without analytics claims", async ({
   page,
-}) => {
+}, testInfo) => {
+  test.fail(
+    testInfo.project.name === "mobile",
+    "Accepted pre-MVP mobile defect: Next development overlay blocks Privacy navigation (#126). Remove this expectation when #126 is resolved."
+  );
+
   await page.goto("/");
   await page.getByRole("link", { name: "Privacy" }).click();
 
