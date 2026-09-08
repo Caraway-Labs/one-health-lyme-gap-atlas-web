@@ -18,6 +18,9 @@ export function SiteFooter() {
         <Link {...analyticsControlAttributes("footer_privacy")} href="/privacy">
           Privacy
         </Link>
+        <a href="/ai-ethics" rel="noopener noreferrer" target="_blank">
+          AI Ethics
+        </a>
         <PrivacyPreferences />
         <a
           {...analyticsControlAttributes("footer_back_to_atlas")}
