@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../src/components/site-footer", () => ({
+vi.mock(import("../src/components/site-footer"), () => ({
   SiteFooter: () => <footer />,
 }));
 
@@ -20,19 +20,13 @@ describe("AI Ethics page", () => {
         name: aiEthicsContent.introduction.title,
       })
     ).toBeTruthy();
-    expect(
-      screen.getByRole("heading", {
-        name: "What is true today, planned, and undecided",
-      })
-    ).toBeTruthy();
-    expect(screen.getByText("What Atlas does today")).toBeTruthy();
-    expect(
-      screen.getByText("Approved direction; release pending")
-    ).toBeTruthy();
-    expect(screen.getByText("Commitment in development")).toBeTruthy();
-    expect(
-      screen.getByRole("heading", { name: "Commitments in development" })
-    ).toBeTruthy();
+    screen.getByRole("heading", {
+      name: "What is true today, planned, and undecided",
+    });
+    screen.getByText("What Atlas does today");
+    screen.getByText("Approved direction; release pending");
+    screen.getByText("Commitment in development");
+    screen.getByRole("heading", { name: "Commitments in development" });
     expect(screen.getAllByRole("term")).toHaveLength(
       aiEthicsContent.openCommitments.length
     );
@@ -41,13 +35,9 @@ describe("AI Ethics page", () => {
   it("exposes public-health boundaries and versioned document metadata", () => {
     render(<AiEthicsPage />);
 
-    expect(
-      screen.getByRole("heading", { name: "What Atlas AI is not for" })
-    ).toBeTruthy();
-    expect(
-      screen.getByText(/does not provide diagnosis or treatment advice/i)
-    ).toBeTruthy();
-    expect(screen.getByText(`Version ${aiEthicsContent.version}`)).toBeTruthy();
+    screen.getByRole("heading", { name: "What Atlas AI is not for" });
+    screen.getByText(/does not provide diagnosis or treatment advice/i);
+    screen.getByText(`Version ${aiEthicsContent.version}`);
     expect(
       screen.getByLabelText("AI Ethics document version").textContent
     ).toContain("Last updated September 7, 2026");
