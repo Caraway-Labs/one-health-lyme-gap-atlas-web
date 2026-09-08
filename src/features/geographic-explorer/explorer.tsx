@@ -278,7 +278,7 @@ export function GeographicExplorer() {
   return (
     <main className="geo-explorer">
       <header className="geo-header">
-        <span className="eyebrow">One Health Lyme Gap Atlas / Variant 7</span>
+        <span className="eyebrow">One Health Lyme Gap Atlas</span>
         <h1>Geographic explorer</h1>
         <p>Different views. The same county evidence.</p>
         <p>
