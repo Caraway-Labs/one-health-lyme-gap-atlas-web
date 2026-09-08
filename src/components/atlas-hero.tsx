@@ -13,10 +13,18 @@ export function AtlasHero() {
             that may warrant review.
           </p>
           <div className="hero-actions">
-            <a className="button primary" href="#atlas">
+            <a
+              className="button primary"
+              data-atlas-analytics-control="hero_explore_counties"
+              href="#atlas"
+            >
               Explore counties
             </a>
-            <a className="button ghost" href="#methods">
+            <a
+              className="button ghost"
+              data-atlas-analytics-control="hero_methodology"
+              href="#methods"
+            >
               Understand the limitations
             </a>
           </div>

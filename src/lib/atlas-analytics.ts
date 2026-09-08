@@ -1,0 +1,212 @@
+type AmplitudeModule = {
+  init: (apiKey: string, options: Record<string, unknown>) => unknown;
+  reset: () => unknown;
+  setOptOut: (optOut: boolean) => unknown;
+  track: (eventType: string, properties: Record<string, unknown>) => unknown;
+};
+
+type AmplitudeLoader = () => Promise<AmplitudeModule>;
+
+export const ANALYTICS_SCHEMA_VERSION = "atlas-analytics/v1";
+export const ANALYTICS_RELEASE_VERSION = "atlas-web/0.1.0";
+
+export const routeIds = [
+  "atlas_home",
+  "privacy",
+  "knowledge_graph",
+  "atlas_variant",
+] as const;
+
+export type RouteId = (typeof routeIds)[number];
+
+export const uiControlIds = [
+  "hero_explore_counties",
+  "hero_methodology",
+  "nav_atlas",
+  "nav_scoring",
+  "nav_methods",
+  "nav_variants",
+  "nav_data_dictionary",
+  "filter_state",
+  "filter_evidence",
+  "csv_download",
+  "results_table_toggle",
+  "summary_copy",
+  "score_ecological_share",
+  "score_low_incidence_breakpoint",
+  "score_missing_human_weakness",
+] as const;
+
+export type UiControlId = (typeof uiControlIds)[number];
+
+type AnalyticsEvent =
+  | {
+      eventType: "atlas_route_viewed";
+      properties: { route_id: RouteId; methodology_version: string };
+    }
+  | {
+      eventType: "atlas_ui_interaction";
+      properties: {
+        route_id: RouteId;
+        control_id: UiControlId;
+        action: "activated";
+      };
+    }
+  | {
+      eventType: "atlas_filter_applied";
+      properties: {
+        route_id: "atlas_home";
+        filter_dimension: "state" | "evidence";
+        filter_value:
+          | "all"
+          | "ecological"
+          | "human"
+          | "complete"
+          | "state_selected";
+      };
+    }
+  | {
+      eventType: "atlas_geography_selected";
+      properties: {
+        route_id: "atlas_home";
+        geography_level: "county";
+        county_fips: string;
+        selection_surface: "map" | "results_table" | "ranked_list";
+      };
+    }
+  | {
+      eventType: "atlas_csv_export_requested";
+      properties: { route_id: "atlas_home"; export_scope: "ranking" };
+    }
+  | {
+      eventType: "atlas_summary_copied";
+      properties: { route_id: "atlas_home"; summary_kind: "county_briefing" };
+    };
+
+function routeIdForPathname(pathname: string): RouteId {
+  if (pathname === "/privacy") return "privacy";
+  if (pathname === "/knowledge-graph") return "knowledge_graph";
+  if (pathname.startsWith("/variant_")) return "atlas_variant";
+  return "atlas_home";
+}
+
+function clearAmplitudeBrowserStorage(storage: Storage): void {
+  for (let index = storage.length - 1; index >= 0; index -= 1) {
+    const key = storage.key(index);
+    if (key?.startsWith("AMP_") || key?.startsWith("amplitude")) {
+      storage.removeItem(key);
+    }
+  }
+}
+
+function browserConfig(): Record<string, unknown> {
+  return {
+    autocapture: false,
+    defaultTracking: false,
+    fetchRemoteConfig: false,
+    identityStorage: "sessionStorage",
+    offline: "disabled",
+    trackingOptions: {
+      ipAddress: false,
+      language: false,
+      platform: false,
+    },
+  };
+}
+
+export function createAtlasAnalytics(loadAmplitude: AmplitudeLoader) {
+  let amplitude: AmplitudeModule | undefined;
+
+  return {
+    async start(apiKey: string | undefined): Promise<boolean> {
+      if (!apiKey || amplitude) return Boolean(amplitude);
+
+      amplitude = await loadAmplitude();
+      amplitude.init(apiKey, browserConfig());
+      amplitude.setOptOut(false);
+      return true;
+    },
+    stop(): void {
+      if (amplitude) {
+        amplitude.setOptOut(true);
+        amplitude.reset();
+        amplitude = undefined;
+      }
+      clearAmplitudeBrowserStorage(window.sessionStorage);
+      clearAmplitudeBrowserStorage(window.localStorage);
+    },
+    track(event: AnalyticsEvent): void {
+      if (!amplitude) return;
+      amplitude.track(event.eventType, {
+        schema_version: ANALYTICS_SCHEMA_VERSION,
+        release_version: ANALYTICS_RELEASE_VERSION,
+        ...event.properties,
+      });
+    },
+  };
+}
+
+export const atlasAnalytics = createAtlasAnalytics(
+  async () => import("@amplitude/analytics-browser")
+);
+
+export function trackRouteView(
+  pathname: string,
+  methodologyVersion = "unavailable"
+) {
+  atlasAnalytics.track({
+    eventType: "atlas_route_viewed",
+    properties: {
+      route_id: routeIdForPathname(pathname),
+      methodology_version: methodologyVersion,
+    },
+  });
+}
+
+export function trackUiInteraction(
+  pathname: string,
+  controlId: UiControlId
+): void {
+  atlasAnalytics.track({
+    eventType: "atlas_ui_interaction",
+    properties: {
+      route_id: routeIdForPathname(pathname),
+      control_id: controlId,
+      action: "activated",
+    },
+  });
+}
+
+export function trackFilterApplied(
+  filterDimension: "state" | "evidence",
+  filterValue: "all" | "ecological" | "human" | "complete" | "state_selected"
+): void {
+  atlasAnalytics.track({
+    eventType: "atlas_filter_applied",
+    properties: {
+      route_id: "atlas_home",
+      filter_dimension: filterDimension,
+      filter_value: filterValue,
+    },
+  });
+}
+
+export function trackCsvExportRequested(): void {
+  atlasAnalytics.track({
+    eventType: "atlas_csv_export_requested",
+    properties: { route_id: "atlas_home", export_scope: "ranking" },
+  });
+}
+
+export function trackSummaryCopied(): void {
+  atlasAnalytics.track({
+    eventType: "atlas_summary_copied",
+    properties: { route_id: "atlas_home", summary_kind: "county_briefing" },
+  });
+}
+
+export function isUiControlId(value: string | undefined): value is UiControlId {
+  return Boolean(value && uiControlIds.includes(value as UiControlId));
+}
+
+export type { AnalyticsEvent };

@@ -26,6 +26,11 @@ import {
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
+  trackCsvExportRequested,
+  trackFilterApplied,
+  trackSummaryCopied,
+} from "@/lib/atlas-analytics";
+import {
   atlasSearchParams,
   synchronizeGovernedDataset,
   toScoreSettings,
@@ -58,9 +63,15 @@ function AtlasPage() {
     state: stateFilter,
   } = urlState;
   const settings = toScoreSettings(urlState);
-  const setStateFilter = (state: string) => setUrlState({ state });
+  const setStateFilter = (state: string) => {
+    setUrlState({ state });
+    trackFilterApplied("state", state === "ALL" ? "all" : "state_selected");
+  };
   const setQuery = (q: string) => setUrlState({ q });
-  const setEvidence = (evidence: EvidenceView) => setUrlState({ evidence });
+  const setEvidence = (evidence: EvidenceView) => {
+    setUrlState({ evidence });
+    trackFilterApplied("evidence", evidence);
+  };
   const setSelectedFips = (county: string) => setUrlState({ county });
   const setSettings = (next: ScoreSettings) =>
     setUrlState({
@@ -162,6 +173,7 @@ function AtlasPage() {
     try {
       await navigator.clipboard.writeText(narrative);
       setCopied(true);
+      trackSummaryCopied();
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
@@ -179,6 +191,7 @@ function AtlasPage() {
     link.href = `${API_BASE_URL}${url}`;
     link.download = "lyme-gap-atlas-ranking.csv";
     link.click();
+    trackCsvExportRequested();
   }
 
   if (metadataQuery.isPending) {

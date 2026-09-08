@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
+import { AnalyticsClient } from "@/components/analytics-client";
 import { ChatLauncher } from "@/components/chat-launcher";
 import { SiteNav } from "@/components/site-nav";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body>
+        <AnalyticsClient />
         <TooltipProvider>
           <Suspense fallback={null}>
             <SiteNav />
