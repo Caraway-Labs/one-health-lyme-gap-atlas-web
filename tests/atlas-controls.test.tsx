@@ -74,15 +74,39 @@ describe("Atlas shared controls", () => {
     expect(onQueryChange).toHaveBeenCalledWith("Adams");
     expect(onEvidenceChange).toHaveBeenCalledWith("human");
     expect(onDownload).toHaveBeenCalledOnce();
+  });
+
+  it("marks filter controls with stable analytics identifiers", () => {
+    const onStateChange = vi.fn<(value: string) => void>();
+    const onQueryChange = vi.fn<(value: string) => void>();
+    const onEvidenceChange = vi.fn<(value: string) => void>();
+    const onDownload = vi.fn<() => void>();
+    render(
+      <AtlasFilters
+        metadata={metadata}
+        stateFilter="ALL"
+        query=""
+        evidence="all"
+        datasetVersion="alpha-2026-08-06"
+        onStateChange={onStateChange}
+        onQueryChange={onQueryChange}
+        onEvidenceChange={onEvidenceChange}
+        onDownload={onDownload}
+        settings={{
+          ecological_share: 65,
+          low_incidence_breakpoint: 10,
+          missing_human_weakness: 75,
+        }}
+      />
+    );
+
     expect(
-      screen
-        .getByRole("combobox", { name: "State" })
-        .getAttribute("data-atlas-analytics-control")
+      screen.getByRole("combobox", { name: "State" }).dataset
+        .atlasAnalyticsControl
     ).toBe("filter_state");
     expect(
-      screen
-        .getByRole("button", { name: "Download county list" })
-        .getAttribute("data-atlas-analytics-control")
+      screen.getByRole("button", { name: "Download county list" }).dataset
+        .atlasAnalyticsControl
     ).toBe("csv_download");
   });
 
@@ -94,9 +118,8 @@ describe("Atlas shared controls", () => {
 
     expect(onSelect).toHaveBeenCalledWith("08001");
     expect(
-      screen
-        .getByRole("button", { name: "Adams, CO" })
-        .getAttribute("data-atlas-analytics-control")
+      screen.getByRole("button", { name: "Adams, CO" }).dataset
+        .atlasAnalyticsControl
     ).toBe("results_table_county_select");
   });
 });
