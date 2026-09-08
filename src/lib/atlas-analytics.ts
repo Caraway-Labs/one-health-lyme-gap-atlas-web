@@ -48,6 +48,10 @@ export const uiControlIds = [
   "nav_data_dictionary_close",
   "results_table_county_select",
   "methods_source_open",
+  "evidence_chat_open",
+  "evidence_chat_close",
+  "evidence_chat_new",
+  "evidence_chat_submit",
 ] as const;
 
 export type UiControlId = (typeof uiControlIds)[number];

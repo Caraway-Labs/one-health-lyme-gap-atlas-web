@@ -174,6 +174,7 @@ export function EvidenceChat({
           </div>
           <button
             className="button secondary"
+            data-atlas-analytics-control="evidence_chat_new"
             type="button"
             onClick={() => setActiveId("__new__")}
           >
@@ -241,6 +242,7 @@ export function EvidenceChat({
             <small>{message.length}/1,000</small>
             <button
               className="button primary"
+              data-atlas-analytics-control="evidence_chat_submit"
               disabled={!message.trim() || pending}
             >
               Ask
