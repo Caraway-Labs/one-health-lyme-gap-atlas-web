@@ -46,7 +46,7 @@ describe("Atlas Amplitude boundary", () => {
 
   it("uses a unique, typed control allowlist for JSX instrumentation", () => {
     expect(new Set(uiControlIds)).toHaveLength(uiControlIds.length);
-    expect(analyticsControlAttributes("hero_explore_counties")).toEqual({
+    expect(analyticsControlAttributes("hero_explore_counties")).toStrictEqual({
       "data-atlas-analytics-control": "hero_explore_counties",
     });
   });
