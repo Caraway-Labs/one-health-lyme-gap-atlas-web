@@ -222,14 +222,11 @@ test("renders the atlas and full non-map results", async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
+// CI runs this unchanged scenario for both projects. The pre-MVP mobile result is
+// reported separately as an accepted defect in #126; desktop remains blocking.
 test("publishes an accessible, clear privacy summary without analytics claims", async ({
   page,
-}, testInfo) => {
-  test.fail(
-    testInfo.project.name === "mobile",
-    "Accepted pre-MVP mobile defect: Next development overlay blocks Privacy navigation (#126). Remove this expectation when #126 is resolved."
-  );
-
+}) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Privacy" }).click();
 
