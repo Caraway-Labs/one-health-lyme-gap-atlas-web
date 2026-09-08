@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AtlasFilters } from "../src/components/atlas-filters";
+import { RankedCounties } from "../src/components/ranked-counties";
 import { ResultsTable } from "../src/components/results-table";
 
 const metadata = { states: [{ code: "CO", name: "Colorado" }] } as never;
@@ -123,5 +124,22 @@ describe("Atlas shared controls", () => {
       screen.getByRole("button", { name: "Adams, CO" }).dataset
         .atlasAnalyticsControl
     ).toBe("results_table_county_select");
+  });
+
+  it("identifies ranked county selections as the ranked-list surface", () => {
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    render(
+      <RankedCounties
+        counties={[county]}
+        selectedFips=""
+        showTable={false}
+        onSelect={onSelect}
+        onToggleTable={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Adams, CO/ }));
+
+    expect(onSelect).toHaveBeenCalledWith("08001", "ranked_list");
   });
 });

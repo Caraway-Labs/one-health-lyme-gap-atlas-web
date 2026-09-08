@@ -10,6 +10,7 @@ import {
   contiguousUsGeometry,
 } from "@/lib/atlas-geometry";
 import { countyBelongsToDistrict } from "@/lib/health-districts";
+import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 
 type FeatureCollection = GeoJSON.FeatureCollection<
   GeoJSON.Geometry,
@@ -29,7 +30,7 @@ export function AtlasMap({
   selectedFips: string;
   selectedState?: string;
   selectedDistrict?: string;
-  onSelect: (fips: string) => void;
+  onSelect: (fips: string, surface: GeographySelectionSurface) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -127,7 +128,7 @@ export function AtlasMap({
       instance.on("click", "counties-fill", (event) => {
         const fips = event.features?.[0]?.properties?.fips;
         if (typeof fips === "string") {
-          selectRef.current(fips);
+          selectRef.current(fips, "map");
         }
       });
       instance.on("mouseenter", "counties-fill", () => {

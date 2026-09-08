@@ -4,6 +4,7 @@ import {
   ANALYTICS_RELEASE_VERSION,
   ANALYTICS_SCHEMA_VERSION,
   createAtlasAnalytics,
+  isCountyFips,
 } from "../src/lib/atlas-analytics";
 
 describe("Atlas Amplitude boundary", () => {
@@ -93,5 +94,31 @@ describe("Atlas Amplitude boundary", () => {
     expect(localStorage.getItem("atlas.analytics-preference.v1")).toBe(
       "keep-this-choice"
     );
+  });
+
+  it("emits county selection using only validated FIPS and a closed surface", async () => {
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start("synthetic-development-key");
+
+    analytics.track({
+      eventType: "atlas_geography_selected",
+      properties: {
+        route_id: "atlas_home",
+        geography_level: "county",
+        county_fips: "08001",
+        selection_surface: "map",
+      },
+    });
+
+    expect(amplitude.track).toHaveBeenCalledWith("atlas_geography_selected", {
+      schema_version: ANALYTICS_SCHEMA_VERSION,
+      release_version: ANALYTICS_RELEASE_VERSION,
+      route_id: "atlas_home",
+      geography_level: "county",
+      county_fips: "08001",
+      selection_surface: "map",
+    });
+    expect(isCountyFips("08001")).toBe(true);
+    expect(isCountyFips("Adams County")).toBe(false);
   });
 });

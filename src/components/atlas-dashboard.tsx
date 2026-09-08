@@ -2,6 +2,7 @@ import { AtlasMap } from "@/components/atlas-map";
 import { CountyProfile } from "@/components/county-profile";
 import { RankedCounties } from "@/components/ranked-counties";
 import type { CountyScoreSummary } from "@/generated/models";
+import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 
 export function AtlasDashboard({
   geometry,
@@ -33,7 +34,7 @@ export function AtlasDashboard({
   highlightState?: string;
   selectedDistrict?: string;
   showTable: boolean;
-  onSelect: (fips: string) => void;
+  onSelect: (fips: string, surface: GeographySelectionSurface) => void;
   onToggleTable: () => void;
 }) {
   const mapState = highlightState ?? selectedState;
