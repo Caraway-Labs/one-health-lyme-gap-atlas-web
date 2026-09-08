@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { CountyScoreSummary } from "@/generated/models";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 export function ResultsTable({
   counties,
@@ -41,7 +42,9 @@ export function ResultsTable({
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>
                   <Button
-                    data-atlas-analytics-control="results_table_county_select"
+                    {...analyticsControlAttributes(
+                      "results_table_county_select"
+                    )}
                     variant="link"
                     size="sm"
                     onClick={() => onSelect(county.fips)}

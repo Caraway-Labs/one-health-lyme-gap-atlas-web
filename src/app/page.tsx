@@ -26,6 +26,7 @@ import {
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
+  analyticsControlAttributes,
   trackCsvExportRequested,
   trackFilterApplied,
   trackGeographySelected,
@@ -238,7 +239,7 @@ function AtlasPage() {
           <h1>The Atlas is temporarily unavailable</h1>
           <p>Unable to retrieve the current governed release.</p>
           <Button
-            data-atlas-analytics-control="page_retry"
+            {...analyticsControlAttributes("page_retry")}
             onClick={() => location.reload()}
           >
             Try again

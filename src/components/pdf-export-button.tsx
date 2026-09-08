@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 import { downloadPdfReport } from "@/lib/pdf-export";
 
@@ -36,7 +37,7 @@ export function PdfExportButton({
   return (
     <div>
       <Button
-        data-atlas-analytics-control="pdf_export"
+        {...analyticsControlAttributes("pdf_export")}
         disabled={isExporting}
         onClick={exportPdf}
         type="button"
