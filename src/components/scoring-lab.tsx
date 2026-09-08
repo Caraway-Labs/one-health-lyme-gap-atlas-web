@@ -1,5 +1,8 @@
 import { Input } from "@/components/ui/input";
-import type { ScoreControlId } from "@/lib/atlas-analytics";
+import {
+  analyticsControlAttributes,
+  type ScoreControlId,
+} from "@/lib/atlas-analytics";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 
 type ScoreChange = { controlId: ScoreControlId; value: number };
@@ -114,7 +117,7 @@ function ScoreControl({
         <strong>{value}</strong>
       </div>
       <Input
-        data-atlas-analytics-control={controlId}
+        {...analyticsControlAttributes(controlId)}
         aria-label={label}
         className="h-auto border-0 bg-transparent px-0 py-0"
         type="range"

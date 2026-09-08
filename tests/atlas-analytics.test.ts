@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ANALYTICS_RELEASE_VERSION,
   ANALYTICS_SCHEMA_VERSION,
+  analyticsControlAttributes,
   createAtlasAnalytics,
   isCountyFips,
   isValidScoreValue,
+  uiControlIds,
 } from "../src/lib/atlas-analytics";
 
 describe("Atlas Amplitude boundary", () => {
@@ -40,6 +42,13 @@ describe("Atlas Amplitude boundary", () => {
 
     expect(loadAmplitude).not.toHaveBeenCalled();
     expect(amplitude.track).not.toHaveBeenCalled();
+  });
+
+  it("uses a unique, typed control allowlist for JSX instrumentation", () => {
+    expect(new Set(uiControlIds)).toHaveLength(uiControlIds.length);
+    expect(analyticsControlAttributes("hero_explore_counties")).toEqual({
+      "data-atlas-analytics-control": "hero_explore_counties",
+    });
   });
 
   it("uses session-only identity and disables every automatic collection path", async () => {

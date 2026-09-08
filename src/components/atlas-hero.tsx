@@ -1,3 +1,5 @@
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
+
 export function AtlasHero() {
   return (
     <header className="hero">
@@ -15,14 +17,14 @@ export function AtlasHero() {
           <div className="hero-actions">
             <a
               className="button primary"
-              data-atlas-analytics-control="hero_explore_counties"
+              {...analyticsControlAttributes("hero_explore_counties")}
               href="#atlas"
             >
               Explore counties
             </a>
             <a
               className="button ghost"
-              data-atlas-analytics-control="hero_methodology"
+              {...analyticsControlAttributes("hero_methodology")}
               href="#methods"
             >
               Understand the limitations

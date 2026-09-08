@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
+
 import { EvidenceChat } from "./evidence-chat";
 
 export function ChatLauncher() {
@@ -61,7 +63,7 @@ function EnabledChatLauncher() {
     <>
       <button
         ref={launcher}
-        data-atlas-analytics-control="evidence_chat_open"
+        {...analyticsControlAttributes("evidence_chat_open")}
         className="chat-launcher"
         type="button"
         aria-haspopup="dialog"
@@ -90,7 +92,7 @@ function EnabledChatLauncher() {
           >
             <button
               className="chat-close"
-              data-atlas-analytics-control="evidence_chat_close"
+              {...analyticsControlAttributes("evidence_chat_close")}
               type="button"
               aria-label="Close evidence chat"
               onClick={() => {

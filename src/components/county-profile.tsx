@@ -1,6 +1,7 @@
 import { CountyActionPlan } from "@/components/county-action-plan";
 import { PdfExportButton } from "@/components/pdf-export-button";
 import type { CountyDetail } from "@/generated/models";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { plainPriority, reasonsFor, type ScoreSettings } from "@/lib/atlas-ui";
 
 export function CountyProfile({
@@ -66,14 +67,14 @@ export function CountyProfile({
           </ol>
           <div className="briefing-actions">
             <button
-              data-atlas-analytics-control="county_summary_copy"
+              {...analyticsControlAttributes("county_summary_copy")}
               className="button secondary"
               onClick={onCopy}
             >
               {copied ? "Summary copied" : "Copy county summary"}
             </button>
             <a
-              data-atlas-analytics-control="county_scoring_link"
+              {...analyticsControlAttributes("county_scoring_link")}
               href="#scoring"
             >
               Change scoring assumptions

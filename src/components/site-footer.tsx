@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PrivacyPreferences } from "@/components/privacy-preferences";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 export function SiteFooter() {
   return (
@@ -14,11 +15,14 @@ export function SiteFooter() {
         or public health laboratory.
       </p>
       <nav className="footer-links" aria-label="Footer navigation">
-        <Link data-atlas-analytics-control="footer_privacy" href="/privacy">
+        <Link {...analyticsControlAttributes("footer_privacy")} href="/privacy">
           Privacy
         </Link>
         <PrivacyPreferences />
-        <a data-atlas-analytics-control="footer_back_to_atlas" href="#atlas">
+        <a
+          {...analyticsControlAttributes("footer_back_to_atlas")}
+          href="#atlas"
+        >
           Back to Atlas ↑
         </a>
       </nav>

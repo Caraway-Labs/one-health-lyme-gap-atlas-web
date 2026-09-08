@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { AtlasMetadata } from "@/generated/models";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
 
 export function AtlasFilters({
@@ -47,7 +48,7 @@ export function AtlasFilters({
           }}
         >
           <SelectTrigger
-            data-atlas-analytics-control="filter_state"
+            {...analyticsControlAttributes("filter_state")}
             aria-label="State"
             className="h-11 w-full"
           >
@@ -89,7 +90,7 @@ export function AtlasFilters({
           }}
         >
           <SelectTrigger
-            data-atlas-analytics-control="filter_evidence"
+            {...analyticsControlAttributes("filter_evidence")}
             aria-label="Filter counties by available data"
             className="h-11 w-full"
           >
@@ -110,7 +111,7 @@ export function AtlasFilters({
       {onDownload && (
         <Button
           className="h-11"
-          data-atlas-analytics-control="csv_download"
+          {...analyticsControlAttributes("csv_download")}
           onClick={onDownload}
         >
           Download county list

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  analyticsControlAttributes,
   trackMethodologyOpened,
   trackProvenanceOpened,
 } from "@/lib/atlas-analytics";
@@ -45,7 +46,7 @@ export function SiteNav() {
   return (
     <nav className="topbar" aria-label="Main navigation">
       <Link
-        data-atlas-analytics-control="nav_home"
+        {...analyticsControlAttributes("nav_home")}
         className="brand"
         href="/#atlas"
         aria-label="One Health Lyme Gap Atlas home"
@@ -56,19 +57,19 @@ export function SiteNav() {
       <div className="nav-links">
         <div className="section-links">
           <Link
-            data-atlas-analytics-control="nav_atlas"
+            {...analyticsControlAttributes("nav_atlas")}
             href={sectionHref("atlas")}
           >
             Atlas
           </Link>
           <Link
-            data-atlas-analytics-control="nav_scoring"
+            {...analyticsControlAttributes("nav_scoring")}
             href={sectionHref("scoring")}
           >
             How counties are prioritized
           </Link>
           <Link
-            data-atlas-analytics-control="nav_methods"
+            {...analyticsControlAttributes("nav_methods")}
             href={sectionHref("methods")}
             onClick={() =>
               trackMethodologyOpened(pathname, "methods_navigation")
@@ -81,7 +82,7 @@ export function SiteNav() {
           <DropdownMenuTrigger
             render={
               <Button
-                data-atlas-analytics-control="nav_variants"
+                {...analyticsControlAttributes("nav_variants")}
                 variant="ghost"
                 className="nav-action"
                 onClick={() =>
@@ -98,7 +99,7 @@ export function SiteNav() {
                 key={href}
                 render={
                   <Link
-                    data-atlas-analytics-control="nav_variant_link"
+                    {...analyticsControlAttributes("nav_variant_link")}
                     href={href}
                   />
                 }
@@ -112,7 +113,7 @@ export function SiteNav() {
           <DialogTrigger
             render={
               <Button
-                data-atlas-analytics-control="nav_data_dictionary"
+                {...analyticsControlAttributes("nav_data_dictionary")}
                 variant="ghost"
                 className="nav-action"
               />
@@ -145,7 +146,7 @@ export function SiteNav() {
               <DialogClose
                 render={
                   <Button
-                    data-atlas-analytics-control="nav_data_dictionary_close"
+                    {...analyticsControlAttributes("nav_data_dictionary_close")}
                     variant="secondary"
                     aria-label="Close data dictionary"
                   />

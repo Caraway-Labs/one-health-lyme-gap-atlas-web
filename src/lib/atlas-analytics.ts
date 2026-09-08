@@ -36,7 +36,6 @@ export const uiControlIds = [
   "score_low_incidence_breakpoint",
   "score_missing_human_weakness",
   "ranked_county_select",
-  "results_table_toggle",
   "county_summary_copy",
   "county_scoring_link",
   "pdf_export",
@@ -55,6 +54,17 @@ export const uiControlIds = [
 ] as const;
 
 export type UiControlId = (typeof uiControlIds)[number];
+
+/**
+ * Creates the sole JSX attribute used by the consent-gated control listener.
+ * Keeping callers typed prevents an arbitrary label, DOM content, or URL from
+ * becoming an analytics property.
+ */
+export function analyticsControlAttributes(controlId: UiControlId): {
+  "data-atlas-analytics-control": UiControlId;
+} {
+  return { "data-atlas-analytics-control": controlId };
+}
 
 export const geographySelectionSurfaces = [
   "map",

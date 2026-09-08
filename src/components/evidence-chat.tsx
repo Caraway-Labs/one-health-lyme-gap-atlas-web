@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 import {
   CHAT_STORAGE_EVENT,
@@ -174,7 +175,7 @@ export function EvidenceChat({
           </div>
           <button
             className="button secondary"
-            data-atlas-analytics-control="evidence_chat_new"
+            {...analyticsControlAttributes("evidence_chat_new")}
             type="button"
             onClick={() => setActiveId("__new__")}
           >
@@ -242,7 +243,7 @@ export function EvidenceChat({
             <small>{message.length}/1,000</small>
             <button
               className="button primary"
-              data-atlas-analytics-control="evidence_chat_submit"
+              {...analyticsControlAttributes("evidence_chat_submit")}
               disabled={!message.trim() || pending}
             >
               Ask
