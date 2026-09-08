@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AtlasFilters } from "../src/components/atlas-filters";
 import { ResultsTable } from "../src/components/results-table";
@@ -14,6 +14,8 @@ const county = {
 } as never;
 
 describe("Atlas shared controls", () => {
+  afterEach(cleanup);
+
   it("updates state, query, evidence, and download through shared filter controls", () => {
     const onStateChange = vi.fn<(value: string) => void>();
     const onQueryChange = vi.fn<(value: string) => void>();
@@ -76,6 +78,40 @@ describe("Atlas shared controls", () => {
     expect(onDownload).toHaveBeenCalledOnce();
   });
 
+  it("marks filter controls with stable analytics identifiers", () => {
+    const onStateChange = vi.fn<(value: string) => void>();
+    const onQueryChange = vi.fn<(value: string) => void>();
+    const onEvidenceChange = vi.fn<(value: string) => void>();
+    const onDownload = vi.fn<() => void>();
+    render(
+      <AtlasFilters
+        metadata={metadata}
+        stateFilter="ALL"
+        query=""
+        evidence="all"
+        datasetVersion="alpha-2026-08-06"
+        onStateChange={onStateChange}
+        onQueryChange={onQueryChange}
+        onEvidenceChange={onEvidenceChange}
+        onDownload={onDownload}
+        settings={{
+          ecological_share: 65,
+          low_incidence_breakpoint: 10,
+          missing_human_weakness: 75,
+        }}
+      />
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: "State" }).dataset
+        .atlasAnalyticsControl
+    ).toBe("filter_state");
+    expect(
+      screen.getByRole("button", { name: "Download county list" }).dataset
+        .atlasAnalyticsControl
+    ).toBe("csv_download");
+  });
+
   it("selects a county from the accessible results table", () => {
     const onSelect = vi.fn<(fips: string) => void>();
     render(<ResultsTable counties={[county]} onSelect={onSelect} />);
@@ -83,5 +119,9 @@ describe("Atlas shared controls", () => {
     fireEvent.click(screen.getByRole("button", { name: "Adams, CO" }));
 
     expect(onSelect).toHaveBeenCalledWith("08001");
+    expect(
+      screen.getByRole("button", { name: "Adams, CO" }).dataset
+        .atlasAnalyticsControl
+    ).toBe("results_table_county_select");
   });
 });

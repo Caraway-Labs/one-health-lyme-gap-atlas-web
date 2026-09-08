@@ -65,10 +65,19 @@ export function CountyProfile({
             ))}
           </ol>
           <div className="briefing-actions">
-            <button className="button secondary" onClick={onCopy}>
+            <button
+              data-atlas-analytics-control="county_summary_copy"
+              className="button secondary"
+              onClick={onCopy}
+            >
               {copied ? "Summary copied" : "Copy county summary"}
             </button>
-            <a href="#scoring">Change scoring assumptions</a>
+            <a
+              data-atlas-analytics-control="county_scoring_link"
+              href="#scoring"
+            >
+              Change scoring assumptions
+            </a>
             <PdfExportButton
               datasetVersion={datasetVersion}
               geography={{ identifier: detail.fips, level: "county" }}

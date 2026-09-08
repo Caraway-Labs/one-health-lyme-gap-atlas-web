@@ -41,6 +41,7 @@ export function ResultsTable({
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>
                   <Button
+                    data-atlas-analytics-control="results_table_county_select"
                     variant="link"
                     size="sm"
                     onClick={() => onSelect(county.fips)}
