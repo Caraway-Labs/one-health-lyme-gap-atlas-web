@@ -1,12 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useReducer } from "react";
+import { useEffect, useState } from "react";
 
 import {
   analyticsMayStart,
   honorsDoNotTrack,
   readAnalyticsPreference,
+  type AnalyticsConsentState,
 } from "@/lib/analytics-consent";
 import {
   atlasAnalytics,
@@ -19,20 +20,19 @@ const PREFERENCE_CHANGED_EVENT = "atlas:analytics-preference-changed";
 
 export function AnalyticsClient() {
   const pathname = usePathname();
-  const [preferenceRevision, refreshPreference] = useReducer(
-    (value) => value + 1,
-    0
-  );
+  const [consent, setConsent] = useState<AnalyticsConsentState>("not-decided");
 
   useEffect(() => {
+    const refreshPreference = () =>
+      setConsent(readAnalyticsPreference(window.localStorage));
     const onPreferenceChanged = () => refreshPreference();
+    refreshPreference();
     window.addEventListener(PREFERENCE_CHANGED_EVENT, onPreferenceChanged);
     return () =>
       window.removeEventListener(PREFERENCE_CHANGED_EVENT, onPreferenceChanged);
   }, []);
 
   useEffect(() => {
-    const consent = readAnalyticsPreference(window.localStorage);
     const mayStart = analyticsMayStart({
       consent,
       doNotTrack: honorsDoNotTrack(window.navigator),
@@ -44,16 +44,19 @@ export function AnalyticsClient() {
     }
 
     let cancelled = false;
-    void atlasAnalytics
-      .start(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY)
-      .then((started) => {
-        if (started && !cancelled) trackRouteView(pathname);
-      });
+    async function startAnalytics() {
+      const started = await atlasAnalytics.start(
+        process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY
+      );
+      if (started && !cancelled) trackRouteView(pathname);
+    }
+
+    void startAnalytics();
 
     return () => {
       cancelled = true;
     };
-  }, [pathname, preferenceRevision]);
+  }, [consent, pathname]);
 
   useEffect(() => {
     const onInteraction = (event: MouseEvent) => {

@@ -8,10 +8,15 @@ import {
 
 describe("Atlas Amplitude boundary", () => {
   const amplitude = {
-    init: vi.fn(),
-    reset: vi.fn(),
-    setOptOut: vi.fn(),
-    track: vi.fn(),
+    init: vi.fn<
+      (apiKey: string, options: Record<string, unknown>) => unknown
+    >(),
+    reset: vi.fn<() => unknown>(),
+    setOptOut: vi.fn<(optOut: boolean) => unknown>(),
+    track:
+      vi.fn<
+        (eventType: string, properties: Record<string, unknown>) => unknown
+      >(),
   };
 
   beforeEach(() => {
@@ -21,7 +26,9 @@ describe("Atlas Amplitude boundary", () => {
   });
 
   it("does not load or emit anything until an explicit start", () => {
-    const loadAmplitude = vi.fn(async () => amplitude);
+    const loadAmplitude = vi.fn<() => Promise<typeof amplitude>>(
+      async () => amplitude
+    );
     const analytics = createAtlasAnalytics(loadAmplitude);
 
     analytics.track({
