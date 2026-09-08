@@ -28,6 +28,8 @@ This contract owns primary movement between Atlas workflows. It is implemented b
 
 The shell keeps only in-session presentation state. It does not add browser storage, telemetry, authorization assumptions, or backend dependencies. Query parameters remain owned by the destination route and are preserved by ordinary browser navigation.
 
+On Geographic Explorer and Wide Workspace, focus mode temporarily compacts the desktop navigation without changing the route or its query state. Focus mode takes precedence over the user's expanded/collapsed preference while it is active; exiting restores that preference. It is intentionally unavailable on mobile, where the primary navigation remains an off-canvas drawer and workspace width is already constrained by the viewport.
+
 ## Open decisions
 
 - Future Surveillance and Outputs destinations need product-approved routes before they are added to primary navigation.

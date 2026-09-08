@@ -445,6 +445,27 @@ test("keeps mobile drawer focus contained and restores it after Escape", async (
   await expect(trigger).toBeFocused();
 });
 
+test("focus mode compacts the shared shell without changing the analytical route", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name.includes("mobile"));
+
+  await page.goto("/variant_6?county=08001");
+  await page.getByRole("button", { name: "Focus workspace" }).click();
+
+  await expect(page.locator(".app-shell")).toHaveClass(/app-shell-focus/);
+  await expect(page.locator(".app-sidebar")).toHaveCSS("width", "68px");
+  await expect(page).toHaveURL(/variant_6\?county=08001/);
+  await expect(
+    page.getByRole("link", { name: "Wide workspace" })
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Exit focus", exact: true }).click();
+
+  await expect(page.locator(".app-shell")).not.toHaveClass(/app-shell-focus/);
+  await expect(page).toHaveURL(/variant_6\?county=08001/);
+});
+
 test("keeps the wide workspace score calculation above the county panels and collapsed until requested", async ({
   page,
 }) => {
