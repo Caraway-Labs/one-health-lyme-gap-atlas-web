@@ -18,13 +18,13 @@ describe("Atlas navigation contract", () => {
     const overview = NAVIGATION_ITEMS.find((item) => item.href === "/")!;
     const countyReview = NAVIGATION_ITEMS.find((item) => item.href === "/variant_1")!;
 
-    expect(isNavigationItemActive(overview, "/")).toBe(true);
-    expect(isNavigationItemActive(overview, "/variant_1")).toBe(false);
-    expect(isNavigationItemActive(countyReview, "/variant_1")).toBe(true);
+    expect(isNavigationItemActive(overview, "/")).toBeTruthy();
+    expect(isNavigationItemActive(overview, "/variant_1")).toBeFalsy();
+    expect(isNavigationItemActive(countyReview, "/variant_1")).toBeTruthy();
   });
 
   it("hides feature-gated research navigation until enabled", () => {
-    expect(navigationItemsForGroup("research", false)).toEqual([]);
-    expect(navigationItemsForGroup("research", true).map((item) => item.href)).toEqual(["/knowledge-graph"]);
+    expect(navigationItemsForGroup("research", false)).toStrictEqual([]);
+    expect(navigationItemsForGroup("research", true).map((item) => item.href)).toStrictEqual(["/knowledge-graph"]);
   });
 });

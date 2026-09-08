@@ -22,10 +22,10 @@ export type NavigationItem = {
   requiresFeature?: "knowledgeGraph";
 };
 
-export const NAVIGATION_GROUPS: ReadonlyArray<{
+export const NAVIGATION_GROUPS: readonly {
   id: NavigationGroupId;
   label: string;
-}> = [
+}[] = [
   { id: "explore", label: "Explore" },
   { id: "intelligence", label: "Intelligence" },
   { id: "research", label: "Research" },
@@ -38,7 +38,7 @@ export const NAVIGATION_GROUPS: ReadonlyArray<{
  * filters, tabs, score controls, and in-page anchors remain contextual
  * navigation and must not be duplicated here.
  */
-export const NAVIGATION_ITEMS: ReadonlyArray<NavigationItem> = [
+export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   {
     description: "Start a county surveillance review.",
     group: "explore",
