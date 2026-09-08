@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AtlasFilters } from "../src/components/atlas-filters";
 import { ResultsTable } from "../src/components/results-table";
@@ -14,6 +14,8 @@ const county = {
 } as never;
 
 describe("Atlas shared controls", () => {
+  afterEach(cleanup);
+
   it("updates state, query, evidence, and download through shared filter controls", () => {
     const onStateChange = vi.fn<(value: string) => void>();
     const onQueryChange = vi.fn<(value: string) => void>();
