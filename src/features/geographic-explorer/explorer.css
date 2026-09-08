@@ -1,11 +1,11 @@
 .geo-explorer {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 110px 32px 48px;
+  padding: clamp(2.75rem, 5vw, 4rem) clamp(1rem, 2.5vw, 2rem) 3rem;
   color: var(--foreground);
 }
 .geo-header {
-  padding: 24px 0 30px;
+  padding: 0 0 1.5rem;
   max-width: 850px;
 }
 .geo-header h1 {
@@ -310,7 +310,7 @@
 }
 @media (max-width: 650px) {
   .geo-explorer {
-    padding: 90px 16px 32px;
+    padding: 2.5rem 1rem 2rem;
   }
   .geo-main-panel {
     padding: 16px;

@@ -51,6 +51,10 @@
   --shell-sidebar-compact-width: 4.25rem;
   --shell-utility-height: 3.5rem;
   --shell-navigation-target: 2.5rem;
+  --layout-inline: clamp(1.25rem, 3vw, 3rem);
+  --layout-hero-block: clamp(4rem, 7vw, 5.75rem);
+  --layout-section-block: clamp(3rem, 5vw, 4rem);
+  --layout-experiment-top: clamp(2.75rem, 4vw, 3.75rem);
 }
 
 @theme inline {
@@ -412,10 +416,10 @@ a {
   z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
-  gap: 5rem;
+  gap: clamp(2rem, 4vw, 3.5rem);
   max-width: 1440px;
   margin: auto;
-  padding: 9rem 3rem 7rem;
+  padding: var(--layout-hero-block) var(--layout-inline);
   align-items: end;
 }
 .eyebrow,
@@ -519,8 +523,8 @@ a {
 }
 .stat-strip div {
   display: flex;
-  min-height: 7rem;
-  padding: 1.25rem 1.5rem;
+  min-height: 5.75rem;
+  padding: 1rem 1.25rem;
   flex-direction: column;
   justify-content: center;
   border-top: 1px solid var(--line);
@@ -551,7 +555,7 @@ a {
 .section {
   max-width: 1440px;
   margin: auto;
-  padding: 5rem 3rem;
+  padding: var(--layout-section-block) var(--layout-inline);
 }
 .section-heading {
   display: flex;
@@ -2065,8 +2069,8 @@ footer > a {
   .hero-content {
     grid-template-columns: 1fr;
     gap: 2rem;
-    padding-top: 4.5rem;
-    padding-bottom: 5rem;
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
   }
   .hero h1 {
     font-size: 3.2rem;
@@ -2293,7 +2297,7 @@ select:focus-visible {
 .experiment {
   max-width: 1440px;
   margin: auto;
-  padding: 7.4rem 3rem 3rem;
+  padding: var(--layout-experiment-top) var(--layout-inline) 2.5rem;
 }
 .experiment-wide-workbench {
   max-width: none;
@@ -2812,7 +2816,7 @@ select:focus-visible {
 }
 @media (max-width: 760px) {
   .experiment {
-    padding: 5.8rem 1.2rem 2rem;
+    padding: 3rem 1.2rem 2rem;
   }
   .experiment-header {
     flex-direction: column;
