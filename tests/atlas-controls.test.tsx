@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AtlasFilters } from "../src/components/atlas-filters";
 import { RankedCounties } from "../src/components/ranked-counties";
 import { ResultsTable } from "../src/components/results-table";
+import { ScoringLab } from "../src/components/scoring-lab";
 
 const metadata = { states: [{ code: "CO", name: "Colorado" }] } as never;
 const county = {
@@ -141,5 +142,44 @@ describe("Atlas shared controls", () => {
     fireEvent.click(screen.getByRole("button", { name: /Adams, CO/ }));
 
     expect(onSelect).toHaveBeenCalledWith("08001", "ranked_list");
+  });
+
+  it("identifies score changes with a stable control identifier", () => {
+    const onChange = vi.fn<
+      (
+        settings: {
+          ecological_share: number;
+          low_incidence_breakpoint: number;
+          missing_human_weakness: number;
+        },
+        change: { controlId: string; value: number }
+      ) => void
+    >();
+    render(
+      <ScoringLab
+        settings={{
+          ecological_share: 65,
+          low_incidence_breakpoint: 10,
+          missing_human_weakness: 75,
+        }}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.change(
+      screen.getByRole("slider", {
+        name: "Weight given to tick and pathogen evidence",
+      }),
+      { target: { value: "70" } }
+    );
+
+    expect(onChange).toHaveBeenCalledWith(
+      {
+        ecological_share: 70,
+        low_incidence_breakpoint: 10,
+        missing_human_weakness: 75,
+      },
+      { controlId: "score_ecological_share", value: 70 }
+    );
   });
 });

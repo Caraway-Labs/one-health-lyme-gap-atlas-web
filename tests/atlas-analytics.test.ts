@@ -5,6 +5,7 @@ import {
   ANALYTICS_SCHEMA_VERSION,
   createAtlasAnalytics,
   isCountyFips,
+  isValidScoreValue,
 } from "../src/lib/atlas-analytics";
 
 describe("Atlas Amplitude boundary", () => {
@@ -120,5 +121,30 @@ describe("Atlas Amplitude boundary", () => {
     });
     expect(isCountyFips("08001")).toBeTruthy();
     expect(isCountyFips("Adams County")).toBeFalsy();
+  });
+
+  it("emits only controlled score changes", async () => {
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start("synthetic-development-key");
+    analytics.track({
+      eventType: "atlas_score_change_committed",
+      properties: {
+        route_id: "atlas_home",
+        score_control: "score_ecological_share",
+        score_value: 70,
+        change_source: "range_control",
+      },
+    });
+
+    expect(amplitude.track).toHaveBeenCalledWith(
+      "atlas_score_change_committed",
+      expect.objectContaining({
+        score_control: "score_ecological_share",
+        score_value: 70,
+        change_source: "range_control",
+      })
+    );
+    expect(isValidScoreValue("score_ecological_share", 70)).toBeTruthy();
+    expect(isValidScoreValue("score_ecological_share", 71)).toBeFalsy();
   });
 });
