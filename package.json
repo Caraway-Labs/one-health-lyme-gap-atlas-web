@@ -15,6 +15,7 @@
     "format": "ultracite fix"
   },
   "dependencies": {
+    "@amplitude/analytics-browser": "2.45.8",
     "@assistant-ui/react": "^0.15.17",
     "@base-ui/react": "^1.7.0",
     "@caraway-labs/one-health-lyme-gap-atlas-knowledge-graph": "git+https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-knowledge-graph.git#kg-v1.0.0",

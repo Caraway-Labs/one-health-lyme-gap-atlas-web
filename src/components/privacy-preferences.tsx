@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { notifyAnalyticsPreferenceChanged } from "@/components/analytics-client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +26,7 @@ export function PrivacyPreferences() {
 
   const saveChoice = (decision: "granted" | "denied") => {
     setConsent(writeAnalyticsPreference(localStorage, decision));
+    notifyAnalyticsPreferenceChanged();
   };
 
   const refreshPreference = (isOpen: boolean) => {
@@ -60,7 +62,7 @@ export function PrivacyPreferences() {
           <DialogDescription>
             Public Atlas exploration works the same whether you allow or decline
             optional product analytics. Atlas does not use product analytics
-            yet.
+            only after you explicitly allow them.
           </DialogDescription>
         </DialogHeader>
         <p>{choiceSummary}</p>

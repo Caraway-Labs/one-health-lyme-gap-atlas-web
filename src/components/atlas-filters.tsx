@@ -46,7 +46,11 @@ export function AtlasFilters({
             }
           }}
         >
-          <SelectTrigger aria-label="State" className="h-11 w-full">
+          <SelectTrigger
+            data-atlas-analytics-control="filter_state"
+            aria-label="State"
+            className="h-11 w-full"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -85,6 +89,7 @@ export function AtlasFilters({
           }}
         >
           <SelectTrigger
+            data-atlas-analytics-control="filter_evidence"
             aria-label="Filter counties by available data"
             className="h-11 w-full"
           >
@@ -103,7 +108,11 @@ export function AtlasFilters({
         </Select>
       </label>
       {onDownload && (
-        <Button className="h-11" onClick={onDownload}>
+        <Button
+          className="h-11"
+          data-atlas-analytics-control="csv_download"
+          onClick={onDownload}
+        >
           Download county list
         </Button>
       )}

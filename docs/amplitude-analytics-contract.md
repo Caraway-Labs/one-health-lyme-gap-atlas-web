@@ -8,7 +8,7 @@ Last reviewed: 2026-09-07
 
 ## Product purpose and boundary
 
-Atlas needs to learn whether people can discover, explore, interpret, and use its public capabilities. This contract permits measurement of **material product actions** that answer those questions. It does not permit surveillance of people or recording every browser interaction.
+Atlas needs to learn whether people can discover, explore, interpret, and use its public capabilities. This contract permits measurement of **every intentional, user-facing Atlas product control** through a named semantic event. It does not permit surveillance of people or recording raw browser interaction data.
 
 Atlas does not sell, rent, target advertising with, or build commercial behavioral profiles from product-analytics data. Analytics is never used to make a public-health, eligibility, diagnosis, treatment, or enforcement decision about a person.
 
@@ -52,6 +52,7 @@ Event names use lower-case `snake_case`. One call represents one completed user-
 | Event | Trigger semantics | Product question | Allowed event properties |
 | --- | --- | --- | --- |
 | `atlas_route_viewed` | A consented visitor completes navigation to a supported Atlas route | Which public surfaces are used? | Common context only |
+| `atlas_ui_interaction` | A consented visitor activates a catalogued user-facing control | Which controls and features are adopted? | `control_id`, `action` |
 | `atlas_filter_panel_opened` | Visitor opens the filter controls | Are filters discoverable? | Common context only |
 | `atlas_filter_applied` | Validated controlled filter state changes results | Which filters and combinations are useful? | `filter_dimension`, `filter_value`, `active_filter_count` |
 | `atlas_filter_cleared` | Visitor clears one or all controlled filters | Do filters impede exploration? | `clear_scope`, `active_filter_count` |
@@ -88,7 +89,7 @@ Every event includes the following common context. A property omitted from this 
 | `entry_surface` | product context | Closed enum such as `map`, `results_table`, `summary`, or `footer` |
 | `outcome` | operational | Closed enum `success`, `cancelled`, `validation_rejected`, or `service_unavailable` |
 
-`filter_dimension`, `filter_value`, `score_control`, `score_value`, `feedback_topic`, `account_flow`, `content_surface`, `selection_surface`, `summary_kind`, `export_scope`, `clear_scope`, `change_source`, and `page_bucket` are each closed, versioned enums defined in the generated schema. A value that is not in that schema causes the event to be dropped. `active_filter_count` is an integer from 0 through 10; `page_bucket` is `1`, `2-5`, `6-10`, or `11+`.
+`control_id`, `action`, `filter_dimension`, `filter_value`, `score_control`, `score_value`, `feedback_topic`, `account_flow`, `content_surface`, `selection_surface`, `summary_kind`, `export_scope`, `clear_scope`, `change_source`, and `page_bucket` are each closed, versioned enums defined in the generated schema. A value that is not in that schema causes the event to be dropped. `atlas_ui_interaction` is the complete control catalogue: every meaningful button, link, menu, selector, map/list action, and committed scenario adjustment must have a stable `control_id` before it ships. It never records labels, raw DOM selectors, hover, scroll, pointer movement, keystrokes, or text input. `active_filter_count` is an integer from 0 through 10; `page_bucket` is `1`, `2-5`, `6-10`, or `11+`.
 
 The following are prohibited in event names, properties, user properties, groups, IDs, URLs, logs, and Amplitude Data: free text; raw search terms; feedback or chat content; email, name, phone, address, account ID, authentication/session token, IP address, cookie value, device ID, user agent, referrer, marketing parameter, exact timestamp supplied by the app, health information, diagnosis, treatment, accessibility preference, or arbitrary error message.
 
