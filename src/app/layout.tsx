@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { AnalyticsClient } from "@/components/analytics-client";
-import { ChatLauncher } from "@/components/chat-launcher";
 import { AppShell } from "@/components/app-shell";
+import { ChatLauncher } from "@/components/chat-launcher";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { Providers } from "./providers";
