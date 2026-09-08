@@ -203,8 +203,13 @@ body {
 }
 .app-header-actions {
   display: flex;
+  gap: 0.25rem;
   margin-left: auto;
   align-items: center;
+}
+.app-header .app-focus-toggle {
+  display: inline-flex;
+  min-height: 2.25rem;
 }
 .app-mobile-nav-close {
   display: none;
@@ -242,6 +247,9 @@ body {
   }
   .app-header [data-slot="button"] {
     display: inline-flex;
+  }
+  .app-header .app-focus-toggle {
+    display: none;
   }
   .app-sidebar-scrim {
     position: fixed;

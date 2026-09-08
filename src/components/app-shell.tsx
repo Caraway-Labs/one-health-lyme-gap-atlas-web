@@ -1,6 +1,13 @@
 "use client";
 
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import {
+  Maximize2,
+  Menu,
+  Minimize2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -15,13 +22,22 @@ import {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const pathname = usePathname();
   const enabled = process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true";
+  const supportsFocusMode =
+    pathname === "/geographic_explorer" || pathname === "/variant_6";
+  const focusModeActive = focusMode && supportsFocusMode;
+  const compactNavigation = collapsed || focusModeActive;
 
   const closeMobileNavigation = useCallback(() => setMobileOpen(false), []);
+  const selectDestination = () => {
+    closeMobileNavigation();
+    setFocusMode(false);
+  };
   const openMobileNavigation = () => {
     previousFocusRef.current =
       document.activeElement instanceof HTMLElement
@@ -76,7 +92,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [closeMobileNavigation, mobileOpen]);
 
   return (
-    <div className={`app-shell ${collapsed ? "app-shell-collapsed" : ""}`}>
+    <div
+      className={`app-shell ${compactNavigation ? "app-shell-collapsed" : ""} ${focusModeActive ? "app-shell-focus" : ""}`}
+    >
       <aside
         id="atlas-primary-navigation"
         ref={sidebarRef}
@@ -86,7 +104,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-modal={mobileOpen || undefined}
       >
         <div className="app-brand">
-          <Link href="/" aria-label="One Health Lyme Gap Atlas home">
+          <Link
+            href="/"
+            aria-label="One Health Lyme Gap Atlas home"
+            onClick={selectDestination}
+          >
             <span>+</span>
             <b>One Health Lyme Gap Atlas</b>
           </Link>
@@ -94,10 +116,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon-sm"
             className="app-sidebar-toggle"
-            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-label={
+              focusModeActive
+                ? "Exit focus mode to expand navigation"
+                : collapsed
+                  ? "Expand navigation"
+                  : "Collapse navigation"
+            }
+            disabled={focusModeActive}
             onClick={() => setCollapsed(!collapsed)}
           >
-            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+            {compactNavigation ? <PanelLeftOpen /> : <PanelLeftClose />}
           </Button>
           <Button
             className="app-mobile-nav-close"
@@ -123,9 +152,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       key={item.href}
                       href={item.href}
                       aria-current={active ? "page" : undefined}
-                      aria-label={collapsed ? item.label : undefined}
-                      title={collapsed ? item.label : undefined}
-                      onClick={closeMobileNavigation}
+                      aria-label={compactNavigation ? item.label : undefined}
+                      title={compactNavigation ? item.label : undefined}
+                      onClick={selectDestination}
                     >
                       <Icon aria-hidden="true" />
                       <span>{item.label}</span>
@@ -162,6 +191,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Button>
           <span>Atlas</span>
           <div className="app-header-actions">
+            {supportsFocusMode && (
+              <Button
+                className="app-focus-toggle"
+                variant="ghost"
+                size="sm"
+                aria-pressed={focusModeActive}
+                onClick={() => setFocusMode(!focusModeActive)}
+              >
+                {focusModeActive ? (
+                  <Minimize2 aria-hidden="true" />
+                ) : (
+                  <Maximize2 aria-hidden="true" />
+                )}
+                {focusModeActive ? "Exit focus" : "Focus workspace"}
+              </Button>
+            )}
             <DataDictionaryDialog />
           </div>
         </header>

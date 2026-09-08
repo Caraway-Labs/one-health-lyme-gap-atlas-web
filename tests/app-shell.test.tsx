@@ -1,9 +1,11 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+let pathname = "/variant_3";
+
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/variant_3",
+  usePathname: () => pathname,
 }));
 
 import { AppShell } from "@/components/app-shell";
@@ -12,6 +14,7 @@ describe("Atlas application shell", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllEnvs();
+    pathname = "/variant_3";
   });
 
   it("renders the metadata-driven primary navigation around route content", () => {
@@ -82,5 +85,28 @@ describe("Atlas application shell", () => {
 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it("temporarily compacts supported analytical routes in focus mode", () => {
+    pathname = "/variant_6";
+    const { container } = render(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Focus workspace" }));
+
+    expect(
+      screen
+        .getByRole("button", { name: "Exit focus" })
+        .getAttribute("aria-pressed")
+    ).toBe("true");
+    expect(container.querySelector(".app-shell-focus")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Wide workspace" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Exit focus" }));
+
+    expect(container.querySelector(".app-shell-focus")).toBeNull();
   });
 });
