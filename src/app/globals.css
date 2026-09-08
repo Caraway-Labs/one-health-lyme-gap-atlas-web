@@ -92,6 +92,160 @@ body {
     "Segoe UI",
     sans-serif;
 }
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--background);
+}
+.app-sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: 16rem;
+  height: 100vh;
+  flex: none;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  background: var(--card);
+  transition: width 0.2s;
+}
+.app-shell-collapsed .app-sidebar {
+  width: 4.25rem;
+}
+.app-brand {
+  display: flex;
+  min-height: 3.5rem;
+  padding: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.app-brand a {
+  display: flex;
+  min-width: 0;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--navy);
+  font-size: 0.78rem;
+}
+.app-brand a span {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--navy);
+  color: white;
+}
+.app-sidebar nav {
+  padding: 0.75rem 0.5rem;
+}
+.app-sidebar section + section {
+  margin-top: 1rem;
+}
+.app-sidebar h2 {
+  margin: 0.25rem 0.5rem 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.app-sidebar nav a {
+  display: flex;
+  min-height: 2.5rem;
+  gap: 0.65rem;
+  padding: 0.5rem;
+  align-items: center;
+  border-radius: var(--radius);
+  color: var(--foreground);
+  font-size: 0.8rem;
+}
+.app-sidebar nav a:hover,
+.app-sidebar nav a[aria-current="page"] {
+  background: var(--mint);
+  color: var(--teal-dark);
+  font-weight: 750;
+}
+.app-shell-collapsed .app-sidebar b,
+.app-shell-collapsed .app-sidebar h2,
+.app-shell-collapsed .app-sidebar nav span {
+  display: none;
+}
+.app-inset {
+  min-width: 0;
+  flex: 1;
+}
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  min-height: 3.5rem;
+  gap: 0.75rem;
+  padding: 0 0.9rem;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+.app-header [data-slot="button"] {
+  display: none;
+}
+.app-header-actions {
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+}
+.app-mobile-nav-close {
+  display: none;
+}
+.app-content {
+  min-width: 0;
+}
+.app-sidebar-scrim {
+  display: none;
+}
+@media (max-width: 800px) {
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    transform: translateX(-100%);
+    width: min(18rem, 86vw);
+    transition: transform 0.2s;
+  }
+  .app-sidebar-open {
+    transform: translateX(0);
+  }
+  .app-shell-collapsed .app-sidebar {
+    width: min(18rem, 86vw);
+  }
+  .app-shell-collapsed .app-sidebar b,
+  .app-shell-collapsed .app-sidebar h2,
+  .app-shell-collapsed .app-sidebar nav span {
+    display: block;
+  }
+  .app-sidebar-toggle {
+    display: none;
+  }
+  .app-mobile-nav-close {
+    display: inline-flex;
+  }
+  .app-header [data-slot="button"] {
+    display: inline-flex;
+  }
+  .app-sidebar-scrim {
+    position: fixed;
+    z-index: 15;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: rgba(8, 42, 77, 0.35);
+  }
+}
 button,
 input,
 select {

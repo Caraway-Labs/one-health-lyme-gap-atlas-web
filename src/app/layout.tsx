@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { AnalyticsClient } from "@/components/analytics-client";
+import { AppShell } from "@/components/app-shell";
 import { ChatLauncher } from "@/components/chat-launcher";
-import { SiteNav } from "@/components/site-nav";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { Providers } from "./providers";
@@ -26,11 +25,8 @@ export default function RootLayout({
       <body>
         <AnalyticsClient />
         <TooltipProvider>
-          <Suspense fallback={null}>
-            <SiteNav />
-          </Suspense>
           <Providers>
-            {children}
+            <AppShell>{children}</AppShell>
             <ChatLauncher />
           </Providers>
         </TooltipProvider>

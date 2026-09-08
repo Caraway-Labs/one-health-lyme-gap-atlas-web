@@ -1,6 +1,6 @@
 # Geographic explorer view contract
 
-Route: `/variant_7`. Entry: **Variants → Geographic explorer**. Epic: [web #51](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/51).
+Route: `/geographic_explorer`. Entry: **Explore → Geographic Explorer**. The legacy `/variant_7` route permanently redirects while preserving URL query state. Epic: [web #51](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/51).
 
 ## User outcome
 

@@ -196,14 +196,22 @@ test("runs the feature-gated assistant demo without a live model", async ({
   expect(results.violations).toEqual([]);
 });
 
-test("renders the atlas and full non-map results", async ({ page }) => {
+test("renders the atlas and full non-map results", async ({
+  page,
+}, testInfo) => {
   await page.goto("/");
-  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  const navigation = page.getByRole("navigation", {
+    name: "Primary navigation",
+  });
   await expect(navigation).toBeVisible();
-  await expect(navigation).toHaveCSS("position", "fixed");
+  const sidebar = navigation.locator("..");
+  await expect(sidebar).toHaveCSS(
+    "position",
+    testInfo.project.name.includes("mobile") ? "fixed" : "sticky"
+  );
   await expect(
     page.getByRole("link", { name: "One Health Lyme Gap Atlas home" })
-  ).toHaveCSS("color", "rgb(255, 255, 255)");
+  ).toHaveCSS("color", "rgb(8, 42, 77)");
   await expect(
     page.getByRole("heading", {
       name: "Find counties that may deserve a closer look.",
@@ -385,33 +393,29 @@ test("renders every interview variant with selected county evidence in the first
   }
 });
 
-test("offers page-aware navigation and a shared data dictionary", async ({
+test("offers route-aware sidebar navigation and a shared data dictionary", async ({
   page,
 }, testInfo) => {
   await page.goto("/variant_6?county=08001");
-  const sectionLinks = page
-    .getByRole("navigation", { name: "Main navigation" })
-    .locator(".section-links");
-  if (!testInfo.project.name.includes("mobile")) {
-    const atlasLink = sectionLinks.getByRole("link", {
-      exact: true,
-      name: "Atlas",
-    });
-    const scoringLink = sectionLinks.getByRole("link", {
-      exact: true,
-      name: "How counties are prioritized",
-    });
-    await expect(atlasLink).toBeVisible();
-    await expect(scoringLink).toBeVisible();
-    expect(await atlasLink.getAttribute("href")).toContain("/variant_6?");
-    expect(await atlasLink.getAttribute("href")).toContain("county=08001");
-    expect(await atlasLink.getAttribute("href")).toMatch(/#atlas$/);
-    expect(await scoringLink.getAttribute("href")).toMatch(/#scoring$/);
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
   }
-  await page.getByText("Variants", { exact: true }).click();
+  const navigation = page.getByRole("navigation", {
+    name: "Primary navigation",
+  });
+  await expect(navigation).toBeVisible();
   await expect(
-    page.getByRole("menuitem", { name: "Wide evidence workspace" })
-  ).toHaveAttribute("href", "/variant_6");
+    navigation.getByRole("link", { name: "Wide workspace" })
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    navigation.getByRole("link", { name: "Geographic Explorer" })
+  ).toHaveAttribute("href", "/geographic_explorer");
+  if (testInfo.project.name.includes("mobile")) {
+    await page
+      .getByRole("complementary", { name: "Primary navigation" })
+      .getByRole("button", { name: "Close navigation" })
+      .click();
+  }
   await page.getByRole("button", { name: "Data dictionary" }).click();
   const dialog = page.getByRole("dialog", { name: "Data dictionary" });
   await expect(dialog).toContainText("County Review Priority");

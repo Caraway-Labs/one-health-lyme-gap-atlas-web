@@ -22,7 +22,7 @@ Only `NEXT_PUBLIC_API_BASE_URL` is public configuration. Never add Snowflake con
 
 ## Geographic explorer
 
-Open **Variants → Geographic explorer** (`/variant_7`) to use geographic tiles, small multiples, the county evidence matrix, ranked dots, synchronized maps, map-linked scatterplots, and up to five county comparison profiles. Filters, selection, score assumptions, and the requested release are shareable in the URL. The release-trends view explains the current historical-data prerequisite. See [the geographic explorer contract](contracts/geographic-explorer.md) for interpretation, accessibility, and acceptance details.
+Open **Explore → Geographic Explorer** (`/geographic_explorer`) to use geographic tiles, small multiples, the county evidence matrix, ranked dots, synchronized maps, map-linked scatterplots, and up to five county comparison profiles. Filters, selection, score assumptions, and the requested release are shareable in the URL. The release-trends view explains the current historical-data prerequisite. See [the geographic explorer contract](contracts/geographic-explorer.md) for interpretation, accessibility, and acceptance details.
 
 ## Feature-gated assistant demo
 

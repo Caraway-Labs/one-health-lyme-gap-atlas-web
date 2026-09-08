@@ -6,7 +6,7 @@ import "@/features/geographic-explorer/explorer.css";
 
 export const metadata = {
   title: "Geographic explorer | One Health Lyme Gap Atlas",
-  alternates: { canonical: "/variant_7" },
+  alternates: { canonical: "/geographic_explorer" },
 };
 
 export default function GeographicExplorerPage() {
