@@ -1,8 +1,5 @@
 "use client";
 
-// Keep the globally shared footer fresh across production deployments.
-export const revalidate = 0;
-
 import { useQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { Suspense, useEffect, useMemo, useState } from "react";
