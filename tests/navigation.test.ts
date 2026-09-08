@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import {
   NAVIGATION_ITEMS,
   isNavigationItemActive,
@@ -16,7 +17,9 @@ describe("Atlas navigation contract", () => {
 
   it("matches exact workflow routes without a prefix collision", () => {
     const overview = NAVIGATION_ITEMS.find((item) => item.href === "/")!;
-    const countyReview = NAVIGATION_ITEMS.find((item) => item.href === "/variant_1")!;
+    const countyReview = NAVIGATION_ITEMS.find(
+      (item) => item.href === "/variant_1"
+    )!;
 
     expect(isNavigationItemActive(overview, "/")).toBeTruthy();
     expect(isNavigationItemActive(overview, "/variant_1")).toBeFalsy();
@@ -25,6 +28,8 @@ describe("Atlas navigation contract", () => {
 
   it("hides feature-gated research navigation until enabled", () => {
     expect(navigationItemsForGroup("research", false)).toStrictEqual([]);
-    expect(navigationItemsForGroup("research", true).map((item) => item.href)).toStrictEqual(["/knowledge-graph"]);
+    expect(
+      navigationItemsForGroup("research", true).map((item) => item.href)
+    ).toStrictEqual(["/knowledge-graph"]);
   });
 });

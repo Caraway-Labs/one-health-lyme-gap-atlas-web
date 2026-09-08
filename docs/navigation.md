@@ -2,10 +2,7 @@
 
 ## Scope
 
-This contract owns primary movement between Atlas workflows. It is implemented
-by `src/lib/navigation.ts` and is consumed by both desktop and mobile shell
-presentations. It does not own page-local filters, tabs, score controls, map
-controls, or in-page anchors.
+This contract owns primary movement between Atlas workflows. It is implemented by `src/lib/navigation.ts` and is consumed by both desktop and mobile shell presentations. It does not own page-local filters, tabs, score controls, map controls, or in-page anchors.
 
 ## Initial information architecture
 
@@ -23,22 +20,15 @@ controls, or in-page anchors.
 
 ## Active-route rules
 
-- The listed analytical routes use exact matching, so a variant never appears
-  active merely because another route shares a text prefix.
-- The Evidence Library uses prefix matching so child workspace routes can keep
-  the parent item current.
+- The listed analytical routes use exact matching, so a variant never appears active merely because another route shares a text prefix.
+- The Evidence Library uses prefix matching so child workspace routes can keep the parent item current.
 - A current item is exposed with `aria-current="page"` by shell renderers.
 
 ## State and privacy
 
-The shell keeps only in-session presentation state. It does not add browser
-storage, telemetry, authorization assumptions, or backend dependencies. Query
-parameters remain owned by the destination route and are preserved by ordinary
-browser navigation.
+The shell keeps only in-session presentation state. It does not add browser storage, telemetry, authorization assumptions, or backend dependencies. Query parameters remain owned by the destination route and are preserved by ordinary browser navigation.
 
 ## Open decisions
 
-- Future Surveillance and Outputs destinations need product-approved routes
-  before they are added to primary navigation.
-- Future authenticated capabilities must use an explicit capability field in
-  this metadata contract rather than inferring access from labels or routes.
+- Future Surveillance and Outputs destinations need product-approved routes before they are added to primary navigation.
+- Future authenticated capabilities must use an explicit capability field in this metadata contract rather than inferring access from labels or routes.

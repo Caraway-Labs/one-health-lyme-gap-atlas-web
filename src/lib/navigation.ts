@@ -114,12 +114,21 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   },
 ];
 
-export function isNavigationItemActive(item: NavigationItem, pathname: string): boolean {
+export function isNavigationItemActive(
+  item: NavigationItem,
+  pathname: string
+): boolean {
   return item.match === "exact"
     ? pathname === item.href
     : pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export function navigationItemsForGroup(group: NavigationGroupId, knowledgeGraphEnabled: boolean): NavigationItem[] {
-  return NAVIGATION_ITEMS.filter((item) => item.group === group && (!item.requiresFeature || knowledgeGraphEnabled));
+export function navigationItemsForGroup(
+  group: NavigationGroupId,
+  knowledgeGraphEnabled: boolean
+): NavigationItem[] {
+  return NAVIGATION_ITEMS.filter(
+    (item) =>
+      item.group === group && (!item.requiresFeature || knowledgeGraphEnabled)
+  );
 }
