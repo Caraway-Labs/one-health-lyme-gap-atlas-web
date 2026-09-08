@@ -35,7 +35,12 @@ export function PdfExportButton({
 
   return (
     <div>
-      <Button disabled={isExporting} onClick={exportPdf} type="button">
+      <Button
+        data-atlas-analytics-control="pdf_export"
+        disabled={isExporting}
+        onClick={exportPdf}
+        type="button"
+      >
         {isExporting ? "Generating PDF…" : "Export PDF"}
       </Button>
       {error && (

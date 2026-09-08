@@ -47,6 +47,7 @@ export function ScoringLab({
             step={5}
             current={settings.ecological_share}
             note="Balances tick and pathogen evidence with possible diagnosis and reporting barriers."
+            controlId="score_ecological_share"
             onChange={(value) =>
               onChange({ ...settings, ecological_share: value })
             }
@@ -58,6 +59,7 @@ export function ScoringLab({
             max={25}
             current={settings.low_incidence_breakpoint}
             note="At this published rate, low case data do not increase the ranking."
+            controlId="score_low_incidence_breakpoint"
             onChange={(value) =>
               onChange({ ...settings, low_incidence_breakpoint: value })
             }
@@ -70,6 +72,7 @@ export function ScoringLab({
             step={5}
             current={settings.missing_human_weakness}
             note="Choose how strongly the ranking responds when no county-level count was published. Missing data are not treated as zero cases."
+            controlId="score_missing_human_weakness"
             onChange={(value) =>
               onChange({ ...settings, missing_human_weakness: value })
             }
@@ -89,6 +92,7 @@ function ScoreControl({
   current,
   note,
   onChange,
+  controlId,
 }: {
   label: string;
   value: string;
@@ -98,6 +102,10 @@ function ScoreControl({
   current: number;
   note: string;
   onChange: (value: number) => void;
+  controlId:
+    | "score_ecological_share"
+    | "score_low_incidence_breakpoint"
+    | "score_missing_human_weakness";
 }) {
   return (
     <label className="range-control">
@@ -106,6 +114,7 @@ function ScoreControl({
         <strong>{value}</strong>
       </div>
       <Input
+        data-atlas-analytics-control={controlId}
         aria-label={label}
         className="h-auto border-0 bg-transparent px-0 py-0"
         type="range"

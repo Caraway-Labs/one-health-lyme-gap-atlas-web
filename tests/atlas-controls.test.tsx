@@ -74,6 +74,13 @@ describe("Atlas shared controls", () => {
     expect(onQueryChange).toHaveBeenCalledWith("Adams");
     expect(onEvidenceChange).toHaveBeenCalledWith("human");
     expect(onDownload).toHaveBeenCalledOnce();
+    expect(screen.getByRole("combobox", { name: "State" })).toHaveAttribute(
+      "data-atlas-analytics-control",
+      "filter_state"
+    );
+    expect(
+      screen.getByRole("button", { name: "Download county list" })
+    ).toHaveAttribute("data-atlas-analytics-control", "csv_download");
   });
 
   it("selects a county from the accessible results table", () => {
@@ -83,5 +90,9 @@ describe("Atlas shared controls", () => {
     fireEvent.click(screen.getByRole("button", { name: "Adams, CO" }));
 
     expect(onSelect).toHaveBeenCalledWith("08001");
+    expect(screen.getByRole("button", { name: "Adams, CO" })).toHaveAttribute(
+      "data-atlas-analytics-control",
+      "results_table_county_select"
+    );
   });
 });

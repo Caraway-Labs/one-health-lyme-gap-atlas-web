@@ -220,7 +220,12 @@ function AtlasPage() {
         <div>
           <h1>The Atlas is temporarily unavailable</h1>
           <p>Unable to retrieve the current governed release.</p>
-          <Button onClick={() => location.reload()}>Try again</Button>
+          <Button
+            data-atlas-analytics-control="page_retry"
+            onClick={() => location.reload()}
+          >
+            Try again
+          </Button>
         </div>
       </main>
     );

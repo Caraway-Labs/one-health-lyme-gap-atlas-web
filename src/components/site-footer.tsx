@@ -14,9 +14,13 @@ export function SiteFooter() {
         or public health laboratory.
       </p>
       <nav className="footer-links" aria-label="Footer navigation">
-        <Link href="/privacy">Privacy</Link>
+        <Link data-atlas-analytics-control="footer_privacy" href="/privacy">
+          Privacy
+        </Link>
         <PrivacyPreferences />
-        <a href="#atlas">Back to Atlas ↑</a>
+        <a data-atlas-analytics-control="footer_back_to_atlas" href="#atlas">
+          Back to Atlas ↑
+        </a>
       </nav>
     </footer>
   );

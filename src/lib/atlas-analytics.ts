@@ -35,6 +35,18 @@ export const uiControlIds = [
   "score_ecological_share",
   "score_low_incidence_breakpoint",
   "score_missing_human_weakness",
+  "ranked_county_select",
+  "results_table_toggle",
+  "county_summary_copy",
+  "county_scoring_link",
+  "pdf_export",
+  "footer_privacy",
+  "footer_back_to_atlas",
+  "page_retry",
+  "nav_home",
+  "nav_variant_link",
+  "nav_data_dictionary_close",
+  "results_table_county_select",
 ] as const;
 
 export type UiControlId = (typeof uiControlIds)[number];
