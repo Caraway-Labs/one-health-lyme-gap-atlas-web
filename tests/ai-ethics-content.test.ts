@@ -13,7 +13,9 @@ describe("AI Ethics content baseline", () => {
   it("keeps current behavior, approved architecture, and pending decisions distinct", () => {
     expect(
       new Set(aiEthicsContent.statements.map((statement) => statement.status))
-    ).toEqual(new Set(["current", "approved-architecture", "pending-decision"]));
+    ).toStrictEqual(
+      new Set(["current", "approved-architecture", "pending-decision"])
+    );
 
     expect(aiEthicsContent.openCommitments).toHaveLength(6);
   });
