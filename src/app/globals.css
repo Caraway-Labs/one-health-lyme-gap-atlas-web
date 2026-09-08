@@ -1258,6 +1258,171 @@ footer > a {
 .privacy-content {
   max-width: 1120px;
 }
+.ethics-page {
+  min-height: 100vh;
+  background: var(--background);
+}
+.ethics-hero {
+  padding: 10rem max(3rem, calc((100vw - 1120px) / 2)) 5rem;
+  background: linear-gradient(135deg, var(--navy), var(--teal-dark));
+  color: white;
+}
+.ethics-hero > * {
+  max-width: 48rem;
+}
+.ethics-hero h1 {
+  margin: 0.4rem 0 1rem;
+  font-family: Georgia, serif;
+  font-size: clamp(2.8rem, 6vw, 5.1rem);
+  letter-spacing: -0.045em;
+}
+.ethics-hero p:not(.eyebrow) {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+.ethics-hero .ethics-audience-note {
+  max-width: 43rem;
+  font-size: 0.9rem;
+}
+.ethics-content {
+  max-width: 1120px;
+}
+.ethics-statements {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.ethics-statement {
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--card);
+}
+.ethics-statement h3,
+.ethics-related h3 {
+  margin: 0.65rem 0;
+  color: var(--navy);
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+}
+.ethics-statement > p:not(.ethics-status),
+.ethics-statement details p,
+.ethics-related p,
+.ethics-version p {
+  color: var(--muted-foreground);
+  line-height: 1.65;
+}
+.ethics-status {
+  display: inline-block;
+  margin: 0;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--pale);
+  color: var(--teal-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ethics-status-approved-architecture {
+  background: var(--mint);
+  color: var(--teal-dark);
+}
+.ethics-status-pending-decision {
+  background: var(--pale);
+  color: var(--navy);
+}
+.ethics-statement details {
+  margin-top: 1.15rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.9rem;
+}
+.ethics-statement summary {
+  color: var(--teal-dark);
+  cursor: pointer;
+  font-weight: 800;
+}
+.ethics-evidence {
+  font-size: 0.84rem;
+}
+.ethics-section {
+  margin-top: 3rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--line);
+}
+.ethics-section h2 {
+  margin: 0;
+  color: var(--navy);
+  font-family: Georgia, serif;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  letter-spacing: -0.035em;
+}
+.ethics-section > ul {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.25rem 0 0;
+  padding-left: 1.25rem;
+}
+.ethics-section > ul li {
+  padding-left: 0.4rem;
+  color: var(--foreground);
+  line-height: 1.6;
+}
+.ethics-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.7fr);
+  gap: 2rem;
+  align-items: end;
+}
+.ethics-section-heading > p {
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+}
+.ethics-questions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin: 1.5rem 0 0;
+}
+.ethics-questions div,
+.ethics-related article {
+  padding: 1.2rem;
+  border-radius: 0.75rem;
+  background: var(--pale);
+}
+.ethics-questions dt {
+  color: var(--navy);
+  font-weight: 800;
+}
+.ethics-questions dd {
+  margin: 0.55rem 0 0;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.ethics-related > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.ethics-related h3 {
+  margin-top: 0;
+}
+.ethics-related p {
+  margin-bottom: 0;
+}
+.ethics-version {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.ethics-version p {
+  margin: 0.35rem 0;
+  font-size: 0.85rem;
+}
 .privacy-principles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2663,9 +2828,25 @@ select:focus-visible {
   .privacy-hero {
     padding: 7rem 1.2rem 3.5rem;
   }
+  .ethics-hero {
+    padding: 7rem 1.2rem 3.5rem;
+  }
   .privacy-content {
     padding-right: 1.2rem;
     padding-left: 1.2rem;
+  }
+  .ethics-content {
+    padding-right: 1.2rem;
+    padding-left: 1.2rem;
+  }
+  .ethics-statements,
+  .ethics-questions,
+  .ethics-related > div,
+  .ethics-section-heading {
+    grid-template-columns: 1fr;
+  }
+  .ethics-section-heading {
+    gap: 1rem;
   }
   .privacy-principles {
     grid-template-columns: 1fr;
