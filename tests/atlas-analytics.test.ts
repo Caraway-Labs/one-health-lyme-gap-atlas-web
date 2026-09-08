@@ -49,7 +49,7 @@ describe("Atlas Amplitude boundary", () => {
     expect(analyticsControlAttributes("hero_explore_counties")).toStrictEqual({
       "data-atlas-analytics-control": "hero_explore_counties",
     });
-    expect(uiControlIds).toEqual(
+    expect(uiControlIds).toStrictEqual(
       expect.arrayContaining([
         "geo_view_maps",
         "geo_state_tile_select",
