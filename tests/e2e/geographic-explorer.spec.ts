@@ -136,13 +136,14 @@ test("Primary navigation links to Geographic Explorer; grids link to accessible 
   );
   if (testInfo.project.name.includes("mobile")) {
     await page
-      .getByRole("complementary", { name: "Primary navigation" })
+      .getByRole("dialog", { name: "Primary navigation" })
       .getByRole("button", { name: "Close navigation" })
       .click();
   }
   await expect(
     page.getByRole("heading", { name: "Geographic explorer", exact: true })
   ).toBeVisible();
+  await expect(page.getByText("Variant 7", { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/dataset=alpha-explorer/);
   await page.screenshot({
     path: testInfo.outputPath("geographic-tiles.png"),

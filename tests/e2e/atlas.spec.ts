@@ -412,7 +412,7 @@ test("offers route-aware sidebar navigation and a shared data dictionary", async
   ).toHaveAttribute("href", "/geographic_explorer");
   if (testInfo.project.name.includes("mobile")) {
     await page
-      .getByRole("complementary", { name: "Primary navigation" })
+      .getByRole("dialog", { name: "Primary navigation" })
       .getByRole("button", { name: "Close navigation" })
       .click();
   }
@@ -420,6 +420,29 @@ test("offers route-aware sidebar navigation and a shared data dictionary", async
   const dialog = page.getByRole("dialog", { name: "Data dictionary" });
   await expect(dialog).toContainText("County Review Priority");
   await dialog.getByRole("button", { name: "Close data dictionary" }).click();
+});
+
+test("keeps mobile drawer focus contained and restores it after Escape", async ({
+  page,
+}, testInfo) => {
+  test.skip(!testInfo.project.name.includes("mobile"));
+
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: "Open navigation" });
+  await trigger.focus();
+  await trigger.click();
+
+  const drawer = page.getByRole("dialog");
+  await expect(drawer).toBeVisible();
+  await expect(
+    drawer.getByRole("button", { name: "Close navigation" })
+  ).toBeFocused();
+  await expect(page.locator(".app-inset")).toHaveAttribute("inert", "");
+
+  await page.keyboard.press("Escape");
+
+  await expect(drawer).toHaveCount(0);
+  await expect(trigger).toBeFocused();
 });
 
 test("keeps the wide workspace score calculation above the county panels and collapsed until requested", async ({

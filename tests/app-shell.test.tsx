@@ -58,4 +58,29 @@ describe("Atlas application shell", () => {
       screen.getByRole("link", { name: "Evidence workspace" })
     ).toBeTruthy();
   });
+
+  it("treats the mobile navigation as a keyboard-operable modal drawer", () => {
+    render(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    const trigger = screen.getByRole("button", { name: "Open navigation" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(document.activeElement?.getAttribute("aria-label")).toBe(
+      "Close navigation"
+    );
+    expect(
+      document.querySelector(".app-inset")?.hasAttribute("inert")
+    ).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
 });
