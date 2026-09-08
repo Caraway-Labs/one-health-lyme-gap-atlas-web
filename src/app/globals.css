@@ -200,6 +200,9 @@ body {
   margin-left: auto;
   align-items: center;
 }
+.app-mobile-nav-close {
+  display: none;
+}
 .app-content {
   min-width: 0;
 }
@@ -224,6 +227,12 @@ body {
   .app-shell-collapsed .app-sidebar h2,
   .app-shell-collapsed .app-sidebar nav span {
     display: block;
+  }
+  .app-sidebar-toggle {
+    display: none;
+  }
+  .app-mobile-nav-close {
+    display: inline-flex;
   }
   .app-header [data-slot="button"] {
     display: inline-flex;

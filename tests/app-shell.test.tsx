@@ -31,7 +31,9 @@ describe("Atlas application shell", () => {
         .getByRole("link", { name: "Geographic Explorer" })
         .getAttribute("href")
     ).toBe("/geographic_explorer");
-    expect(screen.getByRole("main").textContent).toContain("Route content");
+    expect(document.querySelector(".app-content")?.textContent).toContain(
+      "Route content"
+    );
     expect(
       screen.getByRole("button", { name: "Data dictionary" })
     ).toBeTruthy();

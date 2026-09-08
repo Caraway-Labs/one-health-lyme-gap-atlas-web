@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        destination: "/geographic_explorer",
+        permanent: true,
+        source: "/variant_7",
+      },
+      {
         destination: "https://carawaylabs.com/:path*",
         has: [{ type: "host", value: "www.carawaylabs.com" }],
         permanent: true,

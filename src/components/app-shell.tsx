@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -21,6 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className={`app-shell ${collapsed ? "app-shell-collapsed" : ""}`}>
       <aside
+        id="atlas-primary-navigation"
         className={`app-sidebar ${mobileOpen ? "app-sidebar-open" : ""}`}
         aria-label="Primary navigation"
       >
@@ -32,13 +33,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Button
             variant="ghost"
             size="icon-sm"
+            className="app-sidebar-toggle"
             aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
             onClick={() => setCollapsed(!collapsed)}
           >
             {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
           </Button>
+          <Button
+            className="app-mobile-nav-close"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Close navigation"
+            onClick={() => setMobileOpen(false)}
+          >
+            <X />
+          </Button>
         </div>
-        <nav>
+        <nav aria-label="Primary navigation">
           {NAVIGATION_GROUPS.map((group) => {
             const items = navigationItemsForGroup(group.id, enabled);
             return items.length ? (
@@ -69,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {mobileOpen && (
         <button
           className="app-sidebar-scrim"
-          aria-label="Close navigation"
+          aria-label="Dismiss navigation"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -79,6 +90,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon"
             aria-label="Open navigation"
+            aria-controls="atlas-primary-navigation"
+            aria-expanded={mobileOpen}
             onClick={() => setMobileOpen(true)}
           >
             <Menu />
@@ -88,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DataDictionaryDialog />
           </div>
         </header>
-        <main className="app-content">{children}</main>
+        <div className="app-content">{children}</div>
       </div>
     </div>
   );

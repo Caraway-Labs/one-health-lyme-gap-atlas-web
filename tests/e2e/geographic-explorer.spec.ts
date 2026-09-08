@@ -110,14 +110,36 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
 
-test("Variants navigation opens geographic explorer; grids link to accessible county results", async ({
+test("legacy Geographic Explorer URLs permanently redirect to the named route", async ({
+  page,
+}) => {
+  await page.goto("/variant_7?view=ranking&county=08001");
+
+  await expect(page).toHaveURL(
+    /\/geographic_explorer\?view=ranking&county=08001/
+  );
+});
+
+test("Primary navigation links to Geographic Explorer; grids link to accessible county results", async ({
   page,
 }, testInfo) => {
-  await page.goto("/variant_7");
-  await page.getByRole("button", { name: "Variants", exact: true }).click();
-  await page
-    .getByRole("menuitem", { name: "Geographic explorer", exact: true })
-    .click();
+  await page.goto("/geographic_explorer");
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
+  const geographicExplorerLink = page
+    .getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Geographic Explorer" });
+  await expect(geographicExplorerLink).toHaveAttribute(
+    "href",
+    "/geographic_explorer"
+  );
+  if (testInfo.project.name.includes("mobile")) {
+    await page
+      .getByRole("complementary", { name: "Primary navigation" })
+      .getByRole("button", { name: "Close navigation" })
+      .click();
+  }
   await expect(
     page.getByRole("heading", { name: "Geographic explorer", exact: true })
   ).toBeVisible();
@@ -158,7 +180,7 @@ test("Variants navigation opens geographic explorer; grids link to accessible co
 test("ranking and comparison persist exact county values across reload and filtering", async ({
   page,
 }) => {
-  await page.goto("/variant_7?view=ranking&county=08001");
+  await page.goto("/geographic_explorer?view=ranking&county=08001");
   await expect(
     page.getByRole("heading", { name: "Ranked dot plot" })
   ).toBeVisible();
@@ -200,7 +222,7 @@ test("ranking and comparison persist exact county values across reload and filte
 test("maps render and scatter keyboard selection links to county profile", async ({
   page,
 }) => {
-  await page.goto("/variant_7?view=maps&county=08001");
+  await page.goto("/geographic_explorer?view=maps&county=08001");
   await expect(
     page.getByText("Maps ready. Pan and zoom are synchronized.")
   ).toBeVisible();
@@ -224,7 +246,7 @@ test("maps render and scatter keyboard selection links to county profile", async
 test("release mismatch is explicit and unavailable history never becomes a fabricated trend", async ({
   page,
 }) => {
-  await page.goto("/variant_7?dataset=old-release");
+  await page.goto("/geographic_explorer?dataset=old-release");
   await expect(
     page.getByRole("heading", {
       name: "Geographic explorer is temporarily unavailable",
@@ -255,7 +277,7 @@ test("geometry errors retain the matching table and provide recovery", async ({
   await page.route("**/v1/atlas/geometry?*", (route) =>
     route.fulfill({ status: 503, json: { detail: "Geometry unavailable" } })
   );
-  await page.goto("/variant_7?view=maps");
+  await page.goto("/geographic_explorer?view=maps");
   await expect(
     page.getByRole("button", { name: "Retry geometry" })
   ).toBeVisible();
@@ -278,7 +300,7 @@ test("inconsistent score provenance fails closed before rendering charts", async
       },
     })
   );
-  await page.goto("/variant_7");
+  await page.goto("/geographic_explorer");
   await expect(
     page.getByRole("heading", {
       name: "Geographic explorer is temporarily unavailable",
