@@ -29,9 +29,13 @@ import {
   trackCsvExportRequested,
   trackFilterApplied,
   trackGeographySelected,
+  trackScoreChangeCommitted,
   trackSummaryCopied,
 } from "@/lib/atlas-analytics";
-import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
+import type {
+  GeographySelectionSurface,
+  ScoreControlId,
+} from "@/lib/atlas-analytics";
 import {
   atlasSearchParams,
   synchronizeGovernedDataset,
@@ -81,12 +85,17 @@ function AtlasPage() {
     setUrlState({ county });
     trackGeographySelected(county, selectionSurface);
   };
-  const setSettings = (next: ScoreSettings) =>
+  const setSettings = (
+    next: ScoreSettings,
+    scoreChange: { controlId: ScoreControlId; value: number }
+  ) => {
     setUrlState({
       breakpoint: next.low_incidence_breakpoint,
       eco: next.ecological_share,
       missing: next.missing_human_weakness,
     });
+    trackScoreChangeCommitted(scoreChange.controlId, scoreChange.value);
+  };
   const [copied, setCopied] = useState(false);
   const [showTable, setShowTable] = useState(false);
   const debouncedSettings = useDebounced(settings);

@@ -1,12 +1,15 @@
 import { Input } from "@/components/ui/input";
+import type { ScoreControlId } from "@/lib/atlas-analytics";
 import type { ScoreSettings } from "@/lib/atlas-ui";
+
+type ScoreChange = { controlId: ScoreControlId; value: number };
 
 export function ScoringLab({
   settings,
   onChange,
 }: {
   settings: ScoreSettings;
-  onChange: (settings: ScoreSettings) => void;
+  onChange: (settings: ScoreSettings, change: ScoreChange) => void;
 }) {
   return (
     <section className="scoring-section section" id="scoring">
@@ -48,8 +51,8 @@ export function ScoringLab({
             current={settings.ecological_share}
             note="Balances tick and pathogen evidence with possible diagnosis and reporting barriers."
             controlId="score_ecological_share"
-            onChange={(value) =>
-              onChange({ ...settings, ecological_share: value })
+            onChange={(value, change) =>
+              onChange({ ...settings, ecological_share: value }, change)
             }
           />
           <ScoreControl
@@ -60,8 +63,8 @@ export function ScoringLab({
             current={settings.low_incidence_breakpoint}
             note="At this published rate, low case data do not increase the ranking."
             controlId="score_low_incidence_breakpoint"
-            onChange={(value) =>
-              onChange({ ...settings, low_incidence_breakpoint: value })
+            onChange={(value, change) =>
+              onChange({ ...settings, low_incidence_breakpoint: value }, change)
             }
           />
           <ScoreControl
@@ -73,8 +76,8 @@ export function ScoringLab({
             current={settings.missing_human_weakness}
             note="Choose how strongly the ranking responds when no county-level count was published. Missing data are not treated as zero cases."
             controlId="score_missing_human_weakness"
-            onChange={(value) =>
-              onChange({ ...settings, missing_human_weakness: value })
+            onChange={(value, change) =>
+              onChange({ ...settings, missing_human_weakness: value }, change)
             }
           />
         </div>
@@ -101,11 +104,8 @@ function ScoreControl({
   step?: number;
   current: number;
   note: string;
-  onChange: (value: number) => void;
-  controlId:
-    | "score_ecological_share"
-    | "score_low_incidence_breakpoint"
-    | "score_missing_human_weakness";
+  onChange: (value: number, change: ScoreChange) => void;
+  controlId: ScoreControlId;
 }) {
   return (
     <label className="range-control">
@@ -122,7 +122,10 @@ function ScoreControl({
         max={max}
         step={step}
         value={current}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onChange={(event) => {
+          const nextValue = Number(event.target.value);
+          onChange(nextValue, { controlId, value: nextValue });
+        }}
       />
       <small>{note}</small>
     </label>

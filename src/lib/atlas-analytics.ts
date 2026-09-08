@@ -60,6 +60,14 @@ export const geographySelectionSurfaces = [
 export type GeographySelectionSurface =
   (typeof geographySelectionSurfaces)[number];
 
+export const scoreControlIds = [
+  "score_ecological_share",
+  "score_low_incidence_breakpoint",
+  "score_missing_human_weakness",
+] as const;
+
+export type ScoreControlId = (typeof scoreControlIds)[number];
+
 type AnalyticsEvent =
   | {
       eventType: "atlas_route_viewed";
@@ -93,6 +101,15 @@ type AnalyticsEvent =
         geography_level: "county";
         county_fips: string;
         selection_surface: GeographySelectionSurface;
+      };
+    }
+  | {
+      eventType: "atlas_score_change_committed";
+      properties: {
+        route_id: "atlas_home";
+        score_control: ScoreControlId;
+        score_value: number;
+        change_source: "range_control";
       };
     }
   | {
@@ -231,6 +248,42 @@ export function trackGeographySelected(
       geography_level: "county",
       county_fips: countyFips,
       selection_surface: selectionSurface,
+    },
+  });
+}
+
+export function isValidScoreValue(
+  scoreControl: ScoreControlId,
+  scoreValue: number
+): boolean {
+  if (!Number.isInteger(scoreValue)) {
+    return false;
+  }
+
+  if (scoreControl === "score_ecological_share") {
+    return scoreValue >= 40 && scoreValue <= 85 && scoreValue % 5 === 0;
+  }
+  if (scoreControl === "score_low_incidence_breakpoint") {
+    return scoreValue >= 5 && scoreValue <= 25;
+  }
+  return scoreValue >= 40 && scoreValue <= 90 && scoreValue % 5 === 0;
+}
+
+export function trackScoreChangeCommitted(
+  scoreControl: ScoreControlId,
+  scoreValue: number
+): void {
+  if (!isValidScoreValue(scoreControl, scoreValue)) {
+    return;
+  }
+
+  atlasAnalytics.track({
+    eventType: "atlas_score_change_committed",
+    properties: {
+      route_id: "atlas_home",
+      score_control: scoreControl,
+      score_value: scoreValue,
+      change_source: "range_control",
     },
   });
 }
