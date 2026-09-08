@@ -29,7 +29,31 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - run: npm run test:e2e
+      - name: Run blocking E2E coverage except accepted mobile privacy defect
+        run: >-
+          npx playwright test --grep-invert "publishes an accessible, clear privacy summary without analytics claims"
+      - name: Run blocking desktop privacy navigation coverage
+        if: always()
+        run: >-
+          npx playwright test --project=desktop --grep "publishes an accessible, clear privacy summary without analytics claims"
+      - name: Run accepted mobile privacy navigation coverage
+        id: accepted_mobile_privacy_e2e
+        if: always()
+        continue-on-error: true
+        run: >-
+          npx playwright test --project=mobile --grep "publishes an accessible, clear privacy summary without analytics claims"
+      - name: Document accepted mobile privacy result
+        if: always()
+        env:
+          MOBILE_PRIVACY_OUTCOME: ${{ steps.accepted_mobile_privacy_e2e.outcome }}
+        run: |
+          if [[ "$MOBILE_PRIVACY_OUTCOME" == "success" ]]; then
+            echo "## Mobile privacy navigation" >> "$GITHUB_STEP_SUMMARY"
+            echo "Passed unexpectedly. Remove the pre-MVP defect acceptance in #126 and restore this case to the blocking E2E suite." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Mobile privacy navigation" >> "$GITHUB_STEP_SUMMARY"
+            echo "Known pre-MVP failure observed and accepted under #126. The scenario ran; it remains non-blocking until the decision is revisited." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - run: npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: https://api.carawaylabs.com

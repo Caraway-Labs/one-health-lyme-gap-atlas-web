@@ -222,6 +222,8 @@ test("renders the atlas and full non-map results", async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
+// CI runs this unchanged scenario for both projects. The pre-MVP mobile result is
+// reported separately as an accepted defect in #126; desktop remains blocking.
 test("publishes an accessible, clear privacy summary without analytics claims", async ({
   page,
 }) => {
