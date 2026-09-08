@@ -51,6 +51,15 @@ export const uiControlIds = [
 
 export type UiControlId = (typeof uiControlIds)[number];
 
+export const geographySelectionSurfaces = [
+  "map",
+  "results_table",
+  "ranked_list",
+] as const;
+
+export type GeographySelectionSurface =
+  (typeof geographySelectionSurfaces)[number];
+
 type AnalyticsEvent =
   | {
       eventType: "atlas_route_viewed";
@@ -83,7 +92,7 @@ type AnalyticsEvent =
         route_id: "atlas_home";
         geography_level: "county";
         county_fips: string;
-        selection_surface: "map" | "results_table" | "ranked_list";
+        selection_surface: GeographySelectionSurface;
       };
     }
   | {
@@ -199,6 +208,29 @@ export function trackFilterApplied(
       route_id: "atlas_home",
       filter_dimension: filterDimension,
       filter_value: filterValue,
+    },
+  });
+}
+
+export function isCountyFips(value: string): boolean {
+  return /^\d{5}$/.test(value);
+}
+
+export function trackGeographySelected(
+  countyFips: string,
+  selectionSurface: GeographySelectionSurface
+): void {
+  if (!isCountyFips(countyFips)) {
+    return;
+  }
+
+  atlasAnalytics.track({
+    eventType: "atlas_geography_selected",
+    properties: {
+      route_id: "atlas_home",
+      geography_level: "county",
+      county_fips: countyFips,
+      selection_surface: selectionSurface,
     },
   });
 }

@@ -5,6 +5,7 @@ import maplibregl from "maplibre-gl";
 import { useEffect, useRef } from "react";
 
 import type { CountyScoreSummary } from "@/generated/models";
+import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   CONTIGUOUS_US_INITIAL_VIEW,
   contiguousUsGeometry,
@@ -29,7 +30,7 @@ export function AtlasMap({
   selectedFips: string;
   selectedState?: string;
   selectedDistrict?: string;
-  onSelect: (fips: string) => void;
+  onSelect: (fips: string, surface: GeographySelectionSurface) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -127,7 +128,7 @@ export function AtlasMap({
       instance.on("click", "counties-fill", (event) => {
         const fips = event.features?.[0]?.properties?.fips;
         if (typeof fips === "string") {
-          selectRef.current(fips);
+          selectRef.current(fips, "map");
         }
       });
       instance.on("mouseenter", "counties-fill", () => {

@@ -1,4 +1,5 @@
 import type { CountyScoreSummary } from "@/generated/models";
+import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import { plainPriority } from "@/lib/atlas-ui";
 
 export function RankedCounties({
@@ -11,7 +12,7 @@ export function RankedCounties({
   counties: CountyScoreSummary[];
   selectedFips: string;
   showTable: boolean;
-  onSelect: (fips: string) => void;
+  onSelect: (fips: string, surface: GeographySelectionSurface) => void;
   onToggleTable: () => void;
 }) {
   return (
@@ -34,7 +35,7 @@ export function RankedCounties({
               data-atlas-analytics-control="ranked_county_select"
               type="button"
               className={`rank-row ${county.fips === selectedFips ? "active" : ""}`}
-              onClick={() => onSelect(county.fips)}
+              onClick={() => onSelect(county.fips, "ranked_list")}
             >
               <span className="rank-number">{index + 1}</span>
               <span className="rank-name">

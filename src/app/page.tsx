@@ -28,8 +28,10 @@ import { validateApiResponse } from "@/lib/api-response-validation";
 import {
   trackCsvExportRequested,
   trackFilterApplied,
+  trackGeographySelected,
   trackSummaryCopied,
 } from "@/lib/atlas-analytics";
+import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   atlasSearchParams,
   synchronizeGovernedDataset,
@@ -72,7 +74,13 @@ function AtlasPage() {
     setUrlState({ evidence });
     trackFilterApplied("evidence", evidence);
   };
-  const setSelectedFips = (county: string) => setUrlState({ county });
+  const setSelectedFips = (
+    county: string,
+    selectionSurface: GeographySelectionSurface
+  ) => {
+    setUrlState({ county });
+    trackGeographySelected(county, selectionSurface);
+  };
   const setSettings = (next: ScoreSettings) =>
     setUrlState({
       breakpoint: next.low_incidence_breakpoint,
@@ -308,7 +316,7 @@ function AtlasPage() {
           <ResultsTable
             counties={filtered}
             onSelect={(fips) => {
-              setSelectedFips(fips);
+              setSelectedFips(fips, "results_table");
               document.querySelector("#atlas")?.scrollIntoView();
             }}
           />
