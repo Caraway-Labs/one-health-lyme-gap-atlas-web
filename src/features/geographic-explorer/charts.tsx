@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import type { CountyScoreSummary } from "@/generated/models";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 import { evidenceLabel, metricLabel, metricValue, STATE_GRID } from "./model";
 import type { Metric } from "./model";
@@ -56,6 +57,7 @@ export function GeographicGrid({
                 style={{ gridRow: row, gridColumn: column }}
               >
                 <Button
+                  {...analyticsControlAttributes("geo_state_tile_select")}
                   disabled={group.length === 0}
                   variant={state === code ? "secondary" : "ghost"}
                   aria-pressed={state === code}
@@ -151,6 +153,7 @@ export function EvidenceTable({
             <tr key={county.fips} aria-selected={selectedFips === county.fips}>
               <th scope="row">
                 <Button
+                  {...analyticsControlAttributes("geo_county_select")}
                   variant="ghost"
                   onClick={() => onSelect(county.fips)}
                   aria-pressed={selectedFips === county.fips}
@@ -194,6 +197,7 @@ export function RankedDots({
       {counties.map((county) => (
         <div key={county.fips} className="geo-dot-row">
           <Button
+            {...analyticsControlAttributes("geo_county_select")}
             variant="ghost"
             aria-pressed={county.fips === selectedFips}
             onClick={() => onSelect(county.fips)}
@@ -307,6 +311,7 @@ export function ScatterPlot({
             }
             opacity="0.8"
             role="button"
+            {...analyticsControlAttributes("geo_county_select")}
             tabIndex={0}
             aria-label={`Select ${county.county}, ${county.state}: ${county.evidence_completeness}%, score ${county.score.score}`}
             onClick={() => onSelect(county.fips)}
@@ -393,7 +398,11 @@ export function CountyComparisons({
               <dt>Review priority</dt>
               <dd>{county.priority}</dd>
             </dl>
-            <Button variant="secondary" onClick={() => onRemove(county.fips)}>
+            <Button
+              {...analyticsControlAttributes("geo_comparison_remove")}
+              variant="secondary"
+              onClick={() => onRemove(county.fips)}
+            >
               Remove {county.county}
             </Button>
           </article>

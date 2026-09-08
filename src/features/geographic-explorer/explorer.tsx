@@ -26,6 +26,7 @@ import {
   ScoresV1AtlasScoresGetResponse,
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { toScoreSettings } from "@/lib/atlas-search-params";
 
 import {
@@ -53,6 +54,16 @@ const ExplorerMaps = dynamic(() => import("./maps"), {
   loading: () => <p role="status">Loading map tools…</p>,
 });
 const EMPTY: CountyScoreSummary[] = [];
+const viewControlIds = {
+  tiles: "geo_view_tiles",
+  multiples: "geo_view_multiples",
+  matrix: "geo_view_matrix",
+  ranking: "geo_view_ranking",
+  maps: "geo_view_maps",
+  scatter: "geo_view_scatter",
+  compare: "geo_view_compare",
+  trends: "geo_view_trends",
+} as const;
 
 export function GeographicExplorer() {
   const [state, setState] = useQueryStates(explorerParams, {
@@ -225,6 +236,7 @@ export function GeographicExplorer() {
           values are not being shown as current.
         </p>
         <Button
+          {...analyticsControlAttributes("geo_retry")}
           onClick={() => {
             void metadata.refetch();
             void scores.refetch();
@@ -234,6 +246,7 @@ export function GeographicExplorer() {
         </Button>
         {state.dataset && (
           <Button
+            {...analyticsControlAttributes("geo_use_current_release")}
             variant="secondary"
             onClick={() => setState({ dataset: null, selected: [] })}
           >
@@ -307,6 +320,7 @@ export function GeographicExplorer() {
           {VIEWS.map((view) => (
             <Button
               key={view}
+              {...analyticsControlAttributes(viewControlIds[view])}
               className={view === state.view ? "hover:bg-primary" : undefined}
               variant={view === state.view ? "default" : "secondary"}
               aria-pressed={view === state.view}
@@ -338,6 +352,7 @@ export function GeographicExplorer() {
               <p role="status">
                 No counties match these filters.{" "}
                 <Button
+                  {...analyticsControlAttributes("geo_clear_filters")}
                   variant="secondary"
                   onClick={() =>
                     setState({ state: "ALL", q: "", evidence: "all", page: 1 })
@@ -365,7 +380,10 @@ export function GeographicExplorer() {
                         void setState({ metric: value as Metric, page: 1 });
                     }}
                   >
-                    <SelectTrigger aria-label="Rank by">
+                    <SelectTrigger
+                      {...analyticsControlAttributes("geo_metric_select")}
+                      aria-label="Rank by"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -391,6 +409,7 @@ export function GeographicExplorer() {
                     County geometry could not be loaded. The table remains
                     available.{" "}
                     <Button
+                      {...analyticsControlAttributes("geo_retry_geometry")}
                       variant="secondary"
                       onClick={() => geometry.refetch()}
                     >
@@ -481,6 +500,7 @@ export function GeographicExplorer() {
                   <dd>{evidenceLabel(selected.burgdorferi_status)}</dd>
                 </dl>
                 <Button
+                  {...analyticsControlAttributes("geo_add_comparison")}
                   onClick={addComparison}
                   disabled={
                     state.selected.includes(selected.fips) ||
@@ -491,6 +511,7 @@ export function GeographicExplorer() {
                 </Button>
                 <p>{comparisons.length} of 5 comparison slots used</p>
                 <Button
+                  {...analyticsControlAttributes("geo_view_comparison")}
                   variant="secondary"
                   onClick={() => setState({ view: "compare" })}
                 >
@@ -513,6 +534,7 @@ export function GeographicExplorer() {
           <EvidenceTable counties={page.items} {...sharedSelection} />
           <div className="geo-pagination">
             <Button
+              {...analyticsControlAttributes("geo_pagination_previous")}
               variant="secondary"
               disabled={currentPage <= 1}
               onClick={() => setState({ page: currentPage - 1 })}
@@ -523,6 +545,7 @@ export function GeographicExplorer() {
               Page {currentPage} of {page.pages}
             </span>
             <Button
+              {...analyticsControlAttributes("geo_pagination_next")}
               variant="secondary"
               disabled={currentPage >= page.pages}
               onClick={() => setState({ page: currentPage + 1 })}
