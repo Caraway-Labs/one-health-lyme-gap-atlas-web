@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { CountyScoreSummary } from "@/generated/models";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 type Props = {
   geometry: GeoJSON.FeatureCollection;
@@ -143,7 +144,11 @@ function ExplorerMapRuntime(props: Props & { onRetry: () => void }) {
         <p role="alert">
           The map could not render. All county values remain available in the
           evidence table.{" "}
-          <Button variant="secondary" onClick={props.onRetry}>
+          <Button
+            {...analyticsControlAttributes("geo_retry_maps")}
+            variant="secondary"
+            onClick={props.onRetry}
+          >
             Retry maps
           </Button>
         </p>

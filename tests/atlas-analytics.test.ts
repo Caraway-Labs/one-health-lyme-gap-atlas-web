@@ -49,6 +49,15 @@ describe("Atlas Amplitude boundary", () => {
     expect(analyticsControlAttributes("hero_explore_counties")).toStrictEqual({
       "data-atlas-analytics-control": "hero_explore_counties",
     });
+    expect(uiControlIds).toStrictEqual(
+      expect.arrayContaining([
+        "geo_view_maps",
+        "geo_state_tile_select",
+        "geo_county_select",
+        "geo_add_comparison",
+        "geo_pagination_next",
+      ])
+    );
   });
 
   it("uses session-only identity and disables every automatic collection path", async () => {
