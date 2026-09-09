@@ -1,13 +1,30 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
-vi.mock("../src/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) } }) }));
-vi.mock("../src/generated/atlas", () => ({ getProfileV1MeProfileGet: vi.fn(), saveProfileV1MeProfilePut: vi.fn() }));
+vi.mock(
+  import("next/navigation"),
+  () =>
+    ({
+      useRouter: () => ({ push: vi.fn<() => void>() }),
+    }) as unknown as Partial<typeof import("next/navigation")>
+);
+vi.mock(import("../src/lib/supabase/client"), () => ({
+  createClient: () => ({
+    auth: {
+      getUser: vi
+        .fn<() => Promise<{ data: { user: null } }>>()
+        .mockResolvedValue({ data: { user: null } }),
+    },
+  }),
+}));
+vi.mock(import("../src/generated/atlas"), () => ({
+  getProfileV1MeProfileGet: vi.fn<() => Promise<never>>(),
+  saveProfileV1MeProfilePut: vi.fn<() => Promise<never>>(),
+}));
 
 import AccountPage from "../src/app/account/page";
 
-describe("AccountPage", () => {
+describe("account page", () => {
   afterEach(cleanup);
 
   it("renders a native link for a signed-out user", async () => {

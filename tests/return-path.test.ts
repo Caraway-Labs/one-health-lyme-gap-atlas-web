@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+
 import { safeReturnPath } from "../src/lib/auth/return-path";
 
-describe("safeReturnPath", () => {
+describe("safe return path", () => {
   it("keeps an internal path and query string", () => {
     expect(safeReturnPath("/variant_6?state=CO")).toBe("/variant_6?state=CO");
   });

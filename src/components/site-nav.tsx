@@ -103,7 +103,11 @@ export function SiteNav() {
         {process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true" && (
           <Link href="/knowledge-graph">Evidence chat</Link>
         )}
-        <Link href={`/auth/sign-in?next=${encodeURIComponent(`${pathname}${searchParams.size ? `?${searchParams.toString()}` : ""}`)}`}>Sign in</Link>
+        <Link
+          href={`/auth/sign-in?next=${encodeURIComponent(`${pathname}${searchParams.size ? `?${searchParams.toString()}` : ""}`)}`}
+        >
+          Sign in
+        </Link>
       </div>
     </nav>
   );

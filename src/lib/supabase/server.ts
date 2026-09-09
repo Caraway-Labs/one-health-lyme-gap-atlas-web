@@ -11,7 +11,11 @@ export async function createClient() {
   return createServerClient(url, publishableKey, {
     cookies: {
       getAll: () => cookieStore.getAll(),
-      setAll: (values) => values.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
+      setAll: (values) => {
+        for (const { name, value, options } of values) {
+          cookieStore.set(name, value, options);
+        }
+      },
     },
   });
 }

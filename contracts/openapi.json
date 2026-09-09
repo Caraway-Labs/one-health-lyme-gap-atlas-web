@@ -54,9 +54,7 @@
     },
     "/v1/me/profile": {
       "get": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Get Profile",
         "operationId": "get_profile_v1_me_profile_get",
         "parameters": [
@@ -121,9 +119,7 @@
         }
       },
       "put": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Save Profile",
         "operationId": "save_profile_v1_me_profile_put",
         "parameters": [
@@ -1726,9 +1722,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "profile"
-        ],
+        "required": ["profile"],
         "title": "UserProfileResponse"
       },
       "UserProfileWrite": {

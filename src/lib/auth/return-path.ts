@@ -1,5 +1,13 @@
-export function safeReturnPath(value: string | null, fallback = "/account"): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+export function safeReturnPath(
+  value: string | null,
+  fallback = "/account"
+): string {
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\")
+  ) {
     return fallback;
   }
   return value;
