@@ -21,6 +21,71 @@ export const ReadyHealthReadyGetResponse = zod.record(zod.string(), zod.string()
 
 
 /**
+ * @summary Get Profile
+ */
+export const GetProfileV1MeProfileGetHeader = zod.object({
+  "authorization": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const getProfileV1MeProfileGetResponseProfileOneStateCodeOneMax = 2;
+
+export const getProfileV1MeProfileGetResponseProfileOneOrganizationOneMax = 120;
+
+export const getProfileV1MeProfileGetResponseProfileOneJobTitleOneMax = 120;
+
+
+
+export const GetProfileV1MeProfileGetResponse = zod.object({
+  "profile": zod.union([zod.object({
+  "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
+  "state_code": zod.union([zod.string().max(getProfileV1MeProfileGetResponseProfileOneStateCodeOneMax),zod.null()]).optional(),
+  "organization": zod.union([zod.string().max(getProfileV1MeProfileGetResponseProfileOneOrganizationOneMax),zod.null()]).optional(),
+  "job_title": zod.union([zod.string().max(getProfileV1MeProfileGetResponseProfileOneJobTitleOneMax),zod.null()]).optional()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Save Profile
+ */
+export const SaveProfileV1MeProfilePutHeader = zod.object({
+  "authorization": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const saveProfileV1MeProfilePutBodyStateCodeOneMax = 2;
+
+export const saveProfileV1MeProfilePutBodyOrganizationOneMax = 120;
+
+export const saveProfileV1MeProfilePutBodyJobTitleOneMax = 120;
+
+
+
+export const SaveProfileV1MeProfilePutBody = zod.object({
+  "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
+  "state_code": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyStateCodeOneMax),zod.null()]).optional(),
+  "organization": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyOrganizationOneMax),zod.null()]).optional(),
+  "job_title": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyJobTitleOneMax),zod.null()]).optional()
+})
+
+export const saveProfileV1MeProfilePutResponseProfileOneStateCodeOneMax = 2;
+
+export const saveProfileV1MeProfilePutResponseProfileOneOrganizationOneMax = 120;
+
+export const saveProfileV1MeProfilePutResponseProfileOneJobTitleOneMax = 120;
+
+
+
+export const SaveProfileV1MeProfilePutResponse = zod.object({
+  "profile": zod.union([zod.object({
+  "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
+  "state_code": zod.union([zod.string().max(saveProfileV1MeProfilePutResponseProfileOneStateCodeOneMax),zod.null()]).optional(),
+  "organization": zod.union([zod.string().max(saveProfileV1MeProfilePutResponseProfileOneOrganizationOneMax),zod.null()]).optional(),
+  "job_title": zod.union([zod.string().max(saveProfileV1MeProfilePutResponseProfileOneJobTitleOneMax),zod.null()]).optional()
+}),zod.null()])
+})
+
+
+/**
  * @summary Metadata
  */
 export const MetadataV1AtlasMetadataGetQueryParams = zod.object({
