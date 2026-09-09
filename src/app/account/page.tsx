@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } from "@/generated/atlas";
 import type { UserProfileWrite, UserProfileWriteRole } from "@/generated/models";
+import { AtlasApiError } from "@/lib/api-mutator";
 import { createClient } from "@/lib/supabase/client";
 
 const roles: { value: Exclude<UserProfileWriteRole, null>; label: string }[] = [
@@ -47,7 +48,10 @@ export default function AccountPage() {
       const result = await saveProfileV1MeProfilePut({ role: form.role ?? null, state_code: form.state_code || null, organization: form.organization?.trim() || null, job_title: form.job_title?.trim() || null });
       if (result.status !== 200) throw new Error("Profile save was not accepted.");
       setForm(result.data.profile ?? {}); setNotice("Profile saved.");
-    } catch { setNotice("We could not save your profile. Please try again later."); }
+    } catch (error) {
+      const reference = error instanceof AtlasApiError && error.requestId ? ` Reference: ${error.requestId}.` : "";
+      setNotice(`We could not save your profile. Please try again later.${reference}`);
+    }
     finally { setSaving(false); }
   }
 

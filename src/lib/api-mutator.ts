@@ -1,5 +1,17 @@
 import { getPublicConfig } from "@/lib/public-config";
 
+export class AtlasApiError extends Error {
+  constructor(
+    message: string,
+    readonly endpoint: string,
+    readonly status: number,
+    readonly requestId: string | null
+  ) {
+    super(message);
+    this.name = "AtlasApiError";
+  }
+}
+
 export async function apiMutator<T>(
   url: string,
   options: RequestInit
@@ -13,9 +25,20 @@ export async function apiMutator<T>(
   const response = await fetch(`${getPublicConfig().apiBaseUrl}${url}`, { ...options, headers });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(
-      body?.detail ?? `Atlas API request failed (${response.status})`
+    const error = new AtlasApiError(
+      body?.detail ?? `Atlas API request failed (${response.status})`,
+      url,
+      response.status,
+      response.headers.get("X-Request-ID")
     );
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Atlas API request failed", {
+        endpoint: error.endpoint,
+        status: error.status,
+        requestId: error.requestId,
+      });
+    }
+    throw error;
   }
   const contentType = response.headers.get("content-type") ?? "";
   const data = contentType.includes("application/pdf")
