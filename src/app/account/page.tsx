@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } from "@/generated/atlas";
 import type { UserProfileWrite, UserProfileWriteRole } from "@/generated/models";
@@ -52,7 +52,7 @@ export default function AccountPage() {
   }
 
   if (signedIn === null) return <main className="container py-12">Checking account session…</main>;
-  if (!signedIn) return <main className="container py-12"><h1 className="text-3xl font-semibold">Your account</h1><p className="mt-2 text-muted-foreground">Sign in to manage your optional Atlas profile.</p><Button className="mt-6" render={<Link href="/auth/sign-in?next=%2Faccount" />}>Sign in</Button></main>;
+  if (!signedIn) return <main className="container py-12"><h1 className="text-3xl font-semibold">Your account</h1><p className="mt-2 text-muted-foreground">Sign in to manage your optional Atlas profile.</p><Link className={buttonVariants({ className: "mt-6" })} href="/auth/sign-in?next=%2Faccount">Sign in</Link></main>;
   const isPublic = form.role === "general_public_citizen";
   return <main className="container py-12"><section className="mx-auto max-w-xl"><p className="eyebrow">Optional account</p><h1 className="text-3xl font-semibold">Your profile</h1><p className="mt-2 text-muted-foreground">All fields are optional. Profile details do not change Atlas evidence, scores, or access.</p>{loadingProfile ? <p className="mt-6" role="status">Loading profile…</p> : <form className="mt-6 space-y-5" onSubmit={saveProfile}><label className="block text-sm font-medium" htmlFor="role">Role<select id="role" className="mt-2 w-full rounded-md border bg-background p-2" value={form.role ?? ""} onChange={(event) => setForm({ ...form, role: event.target.value as UserProfileWriteRole || null })}><option value="">Prefer not to say</option>{roles.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label><label className="block text-sm font-medium" htmlFor="state">State<select id="state" className="mt-2 w-full rounded-md border bg-background p-2" value={form.state_code ?? ""} onChange={(event) => setForm({ ...form, state_code: event.target.value || null })}>{states.map((state) => <option key={state} value={state}>{state || "No state selected"}</option>)}</select></label>{!isPublic && <><label className="block text-sm font-medium" htmlFor="organization">Organization<Input id="organization" maxLength={120} value={form.organization ?? ""} onChange={(event) => setForm({ ...form, organization: event.target.value })} /></label><label className="block text-sm font-medium" htmlFor="job-title">Job title<Input id="job-title" maxLength={120} value={form.job_title ?? ""} onChange={(event) => setForm({ ...form, job_title: event.target.value })} /></label></>}<Button type="submit" disabled={saving}>{saving ? "Saving profile…" : "Save profile"}</Button></form>}{notice && <p className="mt-4 text-sm text-muted-foreground" role="status" aria-live="polite">{notice}</p>}<Button className="mt-6" variant="secondary" onClick={() => createClient().auth.signOut().then(() => router.push("/"))}>Sign out</Button></section></main>;
 }
