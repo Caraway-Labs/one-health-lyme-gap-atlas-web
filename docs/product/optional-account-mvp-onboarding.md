@@ -87,11 +87,16 @@ before such events are implemented.
 
 ## Prerequisites and policy gates
 
-Before feature code begins:
+Hosted Supabase Development and Production projects, Google OAuth, callback
+allow-lists, and transactional email are configured separately. Development
+validation runs locally against the Development Supabase project. DigitalOcean
+hosts Production web and API services only; do not create a paid DigitalOcean
+Development duplicate for this MVP.
 
-1. The admin provisions separate Supabase Development and Production projects,
-   Google OAuth, magic-link sender/domain, exact redirect allow-lists, and the
-   approved secret-store references required by issue #79.
+Before public release:
+
+1. Configure the approved Production deployment environment values without
+   committing credentials or putting server-only values in the web build.
 2. Define the deletion/export service details and no-backup operational
    implications before public release. The requested email ZIP export is a
    later API and delivery capability, not an MVP dependency.
