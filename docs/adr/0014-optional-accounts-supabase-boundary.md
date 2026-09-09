@@ -52,15 +52,14 @@ An optional US state is stored as a validated postal abbreviation. Future
 versions may use the state as an initial UI selection after sign-in, but never
 as an access-control, scoring, evidence, or analytics input.
 
-The following policy questions remain unresolved and must be decided before a
-database migration or profile form is implemented:
+Optional organization and job-title fields are allowed as user-entered text,
+each limited to 120 characters. They remain skippable and must not be used as
+professional-verification claims, authorization inputs, or analytics values.
 
-1. whether optional organization and job-title inputs are allowed as bounded
-   user-entered text, despite the policy otherwise prohibiting free text;
-2. whether one year of inactivity triggers automatic account deletion or an
-   administrative review; and
-3. how a no-age-gate account flow meets applicable child-data obligations
-   without collecting date of birth.
+Atlas is a general-audience service, not a child-directed service. The account
+flow has no age gate and collects no date of birth or child-status data. This
+decision does not alter obligations that arise if Atlas becomes child-directed
+or has actual knowledge that it is collecting personal information from a child.
 
 ## Privacy and lifecycle rules
 
@@ -76,9 +75,11 @@ database migration or profile form is implemented:
   may asynchronously deliver a ZIP by email; it is out of scope for this
   integration-validation MVP and needs a separate authenticated delivery
   contract.
-- No application-managed backups are planned. The operator must document the
-  practical implications and any provider-managed recovery behavior before
-  public release.
+- Delete dormant accounts and their profile data automatically after one year
+  of inactivity. Deletion is irreversible from Atlas's perspective.
+- No application-managed backups are planned; deleted profile data need not be
+  recoverable by Atlas. Provider-managed recovery behavior, if any, does not
+  change that Atlas policy.
 
 ## Consequences
 

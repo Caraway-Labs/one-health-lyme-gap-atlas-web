@@ -31,8 +31,8 @@ Out of scope:
 | --- | --- | --- |
 | Role | Optional; choose one value; mutable | Validated enum |
 | State | Optional; selected from controlled US-state list | Postal abbreviation |
-| Organization | Policy gate: do not implement until free-text decision is resolved | N/A |
-| Job title | Policy gate: do not implement until free-text decision is resolved | N/A |
+| Organization | Optional; mutable; 120-character maximum | Bounded plaintext; no analytics |
+| Job title | Optional; mutable; 120-character maximum | Bounded plaintext; no analytics |
 | Notification preference | Visible only as a non-interactive future capability, if shown at all | Do not persist |
 
 The general-public path is shorter: it shows only the optional role and state
@@ -92,13 +92,7 @@ Before feature code begins:
 1. The admin provisions separate Supabase Development and Production projects,
    Google OAuth, magic-link sender/domain, exact redirect allow-lists, and the
    approved secret-store references required by issue #79.
-2. Decide organization/job-title handling: allow both as tightly bounded text,
-   replace them with controlled selections, or defer them.
-3. Decide whether a year of inactivity automatically deletes an account or
-   triggers an administrative review.
-4. Decide the child-data compliance approach for no-age-restriction accounts
-   without date-of-birth collection.
-5. Define the deletion/export service details and no-backup operational
+2. Define the deletion/export service details and no-backup operational
    implications before public release. The requested email ZIP export is a
    later API and delivery capability, not an MVP dependency.
 
