@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { safeReturnPath } from "@/lib/auth/return-path";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SignInPage() {
+function SignInForm() {
   const searchParams = useSearchParams();
   const next = safeReturnPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
@@ -107,5 +107,15 @@ export default function SignInPage() {
         </Link>
       </section>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={<main className="container py-12">Loading sign-in…</main>}
+    >
+      <SignInForm />
+    </Suspense>
   );
 }
