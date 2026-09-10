@@ -1,5 +1,9 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const { getUser } = vi.hoisted(() => ({
+  getUser: vi.fn<() => Promise<{ data: { user: null } }>>(),
+}));
 
 vi.mock(
   import("next/navigation"),
@@ -11,9 +15,7 @@ vi.mock(
 vi.mock(import("../src/lib/supabase/client"), () => ({
   createClient: () => ({
     auth: {
-      getUser: vi
-        .fn<() => Promise<{ data: { user: null } }>>()
-        .mockResolvedValue({ data: { user: null } }),
+      getUser,
     },
   }),
 }));
@@ -25,11 +27,33 @@ vi.mock(import("../src/generated/atlas"), () => ({
 import AccountPage from "../src/app/account/page";
 
 describe("account page", () => {
-  afterEach(cleanup);
+  beforeEach(() => {
+    getUser.mockResolvedValue({ data: { user: null } });
+  });
+
+  afterEach(() => {
+    cleanup();
+    getUser.mockReset();
+  });
 
   it("renders a native link for a signed-out user", async () => {
     render(<AccountPage />);
     const signIn = await screen.findByRole("link", { name: "Sign in" });
     expect(signIn.getAttribute("href")).toBe("/auth/sign-in?next=%2Faccount");
+  });
+
+  it("falls back to the signed-out view when session lookup fails", async () => {
+    getUser.mockRejectedValueOnce(new Error("unavailable"));
+
+    render(<AccountPage />);
+    await expect(
+      screen.findByRole("link", { name: "Sign in" })
+    ).resolves.toBeTruthy();
+    expect(screen.queryByText("Checking account session…")).toBeNull();
+    expect(
+      screen.getByText(
+        "Your profile is temporarily unavailable. You can continue exploring Atlas."
+      )
+    ).toBeTruthy();
   });
 });
