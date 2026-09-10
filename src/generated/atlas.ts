@@ -40,7 +40,9 @@ import type {
   ReadyHealthReadyGet200,
   ScoreCollection,
   ScoresV1AtlasScoresGetParams,
-  StateReportPdfV1StatesStateReportPdfGetParams
+  StateReportPdfV1StatesStateReportPdfGetParams,
+  UserProfileResponse,
+  UserProfileWrite
 } from './models';
 
 import { apiMutator } from '../lib/api-mutator';
@@ -290,6 +292,236 @@ export function useReadyHealthReadyGet<TData = Awaited<ReturnType<typeof readyHe
 
 
 
+
+export type getProfileV1MeProfileGetResponse200 = {
+  data: UserProfileResponse
+  status: 200
+}
+
+export type getProfileV1MeProfileGetResponse401 = {
+  data: ProblemDetails
+  status: 401
+}
+
+export type getProfileV1MeProfileGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getProfileV1MeProfileGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type getProfileV1MeProfileGetResponseSuccess = (getProfileV1MeProfileGetResponse200) & {
+  headers: Headers;
+};
+export type getProfileV1MeProfileGetResponseError = (getProfileV1MeProfileGetResponse401 | getProfileV1MeProfileGetResponse422 | getProfileV1MeProfileGetResponse503) & {
+  headers: Headers;
+};
+
+export type getProfileV1MeProfileGetResponse = (getProfileV1MeProfileGetResponseSuccess | getProfileV1MeProfileGetResponseError)
+
+export const getGetProfileV1MeProfileGetUrl = () => {
+
+
+
+
+  return `/v1/me/profile`
+}
+
+/**
+ * @summary Get Profile
+ */
+export const getProfileV1MeProfileGet = async ( options?: Parameters<typeof apiMutator>[1]): Promise<getProfileV1MeProfileGetResponse> => {
+
+  return apiMutator<getProfileV1MeProfileGetResponse>(getGetProfileV1MeProfileGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProfileV1MeProfileGetQueryKey = () => {
+    return [
+    `/v1/me/profile`
+    ] as const;
+    }
+
+
+export const getGetProfileV1MeProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProfileV1MeProfileGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>> = ({ signal }) => getProfileV1MeProfileGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetProfileV1MeProfileGetQueryResult = NonNullable<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>>
+export type GetProfileV1MeProfileGetQueryError = ProblemDetails | HTTPValidationError
+
+
+export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>,
+          TError,
+          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>,
+          TError,
+          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Profile
+ */
+
+export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetProfileV1MeProfileGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type saveProfileV1MeProfilePutResponse200 = {
+  data: UserProfileResponse
+  status: 200
+}
+
+export type saveProfileV1MeProfilePutResponse401 = {
+  data: ProblemDetails
+  status: 401
+}
+
+export type saveProfileV1MeProfilePutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type saveProfileV1MeProfilePutResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type saveProfileV1MeProfilePutResponseSuccess = (saveProfileV1MeProfilePutResponse200) & {
+  headers: Headers;
+};
+export type saveProfileV1MeProfilePutResponseError = (saveProfileV1MeProfilePutResponse401 | saveProfileV1MeProfilePutResponse422 | saveProfileV1MeProfilePutResponse503) & {
+  headers: Headers;
+};
+
+export type saveProfileV1MeProfilePutResponse = (saveProfileV1MeProfilePutResponseSuccess | saveProfileV1MeProfilePutResponseError)
+
+export const getSaveProfileV1MeProfilePutUrl = () => {
+
+
+
+
+  return `/v1/me/profile`
+}
+
+/**
+ * @summary Save Profile
+ */
+export const saveProfileV1MeProfilePut = async (userProfileWrite: UserProfileWrite, options?: Parameters<typeof apiMutator>[1]): Promise<saveProfileV1MeProfilePutResponse> => {
+
+  return apiMutator<saveProfileV1MeProfilePutResponse>(getSaveProfileV1MeProfilePutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(userProfileWrite)
+  }
+);}
+
+
+
+
+
+export const getSaveProfileV1MeProfilePutMutationOptions = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, TError,{data: UserProfileWrite}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, TError,{data: UserProfileWrite}, TContext> => {
+
+const mutationKey = ['saveProfileV1MeProfilePut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, {data: UserProfileWrite}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveProfileV1MeProfilePut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveProfileV1MeProfilePutMutationResult = NonNullable<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>>
+    export type SaveProfileV1MeProfilePutMutationBody = UserProfileWrite
+    export type SaveProfileV1MeProfilePutMutationError = ProblemDetails | HTTPValidationError
+
+    /**
+ * @summary Save Profile
+ */
+export const useSaveProfileV1MeProfilePut = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, TError,{data: UserProfileWrite}, TContext>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>,
+        TError,
+        {data: UserProfileWrite},
+        TContext
+      > => {
+      return useMutation(getSaveProfileV1MeProfilePutMutationOptions(options), queryClient);
+    }
 
 export type metadataV1AtlasMetadataGetResponse200 = {
   data: AtlasMetadata
