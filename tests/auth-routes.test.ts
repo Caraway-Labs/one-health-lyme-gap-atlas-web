@@ -1,15 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { exchangeCodeForSession, verifyOtp } = vi.hoisted(() => ({
-  exchangeCodeForSession: vi.fn(),
-  verifyOtp: vi.fn(),
+  exchangeCodeForSession: vi.fn<(code: string) => Promise<{ error: null }>>(),
+  verifyOtp: vi.fn<
+    (input: { token_hash: string; type: "email" }) => Promise<{ error: null }>
+  >(),
 }));
 
-vi.mock("../src/lib/supabase/server", () => ({
-  createClient: async () => ({
-    auth: { exchangeCodeForSession, verifyOtp },
-  }),
-}));
+vi.mock(import("../src/lib/supabase/server"), () =>
+  ({
+    createClient: async () => ({
+      auth: { exchangeCodeForSession, verifyOtp },
+    }),
+  }) as unknown as Partial<typeof import("../src/lib/supabase/server")>
+);
 
 import { GET as confirm } from "../src/app/auth/confirm/route";
 
