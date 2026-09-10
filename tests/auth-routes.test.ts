@@ -5,7 +5,7 @@ const { exchangeCodeForSession, verifyOtp } = vi.hoisted(() => ({
   verifyOtp: vi.fn(),
 }));
 
-vi.mock(import("../src/lib/supabase/server"), () => ({
+vi.mock("../src/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { exchangeCodeForSession, verifyOtp },
   }),
