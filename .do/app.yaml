@@ -38,6 +38,12 @@ services:
       - key: NEXT_PUBLIC_API_BASE_URL
         value: https://api.carawaylabs.com
         scope: BUILD_TIME
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: ${NEXT_PUBLIC_SUPABASE_URL}
+        scope: BUILD_TIME
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        value: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+        scope: BUILD_TIME
     alerts:
       - rule: CPU_UTILIZATION
         operator: GREATER_THAN

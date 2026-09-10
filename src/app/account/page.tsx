@@ -107,6 +107,10 @@ export default function AccountPage() {
         if (result.status === 200 && result.data.profile)
           setForm(result.data.profile);
       } catch {
+        // A missing or unavailable Auth service must not strand public users on
+        // the loading state. The account feature is optional; fall back to the
+        // signed-out view and keep Atlas available.
+        setSignedIn(false);
         setNotice(
           "Your profile is temporarily unavailable. You can continue exploring Atlas."
         );
@@ -154,6 +158,11 @@ export default function AccountPage() {
         <p className="text-muted-foreground mt-2">
           Sign in to manage your optional Atlas profile.
         </p>
+        {notice ? (
+          <p className="mt-4" role="status">
+            {notice}
+          </p>
+        ) : null}
         <Link
           className={buttonVariants({ className: "mt-6" })}
           href="/auth/sign-in?next=%2Faccount"
