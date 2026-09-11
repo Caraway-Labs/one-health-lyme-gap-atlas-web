@@ -67,14 +67,9 @@ test.beforeEach(async ({ page }) => {
       body = metadata;
     } else if (url.pathname.endsWith("/geometry")) {
       body = {
-        type: "FeatureCollection",
         features: [
           {
-            type: "Feature",
-            id: "08001",
-            properties: { fips: "08001" },
             geometry: {
-              type: "Polygon",
               coordinates: [
                 [
                   [-105, 39],
@@ -84,9 +79,31 @@ test.beforeEach(async ({ page }) => {
                   [-105, 39],
                 ],
               ],
+              type: "Polygon",
             },
+            id: "08001",
+            properties: { fips: "08001" },
+            type: "Feature",
+          },
+          {
+            geometry: {
+              coordinates: [
+                [
+                  [-118.7, 33.7],
+                  [-118.3, 33.7],
+                  [-118.3, 34],
+                  [-118.7, 34],
+                  [-118.7, 33.7],
+                ],
+              ],
+              type: "Polygon",
+            },
+            id: "06037",
+            properties: { fips: "06037" },
+            type: "Feature",
           },
         ],
+        type: "FeatureCollection",
       };
     } else if (url.pathname.endsWith("/scores")) {
       body = {
@@ -103,19 +120,22 @@ test.beforeEach(async ({ page }) => {
         "Content-Disposition": `attachment; filename="${url.pathname.includes("/counties/") ? "adams-county.pdf" : "colorado-state.pdf"}"`,
       };
     } else if (url.pathname.includes("/counties/")) {
+      const requestedFips = url.pathname.match(/\/counties\/(\d{5})/)?.[1];
+      const selected =
+        requestedFips === comparisonSummary.fips ? comparisonSummary : summary;
       body = {
-        ...summary,
-        population: 500_000,
+        ...selected,
         case_count_floor_2023: null,
         incidence_floor_2023: null,
-        state_unallocated_records_2023: 1,
-        scapularis_status: "Established",
         pacificus_status: "No records",
-        svi_percentile: 0.5,
-        uninsured_percentile: 0.5,
-        uninsured_percent: 8,
-        rucc_2023: 2,
+        population: 500_000,
         release: metadata,
+        rucc_2023: 2,
+        scapularis_status: "Established",
+        state_unallocated_records_2023: 1,
+        uninsured_percent: 8,
+        uninsured_percentile: 0.5,
+        svi_percentile: 0.5,
       };
     } else if (url.pathname.endsWith("/knowledge-graph/chat")) {
       body = {
@@ -228,6 +248,44 @@ test("renders the atlas and full non-map results", async ({
     .exclude(".maplibre-atlas")
     .analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("ranked county selection keeps the shareable URL and profile in sync", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Los Angeles, California" })
+  ).toBeVisible();
+  await page
+    .getByRole("list", { name: "Counties suggested for review" })
+    .getByRole("button", { name: /Adams, CO/ })
+    .click();
+  await expect(page).toHaveURL(/county=08001/);
+  await expect(
+    page.getByRole("heading", { name: "Adams, Colorado" })
+  ).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .exclude(".maplibre-atlas")
+    .analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("variant county list selection keeps the shareable URL and profile in sync", async ({
+  page,
+}) => {
+  await page.goto("/variant_1");
+  await expect(
+    page.getByRole("heading", { name: "Los Angeles, California" })
+  ).toBeVisible();
+  await page
+    .getByRole("list", { name: "Counties to review" })
+    .getByRole("button", { name: /Adams, CO/ })
+    .click();
+  await expect(page).toHaveURL(/county=08001/);
+  await expect(
+    page.getByRole("heading", { name: "Adams, Colorado" })
+  ).toBeVisible();
 });
 
 // CI runs this unchanged scenario for both projects. The pre-MVP mobile result is

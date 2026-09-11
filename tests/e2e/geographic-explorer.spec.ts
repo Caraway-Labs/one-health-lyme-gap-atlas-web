@@ -228,6 +228,15 @@ test("maps render and scatter keyboard selection links to county profile", async
     page.getByText("Maps ready. Pan and zoom are synchronized.")
   ).toBeVisible();
   await expect(page.locator(".geo-map-canvas canvas")).toHaveCount(2);
+  await expect(page).toHaveURL(/county=08001/);
+  await page
+    .getByRole("table")
+    .getByRole("button", { name: /County 1, CO/ })
+    .click();
+  await expect(page).toHaveURL(/county=08003/);
+  await expect(
+    page.getByText("Maps ready. Pan and zoom are synchronized.")
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Map + scatterplot", exact: true })
     .click();

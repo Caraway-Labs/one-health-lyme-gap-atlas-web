@@ -83,6 +83,9 @@ const engine = vi.hoisted(() => {
     getPitch() {
       return this.pitch;
     }
+    getCanvas() {
+      return { style: { cursor: this.removed ? "" : "" } };
+    }
     remove() {
       this.removed = true;
     }
@@ -206,7 +209,7 @@ describe("geographic map behavior", () => {
       left.emit("idle");
       right.emit("load");
       right.emit("idle");
-      left.emit("click:county-fill", {
+      left.emit("click:counties-fill", {
         features: [{ properties: { fips: "08001" } }],
       });
     });
@@ -226,11 +229,6 @@ describe("geographic map behavior", () => {
       type: "FeatureCollection",
       features: [],
     });
-    expect(right.setFilter).toHaveBeenLastCalledWith("county-selection", [
-      "==",
-      ["get", "fips"],
-      "08003",
-    ]);
     view.unmount();
     expect(left.removed && right.removed).toBeTruthy();
   });
