@@ -1,3 +1,4 @@
+import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { CountyScoreSummary } from "@/generated/models";
@@ -26,13 +27,13 @@ export function RankedCounties({
       aria-label="Counties to review"
       role="complementary"
     >
-      <div className="card-title-row compact">
-        <div>
-          <span className="eyebrow">Suggested review order</span>
-          <h3>Counties to review</h3>
-        </div>
-        <span className="result-count">{counties.length}</span>
-      </div>
+      <AtlasSectionHeader
+        aside={<span className="result-count">{counties.length}</span>}
+        className="card-title-row compact"
+        eyebrow="Suggested review order"
+        headingLevel="h3"
+        title="Counties to review"
+      />
       <div
         className="rank-list"
         role="list"

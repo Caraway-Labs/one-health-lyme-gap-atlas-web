@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { SiteFooter } from "@/components/site-footer";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -54,14 +55,11 @@ export function AiEthicsPage() {
         className="ethics-content section"
         aria-labelledby="ethics-status"
       >
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Clear about the status of our work</p>
-            <h2 id="ethics-status">
-              What is true today, planned, and undecided
-            </h2>
-          </div>
-        </div>
+        <AtlasSectionHeader
+          eyebrow="Clear about the status of our work"
+          title="What is true today, planned, and undecided"
+          titleId="ethics-status"
+        />
 
         <div className="ethics-statements">
           {aiEthicsContent.statements.map((statement) => (

@@ -1,14 +1,14 @@
 "use client";
 
+import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { CountyActionPlan } from "@/components/county-action-plan";
 import { PdfExportButton } from "@/components/pdf-export-button";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import type { CountyDetail } from "@/generated/models";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
-import { plainPriority, reasonsFor, type ScoreSettings } from "@/lib/atlas-ui";
+import { reasonsFor, type ScoreSettings } from "@/lib/atlas-ui";
 
 export function CountyProfile({
   detail,
@@ -42,9 +42,7 @@ export function CountyProfile({
           </p>
         </div>
         <div className="score-lockup">
-          <Badge className="priority-pill review h-auto">
-            {plainPriority(detail.priority)}
-          </Badge>
+          <AtlasPriorityBadge priority={detail.priority} />
           <strong>{detail.score.score}</strong>
           <span>/ 100</span>
         </div>

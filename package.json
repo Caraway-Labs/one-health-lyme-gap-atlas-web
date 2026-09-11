@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint": "ultracite check",
+    "check:design-system": "node scripts/check-design-system.mjs",
     "typecheck": "tsc --noEmit",
     "generate:api": "orval --config orval.config.ts",
     "test": "vitest run",

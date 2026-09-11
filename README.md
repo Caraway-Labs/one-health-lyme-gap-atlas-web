@@ -14,6 +14,7 @@ npm ci
 npm run generate:api
 npm run typecheck
 npm run lint
+npm run check:design-system
 npm run build
 npm run dev
 ```

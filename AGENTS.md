@@ -10,13 +10,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Frontend design-system rules
 
-- Shared reusable controls must come from `src/components/ui`. Search for an existing primitive before creating a new control.
-- Do not create custom button, input, select, dialog, dropdown, card, badge, table, or tooltip primitives without a documented justification.
-- Use the semantic Tailwind/shadcn tokens in `src/app/globals.css` for UI surfaces, text, actions, borders, and focus states. Do not introduce arbitrary new UI colors for application chrome.
-- Keep Atlas domain and visualization tokens (map ramps, evidence/risk colors, navy/teal brand values, `.priority-pill` severity colors) independent when their data meaning is important.
+- Search `src/components/ui` and existing `atlas-*` domain patterns before creating a control or layout composition.
+- Shared reusable controls must come from `src/components/ui`. Do not create custom button, input, select, dialog, dropdown, card, badge, table, or tooltip primitives without a documented justification.
+- Do not introduce a second UI framework (Mantine, MUI, Chakra, Ant Design, Storybook, etc.).
+- Use semantic Tailwind/shadcn tokens in `src/app/globals.css` for application chrome. Do not hardcode chrome colors when a semantic token exists.
+- Keep Atlas domain and visualization tokens (map ramps, evidence/risk colors, navy/teal brand values, `.priority-pill` severity colors) independent when their data meaning is important. Do not flatten them into `primary`.
 - Domain components compose UI primitives. Do not move scoring, filter, geography, or provenance logic into `src/components/ui`.
 - MapLibre remains the geo rendering layer. Do not wrap or replace map rendering with shadcn.
 - Conversational AI / assistant UI is a separate track (`src/features/assistant`, evidence chat). Do not invent a second chat framework in this migration.
+- Follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). Run `npm run check:design-system` before completion. The `/design-system` gallery is unlinked internal reference, not a product surface.
 - Native HTML is correct when it is the better semantic choice. Documented exceptions:
 
 | Pattern | Location | Why native / domain CSS remains |
@@ -27,7 +29,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | Scoring range inputs | `src/components/experiment-atlas.tsx` | Native `input type="range"`; no shared Slider primitive |
 | Sidebar scrim | `src/components/app-shell.tsx` | Full-viewport dismiss hit target, not a chrome Button |
 | Chat launcher / close / history | `src/components/chat-launcher.tsx`, `src/components/evidence-chat.tsx` | Conversational UI chrome; class-only Button used only for shared actions (New chat, Ask) |
-| `.priority-pill` on `Badge` | `src/components/county-profile.tsx` | Domain severity colors, not a second badge system |
+| `.priority-pill` on `Badge` | `src/components/atlas-priority-badge.tsx` | Domain severity colors composed through Badge, not a second badge system |
 | MapLibre internals | `src/components/atlas-map.tsx` and map CSS | Geo renderer and ramps stay outside shadcn |
 | Assistant demo | `src/features/assistant` | Separate conversational product track |
 
@@ -54,6 +56,7 @@ git diff --exit-code -- contracts src/generated
 npm run format
 npm run typecheck
 npm run lint
+npm run check:design-system
 npm test
 npm run build
 docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.carawaylabs.com .
