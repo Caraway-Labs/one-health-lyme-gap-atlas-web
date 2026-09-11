@@ -1,8 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Lyme Atlas design tokens.
+   Semantic chrome tokens (--background, --primary, …) are for application UI.
+   Domain/viz tokens (--navy, --teal, map ramps, --priority-*) keep data meaning.
+   Token architecture is dark-mode-capable via CSS variables; no dark theme is shipped. */
 :root {
-  /* Atlas domain palette: keep these available for geography and evidence data. */
+  /* Atlas domain palette: geography, evidence, and branded exceptions. */
   --navy: #082a4d;
   --navy-2: #0d3b60;
   --ink: #152c3b;
@@ -18,6 +22,20 @@
   --shadow: 0 16px 45px rgba(8, 42, 77, 0.08);
   --atlas-action-primary: #67d1c4;
   --atlas-action-primary-foreground: #062d36;
+  --priority-urgent-bg: #fde3d7;
+  --priority-urgent-fg: #a43816;
+  --priority-review-bg: #fff1c8;
+  --priority-review-fg: #7c5a00;
+  --priority-watch-bg: #e2f1e6;
+  --priority-watch-fg: #2d6940;
+  --priority-lower-bg: #e8f2f4;
+  --priority-lower-fg: #38666d;
+  --map-ramp-1: #a9d2db;
+  --map-ramp-2: #55a8a3;
+  --map-ramp-3: #87b982;
+  --map-ramp-4: #efc64a;
+  --map-ramp-5: #f49a32;
+  --map-ramp-6: #e9602b;
 
   /* Semantic UI tokens consumed by Tailwind and shadcn primitives. */
   --background: #fbfcfb;
@@ -36,15 +54,59 @@
   --accent-foreground: var(--navy);
   --destructive: #b63d26;
   --destructive-foreground: var(--white);
+  --success: #2d6940;
+  --success-foreground: var(--white);
+  --warning: #7c5a00;
+  --warning-foreground: var(--white);
+  --info: var(--teal);
+  --info-foreground: var(--white);
   --border: var(--line);
   --input: #cbd9d6;
   --ring: var(--teal);
-  --radius: 0.55rem;
-  --radius-sm: 0.4rem;
+  --radius: 0.5rem;
+  --radius-sm: 0.25rem;
   --radius-md: var(--radius);
-  --radius-lg: 0.9rem;
+  --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --shadow-card: var(--shadow);
+
+  /* Typography: sans for UI chrome, serif for display/editorial headings. */
+  --font-sans-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-display-family: Georgia, "Times New Roman", Times, serif;
+  --font-sans: var(--font-sans-family);
+  --font-display: var(--font-display-family);
+  --type-display-size: clamp(3rem, 6vw, 5.75rem);
+  --type-page-size: clamp(2.1rem, 4vw, 3.5rem);
+  --type-section-size: 1.35rem;
+  --type-card-size: 1.55rem;
+  --type-body-size: 1rem;
+  --type-small-size: 0.875rem;
+  --type-eyebrow-size: 0.72rem;
+  --type-metric-size: 2rem;
+  --leading-display: 0.99;
+  --leading-body: 1.65;
+  --tracking-display: -0.055em;
+  --tracking-eyebrow: 0.15em;
+
+  /* 4px spacing scale. Arbitrary values are for viz/layout exceptions only. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --control-height: 2.75rem;
+
+  /* Motion: short purposeful transitions; honor prefers-reduced-motion. */
+  --motion-duration-fast: 120ms;
+  --motion-duration: 200ms;
+  --motion-easing: cubic-bezier(0.2, 0, 0, 1);
+  --focus-ring-width: 3px;
 
   /* Shared application-shell sizing: keeps route chrome compact and predictable. */
   --shell-sidebar-width: 16rem;
@@ -55,9 +117,12 @@
   --layout-hero-block: clamp(4rem, 7vw, 5.75rem);
   --layout-section-block: clamp(3rem, 5vw, 4rem);
   --layout-experiment-top: clamp(2.75rem, 4vw, 3.75rem);
+  --layout-content-max: 90rem;
 }
 
 @theme inline {
+  --font-sans: var(--font-sans-family);
+  --font-serif: var(--font-display-family);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -74,6 +139,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -93,14 +164,9 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  line-height: var(--leading-body);
 }
 .app-shell {
   display: flex;
@@ -117,7 +183,7 @@ body {
   overflow: auto;
   border-right: 1px solid var(--border);
   background: var(--card);
-  transition: width 0.2s;
+  transition: width var(--motion-duration) var(--motion-easing);
 }
 .app-shell-collapsed .app-sidebar {
   width: var(--shell-sidebar-compact-width);
@@ -230,7 +296,7 @@ body {
     left: 0;
     transform: translateX(-100%);
     width: min(18rem, 86vw);
-    transition: transform 0.2s;
+    transition: transform var(--motion-duration) var(--motion-easing);
   }
   .app-sidebar-open {
     transform: translateX(0);
@@ -264,11 +330,6 @@ body {
     background: rgba(8, 42, 77, 0.35);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .app-sidebar {
-    transition: none;
-  }
-}
 button,
 input,
 select {
@@ -277,6 +338,44 @@ select {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.type-display {
+  font-family: var(--font-display);
+  font-size: var(--type-display-size);
+  font-weight: 500;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+}
+.type-page {
+  font-family: var(--font-display);
+  font-size: var(--type-page-size);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.type-section {
+  font-family: var(--font-display);
+  font-size: var(--type-section-size);
+  font-weight: 500;
+}
+.type-card {
+  font-family: var(--font-display);
+  font-size: var(--type-card-size);
+  font-weight: 500;
+}
+.type-body {
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  line-height: var(--leading-body);
+}
+.type-small {
+  font-family: var(--font-sans);
+  font-size: var(--type-small-size);
+}
+.type-metric {
+  font-family: var(--font-display);
+  font-size: var(--type-metric-size);
+  font-weight: 500;
 }
 
 .hero {
@@ -386,7 +485,7 @@ a {
 .dictionary-content h2 {
   margin: 0.25rem 0 0;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 500;
 }
@@ -425,9 +524,9 @@ a {
 .eyebrow,
 .kicker {
   color: var(--teal);
-  font-size: 0.72rem;
+  font-size: var(--type-eyebrow-size);
   font-weight: 800;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
 }
 .eyebrow.light {
@@ -435,12 +534,12 @@ a {
 }
 .hero h1 {
   max-width: 900px;
-  margin: 1rem 0 1.25rem;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(3rem, 6vw, 5.75rem);
+  margin: var(--space-4) 0 var(--space-5);
+  font-family: var(--font-display);
+  font-size: var(--type-display-size);
   font-weight: 500;
-  letter-spacing: -0.055em;
-  line-height: 0.99;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
 }
 .hero-content > div > p {
   max-width: 750px;
@@ -455,7 +554,7 @@ a {
   margin-top: 2rem;
 }
 .hero-actions a {
-  min-height: 2.75rem;
+  min-height: var(--control-height);
   padding: 0.72rem 1rem;
   font-size: 0.86rem;
   font-weight: 750;
@@ -491,7 +590,7 @@ a {
   border-radius: 50%;
   background: #67d1c4;
   color: #073c46;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-weight: 700;
 }
 .hero-note strong {
@@ -532,8 +631,8 @@ a {
 }
 .stat-strip strong {
   color: var(--navy);
-  font-family: Georgia, serif;
-  font-size: 2rem;
+  font-family: var(--font-display);
+  font-size: var(--type-metric-size);
   font-weight: 500;
 }
 .stat-strip span {
@@ -544,22 +643,22 @@ a {
 }
 
 .section {
-  max-width: 1440px;
+  max-width: var(--layout-content-max);
   margin: auto;
   padding: var(--layout-section-block) var(--layout-inline);
 }
 .section-heading {
   display: flex;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-8);
   align-items: end;
   justify-content: space-between;
-  gap: 2rem;
+  gap: var(--space-8);
 }
 .section-heading h2 {
   margin: 0.4rem 0 0.5rem;
   color: var(--navy);
-  font-family: Georgia, serif;
-  font-size: clamp(2.1rem, 4vw, 3.5rem);
+  font-family: var(--font-display);
+  font-size: var(--type-page-size);
   font-weight: 500;
   letter-spacing: -0.04em;
 }
@@ -597,11 +696,11 @@ a {
 .filter-bar {
   display: grid;
   grid-template-columns: 0.8fr 1.3fr 1.1fr auto;
-  gap: 0.8rem;
-  margin-bottom: 1rem;
-  padding: 1rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
   border: 1px solid var(--border);
-  border-radius: 0.8rem;
+  border-radius: var(--radius-lg);
   background: var(--card);
 }
 .filter-bar label {
@@ -617,6 +716,7 @@ a {
   text-transform: uppercase;
 }
 .filter-bar [data-slot="button"] {
+  min-height: var(--control-height);
   align-self: end;
 }
 
@@ -662,8 +762,8 @@ a {
 .card-title-row h3 {
   margin: 0.2rem 0 0;
   color: var(--navy);
-  font-family: Georgia, serif;
-  font-size: 1.55rem;
+  font-family: var(--font-display);
+  font-size: var(--type-card-size);
   font-weight: 500;
 }
 .map-scope {
@@ -720,22 +820,22 @@ a {
   border-radius: 1rem;
 }
 .legend-ramp i:nth-child(1) {
-  background: #a9d2db;
+  background: var(--map-ramp-1);
 }
 .legend-ramp i:nth-child(2) {
-  background: #55a8a3;
+  background: var(--map-ramp-2);
 }
 .legend-ramp i:nth-child(3) {
-  background: #87b982;
+  background: var(--map-ramp-3);
 }
 .legend-ramp i:nth-child(4) {
-  background: #efc64a;
+  background: var(--map-ramp-4);
 }
 .legend-ramp i:nth-child(5) {
-  background: #f49a32;
+  background: var(--map-ramp-5);
 }
 .legend-ramp i:nth-child(6) {
-  background: #e9602b;
+  background: var(--map-ramp-6);
 }
 .legend small {
   justify-self: end;
@@ -793,7 +893,7 @@ a {
 }
 .rank-number {
   color: #92a2a7;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 0.78rem;
 }
 .rank-name {
@@ -843,7 +943,7 @@ a {
 .profile-header h3 {
   margin: 0.25rem 0 0.2rem;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 2.2rem;
   font-weight: 500;
   letter-spacing: -0.035em;
@@ -861,7 +961,7 @@ a {
 }
 .score-lockup strong {
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 3.2rem;
   font-weight: 500;
   line-height: 1;
@@ -879,20 +979,20 @@ a {
   font-weight: 850;
 }
 .priority-pill.urgent {
-  background: #fde3d7;
-  color: #a43816;
+  background: var(--priority-urgent-bg);
+  color: var(--priority-urgent-fg);
 }
 .priority-pill.review {
-  background: #fff1c8;
-  color: #7c5a00;
+  background: var(--priority-review-bg);
+  color: var(--priority-review-fg);
 }
 .priority-pill.watch {
-  background: #e2f1e6;
-  color: #2d6940;
+  background: var(--priority-watch-bg);
+  color: var(--priority-watch-fg);
 }
 .priority-pill.lower {
-  background: #e8f2f4;
-  color: #38666d;
+  background: var(--priority-lower-bg);
+  color: var(--priority-lower-fg);
 }
 .profile-grid {
   display: grid;
@@ -1122,7 +1222,7 @@ a {
   border-radius: 50%;
   background: var(--teal);
   color: white;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
 }
 .next-questions h4 {
   margin-bottom: 0.45rem;
@@ -1182,7 +1282,7 @@ a {
   padding: 0.7rem 0.85rem;
   border-radius: 0.45rem;
   background: rgba(255, 255, 255, 0.1);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1rem;
 }
 .formula b {
@@ -1266,13 +1366,13 @@ a {
 }
 .source-card > span {
   color: #647578;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 0.85rem;
 }
 .source-card h3 {
   margin: 1.5rem 0 0.6rem;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 500;
 }
@@ -1311,7 +1411,7 @@ a {
   border-radius: 50%;
   background: var(--mint);
   color: var(--teal-dark);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
 }
 .guardrail-grid h3 {
   margin: 1rem 0 0.5rem;
@@ -1336,7 +1436,7 @@ a {
 .mvp-boundary h3 {
   margin: 0.5rem 0 0;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.7rem;
   font-weight: 500;
 }
@@ -1401,7 +1501,7 @@ footer > a {
 }
 .privacy-hero h1 {
   margin: 0.4rem 0 1rem;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(2.6rem, 6vw, 4.8rem);
   font-weight: 500;
   letter-spacing: -0.045em;
@@ -1429,7 +1529,7 @@ footer > a {
 }
 .ethics-hero h1 {
   margin: 0.4rem 0 1rem;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(2.8rem, 6vw, 5.1rem);
   letter-spacing: -0.045em;
 }
@@ -1461,7 +1561,7 @@ footer > a {
 .ethics-related h3 {
   margin: 0.65rem 0;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.35rem;
 }
 .ethics-statement > p:not(.ethics-status),
@@ -1512,7 +1612,7 @@ footer > a {
 .ethics-section h2 {
   margin: 0;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(1.8rem, 3vw, 2.6rem);
   letter-spacing: -0.035em;
 }
@@ -1597,7 +1697,7 @@ footer > a {
 .privacy-section h2 {
   margin: 0 0 0.6rem;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-weight: 500;
 }
 .privacy-principles h3 {
@@ -1774,7 +1874,7 @@ footer > a {
 .chat-panel h1 {
   margin: 0.3rem 0 0;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(1.4rem, 3vw, 2.1rem);
   font-weight: 500;
 }
@@ -1801,7 +1901,7 @@ footer > a {
 }
 .chat-empty strong {
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.4rem;
   font-weight: 500;
 }
@@ -1951,8 +2051,9 @@ footer > a {
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -1965,7 +2066,7 @@ footer > a {
   text-align: center;
 }
 .load-state h1 {
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-weight: 500;
 }
 .load-state p {
@@ -2171,19 +2272,6 @@ footer > a {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
 .maplibre-atlas {
   width: 100%;
   height: 100%;
@@ -2219,7 +2307,7 @@ footer > a {
 .full-table h3 {
   margin-top: 0;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.55rem;
   font-weight: 500;
 }
@@ -2294,7 +2382,7 @@ select:focus-visible {
   max-width: 850px;
   margin: 0.45rem 0 0.6rem;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(2.2rem, 4.4vw, 4.3rem);
   font-weight: 500;
   letter-spacing: -0.045em;
@@ -2348,7 +2436,7 @@ select:focus-visible {
 .experiment-card h2 {
   margin: 0.4rem 0 0.8rem;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(1.5rem, 2.5vw, 2.2rem);
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -2366,7 +2454,7 @@ select:focus-visible {
   text-align: center;
 }
 .experiment-load h1 {
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-weight: 500;
 }
 .decision-brief {
@@ -2406,7 +2494,7 @@ select:focus-visible {
   font-weight: 800;
 }
 .experiment-score strong {
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 3rem;
   font-weight: 500;
   line-height: 1;
@@ -2591,7 +2679,7 @@ select:focus-visible {
 .workbench-pane h2 {
   margin: 0.25rem 0 0.85rem;
   color: var(--navy);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.4rem;
   font-weight: 500;
 }
@@ -2708,7 +2796,7 @@ select:focus-visible {
 .comparison-score {
   margin: 0.4rem 0;
   color: var(--navy) !important;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 3.5rem;
   line-height: 1;
 }
@@ -3011,4 +3099,46 @@ select:focus-visible {
   .footer-links {
     justify-content: start;
   }
+}
+
+.design-system-gallery {
+  max-width: var(--layout-content-max);
+  margin: auto;
+  padding: var(--layout-section-block) var(--layout-inline);
+  display: grid;
+  gap: var(--space-12);
+}
+.design-system-gallery header p {
+  max-width: 42rem;
+  color: var(--muted-foreground);
+}
+.design-system-swatches,
+.design-system-specimens,
+.design-system-primitives {
+  display: grid;
+  gap: var(--space-4);
+}
+.design-system-swatches {
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+.design-system-swatch {
+  min-height: 6rem;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--foreground);
+  background: var(--card);
+  font-size: var(--type-small-size);
+}
+.design-system-swatch-chip {
+  flex: 1;
+  min-height: 2.5rem;
+  border-radius: var(--radius);
+}
+.design-system-primitives {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  align-items: start;
 }

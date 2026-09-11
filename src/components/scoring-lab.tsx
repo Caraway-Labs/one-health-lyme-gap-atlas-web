@@ -1,3 +1,4 @@
+import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,17 +18,13 @@ export function ScoringLab({
 }) {
   return (
     <section className="scoring-section section" id="scoring">
-      <div className="section-heading light-heading">
-        <div>
-          <span className="eyebrow light">Transparent assumptions</span>
-          <h2>How counties are prioritized</h2>
-          <p>
-            Adjust the assumptions below to see how they affect the county
-            ranking. The calculation is transparent and uses no predictive
-            model.
-          </p>
-        </div>
-      </div>
+      <AtlasSectionHeader
+        className="section-heading light-heading"
+        description="Adjust the assumptions below to see how they affect the county ranking. The calculation is transparent and uses no predictive model."
+        eyebrow="Transparent assumptions"
+        eyebrowClassName="light"
+        title="How counties are prioritized"
+      />
       <div className="scoring-grid">
         <Card className="formula-card gap-0 bg-[rgba(255,255,255,0.06)] py-0 text-inherit ring-0">
           <span className="formula-label">How the ranking works</span>

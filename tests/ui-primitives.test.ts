@@ -8,9 +8,8 @@ describe("shared UI primitives", () => {
     expect(buttonVariants({ variant: "default" })).toContain("bg-primary");
     expect(buttonVariants({ variant: "secondary" })).toContain("bg-secondary");
     expect(buttonVariants({ variant: "ghost" })).toContain("hover:bg-muted");
-    expect(buttonVariants({ variant: "destructive" })).toContain(
-      "text-destructive"
-    );
+    expect(buttonVariants({ variant: "outline" })).toContain("border-border");
+    expect(buttonVariants({ size: "default" })).toContain("h-8");
   });
 
   it("maps status badges to semantic variants", () => {

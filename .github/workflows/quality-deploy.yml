@@ -28,6 +28,7 @@ jobs:
       - run: git diff --exit-code -- contracts src/generated
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run check:design-system
       - run: npm test
       - name: Run blocking E2E coverage except accepted mobile privacy defect
         run: >-

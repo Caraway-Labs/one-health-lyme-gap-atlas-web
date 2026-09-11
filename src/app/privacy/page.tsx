@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { SiteFooter } from "@/components/site-footer";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -35,12 +36,11 @@ export default function PrivacyPage() {
         className="privacy-content section"
         aria-labelledby="privacy-commitments"
       >
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Our commitments</p>
-            <h2 id="privacy-commitments">Use less data. Explain it clearly.</h2>
-          </div>
-        </div>
+        <AtlasSectionHeader
+          eyebrow="Our commitments"
+          title="Use less data. Explain it clearly."
+          titleId="privacy-commitments"
+        />
         <div className="privacy-principles">
           <article>
             <h3>Public exploration stays public</h3>

@@ -8,6 +8,7 @@ import {
   followUpPlanFor,
   matchesEvidence,
   numericParam,
+  priorityTone,
   reasonsFor,
 } from "../src/lib/atlas-ui";
 import { countyBelongsToDistrict } from "../src/lib/health-districts";
@@ -75,6 +76,13 @@ describe("atlas UI rules", () => {
     expect(numericParam("65", 0, 40, 85, 5)).toBe(65);
     expect(numericParam("66", 65, 40, 85, 5)).toBe(65);
     expect(numericParam("100", 65, 40, 85, 5)).toBe(65);
+  });
+
+  it("maps published priority labels onto domain severity tones", () => {
+    expect(priorityTone("Priority 1 — Immediate")).toBe("urgent");
+    expect(priorityTone("Priority 2 — Review")).toBe("review");
+    expect(priorityTone("Watch")).toBe("watch");
+    expect(priorityTone("Priority 3")).toBe("lower");
   });
 
   it("applies every evidence view consistently", () => {

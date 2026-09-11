@@ -12,6 +12,7 @@ describe("Atlas navigation contract", () => {
 
     expect(new Set(hrefs).size).toBe(hrefs.length);
     expect(hrefs).toContain("/geographic_explorer");
+    expect(hrefs).not.toContain("/design-system");
     expect(hrefs).not.toContain("/variant_7");
   });
 

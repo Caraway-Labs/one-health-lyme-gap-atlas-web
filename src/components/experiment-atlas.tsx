@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AtlasFilters } from "@/components/atlas-filters";
 import { AtlasMap } from "@/components/atlas-map";
+import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { PdfExportButton } from "@/components/pdf-export-button";
 import { ResultsTable } from "@/components/results-table";
 import { Button } from "@/components/ui/button";
@@ -223,8 +224,9 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   if (metadataQuery.isPending) {
     return (
       <main className="experiment-load">
-        <h1>Loading the Atlas experiment</h1>
-        <p>Retrieving the current governed county release.</p>
+        <AtlasStatusMessage title="Loading the Atlas experiment" tone="loading">
+          <p>Retrieving the current governed county release.</p>
+        </AtlasStatusMessage>
       </main>
     );
   }
@@ -236,9 +238,13 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   ) {
     return (
       <main className="experiment-load">
-        <h1>This experiment is temporarily unavailable</h1>
-        <p>Unable to retrieve the current governed release.</p>
-        <Button onClick={() => location.reload()}>Try again</Button>
+        <AtlasStatusMessage
+          action={<Button onClick={() => location.reload()}>Try again</Button>}
+          title="This experiment is temporarily unavailable"
+          tone="error"
+        >
+          <p>Unable to retrieve the current governed release.</p>
+        </AtlasStatusMessage>
       </main>
     );
   }
@@ -939,7 +945,9 @@ function MapPanel({
             onSelect={onSelect}
           />
         ) : (
-          <div className="map-loading">Loading map…</div>
+          <AtlasStatusMessage className="map-loading" tone="loading">
+            Loading map…
+          </AtlasStatusMessage>
         )}
       </div>
       <p>

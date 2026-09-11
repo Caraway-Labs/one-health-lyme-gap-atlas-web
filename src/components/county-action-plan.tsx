@@ -27,7 +27,7 @@ export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
 
   return (
     <Card
-      className="action-plan gap-0 bg-[#f2f8f6] py-0 ring-0"
+      className="action-plan bg-muted gap-0 py-0 ring-0"
       aria-labelledby="county-action-heading"
       role="region"
     >

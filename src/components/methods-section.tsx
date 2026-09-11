@@ -1,5 +1,7 @@
 "use client";
 
+import { AtlasDataStamp } from "@/components/atlas-data-stamp";
+import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { AtlasMetadata } from "@/generated/models";
@@ -11,20 +13,17 @@ import {
 export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
   return (
     <section className="methods-section section" id="methods">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">Data sources and limitations</span>
-          <h2>How to interpret the Atlas</h2>
-          <p>
-            County data are combined using standard FIPS codes. Each source
-            retains its year, source, and known limitations.
-          </p>
-        </div>
-        <span className="version-stamp">
-          Generated {new Date(metadata.generated_at).toLocaleDateString()} ·
-          Loaded {new Date(metadata.loaded_at).toLocaleDateString()}
-        </span>
-      </div>
+      <AtlasSectionHeader
+        aside={
+          <AtlasDataStamp variant="inline">
+            Generated {new Date(metadata.generated_at).toLocaleDateString()} ·
+            Loaded {new Date(metadata.loaded_at).toLocaleDateString()}
+          </AtlasDataStamp>
+        }
+        description="County data are combined using standard FIPS codes. Each source retains its year, source, and known limitations."
+        eyebrow="Data sources and limitations"
+        title="How to interpret the Atlas"
+      />
       <div className="source-grid">
         {metadata.sources.map((source, index) => (
           <a

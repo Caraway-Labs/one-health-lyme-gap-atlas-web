@@ -15,6 +15,21 @@ export interface ScoreSettings {
   missing_human_weakness: number;
 }
 
+export type PriorityTone = "urgent" | "review" | "watch" | "lower";
+
+export function priorityTone(priority: string): PriorityTone {
+  if (priority.includes("Priority 1")) {
+    return "urgent";
+  }
+  if (priority.includes("Priority 2")) {
+    return "review";
+  }
+  if (priority.toLowerCase().includes("watch")) {
+    return "watch";
+  }
+  return "lower";
+}
+
 export function plainPriority(priority: string) {
   if (priority.includes("Priority 1")) {
     return "Highest review priority";

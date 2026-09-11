@@ -5,8 +5,11 @@ import { useQueryStates } from "nuqs";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { AtlasDashboard } from "@/components/atlas-dashboard";
+import { AtlasDataStamp } from "@/components/atlas-data-stamp";
 import { AtlasFilters } from "@/components/atlas-filters";
 import { AtlasHero } from "@/components/atlas-hero";
+import { AtlasSectionHeader } from "@/components/atlas-section-header";
+import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { MethodsSection } from "@/components/methods-section";
 import { ResultsTable } from "@/components/results-table";
 import { ScoringLab } from "@/components/scoring-lab";
@@ -215,7 +218,7 @@ function AtlasPage() {
   if (metadataQuery.isPending) {
     return (
       <main className="load-state">
-        <div>
+        <AtlasStatusMessage tone="loading">
           <div className="loading-mark" aria-hidden="true">
             <span />
             <span />
@@ -223,7 +226,7 @@ function AtlasPage() {
           </div>
           <h1>Loading the Atlas</h1>
           <p>Retrieving the governed county release through the public API.</p>
-        </div>
+        </AtlasStatusMessage>
       </main>
     );
   }
@@ -235,16 +238,20 @@ function AtlasPage() {
   ) {
     return (
       <main className="load-state">
-        <div>
-          <h1>The Atlas is temporarily unavailable</h1>
+        <AtlasStatusMessage
+          action={
+            <Button
+              {...analyticsControlAttributes("page_retry")}
+              onClick={() => location.reload()}
+            >
+              Try again
+            </Button>
+          }
+          title="The Atlas is temporarily unavailable"
+          tone="error"
+        >
           <p>Unable to retrieve the current governed release.</p>
-          <Button
-            {...analyticsControlAttributes("page_retry")}
-            onClick={() => location.reload()}
-          >
-            Try again
-          </Button>
-        </div>
+        </AtlasStatusMessage>
       </main>
     );
   }
@@ -275,25 +282,16 @@ function AtlasPage() {
         </div>
       </section>
       <section className="atlas-shell section" id="atlas">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">Interactive county atlas</span>
-            <h2>Where should surveillance partners look next?</h2>
-            <p>
-              Filter the ranked counties, select a place, and review the
-              evidence before taking action.
-            </p>
-          </div>
-          <div className="data-stamp">
-            <span>
-              <i className="pulse" />
-              Current governed snapshot
-            </span>
-            <small>
+        <AtlasSectionHeader
+          aside={
+            <AtlasDataStamp>
               {metadata.release_id} · {metadata.methodology_version}
-            </small>
-          </div>
-        </div>
+            </AtlasDataStamp>
+          }
+          description="Filter the ranked counties, select a place, and review the evidence before taking action."
+          eyebrow="Interactive county atlas"
+          title="Where should surveillance partners look next?"
+        />
         <AtlasFilters
           metadata={metadata}
           stateFilter={stateFilter}
