@@ -1,5 +1,7 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import type { AtlasMetadata } from "@/generated/models";
 import {
   analyticsControlAttributes,
@@ -38,7 +40,9 @@ export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
           >
             <span>0{index + 1}</span>
             <h3>{source.label}</h3>
-            <strong>{source.vintage}</strong>
+            <Badge className="source-vintage h-auto" variant="secondary">
+              {source.vintage}
+            </Badge>
             <p>{source.note}</p>
             <small>View source ↗</small>
           </a>
@@ -102,10 +106,10 @@ function Guardrail({
   children: React.ReactNode;
 }) {
   return (
-    <article>
+    <Card className="guardrail-card gap-0 rounded-none bg-[var(--pale)] py-0 ring-0">
       <span className="guardrail-icon">{icon}</span>
       <h3>{title}</h3>
       <p>{children}</p>
-    </article>
+    </Card>
   );
 }

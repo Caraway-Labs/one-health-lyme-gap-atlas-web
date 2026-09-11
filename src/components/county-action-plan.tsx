@@ -1,3 +1,5 @@
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import type { CountyDetail } from "@/generated/models";
 import { followUpPlanFor } from "@/lib/atlas-ui";
 
@@ -24,13 +26,19 @@ export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
   const plan = followUpPlanFor(detail);
 
   return (
-    <section className="action-plan" aria-labelledby="county-action-heading">
+    <Card
+      className="action-plan gap-0 bg-[#f2f8f6] py-0 ring-0"
+      aria-labelledby="county-action-heading"
+      role="region"
+    >
       <div className="action-plan-heading">
         <div>
           <span className="eyebrow">Suggested follow-up</span>
           <h4 id="county-action-heading">{plan.level}</h4>
         </div>
-        <span className="action-timeframe">{plan.timeframe}</span>
+        <Badge className="action-timeframe h-auto" variant="outline">
+          {plan.timeframe}
+        </Badge>
       </div>
       <p className="action-summary">{plan.summary}</p>
       <p className="action-caution">
@@ -63,6 +71,6 @@ export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
           ))}
         </ul>
       </details>
-    </section>
+    </Card>
   );
 }

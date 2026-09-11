@@ -1,5 +1,11 @@
+"use client";
+
 import { CountyActionPlan } from "@/components/county-action-plan";
 import { PdfExportButton } from "@/components/pdf-export-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
 import type { CountyDetail } from "@/generated/models";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { plainPriority, reasonsFor, type ScoreSettings } from "@/lib/atlas-ui";
@@ -23,7 +29,7 @@ export function CountyProfile({
     ["Potential barriers to diagnosis and reporting", detail.score.community],
   ];
   return (
-    <article className="card profile-card">
+    <Card className="profile-card gap-0 py-0">
       <div className="profile-header">
         <div>
           <span className="eyebrow">Selected county</span>
@@ -36,9 +42,9 @@ export function CountyProfile({
           </p>
         </div>
         <div className="score-lockup">
-          <span className="priority-pill review">
+          <Badge className="priority-pill review h-auto">
             {plainPriority(detail.priority)}
-          </span>
+          </Badge>
           <strong>{detail.score.score}</strong>
           <span>/ 100</span>
         </div>
@@ -66,13 +72,13 @@ export function CountyProfile({
             ))}
           </ol>
           <div className="briefing-actions">
-            <button
+            <Button
               {...analyticsControlAttributes("county_summary_copy")}
-              className="button secondary"
+              className="h-11"
               onClick={onCopy}
             >
               {copied ? "Summary copied" : "Copy county summary"}
-            </button>
+            </Button>
             <a
               {...analyticsControlAttributes("county_scoring_link")}
               href="#scoring"
@@ -89,15 +95,18 @@ export function CountyProfile({
         <div className="signals-panel">
           <h4>What influenced the ranking</h4>
           {components.map(([label, value]) => (
-            <div className="signal-row" key={label as string}>
+            <Progress
+              className="signal-row flex-col flex-nowrap gap-0"
+              key={label as string}
+              value={Number(value)}
+            >
               <div className="signal-copy">
-                <span>{label}</span>
+                <ProgressLabel className="font-inherit text-inherit">
+                  {label}
+                </ProgressLabel>
                 <strong>{value}</strong>
               </div>
-              <div className="signal-track">
-                <span style={{ width: `${value}%` }} />
-              </div>
-            </div>
+            </Progress>
           ))}
         </div>
         <div className="ledger-panel">
@@ -139,6 +148,6 @@ export function CountyProfile({
         </div>
       </div>
       <CountyActionPlan detail={detail} />
-    </article>
+    </Card>
   );
 }
