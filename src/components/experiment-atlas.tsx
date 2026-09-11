@@ -9,6 +9,14 @@ import { AtlasFilters } from "@/components/atlas-filters";
 import { AtlasMap } from "@/components/atlas-map";
 import { PdfExportButton } from "@/components/pdf-export-button";
 import { ResultsTable } from "@/components/results-table";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   countyV1CountiesFipsGet,
   geometryV1AtlasGeometryGet,
@@ -230,9 +238,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
       <main className="experiment-load">
         <h1>This experiment is temporarily unavailable</h1>
         <p>Unable to retrieve the current governed release.</p>
-        <button className="button primary" onClick={() => location.reload()}>
-          Try again
-        </button>
+        <Button onClick={() => location.reload()}>Try again</Button>
       </main>
     );
   }
@@ -469,15 +475,16 @@ function Decision({
           onSelect={onSelect}
         />
       </section>
-      <button
+      <Button
         className="table-toggle experiment-table-toggle"
         onClick={onToggleTable}
         aria-expanded={showTable}
+        variant="outline"
       >
         {showTable
           ? "Hide accessible county table"
           : "View accessible county table"}
-      </button>
+      </Button>
       {showTable && <ResultsTable counties={counties} onSelect={onSelect} />}
     </>
   );
@@ -733,19 +740,45 @@ function Compare({
         <section className="experiment-card">
           <label className="comparison-select">
             <span>Compare with</span>
-            <select
-              value={comparison?.fips ?? ""}
-              onChange={(event) => onComparison(event.target.value)}
+            <Select
+              value={comparison?.fips}
+              onValueChange={(value) => {
+                if (value) {
+                  onComparison(value);
+                }
+              }}
             >
-              {counties
-                .filter((county) => county.fips !== detail.fips)
-                .slice(0, 40)
-                .map((county) => (
-                  <option key={county.fips} value={county.fips}>
-                    {county.county}, {county.state} · {county.score.score}
-                  </option>
-                ))}
-            </select>
+              <SelectTrigger aria-label="Compare with" className="h-11 w-full">
+                <SelectValue placeholder="Choose another county">
+                  {(value: string | null) => {
+                    const selected =
+                      comparison?.fips === value
+                        ? comparison
+                        : counties.find((county) => county.fips === value);
+                    return selected
+                      ? `${selected.county}, ${selected.state} · ${selected.score.score}`
+                      : "Choose another county";
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {counties
+                  .filter((county) => county.fips !== detail.fips)
+                  .slice(0, 40)
+                  .map((county) => {
+                    const label = `${county.county}, ${county.state} · ${county.score.score}`;
+                    return (
+                      <SelectItem
+                        key={county.fips}
+                        label={label}
+                        value={county.fips}
+                      >
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
+              </SelectContent>
+            </Select>
           </label>
           {comparison ? (
             <>

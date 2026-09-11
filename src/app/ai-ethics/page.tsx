@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SiteFooter } from "@/components/site-footer";
+import { buttonVariants } from "@/components/ui/button";
 import {
   aiEthicsContent,
   type AiEthicsStatementStatus,
@@ -38,7 +39,13 @@ export function AiEthicsPage() {
         <p className="ethics-audience-note">
           {aiEthicsContent.introduction.audienceNote}
         </p>
-        <Link className="button ghost" href="/#atlas">
+        <Link
+          className={buttonVariants({
+            className: "cta-on-dark",
+            variant: "ghost",
+          })}
+          href="/#atlas"
+        >
           Return to the Atlas
         </Link>
       </section>

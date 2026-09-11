@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -173,14 +174,14 @@ export function EvidenceChat({
                 : "Knowledge graph evidence workspace"}
             </h1>
           </div>
-          <button
-            className="button secondary"
+          <Button
+            variant="secondary"
             {...analyticsControlAttributes("evidence_chat_new")}
             type="button"
             onClick={() => setActiveId("__new__")}
           >
             New chat
-          </button>
+          </Button>
         </header>
         <p className="medical-notice">{publicCopy.medical_notice}</p>
         <div className="chat-transcript" aria-live="polite">
@@ -241,13 +242,13 @@ export function EvidenceChat({
           />
           <div>
             <small>{message.length}/1,000</small>
-            <button
-              className="button primary"
+            <Button
               {...analyticsControlAttributes("evidence_chat_submit")}
               disabled={!message.trim() || pending}
+              type="submit"
             >
               Ask
-            </button>
+            </Button>
           </div>
         </form>
         <footer className="chat-attribution">

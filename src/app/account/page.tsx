@@ -7,6 +7,13 @@ import { FormEvent, useEffect, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   getProfileV1MeProfileGet,
   saveProfileV1MeProfilePut,
 } from "@/generated/atlas";
@@ -35,7 +42,6 @@ const roles: { value: Exclude<UserProfileWriteRole, null>; label: string }[] = [
 ];
 
 const states = [
-  "",
   "AL",
   "AK",
   "AZ",
@@ -87,6 +93,9 @@ const states = [
   "WV",
   "WY",
 ];
+
+const ROLE_UNSET = "unspecified";
+const STATE_UNSET = "none";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -189,41 +198,68 @@ export default function AccountPage() {
           <form className="mt-6 space-y-5" onSubmit={saveProfile}>
             <label className="block text-sm font-medium" htmlFor="role">
               Role
-              <select
-                id="role"
-                className="bg-background mt-2 w-full rounded-md border p-2"
-                value={form.role ?? ""}
-                onChange={(event) =>
+              <Select
+                value={form.role ?? ROLE_UNSET}
+                onValueChange={(value) => {
+                  if (!value) {
+                    return;
+                  }
                   setForm({
                     ...form,
-                    role: (event.target.value as UserProfileWriteRole) || null,
-                  })
-                }
+                    role:
+                      value === ROLE_UNSET
+                        ? null
+                        : (value as UserProfileWriteRole),
+                  });
+                }}
               >
-                <option value="">Prefer not to say</option>
-                {roles.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="role"
+                  aria-label="Role"
+                  className="mt-2 w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ROLE_UNSET}>Prefer not to say</SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
             <label className="block text-sm font-medium" htmlFor="state">
               State
-              <select
-                id="state"
-                className="bg-background mt-2 w-full rounded-md border p-2"
-                value={form.state_code ?? ""}
-                onChange={(event) =>
-                  setForm({ ...form, state_code: event.target.value || null })
-                }
+              <Select
+                value={form.state_code ?? STATE_UNSET}
+                onValueChange={(value) => {
+                  if (!value) {
+                    return;
+                  }
+                  setForm({
+                    ...form,
+                    state_code: value === STATE_UNSET ? null : value,
+                  });
+                }}
               >
-                {states.map((state) => (
-                  <option key={state} value={state}>
-                    {state || "No state selected"}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="state"
+                  aria-label="State"
+                  className="mt-2 w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={STATE_UNSET}>No state selected</SelectItem>
+                  {states.map((state) => (
+                    <SelectItem key={state} value={state}>
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
             {!isPublic && (
               <>

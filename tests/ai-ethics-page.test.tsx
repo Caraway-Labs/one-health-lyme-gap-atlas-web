@@ -36,6 +36,7 @@ describe("AI Ethics page", () => {
     render(<AiEthicsPage />);
 
     screen.getByRole("heading", { name: "What Atlas AI is not for" });
+    screen.getByRole("link", { name: "Return to the Atlas" });
     screen.getByText(/does not provide diagnosis or treatment advice/i);
     screen.getByText(`Version ${aiEthicsContent.version}`);
     expect(
