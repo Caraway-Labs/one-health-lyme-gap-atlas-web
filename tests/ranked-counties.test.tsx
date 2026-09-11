@@ -27,6 +27,9 @@ describe("Ranked counties presentation", () => {
       />
     );
 
+    expect(screen.getByRole("complementary").textContent).toContain(
+      "Counties to review"
+    );
     expect(
       screen.getByRole("list", { name: "Counties suggested for review" })
         .textContent

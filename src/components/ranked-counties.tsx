@@ -21,7 +21,7 @@ export function RankedCounties({
   onToggleTable: () => void;
 }) {
   return (
-    <Card className="rank-card gap-0 py-0">
+    <Card className="rank-card gap-0 py-0" role="complementary">
       <div className="card-title-row compact">
         <div>
           <span className="eyebrow">Suggested review order</span>

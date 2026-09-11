@@ -112,5 +112,9 @@ describe("County profile presentation", () => {
     expect(
       screen.getByRole("button", { name: "Summary copied" }).textContent
     ).toBe("Summary copied");
+    expect(
+      screen.getByRole("region", { name: "Conduct targeted follow-up" })
+        .textContent
+    ).toContain("review recommendation");
   });
 });
