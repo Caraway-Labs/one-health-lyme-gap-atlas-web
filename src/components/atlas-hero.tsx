@@ -1,3 +1,4 @@
+import { buttonVariants } from "@/components/ui/button";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 export function AtlasHero() {
@@ -16,16 +17,19 @@ export function AtlasHero() {
           </p>
           <div className="hero-actions">
             <a
-              className="button primary"
-              {...analyticsControlAttributes("hero_explore_counties")}
+              className={buttonVariants({ className: "hero-cta-primary" })}
               href="#atlas"
+              {...analyticsControlAttributes("hero_explore_counties")}
             >
               Explore counties
             </a>
             <a
-              className="button ghost"
-              {...analyticsControlAttributes("hero_methodology")}
+              className={buttonVariants({
+                className: "cta-on-dark",
+                variant: "ghost",
+              })}
               href="#methods"
+              {...analyticsControlAttributes("hero_methodology")}
             >
               Understand the limitations
             </a>

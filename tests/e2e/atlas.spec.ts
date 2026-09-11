@@ -392,19 +392,33 @@ test("keeps filters and score settings in the shareable URL", async ({
   await expect(page).toHaveURL(/q=Adams/);
   await expect(page).toHaveURL(/evidence=ecological/);
   await expect(page).toHaveURL(/eco=70/);
+  await expect(
+    page.getByRole("button", { name: "Download county list" })
+  ).toBeVisible();
 });
 
 test("persists an explicit comparison county in the compare variant URL", async ({
   page,
 }) => {
   await page.goto("/variant_5?county=08001");
-  const comparison = page.getByLabel("Compare with");
-  await comparison.selectOption("06037");
+  await page.getByRole("combobox", { name: "Compare with" }).click();
+  await page.getByRole("option", { name: /Los Angeles, CA/ }).click();
   await expect(page).toHaveURL(/compare=06037/);
-  await expect(comparison).toHaveValue("06037");
+  await expect(
+    page.getByRole("heading", { name: "Los Angeles, CA" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Compare with" })
+  ).toContainText("Los Angeles, CA");
 
   await page.reload();
-  await expect(page.getByLabel("Compare with")).toHaveValue("06037");
+  await expect(page).toHaveURL(/compare=06037/);
+  await expect(
+    page.getByRole("heading", { name: "Los Angeles, CA" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Compare with" })
+  ).toContainText("Los Angeles, CA");
 });
 
 test("shows a recoverable status when the governed API release is unavailable", async ({

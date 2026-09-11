@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,7 +20,7 @@ export function ResultsTable({
   onSelect: (fips: string) => void;
 }) {
   return (
-    <div className="card full-table">
+    <Card className="full-table gap-0 py-0">
       <h3>Complete county list</h3>
       <div className="table-scroll">
         <Table>
@@ -60,6 +61,6 @@ export function ResultsTable({
           </TableBody>
         </Table>
       </div>
-    </div>
+    </Card>
   );
 }

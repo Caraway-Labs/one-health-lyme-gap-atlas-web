@@ -1,7 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getUser } = vi.hoisted(() => ({
+const { getProfile, getUser } = vi.hoisted(() => ({
+  getProfile: vi.fn<() => Promise<never>>(),
   getUser: vi.fn<() => Promise<{ data: { user: null } }>>(),
 }));
 
@@ -20,7 +21,7 @@ vi.mock(import("../src/lib/supabase/client"), () => ({
   }),
 }));
 vi.mock(import("../src/generated/atlas"), () => ({
-  getProfileV1MeProfileGet: vi.fn<() => Promise<never>>(),
+  getProfileV1MeProfileGet: getProfile,
   saveProfileV1MeProfilePut: vi.fn<() => Promise<never>>(),
 }));
 
@@ -33,6 +34,7 @@ describe("account page", () => {
 
   afterEach(() => {
     cleanup();
+    getProfile.mockReset();
     getUser.mockReset();
   });
 
@@ -55,5 +57,23 @@ describe("account page", () => {
         "Your profile is temporarily unavailable. You can continue exploring Atlas."
       )
     ).toBeTruthy();
+  });
+
+  it("uses shared select primitives for optional profile fields", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } as never },
+    });
+    getProfile.mockResolvedValue({
+      data: { profile: null },
+      status: 200,
+    } as never);
+
+    render(<AccountPage />);
+
+    await expect(
+      screen.findByRole("combobox", { name: "Role" })
+    ).resolves.toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "State" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Save profile" })).toBeTruthy();
   });
 });

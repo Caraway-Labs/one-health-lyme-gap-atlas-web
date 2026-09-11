@@ -454,32 +454,23 @@ a {
   gap: 0.8rem;
   margin-top: 2rem;
 }
-.button {
-  display: inline-flex;
+.hero-actions a {
   min-height: 2.75rem;
   padding: 0.72rem 1rem;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: var(--radius);
-  cursor: pointer;
   font-size: 0.86rem;
   font-weight: 750;
-  transition:
-    transform 0.15s ease,
-    background 0.15s ease,
-    border-color 0.15s ease;
 }
-.button:hover {
-  transform: translateY(-1px);
-}
-.button.primary {
+.hero-cta-primary {
   background: var(--atlas-action-primary);
   color: var(--atlas-action-primary-foreground);
 }
-.button.ghost {
+.cta-on-dark {
   border: 1px solid rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+.cta-on-dark:hover {
+  background: rgba(255, 255, 255, 0.12);
   color: white;
 }
 .hero-note {
@@ -629,12 +620,6 @@ a {
   align-self: end;
 }
 
-.card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: var(--shadow-card);
-}
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.9fr);
@@ -963,10 +948,6 @@ a {
   margin-top: 1.25rem;
   align-items: center;
   gap: 1rem;
-}
-.button.secondary {
-  background: var(--primary);
-  color: var(--primary-foreground);
 }
 .briefing-actions a {
   color: var(--teal-dark);
@@ -2141,7 +2122,7 @@ footer > a {
     align-items: stretch;
     flex-direction: column;
   }
-  .hero-actions .button {
+  .hero-actions a {
     width: 100%;
   }
   .stat-strip,
@@ -2720,13 +2701,9 @@ select:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.comparison-select select {
+.comparison-select [data-slot="select-trigger"] {
   min-height: 2.75rem;
-  padding: 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  background: white;
-  color: var(--ink);
+  width: 100%;
 }
 .comparison-score {
   margin: 0.4rem 0;

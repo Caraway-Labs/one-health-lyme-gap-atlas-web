@@ -10,9 +10,28 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Frontend design-system rules
 
-- Use the semantic Tailwind/shadcn tokens in `src/app/globals.css` for UI surfaces, text, actions, borders, and focus states; do not introduce arbitrary new UI colors.
-- Use shared primitives from `@/components/ui` before creating new one-off controls.
-- Keep Atlas domain and visualization tokens (map ramps, evidence/risk colors, navy/teal brand values) independent when their data meaning is important.
+- Shared reusable controls must come from `src/components/ui`. Search for an existing primitive before creating a new control.
+- Do not create custom button, input, select, dialog, dropdown, card, badge, table, or tooltip primitives without a documented justification.
+- Use the semantic Tailwind/shadcn tokens in `src/app/globals.css` for UI surfaces, text, actions, borders, and focus states. Do not introduce arbitrary new UI colors for application chrome.
+- Keep Atlas domain and visualization tokens (map ramps, evidence/risk colors, navy/teal brand values, `.priority-pill` severity colors) independent when their data meaning is important.
+- Domain components compose UI primitives. Do not move scoring, filter, geography, or provenance logic into `src/components/ui`.
+- MapLibre remains the geo rendering layer. Do not wrap or replace map rendering with shadcn.
+- Conversational AI / assistant UI is a separate track (`src/features/assistant`, evidence chat). Do not invent a second chat framework in this migration.
+- Native HTML is correct when it is the better semantic choice. Documented exceptions:
+
+| Pattern | Location | Why native / domain CSS remains |
+| --- | --- | --- |
+| Rank-row county buttons | `src/components/ranked-counties.tsx` | Domain list rows with score-color encoding, not generic actions |
+| Variant county-list rows | `src/components/experiment-atlas.tsx` | Same ranked-list semantics in interview variants |
+| Guided-step tabs | `src/components/experiment-atlas.tsx` | Native `role="tab"` stepper, not a shared Button |
+| Scoring range inputs | `src/components/experiment-atlas.tsx` | Native `input type="range"`; no shared Slider primitive |
+| Sidebar scrim | `src/components/app-shell.tsx` | Full-viewport dismiss hit target, not a chrome Button |
+| Chat launcher / close / history | `src/components/chat-launcher.tsx`, `src/components/evidence-chat.tsx` | Conversational UI chrome; class-only Button used only for shared actions (New chat, Ask) |
+| `.priority-pill` on `Badge` | `src/components/county-profile.tsx` | Domain severity colors, not a second badge system |
+| MapLibre internals | `src/components/atlas-map.tsx` and map CSS | Geo renderer and ramps stay outside shadcn |
+| Assistant demo | `src/features/assistant` | Separate conversational product track |
+
+- Editorial dark-hero CTAs may use `.hero-cta-primary` and `.cta-on-dark` on top of Button/`buttonVariants`. Do not reintroduce generic `.button` or `.card` classes.
 
 ## Atlas web instructions
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SiteFooter } from "@/components/site-footer";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Privacy | One Health Lyme Gap Atlas",
@@ -20,7 +21,13 @@ export default function PrivacyPage() {
           turn its visitors into a data product. We do not sell user data, run
           ads, or use Atlas activity for advertising.
         </p>
-        <Link className="button ghost" href="/#atlas">
+        <Link
+          className={buttonVariants({
+            className: "cta-on-dark",
+            variant: "ghost",
+          })}
+          href="/#atlas"
+        >
           Return to the Atlas
         </Link>
       </section>

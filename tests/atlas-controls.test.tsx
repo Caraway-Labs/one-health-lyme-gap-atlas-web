@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AtlasFilters } from "../src/components/atlas-filters";
+import { AtlasHero } from "../src/components/atlas-hero";
 import { RankedCounties } from "../src/components/ranked-counties";
 import { ResultsTable } from "../src/components/results-table";
 import { ScoringLab } from "../src/components/scoring-lab";
@@ -125,6 +126,24 @@ describe("Atlas shared controls", () => {
       screen.getByRole("button", { name: "Adams, CO" }).dataset
         .atlasAnalyticsControl
     ).toBe("results_table_county_select");
+    expect(
+      screen
+        .getByRole("heading", { name: "Complete county list" })
+        .closest('[data-slot="card"]')
+    ).toBeTruthy();
+  });
+
+  it("renders hero calls to action through shared button primitives", () => {
+    render(<AtlasHero />);
+
+    const explore = screen.getByRole("link", { name: "Explore counties" });
+    const methods = screen.getByRole("link", {
+      name: "Understand the limitations",
+    });
+    expect(explore.getAttribute("href")).toBe("#atlas");
+    expect(explore.className).toContain("hero-cta-primary");
+    expect(methods.getAttribute("href")).toBe("#methods");
+    expect(methods.className).toContain("cta-on-dark");
   });
 
   it("identifies ranked county selections as the ranked-list surface", () => {
