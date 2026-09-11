@@ -265,6 +265,12 @@ test("ranked county selection keeps the shareable URL and profile in sync", asyn
   await expect(
     page.getByRole("heading", { name: "Adams, Colorado" })
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Copy county summary" })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Moderate review priority", { exact: true })
+  ).toBeVisible();
   const results = await new AxeBuilder({ page })
     .exclude(".maplibre-atlas")
     .analyze();

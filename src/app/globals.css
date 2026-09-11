@@ -990,17 +990,14 @@ a {
 .signal-copy strong {
   color: var(--navy);
 }
-.signal-track {
+.signal-row [data-slot="progress-track"] {
   height: 0.45rem;
   margin: 0.4rem 0;
   overflow: hidden;
   border-radius: 1rem;
   background: #e8efed;
 }
-.signal-track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
+.signal-row [data-slot="progress-indicator"] {
   background: linear-gradient(90deg, #3ca3a4, #efb846);
 }
 .signal-row small {
@@ -1298,7 +1295,8 @@ a {
   font-size: 1.15rem;
   font-weight: 500;
 }
-.source-card strong {
+.source-card strong,
+.source-card .source-vintage {
   color: var(--teal);
   font-size: 0.7rem;
 }
@@ -1318,7 +1316,8 @@ a {
   gap: 1rem;
   margin-top: 3rem;
 }
-.guardrail-grid article {
+.guardrail-grid article,
+.guardrail-grid .guardrail-card {
   padding: 1.35rem;
   border-top: 3px solid var(--teal);
   background: var(--pale);

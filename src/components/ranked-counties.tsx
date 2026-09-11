@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { CountyScoreSummary } from "@/generated/models";
 import {
   analyticsControlAttributes,
@@ -19,7 +21,7 @@ export function RankedCounties({
   onToggleTable: () => void;
 }) {
   return (
-    <aside className="card rank-card">
+    <Card className="rank-card gap-0 py-0">
       <div className="card-title-row compact">
         <div>
           <span className="eyebrow">Suggested review order</span>
@@ -60,14 +62,15 @@ export function RankedCounties({
         Showing the first 40 filtered counties. The accessible table and CSV
         include the complete result.
       </p>
-      <button
+      <Button
         {...analyticsControlAttributes("results_table_toggle")}
+        aria-expanded={showTable}
         className="table-toggle"
         onClick={onToggleTable}
-        aria-expanded={showTable}
+        variant="outline"
       >
         {showTable ? "Hide full county list" : "View full county list"}
-      </button>
-    </aside>
+      </Button>
+    </Card>
   );
 }

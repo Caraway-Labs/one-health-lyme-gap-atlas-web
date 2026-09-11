@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   analyticsControlAttributes,
@@ -28,7 +29,7 @@ export function ScoringLab({
         </div>
       </div>
       <div className="scoring-grid">
-        <article className="formula-card">
+        <Card className="formula-card gap-0 bg-[rgba(255,255,255,0.06)] py-0 text-inherit ring-0">
           <span className="formula-label">How the ranking works</span>
           <p>
             Counties move higher in the review order when published case data
@@ -43,8 +44,8 @@ export function ScoringLab({
             </span>
           </div>
           <p>Missing county case data are not treated as zero cases.</p>
-        </article>
-        <div className="controls-card">
+        </Card>
+        <Card className="controls-card gap-0 bg-[rgba(255,255,255,0.06)] py-0 text-inherit ring-0">
           <ScoreControl
             label="Weight given to tick and pathogen evidence"
             value={`${settings.ecological_share}%`}
@@ -83,7 +84,7 @@ export function ScoringLab({
               onChange({ ...settings, missing_human_weakness: value }, change)
             }
           />
-        </div>
+        </Card>
       </div>
     </section>
   );

@@ -1,6 +1,8 @@
 import { AtlasMap } from "@/components/atlas-map";
 import { CountyProfile } from "@/components/county-profile";
 import { RankedCounties } from "@/components/ranked-counties";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import type { CountyScoreSummary } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 
@@ -41,19 +43,19 @@ export function AtlasDashboard({
   const results = counties ?? [];
   return (
     <div className="dashboard-grid">
-      <article className="card map-card">
+      <Card className="map-card gap-0 py-0">
         <div className="card-title-row">
           <div>
             <span className="eyebrow">County Review Priority</span>
             <h3>Counties suggested for review</h3>
           </div>
-          <span className="map-scope">
+          <Badge className="map-scope h-auto" variant="secondary">
             {selectedDistrict === "ALL"
               ? mapState === "ALL"
                 ? "Select a county to highlight its state"
                 : `${mapState} highlighted`
               : `${selectedDistrict} highlighted`}
-          </span>
+          </Badge>
         </div>
         <div className="map-wrap">
           {geometry && scores ? (
@@ -88,7 +90,7 @@ export function AtlasDashboard({
               : "Outlined counties belong to the selected health district."}
           </small>
         </div>
-      </article>
+      </Card>
       <div className="dashboard-profile">
         {detail ? (
           <CountyProfile
@@ -99,9 +101,9 @@ export function AtlasDashboard({
             settings={settings}
           />
         ) : (
-          <div className="card profile-card">
+          <Card className="profile-card gap-0 py-0">
             <p>Select a county to see its details.</p>
-          </div>
+          </Card>
         )}
       </div>
       <RankedCounties
