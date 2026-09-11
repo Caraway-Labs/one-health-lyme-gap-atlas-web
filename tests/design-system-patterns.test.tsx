@@ -32,9 +32,7 @@ describe("Atlas domain patterns", () => {
         <p>Retrieving the governed county release.</p>
       </AtlasStatusMessage>
     );
-    expect(screen.getByRole("status").dataset.atlasStatus).toBe(
-      "loading"
-    );
+    expect(screen.getByRole("status").dataset.atlasStatus).toBe("loading");
 
     rerender(
       <AtlasStatusMessage
