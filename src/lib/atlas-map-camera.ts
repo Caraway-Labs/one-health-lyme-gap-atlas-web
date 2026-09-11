@@ -183,9 +183,16 @@ export function countyIsSubstantiallyVisible(input: {
 export function fitCountyBounds(
   map: FitCountyMap,
   bounds: CountyBounds,
-  options?: { duration?: number; maxZoom?: number; padding?: number }
+  options?: {
+    duration?: number;
+    maxZoom?: number;
+    padding?: number;
+    stop?: boolean;
+  }
 ): void {
-  map.stop();
+  if (options?.stop !== false) {
+    map.stop();
+  }
   map.fitBounds(bounds, {
     duration: options?.duration ?? DEFAULT_CAMERA_DURATION_MS,
     maxZoom: options?.maxZoom ?? DEFAULT_FIT_MAX_ZOOM,

@@ -148,6 +148,7 @@ export function AtlasMap({
   const map = useRef<MapLibreMap | null>(null);
   const applyingExternalMove = useRef(false);
   const previousSelectedFips = useRef<string | null>(null);
+  const cameraFitGeneration = useRef(0);
   const [mapReady, setMapReady] = useState(false);
   const selectRef = useRef(onSelect);
   const onMoveRef = useRef(onMove);
@@ -365,7 +366,19 @@ export function AtlasMap({
       return;
     }
 
-    fitCountyBounds(instance, bounds, { duration: mapCameraDuration() });
+    applyingExternalMove.current = true;
+    const generation = cameraFitGeneration.current + 1;
+    cameraFitGeneration.current = generation;
+    instance.stop();
+    instance.once("moveend", () => {
+      if (cameraFitGeneration.current === generation) {
+        applyingExternalMove.current = false;
+      }
+    });
+    fitCountyBounds(instance, bounds, {
+      duration: mapCameraDuration(),
+      stop: false,
+    });
   }, [geometry, mapReady, selectedFips]);
 
   return (

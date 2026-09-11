@@ -37,6 +37,8 @@ const engine = vi.hoisted(() => {
         this.east = bounds[2];
         this.north = bounds[3];
         this.zoom = options.maxZoom;
+        this.emit("move");
+        this.emit("moveend");
       }
     );
     setFilter = vi.fn<(...args: unknown[]) => void>();
@@ -321,6 +323,46 @@ describe("AtlasMap county camera", () => {
       duration: 450,
       maxZoom: 8,
       padding: 48,
+    });
+  });
+
+  it("does not report programmatic county framing as a user camera move", () => {
+    stubPrefersReducedMotion(false);
+    const onMove = vi.fn<(camera: { zoom: number }) => void>();
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        onSelect={onSelect}
+        onMove={onMove}
+      />
+    );
+    const map = loadMap();
+    view.rerender(
+      <AtlasMap
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="06037"
+        onSelect={onSelect}
+        onMove={onMove}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenCalledExactlyOnceWith(
+      [-118.7, 33.7, -118.3, 34],
+      { duration: 450, maxZoom: 8, padding: 48 }
+    );
+    expect(onMove).not.toHaveBeenCalled();
+
+    act(() => {
+      map?.emit("move");
+    });
+    expect(onMove).toHaveBeenCalledExactlyOnceWith({
+      bearing: 0,
+      center: { lat: 38.5, lng: -96.5 },
+      pitch: 0,
+      zoom: 8,
     });
   });
 

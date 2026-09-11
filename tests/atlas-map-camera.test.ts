@@ -208,6 +208,22 @@ describe("fit county bounds helper", () => {
       { duration: 450, maxZoom: 8, padding: 48 },
     ]);
   });
+
+  it("can skip stop when the caller already halted the camera", () => {
+    const map = {
+      stop: vi.fn<() => void>(),
+      fitBounds: vi.fn<FitCountyMap["fitBounds"]>(),
+    };
+
+    fitCountyBounds(map, SMALL_COUNTY, { duration: 0, stop: false });
+
+    expect(map.stop).not.toHaveBeenCalled();
+    expect(map.fitBounds).toHaveBeenCalledExactlyOnceWith(SMALL_COUNTY, {
+      duration: 0,
+      maxZoom: 8,
+      padding: 48,
+    });
+  });
 });
 
 describe("map camera duration", () => {
