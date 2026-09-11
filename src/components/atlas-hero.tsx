@@ -31,7 +31,7 @@ export function AtlasHero() {
             </a>
           </div>
         </div>
-        <aside className="hero-note">
+        <aside className="hero-note" aria-label="Review interpretation note">
           <span className="note-icon">i</span>
           <div>
             <strong>
