@@ -8,7 +8,9 @@
   "paths": {
     "/health/live": {
       "get": {
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "summary": "Live",
         "operationId": "live_health_live_get",
         "responses": {
@@ -31,7 +33,9 @@
     },
     "/health/ready": {
       "get": {
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "summary": "Ready",
         "operationId": "ready_health_ready_get",
         "responses": {
@@ -54,7 +58,9 @@
     },
     "/v1/me/profile": {
       "get": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Get Profile",
         "operationId": "get_profile_v1_me_profile_get",
         "parameters": [
@@ -119,7 +125,9 @@
         }
       },
       "put": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Save Profile",
         "operationId": "save_profile_v1_me_profile_put",
         "parameters": [
@@ -194,9 +202,395 @@
         }
       }
     },
+    "/v1/me/privacy-requests": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Create Privacy Request",
+        "operationId": "create_privacy_request_v1_me_privacy_requests_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivacyRequestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyRequestCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/privacy-requests/{request_id}/confirm": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Confirm Privacy Request",
+        "operationId": "confirm_privacy_request_v1_me_privacy_requests__request_id__confirm_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivacyRequestConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyRequestStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/privacy-requests/{request_id}": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Get Privacy Request",
+        "operationId": "get_privacy_request_v1_me_privacy_requests__request_id__get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyRequestStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/privacy-requests/{request_id}/export": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Download Privacy Export",
+        "operationId": "download_privacy_export_v1_me_privacy_requests__request_id__export_get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/atlas/metadata": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Metadata",
         "operationId": "metadata_v1_atlas_metadata_get",
         "parameters": [
@@ -243,7 +637,9 @@
     },
     "/v1/atlas/geometry": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Geometry",
         "operationId": "geometry_v1_atlas_geometry_get",
         "parameters": [
@@ -288,7 +684,9 @@
     },
     "/v1/atlas/scores": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Scores",
         "operationId": "scores_v1_atlas_scores_get",
         "parameters": [
@@ -373,7 +771,9 @@
     },
     "/v1/counties/{fips}": {
       "get": {
-        "tags": ["counties"],
+        "tags": [
+          "counties"
+        ],
         "summary": "County",
         "operationId": "county_v1_counties__fips__get",
         "parameters": [
@@ -468,7 +868,9 @@
     },
     "/v1/counties/{fips}/report.pdf": {
       "get": {
-        "tags": ["counties"],
+        "tags": [
+          "counties"
+        ],
         "summary": "County Report Pdf",
         "operationId": "county_report_pdf_v1_counties__fips__report_pdf_get",
         "parameters": [
@@ -573,7 +975,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "422": {
             "content": {
@@ -583,7 +985,7 @@
                 }
               }
             },
-            "description": "Unprocessable Entity"
+            "description": "Unprocessable Content"
           },
           "503": {
             "headers": {
@@ -607,7 +1009,9 @@
     },
     "/v1/states/{state}/report.pdf": {
       "get": {
-        "tags": ["states"],
+        "tags": [
+          "states"
+        ],
         "summary": "State Report Pdf",
         "operationId": "state_report_pdf_v1_states__state__report_pdf_get",
         "parameters": [
@@ -712,7 +1116,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "422": {
             "content": {
@@ -722,7 +1126,7 @@
                 }
               }
             },
-            "description": "Unprocessable Entity"
+            "description": "Unprocessable Content"
           },
           "503": {
             "headers": {
@@ -746,7 +1150,9 @@
     },
     "/v1/atlas/ranking.csv": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Ranking Csv",
         "operationId": "ranking_csv_v1_atlas_ranking_csv_get",
         "parameters": [
@@ -777,7 +1183,12 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": ["all", "ecological", "human", "complete"],
+              "enum": [
+                "all",
+                "ecological",
+                "human",
+                "complete"
+              ],
               "type": "string",
               "default": "all",
               "title": "Evidence"
@@ -846,7 +1257,9 @@
     },
     "/v1/knowledge-graph/chat": {
       "post": {
-        "tags": ["knowledge graph"],
+        "tags": [
+          "knowledge graph"
+        ],
         "summary": "Knowledge Graph Chat",
         "operationId": "knowledge_graph_chat_v1_knowledge_graph_chat_post",
         "requestBody": {
@@ -992,7 +1405,10 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": ["user", "assistant"],
+            "enum": [
+              "user",
+              "assistant"
+            ],
             "title": "Role"
           },
           "content": {
@@ -1003,7 +1419,10 @@
           }
         },
         "type": "object",
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "title": "ChatHistoryTurn"
       },
       "CountyDetail": {
@@ -1320,7 +1739,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "title": "KnowledgeChatRequest"
       },
       "KnowledgeChatResponse": {
@@ -1460,8 +1881,255 @@
           }
         },
         "type": "object",
-        "required": ["claim_id", "text", "citation_ids"],
+        "required": [
+          "claim_id",
+          "text",
+          "citation_ids"
+        ],
         "title": "KnowledgeClaim"
+      },
+      "PrivacyOmission": {
+        "properties": {
+          "system": {
+            "type": "string",
+            "title": "System"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "not_connected",
+              "not_account_linked",
+              "browser_only"
+            ],
+            "title": "Reason"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "system",
+          "reason",
+          "detail"
+        ],
+        "title": "PrivacyOmission"
+      },
+      "PrivacyRequestConfirm": {
+        "properties": {
+          "nonce": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 16,
+            "title": "Nonce"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nonce"
+        ],
+        "title": "PrivacyRequestConfirm"
+      },
+      "PrivacyRequestCreate": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "export",
+              "deletion"
+            ],
+            "title": "Action"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "PrivacyRequestCreate"
+      },
+      "PrivacyRequestCreated": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "export",
+              "deletion"
+            ],
+            "title": "Action"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "verified",
+              "confirmed",
+              "in_progress",
+              "completed",
+              "needs_support"
+            ],
+            "title": "State"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "download_available": {
+            "type": "boolean",
+            "title": "Download Available",
+            "default": false
+          },
+          "omissions": {
+            "items": {
+              "$ref": "#/components/schemas/PrivacyOmission"
+            },
+            "type": "array",
+            "title": "Omissions"
+          },
+          "support_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Reason"
+          },
+          "confirmation_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Expires At"
+          },
+          "confirmation_nonce": {
+            "type": "string",
+            "title": "Confirmation Nonce"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "action",
+          "state",
+          "created_at",
+          "confirmation_nonce"
+        ],
+        "title": "PrivacyRequestCreated"
+      },
+      "PrivacyRequestStatus": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "export",
+              "deletion"
+            ],
+            "title": "Action"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "verified",
+              "confirmed",
+              "in_progress",
+              "completed",
+              "needs_support"
+            ],
+            "title": "State"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "download_available": {
+            "type": "boolean",
+            "title": "Download Available",
+            "default": false
+          },
+          "omissions": {
+            "items": {
+              "$ref": "#/components/schemas/PrivacyOmission"
+            },
+            "type": "array",
+            "title": "Omissions"
+          },
+          "support_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Reason"
+          },
+          "confirmation_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "action",
+          "state",
+          "created_at"
+        ],
+        "title": "PrivacyRequestStatus"
       },
       "ProblemDetails": {
         "properties": {
@@ -1645,7 +2313,13 @@
           }
         },
         "type": "object",
-        "required": ["key", "label", "vintage", "url", "note"],
+        "required": [
+          "key",
+          "label",
+          "vintage",
+          "url",
+          "note"
+        ],
         "title": "SourceMetadata"
       },
       "UserProfile": {
@@ -1722,7 +2396,9 @@
           }
         },
         "type": "object",
-        "required": ["profile"],
+        "required": [
+          "profile"
+        ],
         "title": "UserProfileResponse"
       },
       "UserProfileWrite": {
@@ -1819,7 +2495,11 @@
           }
         },
         "type": "object",
-        "required": ["loc", "msg", "type"],
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
         "title": "ValidationError"
       }
     }

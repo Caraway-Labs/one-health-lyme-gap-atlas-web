@@ -19,7 +19,7 @@ npm run build
 npm run dev
 ```
 
-Only `NEXT_PUBLIC_API_BASE_URL` is public configuration. Never add Snowflake configuration or secrets to this repository.
+The public frontend may use `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_AMPLITUDE_API_KEY`, and the Supabase publishable project URL/key. Treat those values as public. Never add Snowflake configuration, service-role keys, or other secrets to this repository or to `NEXT_PUBLIC_*` variables.
 
 ## Geographic explorer
 

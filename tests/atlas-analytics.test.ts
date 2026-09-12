@@ -6,7 +6,9 @@ import {
   analyticsControlAttributes,
   createAtlasAnalytics,
   isCountyFips,
+  isUiControlId,
   isValidScoreValue,
+  routeIds,
   uiControlIds,
 } from "../src/lib/atlas-analytics";
 
@@ -44,8 +46,14 @@ describe("Atlas Amplitude boundary", () => {
     expect(amplitude.track).not.toHaveBeenCalled();
   });
 
-  it("uses a unique, typed control allowlist for JSX instrumentation", () => {
+  it("uses unique typed route and control allowlists", () => {
+    expect(new Set(routeIds)).toHaveLength(routeIds.length);
     expect(new Set(uiControlIds)).toHaveLength(uiControlIds.length);
+    expect(isUiControlId("not_a_real_control")).toBeFalsy();
+    expect(isUiControlId("hero_explore_counties")).toBeTruthy();
+  });
+
+  it("uses a unique, typed control allowlist for JSX instrumentation", () => {
     expect(analyticsControlAttributes("hero_explore_counties")).toStrictEqual({
       "data-atlas-analytics-control": "hero_explore_counties",
     });
@@ -56,6 +64,15 @@ describe("Atlas Amplitude boundary", () => {
         "geo_county_select",
         "geo_add_comparison",
         "geo_pagination_next",
+        "experiment_retry",
+        "experiment_table_toggle",
+        "experiment_step_select",
+        "experiment_county_select",
+        "evidence_chat_history_clear",
+        "evidence_chat_history_select",
+        "evidence_chat_history_delete",
+        "assistant_demo_send",
+        "assistant_demo_stop",
       ])
     );
   });
@@ -139,6 +156,23 @@ describe("Atlas Amplitude boundary", () => {
     });
     expect(isCountyFips("08001")).toBeTruthy();
     expect(isCountyFips("Adams County")).toBeFalsy();
+
+    analytics.track({
+      eventType: "atlas_geography_selected",
+      properties: {
+        route_id: "atlas_home",
+        geography_level: "county",
+        county_fips: "08001",
+        selection_surface: "experiment",
+      },
+    });
+    expect(amplitude.track).toHaveBeenLastCalledWith(
+      "atlas_geography_selected",
+      expect.objectContaining({
+        county_fips: "08001",
+        selection_surface: "experiment",
+      })
+    );
   });
 
   it("emits only controlled score changes", async () => {
@@ -164,5 +198,40 @@ describe("Atlas Amplitude boundary", () => {
     );
     expect(isValidScoreValue("score_ecological_share", 70)).toBeTruthy();
     expect(isValidScoreValue("score_ecological_share", 71)).toBeFalsy();
+  });
+
+  it("does not attach free-text properties to chat or assistant control events", async () => {
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start("synthetic-development-key");
+    analytics.track({
+      eventType: "atlas_ui_interaction",
+      properties: {
+        route_id: "knowledge_graph",
+        control_id: "evidence_chat_history_delete",
+        action: "activated",
+      },
+    });
+    analytics.track({
+      eventType: "atlas_ui_interaction",
+      properties: {
+        route_id: "assistant",
+        control_id: "assistant_demo_send",
+        action: "activated",
+      },
+    });
+
+    for (const [, properties] of amplitude.track.mock.calls) {
+      expect(properties).not.toHaveProperty("title");
+      expect(properties).not.toHaveProperty("prompt");
+      expect(properties).not.toHaveProperty("conversation_id");
+      expect(properties).not.toHaveProperty("message");
+      expect(Object.keys(properties).sort()).toStrictEqual([
+        "action",
+        "control_id",
+        "release_version",
+        "route_id",
+        "schema_version",
+      ]);
+    }
   });
 });

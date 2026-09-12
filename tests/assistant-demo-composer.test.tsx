@@ -45,4 +45,20 @@ describe("assistant demo thread readiness", () => {
       screen.getByRole("button", { name: "Send demo question" })
     ).toBeTruthy();
   });
+
+  it("marks send and stop with typed analytics ids and leaves the prompt uninstrumented", () => {
+    runtime.loading = false;
+    render(<AssistantDemoComposer />);
+    expect(
+      screen.getByRole("button", { name: "Send demo question" }).dataset
+        .atlasAnalyticsControl
+    ).toBe("assistant_demo_send");
+    expect(
+      screen.getByRole("button", { name: "Stop" }).dataset.atlasAnalyticsControl
+    ).toBe("assistant_demo_stop");
+    expect(
+      screen.getByRole("textbox", { name: "Ask the Atlas demo" }).dataset
+        .atlasAnalyticsControl
+    ).toBeUndefined();
+  });
 });

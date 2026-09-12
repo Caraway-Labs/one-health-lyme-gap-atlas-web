@@ -36,6 +36,10 @@ import {
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
+  analyticsControlAttributes,
+  trackGeographySelected,
+} from "@/lib/atlas-analytics";
+import {
   atlasSearchParams,
   synchronizeGovernedDataset,
   toScoreSettings,
@@ -119,7 +123,10 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   const setStateFilter = (state: string) => setUrlState({ state });
   const setQuery = (q: string) => setUrlState({ q });
   const setEvidence = (evidence: EvidenceView) => setUrlState({ evidence });
-  const setSelectedFips = (county: string) => setUrlState({ county });
+  const setSelectedFips = (county: string) => {
+    setUrlState({ county });
+    trackGeographySelected(county, "experiment");
+  };
   const setSettings = (next: ScoreSettings) =>
     setUrlState({
       breakpoint: next.low_incidence_breakpoint,
@@ -239,7 +246,14 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
     return (
       <main className="experiment-load">
         <AtlasStatusMessage
-          action={<Button onClick={() => location.reload()}>Try again</Button>}
+          action={
+            <Button
+              onClick={() => location.reload()}
+              {...analyticsControlAttributes("experiment_retry")}
+            >
+              Try again
+            </Button>
+          }
           title="This experiment is temporarily unavailable"
           tone="error"
         >
@@ -486,6 +500,7 @@ function Decision({
         onClick={onToggleTable}
         aria-expanded={showTable}
         variant="outline"
+        {...analyticsControlAttributes("experiment_table_toggle")}
       >
         {showTable
           ? "Hide accessible county table"
@@ -531,6 +546,7 @@ function Guided({
             role="tab"
             aria-selected={step === index}
             onClick={() => onStep(index)}
+            {...analyticsControlAttributes("experiment_step_select")}
           >
             <span>{index + 1}</span>
             {label}
@@ -978,6 +994,7 @@ function CountyList({
           <button
             className={county.fips === selectedFips ? "active" : ""}
             onClick={() => onSelect(county.fips)}
+            {...analyticsControlAttributes("experiment_county_select")}
           >
             <span>{index + 1}</span>
             <strong>

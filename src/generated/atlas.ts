@@ -35,6 +35,10 @@ import type {
   KnowledgeChatResponse,
   LiveHealthLiveGet200,
   MetadataV1AtlasMetadataGetParams,
+  PrivacyRequestConfirm,
+  PrivacyRequestCreate,
+  PrivacyRequestCreated,
+  PrivacyRequestStatus,
   ProblemDetails,
   RankingCsvV1AtlasRankingCsvGetParams,
   ReadyHealthReadyGet200,
@@ -522,6 +526,497 @@ export const useSaveProfileV1MeProfilePut = <TError = ProblemDetails | HTTPValid
       > => {
       return useMutation(getSaveProfileV1MeProfilePutMutationOptions(options), queryClient);
     }
+
+export type createPrivacyRequestV1MePrivacyRequestsPostResponse200 = {
+  data: PrivacyRequestCreated
+  status: 200
+}
+
+export type createPrivacyRequestV1MePrivacyRequestsPostResponse401 = {
+  data: ProblemDetails
+  status: 401
+}
+
+export type createPrivacyRequestV1MePrivacyRequestsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createPrivacyRequestV1MePrivacyRequestsPostResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type createPrivacyRequestV1MePrivacyRequestsPostResponseSuccess = (createPrivacyRequestV1MePrivacyRequestsPostResponse200) & {
+  headers: Headers;
+};
+export type createPrivacyRequestV1MePrivacyRequestsPostResponseError = (createPrivacyRequestV1MePrivacyRequestsPostResponse401 | createPrivacyRequestV1MePrivacyRequestsPostResponse422 | createPrivacyRequestV1MePrivacyRequestsPostResponse503) & {
+  headers: Headers;
+};
+
+export type createPrivacyRequestV1MePrivacyRequestsPostResponse = (createPrivacyRequestV1MePrivacyRequestsPostResponseSuccess | createPrivacyRequestV1MePrivacyRequestsPostResponseError)
+
+export const getCreatePrivacyRequestV1MePrivacyRequestsPostUrl = () => {
+
+
+
+
+  return `/v1/me/privacy-requests`
+}
+
+/**
+ * @summary Create Privacy Request
+ */
+export const createPrivacyRequestV1MePrivacyRequestsPost = async (privacyRequestCreate: PrivacyRequestCreate, options?: Parameters<typeof apiMutator>[1]): Promise<createPrivacyRequestV1MePrivacyRequestsPostResponse> => {
+
+  return apiMutator<createPrivacyRequestV1MePrivacyRequestsPostResponse>(getCreatePrivacyRequestV1MePrivacyRequestsPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(privacyRequestCreate)
+  }
+);}
+
+
+
+
+
+export const getCreatePrivacyRequestV1MePrivacyRequestsPostMutationOptions = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, TError,{data: PrivacyRequestCreate}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, TError,{data: PrivacyRequestCreate}, TContext> => {
+
+const mutationKey = ['createPrivacyRequestV1MePrivacyRequestsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, {data: PrivacyRequestCreate}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPrivacyRequestV1MePrivacyRequestsPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePrivacyRequestV1MePrivacyRequestsPostMutationResult = NonNullable<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>>
+    export type CreatePrivacyRequestV1MePrivacyRequestsPostMutationBody = PrivacyRequestCreate
+    export type CreatePrivacyRequestV1MePrivacyRequestsPostMutationError = ProblemDetails | HTTPValidationError
+
+    /**
+ * @summary Create Privacy Request
+ */
+export const useCreatePrivacyRequestV1MePrivacyRequestsPost = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, TError,{data: PrivacyRequestCreate}, TContext>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>,
+        TError,
+        {data: PrivacyRequestCreate},
+        TContext
+      > => {
+      return useMutation(getCreatePrivacyRequestV1MePrivacyRequestsPostMutationOptions(options), queryClient);
+    }
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse200 = {
+  data: PrivacyRequestStatus
+  status: 200
+}
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse401 = {
+  data: ProblemDetails
+  status: 401
+}
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseSuccess = (confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse200) & {
+  headers: Headers;
+};
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseError = (confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse400 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse401 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse404 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse409 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse422 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse503) & {
+  headers: Headers;
+};
+
+export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse = (confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseSuccess | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseError)
+
+export const getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostUrl = (requestId: string,) => {
+
+
+
+
+  return `/v1/me/privacy-requests/${requestId}/confirm`
+}
+
+/**
+ * @summary Confirm Privacy Request
+ */
+export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost = async (requestId: string,
+    privacyRequestConfirm: PrivacyRequestConfirm, options?: Parameters<typeof apiMutator>[1]): Promise<confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse> => {
+
+  return apiMutator<confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse>(getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostUrl(requestId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(privacyRequestConfirm)
+  }
+);}
+
+
+
+
+
+export const getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationOptions = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext> => {
+
+const mutationKey = ['confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, {requestId: string;data: PrivacyRequestConfirm}> = (props) => {
+          const {requestId,data} = props ?? {};
+
+          return  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(requestId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>>
+    export type ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationBody = PrivacyRequestConfirm
+    export type ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationError = ProblemDetails | HTTPValidationError
+
+    /**
+ * @summary Confirm Privacy Request
+ */
+export const useConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>,
+        TError,
+        {requestId: string;data: PrivacyRequestConfirm},
+        TContext
+      > => {
+      return useMutation(getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationOptions(options), queryClient);
+    }
+
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse200 = {
+  data: PrivacyRequestStatus
+  status: 200
+}
+
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse401 = {
+  data: ProblemDetails
+  status: 401
+}
+
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseSuccess = (getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse200) & {
+  headers: Headers;
+};
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseError = (getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse401 | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse404 | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse422 | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse503) & {
+  headers: Headers;
+};
+
+export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse = (getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseSuccess | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseError)
+
+export const getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetUrl = (requestId: string,) => {
+
+
+
+
+  return `/v1/me/privacy-requests/${requestId}`
+}
+
+/**
+ * @summary Get Privacy Request
+ */
+export const getPrivacyRequestV1MePrivacyRequestsRequestIdGet = async (requestId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse> => {
+
+  return apiMutator<getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse>(getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetUrl(requestId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryKey = (requestId: string,) => {
+    return [
+    `/v1/me/privacy-requests/${requestId}`
+    ] as const;
+    }
+
+
+export const getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryKey(requestId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>> = ({ signal }) => getPrivacyRequestV1MePrivacyRequestsRequestIdGet(requestId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: requestId !== null && requestId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>>
+export type GetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryError = ProblemDetails | HTTPValidationError
+
+
+export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Privacy Request
+ */
+
+export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryOptions(requestId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse401 = {
+  data: ProblemDetails
+  status: 401
+}
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseSuccess = (downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse200) & {
+  headers: Headers;
+};
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseError = (downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse401 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse404 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse409 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse422 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse503) & {
+  headers: Headers;
+};
+
+export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse = (downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseSuccess | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseError)
+
+export const getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetUrl = (requestId: string,) => {
+
+
+
+
+  return `/v1/me/privacy-requests/${requestId}/export`
+}
+
+/**
+ * @summary Download Privacy Export
+ */
+export const downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet = async (requestId: string, options?: Parameters<typeof apiMutator>[1]): Promise<downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse> => {
+
+  return apiMutator<downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse>(getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetUrl(requestId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryKey = (requestId: string,) => {
+    return [
+    `/v1/me/privacy-requests/${requestId}/export`
+    ] as const;
+    }
+
+
+export const getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryOptions = <TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryKey(requestId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>> = ({ signal }) => downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(requestId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: requestId !== null && requestId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryResult = NonNullable<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>>
+export type DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryError = ProblemDetails | HTTPValidationError
+
+
+export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>,
+          TError,
+          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>,
+          TError,
+          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download Privacy Export
+ */
+
+export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryOptions(requestId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type metadataV1AtlasMetadataGetResponse200 = {
   data: AtlasMetadata
