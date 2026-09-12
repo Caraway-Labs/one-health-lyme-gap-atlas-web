@@ -76,7 +76,7 @@ export function AccountDataRights() {
       }
       if (confirmed.data.state === "needs_support") {
         setNotice(
-          "This request needs support. Public Atlas exploration remains available."
+          `This request needs support. Public Atlas exploration remains available. Reference: ${created.data.request_id}.`
         );
         return;
       }

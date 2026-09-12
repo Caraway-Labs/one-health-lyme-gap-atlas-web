@@ -23,21 +23,29 @@ const {
   signOut: vi.fn<() => Promise<void>>(),
 }));
 
-vi.mock(import("next/navigation"), () => ({
-  useRouter: () => ({ push }),
-}));
+vi.mock(
+  import("next/navigation"),
+  () =>
+    ({
+      useRouter: () => ({ push }),
+    }) as unknown as Partial<typeof import("next/navigation")>
+);
 vi.mock(import("../src/lib/supabase/client"), () => ({
   createClient: () => ({
     auth: { signOut },
   }),
 }));
-vi.mock(import("../src/generated/atlas"), () => ({
-  createPrivacyRequestV1MePrivacyRequestsPost: createPrivacyRequest,
-  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
-    confirmPrivacyRequest,
-  downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
-    downloadPrivacyExport,
-}));
+vi.mock(
+  import("../src/generated/atlas"),
+  () =>
+    ({
+      createPrivacyRequestV1MePrivacyRequestsPost: createPrivacyRequest,
+      confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
+        confirmPrivacyRequest,
+      downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
+        downloadPrivacyExport,
+    }) as unknown as Partial<typeof import("../src/generated/atlas")>
+);
 
 import { AccountDataRights } from "../src/components/account-data-rights";
 
