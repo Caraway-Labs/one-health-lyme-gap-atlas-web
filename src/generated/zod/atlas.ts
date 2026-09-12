@@ -86,6 +86,120 @@ export const SaveProfileV1MeProfilePutResponse = zod.object({
 
 
 /**
+ * @summary Create Privacy Request
+ */
+export const CreatePrivacyRequestV1MePrivacyRequestsPostHeader = zod.object({
+  "authorization": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const CreatePrivacyRequestV1MePrivacyRequestsPostBody = zod.object({
+  "action": zod.enum(['export', 'deletion'])
+})
+
+export const createPrivacyRequestV1MePrivacyRequestsPostResponseDownloadAvailableDefault = false;
+
+export const CreatePrivacyRequestV1MePrivacyRequestsPostResponse = zod.object({
+  "request_id": zod.string(),
+  "action": zod.enum(['export', 'deletion']),
+  "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "completed_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "download_available": zod.boolean().default(createPrivacyRequestV1MePrivacyRequestsPostResponseDownloadAvailableDefault),
+  "omissions": zod.array(zod.object({
+  "system": zod.string(),
+  "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
+  "detail": zod.string()
+})).optional(),
+  "support_reason": zod.union([zod.string(),zod.null()]).optional(),
+  "confirmation_expires_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "confirmation_nonce": zod.string()
+})
+
+
+/**
+ * @summary Confirm Privacy Request
+ */
+export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostParams = zod.object({
+  "request_id": zod.uuid()
+})
+
+export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostHeader = zod.object({
+  "authorization": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMin = 16;
+export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMax = 128;
+
+
+
+export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBody = zod.object({
+  "nonce": zod.string().min(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMin).max(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMax)
+})
+
+export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseDownloadAvailableDefault = false;
+
+export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse = zod.object({
+  "request_id": zod.string(),
+  "action": zod.enum(['export', 'deletion']),
+  "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "completed_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "download_available": zod.boolean().default(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseDownloadAvailableDefault),
+  "omissions": zod.array(zod.object({
+  "system": zod.string(),
+  "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
+  "detail": zod.string()
+})).optional(),
+  "support_reason": zod.union([zod.string(),zod.null()]).optional(),
+  "confirmation_expires_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary Get Privacy Request
+ */
+export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetParams = zod.object({
+  "request_id": zod.uuid()
+})
+
+export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetHeader = zod.object({
+  "authorization": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseDownloadAvailableDefault = false;
+
+export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse = zod.object({
+  "request_id": zod.string(),
+  "action": zod.enum(['export', 'deletion']),
+  "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
+  "created_at": zod.iso.datetime({"offset":true}),
+  "completed_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "download_available": zod.boolean().default(getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseDownloadAvailableDefault),
+  "omissions": zod.array(zod.object({
+  "system": zod.string(),
+  "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
+  "detail": zod.string()
+})).optional(),
+  "support_reason": zod.union([zod.string(),zod.null()]).optional(),
+  "confirmation_expires_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary Download Privacy Export
+ */
+export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetParams = zod.object({
+  "request_id": zod.uuid()
+})
+
+export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetHeader = zod.object({
+  "authorization": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse = zod.unknown()
+
+
+/**
  * @summary Metadata
  */
 export const MetadataV1AtlasMetadataGetQueryParams = zod.object({

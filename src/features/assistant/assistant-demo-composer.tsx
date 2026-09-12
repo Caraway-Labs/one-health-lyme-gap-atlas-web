@@ -3,6 +3,7 @@
 import { ComposerPrimitive, useAuiState } from "@assistant-ui/react";
 
 import { Button } from "@/components/ui/button";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 export function AssistantDemoComposer() {
   const loading = useAuiState((state) => state.thread.isLoading);
@@ -20,11 +21,22 @@ export function AssistantDemoComposer() {
       />
       <div className="flex gap-2">
         <ComposerPrimitive.Send
-          render={<Button type="submit">Send demo question</Button>}
+          render={
+            <Button
+              type="submit"
+              {...analyticsControlAttributes("assistant_demo_send")}
+            >
+              Send demo question
+            </Button>
+          }
         />
         <ComposerPrimitive.Cancel
           render={
-            <Button type="button" variant="outline">
+            <Button
+              type="button"
+              variant="outline"
+              {...analyticsControlAttributes("assistant_demo_stop")}
+            >
               Stop
             </Button>
           }

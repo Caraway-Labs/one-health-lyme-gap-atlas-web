@@ -1,10 +1,10 @@
 # Privacy-safe Amplitude product analytics contract
 
-Status: approved design contract; no Amplitude SDK, key, or event transmission is enabled by this document.
+Status: approved design contract; consent-gated Browser SDK is implemented against this allowlist.
 
 Owner: Atlas product, engineering, and privacy leads
 
-Last reviewed: 2026-09-07
+Last reviewed: 2026-09-11
 
 ## Product purpose and boundary
 
@@ -87,6 +87,7 @@ Every event includes the following common context. A property omitted from this 
 | `state_fips` | public Atlas context | Valid two-digit state FIPS only; absent when not selected |
 | `county_fips` | public Atlas context | Valid five-digit county FIPS only; absent when not selected |
 | `entry_surface` | product context | Closed enum such as `map`, `results_table`, `summary`, or `footer` |
+| `selection_surface` | product context | Closed enum `map`, `results_table`, `ranked_list`, or `experiment` |
 | `outcome` | operational | Closed enum `success`, `cancelled`, `validation_rejected`, or `service_unavailable` |
 
 `control_id`, `action`, `filter_dimension`, `filter_value`, `score_control`, `score_value`, `feedback_topic`, `account_flow`, `content_surface`, `selection_surface`, `summary_kind`, `export_scope`, `clear_scope`, `change_source`, and `page_bucket` are each closed, versioned enums in the typed analytics boundary. A value that is not in that allowlist causes the event to be dropped. Every JSX control attribute is created through its typed helper, so an unapproved literal cannot compile. `atlas_ui_interaction` is the complete control catalogue: every meaningful button, link, menu, selector, map/list action, and committed scenario adjustment must have a stable `control_id` before it ships. It never records labels, raw DOM selectors, hover, scroll, pointer movement, keystrokes, or text input. `active_filter_count` is an integer from 0 through 10; `page_bucket` is `1`, `2-5`, `6-10`, or `11+`.

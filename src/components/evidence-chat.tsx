@@ -131,6 +131,7 @@ export function EvidenceChat({
                 setConversations([]);
                 setActiveId("");
               }}
+              {...analyticsControlAttributes("evidence_chat_history_clear")}
             >
               Clear all
             </button>
@@ -144,6 +145,9 @@ export function EvidenceChat({
                   type="button"
                   aria-current={active?.id === item.id}
                   onClick={() => setActiveId(item.id)}
+                  {...analyticsControlAttributes(
+                    "evidence_chat_history_select"
+                  )}
                 >
                   {item.title}
                 </button>
@@ -151,6 +155,9 @@ export function EvidenceChat({
                   type="button"
                   aria-label={`Delete ${item.title}`}
                   onClick={() => deleteOne(item.id)}
+                  {...analyticsControlAttributes(
+                    "evidence_chat_history_delete"
+                  )}
                 >
                   ×
                 </button>

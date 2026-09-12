@@ -36,20 +36,12 @@ export async function apiMutator<T>(
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    const error = new AtlasApiError(
+    throw new AtlasApiError(
       body?.detail ?? `Atlas API request failed (${response.status})`,
       url,
       response.status,
       response.headers.get("X-Request-ID")
     );
-    if (process.env.NODE_ENV !== "production") {
-      console.error("Atlas API request failed", {
-        endpoint: error.endpoint,
-        status: error.status,
-        requestId: error.requestId,
-      });
-    }
-    throw error;
   }
   const contentType = response.headers.get("content-type") ?? "";
   const data = contentType.includes("application/pdf")

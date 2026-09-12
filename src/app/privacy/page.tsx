@@ -71,8 +71,11 @@ export default function PrivacyPage() {
             <div>
               <dt>Product analytics</dt>
               <dd>
-                Atlas does not currently use a third-party product-analytics
-                service or browser tracking SDK.
+                After you allow optional analytics in Privacy settings, Atlas
+                sends allowlisted product events to Amplitude using a
+                session-only browser SDK. Events expire after 90 days. Atlas
+                does not send chat content, prompts, health information, email
+                addresses, or account identifiers to Amplitude.
               </dd>
             </div>
             <div>
@@ -96,9 +99,10 @@ export default function PrivacyPage() {
             <div>
               <dt>Accounts and feedback</dt>
               <dd>
-                Optional accounts, personalized workspaces, and in-product
-                feedback are not available yet. Their data practices will be
-                published before those features launch.
+                Optional accounts let you save a profile after you sign in.
+                In-product feedback is not available yet. Saved workspaces are
+                not launched. Account data never changes Atlas evidence, scores,
+                or access.
               </dd>
             </div>
           </dl>
@@ -106,26 +110,24 @@ export default function PrivacyPage() {
         <div className="privacy-section">
           <h2>What we will not put in product analytics</h2>
           <p>
-            When optional product analytics are introduced, they will not
-            include private health information, medical history, diagnosis or
-            treatment information, chat prompts or answers, feedback text, raw
-            search text, email addresses, credentials, or tokens.
+            Optional product analytics do not include private health
+            information, medical history, diagnosis or treatment information,
+            chat prompts or answers, feedback text, raw search text, email
+            addresses, credentials, or tokens.
           </p>
           <p>
-            Any future analytics integration will be optional, governed by a
-            public explanation and an accessible choice to decline or withdraw
-            consent. Declining analytics will not limit public Atlas
+            Analytics are optional. You can decline or withdraw consent from
+            Privacy settings. Declining analytics does not limit public Atlas
             exploration.
           </p>
         </div>
         <div className="privacy-section">
           <h2>Optional analytics choices</h2>
           <p>
-            Optional analytics are off by default. If they are introduced, you
-            will be able to allow them or keep them off from Privacy settings in
-            the footer. We honor browser Do Not Track by keeping optional
-            analytics off, and we will not show a consent wall or limit public
-            Atlas exploration when you decline.
+            Optional analytics are off by default. You can allow them or keep
+            them off from Privacy settings in the footer. We honor browser Do
+            Not Track by keeping optional analytics off, and we will not show a
+            consent wall or limit public Atlas exploration when you decline.
           </p>
           <p>
             A choice is stored only in your browser, expires after six months,
@@ -134,23 +136,24 @@ export default function PrivacyPage() {
           </p>
         </div>
         <div className="privacy-section">
-          <h2>Your future data controls</h2>
+          <h2>Your data controls</h2>
           <p>
-            When optional accounts are available, account settings will include{" "}
-            <strong>Export my data</strong> and <strong>Remove all data</strong>
-            . Those controls will cover the account and personalization
-            information connected to your account, along with any linked
-            analytics data where applicable. We will publish the request
-            process, timing, and any limited exceptions before launch.
+            Signed-in users can start <strong>Export my data</strong> and{" "}
+            <strong>Remove all data</strong> from account settings. Those
+            controls cover the account profile connected to your sign-in. They
+            do not include browser-only chat history, unlinked Amplitude
+            sessions, in-product feedback (not launched), or saved workspaces
+            (not launched). Completion is targeted within 30 days. Public Atlas
+            datasets and methodology are unaffected. Deletion is irreversible.
           </p>
         </div>
         <div className="privacy-section privacy-contact">
           <h2>Questions or concerns</h2>
           <p>
-            This is the Atlas privacy commitment and current data-use summary. A
-            fuller implementation inventory, retention policy, consent controls,
-            and processor list are being completed before optional analytics,
-            feedback capture, or accounts are released.
+            This is the Atlas privacy commitment and current data-use summary.
+            The implementation inventory, retention policy, consent controls,
+            and processor list are kept with the public notice so visitors can
+            interpret optional analytics and account data rights.
           </p>
         </div>
       </section>

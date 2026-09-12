@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import { AccountDataRights } from "@/components/account-data-rights";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -307,6 +308,7 @@ export default function AccountPage() {
             {notice}
           </p>
         )}
+        <AccountDataRights />
         <Button
           className="mt-6"
           variant="secondary"

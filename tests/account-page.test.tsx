@@ -23,6 +23,11 @@ vi.mock(import("../src/lib/supabase/client"), () => ({
 vi.mock(import("../src/generated/atlas"), () => ({
   getProfileV1MeProfileGet: getProfile,
   saveProfileV1MeProfilePut: vi.fn<() => Promise<never>>(),
+  createPrivacyRequestV1MePrivacyRequestsPost: vi.fn<() => Promise<never>>(),
+  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
+    vi.fn<() => Promise<never>>(),
+  downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
+    vi.fn<() => Promise<never>>(),
 }));
 
 import AccountPage from "../src/app/account/page";
@@ -75,5 +80,9 @@ describe("account page", () => {
     ).resolves.toBeTruthy();
     expect(screen.getByRole("combobox", { name: "State" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save profile" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Export my data" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Remove all data" })
+    ).toBeTruthy();
   });
 });

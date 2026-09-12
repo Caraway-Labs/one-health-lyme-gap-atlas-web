@@ -15,6 +15,10 @@ export const routeIds = [
   "privacy",
   "knowledge_graph",
   "atlas_variant",
+  "account",
+  "assistant",
+  "geographic_explorer",
+  "ai_ethics",
 ] as const;
 
 export type RouteId = (typeof routeIds)[number];
@@ -51,6 +55,15 @@ export const uiControlIds = [
   "evidence_chat_close",
   "evidence_chat_new",
   "evidence_chat_submit",
+  "evidence_chat_history_clear",
+  "evidence_chat_history_select",
+  "evidence_chat_history_delete",
+  "experiment_retry",
+  "experiment_table_toggle",
+  "experiment_step_select",
+  "experiment_county_select",
+  "assistant_demo_send",
+  "assistant_demo_stop",
   "geo_retry",
   "geo_use_current_release",
   "geo_view_tiles",
@@ -91,6 +104,7 @@ export const geographySelectionSurfaces = [
   "map",
   "results_table",
   "ranked_list",
+  "experiment",
 ] as const;
 
 export type GeographySelectionSurface =
@@ -174,6 +188,12 @@ function routeIdForPathname(pathname: string): RouteId {
   if (pathname === "/privacy") return "privacy";
   if (pathname === "/knowledge-graph") return "knowledge_graph";
   if (pathname.startsWith("/variant_")) return "atlas_variant";
+  if (pathname === "/account") return "account";
+  if (pathname === "/assistant" || pathname.startsWith("/assistant/")) {
+    return "assistant";
+  }
+  if (pathname === "/geographic_explorer") return "geographic_explorer";
+  if (pathname === "/ai-ethics") return "ai_ethics";
   return "atlas_home";
 }
 

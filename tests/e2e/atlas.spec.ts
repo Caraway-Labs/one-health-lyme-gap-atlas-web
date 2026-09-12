@@ -294,11 +294,7 @@ test("variant county list selection keeps the shareable URL and profile in sync"
   ).toBeVisible();
 });
 
-// CI runs this unchanged scenario for both projects. The pre-MVP mobile result is
-// reported separately as an accepted defect in #126; desktop remains blocking.
-test("publishes an accessible, clear privacy summary without analytics claims", async ({
-  page,
-}) => {
+test("publishes an accessible, clear privacy summary", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Privacy" }).click();
 
@@ -308,7 +304,7 @@ test("publishes an accessible, clear privacy summary without analytics claims", 
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Atlas does not currently use a third-party product-analytics service or browser tracking SDK."
+      /After you allow optional analytics in Privacy settings, Atlas sends allowlisted product events to Amplitude/
     )
   ).toBeVisible();
   await expect(
@@ -323,7 +319,7 @@ test("publishes an accessible, clear privacy summary without analytics claims", 
   await expect(page.getByText("Remove all data")).toBeVisible();
   await expect(
     page.getByText(
-      /When optional accounts are available, account settings will include/
+      /Signed-in users can start Export my data and Remove all data from account settings/
     )
   ).toBeVisible();
   await expect
@@ -354,6 +350,45 @@ test("publishes an accessible, clear privacy summary without analytics claims", 
 
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("does not contact Amplitude before consent or after opt-out", async ({
+  page,
+}) => {
+  const amplitudeCalls: string[] = [];
+  await page.route(/amplitude/i, async (route) => {
+    amplitudeCalls.push(route.request().url());
+    await route.abort();
+  });
+  await page.goto("/");
+  await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
+  await page.getByRole("button", { name: "Privacy settings" }).click();
+  await page
+    .getByRole("dialog", { name: "Privacy settings" })
+    .getByRole("button", { name: "Keep optional analytics off" })
+    .click();
+  await page.reload();
+  await expect.poll(() => amplitudeCalls).toEqual([]);
+});
+
+test("keeps Amplitude off when Do Not Track is enabled", async ({ page }) => {
+  const amplitudeCalls: string[] = [];
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "doNotTrack", {
+      configurable: true,
+      get: () => "1",
+    });
+  });
+  await page.route(/amplitude/i, async (route) => {
+    amplitudeCalls.push(route.request().url());
+    await route.abort();
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Privacy settings" }).click();
+  await expect(
+    page.getByRole("button", { name: "Allow optional analytics" })
+  ).toBeDisabled();
+  await expect.poll(() => amplitudeCalls).toEqual([]);
 });
 
 test("downloads county and state PDF reports with server filenames", async ({
