@@ -10,10 +10,7 @@ describe("Atlas API mutator", () => {
   it("throws handled failures without a development console.error", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ detail: "unavailable" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      })
+      Response.json({ detail: "unavailable" }, { status: 503 })
     );
 
     await expect(

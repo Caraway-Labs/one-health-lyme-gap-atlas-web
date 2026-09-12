@@ -8,9 +8,7 @@
   "paths": {
     "/health/live": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Live",
         "operationId": "live_health_live_get",
         "responses": {
@@ -33,9 +31,7 @@
     },
     "/health/ready": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Ready",
         "operationId": "ready_health_ready_get",
         "responses": {
@@ -58,9 +54,7 @@
     },
     "/v1/me/profile": {
       "get": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Get Profile",
         "operationId": "get_profile_v1_me_profile_get",
         "parameters": [
@@ -125,9 +119,7 @@
         }
       },
       "put": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Save Profile",
         "operationId": "save_profile_v1_me_profile_put",
         "parameters": [
@@ -204,9 +196,7 @@
     },
     "/v1/me/privacy-requests": {
       "post": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Create Privacy Request",
         "operationId": "create_privacy_request_v1_me_privacy_requests_post",
         "parameters": [
@@ -283,9 +273,7 @@
     },
     "/v1/me/privacy-requests/{request_id}/confirm": {
       "post": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Confirm Privacy Request",
         "operationId": "confirm_privacy_request_v1_me_privacy_requests__request_id__confirm_post",
         "parameters": [
@@ -402,9 +390,7 @@
     },
     "/v1/me/privacy-requests/{request_id}": {
       "get": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Get Privacy Request",
         "operationId": "get_privacy_request_v1_me_privacy_requests__request_id__get",
         "parameters": [
@@ -491,9 +477,7 @@
     },
     "/v1/me/privacy-requests/{request_id}/export": {
       "get": {
-        "tags": [
-          "account"
-        ],
+        "tags": ["account"],
         "summary": "Download Privacy Export",
         "operationId": "download_privacy_export_v1_me_privacy_requests__request_id__export_get",
         "parameters": [
@@ -588,9 +572,7 @@
     },
     "/v1/atlas/metadata": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Metadata",
         "operationId": "metadata_v1_atlas_metadata_get",
         "parameters": [
@@ -637,9 +619,7 @@
     },
     "/v1/atlas/geometry": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Geometry",
         "operationId": "geometry_v1_atlas_geometry_get",
         "parameters": [
@@ -684,9 +664,7 @@
     },
     "/v1/atlas/scores": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Scores",
         "operationId": "scores_v1_atlas_scores_get",
         "parameters": [
@@ -771,9 +749,7 @@
     },
     "/v1/counties/{fips}": {
       "get": {
-        "tags": [
-          "counties"
-        ],
+        "tags": ["counties"],
         "summary": "County",
         "operationId": "county_v1_counties__fips__get",
         "parameters": [
@@ -868,9 +844,7 @@
     },
     "/v1/counties/{fips}/report.pdf": {
       "get": {
-        "tags": [
-          "counties"
-        ],
+        "tags": ["counties"],
         "summary": "County Report Pdf",
         "operationId": "county_report_pdf_v1_counties__fips__report_pdf_get",
         "parameters": [
@@ -1009,9 +983,7 @@
     },
     "/v1/states/{state}/report.pdf": {
       "get": {
-        "tags": [
-          "states"
-        ],
+        "tags": ["states"],
         "summary": "State Report Pdf",
         "operationId": "state_report_pdf_v1_states__state__report_pdf_get",
         "parameters": [
@@ -1150,9 +1122,7 @@
     },
     "/v1/atlas/ranking.csv": {
       "get": {
-        "tags": [
-          "atlas"
-        ],
+        "tags": ["atlas"],
         "summary": "Ranking Csv",
         "operationId": "ranking_csv_v1_atlas_ranking_csv_get",
         "parameters": [
@@ -1183,12 +1153,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": [
-                "all",
-                "ecological",
-                "human",
-                "complete"
-              ],
+              "enum": ["all", "ecological", "human", "complete"],
               "type": "string",
               "default": "all",
               "title": "Evidence"
@@ -1257,9 +1222,7 @@
     },
     "/v1/knowledge-graph/chat": {
       "post": {
-        "tags": [
-          "knowledge graph"
-        ],
+        "tags": ["knowledge graph"],
         "summary": "Knowledge Graph Chat",
         "operationId": "knowledge_graph_chat_v1_knowledge_graph_chat_post",
         "requestBody": {
@@ -1405,10 +1368,7 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": [
-              "user",
-              "assistant"
-            ],
+            "enum": ["user", "assistant"],
             "title": "Role"
           },
           "content": {
@@ -1419,10 +1379,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "role",
-          "content"
-        ],
+        "required": ["role", "content"],
         "title": "ChatHistoryTurn"
       },
       "CountyDetail": {
@@ -1739,9 +1696,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "title": "KnowledgeChatRequest"
       },
       "KnowledgeChatResponse": {
@@ -1881,11 +1836,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "claim_id",
-          "text",
-          "citation_ids"
-        ],
+        "required": ["claim_id", "text", "citation_ids"],
         "title": "KnowledgeClaim"
       },
       "PrivacyOmission": {
@@ -1896,11 +1847,7 @@
           },
           "reason": {
             "type": "string",
-            "enum": [
-              "not_connected",
-              "not_account_linked",
-              "browser_only"
-            ],
+            "enum": ["not_connected", "not_account_linked", "browser_only"],
             "title": "Reason"
           },
           "detail": {
@@ -1909,11 +1856,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "system",
-          "reason",
-          "detail"
-        ],
+        "required": ["system", "reason", "detail"],
         "title": "PrivacyOmission"
       },
       "PrivacyRequestConfirm": {
@@ -1927,27 +1870,20 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "nonce"
-        ],
+        "required": ["nonce"],
         "title": "PrivacyRequestConfirm"
       },
       "PrivacyRequestCreate": {
         "properties": {
           "action": {
             "type": "string",
-            "enum": [
-              "export",
-              "deletion"
-            ],
+            "enum": ["export", "deletion"],
             "title": "Action"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "action"
-        ],
+        "required": ["action"],
         "title": "PrivacyRequestCreate"
       },
       "PrivacyRequestCreated": {
@@ -1958,10 +1894,7 @@
           },
           "action": {
             "type": "string",
-            "enum": [
-              "export",
-              "deletion"
-            ],
+            "enum": ["export", "deletion"],
             "title": "Action"
           },
           "state": {
@@ -2051,10 +1984,7 @@
           },
           "action": {
             "type": "string",
-            "enum": [
-              "export",
-              "deletion"
-            ],
+            "enum": ["export", "deletion"],
             "title": "Action"
           },
           "state": {
@@ -2123,12 +2053,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "request_id",
-          "action",
-          "state",
-          "created_at"
-        ],
+        "required": ["request_id", "action", "state", "created_at"],
         "title": "PrivacyRequestStatus"
       },
       "ProblemDetails": {
@@ -2313,13 +2238,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "key",
-          "label",
-          "vintage",
-          "url",
-          "note"
-        ],
+        "required": ["key", "label", "vintage", "url", "note"],
         "title": "SourceMetadata"
       },
       "UserProfile": {
@@ -2396,9 +2315,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "profile"
-        ],
+        "required": ["profile"],
         "title": "UserProfileResponse"
       },
       "UserProfileWrite": {
@@ -2495,11 +2412,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       }
     }

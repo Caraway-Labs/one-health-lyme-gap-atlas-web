@@ -145,7 +145,9 @@ export function EvidenceChat({
                   type="button"
                   aria-current={active?.id === item.id}
                   onClick={() => setActiveId(item.id)}
-                  {...analyticsControlAttributes("evidence_chat_history_select")}
+                  {...analyticsControlAttributes(
+                    "evidence_chat_history_select"
+                  )}
                 >
                   {item.title}
                 </button>
