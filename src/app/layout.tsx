@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
-import { AnalyticsClient } from "@/components/analytics-client";
-import { AppShell } from "@/components/app-shell";
-import { ChatLauncher } from "@/components/chat-launcher";
+import { RouteChrome } from "@/components/route-chrome";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { Providers } from "./providers";
@@ -23,11 +21,9 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body>
-        <AnalyticsClient />
         <TooltipProvider>
           <Providers>
-            <AppShell>{children}</AppShell>
-            <ChatLauncher />
+            <RouteChrome>{children}</RouteChrome>
           </Providers>
         </TooltipProvider>
       </body>

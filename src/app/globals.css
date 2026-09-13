@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 /* Lyme Atlas design tokens.
    Semantic chrome tokens (--background, --primary, …) are for application UI.
@@ -281,6 +283,23 @@ body {
   display: inline-flex;
   min-height: 2.25rem;
 }
+.app-docs-link,
+.nav-docs-link {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.app-docs-link {
+  min-height: 2.25rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius);
+  color: var(--teal-dark);
+  font-weight: 750;
+}
+.app-docs-link:hover,
+.app-docs-link:focus-visible {
+  background: var(--mint);
+}
 .app-mobile-nav-close {
   display: none;
 }
@@ -289,6 +308,41 @@ body {
 }
 .app-sidebar-scrim {
   display: none;
+}
+
+.atlas-docs-root {
+  --color-fd-accent: var(--mint);
+  --color-fd-accent-foreground: var(--teal-dark);
+  --color-fd-background: var(--background);
+  --color-fd-border: var(--border);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--card-foreground);
+  --color-fd-foreground: var(--foreground);
+  --color-fd-muted-foreground: var(--muted-foreground);
+  --color-fd-primary: var(--teal);
+  --color-fd-primary-foreground: var(--white);
+  --color-fd-secondary: var(--pale);
+  --color-fd-secondary-foreground: var(--navy);
+}
+.atlas-docs-root #nd-docs-layout {
+  min-height: 100dvh;
+}
+.atlas-docs-brand {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--navy);
+  font-weight: 750;
+}
+.atlas-docs-brand-mark {
+  display: inline-grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+  font-size: 0.8rem;
 }
 @media (max-width: 800px) {
   .app-sidebar {
@@ -1338,6 +1392,18 @@ a {
 .methods-section {
   padding-top: 6rem;
   padding-bottom: 6rem;
+}
+.methods-docs-link {
+  display: inline-flex;
+  margin: 1.5rem 0;
+  color: var(--teal-dark);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.methods-docs-link:hover,
+.methods-docs-link:focus-visible {
+  color: var(--navy);
 }
 .version-stamp {
   color: var(--muted-foreground);

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import { DataDictionaryDialog } from "@/components/data-dictionary-dialog";
+import { DocsLink } from "@/components/docs-link";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -68,6 +69,7 @@ export function SiteNav() {
             How to interpret the Atlas
           </Link>
         </div>
+        <DocsLink className="nav-docs-link" />
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
