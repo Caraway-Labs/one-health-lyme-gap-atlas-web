@@ -2,6 +2,7 @@
 
 import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { CountyActionPlan } from "@/components/county-action-plan";
+import { CountyEvidencePanel } from "@/components/county-evidence-panel";
 import { PdfExportButton } from "@/components/pdf-export-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -107,43 +108,7 @@ export function CountyProfile({
             </Progress>
           ))}
         </div>
-        <div className="ledger-panel">
-          <h4>Data used for this county</h4>
-          <dl>
-            <div>
-              <dt>Published 2023 Lyme case count</dt>
-              <dd>{detail.human_status.replaceAll("_", " ")}</dd>
-            </div>
-            <div>
-              <dt>Blacklegged tick status</dt>
-              <dd>{detail.tick_status}</dd>
-            </div>
-            <div>
-              <dt>Lyme bacterium detected in ticks</dt>
-              <dd>{detail.burgdorferi_status}</dd>
-            </div>
-            <div>
-              <dt>Social Vulnerability Index</dt>
-              <dd>
-                {detail.svi_percentile == null
-                  ? "Unavailable"
-                  : `${Math.round(detail.svi_percentile * 100)}th percentile`}
-              </dd>
-            </div>
-            <div>
-              <dt>Uninsured rate</dt>
-              <dd>
-                {detail.uninsured_percent == null
-                  ? "Unavailable"
-                  : `${detail.uninsured_percent}%`}
-              </dd>
-            </div>
-            <div>
-              <dt>Rural–urban classification (2023)</dt>
-              <dd>{detail.rucc_2023 ?? "Unavailable"}</dd>
-            </div>
-          </dl>
-        </div>
+        <CountyEvidencePanel compact detail={detail} />
       </div>
       <CountyActionPlan detail={detail} />
     </Card>

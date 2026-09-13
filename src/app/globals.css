@@ -1259,6 +1259,192 @@ a {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+.county-evidence-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: white;
+  box-shadow: var(--shadow);
+}
+.county-evidence-panel-compact {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.county-evidence-panel-header h3,
+.county-uncertainty-panel h3 {
+  margin: 0.25rem 0 0.4rem;
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+.county-evidence-panel-header p {
+  margin: 0 0 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.county-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.county-evidence-item {
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid #dceae5;
+  border-radius: 0.55rem;
+  background: #f7fbf9;
+}
+.county-evidence-item[data-evidence-state="missing"] {
+  border-color: #ecdca8;
+  background: #fffaf0;
+}
+.county-evidence-item[data-evidence-state="unavailable"] {
+  border-color: #d8e0e1;
+  background: #f5f7f7;
+}
+.county-evidence-item-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+.county-evidence-item h4 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.73rem;
+  line-height: 1.35;
+}
+.county-evidence-item .badge {
+  flex: 0 0 auto;
+  height: auto;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.57rem;
+}
+.county-evidence-item > strong {
+  display: block;
+  margin-top: 0.55rem;
+  color: var(--teal-dark);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.county-evidence-item p {
+  margin: 0.4rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+.county-evidence-context,
+.county-evidence-provenance {
+  margin-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+.county-evidence-context summary,
+.county-evidence-provenance summary {
+  min-height: 2.75rem;
+  padding: 0.75rem 0 0;
+  color: var(--teal-dark);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.county-evidence-context dl {
+  margin: 0.2rem 0 0;
+}
+.county-evidence-context dl div {
+  display: flex;
+  padding: 0.4rem 0;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border-bottom: 1px solid #edf1ef;
+}
+.county-evidence-context dt,
+.county-evidence-context dd {
+  font-size: 0.67rem;
+}
+.county-evidence-context dt {
+  color: var(--muted-foreground);
+}
+.county-evidence-context dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 750;
+  text-align: right;
+}
+.county-evidence-provenance p {
+  margin: 0.2rem 0 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+.county-evidence-provenance ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+.county-evidence-provenance li {
+  margin: 0.45rem 0;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+.county-evidence-provenance a {
+  display: block;
+  color: var(--teal-dark);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.county-evidence-provenance li > span {
+  display: block;
+  margin-top: 0.15rem;
+}
+.county-uncertainty-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-left: 4px solid var(--gold);
+  border-radius: 0.55rem;
+  background: #fffaf0;
+  color: #5f563f;
+}
+.county-uncertainty-panel ul {
+  display: grid;
+  margin: 0.7rem 0;
+  padding-left: 1.1rem;
+  gap: 0.45rem;
+}
+.county-uncertainty-panel li,
+.county-uncertainty-panel p {
+  font-size: 0.69rem;
+  line-height: 1.5;
+}
+.county-uncertainty-panel p {
+  margin: 0;
+}
+.county-uncertainty-panel h3 {
+  color: #645421;
+}
+.experiment-detail-status {
+  margin-top: 1rem;
+  padding: 1.5rem;
+}
+.workbench-detail .county-evidence-panel,
+.workbench-detail .county-uncertainty-panel {
+  box-shadow: none;
+}
+.workbench-detail .county-evidence-grid {
+  grid-template-columns: 1fr;
+}
+.workbench-detail .county-evidence-panel {
+  padding: 0.9rem;
+}
+.workbench-detail .county-evidence-panel-header p {
+  font-size: 0.68rem;
+}
 .next-questions {
   display: flex;
   gap: 1rem;
@@ -2177,6 +2363,9 @@ footer > a {
     grid-template-columns: 1fr 1fr;
   }
   .ledger-panel {
+    grid-column: 1 / -1;
+  }
+  .profile-grid > .county-evidence-panel {
     grid-column: 1 / -1;
   }
   .signals-panel {

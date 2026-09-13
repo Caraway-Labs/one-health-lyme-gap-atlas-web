@@ -15,6 +15,17 @@ export interface ScoreSettings {
   missing_human_weakness: number;
 }
 
+export const REVIEW_REASON_LABELS = [
+  "Published Lyme case data",
+  "Tick presence",
+  "Lyme bacterium detection",
+] as const;
+
+export interface CountyReviewReason {
+  label: string;
+  text: string;
+}
+
 export type PriorityTone = "urgent" | "review" | "watch" | "lower";
 
 export function priorityTone(priority: string): PriorityTone {
@@ -78,8 +89,8 @@ export function matchesEvidence(
   return true;
 }
 
-export function reasonsFor(county: CountyDetail): string[] {
-  return [
+export function reviewReasonsFor(county: CountyDetail): CountyReviewReason[] {
+  const reasons = [
     county.human_status === "published_count_floor"
       ? `The minimum rate supported by the published 2023 county data was ${county.incidence_floor_2023?.toFixed(1) ?? "unavailable"} cases per 100,000.`
       : "No county-level 2023 Lyme case count was published. This may reflect zero cases, privacy suppression, or other reporting limitations; the score treats missing data not as zero cases.",
@@ -90,6 +101,74 @@ export function reasonsFor(county: CountyDetail): string[] {
       ? "The bacterium that causes Lyme disease has been detected in locally collected, host-seeking blacklegged ticks."
       : "The published pathogen table has no county record; this does not establish pathogen absence.",
   ];
+  return reasons.map((text, index) => ({
+    label: REVIEW_REASON_LABELS[index],
+    text,
+  }));
+}
+
+export function reasonsFor(county: CountyDetail): string[] {
+  return reviewReasonsFor(county).map((reason) => reason.text);
+}
+
+export function uncertaintyCuesFor(county: CountyDetail): string[] {
+  const cues: string[] = [];
+
+  if (county.human_status === "published_count_floor") {
+    if (county.case_count_floor_2023 === 0) {
+      cues.push(
+        "The published county-linked case count is zero for this release. That observed zero is different from an unavailable or suppressed record."
+      );
+    } else {
+      cues.push(
+        "The human surveillance value is a privacy-protected published floor, not an official complete county incidence estimate."
+      );
+    }
+  } else {
+    cues.push(
+      "A county-level published Lyme case count is unavailable. This may reflect zero cases, suppression, unallocated records, or reporting and publication limits; it is not treated as zero by default."
+    );
+  }
+
+  if (county.tick_status === "No records") {
+    cues.push(
+      "The published tick table has no county record. No record does not establish that ticks are absent."
+    );
+  }
+
+  if (county.burgdorferi_status === "No records") {
+    cues.push(
+      "The published pathogen table has no county record. No record does not establish that the pathogen is absent."
+    );
+  }
+
+  if (county.evidence_completeness < 100) {
+    cues.push(
+      `${county.evidence_completeness}% of the six scored inputs are marked available in this release; incomplete inputs can change what a county review can establish.`
+    );
+  }
+
+  if (
+    county.state_unallocated_records_2023 != null &&
+    county.state_unallocated_records_2023 > 0
+  ) {
+    cues.push(
+      `${county.state_unallocated_records_2023} published 2023 human-surveillance record${county.state_unallocated_records_2023 === 1 ? " was" : "s were"} not allocated to a county in this release.`
+    );
+  }
+
+  const unavailableContext = [
+    county.svi_percentile == null ? "social vulnerability" : null,
+    county.uninsured_percent == null ? "insurance access" : null,
+    county.rucc_2023 == null ? "rurality" : null,
+  ].filter((value): value is string => value !== null);
+  if (unavailableContext.length > 0) {
+    cues.push(
+      `Context unavailable for this county: ${unavailableContext.join(", ")}.`
+    );
+  }
+
+  return cues;
 }
 
 export interface FollowUpPlan {
