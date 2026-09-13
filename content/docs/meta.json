@@ -1,4 +1,4 @@
 {
   "title": "Atlas documentation",
-  "pages": ["index"]
+  "pages": ["index", "what-is-atlas", "who-is-atlas-for", "atlas-workflow"]
 }
