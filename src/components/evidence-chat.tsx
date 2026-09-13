@@ -216,9 +216,25 @@ export function EvidenceChat({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        {citation.title} (PMID {citation.pmid})
+                        {citation.title} (PMID {citation.pmid}
+                        {citation.pmcid ? ` / ${citation.pmcid}` : ""})
                       </a>
                       <small>{citation.source_label}</small>
+                      {citation.section_labels?.length ||
+                      citation.corpus_rules_version ? (
+                        <small>
+                          {[
+                            citation.section_labels?.length
+                              ? `Sections: ${citation.section_labels.join(", ")}`
+                              : null,
+                            citation.corpus_rules_version
+                              ? `Corpus ${citation.corpus_rules_version}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </small>
+                      ) : null}
                     </li>
                   ))}
                 </ol>
