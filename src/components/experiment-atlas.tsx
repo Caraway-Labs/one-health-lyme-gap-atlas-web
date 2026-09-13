@@ -8,6 +8,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AtlasFilters } from "@/components/atlas-filters";
 import { AtlasMap } from "@/components/atlas-map";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { CountyActionPlan } from "@/components/county-action-plan";
+import {
+  CountyEvidencePanel,
+  CountyUncertaintyPanel,
+} from "@/components/county-evidence-panel";
 import { PdfExportButton } from "@/components/pdf-export-button";
 import { ResultsTable } from "@/components/results-table";
 import { Button } from "@/components/ui/button";
@@ -44,7 +49,11 @@ import {
   synchronizeGovernedDataset,
   toScoreSettings,
 } from "@/lib/atlas-search-params";
-import { matchesEvidence, reasonsFor } from "@/lib/atlas-ui";
+import {
+  matchesEvidence,
+  plainPriority,
+  reviewReasonsFor,
+} from "@/lib/atlas-ui";
 import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
 
 export type ExperimentVariant =
@@ -176,7 +185,6 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   });
   const detailQuery = useQuery({
     enabled: Boolean(metadataQuery.data && selectedFips),
-    placeholderData: (previous) => previous,
     queryFn: async () =>
       validateApiResponse(
         "County detail",
@@ -237,12 +245,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
       </main>
     );
   }
-  if (
-    metadataQuery.error ||
-    geometryQuery.error ||
-    scoresQuery.error ||
-    !metadataQuery.data
-  ) {
+  if (metadataQuery.error || scoresQuery.error || !metadataQuery.data) {
     return (
       <main className="experiment-load">
         <AtlasStatusMessage
@@ -294,7 +297,27 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
           onEvidenceChange={setEvidence}
           settings={settings}
         />
-        {detail ? (
+        {detailQuery.error ? (
+          <section className="experiment-card experiment-detail-status">
+            <AtlasStatusMessage
+              action={
+                <Button
+                  onClick={() => detailQuery.refetch()}
+                  {...analyticsControlAttributes("experiment_retry")}
+                >
+                  Try again
+                </Button>
+              }
+              title="This county detail is temporarily unavailable"
+              tone="error"
+            >
+              <p>
+                The county list and governed release are still available. Try
+                loading this county again.
+              </p>
+            </AtlasStatusMessage>
+          </section>
+        ) : detail ? (
           <>
             {isWideWorkbench && (
               <ScoringAssumptions
@@ -309,6 +332,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
               detail={detail}
               counties={filtered}
               geometry={geometryQuery.data}
+              geometryError={Boolean(geometryQuery.error)}
               selectedFips={selectedFips}
               datasetVersion={metadataQuery.data.release_id}
               settings={settings}
@@ -350,6 +374,7 @@ function VariantBody({
   detail,
   counties,
   geometry,
+  geometryError,
   selectedFips,
   datasetVersion,
   settings,
@@ -365,6 +390,7 @@ function VariantBody({
   detail: CountyDetail;
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
+  geometryError: boolean;
   selectedFips: string;
   datasetVersion: string;
   settings: ScoreSettings;
@@ -382,6 +408,7 @@ function VariantBody({
         detail={detail}
         counties={counties}
         geometry={geometry}
+        geometryError={geometryError}
         selectedFips={selectedFips}
         datasetVersion={datasetVersion}
         settings={settings}
@@ -397,6 +424,7 @@ function VariantBody({
         detail={detail}
         counties={counties}
         geometry={geometry}
+        geometryError={geometryError}
         selectedFips={selectedFips}
         datasetVersion={datasetVersion}
         settings={settings}
@@ -410,6 +438,7 @@ function VariantBody({
         detail={detail}
         counties={counties}
         geometry={geometry}
+        geometryError={geometryError}
         selectedFips={selectedFips}
         datasetVersion={datasetVersion}
         settings={settings}
@@ -434,6 +463,7 @@ function VariantBody({
       detail={detail}
       counties={counties}
       geometry={geometry}
+      geometryError={geometryError}
       selectedFips={selectedFips}
       datasetVersion={datasetVersion}
       settings={settings}
@@ -448,6 +478,7 @@ function Decision({
   detail,
   counties,
   geometry,
+  geometryError,
   selectedFips,
   datasetVersion,
   settings,
@@ -458,6 +489,7 @@ function Decision({
   detail: CountyDetail;
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
+  geometryError: boolean;
   selectedFips: string;
   datasetVersion: string;
   settings: ScoreSettings;
@@ -485,6 +517,7 @@ function Decision({
       <section className="experiment-data-grid">
         <MapPanel
           geometry={geometry}
+          geometryError={geometryError}
           counties={counties}
           selectedFips={selectedFips}
           onSelect={onSelect}
@@ -515,6 +548,7 @@ function Guided({
   detail,
   counties,
   geometry,
+  geometryError,
   selectedFips,
   datasetVersion,
   settings,
@@ -525,6 +559,7 @@ function Guided({
   detail: CountyDetail;
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
+  geometryError: boolean;
   selectedFips: string;
   datasetVersion: string;
   settings: ScoreSettings;
@@ -569,6 +604,7 @@ function Guided({
             <section className="guided-map">
               <MapPanel
                 geometry={geometry}
+                geometryError={geometryError}
                 counties={counties}
                 selectedFips={selectedFips}
                 onSelect={onSelect}
@@ -613,6 +649,7 @@ function Workbench({
   detail,
   counties,
   geometry,
+  geometryError,
   selectedFips,
   datasetVersion,
   settings,
@@ -621,6 +658,7 @@ function Workbench({
   detail: CountyDetail;
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
+  geometryError: boolean;
   selectedFips: string;
   datasetVersion: string;
   settings: ScoreSettings;
@@ -645,6 +683,7 @@ function Workbench({
         <h2>Where does it appear?</h2>
         <MapPanel
           geometry={geometry}
+          geometryError={geometryError}
           counties={counties}
           selectedFips={selectedFips}
           onSelect={onSelect}
@@ -657,6 +696,9 @@ function Workbench({
           settings={settings}
         />
         <WhyPanel detail={detail} />
+        <CountyEvidencePanel detail={detail} />
+        <CountyUncertaintyPanel detail={detail} />
+        <CountyActionPlan detail={detail} />
         <details>
           <summary>What these labels mean</summary>
           <DefinitionCards />
@@ -670,6 +712,7 @@ function Explain({
   detail,
   counties,
   geometry,
+  geometryError,
   selectedFips,
   datasetVersion,
   settings,
@@ -678,6 +721,7 @@ function Explain({
   detail: CountyDetail;
   counties: CountyScoreSummary[];
   geometry?: GeoJSON.FeatureCollection;
+  geometryError: boolean;
   selectedFips: string;
   datasetVersion: string;
   settings: ScoreSettings;
@@ -719,6 +763,7 @@ function Explain({
       <section className="experiment-data-grid explain-map">
         <MapPanel
           geometry={geometry}
+          geometryError={geometryError}
           counties={counties}
           selectedFips={selectedFips}
           onSelect={onSelect}
@@ -877,9 +922,9 @@ function DecisionSummary({
         </p>
       </div>
       <div className="experiment-score">
-        <span>{detail.priority}</span>
+        <span>{plainPriority(detail.priority)}</span>
         <strong>{detail.score.score}</strong>
-        <small>follow-up priority score / 100</small>
+        <small>County Review Priority · not personal risk</small>
       </div>
       <PdfExportButton
         datasetVersion={datasetVersion}
@@ -893,12 +938,20 @@ function DecisionSummary({
 function WhyPanel({ detail }: { detail: CountyDetail }) {
   return (
     <div className="why-panel experiment-why">
+      <span className="eyebrow">Review rationale</span>
       <h3>Why it surfaced</h3>
+      <p className="why-panel-intro">
+        These are signals to investigate, not conclusions about disease risk or
+        a complete count of Lyme disease.
+      </p>
       <ol>
-        {reasonsFor(detail).map((reason, index) => (
-          <li key={reason}>
+        {reviewReasonsFor(detail).map((reason, index) => (
+          <li key={reason.label}>
             <span>{index + 1}</span>
-            <p>{reason}</p>
+            <div>
+              <h4>{reason.label}</h4>
+              <p>{reason.text}</p>
+            </div>
           </li>
         ))}
       </ol>
@@ -944,11 +997,13 @@ function MapPanel({
   counties,
   selectedFips,
   onSelect,
+  geometryError,
 }: {
   geometry?: GeoJSON.FeatureCollection;
   counties: CountyScoreSummary[];
   selectedFips: string;
   onSelect: (fips: string) => void;
+  geometryError: boolean;
 }) {
   return (
     <section className="experiment-map">
@@ -960,6 +1015,13 @@ function MapPanel({
             selectedFips={selectedFips}
             onSelect={onSelect}
           />
+        ) : geometryError ? (
+          <AtlasStatusMessage className="map-loading" tone="error">
+            <p>
+              The map is temporarily unavailable. Use the county list or table
+              to inspect the same findings.
+            </p>
+          </AtlasStatusMessage>
         ) : (
           <AtlasStatusMessage className="map-loading" tone="loading">
             Loading map…

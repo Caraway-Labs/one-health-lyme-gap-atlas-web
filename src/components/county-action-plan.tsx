@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import type { CountyDetail } from "@/generated/models";
 import { followUpPlanFor } from "@/lib/atlas-ui";
 
-const PROGRAM_RESOURCES = [
+export const PROGRAM_RESOURCES = [
   {
     href: "https://www.dhs.wisconsin.gov/tick/lyme-reporting-surveillance.htm",
     label: "Wisconsin: reporting and investigation protocol",
@@ -28,13 +28,13 @@ export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
   return (
     <Card
       className="action-plan bg-muted gap-0 py-0 ring-0"
-      aria-labelledby="county-action-heading"
+      aria-labelledby={`county-action-heading-${detail.fips}`}
       role="region"
     >
       <div className="action-plan-heading">
         <div>
           <span className="eyebrow">Suggested follow-up</span>
-          <h4 id="county-action-heading">{plan.level}</h4>
+          <h4 id={`county-action-heading-${detail.fips}`}>{plan.level}</h4>
         </div>
         <Badge className="action-timeframe h-auto" variant="outline">
           {plan.timeframe}
@@ -63,7 +63,12 @@ export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
         <ul>
           {PROGRAM_RESOURCES.map((resource) => (
             <li key={resource.href}>
-              <a href={resource.href} target="_blank" rel="noreferrer">
+              <a
+                href={resource.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${resource.label} (opens in a new tab)`}
+              >
                 {resource.label}
                 <span aria-hidden="true"> ↗</span>
               </a>

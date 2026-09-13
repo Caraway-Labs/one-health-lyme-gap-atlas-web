@@ -654,6 +654,47 @@ test("keeps the wide workspace score calculation above the county panels and col
   );
 });
 
+test("guides Variant 6 from review rationale through evidence, uncertainty, action, and resources", async ({
+  page,
+}) => {
+  await page.goto("/variant_6?county=08001");
+
+  await expect(
+    page.getByText("County Review Priority · not personal risk")
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Why it surfaced" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Evidence and data used for this county",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "What to keep in mind" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Conduct targeted follow-up" })
+  ).toBeVisible();
+
+  await page.getByText("Official program examples and resources").click();
+  await expect(
+    page.getByRole("link", {
+      name: /Wisconsin: reporting and investigation protocol/,
+    })
+  ).toHaveAttribute("rel", "noopener noreferrer");
+
+  await page.getByRole("button", { name: /Los Angeles, CA/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Los Angeles, California" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Evidence and data used for this county",
+    })
+  ).toBeVisible();
+});
+
 test("keeps definitions close to the evidence in the explain-the-score variant", async ({
   page,
 }) => {
