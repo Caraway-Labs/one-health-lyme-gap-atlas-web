@@ -18,7 +18,9 @@ test("renders the public documentation page without the Atlas shell", async ({
       : page.locator("[data-search]:visible");
   await expect(visibleSearch).toHaveCount(1);
   await expect(page.locator(".app-shell")).toHaveCount(0);
-  await expect(page).toHaveTitle(/Start with Atlas \| Atlas documentation/);
+  await expect(page).toHaveTitle(
+    /Start with Atlas Lyme \| Atlas documentation/
+  );
 
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
