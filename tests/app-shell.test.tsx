@@ -40,6 +40,13 @@ describe("Atlas application shell", () => {
     expect(
       screen.getByRole("button", { name: "Data dictionary" })
     ).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", {
+          name: "Open Atlas documentation (opens in a new tab)",
+        })
+        .getAttribute("target")
+    ).toBe("_blank");
   });
 
   it("collapses the persistent sidebar without losing its accessible names", () => {

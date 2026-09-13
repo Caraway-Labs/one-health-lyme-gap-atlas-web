@@ -41,6 +41,9 @@ services:
       - key: NEXT_PUBLIC_SITE_URL
         value: https://carawaylabs.com
         scope: BUILD_TIME
+      - key: NEXT_PUBLIC_DOCS_URL
+        value: https://carawaylabs.com/docs
+        scope: BUILD_TIME
       - key: NEXT_PUBLIC_AMPLITUDE_API_KEY
         value: ${NEXT_PUBLIC_AMPLITUDE_API_KEY}
         scope: BUILD_TIME

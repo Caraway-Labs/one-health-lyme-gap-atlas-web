@@ -9,6 +9,7 @@ import {
   analyticsControlAttributes,
   trackProvenanceOpened,
 } from "@/lib/atlas-analytics";
+import { getDocsHref } from "@/lib/docs-config";
 
 export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
   return (
@@ -24,6 +25,14 @@ export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
         eyebrow="Data sources and limitations"
         title="How to interpret the Atlas"
       />
+      <a
+        className="methods-docs-link"
+        href={getDocsHref("read-the-evidence-carefully")}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Read the documentation guide for interpreting evidence ↗
+      </a>
       <div className="source-grid">
         {metadata.sources.map((source, index) => (
           <a

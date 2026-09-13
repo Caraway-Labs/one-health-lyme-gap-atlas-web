@@ -44,6 +44,13 @@ describe("Site navigation", () => {
     expect(
       screen.getByRole("link", { name: "Atlas" }).getAttribute("href")
     ).toBe("/?state=CO#atlas");
+    expect(
+      screen
+        .getByRole("link", {
+          name: "Open Atlas documentation (opens in a new tab)",
+        })
+        .getAttribute("href")
+    ).toBe("https://carawaylabs.com/docs");
   });
 
   it("retains the conditional Evidence Chat route", () => {

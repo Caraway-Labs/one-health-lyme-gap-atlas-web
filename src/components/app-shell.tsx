@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DataDictionaryDialog } from "@/components/data-dictionary-dialog";
+import { DocsLink } from "@/components/docs-link";
 import { Button } from "@/components/ui/button";
 import {
   NAVIGATION_GROUPS,
@@ -191,6 +192,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Button>
           <span>Atlas</span>
           <div className="app-header-actions">
+            <DocsLink className="app-docs-link" />
             {supportsFocusMode && (
               <Button
                 className="app-focus-toggle"
