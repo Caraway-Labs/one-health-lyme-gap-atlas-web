@@ -1,0 +1,72 @@
+---
+title: Investigation workflows
+description: Use Atlas Lyme to move from a surveillance question to a bounded, evidence-backed investigation next step.
+---
+
+Atlas is most useful when it helps turn a broad question into a reviewable next step. The workflows below use the current public experience and keep the evidence checks close to the decision.
+
+For a capability-by-capability view, see [current capabilities](/docs/current-capabilities). For the product's overall model, see [the Atlas decision-support workflow](/docs/atlas-workflow).
+
+## 1. Find a geography or signal for review
+
+**Question:** Where should our team look first, given the available release?
+
+1. Open the [Atlas Explorer](/) or the [Geographic Explorer](/geographic_explorer).
+2. Choose a state, or search by county name or FIPS code. Use the evidence filter when you need to focus on counties with a particular evidence-availability state.
+3. Review the ranked list, geographic view, and county evidence table together. Select a county to open its profile and signals.
+4. If a map is difficult to use or geometry is unavailable, use the county table and text summaries. The table is the supported non-map path to the same key result set.
+5. Record the release, methodology version, geography, filters, and the evidence context that made the signal worth reviewing.
+
+**Evidence check:** A rank or score focuses attention. It does not mean that the county has the highest disease burden, that missing evidence means zero, or that a cause has been identified.
+
+**Next step:** Form a bounded question such as, “Which source and time period should we validate for this county?” Then use the evidence and methodology context before requesting follow-up analysis or local review.
+
+## 2. Compare a county with surrounding or peer geographies
+
+**Question:** Is this signal distinctive enough, or does it appear in other supported counties in the same release?
+
+1. In the Explorer, select the first county from the evidence table and choose **Add to comparison**.
+2. Add up to four more counties that are relevant to the review question, such as nearby counties or a documented peer set.
+3. Review the side-by-side comparison and the source, release, method, and completeness context for the selected counties.
+4. Keep the comparison within the same active release. If filters change, confirm that the selected counties still match the question and evidence set.
+5. Record why each county was selected and which displayed signal or evidence difference merits follow-up.
+
+**Evidence check:** The comparison is descriptive. Differences in a score or displayed signal are not evidence of causation, a statistical test, or a person-level risk difference. Different reporting practices, geographies, vintages, and missingness can make apparent differences difficult to compare.
+
+**Next step:** Choose the smallest defensible follow-up—source validation, local surveillance review, a time-bounded analysis, or expert consultation—and state what evidence would change the interpretation.
+
+## 3. Inspect evidence before deciding what to investigate next
+
+**Question:** What supports this result, and what remains uncertain?
+
+1. Select the geography from the [Atlas Explorer](/) or the county evidence table in the [Geographic Explorer](/geographic_explorer).
+2. Open **source, release, and methodology context** in the selected-county evidence panel, and read the relevant methods section in the application.
+3. Check the source or publisher, source time or vintage, geography and boundary, active release, methodology version, generated and loaded or retrieved context, completeness, known limitations, and any uncertainty language.
+4. Distinguish “no record available” from “zero.” Look for the fields that are present, the fields that are missing, and whether the inputs are comparable before drawing a conclusion.
+5. Write the investigation question and the evidence gap together. For example: “The county is a review candidate in release X; validate the human-disease source vintage and vector coverage before interpreting the signal.”
+
+**Evidence check:** Atlas combines measures that can have different publishers, schedules, years, and scales. A result is only as interpretable as the provenance and limitations that accompany it.
+
+**Next step:** Ask a qualified reviewer to validate the source context and local meaning, then decide whether the question warrants additional analysis, field investigation, coordination, or no action.
+
+## Record and share the review
+
+When you share an Atlas result, keep a small review record:
+
+- the URL and the date you opened it;
+- the active release identifier and methodology version;
+- the selected state, county, or county set;
+- the view, metric, filters, page, and score assumptions used;
+- the source, geography, time or vintage, freshness, completeness, uncertainty, and limitations you observed; and
+- the follow-up question, reviewer, and decision about what happens next.
+
+The URL is a useful handoff because it preserves supported analytical state. It is not a substitute for recording the release and evidence context, and it should not be described as reproducing a future result after the underlying release changes.
+
+## In-product help
+
+- Use the [Atlas Explorer](/) for the county profile, evidence panel, methods, and supported exports.
+- Use the [Geographic Explorer](/geographic_explorer) for coordinated views and the always-available county evidence table.
+- Keep the [AI Ethics commitments](/ai-ethics) nearby when reviewing any AI-enabled or experimental experience.
+- Return to [current capabilities](/docs/current-capabilities) when you need to distinguish a released behavior from a planned or experimental one.
+
+Atlas helps identify what may deserve investigation. The epidemiologist and responsible public-health organization remain accountable for interpretation, validation, and action.
