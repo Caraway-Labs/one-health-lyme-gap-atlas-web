@@ -18,7 +18,14 @@ export const KnowledgeCitation = zod.object({
   "pubmed_url": zod.string(),
   "claim_ids": zod.array(zod.string()).min(1),
   "passage_ids": zod.array(zod.string()).min(1),
-  "source_label": zod.string().default(knowledgeCitationSourceLabelDefault)
+  "source_label": zod.string().default(knowledgeCitationSourceLabelDefault),
+  "pmcid": zod.union([zod.string(),zod.null()]).optional(),
+  "corpus_unit_ids": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "section_labels": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "corpus_rules_version": zod.union([zod.string(),zod.null()]).optional(),
+  "artifact_id": zod.union([zod.string(),zod.null()]).optional(),
+  "contribution_sha256": zod.union([zod.string(),zod.null()]).optional(),
+  "jats_sha256": zod.union([zod.string(),zod.null()]).optional()
 })
 
 export type KnowledgeCitation = zod.input<typeof KnowledgeCitation>;
