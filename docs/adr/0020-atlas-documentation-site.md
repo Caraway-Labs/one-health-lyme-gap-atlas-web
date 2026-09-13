@@ -1,8 +1,6 @@
 # 0020: Atlas documentation in the existing web application
 
-Status: Accepted
-Date: 2026-09-13
-Decision owner: One Health Lyme Gap Atlas product and engineering leads
+Status: Accepted Date: 2026-09-13 Decision owner: One Health Lyme Gap Atlas product and engineering leads
 
 ## Context
 
