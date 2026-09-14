@@ -1,0 +1,80 @@
+---
+title: FAQ and troubleshooting
+description: Get practical answers about Atlas Lyme interpretation, loading, filters, data availability, and the public HelpDocs experience.
+---
+
+## Product and interpretation
+
+### What is Atlas Lyme?
+
+Atlas is an **Epidemiologist Decision Intelligence Platform** for Lyme disease and other tick-borne diseases. It brings fragmented One Health evidence together to help epidemiologists understand what is happening, investigate why, and decide what deserves review.
+
+Start with [What is Atlas Lyme?](/docs/what-is-atlas), then open the [Atlas Explorer](/).
+
+### Is the current Atlas score an AI prediction?
+
+No. The current score is a transparent, adjustable follow-up-priority calculation over released inputs. It is not a predictive model, diagnosis, disease-burden estimate, causal conclusion, or individual-risk prediction. Use [current capabilities](/docs/current-capabilities) and [evidence guidance](/docs/evidence-and-uncertainty) when interpreting it.
+
+### Does a high score mean that a county is high risk?
+
+No. It means the released inputs or evidence gaps made the county a candidate for closer review under the displayed methodology. Check the source, vintage, geography, method, completeness, limitations, and uncertainty before deciding what to investigate.
+
+### Why does Atlas show a signal when evidence is missing?
+
+Missing evidence can be part of the reason a question deserves review, but missing is not zero and no record is not absence. A low observed value and insufficient surveillance are different states. Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) before drawing a conclusion.
+
+### Can Atlas tell me whether an outbreak will happen?
+
+No. Atlas does not guarantee outbreak prediction, causation, individual risk, diagnosis, or automatic public-health action. It helps identify a bounded investigation question.
+
+### What does “AI-enabled” mean today?
+
+It describes the product direction: organizing, comparing, synthesizing, or explaining governed evidence with clear sources and limits. The current public score is deterministic, and the assistant route is a feature-gated local demo rather than a live model-backed service. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) and the approved [AI Ethics commitments](/ai-ethics).
+
+## Using Atlas
+
+### The Atlas is loading or says it is temporarily unavailable. What should I do?
+
+The public application retrieves the current governed release through the public API. Use **Try again** or refresh once. If the problem continues, record the time, route, and any displayed release or request reference, then return later. Do not treat a loading or error state as evidence about a county.
+
+### No counties match my filters. Did Atlas find no risk?
+
+No. The current filters may simply exclude every county. Review the selected state, county name or FIPS search, evidence filter, view, and score controls, then use **Clear filters** if needed. An empty result set is not a public-health conclusion.
+
+### The map is unavailable or difficult to use. Can I still review results?
+
+Yes. Use the county evidence table and text summaries. The [Geographic Explorer](/geographic_explorer) keeps the table available as the non-map path, and its map-error state explains that the table remains usable.
+
+### How do I compare counties?
+
+In the [Geographic Explorer](/geographic_explorer), select a county from the evidence table, choose **Add to comparison**, and add up to five counties from the same active release. The comparison is descriptive; document why the counties were selected and do not treat differences as causation or individual risk.
+
+### Why is a county’s case value not shown as zero?
+
+The source may have no county-linked record, may have suppressed or unallocated records, or may not report that geography or period. Atlas preserves that distinction rather than converting missing evidence into zero. An explicitly published zero is still bounded by the source and method.
+
+### Why can two signals point in different directions?
+
+Human, tick, pathogen, environmental, population, and scientific sources can use different boundaries, definitions, sampling designs, periods, publishers, and update schedules. Compare provenance and coverage first; make the disagreement a question for review. Do not average away the difference.
+
+### How do I share what I reviewed?
+
+Use the supported URL handoff or export, and record the active release, methodology version, geography, filters, view, metric, score assumptions, evidence context, limitations, and follow-up question. A URL preserves supported analytical state, but it does not guarantee that a future release will contain identical data.
+
+## HelpDocs and policy
+
+### How do I find the right documentation page?
+
+Open the [Atlas documentation home](/docs), use the sidebar or search, and choose the page that matches your question: [current capabilities](/docs/current-capabilities), [investigation workflows](/docs/investigation-workflows), or [evidence guidance](/docs/evidence-and-uncertainty). The Docs link in the Atlas utility bar opens HelpDocs in a new tab so your analytical state stays in the original tab.
+
+### Where are privacy and AI policy commitments documented?
+
+Use the approved [Privacy page](/privacy) for privacy and data-use commitments and [AI Ethics commitments](/ai-ethics) for AI status, boundaries, and open decisions. HelpDocs links to those sources and does not replace or expand them.
+
+### Can HelpDocs change a data value or score?
+
+No. HelpDocs explains the released experience; it does not edit source data, change methodology, or authorize an interpretation. Validate a concern against the source and responsible local or state program, and preserve the release and method in your review record.
+
+### What if an AI or analytical explanation conflicts with the evidence panel?
+
+Pause the interpretation. Prefer the governed source and in-product provenance context, record the disagreement, and ask a qualified reviewer to validate it. Treat an unsupported or unavailable explanation as unavailable—not as a reason to fill the gap with confidence. Keep the [AI Ethics commitments](/ai-ethics) in view.
