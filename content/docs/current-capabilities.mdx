@@ -1,0 +1,46 @@
+---
+title: Current capabilities
+description: See what Atlas Lyme supports in the current public release and how each capability contributes to evidence-aware investigation.
+---
+
+This page describes the current public Atlas experience. Use it to choose a supported workflow and to avoid treating a planned or experimental idea as a released capability.
+
+## Capability status
+
+Atlas uses four status labels:
+
+- **Available now** — verified in the current public release and appropriate to document as user behavior.
+- **Planned** — part of the product direction, but not available to rely on today.
+- **Experimental/demo** — available only in a constrained, feature-gated, or validation context; do not treat it as a production commitment.
+- **Not supported** — outside the current product promise or deliberately excluded from the public experience.
+
+## What you can do today
+
+| Capability | Status | How it supports investigation | Important boundary |
+| --- | --- | --- | --- |
+| Explore county and state context | Available now | Start with a geography and review its rank, map context, county profile, signals, and evidence together. | A review-priority signal is not a diagnosis, disease-burden estimate, or individual risk estimate. |
+| Filter the county set | Available now | Narrow the review to a state, county name or FIPS code, or the available-evidence state. | Filters describe the current release; they do not create new surveillance data. |
+| Review geographic views | Available now | Use geographic tiles, small multiples, the evidence matrix, ranked dots, synchronized maps, map-linked scatterplots, county comparison, and the county evidence table to look for patterns worth checking. | The table and text summaries are the non-map path. A map color or rank is a prompt for review, not a conclusion. |
+| Compare supported counties | Available now | Select up to five counties from the same release and compare their displayed signals and evidence context side by side. | Comparisons are descriptive and methodology-defined; they do not establish causation or peer-group equivalence. |
+| Inspect evidence and provenance | Available now | Open the selected county's evidence and methodology context before deciding what to investigate next. | Check source, geography, time or vintage, release, method version, freshness, completeness, uncertainty, and limitations. |
+| Share analytical state | Available now | Share a URL that preserves supported filters, view, metric, selected counties, page, and score assumptions for another reviewer. | Record the release and method with the URL. A URL does not guarantee that a future release will contain identical data. |
+| Export a review artifact | Available now | Use the supported county-list CSV or state/county PDF export in the Atlas experience to carry a bounded review into team discussion. | Exports are snapshots of the displayed release and assumptions, not a new analysis or a guarantee of future reproducibility. |
+
+## Capabilities that are not current promises
+
+| Capability | Status | What this means for you |
+| --- | --- | --- |
+| Historical release trends | Not supported | The public explorer currently exposes one active release. A generated date is release metadata, not the date of disease observations. |
+| Guaranteed outbreak prediction or automated public-health action | Not supported | Atlas surfaces signals and investigation candidates. It does not predict with certainty or act on behalf of an authority. |
+| Clinical diagnosis or person-level exposure risk | Not supported | Atlas is a population-level public-health decision-support experience, not a clinical or individual-risk tool. |
+| AI-generated findings treated as authoritative | Experimental/demo | AI-enabled experiences must remain grounded in approved evidence, show limitations, and retain human review. Do not use an AI suggestion as a finding by itself. |
+| Alerts, private feeds, or account-based evidence access | Not supported | The public Atlas is designed to be useful without sign-in. Do not assume an account unlocks data, changes scores, or authorizes an interpretation. |
+
+## Where to start
+
+- Open the [Atlas Explorer](/) for county and state review.
+- Open the [Geographic Explorer](/geographic_explorer) for coordinated geographic views and the county evidence table.
+- Follow the [investigation workflows](/docs/investigation-workflows) for question-to-next-step guidance.
+- Read the evidence and methodology context beside the result before relying on a signal, and keep the [AI Ethics commitments](/ai-ethics) nearby for AI-enabled or experimental experiences.
+
+The current release is a situational-awareness foundation. When a question depends on a feed, model, alert, historical comparison, or export that is not listed as available now, treat it as an open product or data dependency and do not infer the answer from the interface.

@@ -1,4 +1,11 @@
 {
   "title": "Atlas documentation",
-  "pages": ["index", "what-is-atlas", "who-is-atlas-for", "atlas-workflow"]
+  "pages": [
+    "index",
+    "what-is-atlas",
+    "who-is-atlas-for",
+    "atlas-workflow",
+    "current-capabilities",
+    "investigation-workflows"
+  ]
 }
