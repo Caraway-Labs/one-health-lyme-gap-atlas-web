@@ -1,33 +1,22 @@
+import { ComingSoonPage } from "@/components/coming-soon-page";
 import { EvidenceChat } from "@/components/evidence-chat";
+import { pageMetadataForRoute } from "@/lib/navigation";
 
 interface KnowledgeGraphPageProps {
   searchParams: Promise<{ conversation?: string | string[] }>;
 }
 
-export const metadata = {
-  description:
-    "Ask questions grounded in reviewed PubMed and PMC Open Access literature.",
-  title: "Knowledge Graph Evidence | One Health Lyme Gap Atlas",
-};
+export const metadata = pageMetadataForRoute("/knowledge-graph");
 
 export default async function KnowledgeGraphPage({
   searchParams,
 }: KnowledgeGraphPageProps) {
   if (process.env.NEXT_PUBLIC_KG_CHAT_ENABLED !== "true") {
     return (
-      <main className="knowledge-workspace">
-        <section className="chat-panel">
-          <header>
-            <div>
-              <span className="kicker">Reviewed literature</span>
-              <h1>Knowledge graph evidence workspace</h1>
-            </div>
-          </header>
-          <p className="medical-notice">
-            The evidence workspace is not yet enabled.
-          </p>
-        </section>
-      </main>
+      <ComingSoonPage
+        title="Evidence library"
+        description="Ask questions grounded in reviewed PubMed and PMC Open Access literature as the Atlas research workspace moves toward release."
+      />
     );
   }
   const params = await searchParams;

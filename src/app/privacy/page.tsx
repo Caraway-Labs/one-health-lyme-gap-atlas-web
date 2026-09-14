@@ -1,15 +1,10 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
-import { SiteFooter } from "@/components/site-footer";
 import { buttonVariants } from "@/components/ui/button";
+import { pageMetadataForRoute } from "@/lib/navigation";
 
-export const metadata: Metadata = {
-  title: "Privacy | One Health Lyme Gap Atlas",
-  description:
-    "How One Health Lyme Gap Atlas handles user data and privacy choices.",
-};
+export const metadata = pageMetadataForRoute("/privacy");
 
 export default function PrivacyPage() {
   return (
@@ -157,7 +152,6 @@ export default function PrivacyPage() {
           </p>
         </div>
       </section>
-      <SiteFooter />
     </main>
   );
 }

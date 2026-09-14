@@ -310,6 +310,345 @@ body {
   display: none;
 }
 
+/* shadcn/Base UI application-shell primitives. The sidebar owns primary
+   navigation; the inset owns utility chrome, route content, and the footer. */
+[data-slot="sidebar-provider"] {
+  display: contents;
+}
+.atlas-sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  width: var(--shell-sidebar-width);
+  height: 100vh;
+  flex: none;
+  flex-direction: column;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  background: var(--card);
+  transition: width var(--motion-duration) var(--motion-easing);
+}
+.atlas-sidebar[data-state="collapsed"] {
+  width: var(--shell-sidebar-compact-width);
+}
+.atlas-sidebar [data-slot="sidebar-header"] {
+  display: flex;
+  min-height: var(--shell-utility-height);
+  padding: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.atlas-sidebar [data-slot="sidebar-header"] > a {
+  display: flex;
+  min-width: 0;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--navy);
+  font-size: 0.78rem;
+}
+.atlas-sidebar [data-slot="sidebar-header"] > a > span {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+}
+.atlas-sidebar [data-slot="sidebar-content"] {
+  min-height: 0;
+  overflow-y: auto;
+}
+.atlas-sidebar [data-slot="sidebar-content"] > nav {
+  padding: var(--space-3) var(--space-2);
+}
+.atlas-sidebar [data-slot="sidebar-group"] + [data-slot="sidebar-group"] {
+  margin-top: var(--space-4);
+}
+.atlas-sidebar [data-slot="sidebar-group-label"] {
+  margin: var(--space-1) var(--space-2) var(--space-2);
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.atlas-sidebar [data-slot="sidebar-menu"] {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-1);
+  list-style: none;
+}
+.atlas-sidebar [data-slot="sidebar-menu-button"] {
+  display: flex;
+  min-height: var(--shell-navigation-target);
+  width: 100%;
+  gap: 0.65rem;
+  padding: var(--space-2);
+  align-items: center;
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 0.8rem;
+}
+.atlas-sidebar [data-slot="sidebar-menu-button"]:hover,
+.atlas-sidebar [data-slot="sidebar-menu-button"]:focus-visible,
+.atlas-sidebar [data-slot="sidebar-menu-button"][data-active="true"] {
+  background: var(--mint);
+  color: var(--teal-dark);
+  font-weight: 750;
+}
+.atlas-sidebar [data-slot="sidebar-menu-button"] > svg:first-child {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+}
+.atlas-sidebar [data-slot="sidebar-menu-button"] .sidebar-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atlas-sidebar .sidebar-status {
+  margin-left: auto;
+  font-size: 0.6rem;
+}
+.atlas-sidebar .sidebar-external-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-left: auto;
+  flex: none;
+}
+.atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-header"] > a b,
+.atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-group-label"],
+.atlas-sidebar[data-state="collapsed"] .sidebar-item-label,
+.atlas-sidebar[data-state="collapsed"] .sidebar-status,
+.atlas-sidebar[data-state="collapsed"] .sidebar-external-icon {
+  display: none;
+}
+.atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-header"] > a {
+  margin: auto;
+}
+.atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-menu-button"] {
+  justify-content: center;
+}
+.atlas-sidebar[data-state="collapsed"] .app-sidebar-toggle {
+  position: absolute;
+  right: var(--space-1);
+  top: var(--space-2);
+}
+.app-sidebar-collapsed-icon {
+  display: none;
+}
+.atlas-sidebar[data-state="collapsed"] .app-sidebar-expanded-icon {
+  display: none;
+}
+.atlas-sidebar[data-state="collapsed"] .app-sidebar-collapsed-icon {
+  display: inline-flex;
+}
+.app-inset[data-slot="sidebar-inset"] {
+  display: flex;
+  min-width: 0;
+  min-height: 100vh;
+  flex: 1;
+  flex-direction: column;
+}
+.app-shell {
+  min-width: 0;
+  overflow-x: clip;
+}
+.app-header {
+  flex: none;
+}
+.app-header [data-slot="button"] {
+  display: inline-flex;
+}
+.app-mobile-nav-trigger {
+  display: none;
+}
+.app-header .app-mobile-nav-trigger {
+  display: none;
+}
+.app-header-label {
+  color: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+.app-header-actions {
+  display: flex;
+  min-width: 0;
+  gap: var(--space-1);
+  margin-left: auto;
+  align-items: center;
+}
+.app-focus-toggle,
+.app-utility-link {
+  display: inline-flex;
+  min-height: 2.25rem;
+  gap: var(--space-1);
+  padding: 0.45rem 0.65rem;
+  align-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--teal-dark);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+.app-focus-toggle:hover,
+.app-focus-toggle:focus-visible,
+.app-utility-link:hover,
+.app-utility-link:focus-visible {
+  background: var(--mint);
+}
+.app-focus-toggle svg,
+.app-utility-link svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.app-content {
+  min-width: 0;
+  flex: 1;
+}
+.app-shell .app-inset > footer {
+  flex: none;
+}
+.public-layout {
+  min-height: 100vh;
+  background: var(--background);
+}
+.public-header {
+  display: flex;
+  min-height: var(--shell-utility-height);
+  padding: var(--space-2) var(--layout-inline);
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.public-brand {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--navy);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+.public-brand .brand-mark {
+  display: inline-grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+}
+.public-home-link {
+  color: var(--teal-dark);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+.public-home-link:hover,
+.public-home-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.coming-soon-page {
+  display: grid;
+  min-height: min(70vh, 42rem);
+  padding: var(--layout-section-block) var(--layout-inline);
+  place-items: center;
+}
+.coming-soon-card {
+  width: min(100%, 42rem);
+  padding: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.coming-soon-card h1 {
+  margin: var(--space-2) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.coming-soon-card p {
+  max-width: 38rem;
+}
+@media (max-width: 800px) {
+  .atlas-sidebar {
+    position: fixed;
+    left: 0;
+    transform: translateX(-100%);
+    width: min(18rem, 86vw);
+    height: 100dvh;
+    transition: transform var(--motion-duration) var(--motion-easing);
+  }
+  .atlas-sidebar[data-mobile-open="true"] {
+    transform: translateX(0);
+  }
+  .atlas-sidebar[data-state="collapsed"] {
+    width: min(18rem, 86vw);
+  }
+  .atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-header"] > a b,
+  .atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-group-label"],
+  .atlas-sidebar[data-state="collapsed"] .sidebar-item-label,
+  .atlas-sidebar[data-state="collapsed"] .sidebar-status,
+  .atlas-sidebar[data-state="collapsed"] .sidebar-external-icon {
+    display: block;
+  }
+  .atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-header"] > a {
+    margin: 0;
+  }
+  .atlas-sidebar[data-state="collapsed"] [data-slot="sidebar-menu-button"] {
+    justify-content: initial;
+  }
+  .atlas-sidebar .app-sidebar-toggle {
+    display: none;
+  }
+  .app-mobile-nav-close,
+  .app-mobile-nav-trigger {
+    display: inline-flex;
+  }
+  .app-header .app-mobile-nav-trigger {
+    display: inline-flex;
+  }
+  .app-mobile-nav-trigger {
+    flex: none;
+  }
+  .app-header-actions {
+    gap: 0;
+  }
+  .app-header-actions .app-focus-toggle,
+  .app-header-actions .app-utility-link span,
+  .app-header-actions [data-slot="button"] {
+    display: none;
+  }
+  .app-sidebar-scrim {
+    position: fixed;
+    z-index: 15;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: color-mix(in srgb, var(--navy) 35%, transparent);
+  }
+  .public-header {
+    padding-right: 1.2rem;
+    padding-left: 1.2rem;
+  }
+  .public-brand span:last-child {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 .atlas-docs-root {
   --color-fd-accent: var(--mint);
   --color-fd-accent-foreground: var(--teal-dark);

@@ -1,19 +1,14 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
-import { SiteFooter } from "@/components/site-footer";
 import { buttonVariants } from "@/components/ui/button";
 import {
   aiEthicsContent,
   type AiEthicsStatementStatus,
 } from "@/lib/ai-ethics-content";
+import { pageMetadataForRoute } from "@/lib/navigation";
 
-export const metadata: Metadata = {
-  title: "AI Ethics | One Health Lyme Gap Atlas",
-  description:
-    "How One Health Lyme Gap Atlas uses AI today, the evidence boundaries it follows, and the commitments still being decided.",
-};
+export const metadata = pageMetadataForRoute("/ai-ethics");
 
 const statusLabels: Record<AiEthicsStatementStatus, string> = {
   current: "What Atlas does today",
@@ -143,7 +138,6 @@ export function AiEthicsPage() {
           <p>{aiEthicsContent.maintenance.updateRule}</p>
         </footer>
       </section>
-      <SiteFooter />
     </main>
   );
 }

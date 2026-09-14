@@ -13,7 +13,6 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { MethodsSection } from "@/components/methods-section";
 import { ResultsTable } from "@/components/results-table";
 import { ScoringLab } from "@/components/scoring-lab";
-import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import {
   countyV1CountiesFipsGet,
@@ -337,7 +336,6 @@ function AtlasPage() {
       </section>
       <ScoringLab settings={settings} onChange={setSettings} />
       <MethodsSection metadata={metadata} />
-      <SiteFooter />
     </main>
   );
 }

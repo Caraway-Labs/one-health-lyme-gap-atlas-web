@@ -149,12 +149,15 @@ test("opens HelpDocs search and finds the evidence guide", async ({
   ).toBeVisible({ timeout: 15_000 });
 });
 
-test("opens the configured docs destination in a secure new tab", async ({
+test("opens the configured docs destination from the analytical sidebar", async ({
   page,
-}) => {
-  await page.goto("/privacy");
+}, testInfo) => {
+  await page.goto("/");
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
   const docsLink = page.getByRole("link", {
-    name: "Open Atlas documentation (opens in a new tab)",
+    name: "Docs",
   });
 
   await expect(docsLink).toHaveAttribute(

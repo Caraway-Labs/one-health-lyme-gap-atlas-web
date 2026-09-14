@@ -110,14 +110,19 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
 
-test("legacy Geographic Explorer URLs permanently redirect to the named route", async ({
+test("experimental Geographic Explorer URLs remain direct-link accessible and isolated", async ({
   page,
 }) => {
   await page.goto("/variant_7?view=ranking&county=08001");
 
-  await expect(page).toHaveURL(
-    /\/geographic_explorer\?view=ranking&county=08001/
-  );
+  await expect(page).toHaveURL(/\/variant_7\?view=ranking&county=08001/);
+  await expect(page.locator(".app-shell")).toHaveCount(0);
+  await expect(
+    page.getByRole("navigation", { name: "Primary navigation" })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Geographic explorer" })
+  ).toBeVisible();
 });
 
 test("Primary navigation links to Geographic Explorer; grids link to accessible county results", async ({

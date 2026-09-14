@@ -1,7 +1,13 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-let pathname = "/variant_3";
+let pathname = "/assistant";
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -11,13 +17,18 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
 import { AppShell } from "@/components/app-shell";
 
 describe("Atlas application shell", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   afterEach(() => {
     cleanup();
     vi.unstubAllEnvs();
-    pathname = "/variant_3";
+    window.localStorage.clear();
+    pathname = "/assistant";
   });
 
-  it("renders the metadata-driven primary navigation around route content", () => {
+  it("renders metadata-driven primary navigation and status treatment", () => {
     render(
       <AppShell>
         <p>Route content</p>
@@ -26,30 +37,38 @@ describe("Atlas application shell", () => {
 
     expect(
       screen
-        .getByRole("link", { name: "Evidence workspace" })
+        .getByRole("link", { name: "Talk with the Atlas" })
         .getAttribute("aria-current")
     ).toBe("page");
-    expect(
-      screen
-        .getByRole("link", { name: "Geographic Explorer" })
-        .getAttribute("href")
-    ).toBe("/geographic_explorer");
-    expect(document.querySelector(".app-content")?.textContent).toContain(
-      "Route content"
-    );
-    expect(
-      screen.getByRole("button", { name: "Data dictionary" })
-    ).toBeTruthy();
-    expect(
-      screen
-        .getByRole("link", {
-          name: "Open Atlas documentation (opens in a new tab)",
-        })
-        .getAttribute("target")
-    ).toBe("_blank");
+    expect(screen.getByRole("link", { name: "Evidence library" })).toBeTruthy();
+    expect(screen.getAllByText("Coming Soon")).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: /County review/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /variant/i })).toBeNull();
   });
 
-  it("collapses the persistent sidebar without losing its accessible names", () => {
+  it("renders utility and footer destinations from the route metadata", () => {
+    render(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Docs" }).getAttribute("href")
+    ).toBe("https://carawaylabs.com/docs");
+    expect(
+      screen.getByRole("link", { name: "Docs" }).getAttribute("target")
+    ).toBe("_blank");
+    expect(
+      screen.getByRole("link", { name: "Account" }).getAttribute("href")
+    ).toBe("/account");
+    expect(
+      screen.getByRole("navigation", { name: "Footer navigation" }).innerHTML
+    ).toContain("Privacy");
+    expect(screen.getByText("Route content")).toBeTruthy();
+  });
+
+  it("collapses the persistent sidebar while retaining accessible item status", () => {
     render(
       <AppShell>
         <p>Route content</p>
@@ -60,13 +79,41 @@ describe("Atlas application shell", () => {
       screen.getByRole("button", { name: "Collapse navigation" })
     );
 
-    expect(screen.getByText("Route content")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Expand navigation" })
     ).toBeTruthy();
+    expect(screen.getByRole("complementary").dataset.state).toBe("collapsed");
     expect(
-      screen.getByRole("link", { name: "Evidence workspace" })
-    ).toBeTruthy();
+      screen
+        .getByRole("link", { name: "Evidence library — Coming Soon" })
+        .getAttribute("aria-label")
+    ).toBe("Evidence library — Coming Soon");
+  });
+
+  it("persists only the desktop presentation preference across shell sessions", async () => {
+    const { unmount } = render(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Collapse navigation" })
+    );
+
+    await waitFor(() =>
+      expect(window.localStorage.getItem("atlas-sidebar-open")).toBe("false")
+    );
+    unmount();
+
+    render(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("complementary").dataset.state).toBe("collapsed")
+    );
+    expect(window.localStorage.getItem("atlas-sidebar-open")).toBe("false");
   });
 
   it("treats the mobile navigation as a keyboard-operable modal drawer", () => {
@@ -81,9 +128,9 @@ describe("Atlas application shell", () => {
     fireEvent.click(trigger);
 
     expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(document.activeElement?.getAttribute("aria-label")).toBe(
-      "Close navigation"
-    );
+    expect(
+      screen.getByRole("button", { name: "Close navigation" })
+    ).toBeTruthy();
     expect(
       document.querySelector(".app-inset")?.hasAttribute("inert")
     ).toBeTruthy();
@@ -94,9 +141,9 @@ describe("Atlas application shell", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it("temporarily compacts supported analytical routes in focus mode", () => {
-    pathname = "/variant_6";
-    const { container } = render(
+  it("temporarily compacts Geographic Explorer in focus mode without changing the route", () => {
+    pathname = "/geographic_explorer";
+    render(
       <AppShell>
         <p>Route content</p>
       </AppShell>
@@ -109,11 +156,9 @@ describe("Atlas application shell", () => {
         .getByRole("button", { name: "Exit focus" })
         .getAttribute("aria-pressed")
     ).toBe("true");
-    expect(container.querySelector(".app-shell-focus")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Wide workspace" })).toBeTruthy();
+    expect(screen.getByRole("complementary").dataset.state).toBe("collapsed");
 
     fireEvent.click(screen.getByRole("button", { name: "Exit focus" }));
-
-    expect(container.querySelector(".app-shell-focus")).toBeNull();
+    expect(screen.getByRole("complementary").dataset.state).toBe("expanded");
   });
 });

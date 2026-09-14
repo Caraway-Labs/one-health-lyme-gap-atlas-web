@@ -1,7 +1,9 @@
+import { ComingSoonPage } from "@/components/coming-soon-page";
 import { AssistantDemo } from "@/features/assistant/assistant-demo";
 import { isAssistantDemoEnabled } from "@/features/assistant/feature-flag";
+import { pageMetadataForRoute } from "@/lib/navigation";
 
-export const metadata = { title: "Talk with the Atlas demo" };
+export const metadata = pageMetadataForRoute("/assistant");
 
 export default function AssistantDemoPage() {
   if (
@@ -10,13 +12,10 @@ export default function AssistantDemoPage() {
     )
   ) {
     return (
-      <main className="mx-auto max-w-3xl p-8">
-        <h1>Talk with the Atlas is not enabled</h1>
-        <p>
-          The assistant demo is feature-gated while its governed backend is
-          under review.
-        </p>
-      </main>
+      <ComingSoonPage
+        title="Talk with the Atlas"
+        description="Explore how an evidence-grounded assistant may support literature review and Atlas orientation."
+      />
     );
   }
   return (

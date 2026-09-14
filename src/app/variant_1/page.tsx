@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 
 import { ExperimentAtlas } from "@/components/experiment-atlas";
+import { pageMetadataForRoute } from "@/lib/navigation";
+
+export const metadata = pageMetadataForRoute("/variant_1");
 
 export default function VariantOnePage() {
   return (

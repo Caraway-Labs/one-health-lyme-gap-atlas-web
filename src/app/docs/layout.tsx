@@ -3,6 +3,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import type { ReactNode } from "react";
 
 import { DocsAccessibility } from "@/components/docs-accessibility";
+import { SiteFooter } from "@/components/site-footer";
 import { docsSource } from "@/lib/docs-source";
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -32,6 +33,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           {children}
         </DocsLayout>
       </div>
+      <SiteFooter />
     </RootProvider>
   );
 }
