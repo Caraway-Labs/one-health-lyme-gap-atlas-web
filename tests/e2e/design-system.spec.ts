@@ -11,9 +11,10 @@ test("keeps the design-system gallery unlinked and keyboard-reachable", async ({
   await expect(
     page.getByRole("heading", { name: "Atlas domain patterns" })
   ).toBeVisible();
+  await expect(page.locator(".app-shell")).toHaveCount(0);
   await expect(
     page.getByRole("navigation", { name: "Primary navigation" })
-  ).not.toContainText("Design system");
+  ).toHaveCount(0);
 
   await page.getByRole("button", { name: "Primary" }).focus();
   await expect(page.getByRole("button", { name: "Primary" })).toBeFocused();
@@ -29,10 +30,10 @@ test("keeps the design-system gallery unlinked and keyboard-reachable", async ({
   }
 });
 
-test("honors reduced motion on the design-system gallery", async ({ page }) => {
+test("honors reduced motion on the analytical shell", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/design-system");
-  await expect(page.locator(".app-sidebar")).toHaveCSS(
+  await page.goto("/geographic_explorer");
+  await expect(page.locator(".atlas-sidebar")).toHaveCSS(
     "transition-duration",
     "1e-05s"
   );

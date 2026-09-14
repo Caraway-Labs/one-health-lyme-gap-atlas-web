@@ -224,7 +224,7 @@ test("renders the atlas and full non-map results", async ({
     name: "Primary navigation",
   });
   await expect(navigation).toBeVisible();
-  const sidebar = navigation.locator("..");
+  const sidebar = page.locator("#atlas-primary-navigation");
   await expect(sidebar).toHaveCSS(
     "position",
     testInfo.project.name.includes("mobile") ? "fixed" : "sticky"
@@ -506,10 +506,10 @@ test("renders every interview variant with selected county evidence in the first
   }
 });
 
-test("offers route-aware sidebar navigation and a shared data dictionary", async ({
+test("offers route-aware sidebar navigation, Coming Soon status, and a shared data dictionary", async ({
   page,
 }, testInfo) => {
-  await page.goto("/variant_6?county=08001");
+  await page.goto("/geographic_explorer?county=08001");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
@@ -518,11 +518,18 @@ test("offers route-aware sidebar navigation and a shared data dictionary", async
   });
   await expect(navigation).toBeVisible();
   await expect(
-    navigation.getByRole("link", { name: "Wide workspace" })
+    navigation.getByRole("link", { name: "Geographic Explorer" })
   ).toHaveAttribute("aria-current", "page");
   await expect(
     navigation.getByRole("link", { name: "Geographic Explorer" })
   ).toHaveAttribute("href", "/geographic_explorer");
+  await expect(
+    navigation.getByRole("link", { name: "Evidence library" })
+  ).toContainText("Coming Soon");
+  await expect(navigation.getByRole("link", { name: "Docs" })).toHaveAttribute(
+    "target",
+    "_blank"
+  );
   if (testInfo.project.name.includes("mobile")) {
     await page
       .getByRole("dialog", { name: "Primary navigation" })
@@ -563,34 +570,29 @@ test("focus mode compacts the shared shell without changing the analytical route
 }, testInfo) => {
   test.skip(testInfo.project.name.includes("mobile"));
 
-  await page.goto("/variant_6?county=08001");
+  await page.goto("/geographic_explorer?county=08001");
   await page.getByRole("button", { name: "Focus workspace" }).click();
 
   await expect(page.locator(".app-shell")).toHaveClass(/app-shell-focus/);
-  await expect(page.locator(".app-sidebar")).toHaveCSS("width", "68px");
-  await expect(page).toHaveURL(/variant_6\?county=08001/);
+  await expect(page.locator(".atlas-sidebar")).toHaveAttribute(
+    "data-state",
+    "collapsed"
+  );
+  await expect(page).toHaveURL(/geographic_explorer\?county=08001/);
   await expect(
-    page.getByRole("link", { name: "Wide workspace" })
+    page.getByRole("link", { name: "Geographic Explorer" })
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Exit focus", exact: true }).click();
 
   await expect(page.locator(".app-shell")).not.toHaveClass(/app-shell-focus/);
-  await expect(page).toHaveURL(/variant_6\?county=08001/);
+  await expect(page).toHaveURL(/geographic_explorer\?county=08001/);
 });
 
 test("keeps the shared shell responsive and preserves deep links during keyboard navigation", async ({
   page,
 }, testInfo) => {
-  const routes = [
-    "/",
-    "/variant_1?county=08001",
-    "/variant_2?county=08001",
-    "/variant_3?county=08001",
-    "/variant_4?county=08001",
-    "/variant_5?county=08001",
-    "/variant_6?county=08001",
-  ];
+  const routes = ["/", "/geographic_explorer?county=08001", "/assistant"];
 
   for (const route of routes) {
     await page.goto(route);
@@ -605,6 +607,12 @@ test("keeps the shared shell responsive and preserves deep links during keyboard
   }
 
   await page.goto("/variant_6?county=08001");
+  await expect(page.locator(".app-shell")).toHaveCount(0);
+  await expect(
+    page.getByRole("navigation", { name: "Primary navigation" })
+  ).toHaveCount(0);
+
+  await page.goto("/?county=08001");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
@@ -619,14 +627,14 @@ test("keeps the shared shell responsive and preserves deep links during keyboard
   expect(new URL(page.url()).pathname).toBe("/geographic_explorer");
 
   await page.goBack();
-  await expect(page).toHaveURL(/\/variant_6\?.*county=08001/);
+  await expect(page).toHaveURL(/\/?county=08001/);
 });
 
 test("reduces shell motion when the user requests it", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/variant_6?county=08001");
+  await page.goto("/geographic_explorer?county=08001");
 
-  await expect(page.locator(".app-sidebar")).toHaveCSS(
+  await expect(page.locator(".atlas-sidebar")).toHaveCSS(
     "transition-duration",
     "1e-05s"
   );
