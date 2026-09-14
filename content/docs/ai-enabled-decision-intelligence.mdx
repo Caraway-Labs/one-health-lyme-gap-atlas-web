@@ -1,0 +1,62 @@
+---
+title: AI-enabled decision intelligence
+description: Understand what AI means in Atlas Lyme, what is available now, and which future capabilities still require release and human review.
+---
+
+Atlas Lyme is an **Epidemiologist Decision Intelligence Platform**. The product direction is AI-enabled: it is intended to help people organize, compare, synthesize, and explain governed One Health evidence so they can decide what deserves investigation.
+
+AI-enabled does not mean that Atlas replaces epidemiologists or turns a score into a prediction. The preferred public-health framing is:
+
+**signals → evidence → hypotheses → anomaly candidates → investigation priorities**
+
+Each step must remain interpretable, bounded by the evidence, clear about uncertainty, and accountable to human review.
+
+## Capability status
+
+| Capability | Status | What you can rely on |
+| --- | --- | --- |
+| Transparent follow-up-priority scoring | Available now | The current score is a deterministic, adjustable calculation over released inputs. It helps focus review; it is not a predictive model, diagnosis, causal claim, disease-burden estimate, or individual-risk output. |
+| Public evidence and provenance context | Available now | The Explorer provides released signals, source/release/method context, limitations, and a table path for reviewing results. Start with [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). |
+| Talk with the Atlas assistant experience | Experimental/demo | `/assistant` is a feature-gated local fixture. It does not query live Atlas data or a model, and its example source is explicitly marked as fixture content. Do not use it as an operational answer. |
+| Evidence-grounded assistant | Planned | The approved direction requires governed evidence, citations, an unavailable-evidence outcome, and human review before public enablement. It is not a released public capability. |
+| Anomaly candidates and interpretable modeling | Planned | Future outputs may help identify unusual patterns or explain modeled context, but no current public result should be described that way without a released model, inputs, validation, uncertainty, and review record. |
+| Literature monitoring or agent assistance | Planned | Future monitoring or agent workflows must use approved sources and explicit release controls. The current web prototype does not promise a public MCP connection, monitoring feed, or autonomous agent. |
+
+The status labels are intentionally explicit. A planned architecture, a design exploration, or a local demo is not evidence that a capability is available in the public release.
+
+## What the current release does
+
+Today, Atlas helps you:
+
+- explore public county and state patterns;
+- review human disease, tick/vector, pathogen, environmental, population, and related context when released;
+- inspect the source, vintage, geography, release, method, completeness, and limitations behind a result;
+- compare supported geographies descriptively; and
+- turn a review-priority signal or evidence gap into a bounded investigation question.
+
+See [current capabilities](/docs/current-capabilities) and [investigation workflows](/docs/investigation-workflows) for the released behavior and task steps.
+
+## What human review means
+
+Use an AI-assisted or analytical output as a prompt for review. A responsible reviewer should:
+
+1. check the source and provenance;
+2. verify that the geography, period, coverage, and method fit the question;
+3. distinguish observed evidence from a derived score, contextual evidence, or modeled output;
+4. state missing evidence and uncertainty rather than filling gaps with assumptions; and
+5. decide whether source validation, local surveillance review, additional analysis, expert consultation, or no action is appropriate.
+
+If an output cannot show the evidence and limits needed for that review, treat it as unavailable. Do not infer certainty from fluent language, a rank, a map color, or an AI-generated summary.
+
+## What Atlas AI is not for
+
+Atlas does not:
+
+- diagnose Lyme disease or provide clinical or treatment advice;
+- predict an individual's exposure, infection, or disease risk;
+- guarantee that an outbreak will or will not occur;
+- prove that a vector, pathogen, environment, or population factor caused an outcome;
+- convert missing surveillance into evidence of absence or zero; or
+- make an automatic public-health decision or replace epidemiologists, analysts, local knowledge, or responsible authorities.
+
+The [AI Ethics commitments](/ai-ethics) are the approved in-application source for the current AI status, boundaries, and open decisions. Privacy and data-use commitments belong on the [Privacy page](/privacy); this guide does not add to either policy source.
