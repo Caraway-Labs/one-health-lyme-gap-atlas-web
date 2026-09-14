@@ -1,0 +1,88 @@
+---
+title: Evidence, provenance, and uncertainty
+description: Learn how to read Atlas Lyme signals, distinguish missing evidence from low observed signal, and decide what remains unknown.
+---
+
+Atlas Lyme is designed to help epidemiologists identify areas where available tick/vector and related One Health evidence may warrant review. A signal is the beginning of an investigation question—not a finding that a place is definitively high risk.
+
+## What an Atlas output means
+
+Use these terms consistently when reading a result:
+
+| Term | Meaning | How to use it |
+| --- | --- | --- |
+| **Observed signal** | A value or status reported by an approved source, such as a published county-linked human-surveillance value, tick status, or pathogen detection status. | Describe what the source reported, including its geography and time or vintage. |
+| **Derived measure** | A value calculated from released inputs, such as a county review score or evidence-completeness percentage. | Use it to focus review. It is not a diagnosis, a complete disease-burden estimate, a confidence interval, or individual risk. |
+| **Contextual evidence** | Information that helps interpret a result, such as population, access, rurality, habitat, climate, or scientific context. | Treat context as relevant background with its own source, coverage, geography, vintage, and limitations. |
+| **Modeled output** | An estimate, forecast, classification, or other result produced by a model rather than directly published as an observation. | Require the model version, inputs, validation, uncertainty, and human review before relying on it. The current public explorer does not promise an authoritative modeled outbreak or individual-risk output. |
+| **Investigation candidate** | A geography or pattern selected for a bounded follow-up question because the available evidence or an evidence gap merits review. | State what should be checked next and what evidence could change the interpretation. |
+
+The current [Geographic Explorer](/geographic_explorer) labels the county review score and evidence completeness as analytical signals. The score settings and active release are shown in the application; [current capabilities](/docs/current-capabilities) describes the release boundary.
+
+## Start with provenance
+
+Before interpreting a signal, locate and record:
+
+- **Source and publisher:** who produced or published the input, and what link or citation identifies it;
+- **Release and vintage:** the active Atlas release and the source observation, reporting, or publication period;
+- **Geography:** county, state, sampling location, boundary definition, and any records not allocated to a county;
+- **Method and version:** the methodology, calculation, or model version used to produce the displayed value;
+- **Freshness and processing context:** source retrieval, release generation, and data load times when the application provides them; and
+- **Limitations:** coverage, sample size, representativeness, missingness, suppression, comparability, uncertainty, and known data-quality constraints.
+
+The selected-county evidence panel in the [Atlas Explorer](/) provides source, release, methodology, generated, and loaded context when it is available. Use that panel and the in-product methods section before sharing or acting on a result. A generated date describes the release; it is not necessarily the date of disease observations.
+
+## Read value states carefully
+
+These states answer different questions and must not be collapsed into one another:
+
+| State | What it can mean | What you should say |
+| --- | --- | --- |
+| **Observed or published** | A source published a value or status for the stated geography and period. | “This source reports…” and include the source context. |
+| **Zero** | The source explicitly reported zero for the stated measure and period. | “The published value is zero for this release.” A zero is still bounded by source coverage and method. |
+| **Missing or no record** | No county-linked row or value is available in the release. | “No county record is available.” Do not call this absence. |
+| **Suppressed or privacy-protected** | A publisher withheld or transformed a value to protect privacy or meet a reporting rule. | Describe the protection and do not reconstruct a precise count. |
+| **Unavailable or not reported** | The source, field, geography, or period is not available for this release. | Treat it as an evidence gap, not as zero or no activity. |
+| **Stale** | The source vintage or retrieval is too old for the question being asked. | Confirm the current source and state the time limitation. |
+| **Sparse or incomplete** | Coverage, sampling, reporting, or scored inputs are limited. | State what the available records can and cannot support. |
+| **Disagreement** | Two sources or signals point in different directions. | Preserve both observations, compare their provenance, and make the disagreement the investigation question. |
+
+The public application uses “No records,” “Unavailable,” and completeness indicators in context. In the [Geographic Explorer](/geographic_explorer), “No records” describes published evidence availability; it does not establish that ticks, pathogens, or disease are absent.
+
+## Low signal is not the same as insufficient surveillance
+
+A low observed signal means that a source reported a low value or status under its method and coverage. **Insufficient surveillance** means the available evidence is too incomplete, unrepresentative, outdated, or incomparable to determine whether the underlying activity is low.
+
+For example, a county with no county-linked published Lyme case record may have zero cases, suppressed records, unallocated records, a reporting boundary mismatch, or another publication limitation. Atlas does not treat that missing record as zero by default. Likewise, a tick table with no county record does not prove ticks are absent.
+
+When evidence is incomplete, use the safer statement: “The current release does not establish this.” Then identify the source or coverage check needed to learn more.
+
+## Why signals may not agree
+
+One Health inputs can differ in:
+
+- collection design and sample size;
+- geographic boundaries and whether records are allocated to counties;
+- observation, reporting, and publication periods;
+- publisher, laboratory, field, or case definitions;
+- coverage and representativeness of the sampled population or habitat; and
+- missingness, suppression, processing, and update schedules.
+
+Those differences can produce apparent agreement or disagreement without proving that one source caused another or that either source represents every person, tick, or location. Compare provenance first; do not average away a disagreement or describe it as certainty.
+
+## Read the evidence before acting
+
+Use this checklist for a county, comparison, or other review candidate:
+
+1. **Name the question.** What decision or follow-up are you trying to inform?
+2. **Name the output.** Is it an observed signal, derived measure, contextual input, modeled output, or investigation candidate?
+3. **Check the provenance.** Source, publisher, release, vintage, geography, method/version, freshness, and processing context.
+4. **Check the value state.** Observed, zero, missing, suppressed, unavailable, stale, sparse, or conflicting?
+5. **Check comparability.** Do the geographies, periods, definitions, coverage, and methods support the comparison?
+6. **State what remains unknown.** What cannot be concluded from this release?
+7. **Choose a bounded next step.** Source validation, local surveillance review, a time-bounded analysis, expert consultation, or no action.
+8. **Record the handoff.** Save the URL, release, method, filters, evidence context, question, reviewer, and caveats using the [investigation workflows](/docs/investigation-workflows).
+
+The [Atlas Explorer](/) and [Geographic Explorer](/geographic_explorer) provide map and table paths to the public results. If map geometry is unavailable or a map is not usable, use the county evidence table and text summaries. For AI-enabled or experimental experiences, keep the [AI Ethics commitments](/ai-ethics) in view and retain human review.
+
+Atlas helps identify what may deserve investigation. It does not provide clinical advice, person-level exposure or disease-risk predictions, causal proof, guaranteed outbreak forecasts, or an automatic public-health decision.
