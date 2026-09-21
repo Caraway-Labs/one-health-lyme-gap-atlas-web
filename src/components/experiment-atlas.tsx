@@ -15,6 +15,7 @@ import {
 } from "@/components/county-evidence-panel";
 import { PdfExportButton } from "@/components/pdf-export-button";
 import { ResultsTable } from "@/components/results-table";
+import { ScoringCalculationPreview } from "@/components/scoring-calculation-preview";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -1089,7 +1090,7 @@ function scoreDifference(a: number, b: number) {
     : `${Math.abs(difference)} points ${difference > 0 ? "higher" : "lower"} for the selected county.`;
 }
 
-function ScoringAssumptions({
+export function ScoringAssumptions({
   detail,
   settings,
   onChange,
@@ -1214,8 +1215,20 @@ function ScoringAssumptions({
         id="scoring"
       >
         <summary>
-          <span>Scoring calculation</span>
-          <small>Adjust assumptions and update the workspace</small>
+          <div className="score-accordion-heading">
+            <span>Scoring calculation</span>
+            <small>Adjust assumptions and update the workspace</small>
+          </div>
+          <ScoringCalculationPreview settings={settings} />
+          <span className="score-accordion-affordance">
+            <span className="score-accordion-affordance-closed">
+              View &amp; adjust assumptions
+            </span>
+            <span className="score-accordion-affordance-open">
+              Hide assumptions
+            </span>
+            <span aria-hidden="true" className="score-accordion-chevron" />
+          </span>
         </summary>
         <div className="score-accordion-content">{content}</div>
       </details>

@@ -651,15 +651,56 @@ test("keeps the wide workspace score calculation above the county panels and col
       name: "How this follow-up priority score is calculated",
     })
   ).not.toBeVisible();
-  await scoreAccordion
-    .getByText("Scoring calculation", { exact: true })
-    .click();
+
+  const summary = scoreAccordion.locator("> summary");
+  await expect(summary.getByText("Tick/pathogen share")).toBeVisible();
+  await expect(summary.getByText("65%", { exact: true })).toBeVisible();
+  await expect(summary.getByText("Published-record threshold")).toBeVisible();
+  await expect(summary.getByText("10 per 100,000")).toBeVisible();
+  await expect(summary.getByText("Missing county-record value")).toBeVisible();
+  await expect(summary.getByText("View & adjust assumptions")).toBeVisible();
+
+  await summary.click();
   await expect(scoreAccordion).toHaveAttribute("open", "");
+  await expect(summary.getByText("Hide assumptions")).toBeVisible();
   await page.getByLabel("Tick and pathogen share").fill("70");
   await expect(page).toHaveURL(/eco=70/);
   await expect(page.getByText("Selected county", { exact: true })).toHaveCount(
     1
   );
+});
+
+test("shows URL-backed scoring assumptions in the collapsed preview before expanding", async ({
+  page,
+}) => {
+  await page.goto("/variant_6?county=08001&eco=70&breakpoint=15&missing=80");
+  const scoreAccordion = page.locator("#scoring");
+  const summary = scoreAccordion.locator("> summary");
+
+  await expect(scoreAccordion).not.toHaveAttribute("open", "");
+  await expect(summary.getByText("70%", { exact: true })).toBeVisible();
+  await expect(summary.getByText("15 per 100,000")).toBeVisible();
+  await expect(summary.getByText("80", { exact: true })).toBeVisible();
+});
+
+test("keeps the collapsed scoring accordion accessible via keyboard and axe", async ({
+  page,
+}) => {
+  await page.goto("/variant_6?county=08001");
+  const scoreAccordion = page.locator("#scoring");
+  const summary = scoreAccordion.locator("> summary");
+
+  await summary.focus();
+  await expect(summary).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(scoreAccordion).toHaveAttribute("open", "");
+  await page.keyboard.press("Enter");
+  await expect(scoreAccordion).not.toHaveAttribute("open", "");
+
+  const results = await new AxeBuilder({ page })
+    .include("#scoring")
+    .analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test("guides Variant 6 from review rationale through evidence, uncertainty, action, and resources", async ({
