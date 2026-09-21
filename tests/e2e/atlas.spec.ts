@@ -697,9 +697,7 @@ test("keeps the collapsed scoring accordion accessible via keyboard and axe", as
   await page.keyboard.press("Enter");
   await expect(scoreAccordion).not.toHaveAttribute("open", "");
 
-  const results = await new AxeBuilder({ page })
-    .include("#scoring")
-    .analyze();
+  const results = await new AxeBuilder({ page }).include("#scoring").analyze();
   expect(results.violations).toEqual([]);
 });
 
