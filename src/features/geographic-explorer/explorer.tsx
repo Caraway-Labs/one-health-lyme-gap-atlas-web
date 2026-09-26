@@ -6,6 +6,7 @@ import { useQueryStates } from "nuqs";
 import { useEffect, useMemo } from "react";
 
 import { AtlasFilters } from "@/components/atlas-filters";
+import { FeedbackTrigger } from "@/components/feedback-dialog";
 import { MethodsSection } from "@/components/methods-section";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,10 @@ import {
   metadataV1AtlasMetadataGet,
   scoresV1AtlasScoresGet,
 } from "@/generated/atlas";
-import type { CountyScoreSummary } from "@/generated/models";
+import {
+  FeedbackSubmissionRequestCategory,
+  type CountyScoreSummary,
+} from "@/generated/models";
 import {
   MetadataV1AtlasMetadataGetResponse,
   ScoresV1AtlasScoresGetResponse,
@@ -320,6 +324,11 @@ export function GeographicExplorer() {
           Explore geographic patterns, inspect missing evidence, and compare
           places before deciding what to investigate.
         </p>
+        <FeedbackTrigger
+          category={FeedbackSubmissionRequestCategory.data_issue}
+          controlId="feedback_report_data_issue"
+          label="Report a data issue"
+        />
       </header>
       <section id="atlas" aria-label="Geographic exploration workspace">
         <div className="geo-release">

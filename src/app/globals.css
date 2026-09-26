@@ -630,6 +630,11 @@ body {
   .app-header-actions [data-slot="button"] {
     display: none;
   }
+  .app-header-actions
+    .app-utility-link[data-atlas-analytics-control="feedback_open"]
+    span {
+    display: inline;
+  }
   .app-sidebar-scrim {
     position: fixed;
     z-index: 15;
@@ -3814,6 +3819,46 @@ select:focus-visible {
   color: var(--foreground);
   background: var(--card);
   font-size: var(--type-small-size);
+}
+.feedback-dialog {
+  max-height: min(90vh, 40rem);
+  overflow-y: auto;
+}
+.feedback-form .feedback-textarea {
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.feedback-form .feedback-textarea:focus {
+  outline: 3px solid rgba(15, 119, 130, 0.16);
+  border-color: var(--teal);
+}
+.feedback-form .feedback-textarea:disabled {
+  opacity: 0.6;
+}
+.feedback-id-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.feedback-id-row input {
+  flex: 1;
+}
+.feedback-actions {
+  flex-wrap: wrap;
+}
+.footer-links .footer-feedback {
+  min-height: 2.75rem;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
 }
 .design-system-swatch-chip {
   flex: 1;

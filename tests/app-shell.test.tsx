@@ -5,6 +5,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
+import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let pathname = "/assistant";
@@ -15,6 +17,15 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
 }));
 
 import { AppShell } from "@/components/app-shell";
+import { FeedbackProvider } from "@/components/feedback-dialog";
+
+function renderShell(ui: ReactElement) {
+  return render(
+    <NuqsTestingAdapter>
+      <FeedbackProvider>{ui}</FeedbackProvider>
+    </NuqsTestingAdapter>
+  );
+}
 
 describe("Atlas application shell", () => {
   beforeEach(() => {
@@ -29,7 +40,7 @@ describe("Atlas application shell", () => {
   });
 
   it("renders metadata-driven primary navigation and status treatment", () => {
-    render(
+    renderShell(
       <AppShell>
         <p>Route content</p>
       </AppShell>
@@ -47,7 +58,7 @@ describe("Atlas application shell", () => {
   });
 
   it("renders utility and footer destinations from the route metadata", () => {
-    render(
+    renderShell(
       <AppShell>
         <p>Route content</p>
       </AppShell>
@@ -68,8 +79,18 @@ describe("Atlas application shell", () => {
     expect(screen.getByText("Route content")).toBeTruthy();
   });
 
+  it("exposes a Feedback control next to Account in the header", () => {
+    renderShell(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    expect(screen.getByRole("button", { name: "Feedback" })).toBeTruthy();
+  });
+
   it("collapses the persistent sidebar while retaining accessible item status", () => {
-    render(
+    renderShell(
       <AppShell>
         <p>Route content</p>
       </AppShell>
@@ -91,7 +112,7 @@ describe("Atlas application shell", () => {
   });
 
   it("persists only the desktop presentation preference across shell sessions", async () => {
-    const { unmount } = render(
+    const { unmount } = renderShell(
       <AppShell>
         <p>Route content</p>
       </AppShell>
@@ -105,7 +126,7 @@ describe("Atlas application shell", () => {
     );
     unmount();
 
-    render(
+    renderShell(
       <AppShell>
         <p>Route content</p>
       </AppShell>
@@ -117,7 +138,7 @@ describe("Atlas application shell", () => {
   });
 
   it("treats the mobile navigation as a keyboard-operable modal drawer", () => {
-    render(
+    renderShell(
       <AppShell>
         <p>Route content</p>
       </AppShell>
@@ -143,7 +164,7 @@ describe("Atlas application shell", () => {
 
   it("temporarily compacts Geographic Explorer in focus mode without changing the route", () => {
     pathname = "/geographic_explorer";
-    render(
+    renderShell(
       <AppShell>
         <p>Route content</p>
       </AppShell>
