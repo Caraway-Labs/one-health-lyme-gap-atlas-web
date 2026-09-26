@@ -1,5 +1,4 @@
 import { usePathname } from "next/navigation";
-import { useQueryStates } from "nuqs";
 
 import { explorerParams, VIEWS } from "@/features/geographic-explorer/model";
 import type { FeedbackContext } from "@/generated/models";
@@ -138,30 +137,80 @@ export function buildFeedbackContext(
   return omitEmptyContext(context);
 }
 
-export function useFeedbackPageContext(): {
+/**
+ * Reads explorer/atlas search params from the current location without
+ * `useQueryStates`, so FeedbackProvider can mount during static prerender.
+ */
+export function readFeedbackExplorerInput(): Omit<
+  FeedbackContextInput,
+  "pathname"
+> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  const params = new URLSearchParams(window.location.search);
+  return {
+    state: explorerParams.state.parseServerSide(
+      params.get("state") ?? undefined
+    ),
+    county: explorerParams.county.parseServerSide(
+      params.get("county") ?? undefined
+    ),
+    compare: explorerParams.compare.parseServerSide(
+      params.get("compare") ?? undefined
+    ),
+    selected: explorerParams.selected.parseServerSide(
+      params.get("selected") ?? undefined
+    ),
+    dataset: explorerParams.dataset.parseServerSide(
+      params.get("dataset") ?? undefined
+    ),
+    evidence: explorerParams.evidence.parseServerSide(
+      params.get("evidence") ?? undefined
+    ),
+    view: explorerParams.view.parseServerSide(params.get("view") ?? undefined),
+    metric: explorerParams.metric.parseServerSide(
+      params.get("metric") ?? undefined
+    ),
+    eco: explorerParams.eco.parseServerSide(params.get("eco") ?? undefined),
+    breakpoint: explorerParams.breakpoint.parseServerSide(
+      params.get("breakpoint") ?? undefined
+    ),
+    missing: explorerParams.missing.parseServerSide(
+      params.get("missing") ?? undefined
+    ),
+  };
+}
+
+export function resolveFeedbackPageContext(pathname: string): {
   routeId: FeedbackSubmissionRequestRouteId;
   context: FeedbackContext | null;
   appVersion: string;
 } {
-  const pathname = usePathname();
-  const [state] = useQueryStates(explorerParams, { history: "replace" });
-
   return {
     routeId: feedbackRouteIdFromPathname(pathname),
     context: buildFeedbackContext({
       pathname,
-      state: state.state,
-      county: state.county,
-      compare: state.compare,
-      selected: state.selected,
-      dataset: state.dataset,
-      evidence: state.evidence,
-      view: state.view,
-      metric: state.metric,
-      eco: state.eco,
-      breakpoint: state.breakpoint,
-      missing: state.missing,
+      ...readFeedbackExplorerInput(),
     }),
     appVersion: feedbackAppVersion(),
+  };
+}
+
+export function useFeedbackPageContext(): {
+  routeId: FeedbackSubmissionRequestRouteId;
+  context: FeedbackContext | null;
+  appVersion: string;
+  resolve: () => {
+    routeId: FeedbackSubmissionRequestRouteId;
+    context: FeedbackContext | null;
+    appVersion: string;
+  };
+} {
+  const pathname = usePathname();
+
+  return {
+    ...resolveFeedbackPageContext(pathname),
+    resolve: () => resolveFeedbackPageContext(pathname),
   };
 }
