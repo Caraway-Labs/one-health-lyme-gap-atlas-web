@@ -1,10 +1,22 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import {
+  FeedbackTrigger,
+  useOptionalFeedbackController,
+} from "@/components/feedback-dialog";
 import { PrivacyPreferences } from "@/components/privacy-preferences";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { FOOTER_NAVIGATION_ITEMS } from "@/lib/navigation";
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const feedback = useOptionalFeedbackController();
+  const showFooterFeedback =
+    Boolean(feedback) && (pathname === "/privacy" || pathname === "/ai-ethics");
+
   return (
     <footer>
       <div className="footer-brand">
@@ -36,6 +48,13 @@ export function SiteFooter() {
             </Link>
           )
         )}
+        {showFooterFeedback ? (
+          <FeedbackTrigger
+            className="footer-feedback"
+            controlId="feedback_footer_open"
+            label="Feedback"
+          />
+        ) : null}
         <PrivacyPreferences />
         <a
           {...analyticsControlAttributes("footer_back_to_atlas")}

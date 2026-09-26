@@ -85,7 +85,33 @@ export const uiControlIds = [
   "geo_pagination_previous",
   "geo_pagination_next",
   "geo_retry_maps",
+  "feedback_open",
+  "feedback_submit",
+  "feedback_retry",
+  "feedback_discard",
+  "feedback_report_data_issue",
+  "feedback_footer_open",
 ] as const;
+
+export const feedbackTopics = [
+  "data_issue",
+  "usability",
+  "bug",
+  "feature_idea",
+  "general",
+] as const;
+
+export type FeedbackTopic = (typeof feedbackTopics)[number];
+
+export const feedbackOutcomes = [
+  "success",
+  "validation_error",
+  "throttled",
+  "unavailable",
+  "dismissed",
+] as const;
+
+export type FeedbackOutcome = (typeof feedbackOutcomes)[number];
 
 export type UiControlId = (typeof uiControlIds)[number];
 
@@ -182,6 +208,18 @@ type AnalyticsEvent =
   | {
       eventType: "atlas_summary_copied";
       properties: { route_id: "atlas_home"; summary_kind: "county_briefing" };
+    }
+  | {
+      eventType: "atlas_feedback_opened";
+      properties: { feedback_topic: FeedbackTopic };
+    }
+  | {
+      eventType: "atlas_feedback_submitted";
+      properties: { feedback_topic: FeedbackTopic; outcome: FeedbackOutcome };
+    }
+  | {
+      eventType: "atlas_feedback_outcome_viewed";
+      properties: { outcome: FeedbackOutcome };
     };
 
 function routeIdForPathname(pathname: string): RouteId {
@@ -394,6 +432,34 @@ export function trackSummaryCopied(): void {
   atlasAnalytics.track({
     eventType: "atlas_summary_copied",
     properties: { route_id: "atlas_home", summary_kind: "county_briefing" },
+  });
+}
+
+export function trackFeedbackOpened(feedbackTopic: FeedbackTopic): void {
+  if (!feedbackTopics.includes(feedbackTopic)) return;
+  atlasAnalytics.track({
+    eventType: "atlas_feedback_opened",
+    properties: { feedback_topic: feedbackTopic },
+  });
+}
+
+export function trackFeedbackSubmitted(
+  feedbackTopic: FeedbackTopic,
+  outcome: FeedbackOutcome
+): void {
+  if (!feedbackTopics.includes(feedbackTopic)) return;
+  if (!feedbackOutcomes.includes(outcome)) return;
+  atlasAnalytics.track({
+    eventType: "atlas_feedback_submitted",
+    properties: { feedback_topic: feedbackTopic, outcome },
+  });
+}
+
+export function trackFeedbackOutcomeViewed(outcome: FeedbackOutcome): void {
+  if (!feedbackOutcomes.includes(outcome)) return;
+  atlasAnalytics.track({
+    eventType: "atlas_feedback_outcome_viewed",
+    properties: { outcome },
   });
 }
 

@@ -29,6 +29,8 @@ import type {
   CountyDetail,
   CountyReportPdfV1CountiesFipsReportPdfGetParams,
   CountyV1CountiesFipsGetParams,
+  FeedbackSubmissionRequest,
+  FeedbackSubmissionResponse,
   GeometryV1AtlasGeometryGetParams,
   HTTPValidationError,
   KnowledgeChatRequest,
@@ -1960,6 +1962,126 @@ export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typ
 
 
 
+
+export type submitFeedbackV1FeedbackPostResponse200 = {
+  data: FeedbackSubmissionResponse
+  status: 200
+}
+
+export type submitFeedbackV1FeedbackPostResponse401 = {
+  data: ProblemDetails
+  status: 401
+}
+
+export type submitFeedbackV1FeedbackPostResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type submitFeedbackV1FeedbackPostResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type submitFeedbackV1FeedbackPostResponse415 = {
+  data: ProblemDetails
+  status: 415
+}
+
+export type submitFeedbackV1FeedbackPostResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type submitFeedbackV1FeedbackPostResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type submitFeedbackV1FeedbackPostResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type submitFeedbackV1FeedbackPostResponseSuccess = (submitFeedbackV1FeedbackPostResponse200) & {
+  headers: Headers;
+};
+export type submitFeedbackV1FeedbackPostResponseError = (submitFeedbackV1FeedbackPostResponse401 | submitFeedbackV1FeedbackPostResponse409 | submitFeedbackV1FeedbackPostResponse413 | submitFeedbackV1FeedbackPostResponse415 | submitFeedbackV1FeedbackPostResponse422 | submitFeedbackV1FeedbackPostResponse429 | submitFeedbackV1FeedbackPostResponse503) & {
+  headers: Headers;
+};
+
+export type submitFeedbackV1FeedbackPostResponse = (submitFeedbackV1FeedbackPostResponseSuccess | submitFeedbackV1FeedbackPostResponseError)
+
+export const getSubmitFeedbackV1FeedbackPostUrl = () => {
+
+
+
+
+  return `/v1/feedback`
+}
+
+/**
+ * @summary Submit Feedback
+ */
+export const submitFeedbackV1FeedbackPost = async (feedbackSubmissionRequest: FeedbackSubmissionRequest, options?: Parameters<typeof apiMutator>[1]): Promise<submitFeedbackV1FeedbackPostResponse> => {
+
+  return apiMutator<submitFeedbackV1FeedbackPostResponse>(getSubmitFeedbackV1FeedbackPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(feedbackSubmissionRequest)
+  }
+);}
+
+
+
+
+
+export const getSubmitFeedbackV1FeedbackPostMutationOptions = <TError = ProblemDetails,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, TError,{data: FeedbackSubmissionRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, TError,{data: FeedbackSubmissionRequest}, TContext> => {
+
+const mutationKey = ['submitFeedbackV1FeedbackPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, {data: FeedbackSubmissionRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitFeedbackV1FeedbackPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitFeedbackV1FeedbackPostMutationResult = NonNullable<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>>
+    export type SubmitFeedbackV1FeedbackPostMutationBody = FeedbackSubmissionRequest
+    export type SubmitFeedbackV1FeedbackPostMutationError = ProblemDetails
+
+    /**
+ * @summary Submit Feedback
+ */
+export const useSubmitFeedbackV1FeedbackPost = <TError = ProblemDetails,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, TError,{data: FeedbackSubmissionRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>,
+        TError,
+        {data: FeedbackSubmissionRequest},
+        TContext
+      > => {
+      return useMutation(getSubmitFeedbackV1FeedbackPostMutationOptions(options), queryClient);
+    }
 
 export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse200 = {
   data: KnowledgeChatResponse

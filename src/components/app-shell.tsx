@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DataDictionaryDialog } from "@/components/data-dictionary-dialog";
+import { FeedbackTrigger } from "@/components/feedback-dialog";
 import { SiteFooter } from "@/components/site-footer";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -273,6 +274,7 @@ function AppShellContent({
               />
             ) : null}
             <DataDictionaryDialog />
+            <FeedbackTrigger controlId="feedback_open" label="Feedback" />
             {UTILITY_NAVIGATION_ITEMS.map((item) => (
               <Link
                 key={item.id}

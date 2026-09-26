@@ -95,7 +95,11 @@ export default function PrivacyPage() {
               <dt>Accounts and feedback</dt>
               <dd>
                 Optional accounts let you save a profile after you sign in.
-                In-product feedback is not available yet. Saved workspaces are
+                In-product feedback is available from the Atlas header, the
+                geographic explorer, and this privacy page footer. Optional
+                contact email is only for follow-up on that report. Account
+                deletion removes feedback contact fields and account linkage
+                while retaining the submitted message text. Saved workspaces are
                 not launched. Account data never changes Atlas evidence, scores,
                 or access.
               </dd>
@@ -135,11 +139,13 @@ export default function PrivacyPage() {
           <p>
             Signed-in users can start <strong>Export my data</strong> and{" "}
             <strong>Remove all data</strong> from account settings. Those
-            controls cover the account profile connected to your sign-in. They
-            do not include browser-only chat history, unlinked Amplitude
-            sessions, in-product feedback (not launched), or saved workspaces
-            (not launched). Completion is targeted within 30 days. Public Atlas
-            datasets and methodology are unaffected. Deletion is irreversible.
+            controls cover the account profile connected to your sign-in.
+            Account deletion also removes feedback contact fields and account
+            linkage for that account while retaining submitted feedback text.
+            They do not include browser-only chat history, unlinked Amplitude
+            sessions, or saved workspaces (not launched). Completion is targeted
+            within 30 days. Public Atlas datasets and methodology are
+            unaffected. Deletion is irreversible.
           </p>
         </div>
         <div className="privacy-section privacy-contact">
