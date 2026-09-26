@@ -194,12 +194,12 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/privacy");
+    await page.goto("/");
     const feedback = page.getByRole("button", {
       name: "Feedback",
       exact: true,
     });
-    await feedback.scrollIntoViewIfNeeded();
+    await expect(feedback).toBeVisible();
     await feedback.click();
     await expect(page.getByRole("dialog")).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();

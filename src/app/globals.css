@@ -631,6 +631,10 @@ body {
     display: none;
   }
   .app-header-actions
+    .app-utility-link[data-atlas-analytics-control="feedback_open"] {
+    display: inline-flex;
+  }
+  .app-header-actions
     .app-utility-link[data-atlas-analytics-control="feedback_open"]
     span {
     display: inline;

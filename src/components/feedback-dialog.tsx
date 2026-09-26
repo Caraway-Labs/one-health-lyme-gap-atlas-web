@@ -569,8 +569,10 @@ export function FeedbackTrigger({
     | "feedback_footer_open";
   className?: string;
 }) {
-  const { openFeedback } = useFeedbackController();
-  const onClick = () => openFeedback(category ? { category } : undefined);
+  const controller = useOptionalFeedbackController();
+  if (!controller) return null;
+  const onClick = () =>
+    controller.openFeedback(category ? { category } : undefined);
 
   if (controlId === "feedback_open") {
     return (
