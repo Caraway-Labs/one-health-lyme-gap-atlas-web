@@ -125,11 +125,11 @@ Expected outcomes the UI must handle:
 
 Only the three events already reserved in [amplitude-analytics-contract.md](amplitude-analytics-contract.md) may be used for this feature:
 
-| Event | Properties |
-| --- | --- |
-| `atlas_feedback_opened` | `feedback_topic` |
-| `atlas_feedback_submitted` | `feedback_topic`, `outcome` |
-| `atlas_feedback_outcome_viewed` | `outcome` |
+| Event                           | Properties                  |
+| ------------------------------- | --------------------------- |
+| `atlas_feedback_opened`         | `feedback_topic`            |
+| `atlas_feedback_submitted`      | `feedback_topic`, `outcome` |
+| `atlas_feedback_outcome_viewed` | `outcome`                   |
 
 `feedback_topic` is the category enum (`data_issue`, `usability`, `bug`, `feature_idea`, `general`). `outcome` is the closed set `success` \| `validation_error` \| `throttled` \| `unavailable` \| `dismissed`. Never send message text, contact email, account id, bearer token, raw URL, or free-text error strings in Amplitude properties.
 
