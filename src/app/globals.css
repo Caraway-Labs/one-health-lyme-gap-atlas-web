@@ -2854,9 +2854,6 @@ footer > a {
   .source-card {
     min-height: 13rem;
   }
-  .hero-note {
-    display: none;
-  }
   .action-timeframe {
     align-self: start;
   }

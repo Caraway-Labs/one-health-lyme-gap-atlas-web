@@ -177,6 +177,120 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", {
+      name: "Find counties that may deserve a closer look.",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Explore counties" })
+  ).toHaveAttribute("href", "#atlas");
+  await expect(
+    page.getByRole("link", { name: "Understand the limitations" })
+  ).toHaveAttribute("href", "#methods");
+  await expect(
+    page.getByRole("complementary", { name: "Review interpretation note" })
+  ).toContainText("not a Lyme risk estimate");
+  if (testInfo.project.name === "mobile")
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  await page
+    .getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Geographic Explorer" })
+    .click();
+  await expect(page).toHaveURL(/\/geographic_explorer/);
+  await expect(
+    page.getByRole("heading", { name: "Geographic explorer", exact: true })
+  ).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "State" })).toBeVisible();
+  await expect(page.getByRole("table")).toContainText("08001");
+  await expect(page.getByRole("link", { name: /Sign in/ })).toHaveCount(0);
+
+  for (const [path, heading] of [
+    ["/docs", "Start with Atlas"],
+    ["/privacy", "Privacy without the fine print."],
+    ["/ai-ethics", "How Atlas approaches AI"],
+  ] as const) {
+    const response = await page.goto(path);
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+  }
+  await expect(
+    page.getByText(/human oversight|clinical/i).first()
+  ).toBeVisible();
+});
+
+test("TC06–TC08: research and sign-in shells fail safely without authentication", async ({
+  page,
+}) => {
+  await page.route("**/v1/knowledge-graph/chat", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { detail: "Evidence service unavailable" },
+    })
+  );
+  await page.goto("/knowledge-graph");
+  await expect(
+    page.getByRole("heading", { name: "Knowledge graph evidence workspace" })
+  ).toBeVisible();
+  await page.getByLabel("Your question").fill("What evidence is available?");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(page.locator(".chat-panel").getByRole("alert")).toContainText(
+    /unavailable|503/i
+  );
+  await expect(
+    page.getByRole("heading", { name: "Knowledge graph evidence workspace" })
+  ).toBeVisible();
+
+  await page.goto("/assistant");
+  await expect(
+    page.getByRole("heading", { name: "Talk with the Atlas" })
+  ).toBeVisible();
+  await expect(page.getByText(/Feature-gated development demo/)).toBeVisible();
+  await expect(
+    page.getByText(/not medical advice and does not retrieve live Atlas data/)
+  ).toBeVisible();
+
+  await page.goto("/auth/sign-in");
+  await expect(
+    page.getByRole("heading", { name: "Sign in to Atlas" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Continue with Google" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Email me a sign-in link" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Continue without an account" })
+  ).toBeVisible();
+});
+
+test("TC22: declared favicon and canonical fallback resolve without 404", async ({
+  page,
+  request,
+}) => {
+  const failedFavicons: string[] = [];
+  page.on("response", (response) => {
+    if (response.url().includes("favicon") && response.status() === 404)
+      failedFavicons.push(response.url());
+  });
+  await page.goto("/");
+  const icon = page.locator('head link[rel="icon"]');
+  await expect(icon).toHaveAttribute("href", "/favicon.svg");
+  const declared = await request.get("/favicon.svg");
+  expect(declared.status()).toBe(200);
+  expect(declared.headers()["content-type"]).toContain("image/svg+xml");
+  expect((await declared.body()).byteLength).toBeGreaterThan(0);
+  const canonical = await request.get("/favicon.ico");
+  expect(canonical.status()).toBe(200);
+  expect(canonical.headers()["content-type"]).toContain("image/svg+xml");
+  expect(failedFavicons).toEqual([]);
+});
+
 test("drawer hands the local conversation to the accessible workspace", async ({
   page,
 }) => {
@@ -626,7 +740,7 @@ test("keeps the shared shell responsive and preserves deep links during keyboard
   await expect(page).toHaveURL(/\/geographic_explorer\?/);
   expect(new URL(page.url()).pathname).toBe("/geographic_explorer");
 
-  await page.goBack();
+  await page.goBack({ waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/?county=08001/);
 });
 

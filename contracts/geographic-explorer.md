@@ -25,6 +25,10 @@ Use the existing validated nuqs parameters for county FIPS, state, evidence, que
 
 County selection persists across views and filters; the summary explains when selection is outside current filters. Comparisons intentionally persist across filters. Map selection and scatterplot selection update the same county summary and URL. Both maps synchronize center, zoom, bearing and pitch without replay loops.
 
+For `view=compare`, the ordered `selected` FIPS list determines comparison membership and order. Its first valid FIPS is the primary county in the Selected County panel, including on direct URL load and reload. Selecting a county while comparing moves it to the front of that list. The shared `county` parameter is synchronized to the primary selection.
+
+The county-list CSV exports the complete active filtered result set in the same deterministic order as the table, across all pagination pages. It includes stable FIPS, county and state identity, evidence labels, completeness, review score, and review priority. PDF export remains the API-provided report for the active state.
+
 ## Accessibility, errors and performance
 
 Shared semantic UI primitives, visible focus, labeled axes and controls, descriptive color-independent text and exact-values table. Table pagination makes every result reachable, with 20 rows per page. Geographic grid/table scrolling is keyboard accessible on narrow screens. Honor reduced motion; no autoplay.

@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   evidenceLabel,
   explorerParams,
+  filteredCountiesCsv,
   metricMaximum,
   matchesExplorerEvidence,
   pageOf,
   parseComparison,
+  primaryCountyFips,
   rankCounties,
   STATE_GRID,
 } from "@/features/geographic-explorer/model";
@@ -62,6 +64,33 @@ describe("geographic explorer state and comparisons", () => {
     expect(explorerParams.view.parse("invalid")).toBeNull();
     expect(explorerParams.page.parse("2junk")).toBeNull();
     expect(explorerParams.page.parse("-1")).toBeNull();
+  });
+
+  it("derives compare primary from the first available ordered FIPS", () => {
+    const available = new Set(["06085", "06037"]);
+    expect(
+      primaryCountyFips("compare", ["06085", "06037"], "06037", available)
+    ).toBe("06085");
+    expect(
+      primaryCountyFips(
+        "compare",
+        ["bad", "06037", "06085"],
+        "06085",
+        available
+      )
+    ).toBe("06037");
+    expect(
+      primaryCountyFips("tiles", ["06085", "06037"], "06037", available)
+    ).toBe("06037");
+  });
+
+  it("exports only supplied filtered counties with stable FIPS and escaped cells", () => {
+    const csv = filteredCountiesCsv([
+      { ...county("06085", 82, 100), county: 'Santa "Clara"', state: "CA" },
+    ]);
+    expect(csv).toContain("fips,county,state,");
+    expect(csv).toContain('"06085","Santa ""Clara""","CA"');
+    expect(csv).not.toContain("06037");
   });
 
   it("ranks by the selected metric with stable FIPS tie-breaking", () => {

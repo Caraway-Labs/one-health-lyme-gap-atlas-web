@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
@@ -58,6 +60,22 @@ counties.push({
   state_name: "California",
   evidence_completeness: 100,
 });
+counties.push({
+  ...counties[0],
+  fips: "06085",
+  county: "Santa Clara",
+  state: "CA",
+  state_name: "California",
+  evidence_completeness: 100,
+});
+counties.push({
+  ...counties[0],
+  fips: "06001",
+  county: "Alameda",
+  state: "CA",
+  state_name: "California",
+  evidence_completeness: 67,
+});
 
 async function mockApi(page: Page) {
   await page.route("http://localhost:8000/**", async (route) => {
@@ -79,6 +97,15 @@ async function mockApi(page: Page) {
           methodology_version: metadata.methodology_version,
           settings: {},
           counties,
+        },
+      });
+    if (url.pathname.endsWith("/report.pdf"))
+      return route.fulfill({
+        body: "%PDF-1.7 mock Atlas state report with non-empty content",
+        contentType: "application/pdf",
+        headers: {
+          "Access-Control-Expose-Headers": "Content-Disposition",
+          "Content-Disposition": 'attachment; filename="california-state.pdf"',
         },
       });
     if (url.pathname.endsWith("/geometry"))
@@ -109,6 +136,170 @@ async function mockApi(page: Page) {
 test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
+
+test("TC10–TC13: California, search, evidence filter, and selected FIPS agree", async ({
+  page,
+}) => {
+  await page.goto("/geographic_explorer");
+  await page.getByRole("combobox", { name: "State" }).click();
+  await page.getByRole("option", { name: "California" }).click();
+  await expect(page).toHaveURL(/state=CA/);
+  const table = page.getByRole("table");
+  await expect(table).toContainText("06085");
+  await expect(table).not.toContainText("08001");
+
+  await page
+    .getByRole("combobox", { name: "Filter counties by available data" })
+    .click();
+  await page
+    .getByRole("option", { name: "Most data fields available" })
+    .click();
+  await expect(page).toHaveURL(/evidence=complete/);
+  await expect(table).toContainText("06085");
+  await expect(table).not.toContainText("06001");
+
+  await page.getByLabel("County name or FIPS code").fill("Santa Clara");
+  await expect(page).toHaveURL(/q=Santa/);
+  await expect(table).toContainText("06085");
+  await expect(table).not.toContainText("06037");
+  await table.getByRole("button", { name: /Santa Clara, CA.*06085/ }).click();
+  const detail = page.getByRole("complementary", { name: "Selected county" });
+  await expect(detail).toContainText("Santa Clara, CA");
+  await expect(detail).toContainText("FIPS 06085");
+  await expect(page).toHaveURL(/county=06085/);
+});
+
+test("TC14–TC17: comparison, matrix, dictionary, and non-risk method", async ({
+  page,
+}) => {
+  await page.goto("/geographic_explorer?state=CA&county=06085");
+  const detail = page.getByRole("complementary", { name: "Selected county" });
+  await expect(detail).toContainText("FIPS 06085");
+  await detail.getByRole("button", { name: "Add to comparison" }).click();
+  await page
+    .getByRole("table")
+    .getByRole("button", { name: /Los Angeles, CA.*06037/ })
+    .click();
+  await detail.getByRole("button", { name: "Add to comparison" }).click();
+  await detail.getByRole("button", { name: "View comparison" }).click();
+  await expect(page).toHaveURL(/view=compare/);
+  await expect(page).toHaveURL(/selected=06085%2C06037|selected=06085,06037/);
+  await expect(
+    page
+      .locator(".geo-comparisons")
+      .getByRole("heading", { name: "Santa Clara, CA" })
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".geo-comparisons")
+      .getByRole("heading", { name: "Los Angeles, CA" })
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Evidence matrix", exact: true })
+    .click();
+  await expect(page).toHaveURL(/view=matrix/);
+  await expect(page.getByRole("table")).toContainText(
+    "No county-linked record"
+  );
+  await page.getByRole("button", { name: "Data dictionary" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Data dictionary" })
+  ).toContainText("County Review Priority");
+  await page
+    .getByRole("dialog", { name: "Data dictionary" })
+    .getByRole("button", { name: "Close data dictionary" })
+    .click();
+  await expect(
+    page.getByText(
+      /Review priority is not a diagnosis, an individual disease-risk estimate/
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "How counties are prioritized" })
+  ).toBeVisible();
+});
+
+test("TC18–TC19: state PDF and filtered county CSV downloads contain the active results", async ({
+  page,
+}) => {
+  await page.goto("/geographic_explorer?state=CA&evidence=complete");
+  await expect(page.getByRole("table")).toContainText("06085");
+  const pdfEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export PDF" }).click();
+  const pdf = await pdfEvent;
+  expect(pdf.suggestedFilename()).toBe("california-state.pdf");
+  const pdfPath = await pdf.path();
+  expect(pdfPath).not.toBeNull();
+  expect((await readFile(pdfPath as string)).subarray(0, 5).toString()).toBe(
+    "%PDF-"
+  );
+
+  const csvEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download county list" }).click();
+  const csv = await csvEvent;
+  const csvPath = await csv.path();
+  expect(csvPath).not.toBeNull();
+  const lines = (await readFile(csvPath as string, "utf8"))
+    .trim()
+    .split(/\r?\n/);
+  const headers = lines[0].split(",");
+  expect(headers).toContain("fips");
+  expect(headers).toContain("evidence_completeness_percent");
+  const rows = lines.slice(1).map((line) => {
+    const cells = [...line.matchAll(/"((?:[^"]|"")*)"(?:,|$)/g)].map((match) =>
+      match[1].replaceAll('""', '"')
+    );
+    return Object.fromEntries(
+      headers.map((header, index) => [header, cells[index]])
+    );
+  });
+  expect(rows.length).toBeGreaterThan(0);
+  expect(rows.map((row) => row.fips).sort()).toEqual(["06037", "06085"]);
+  for (const row of rows) {
+    expect(row.state).toBe("CA");
+    expect(Number(row.evidence_completeness_percent)).toBeGreaterThanOrEqual(
+      83
+    );
+  }
+});
+
+for (const [ordered, primary] of [
+  ["06085,06037", "Santa Clara, CA"],
+  ["06037,06085", "Los Angeles, CA"],
+] as const) {
+  test(`TC20–TC21: compare URL ${ordered} hydrates and reloads with ${primary} primary`, async ({
+    page,
+  }) => {
+    await page.goto(
+      `/geographic_explorer?dataset=alpha-explorer&state=CA&selected=${ordered}&view=compare`
+    );
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await expect(
+        page.getByRole("complementary", { name: "Selected county" })
+      ).toContainText(primary);
+      await expect(
+        page.getByRole("complementary", { name: "Selected county" })
+      ).toContainText(`FIPS ${ordered.slice(0, 5)}`);
+      await expect(
+        page
+          .locator(".geo-comparisons")
+          .getByRole("heading", { name: "Santa Clara, CA" })
+      ).toBeVisible();
+      await expect(
+        page
+          .locator(".geo-comparisons")
+          .getByRole("heading", { name: "Los Angeles, CA" })
+      ).toBeVisible();
+      const url = new URL(page.url());
+      expect(url.searchParams.get("dataset")).toBe("alpha-explorer");
+      expect(url.searchParams.get("state")).toBe("CA");
+      expect(url.searchParams.get("view")).toBe("compare");
+      expect(url.searchParams.get("selected")).toBe(ordered);
+      if (attempt === 0) await page.reload();
+    }
+  });
+}
 
 test("experimental Geographic Explorer URLs remain direct-link accessible and isolated", async ({
   page,
@@ -204,7 +395,9 @@ test("ranking and comparison persist exact county values across reload and filte
     .getByRole("button", { name: "View comparison", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Adams, CO", exact: true })
+    page
+      .locator(".geo-comparisons")
+      .getByRole("heading", { name: "Adams, CO", exact: true })
   ).toBeVisible();
   await page.reload();
   await expect(
