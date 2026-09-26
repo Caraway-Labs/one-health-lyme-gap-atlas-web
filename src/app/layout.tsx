@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description:
     "A population-level hypothesis generator for Lyme surveillance review.",
   metadataBase: new URL("https://carawaylabs.com"),
+  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }] },
   title: "One Health Lyme Gap Atlas",
 };
 

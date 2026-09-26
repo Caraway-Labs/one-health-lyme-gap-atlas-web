@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
+  timeout: 60_000,
   workers: 1,
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },

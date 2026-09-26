@@ -34,6 +34,56 @@ export function parseComparison(value: string) {
     5
   );
 }
+
+export function primaryCountyFips(
+  view: View,
+  selected: string[],
+  county: string,
+  available: ReadonlySet<string>
+) {
+  if (view === "compare") {
+    const firstComparison = selected.find((fips) => available.has(fips));
+    if (firstComparison) return firstComparison;
+  }
+  return available.has(county) ? county : undefined;
+}
+
+const CSV_HEADERS = [
+  "fips",
+  "county",
+  "state",
+  "human_reporting",
+  "tick_evidence",
+  "pathogen_evidence",
+  "evidence_completeness_percent",
+  "review_score",
+  "review_priority",
+] as const;
+
+function csvCell(value: string | number) {
+  const text = String(value);
+  const safe = /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
+  return `"${safe.replaceAll('"', '""')}"`;
+}
+
+export function filteredCountiesCsv(counties: CountyScoreSummary[]) {
+  const rows = counties.map((county) =>
+    [
+      county.fips,
+      county.county,
+      county.state,
+      evidenceLabel(county.human_status),
+      evidenceLabel(county.tick_status),
+      evidenceLabel(county.burgdorferi_status),
+      county.evidence_completeness,
+      county.score.score,
+      county.priority,
+    ]
+      .map(csvCell)
+      .join(",")
+  );
+  return `${[CSV_HEADERS.join(","), ...rows].join("\r\n")}\r\n`;
+}
 export const explorerParams = {
   ...atlasSearchParams,
   view: parseAsStringEnum<View>([...VIEWS]).withDefault("tiles"),

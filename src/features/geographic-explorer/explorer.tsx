@@ -39,10 +39,12 @@ import {
 import {
   evidenceLabel,
   explorerParams,
+  filteredCountiesCsv,
   metricLabel,
   metricMaximum,
   matchesExplorerEvidence,
   pageOf,
+  primaryCountyFips,
   rankCounties,
   VIEW_LABELS,
   VIEWS,
@@ -183,8 +185,18 @@ export function GeographicExplorer() {
   );
   const page = pageOf(ranked, state.page);
   const currentPage = page.current;
+  const availableFips = useMemo(
+    () => new Set(scope.map((county) => county.fips)),
+    [scope]
+  );
+  const primaryFips = primaryCountyFips(
+    state.view,
+    state.selected,
+    state.county,
+    availableFips
+  );
   const selected =
-    scope.find((county) => county.fips === state.county) ?? filtered[0];
+    scope.find((county) => county.fips === primaryFips) ?? filtered[0];
   const selectedFips = selected?.fips ?? "";
   const comparisons = state.selected.flatMap((fips) => {
     const county = scope.find((item) => item.fips === fips);
@@ -195,7 +207,7 @@ export function GeographicExplorer() {
   useEffect(() => {
     if (!releaseId || !scores.data) return;
     const validComparisons = state.selected.filter((fips) =>
-      scope.some((county) => county.fips === fips)
+      availableFips.has(fips)
     );
     if (
       state.dataset !== releaseId ||
@@ -215,7 +227,7 @@ export function GeographicExplorer() {
   }, [
     releaseId,
     scores.data,
-    scope,
+    availableFips,
     validState,
     selectedFips,
     currentPage,
@@ -263,7 +275,30 @@ export function GeographicExplorer() {
       </main>
     );
   const select = (county: string) => {
+    if (state.view === "compare") {
+      void setState({
+        county,
+        selected: [
+          county,
+          ...state.selected.filter((fips) => fips !== county),
+        ].slice(0, 5),
+      });
+      return;
+    }
     void setState({ county });
+  };
+  const downloadCsv = () => {
+    const blob = new Blob([filteredCountiesCsv(ranked)], {
+      type: "text/csv;charset=utf-8",
+    });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `lyme-gap-atlas-counties-${validState.toLowerCase()}.csv`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
   };
   const sharedSelection = { selectedFips, onSelect: select };
   const addComparison = () => {
@@ -310,6 +345,7 @@ export function GeographicExplorer() {
           onStateChange={(value) => setState({ state: value, page: 1 })}
           onQueryChange={(q) => setState({ q, page: 1 })}
           onEvidenceChange={(evidence) => setState({ evidence, page: 1 })}
+          onDownload={downloadCsv}
           settings={settings}
         />
         <div
