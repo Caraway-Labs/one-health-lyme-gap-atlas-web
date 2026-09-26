@@ -218,46 +218,45 @@ describe("feedback dialog", () => {
     ).toBe("County completeness looks wrong for Adams.");
   });
 
-  it("rotates the submission token only after choosing a new report", async () => {
-    submitFeedback.mockRejectedValueOnce(
-      new AtlasApiError("conflict", "/v1/feedback", 409, "req-1")
-    );
+  it("resubmits a 409 as a new report and shows the new reference id", async () => {
+    submitFeedback
+      .mockRejectedValueOnce(
+        new AtlasApiError("conflict", "/v1/feedback", 409, "req-1")
+      )
+      .mockResolvedValueOnce({
+        status: 200,
+        data: {
+          feedback_id: "22222222-2222-4222-8222-222222222222",
+          received_at: "2026-09-26T18:01:00Z",
+          replayed: false,
+        },
+        headers: new Headers(),
+      });
     renderFeedback();
     fireEvent.click(screen.getByRole("button", { name: "Feedback" }));
     fireEvent.change(screen.getByLabelText(/^Message/), {
       target: { value: "County completeness looks wrong for Adams." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
-    await expect(
-      screen.findByRole("button", { name: "Submit as a new report" })
-    ).resolves.toBeTruthy();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Submit as a new report" })
+    );
 
+    const successStatus = await screen.findByRole("status");
+    expect(successStatus.textContent).toContain("Thanks");
+    expect(
+      (screen.getByLabelText("Feedback reference id") as HTMLInputElement).value
+    ).toBe("22222222-2222-4222-8222-222222222222");
+    expect(submitFeedback).toHaveBeenCalledTimes(2);
     const firstBody = submitFeedback.mock.calls[0]?.[0] as unknown as {
       submission_token: string;
+      message: string;
     };
-    fireEvent.click(
-      screen.getByRole("button", { name: "Submit as a new report" })
-    );
-    submitFeedback.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        feedback_id: "22222222-2222-4222-8222-222222222222",
-        received_at: "2026-09-26T18:01:00Z",
-        replayed: false,
-      },
-      headers: new Headers(),
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
-    await expect(screen.findByRole("status")).resolves.toBeTruthy();
     const secondBody = submitFeedback.mock.calls[1]?.[0] as unknown as {
       submission_token: string;
       message: string;
     };
-    expect(
-      secondBody.submission_token !== firstBody.submission_token
-    ).toBeTruthy();
-    expect(secondBody.message).toBe(
-      "County completeness looks wrong for Adams."
-    );
+    expect(secondBody.submission_token).not.toBe(firstBody.submission_token);
+    expect(secondBody.message).toBe(firstBody.message);
   });
 });

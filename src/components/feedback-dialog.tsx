@@ -155,7 +155,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [submitting, setSubmitting] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { routeId, context, appVersion } = useFeedbackPageContext();
+  const { resolve: resolvePageContext } = useFeedbackPageContext();
 
   const emitOutcome = useCallback((outcome: FeedbackOutcome) => {
     trackFeedbackOutcomeViewed(outcome);
@@ -227,18 +227,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     setOpen(false);
   };
 
-  const rotateToken = () => {
-    setDraft((current) => ({
-      ...current,
-      submissionToken: createSubmissionToken(),
-    }));
-    setPhase("form");
-    setStatusMessage(null);
-    setValidationError(null);
-  };
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
+  const submitDraft = async (submissionToken: string) => {
     if (submitting) return;
 
     const messageError = validateMessage(draft.message);
@@ -256,8 +245,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     setSubmitting(true);
 
     const trimmedEmail = draft.contactEmail.trim();
+    const { routeId, context, appVersion } = resolvePageContext();
     const body = {
-      submission_token: draft.submissionToken,
+      submission_token: submissionToken,
       category: draft.category,
       message: draft.message.trim(),
       ...(trimmedEmail ? { contact_email: trimmedEmail } : {}),
@@ -327,6 +317,23 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    await submitDraft(draft.submissionToken);
+  };
+
+  const submitAsNewReport = () => {
+    const nextToken = createSubmissionToken();
+    setDraft((current) => ({
+      ...current,
+      submissionToken: nextToken,
+    }));
+    setPhase("form");
+    setStatusMessage(null);
+    setValidationError(null);
+    void submitDraft(nextToken);
   };
 
   const copyFeedbackId = async () => {
@@ -523,7 +530,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                     type="button"
                     variant="secondary"
                     disabled={submitting}
-                    onClick={rotateToken}
+                    onClick={submitAsNewReport}
                   >
                     Submit as a new report
                   </Button>
