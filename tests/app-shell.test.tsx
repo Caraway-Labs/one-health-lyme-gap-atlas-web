@@ -57,6 +57,20 @@ describe("Atlas application shell", () => {
     expect(screen.queryByRole("link", { name: /variant/i })).toBeNull();
   });
 
+  it("labels the enabled literature Assistant as early access", () => {
+    vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
+    renderShell(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Atlas Assistant" }).textContent
+    ).toContain("Early access");
+    expect(screen.queryByText("Coming Soon")).toBeNull();
+  });
+
   it("renders utility and footer destinations from the route metadata", () => {
     renderShell(
       <AppShell>

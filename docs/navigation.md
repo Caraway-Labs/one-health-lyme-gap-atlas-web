@@ -12,7 +12,7 @@ The initial hierarchy is task-oriented for epidemiologists and public-health pro
 | --- | --- | --- | --- | --- |
 | Explore | Atlas overview | `/` | Available | Sidebar |
 | Explore | Geographic Explorer | `/geographic_explorer` | Available | Sidebar |
-| Research | Atlas Assistant | `/assistant` | Coming Soon / in development | Sidebar |
+| Research | Atlas Assistant | `/assistant` | Early access when enabled; Coming Soon when disabled | Sidebar |
 | Reference | Docs | `https://carawaylabs.com/docs` | Available | Sidebar, new tab |
 | Utility | Account | `/account` | Available | Top utility bar |
 | Trust | Privacy | `/privacy` | Available | Global footer |
@@ -25,7 +25,7 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 | Route family | Navigation role | Status | Shell | Rationale |
 | --- | --- | --- | --- | --- |
 | `/`, `/geographic_explorer` | Primary sidebar | Available | Analytical | Released public Atlas workflows. |
-| `/assistant` | Primary sidebar | In development | Analytical | Literature-only chat is feature-gated; unavailable state uses the shared Coming Soon contract. |
+| `/assistant` | Primary sidebar | In development | Analytical | Literature-only chat is feature-gated; enabled navigation says Early access and unavailable state uses the shared Coming Soon contract. |
 | `/knowledge-graph` | Legacy deep link | Hidden | Analytical | Redirects to `/assistant`, preserving the local conversation selector. |
 | `/account` | Global utility | Available | Analytical | Optional account functionality is user-facing and usable. |
 | `/auth/sign-in` | Account-specific | Hidden from navigation | Analytical | User-facing sign-in adopts the shell without becoming primary navigation. |

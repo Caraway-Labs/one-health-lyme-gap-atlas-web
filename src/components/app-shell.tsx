@@ -188,7 +188,11 @@ function AppShellContent({
                       const Icon = item.icon;
                       if (!Icon) return null;
                       const active = isNavigationItemActive(item, pathname);
-                      const statusLabel = NAVIGATION_STATUS_LABELS[item.status];
+                      const statusLabel =
+                        item.id === "assistant" &&
+                        process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true"
+                          ? "Early access"
+                          : NAVIGATION_STATUS_LABELS[item.status];
                       const accessibleLabel =
                         item.status === "inDevelopment"
                           ? `${item.label} — ${statusLabel}`

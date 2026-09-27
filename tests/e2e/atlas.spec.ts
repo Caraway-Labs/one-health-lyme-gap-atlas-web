@@ -610,7 +610,7 @@ test("renders every interview variant with selected county evidence in the first
   }
 });
 
-test("offers route-aware sidebar navigation, Coming Soon status, and a shared data dictionary", async ({
+test("offers route-aware sidebar navigation, early-access status, and a shared data dictionary", async ({
   page,
 }, testInfo) => {
   await page.goto("/geographic_explorer?county=08001");
@@ -629,7 +629,7 @@ test("offers route-aware sidebar navigation, Coming Soon status, and a shared da
   ).toHaveAttribute("href", "/geographic_explorer");
   await expect(
     navigation.getByRole("link", { name: "Atlas Assistant" })
-  ).toContainText("Coming Soon");
+  ).toContainText("Early access");
   await expect(navigation.getByRole("link", { name: "Docs" })).toHaveAttribute(
     "target",
     "_blank"
