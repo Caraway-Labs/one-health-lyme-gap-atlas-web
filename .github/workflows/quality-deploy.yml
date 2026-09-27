@@ -17,10 +17,23 @@ permissions:
   checks: write
   pull-requests: write
 
+# CI_MAX_PARALLEL=4 is intent, not a semaphore. A GitHub concurrency group runs
+# one member at a time, so it cannot cap CI at four slots. This workflow has no
+# matrix, so strategy.max-parallel does not apply. Independent pull requests and
+# main pushes stay concurrent up to the GitHub-hosted runner limit. Do not add a
+# workflow-level concurrency group; that would serialize quality behind deploys.
+# WEB_PRODUCTION_CONCURRENCY_GROUP and LATEST_MAIN_WINS are repository or
+# organization Actions variables. Unset values use the defaults below.
+env:
+  CI_MAX_PARALLEL: ${{ vars.CI_MAX_PARALLEL || '4' }}
+
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
+      - name: Record CI parallelism intent
+        run: >-
+          echo "CI_MAX_PARALLEL=${CI_MAX_PARALLEL} app=web (intent only; quality runs are not serialized by production deploy concurrency)"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
@@ -157,18 +170,82 @@ jobs:
       - name: Scan Git history for secrets
         run: >-
           docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f git /repo --redact --no-banner
-  deploy:
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy_production
+  deploy-guard:
+    name: production deploy guard
     needs: quality
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.deploy_production)
+    runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.guard.outputs.decision }}
+      candidate_sha: ${{ steps.guard.outputs.candidate_sha }}
+      main_sha: ${{ steps.guard.outputs.main_sha }}
+      reason: ${{ steps.guard.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Compare candidate SHA with origin/main
+        id: guard
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+          LATEST_MAIN_WINS: ${{ vars.LATEST_MAIN_WINS || 'true' }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+          DEPLOY_RUN_ID: ${{ github.run_id }}
+          DEPLOY_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          export MAIN_SHA
+          node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/production-deploy-guard.ts guard
+  deploy:
+    needs: [quality, deploy-guard]
+    if: needs.deploy-guard.outputs.decision == 'proceed'
     runs-on: ubuntu-latest
     environment:
       name: production
       url: https://carawaylabs.com
-    concurrency: { group: web-production, cancel-in-progress: false }
+    # Former group name: web-production. Renamed so the web app does not share
+    # a lock with any other service. In-flight runs started before this rename
+    # still occupy web-production until they finish.
+    concurrency:
+      group: ${{ vars.WEB_PRODUCTION_CONCURRENCY_GROUP || 'atlas-web-production' }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-      - uses: digitalocean/app_action/deploy@v2
+        with:
+          fetch-depth: 1
+      - name: Re-check latest main immediately before deploy
+        id: guard
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+          LATEST_MAIN_WINS: ${{ vars.LATEST_MAIN_WINS || 'true' }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+          DEPLOY_RUN_ID: ${{ github.run_id }}
+          DEPLOY_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          export MAIN_SHA
+          node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/production-deploy-guard.ts guard
+      - name: Deploy the validated commit to DigitalOcean App Platform
+        id: production
+        if: steps.guard.outputs.decision == 'proceed'
+        uses: digitalocean/app_action/deploy@v2
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         with: { token: "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" }
+      - name: Record production deploy result
+        if: always() && steps.guard.outputs.decision == 'proceed'
+        env:
+          CANDIDATE_SHA: ${{ steps.guard.outputs.candidate_sha }}
+          MAIN_SHA: ${{ steps.guard.outputs.main_sha }}
+          DEPLOY_REASON: ${{ steps.production.outcome == 'success' && 'digitalocean deploy succeeded' || 'digitalocean deploy failed' }}
+          DEPLOY_RESULT: ${{ steps.production.outcome == 'success' && 'success' || 'failure' }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+          DEPLOY_RUN_ID: ${{ github.run_id }}
+          DEPLOY_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/production-deploy-guard.ts record
