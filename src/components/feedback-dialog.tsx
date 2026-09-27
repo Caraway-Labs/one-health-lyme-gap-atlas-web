@@ -423,7 +423,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                   >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent positionerClassName="z-[70]">
                     {CATEGORY_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
