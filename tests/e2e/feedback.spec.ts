@@ -90,6 +90,36 @@ test.describe("in-product feedback dialog", () => {
     expect(submitCount).toBe(1);
   });
 
+  test("selects a category above the dialog stacking context", async ({
+    page,
+  }) => {
+    let category: string | undefined;
+    await mockAtlasApi(page, async (route) => {
+      category = route.request().postDataJSON()?.category;
+      await route.fulfill({
+        status: 200,
+        json: {
+          feedback_id: feedbackId,
+          received_at: "2026-09-26T18:00:00Z",
+          replayed: false,
+        },
+      });
+    });
+
+    await page.goto("/");
+    await openFeedback(page);
+    await page.getByLabel("Feedback category").click();
+    await page.getByRole("option", { name: "Usability" }).click();
+    await page
+      .getByLabel(/^Message/)
+      .fill("The overview ranking looks incomplete for Colorado.");
+    await page.getByRole("button", { name: "Send feedback" }).click();
+    await expect(page.getByLabel("Feedback reference id")).toHaveValue(
+      feedbackId
+    );
+    expect(category).toBe("usability");
+  });
+
   test("supports keyboard open and validation messaging", async ({ page }) => {
     await mockAtlasApi(page, async (route) => {
       await route.fulfill({
