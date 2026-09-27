@@ -16,7 +16,6 @@ export default defineConfig({
     command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
     env: {
       ATLAS_E2E: "1",
-      NEXT_PUBLIC_ATLAS_ASSISTANT_DEMO_ENABLED: "true",
       NEXT_PUBLIC_KG_CHAT_ENABLED: "true",
     },
     reuseExistingServer: false,

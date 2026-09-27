@@ -28,8 +28,7 @@ Understanding the data
   Missingness, suppression, and uncertainty
   Human, vector/pathogen, environmental, and population context
 AI and evidence
-  Ask Atlas
-  Evidence library
+  Atlas Assistant (reviewed literature early access)
   AI ethics and limitations
 Methods and trust
   Provenance and freshness

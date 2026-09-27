@@ -48,13 +48,27 @@ describe("Atlas application shell", () => {
 
     expect(
       screen
-        .getByRole("link", { name: "Talk with the Atlas" })
+        .getByRole("link", { name: "Atlas Assistant" })
         .getAttribute("aria-current")
     ).toBe("page");
-    expect(screen.getByRole("link", { name: "Evidence library" })).toBeTruthy();
-    expect(screen.getAllByText("Coming Soon")).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: "Evidence library" })).toBeNull();
+    expect(screen.getAllByText("Coming Soon")).toHaveLength(1);
     expect(screen.queryByRole("link", { name: /County review/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /variant/i })).toBeNull();
+  });
+
+  it("labels the enabled literature Assistant as early access", () => {
+    vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
+    renderShell(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Atlas Assistant" }).textContent
+    ).toContain("Early access");
+    expect(screen.queryByText("Coming Soon")).toBeNull();
   });
 
   it("renders utility and footer destinations from the route metadata", () => {
@@ -106,9 +120,9 @@ describe("Atlas application shell", () => {
     expect(screen.getByRole("complementary").dataset.state).toBe("collapsed");
     expect(
       screen
-        .getByRole("link", { name: "Evidence library — Coming Soon" })
+        .getByRole("link", { name: "Atlas Assistant — Coming Soon" })
         .getAttribute("aria-label")
-    ).toBe("Evidence library — Coming Soon");
+    ).toBe("Atlas Assistant — Coming Soon");
   });
 
   it("persists only the desktop presentation preference across shell sessions", async () => {
