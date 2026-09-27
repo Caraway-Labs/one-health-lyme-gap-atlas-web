@@ -255,15 +255,11 @@ export function EvidenceChat({
           </p>
         </aside>
       )}
-      <section className="chat-panel" aria-label="Ask the evidence">
+      <section className="chat-panel" aria-label="Atlas Assistant">
         <header>
           <div>
             <span className="kicker">Reviewed literature</span>
-            <h1>
-              {mode === "drawer"
-                ? "Ask the evidence"
-                : "Knowledge graph evidence workspace"}
-            </h1>
+            <h1>{mode === "drawer" ? "Atlas Assistant" : "Atlas Assistant"}</h1>
           </div>
           <Button
             variant="secondary"
@@ -383,8 +379,8 @@ export function EvidenceChat({
             <Link
               href={
                 active
-                  ? `/knowledge-graph?conversation=${encodeURIComponent(active.id)}`
-                  : "/knowledge-graph"
+                  ? `/assistant?conversation=${encodeURIComponent(active.id)}`
+                  : "/assistant"
               }
             >
               Open full workspace

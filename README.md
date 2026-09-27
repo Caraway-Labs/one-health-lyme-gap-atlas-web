@@ -34,6 +34,6 @@ The public frontend may use `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_SITE_URL`, 
 
 Open **Explore → Geographic Explorer** (`/geographic_explorer`) to use geographic tiles, small multiples, the county evidence matrix, ranked dots, synchronized maps, map-linked scatterplots, and up to five county comparison profiles. Filters, selection, score assumptions, and the requested release are shareable in the URL. The release-trends view explains the current historical-data prerequisite. See [the geographic explorer contract](contracts/geographic-explorer.md) for interpretation, accessibility, and acceptance details.
 
-## Feature-gated assistant demo
+## Feature-gated Atlas Assistant
 
-`/assistant` is a local, fixture-only assistant-ui demonstration. Enable it locally with `NEXT_PUBLIC_ATLAS_ASSISTANT_DEMO_ENABLED=true`. It has no model/provider SDK or live Atlas request; future work must extend `src/features/assistant`, retain structured sources, and register rich UI through an explicit allowlist.
+`/assistant` is the feature-gated Atlas Assistant for questions grounded in reviewed PubMed and PMC Open Access literature. Enable its full workspace and compact drawer locally with `NEXT_PUBLIC_KG_CHAT_ENABLED=true`. The browser uses the Python REST API; `/knowledge-graph` redirects to `/assistant` for existing deep links. The internal fixture-only demo components remain for development tests and are not a user-facing route.

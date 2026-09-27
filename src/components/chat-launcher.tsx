@@ -70,7 +70,7 @@ function EnabledChatLauncher() {
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        Ask the evidence
+        Atlas Assistant
       </button>
       {open && (
         <div
@@ -88,13 +88,13 @@ function EnabledChatLauncher() {
             className="chat-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Ask the evidence"
+            aria-label="Atlas Assistant"
           >
             <button
               className="chat-close"
               {...analyticsControlAttributes("evidence_chat_close")}
               type="button"
-              aria-label="Close evidence chat"
+              aria-label="Close Atlas Assistant"
               onClick={() => {
                 setOpen(false);
                 launcher.current?.focus();
