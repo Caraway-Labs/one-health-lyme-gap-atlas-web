@@ -6,6 +6,7 @@ import type { LocalConversation } from "../src/lib/knowledge-chat-storage";
 import {
   CHAT_STORAGE_KEY,
   clearConversations,
+  conversationHistory,
   loadConversations,
   removeConversation,
   saveConversations,
@@ -21,7 +22,6 @@ function conversation(
     expiresAt,
     id,
     title: id,
-    token: `token-${id}`,
     turns: [],
     updatedAt,
   };
@@ -116,7 +116,7 @@ describe("knowledge chat local storage", () => {
     ).toStrictEqual(["valid"]);
   });
 
-  it("rejects malformed nested assistant responses", () => {
+  it("preserves old chat text while discarding incompatible response metadata", () => {
     const stored = conversation(
       "bad-response",
       "2026-08-25T00:00:00.000Z",
@@ -135,6 +135,54 @@ describe("knowledge chat local storage", () => {
       CHAT_STORAGE_KEY,
       JSON.stringify({ conversations: [stored], version: 1 })
     );
-    expect(loadConversations()).toStrictEqual([]);
+    const loaded = loadConversations(Date.parse("2026-08-26T00:00:00.000Z"));
+    expect(loaded[0].turns[0].text).toBe("text");
+    expect(loaded[0].turns[0].response).toBeUndefined();
+  });
+
+  it("removes legacy continuation tokens from browser storage", () => {
+    const stored = {
+      ...conversation(
+        "legacy",
+        "2026-08-25T00:00:00.000Z",
+        "2026-09-24T00:00:00.000Z"
+      ),
+      token: "secret",
+    };
+    localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({ version: 1, conversations: [stored] })
+    );
+    expect(
+      loadConversations(Date.parse("2026-08-26T00:00:00.000Z"))
+    ).toHaveLength(1);
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain("secret");
+  });
+
+  it("sends only six complete recent turn pairs without tokens", () => {
+    const stored = conversation(
+      "history",
+      "2026-08-25T00:00:00.000Z",
+      "2026-09-24T00:00:00.000Z"
+    );
+    stored.turns = Array.from({ length: 8 }, (_, index) => [
+      {
+        id: `u${index}`,
+        role: "user" as const,
+        text: `question ${index}`,
+        createdAt: stored.createdAt,
+      },
+      {
+        id: `a${index}`,
+        role: "assistant" as const,
+        text: `answer ${index}`,
+        createdAt: stored.createdAt,
+      },
+    ]).flat();
+    expect(conversationHistory(stored)).toHaveLength(12);
+    expect(conversationHistory(stored)[0]).toStrictEqual({
+      role: "user",
+      content: "question 2",
+    });
   });
 });

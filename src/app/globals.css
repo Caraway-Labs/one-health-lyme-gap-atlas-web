@@ -2531,6 +2531,28 @@ footer > a {
   white-space: pre-wrap;
   line-height: 1.55;
 }
+.chat-evidence-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.7rem;
+  color: var(--teal-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.chat-evidence-meta span {
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 0.3rem;
+  background: white;
+}
+.chat-turn .chat-corpus-note {
+  margin-top: 0.7rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--teal);
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
 .citation-list {
   margin: 0.8rem 0 0;
   padding-left: 1.2rem;

@@ -27,6 +27,7 @@ export * from './geometryV1AtlasGeometryGetParams';
 export * from './hTTPValidationError';
 export * from './knowledgeChatRequest';
 export * from './knowledgeChatResponse';
+export * from './knowledgeChatResponseEvidenceState';
 export * from './knowledgeChatResponseStatus';
 export * from './knowledgeCitation';
 export * from './knowledgeClaim';
