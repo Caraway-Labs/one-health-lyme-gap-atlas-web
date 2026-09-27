@@ -358,7 +358,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         }}
       >
         <DialogContent
-          className="feedback-dialog sm:max-w-lg"
+          className="feedback-dialog z-[60] sm:max-w-lg"
           aria-labelledby="feedback-dialog-title"
         >
           <DialogHeader>
