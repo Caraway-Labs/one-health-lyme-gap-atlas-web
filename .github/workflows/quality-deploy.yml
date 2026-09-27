@@ -31,8 +31,7 @@ jobs:
     steps:
       - name: Record CI parallelism intent
         run: >-
-          echo "CI_MAX_PARALLEL=${CI_MAX_PARALLEL} app=web (intent only; quality
-          runs are not serialized by production deploy concurrency)"
+          echo "CI_MAX_PARALLEL=${CI_MAX_PARALLEL} app=web (intent only; quality runs are not serialized by production deploy concurrency)"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
@@ -64,8 +63,7 @@ jobs:
     name: production deploy guard
     needs: quality
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && inputs.deploy_production)
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.deploy_production)
     runs-on: ubuntu-latest
     outputs:
       decision: ${{ steps.guard.outputs.decision }}

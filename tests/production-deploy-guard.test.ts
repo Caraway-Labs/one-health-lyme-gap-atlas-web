@@ -1,7 +1,7 @@
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -17,7 +17,8 @@ const newerMain = "b".repeat(40);
 const identity = {
   branch: "main",
   runId: "4242",
-  runUrl: "https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/actions/runs/4242",
+  runUrl:
+    "https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/actions/runs/4242",
   timestamp: "2026-09-27T22:30:00.000Z",
 };
 
@@ -45,16 +46,7 @@ describe("latest-main production deploy guard", () => {
       reason: decision.reason,
       result: "skip",
     });
-    expect(log).toContain("Deployment skipped.");
-    expect(log).toContain(`Candidate SHA: ${candidate}`);
-    expect(log).toContain(`Current main SHA: ${newerMain}`);
-    expect(log).toContain("Reason: superseded");
-    expect(log).toContain("app=web");
-    expect(log).toContain("result=skip");
-    expect(log).toContain(`run_id=${identity.runId}`);
-    expect(log).toContain(`run_url=${identity.runUrl}`);
-    expect(log).toContain("branch=main");
-    expect(log).toContain(`timestamp=${identity.timestamp}`);
+    expect(missingLines(log, skipLogLines())).toStrictEqual([]);
   });
 
   it("does not treat a disabled guard as a successful production deploy", () => {
@@ -79,8 +71,9 @@ describe("latest-main production deploy guard", () => {
       DEPLOY_REASON: "digitalocean deploy succeeded",
       DEPLOY_RESULT: "success",
     });
-    expect(success).toContain("result=success");
-    expect(success).toContain(`candidate_sha=${candidate}`);
+    expect(
+      missingLines(success, [`result=success`, `candidate_sha=${candidate}`])
+    ).toStrictEqual([]);
     expect(success).not.toContain("Deployment skipped.");
 
     const failure = runDeployRecord({
@@ -88,13 +81,14 @@ describe("latest-main production deploy guard", () => {
       DEPLOY_REASON: "digitalocean deploy failed",
       DEPLOY_RESULT: "failure",
     });
-    expect(failure).toContain("result=failure");
-    expect(failure).toContain(`current_main_sha=${candidate}`);
+    expect(
+      missingLines(failure, [`result=failure`, `current_main_sha=${candidate}`])
+    ).toStrictEqual([]);
   });
 
   it("writes a skip decision for a stale CLI invocation", () => {
-    const directory = mkdtempSync(join(tmpdir(), "deploy-guard-"));
-    const outputPath = join(directory, "github-output.txt");
+    const directory = mkdtempSync(path.join(tmpdir(), "deploy-guard-"));
+    const outputPath = path.join(directory, "github-output.txt");
     const env = {
       ...identityEnv(candidate),
       GITHUB_OUTPUT: outputPath,
@@ -102,20 +96,25 @@ describe("latest-main production deploy guard", () => {
     };
     try {
       const log = runDeployGuard(env);
-      expect(log).toContain("Reason: superseded");
-      expect(log).toContain("result=skip");
-      const output = readFileSync(outputPath, "utf8");
-      expect(output).toContain("decision=skip");
-      expect(output).toContain(`candidate_sha=${candidate}`);
-      expect(output).toContain(`main_sha=${newerMain}`);
+      expect(
+        missingLines(log, ["Reason: superseded", "result=skip"])
+      ).toStrictEqual([]);
+      const output = readFileSync(outputPath, "utf-8");
+      expect(
+        missingLines(output, [
+          "decision=skip",
+          `candidate_sha=${candidate}`,
+          `main_sha=${newerMain}`,
+        ])
+      ).toStrictEqual([]);
     } finally {
       rmSync(directory, { recursive: true });
     }
   });
 
   it("runs the CLI as a successful skip", () => {
-    const directory = mkdtempSync(join(tmpdir(), "deploy-guard-cli-"));
-    const outputPath = join(directory, "github-output.txt");
+    const directory = mkdtempSync(path.join(tmpdir(), "deploy-guard-cli-"));
+    const outputPath = path.join(directory, "github-output.txt");
     try {
       const result = spawnSync(
         process.execPath,
@@ -126,7 +125,7 @@ describe("latest-main production deploy guard", () => {
           "guard",
         ],
         {
-          encoding: "utf8",
+          encoding: "utf-8",
           env: {
             ...process.env,
             ...identityEnv(candidate),
@@ -136,17 +135,41 @@ describe("latest-main production deploy guard", () => {
         }
       );
       expect(result.status).toBe(0);
-      expect(result.stdout).toContain("Reason: superseded");
-      expect(readFileSync(outputPath, "utf8")).toContain("decision=skip");
+      expect(
+        missingLines(
+          `${result.stdout ?? ""}\n${readFileSync(outputPath, "utf-8")}`,
+          ["Reason: superseded", "decision=skip"]
+        )
+      ).toStrictEqual([]);
     } finally {
       rmSync(directory, { recursive: true });
     }
   });
 });
 
+function missingLines(text: string, lines: readonly string[]): string[] {
+  return lines.filter((line) => !text.includes(line));
+}
+
+function skipLogLines(): string[] {
+  return [
+    "Deployment skipped.",
+    `Candidate SHA: ${candidate}`,
+    `Current main SHA: ${newerMain}`,
+    "Reason: superseded",
+    "app=web",
+    "result=skip",
+    `run_id=${identity.runId}`,
+    `run_url=${identity.runUrl}`,
+    "branch=main",
+    `timestamp=${identity.timestamp}`,
+  ];
+}
+
 function identityEnv(sha: string): NodeJS.ProcessEnv {
   return {
     CANDIDATE_SHA: sha,
+    NODE_ENV: "test",
     DEPLOY_BRANCH: identity.branch,
     DEPLOY_RUN_ID: identity.runId,
     DEPLOY_RUN_URL: identity.runUrl,
@@ -157,18 +180,25 @@ function identityEnv(sha: string): NodeJS.ProcessEnv {
 }
 
 describe("quality and deploy workflow", () => {
-  const workflow = readFileSync(".github/workflows/quality-deploy.yml", "utf8");
+  const workflow = readFileSync(
+    ".github/workflows/quality-deploy.yml",
+    "utf-8"
+  );
 
   it("keeps the quality job and its existing gates", () => {
     expect(workflow).toMatch(/^ {2}quality:$/m);
-    expect(workflow).toContain("npm audit --audit-level=moderate");
-    expect(workflow).toContain("npm run typecheck");
-    expect(workflow).toContain("npm run lint");
-    expect(workflow).toContain("npm run check:design-system");
-    expect(workflow).toContain("npm test");
-    expect(workflow).toContain("npx playwright test");
-    expect(workflow).toContain("docker build --build-arg");
-    expect(workflow).toContain("gitleaks");
+    expect(
+      missingLines(workflow, [
+        "npm audit --audit-level=moderate",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run check:design-system",
+        "npm test",
+        "npx playwright test",
+        "docker build --build-arg",
+        "gitleaks",
+      ])
+    ).toStrictEqual([]);
   });
 
   it("does not serialize CI with the production concurrency group", () => {
@@ -183,23 +213,27 @@ describe("quality and deploy workflow", () => {
 
   it("serializes production deploys and cancels superseded deploy work", () => {
     const deployJob = workflow.slice(workflow.indexOf("\n  deploy:"));
-    expect(deployJob).toContain(
-      "vars.WEB_PRODUCTION_CONCURRENCY_GROUP || 'atlas-web-production'"
-    );
-    expect(deployJob).toContain("cancel-in-progress: true");
-    expect(deployJob).toContain("needs: [quality, deploy-guard]");
-    expect(deployJob).toContain("digitalocean/app_action/deploy@v2");
+    expect(
+      missingLines(deployJob, [
+        "vars.WEB_PRODUCTION_CONCURRENCY_GROUP || 'atlas-web-production'",
+        "cancel-in-progress: true",
+        "needs: [quality, deploy-guard]",
+        "digitalocean/app_action/deploy@v2",
+      ])
+    ).toStrictEqual([]);
     expect(deployJob).not.toContain("git checkout origin/main");
     expect(deployJob).not.toContain("git reset --hard origin/main");
   });
 
   it("deploys a green main push or an explicit manual production dispatch", () => {
     expect(workflow).toContain(
-      "(github.event_name == 'push' && github.ref == 'refs/heads/main') ||"
+      "github.event_name == 'push' && github.ref == 'refs/heads/main'"
     );
     expect(workflow).toContain(
-      "(github.event_name == 'workflow_dispatch' && inputs.deploy_production)"
+      "github.event_name == 'workflow_dispatch' && inputs.deploy_production"
     );
-    expect(workflow).toContain("needs.deploy-guard.outputs.decision == 'proceed'");
+    expect(workflow).toContain(
+      "needs.deploy-guard.outputs.decision == 'proceed'"
+    );
   });
 });

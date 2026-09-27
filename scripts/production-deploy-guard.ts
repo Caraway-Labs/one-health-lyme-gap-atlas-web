@@ -30,7 +30,10 @@ function normalizeCommitSha(value: string | undefined, name: string): string {
 }
 
 function guardEnabled(latestMainWins: string | undefined): boolean {
-  return requiredText(latestMainWins ?? "true", "LATEST_MAIN_WINS").toLowerCase() !== "false";
+  return (
+    requiredText(latestMainWins ?? "true", "LATEST_MAIN_WINS").toLowerCase() !==
+    "false"
+  );
 }
 
 function assertDeployResult(result: string): DeployResult {
@@ -38,8 +41,9 @@ function assertDeployResult(result: string): DeployResult {
     case "failure":
     case "pending":
     case "skip":
-    case "success":
+    case "success": {
       return result;
+    }
     default: {
       throw new Error(`Unexpected deploy result: ${result}`);
     }
@@ -150,7 +154,8 @@ export function runDeployGuard(env: NodeJS.ProcessEnv = process.env): string {
     latestMainWins: env.LATEST_MAIN_WINS,
     mainSha: env.MAIN_SHA,
   });
-  const result: DeployResult = decision.decision === "skip" ? "skip" : "pending";
+  const result: DeployResult =
+    decision.decision === "skip" ? "skip" : "pending";
   writeGitHubOutput(env, {
     candidate_sha: decision.candidateSha,
     decision: decision.decision,
@@ -169,11 +174,13 @@ export function runDeployGuard(env: NodeJS.ProcessEnv = process.env): string {
 function assertTerminalResult(result: DeployResult): "failure" | "success" {
   switch (result) {
     case "failure":
-    case "success":
+    case "success": {
       return result;
+    }
     case "pending":
-    case "skip":
+    case "skip": {
       throw new Error("DEPLOY_RESULT must be success or failure.");
+    }
     default: {
       const unexpected: never = result;
       throw new Error(`Unexpected deploy result: ${String(unexpected)}`);
@@ -197,8 +204,9 @@ export function runDeployRecord(env: NodeJS.ProcessEnv = process.env): string {
 function assertGuardCommand(command: string): GuardCommand {
   switch (command) {
     case "guard":
-    case "record":
+    case "record": {
       return command;
+    }
     default: {
       throw new Error(`Unexpected guard command: ${command}`);
     }
@@ -207,10 +215,12 @@ function assertGuardCommand(command: string): GuardCommand {
 
 function runCommand(command: GuardCommand, env: NodeJS.ProcessEnv): string {
   switch (command) {
-    case "guard":
+    case "guard": {
       return runDeployGuard(env);
-    case "record":
+    }
+    case "record": {
       return runDeployRecord(env);
+    }
     default: {
       const unexpected: never = command;
       throw new Error(`Unexpected guard command: ${String(unexpected)}`);
