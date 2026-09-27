@@ -23,6 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      - name: Audit locked dependencies
+        run: npm audit --audit-level=moderate
       - run: npx playwright install --with-deps chromium
       - run: npm run generate:api
       - run: git diff --exit-code -- contracts src/generated

@@ -92,14 +92,17 @@ const engine = vi.hoisted(() => {
   }
   return { instances, FakeMap };
 });
-vi.mock(import("maplibre-gl"), () => ({
-  default: {
-    Map: engine.FakeMap,
-    NavigationControl: function NavigationControl() {
-      return {};
-    },
-  } as unknown as typeof import("maplibre-gl"),
-}));
+vi.mock(
+  import("maplibre-gl"),
+  () =>
+    ({
+      Map: engine.FakeMap,
+      NavigationControl: function NavigationControl() {
+        return {};
+      },
+      setWorkerUrl: vi.fn<(url: string) => void>(),
+    }) as unknown as Partial<typeof import("maplibre-gl")>
+);
 describe("geographic map behavior", () => {
   afterEach(() => {
     cleanup();
