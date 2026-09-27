@@ -142,8 +142,11 @@ test.beforeEach(async ({ page }) => {
         request_id: "request-1",
         conversation_id: "conversation-1",
         conversation_token: "opaque-token",
+        assistant_policy_version: "policy-v1",
         configuration_version: "kg-v1.0.0",
         status: "answered",
+        evidence_state: "limited",
+        source_used: "literature_evidence",
         answer: "Reviewed evidence answer.",
         claims: [
           {
