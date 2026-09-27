@@ -15,26 +15,29 @@ import type { ScoreSettings } from "../src/lib/atlas-ui";
 // touches browser APIs jsdom does not implement, so it is stubbed the same
 // way `tests/atlas-map.test.tsx` stubs it. `vi.mock` calls are hoisted above
 // imports by Vitest, so this still applies before `experiment-atlas` loads.
-vi.mock(import("maplibre-gl"), () => ({
-  default: {
-    Map: function Map() {
-      return {
-        addControl() {
-          return this;
-        },
-        on() {
-          return this;
-        },
-        remove() {
-          // no-op
-        },
-      };
-    },
-    NavigationControl: function NavigationControl() {
-      return {};
-    },
-  } as unknown as typeof import("maplibre-gl"),
-}));
+vi.mock(
+  import("maplibre-gl"),
+  () =>
+    ({
+      Map: function Map() {
+        return {
+          addControl() {
+            return this;
+          },
+          on() {
+            return this;
+          },
+          remove() {
+            // no-op
+          },
+        };
+      },
+      NavigationControl: function NavigationControl() {
+        return {};
+      },
+      setWorkerUrl: vi.fn<(url: string) => void>(),
+    }) as unknown as Partial<typeof import("maplibre-gl")>
+);
 
 const detail: CountyDetail = {
   burgdorferi_status: "No records",

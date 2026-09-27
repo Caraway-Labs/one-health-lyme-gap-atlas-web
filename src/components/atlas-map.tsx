@@ -5,7 +5,7 @@ import type {
   GeoJSONSource,
   Map as MapLibreMap,
 } from "maplibre-gl";
-import maplibregl from "maplibre-gl";
+import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Ref } from "react";
 
@@ -210,7 +210,8 @@ export function AtlasMap({
     if (!container.current || map.current) {
       return;
     }
-    const instance = new maplibregl.Map({
+    setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+    const instance = new MapLibre({
       container: container.current,
       style: { layers: [], sources: {}, version: 8 },
       ...CONTIGUOUS_US_INITIAL_VIEW,
@@ -219,7 +220,7 @@ export function AtlasMap({
       attributionControl: false,
     });
     instance.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
+      new NavigationControl({ showCompass: false }),
       "top-right"
     );
     instance.on("error", () => {

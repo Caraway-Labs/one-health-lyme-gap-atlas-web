@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "format": "ultracite fix",
     "postinstall": "npm run docs:generate",
-    "prebuild": "npm run docs:generate && npm run docs:check",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs && npm run docs:generate && npm run docs:check",
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "pretypecheck": "npm run docs:generate && npm run docs:check"
   },
   "dependencies": {
@@ -36,9 +37,9 @@
     "fumadocs-mdx": "^15.4.0",
     "fumadocs-ui": "^16.15.10",
     "lucide-react": "^1.35.0",
-    "maplibre-gl": "^5.7.0",
+    "maplibre-gl": "6.4.1",
     "mdast-util-directive": "^3.1.0",
-    "next": "16.3.1",
+    "next": "16.3.3",
     "nuqs": "^2.10.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -64,7 +65,12 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",
     "ultracite": "^7.10.7",
-    "vitest": "^3.2.0"
+    "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "orval": {
+      "js-yaml": "4.3.2"
+    }
   },
   "engines": {
     "node": ">=22.13.0"
