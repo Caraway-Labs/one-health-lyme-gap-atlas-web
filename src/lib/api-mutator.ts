@@ -20,13 +20,15 @@ export class AtlasApiError extends Error {
   readonly status: number;
   readonly requestId: string | null;
   readonly retryAfterSeconds: number | null;
+  readonly responseBody: unknown;
 
   constructor(
     message: string,
     endpoint: string,
     status: number,
     requestId: string | null,
-    retryAfterSeconds: number | null = null
+    retryAfterSeconds: number | null = null,
+    responseBody: unknown = null
   ) {
     super(message);
     this.name = "AtlasApiError";
@@ -34,6 +36,7 @@ export class AtlasApiError extends Error {
     this.status = status;
     this.requestId = requestId;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.responseBody = responseBody;
   }
 }
 
@@ -64,7 +67,8 @@ export async function apiMutator<T>(
       url,
       response.status,
       response.headers.get("X-Request-ID"),
-      parseRetryAfterSeconds(response.headers.get("Retry-After"))
+      parseRetryAfterSeconds(response.headers.get("Retry-After")),
+      body
     );
   }
   const contentType = response.headers.get("content-type") ?? "";

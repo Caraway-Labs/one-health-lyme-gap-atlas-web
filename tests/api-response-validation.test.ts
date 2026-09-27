@@ -8,9 +8,12 @@ import {
 
 const response = {
   answer: "Reviewed evidence is available.",
+  assistant_policy_version: "policy-v1",
   configuration_version: "kg-v1.0.0",
   conversation_id: "conversation-1",
+  evidence_state: "limited",
   request_id: "request-1",
+  source_used: "literature_evidence",
   status: "answered",
 };
 

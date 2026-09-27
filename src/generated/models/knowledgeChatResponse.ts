@@ -5,6 +5,7 @@
  * Public API for Atlas data and reviewed knowledge-graph evidence chat.
  * OpenAPI spec version: 0.1.0
  */
+import type { KnowledgeChatResponseEvidenceState } from './knowledgeChatResponseEvidenceState';
 import type { KnowledgeChatResponseStatus } from './knowledgeChatResponseStatus';
 import type { KnowledgeCitation } from './knowledgeCitation';
 import type { KnowledgeClaim } from './knowledgeClaim';
@@ -14,8 +15,12 @@ export interface KnowledgeChatResponse {
   conversation_id: string;
   conversation_token?: string | null;
   configuration_version: string;
+  assistant_policy_version: string;
   status: KnowledgeChatResponseStatus;
   answer: string;
+  evidence_state: KnowledgeChatResponseEvidenceState;
+  source_used: 'literature_evidence';
+  model_id?: string | null;
   claims?: KnowledgeClaim[];
   citations?: KnowledgeCitation[];
 }
