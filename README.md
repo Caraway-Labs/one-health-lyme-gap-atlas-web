@@ -20,6 +20,10 @@ npm run build
 npm run dev
 ```
 
+## Continuous integration
+
+Pull requests and pushes to `main` run the `quality` check concurrently. A green push to `main` deploys this web app after that check. Production deploys one at a time, and a commit that is no longer the head of `main` is skipped. See [CI and production deployment](docs/ci.md).
+
 ## Documentation
 
 The public help center is part of this Next.js application and is available at `/docs`. Fumadocs MDX content lives in `content/docs`; generated Fumadocs source files are created by `npm run docs:generate` and are intentionally ignored. `npm run docs:check` validates required page metadata, navigation references, and internal Atlas/docs links. The existing DigitalOcean App Platform service deploys the docs with the web app; no separate repository or infrastructure is required.
