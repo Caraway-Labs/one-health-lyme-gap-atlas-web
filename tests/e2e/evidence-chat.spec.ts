@@ -116,14 +116,14 @@ test("answered evidence, safe citations, local continuation, and history control
   expect(accessibility.violations).toEqual([]);
 });
 
-test("no evidence, conflicting evidence, safety refusal, unavailable response and retry", async ({
+test("corpus availability, conflicting evidence, refusal, unavailable and capacity retry", async ({
   page,
 }) => {
   const states = [
     [
       "no_evidence",
       "no_relevant_corpus_evidence",
-      "No relevant evidence was found.",
+      "No reviewed passages matched this question.",
       200,
     ],
     ["answered", "conflicting", "Studies disagree across settings.", 200],
@@ -140,6 +140,13 @@ test("no evidence, conflicting evidence, safety refusal, unavailable response an
       503,
     ],
     ["answered", "consistent", "Evidence is now available.", 200],
+    [
+      "capacity_limited",
+      "not_applicable",
+      "The assistant is at capacity. Please retry.",
+      503,
+    ],
+    ["answered", "single_study", "One study is available.", 200],
   ] as const;
   let index = 0;
   await page.route("**/v1/knowledge-graph/chat", async (route) => {
@@ -152,17 +159,43 @@ test("no evidence, conflicting evidence, safety refusal, unavailable response an
     });
   });
   await page.goto("/knowledge-graph");
-  for (const [question, indicator] of [
-    ["No evidence?", "No relevant corpus evidence"],
-    ["Conflicts?", "Conflicting evidence"],
-    ["Medical advice?", "Evidence state not applicable"],
-    ["Unavailable?", "Evidence unavailable"],
-  ]) {
-    await ask(page, question);
-    await expect(page.getByText(`Evidence: ${indicator}`)).toBeVisible();
-  }
+  await ask(page, "No evidence?");
+  const lastAssistant = page.locator(".chat-turn.assistant").last();
+  await expect(lastAssistant).toContainText(
+    "No reviewed passages matched this question."
+  );
+  await expect(lastAssistant).toContainText(
+    "No relevant Atlas corpus evidence. Other scientific evidence may exist."
+  );
+  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+
+  await ask(page, "Conflicts?");
+  await expect(page.getByText("Evidence: Conflicting evidence")).toBeVisible();
+
+  await ask(page, "Medical advice?");
+  await expect(lastAssistant).toContainText(
+    "I cannot give individual medical advice."
+  );
+  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+  await expect(
+    page.getByText("Evidence: Evidence state not applicable")
+  ).toHaveCount(0);
+
+  await ask(page, "Unavailable?");
+  await expect(lastAssistant).toContainText(
+    "Evidence is temporarily unavailable."
+  );
+  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
   await page.getByRole("button", { name: "Retry question" }).click();
   await expect(page.getByText("Evidence: Consistent evidence")).toBeVisible();
+
+  await ask(page, "Capacity?");
+  await expect(lastAssistant).toContainText(
+    "The assistant is at capacity. Please retry."
+  );
+  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+  await page.getByRole("button", { name: "Retry question" }).click();
+  await expect(page.getByText("Evidence: Single-study evidence")).toBeVisible();
 });
 
 test("network and rate-limit errors preserve the question for retry", async ({
@@ -189,5 +222,5 @@ test("network and rate-limit errors preserve the question for retry", async ({
   await expect(page.locator(".chat-error")).toContainText("busy");
   await expect(page.getByLabel("Your question")).toHaveValue("Rate limited?");
   await page.getByRole("button", { name: "Retry question" }).click();
-  await expect(page.getByText("Evidence: Single study")).toBeVisible();
+  await expect(page.getByText("Evidence: Single-study evidence")).toBeVisible();
 });

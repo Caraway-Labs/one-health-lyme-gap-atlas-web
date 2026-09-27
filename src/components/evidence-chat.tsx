@@ -23,18 +23,37 @@ import {
   saveConversations,
 } from "@/lib/knowledge-chat-storage";
 
-const evidenceLabels: Record<KnowledgeChatResponse["evidence_state"], string> =
-  {
-    single_study: "Single study",
-    consistent: "Consistent evidence",
-    limited: "Limited evidence",
-    mixed: "Mixed evidence",
-    conflicting: "Conflicting evidence",
-    insufficient_to_compare: "Insufficient to compare",
-    no_relevant_corpus_evidence: "No relevant corpus evidence",
-    evidence_unavailable: "Evidence unavailable",
-    not_applicable: "Evidence state not applicable",
-  };
+const evidenceStrengthLabels: Partial<
+  Record<KnowledgeChatResponse["evidence_state"], string>
+> = {
+  single_study: "Single-study evidence",
+  consistent: "Consistent evidence",
+  limited: "Limited evidence",
+  mixed: "Mixed evidence",
+  conflicting: "Conflicting evidence",
+  insufficient_to_compare: "Insufficient evidence to compare",
+};
+
+function EvidenceContext({ response }: { response: KnowledgeChatResponse }) {
+  if (
+    response.status === "no_evidence" &&
+    response.evidence_state === "no_relevant_corpus_evidence"
+  ) {
+    return (
+      <p className="chat-corpus-note">
+        No relevant Atlas corpus evidence. Other scientific evidence may exist.
+      </p>
+    );
+  }
+  if (response.status !== "answered") return null;
+  const strength = evidenceStrengthLabels[response.evidence_state];
+  return (
+    <div className="chat-evidence-meta" aria-label="Evidence details">
+      <span>Source: Literature evidence</span>
+      {strength && <span>Evidence: {strength}</span>}
+    </div>
+  );
+}
 
 function safePubMedUrl(url: string, pmid: string): string | null {
   try {
@@ -276,17 +295,7 @@ export function EvidenceChat({
                 {turn.role === "user" ? "You" : "Evidence assistant"}
               </strong>
               <p>{turn.text}</p>
-              {turn.response && (
-                <div
-                  className="chat-evidence-meta"
-                  aria-label="Evidence details"
-                >
-                  <span>Source: Literature evidence</span>
-                  <span>
-                    Evidence: {evidenceLabels[turn.response.evidence_state]}
-                  </span>
-                </div>
-              )}
+              {turn.response && <EvidenceContext response={turn.response} />}
               {turn.response?.citations?.length ? (
                 <ol className="citation-list">
                   {turn.response.citations.map((citation) => (
