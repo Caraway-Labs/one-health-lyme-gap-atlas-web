@@ -66,7 +66,7 @@ test("answered evidence, safe citations, local continuation, and history control
       ),
     });
   });
-  await page.goto("/knowledge-graph");
+  await page.goto("/assistant");
   await ask(page, "What does the literature say?");
   await expect(page.getByText("Evidence: Limited evidence")).toBeVisible();
   await expect(page.getByText("Source: Literature evidence")).toBeVisible();
@@ -158,7 +158,7 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
       json: response(status, evidence, answer, index),
     });
   });
-  await page.goto("/knowledge-graph");
+  await page.goto("/assistant");
   await ask(page, "No evidence?");
   const lastAssistant = page.locator(".chat-turn.assistant").last();
   await expect(lastAssistant).toContainText(
@@ -217,7 +217,7 @@ test("network and rate-limit errors preserve the question for retry", async ({
           }
     );
   });
-  await page.goto("/knowledge-graph");
+  await page.goto("/assistant");
   await ask(page, "Rate limited?");
   await expect(page.locator(".chat-error")).toContainText("busy");
   await expect(page.getByLabel("Your question")).toHaveValue("Rate limited?");

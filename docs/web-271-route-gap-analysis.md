@@ -1,0 +1,16 @@
+# Web #271 route and navigation gap analysis
+
+Recorded before implementation on the Web #271 branch, based on web `main` after Web #43 merged (`17759298825566513f0645796eac6cdc8ba11917`).
+
+| Surface | Current behavior | Gap and decision |
+| --- | --- | --- |
+| `/assistant` | Separate `AssistantDemo`, gated by `NEXT_PUBLIC_ATLAS_ASSISTANT_DEMO_ENABLED`; fixture answer and example source only | Make this the canonical Atlas Assistant route. Render the existing literature `EvidenceChat` under the existing `NEXT_PUBLIC_KG_CHAT_ENABLED` gate. Remove the fixture demo from user-facing routing; retain its internal code/tests as a development fixture, without a production entry point. |
+| `/knowledge-graph` | Full, functional literature chat under `NEXT_PUBLIC_KG_CHAT_ENABLED`, with `?conversation=` local-history selection | Redirect old deep links to `/assistant`, preserving the conversation selector. Do not expose a second workspace. |
+| Global chat drawer | Functional `EvidenceChat` with the same literature API and browser history; “Ask the evidence” and “Open full workspace” point users into a separately named workspace | Name the launcher and drawer “Atlas Assistant” and hand off to `/assistant?conversation=`. Preserve the selected conversation and existing local-history behavior. |
+| Primary Research navigation | Two Coming Soon entries, “Evidence library” and “Talk with the Atlas” | Keep one “Atlas Assistant” entry at `/assistant`. Status remains in development for this gated early access surface. The library is an evidence source within the Assistant, not a separate product destination. |
+| Content and docs | Demo copy describes `/assistant` as fixture-only; navigation docs list both entries | Describe a literature-only, reviewed PubMed/PMC Open Access experience, its limits, gate, and canonical path. Remove public invitations to the fixture demo. |
+| Feedback and analytics | Feedback schema already has stable `assistant` and `evidence_library` route IDs; analytics has `assistant`, `knowledge_graph`, and `evidence_chat_*` controls | Use the existing `assistant` route ID on the canonical path. Keep legacy enum/control identifiers for schema compatibility; old URL redirects mean normal events accrue on `/assistant`. No question text, response, or conversation ID enters telemetry. |
+| Feature flags | Demo and chat have separate public flags | `NEXT_PUBLIC_KG_CHAT_ENABLED` controls both full workspace and drawer. Retire demo flag from user-facing route and test server configuration. Disabled state uses the shared Coming Soon treatment. |
+| Tests | E2E chat tests target `/knowledge-graph`; one E2E test exercises the demo; navigation expects two entries | Move chat and handoff assertions to `/assistant`; add old-route redirect and conversation deep-link coverage; remove user-facing demo journey while retaining component-level fixture tests. Verify accessibility and error states through the canonical route. |
+
+This is a web-only route and copy consolidation. The browser continues to call the Python REST API, with no new provider, API payload, persistence, or geospatial behavior. Literature-only claims and cited evidence remain governed by the existing API response and public-copy contract. Web #237 and mixed Atlas or knowledge-graph modes are outside this change.

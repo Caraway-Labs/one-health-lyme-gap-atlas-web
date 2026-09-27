@@ -1,12 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  BookOpenText,
-  Compass,
-  FileText,
-  FlaskConical,
-  Map,
-  UserCircle,
-} from "lucide-react";
+import { BookOpenText, Compass, FileText, Map, UserCircle } from "lucide-react";
 
 export type NavigationGroupId = "explore" | "research" | "reference";
 export type NavigationStatus =
@@ -98,35 +91,31 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     status: "available",
   },
   {
-    description: "Review the evidence library as it is brought into Atlas.",
+    description: "Ask questions grounded in reviewed literature.",
     group: "research",
-    href: "/knowledge-graph",
+    href: "/assistant",
     icon: BookOpenText,
-    id: "evidence-library",
-    label: "Evidence library",
-    match: "prefix",
+    id: "assistant",
+    label: "Atlas Assistant",
+    match: "exact",
     pageDescription:
-      "Ask questions grounded in reviewed PubMed and PMC Open Access literature.",
-    pageTitle: "Evidence Library | One Health Lyme Gap Atlas",
+      "Ask literature questions grounded in reviewed PubMed and PMC Open Access evidence.",
+    pageTitle: "Atlas Assistant | One Health Lyme Gap Atlas",
     placement: "sidebar",
     shell: "analytical",
     status: "inDevelopment",
   },
   {
-    description:
-      "See the approved fixture-only assistant experience in development.",
-    group: "research",
-    href: "/assistant",
-    icon: FlaskConical,
-    id: "assistant",
-    label: "Talk with the Atlas",
-    match: "exact",
-    pageDescription:
-      "A fixture-only assistant experience in development for the One Health Lyme Gap Atlas.",
-    pageTitle: "Talk with the Atlas | One Health Lyme Gap Atlas",
-    placement: "sidebar",
+    description: "Legacy Assistant deep link.",
+    href: "/knowledge-graph",
+    id: "evidence-library-legacy",
+    label: "Atlas Assistant redirect",
+    match: "prefix",
+    pageDescription: "Redirects to the Atlas Assistant.",
+    pageTitle: "Atlas Assistant | One Health Lyme Gap Atlas",
+    placement: "none",
     shell: "analytical",
-    status: "inDevelopment",
+    status: "hidden",
   },
   {
     description: "Open the canonical Atlas documentation center.",

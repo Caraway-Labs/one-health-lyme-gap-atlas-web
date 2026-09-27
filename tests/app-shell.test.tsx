@@ -48,11 +48,11 @@ describe("Atlas application shell", () => {
 
     expect(
       screen
-        .getByRole("link", { name: "Talk with the Atlas" })
+        .getByRole("link", { name: "Atlas Assistant" })
         .getAttribute("aria-current")
     ).toBe("page");
-    expect(screen.getByRole("link", { name: "Evidence library" })).toBeTruthy();
-    expect(screen.getAllByText("Coming Soon")).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: "Evidence library" })).toBeNull();
+    expect(screen.getAllByText("Coming Soon")).toHaveLength(1);
     expect(screen.queryByRole("link", { name: /County review/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /variant/i })).toBeNull();
   });
@@ -106,9 +106,9 @@ describe("Atlas application shell", () => {
     expect(screen.getByRole("complementary").dataset.state).toBe("collapsed");
     expect(
       screen
-        .getByRole("link", { name: "Evidence library — Coming Soon" })
+        .getByRole("link", { name: "Atlas Assistant — Coming Soon" })
         .getAttribute("aria-label")
-    ).toBe("Evidence library — Coming Soon");
+    ).toBe("Atlas Assistant — Coming Soon");
   });
 
   it("persists only the desktop presentation preference across shell sessions", async () => {

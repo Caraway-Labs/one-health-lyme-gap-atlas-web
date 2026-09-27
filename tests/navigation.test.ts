@@ -19,7 +19,6 @@ describe("Atlas navigation contract", () => {
     expect(hrefs).toStrictEqual([
       "/",
       "/geographic_explorer",
-      "/knowledge-graph",
       "/assistant",
       "/docs",
     ]);
@@ -49,20 +48,15 @@ describe("Atlas navigation contract", () => {
 
   it("matches exact and nested routes without query sensitivity", () => {
     const overview = NAVIGATION_ITEMS.find((item) => item.href === "/")!;
-    const evidenceLibrary = NAVIGATION_ITEMS.find(
-      (item) => item.href === "/knowledge-graph"
+    const assistant = NAVIGATION_ITEMS.find(
+      (item) => item.href === "/assistant"
     )!;
 
     expect(isNavigationItemActive(overview, "/")).toBeTruthy();
     expect(isNavigationItemActive(overview, "/variant_1")).toBeFalsy();
+    expect(isNavigationItemActive(assistant, "/assistant")).toBeTruthy();
     expect(
-      isNavigationItemActive(evidenceLibrary, "/knowledge-graph/abc")
-    ).toBeTruthy();
-    expect(
-      isNavigationItemActive(
-        evidenceLibrary,
-        "/knowledge-graph?conversation=abc"
-      )
+      isNavigationItemActive(assistant, "/assistant?conversation=abc")
     ).toBeTruthy();
   });
 
@@ -82,9 +76,9 @@ describe("Atlas navigation contract", () => {
   it("renders active development capabilities consistently without inventing a feature guard", () => {
     const research = navigationItemsForGroup("research");
     expect(research.map((item) => [item.href, item.status])).toStrictEqual([
-      ["/knowledge-graph", "inDevelopment"],
       ["/assistant", "inDevelopment"],
     ]);
+    expect(findRouteMetadata("/knowledge-graph")?.placement).toBe("none");
     expect(
       ATLAS_ROUTES.filter((item) => item.status === "hidden").map(
         (item) => item.href

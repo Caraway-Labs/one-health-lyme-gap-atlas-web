@@ -12,8 +12,7 @@ The initial hierarchy is task-oriented for epidemiologists and public-health pro
 | --- | --- | --- | --- | --- |
 | Explore | Atlas overview | `/` | Available | Sidebar |
 | Explore | Geographic Explorer | `/geographic_explorer` | Available | Sidebar |
-| Research | Evidence library | `/knowledge-graph` | Coming Soon / in development | Sidebar |
-| Research | Talk with the Atlas | `/assistant` | Coming Soon / in development | Sidebar |
+| Research | Atlas Assistant | `/assistant` | Coming Soon / in development | Sidebar |
 | Reference | Docs | `https://carawaylabs.com/docs` | Available | Sidebar, new tab |
 | Utility | Account | `/account` | Available | Top utility bar |
 | Trust | Privacy | `/privacy` | Available | Global footer |
@@ -26,7 +25,8 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 | Route family | Navigation role | Status | Shell | Rationale |
 | --- | --- | --- | --- | --- |
 | `/`, `/geographic_explorer` | Primary sidebar | Available | Analytical | Released public Atlas workflows. |
-| `/assistant`, `/knowledge-graph` | Primary sidebar | In development | Analytical | Meaningful implementation exists; unavailable states use the shared Coming Soon contract. |
+| `/assistant` | Primary sidebar | In development | Analytical | Literature-only chat is feature-gated; unavailable state uses the shared Coming Soon contract. |
+| `/knowledge-graph` | Legacy deep link | Hidden | Analytical | Redirects to `/assistant`, preserving the local conversation selector. |
 | `/account` | Global utility | Available | Analytical | Optional account functionality is user-facing and usable. |
 | `/auth/sign-in` | Account-specific | Hidden from navigation | Analytical | User-facing sign-in adopts the shell without becoming primary navigation. |
 | `/privacy`, `/ai-ethics` | Footer/trust | Available | Lightweight public | Trust pages do not need the persistent analytical sidebar. |
@@ -50,7 +50,7 @@ The status is metadata, not a page-specific conditional. The sidebar renders the
 ## Active-route rules
 
 - Exact routes match only their own pathname. Query strings do not affect the result, so shareable analytical state remains intact.
-- Prefix routes match the route and nested paths. This keeps nested evidence workspaces and direct docs pages associated with their parent metadata.
+- Prefix routes match the route and nested paths. This keeps direct docs pages associated with their parent metadata.
 - Dynamic route patterns use bracketed segments such as `/reports/[id]` and match one non-empty path segment per bracket.
 - `none` never becomes active. Auth callbacks, APIs, internal routes, and experimental direct-link routes are not represented as active primary items.
 - The longest matching route wins when nested prefixes exist.

@@ -107,7 +107,7 @@ test("keeps canonical product language and safety boundaries in the rendered gui
     )
   ).toBeVisible();
   await expect(
-    page.getByText("Experimental/demo", { exact: true })
+    page.getByText("Early access, feature-gated", { exact: true })
   ).toBeVisible();
   await expect(
     page.getByText("Planned", { exact: true }).first()

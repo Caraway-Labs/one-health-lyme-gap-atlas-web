@@ -235,9 +235,9 @@ test("TC06–TC08: research and sign-in shells fail safely without authenticatio
       json: { detail: "Evidence service unavailable" },
     })
   );
-  await page.goto("/knowledge-graph");
+  await page.goto("/assistant");
   await expect(
-    page.getByRole("heading", { name: "Knowledge graph evidence workspace" })
+    page.getByRole("heading", { name: "Atlas Assistant" })
   ).toBeVisible();
   await page.getByLabel("Your question").fill("What evidence is available?");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
@@ -245,17 +245,10 @@ test("TC06–TC08: research and sign-in shells fail safely without authenticatio
     /unavailable|503/i
   );
   await expect(
-    page.getByRole("heading", { name: "Knowledge graph evidence workspace" })
+    page.getByRole("heading", { name: "Atlas Assistant" })
   ).toBeVisible();
 
-  await page.goto("/assistant");
-  await expect(
-    page.getByRole("heading", { name: "Talk with the Atlas" })
-  ).toBeVisible();
-  await expect(page.getByText(/Feature-gated development demo/)).toBeVisible();
-  await expect(
-    page.getByText(/not medical advice and does not retrieve live Atlas data/)
-  ).toBeVisible();
+  await expect(page.getByText(/not medical advice/)).toBeVisible();
 
   await page.goto("/auth/sign-in");
   await expect(
@@ -298,8 +291,8 @@ test("drawer hands the local conversation to the accessible workspace", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Ask the evidence" }).click();
-  const dialog = page.getByRole("dialog", { name: "Ask the evidence" });
+  await page.getByRole("button", { name: "Atlas Assistant" }).click();
+  const dialog = page.getByRole("dialog", { name: "Atlas Assistant" });
   await expect(dialog).toContainText("not medical advice");
   await dialog.getByLabel("Your question").fill("What evidence is reviewed?");
   await dialog.getByRole("button", { exact: true, name: "Ask" }).click();
@@ -308,27 +301,21 @@ test("drawer hands the local conversation to the accessible workspace", async ({
     dialog.getByRole("link", { name: /Reviewed paper/ })
   ).toHaveAttribute("rel", "noopener noreferrer");
   await dialog.getByRole("link", { name: "Open full workspace" }).click();
-  await expect(page).toHaveURL(
-    /\/knowledge-graph\?conversation=conversation-1/
-  );
+  await expect(page).toHaveURL(/\/assistant\?conversation=conversation-1/);
   await expect(page.getByText("Reviewed evidence answer.")).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
 
-test("runs the feature-gated assistant demo without a live model", async ({
+test("redirects legacy research links to the single assistant workspace", async ({
   page,
 }) => {
-  await page.goto("/assistant");
+  await page.goto("/knowledge-graph?conversation=legacy-conversation");
+  await expect(page).toHaveURL(/\/assistant\?conversation=legacy-conversation/);
   await expect(
-    page.getByRole("heading", { name: "Talk with the Atlas" })
+    page.getByRole("heading", { name: "Atlas Assistant" })
   ).toBeVisible();
-  await page.getByLabel("Ask the Atlas demo").fill("What should I review?");
-  await page.getByRole("button", { name: "Send demo question" }).click();
-  await expect(page.getByText(/Demo response: Atlas questions/)).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Open CDC Lyme surveillance" })
-  ).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(page.getByLabel("Your question")).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
@@ -641,7 +628,7 @@ test("offers route-aware sidebar navigation, Coming Soon status, and a shared da
     navigation.getByRole("link", { name: "Geographic Explorer" })
   ).toHaveAttribute("href", "/geographic_explorer");
   await expect(
-    navigation.getByRole("link", { name: "Evidence library" })
+    navigation.getByRole("link", { name: "Atlas Assistant" })
   ).toContainText("Coming Soon");
   await expect(navigation.getByRole("link", { name: "Docs" })).toHaveAttribute(
     "target",
