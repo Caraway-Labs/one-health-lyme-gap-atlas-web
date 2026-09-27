@@ -55,7 +55,7 @@ services:
         scope: BUILD_TIME
       - key: NEXT_PUBLIC_KG_CHAT_ENABLED
         value: "true"
-        scope: BUILD_TIME
+        scope: RUN_AND_BUILD_TIME
     alerts:
       - rule: CPU_UTILIZATION
         operator: GREATER_THAN
