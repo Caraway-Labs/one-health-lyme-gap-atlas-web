@@ -42,7 +42,12 @@ describe("UX Lab harness", () => {
       UX_LAB_CONCEPTS.filter((concept) => concept.status === "available").map(
         (concept) => concept.id
       )
-    ).toStrictEqual(["persona-gateway", "public-first", "public-site-pro-app"]);
+    ).toStrictEqual([
+      "persona-gateway",
+      "public-first",
+      "geography-first",
+      "public-site-pro-app",
+    ]);
   });
 
   it("keeps sample topics free of scores, classifications, and clinical direction", () => {
@@ -107,6 +112,20 @@ describe("UX Lab harness", () => {
     expect(screen.getAllByText("Planned")).toHaveLength(
       UX_LAB_CONCEPTS.filter((concept) => concept.status === "planned").length
     );
+    expect(
+      screen
+        .getByRole("link", { name: "Open Geography-First" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first");
+  });
+
+  it("links the prototype shell back to the production Atlas", () => {
+    render(
+      <UxLabShell>
+        <UxLabPage />
+      </UxLabShell>
+    );
+
     expect(
       screen
         .getByRole("link", { name: "Production Atlas" })

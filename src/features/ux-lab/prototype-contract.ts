@@ -87,7 +87,7 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     href: "/ux-lab/geography-first",
     hypothesis: "A location experience is the shared object.",
     id: "geography-first",
-    status: "planned",
+    status: "available",
     title: "Geography-First",
   },
   {
