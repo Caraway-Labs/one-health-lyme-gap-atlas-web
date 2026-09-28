@@ -1,6 +1,14 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+const CONCEPT_ROUTES = [
+  "/ux-lab/persona-gateway",
+  "/ux-lab/public-first",
+  "/ux-lab/three-lanes",
+  "/ux-lab/geography-first",
+  "/ux-lab/public-site-pro-app",
+] as const;
+
 test("loads the UX Lab outside production navigation", async ({
   page,
 }, testInfo) => {
@@ -39,7 +47,40 @@ test("loads the UX Lab outside production navigation", async ({
     )
   ).toBe(true);
 
+  await expect(
+    page.getByRole("heading", { name: "Comparison guide" })
+  ).toBeVisible();
+  await expect(page.getByText("What this variant is testing.")).toHaveCount(5);
+  await expect(
+    page.getByRole("heading", { name: "Prototype limits" })
+  ).toBeVisible();
+
+  for (const route of CONCEPT_ROUTES) {
+    await page.goto(route);
+    await expect(
+      page.getByRole("region", { name: "Prototype status" })
+    ).toContainText("Atlas UX Prototype — Product research only");
+    await expect(
+      page.getByRole("complementary", { name: "What this variant is testing" })
+    ).toBeVisible();
+    await expect(page.locator(".app-shell")).toHaveCount(0);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      "content",
+      /noindex/i
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth
+      )
+    ).toBe(true);
+    if (!testInfo.project.name.includes("mobile")) {
+      const conceptResults = await new AxeBuilder({ page }).analyze();
+      expect(conceptResults.violations).toEqual([]);
+    }
+  }
+
   if (!testInfo.project.name.includes("mobile")) {
+    await page.goto("/ux-lab");
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
   }

@@ -94,6 +94,9 @@
 }
 
 .persona-gateway-return {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
   color: var(--primary);
   font-size: var(--type-small-size);
   font-weight: 700;

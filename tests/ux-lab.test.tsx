@@ -3,19 +3,32 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
+import { metadata as geographyFirstMetadata } from "@/app/ux-lab/geography-first/layout";
 import { UxLabPage } from "@/app/ux-lab/page";
+import { metadata as personaGatewayMetadata } from "@/app/ux-lab/persona-gateway/layout";
+import { metadata as publicFirstMetadata } from "@/app/ux-lab/public-first/layout";
+import { metadata as publicSiteMetadata } from "@/app/ux-lab/public-site-pro-app/layout";
+import { metadata as threeLanesMetadata } from "@/app/ux-lab/three-lanes/layout";
 import {
   UX_LAB_AUDIENCES,
   UX_LAB_BANNER_LABEL,
+  UX_LAB_COMPARISON_CRITERIA,
   UX_LAB_CONCEPTS,
   UX_LAB_CONCEPT_IDS,
+  UX_LAB_KNOWN_LIMITATIONS,
+  UX_LAB_MOCKED_INTERACTIONS,
   UX_LAB_PATH,
+  UX_LAB_ROBOTS,
   UX_LAB_SAMPLE_NOTICE,
   UX_LAB_SAMPLE_TOPICS,
+  UX_LAB_SESSION_ROUTES,
+  UX_LAB_TESTING_LABEL,
+  uxLabConceptById,
   uxLabMetadata,
   uxLabSampleTopicsForAudience,
 } from "@/features/ux-lab/prototype-contract";
 import { UxLabShell } from "@/features/ux-lab/ux-lab-shell";
+import { UxLabTestingStatement } from "@/features/ux-lab/ux-lab-testing-statement";
 import {
   FOOTER_NAVIGATION_ITEMS,
   NAVIGATION_ITEMS,
@@ -60,10 +73,16 @@ describe("UX Lab harness", () => {
   });
 
   it("marks prototype routes noindex and leaves them out of the sitemap", () => {
-    expect(uxLabMetadata().robots).toStrictEqual({
-      follow: false,
-      index: false,
-    });
+    expect(uxLabMetadata().robots).toStrictEqual(UX_LAB_ROBOTS);
+    for (const conceptMetadata of [
+      geographyFirstMetadata,
+      personaGatewayMetadata,
+      publicFirstMetadata,
+      publicSiteMetadata,
+      threeLanesMetadata,
+    ]) {
+      expect(conceptMetadata.robots).toStrictEqual(UX_LAB_ROBOTS);
+    }
     expect(uxLabMetadata().alternates?.canonical).toBeNull();
     expect(pageMetadataForRoute(UX_LAB_PATH)).toStrictEqual({
       description: uxLabMetadata().description,
@@ -177,5 +196,72 @@ describe("UX Lab harness", () => {
         .getByRole("link", { name: "Open Public Site + Professional App" })
         .getAttribute("href")
     ).toBe("/ux-lab/public-site-pro-app");
+  });
+
+  it("states each hypothesis and keeps the comparison guide neutral", () => {
+    render(<UxLabPage />);
+
+    expect(screen.getAllByText(`${UX_LAB_TESTING_LABEL}.`)).toHaveLength(
+      UX_LAB_CONCEPTS.length
+    );
+    expect(
+      screen.getByRole("heading", { name: "Comparison guide" })
+    ).toBeTruthy();
+    for (const criterion of UX_LAB_COMPARISON_CRITERIA) {
+      expect(
+        screen.getByRole("heading", { name: criterion.label })
+      ).toBeTruthy();
+      expect(criterion.prompt).not.toMatch(
+        /best|winner|recommend|selected|score/i
+      );
+    }
+    for (const concept of UX_LAB_CONCEPTS) {
+      expect(screen.getByText(concept.hypothesis)).toBeTruthy();
+      expect(
+        screen.getByRole("link", { name: `Open ${concept.title}` })
+      ).toBeTruthy();
+    }
+  });
+
+  it("lists workshop routes, limitations, and mocked interactions", () => {
+    render(<UxLabPage />);
+
+    expect(
+      screen.getByRole("heading", { name: "Session routes" })
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Prototype limits" })
+    ).toBeTruthy();
+    for (const route of UX_LAB_SESSION_ROUTES) {
+      expect(
+        screen.getByRole("link", { name: route.label }).getAttribute("href")
+      ).toBe(route.href);
+    }
+    for (const limitation of UX_LAB_KNOWN_LIMITATIONS) {
+      expect(screen.getByText(limitation)).toBeTruthy();
+    }
+    for (const interaction of UX_LAB_MOCKED_INTERACTIONS) {
+      expect(screen.getByText(interaction.detail)).toBeTruthy();
+      expect(
+        uxLabConceptById(interaction.conceptId).title.length
+      ).toBeGreaterThan(0);
+    }
+    expect(UX_LAB_SESSION_ROUTES.map((route) => route.href)).toStrictEqual(
+      expect.arrayContaining(UX_LAB_CONCEPTS.map((concept) => concept.href))
+    );
+  });
+
+  it("repeats the testing statement on a concept route", () => {
+    render(<UxLabTestingStatement conceptId="geography-first" />);
+
+    expect(
+      screen.getByRole("complementary", { name: UX_LAB_TESTING_LABEL })
+        .textContent
+    ).toContain(uxLabConceptById("geography-first").hypothesis);
+    expect(
+      screen
+        .getByRole("link", { name: "Comparison guide" })
+        .getAttribute("href")
+    ).toBe("/ux-lab#ux-lab-comparison");
   });
 });

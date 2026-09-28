@@ -28,6 +28,9 @@
 }
 
 .ux-lab-public-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
   color: var(--foreground);
   font-size: var(--type-small-size);
   font-weight: 700;
@@ -128,10 +131,13 @@
 }
 
 .ux-lab-pro-return {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
   margin-left: auto;
   color: var(--teal-dark);
   font-size: var(--type-small-size);
-  font-weight: 750;
+  font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
