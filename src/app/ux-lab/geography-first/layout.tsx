@@ -4,21 +4,18 @@ import type { ReactNode } from "react";
 import { UX_LAB_ROBOTS } from "@/features/ux-lab/prototype-contract";
 import { UxLabTestingStatement } from "@/features/ux-lab/ux-lab-testing-statement";
 
-import "@/features/ux-lab/persona-gateway/persona-gateway.css";
-
 export const metadata: Metadata = {
   robots: UX_LAB_ROBOTS,
-  title: "Persona Gateway",
 };
 
-export default function PersonaGatewayLayout({
+export default function GeographyFirstLayout({
   children,
 }: {
   children: ReactNode;
 }) {
   return (
     <>
-      <UxLabTestingStatement conceptId="persona-gateway" />
+      <UxLabTestingStatement conceptId="geography-first" />
       {children}
     </>
   );

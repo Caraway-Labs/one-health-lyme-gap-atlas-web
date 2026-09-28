@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,16 +11,32 @@ import {
 import {
   UX_LAB_AUDIENCES,
   UX_LAB_AUDIENCE_LABELS,
+  UX_LAB_COMPARISON_CRITERIA,
   UX_LAB_CONCEPTS,
+  UX_LAB_KNOWN_LIMITATIONS,
+  UX_LAB_MOCKED_INTERACTIONS,
   UX_LAB_SAMPLE_NOTICE,
+  UX_LAB_SESSION_ROUTES,
+  UX_LAB_TESTING_LABEL,
   type UxLabConcept,
+  uxLabConceptById,
   uxLabSampleTopicsForAudience,
 } from "@/features/ux-lab/prototype-contract";
+
+const openConceptClassName = buttonVariants({
+  className: "h-[var(--control-height)] bg-background px-4",
+  size: "sm",
+  variant: "outline",
+});
 
 function ConceptStatus({ concept }: { concept: UxLabConcept }) {
   switch (concept.status) {
     case "available": {
-      return <Link href={concept.href}>Open {concept.title}</Link>;
+      return (
+        <Link className={openConceptClassName} href={concept.href}>
+          Open {concept.title}
+        </Link>
+      );
     }
     case "planned": {
       return <Badge variant="outline">Planned</Badge>;
@@ -38,13 +55,33 @@ export function UxLabPage() {
         <p className="eyebrow">Product research</p>
         <h1 className="type-page">Atlas UX Lab</h1>
         <p className="type-body">
-          Compare information-architecture hypotheses for public visitors,
-          clinicians, and public-health professionals inside the Atlas web
-          application. This lab supports facilitated product research. The live
-          Atlas remains the production experience until a later product
-          decision.
+          Compare five information-architecture hypotheses for public visitors,
+          clinicians, and public-health professionals. Open a concept, read what
+          it is testing, and use the same questions for every variant. The live
+          Atlas stays the production experience until a later product decision.
         </p>
       </header>
+
+      <section aria-labelledby="ux-lab-comparison" className="ux-lab-section">
+        <div>
+          <h2 className="type-section" id="ux-lab-comparison">
+            Comparison guide
+          </h2>
+          <p className="ux-lab-lead type-body">
+            These prompts are for a facilitated session. They describe what to
+            notice. They do not rank the concepts, and they do not recommend one
+            architecture.
+          </p>
+        </div>
+        <ul className="ux-lab-criteria">
+          {UX_LAB_COMPARISON_CRITERIA.map((criterion) => (
+            <li key={criterion.id}>
+              <h3 className="type-card">{criterion.label}</h3>
+              <p className="type-body">{criterion.prompt}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section aria-labelledby="ux-lab-concepts" className="ux-lab-section">
         <div>
@@ -52,9 +89,8 @@ export function UxLabPage() {
             Concepts
           </h2>
           <p className="ux-lab-lead type-body">
-            Each concept keeps its own navigation. This index is the shared
-            comparison entry point. A concept link appears here when that
-            prototype page exists.
+            Each concept keeps its own navigation. The five links below are the
+            direct ways into the prototypes.
           </p>
         </div>
         <ul className="ux-lab-concept-list">
@@ -63,10 +99,16 @@ export function UxLabPage() {
               <Card>
                 <CardHeader>
                   <h3 className="type-card">{concept.title}</h3>
-                  <CardDescription>{concept.hypothesis}</CardDescription>
+                  <CardDescription>
+                    <strong>{UX_LAB_TESTING_LABEL}.</strong>{" "}
+                    {concept.hypothesis}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="type-body">{concept.difference}</p>
+                  <p className="type-body">
+                    <strong>How this concept stays distinct.</strong>{" "}
+                    {concept.difference}
+                  </p>
                   <div className="ux-lab-concept-meta">
                     <ConceptStatus concept={concept} />
                     <code className="ux-lab-route">{concept.href}</code>
@@ -76,6 +118,61 @@ export function UxLabPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="ux-lab-routes" className="ux-lab-section">
+        <div>
+          <h2 className="type-section" id="ux-lab-routes">
+            Session routes
+          </h2>
+          <p className="ux-lab-lead type-body">
+            Representative pages for a workshop. Inner pages stay inside the
+            concept that owns them.
+          </p>
+        </div>
+        <ul className="ux-lab-route-list">
+          {UX_LAB_SESSION_ROUTES.map((route) => (
+            <li key={route.href}>
+              <Link href={route.href}>{route.label}</Link>
+              <code className="ux-lab-route">{route.href}</code>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="ux-lab-limits" className="ux-lab-section">
+        <div>
+          <h2 className="type-section" id="ux-lab-limits">
+            Prototype limits
+          </h2>
+          <p className="ux-lab-lead type-body">
+            Treat every screen as a research prop. Mocked interactions show
+            navigation and hierarchy only.
+          </p>
+        </div>
+        <div className="ux-lab-limit-groups">
+          <div>
+            <h3 className="type-card">Known limitations</h3>
+            <ul>
+              {UX_LAB_KNOWN_LIMITATIONS.map((limitation) => (
+                <li key={limitation}>{limitation}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="type-card">Intentionally mocked interactions</h3>
+            <ul>
+              {UX_LAB_MOCKED_INTERACTIONS.map((interaction) => (
+                <li key={interaction.conceptId}>
+                  <strong>
+                    {uxLabConceptById(interaction.conceptId).title}.
+                  </strong>{" "}
+                  {interaction.detail}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section aria-labelledby="ux-lab-sample" className="ux-lab-section">

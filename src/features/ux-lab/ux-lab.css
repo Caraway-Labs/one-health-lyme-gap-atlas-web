@@ -107,13 +107,101 @@
   padding-left: var(--space-5);
 }
 
+.ux-lab-criteria,
+.ux-lab-route-list,
+.ux-lab-limit-groups ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-lab-criteria {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-lab-criteria li,
+.ux-lab-limit-groups > div {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.ux-lab-criteria p,
+.ux-lab-limit-groups li {
+  color: var(--muted-foreground);
+}
+
+.ux-lab-route-list {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ux-lab-route-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+.ux-lab-route-list a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.ux-lab-limit-groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ux-lab-limit-groups ul {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-lab-testing-note {
+  display: grid;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: var(--space-4) var(--layout-inline);
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.ux-lab-testing-note p {
+  max-width: 46rem;
+  margin: 0;
+}
+
+.ux-lab-testing-note a {
+  width: fit-content;
+  min-height: var(--control-height);
+  color: var(--primary);
+  font-weight: 700;
+  line-height: var(--control-height);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 .ux-lab-shell summary:focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 3px;
 }
 
 @media (min-width: 768px) {
-  .ux-lab-concept-list {
+  .ux-lab-concept-list,
+  .ux-lab-criteria,
+  .ux-lab-limit-groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
