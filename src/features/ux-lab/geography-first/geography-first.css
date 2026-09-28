@@ -1,0 +1,231 @@
+.geography-first {
+  display: grid;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: var(--layout-section-block) var(--layout-inline) var(--space-12);
+  gap: var(--space-8);
+}
+
+.geography-first h1,
+.geography-first h2,
+.geography-first h3,
+.geography-first p {
+  margin-block: 0;
+}
+
+.geography-first-intro,
+.geography-first-place-header,
+.geography-first-section,
+.geography-first-picker,
+.geography-first-place-view {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.geography-first-intro p:last-child,
+.geography-first-lead,
+.geography-first-heading p {
+  max-width: 42rem;
+  color: var(--muted-foreground);
+}
+
+.geography-first-layout {
+  display: grid;
+  align-items: start;
+  gap: var(--space-6);
+}
+
+.geography-first-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--type-small-size);
+  font-weight: 700;
+}
+
+.geography-first-places,
+.geography-first-topics,
+.geography-first-cards,
+.geography-first-handoff-list,
+.geography-first-depth ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.geography-first-places,
+.geography-first-topics,
+.geography-first-disclosures,
+.geography-first-handoff-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.geography-first-place {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  gap: var(--space-3);
+  white-space: normal;
+}
+
+.geography-first-place-name,
+.geography-first-place-kind {
+  display: block;
+}
+
+.geography-first-place-name {
+  font-weight: 700;
+}
+
+.geography-first-place-kind,
+.geography-first-empty,
+.geography-first-depth span,
+.geography-first-handoff p {
+  color: var(--muted-foreground);
+}
+
+.geography-first-place[aria-current="true"] {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+
+.geography-first-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.geography-first-depth ol {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.geography-first-depth li {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.geography-first-depth a {
+  color: var(--foreground);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.geography-first-depth a:focus-visible,
+.geography-first-disclosure summary:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.geography-first-limits {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--warning) 12%, var(--background));
+}
+
+.geography-first-limits h2 {
+  font-family: var(--font-display);
+  font-size: var(--type-card-size);
+  font-weight: 500;
+}
+
+.geography-first-heading {
+  margin-bottom: 0;
+}
+
+.geography-first-topics li,
+.geography-first-disclosure {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.geography-first-disclosure summary {
+  min-height: var(--control-height);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.geography-first-disclosure p {
+  max-width: 42rem;
+  color: var(--muted-foreground);
+}
+
+.geography-first-cards {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.geography-first-clinician {
+  padding: var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+.geography-first-handoff {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--info) 8%, var(--background));
+}
+
+.geography-first-handoff-list li {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+/* globals.css sets `a { color: inherit }`, which overrides Tailwind text color
+   utilities. These links need an explicit foreground on the primary fill. */
+.geography-first-handoff-list a {
+  height: auto;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  white-space: normal;
+}
+
+.geography-first-missing {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.geography-first-section,
+.geography-first-limits,
+.geography-first-missing {
+  scroll-margin-top: 6rem;
+}
+
+@media (min-width: 768px) {
+  .geography-first-depth ol,
+  .geography-first-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .geography-first-layout {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  }
+
+  .geography-first-depth ol {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

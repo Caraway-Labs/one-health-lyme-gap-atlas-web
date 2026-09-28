@@ -42,12 +42,7 @@ describe("UX Lab harness", () => {
       UX_LAB_CONCEPTS.filter((concept) => concept.status === "available").map(
         (concept) => concept.id
       )
-    ).toStrictEqual([
-      "persona-gateway",
-      "public-first",
-      "three-lanes",
-      "public-site-pro-app",
-    ]);
+    ).toStrictEqual([...UX_LAB_CONCEPT_IDS]);
   });
 
   it("keeps sample topics free of scores, classifications, and clinical direction", () => {
@@ -109,9 +104,23 @@ describe("UX Lab harness", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Atlas UX Lab" })
     ).toBeTruthy();
-    expect(screen.getAllByText("Planned")).toHaveLength(
+    expect(screen.queryAllByText("Planned")).toHaveLength(
       UX_LAB_CONCEPTS.filter((concept) => concept.status === "planned").length
     );
+    expect(
+      screen
+        .getByRole("link", { name: "Open Geography-First" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first");
+  });
+
+  it("links the prototype shell back to the production Atlas", () => {
+    render(
+      <UxLabShell>
+        <UxLabPage />
+      </UxLabShell>
+    );
+
     expect(
       screen
         .getByRole("link", { name: "Production Atlas" })
@@ -144,6 +153,16 @@ describe("UX Lab harness", () => {
         .getByRole("link", { name: "Open Public-First Local Snapshot" })
         .getAttribute("href")
     ).toBe("/ux-lab/public-first");
+  });
+
+  it("links the available Three Lanes concept from the index", () => {
+    render(<UxLabPage />);
+
+    expect(
+      screen
+        .getByRole("link", { name: "Open One Atlas / Three Lanes" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/three-lanes");
   });
 
   it("links the available public-site prototype from the index", () => {
