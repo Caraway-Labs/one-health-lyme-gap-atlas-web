@@ -22,8 +22,7 @@ concurrency:
 jobs:
   dispatch:
     if: >-
-      github.event_name == 'schedule' ||
-      (github.event_name == 'issues' &&
+      github.event_name == 'schedule' || (github.event_name == 'issues' &&
        github.event.label.name == 'cursor:ready' &&
        github.event.issue.pull_request == null)
     runs-on: ubuntu-latest
