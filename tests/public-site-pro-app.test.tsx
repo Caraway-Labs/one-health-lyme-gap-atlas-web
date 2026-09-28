@@ -78,9 +78,7 @@ describe("Public site + professional app prototype", () => {
         name: "Education and local context",
       })
     ).toBeTruthy();
-    expect(
-      screen.getByRole("heading", { name: "Sample place" })
-    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sample place" })).toBeTruthy();
     education.unmount();
 
     pathname = PUBLIC_CLINICIANS_PATH;

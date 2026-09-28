@@ -14,13 +14,17 @@ import {
   PUBLIC_CLINICIANS_PATH,
   PUBLIC_EDUCATION_PATH,
 } from "@/features/ux-lab/public-site-pro-app/paths";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Public site",
 };
 
 const pathLinkClassName = buttonVariants({ variant: "outline" });
-const openAtlasClassName = buttonVariants({ size: "lg" });
+const openAtlasClassName = cn(
+  buttonVariants({ size: "lg" }),
+  "ux-lab-open-atlas"
+);
 
 export default function PublicSiteHomePage() {
   return (

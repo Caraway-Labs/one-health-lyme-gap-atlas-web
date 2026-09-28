@@ -34,7 +34,9 @@ test("switches between the public site and the professional application", async 
   await expect(
     page.getByRole("heading", { name: "Education and local context" })
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Sample place" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sample place" })
+  ).toBeVisible();
 
   await page
     .getByRole("navigation", { name: "Public site" })
@@ -55,8 +57,10 @@ test("switches between the public site and the professional application", async 
   ).toBeVisible();
 
   await page
-    .getByRole("link", { name: "Return to public site" })
-    .first()
+    .locator(".app-header")
+    .getByRole("link", {
+      name: "Return to public site",
+    })
     .click();
   await expect(
     page.getByRole("heading", {
@@ -87,11 +91,19 @@ test("professional workspace navigation stays inside the application shell", asy
   );
   await page.goto("/ux-lab/public-site-pro-app/app");
 
+  if (!testInfo.project.name.includes("mobile")) {
+    const overview = await new AxeBuilder({ page }).analyze();
+    expect(overview.violations).toEqual([]);
+  }
+
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
 
-  await page.getByRole("link", { name: "Evidence review" }).click();
+  await page
+    .getByRole("navigation", { name: "Professional application" })
+    .getByRole("link", { name: "Evidence review" })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Evidence review" })
   ).toBeVisible();

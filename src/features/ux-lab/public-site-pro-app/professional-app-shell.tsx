@@ -260,9 +260,9 @@ function ProfessionalAppFrame({ children }: { children: ReactNode }) {
           </Link>
         </header>
         <main className="app-content ux-lab-pro-main">{children}</main>
-        <footer className="ux-lab-pro-footer">
+        <div className="ux-lab-pro-footer" role="contentinfo">
           <p>{UX_LAB_SAMPLE_NOTICE}</p>
-        </footer>
+        </div>
       </SidebarInset>
     </div>
   );

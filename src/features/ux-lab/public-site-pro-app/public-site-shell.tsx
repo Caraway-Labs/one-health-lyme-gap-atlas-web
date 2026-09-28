@@ -14,8 +14,12 @@ import {
   PUBLIC_SITE_NAV,
   isPrototypeRouteActive,
 } from "@/features/ux-lab/public-site-pro-app/paths";
+import { cn } from "@/lib/utils";
 
-const openAtlasClassName = buttonVariants({ size: "lg" });
+const openAtlasClassName = cn(
+  buttonVariants({ size: "lg" }),
+  "ux-lab-open-atlas"
+);
 
 export function PublicSiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -51,9 +55,9 @@ export function PublicSiteShell({ children }: { children: ReactNode }) {
         </Link>
       </header>
       <main className="ux-lab-public-main">{children}</main>
-      <footer className="ux-lab-public-footer">
+      <div className="ux-lab-public-footer" role="contentinfo">
         <p>{UX_LAB_SAMPLE_NOTICE}</p>
-      </footer>
+      </div>
     </div>
   );
 }

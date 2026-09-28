@@ -44,6 +44,17 @@
   color: var(--teal-dark);
 }
 
+.ux-lab-open-atlas {
+  background: var(--navy);
+  color: var(--white);
+}
+
+.ux-lab-open-atlas:hover,
+.ux-lab-open-atlas:focus-visible {
+  background: var(--teal-dark);
+  color: var(--white);
+}
+
 .ux-lab-public-main {
   display: grid;
   max-width: 52rem;
@@ -91,7 +102,8 @@
 .ux-lab-pro-footer {
   padding: var(--space-4) var(--layout-inline) var(--space-8);
   border-top: 1px solid var(--border);
-  color: var(--muted-foreground);
+  background: var(--background);
+  color: var(--foreground);
   font-size: var(--type-small-size);
 }
 
@@ -145,6 +157,13 @@
   font-family: var(--font-display);
   font-size: var(--type-section-size);
   font-weight: 500;
+}
+
+.ux-lab-pro-main a {
+  color: var(--teal-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 .ux-lab-pro-grid {
