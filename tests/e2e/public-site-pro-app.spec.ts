@@ -58,9 +58,7 @@ test("switches between the public site and the professional application", async 
 
   await page
     .locator(".app-header")
-    .getByRole("link", {
-      name: "Return to public site",
-    })
+    .getByRole("link", { name: "Return to public site" })
     .click();
   await expect(
     page.getByRole("heading", {
