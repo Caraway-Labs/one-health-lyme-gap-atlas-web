@@ -42,7 +42,12 @@ describe("UX Lab harness", () => {
       UX_LAB_CONCEPTS.filter((concept) => concept.status === "available").map(
         (concept) => concept.id
       )
-    ).toStrictEqual(["persona-gateway", "public-first", "public-site-pro-app"]);
+    ).toStrictEqual([
+      "persona-gateway",
+      "public-first",
+      "three-lanes",
+      "public-site-pro-app",
+    ]);
   });
 
   it("keeps sample topics free of scores, classifications, and clinical direction", () => {
