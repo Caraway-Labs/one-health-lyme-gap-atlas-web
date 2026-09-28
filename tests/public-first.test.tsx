@@ -104,9 +104,7 @@ describe("Public-first local snapshot", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Clinical Resources" })
     ).toBeTruthy();
-    expect(
-      screen.getAllByText(/not a clinical care pathway/i).length
-    ).toBeGreaterThan(0);
+    expect(screen.getByText(/does not give medical direction/i)).toBeTruthy();
     expect(
       screen
         .getByRole("link", { name: "Return to the Harbor Borough snapshot" })
