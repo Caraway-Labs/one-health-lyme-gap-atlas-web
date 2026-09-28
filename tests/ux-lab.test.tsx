@@ -35,9 +35,12 @@ describe("UX Lab harness", () => {
     );
     for (const concept of UX_LAB_CONCEPTS) {
       expect(concept.href.startsWith(`${UX_LAB_PATH}/`)).toBeTruthy();
-      expect(concept.status).toBe("planned");
       expect(concept.hypothesis.length).toBeGreaterThan(0);
     }
+    expect(
+      UX_LAB_CONCEPTS.find((concept) => concept.id === "public-site-pro-app")
+        ?.status
+    ).toBe("available");
   });
 
   it("keeps sample topics free of scores, classifications, and clinical direction", () => {
@@ -99,7 +102,9 @@ describe("UX Lab harness", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Atlas UX Lab" })
     ).toBeTruthy();
-    expect(screen.getAllByText("Planned")).toHaveLength(UX_LAB_CONCEPTS.length);
+    expect(screen.getAllByText("Planned")).toHaveLength(
+      UX_LAB_CONCEPTS.filter((concept) => concept.status === "planned").length
+    );
     expect(
       screen
         .getByRole("link", { name: "Production Atlas" })
@@ -108,5 +113,19 @@ describe("UX Lab harness", () => {
     expect(
       screen.getByRole("link", { name: "Skip to prototype content" })
     ).toBeTruthy();
+  });
+
+  it("links the available public-site prototype from the index", () => {
+    render(
+      <UxLabShell>
+        <UxLabPage />
+      </UxLabShell>
+    );
+
+    expect(
+      screen
+        .getByRole("link", { name: "Open Public Site + Professional App" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/public-site-pro-app");
   });
 });
