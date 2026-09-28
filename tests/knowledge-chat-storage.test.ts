@@ -185,4 +185,62 @@ describe("knowledge chat local storage", () => {
       content: "question 2",
     });
   });
+
+  it("omits operational failures from the history sent back to the API", () => {
+    const stored = conversation(
+      "history",
+      "2026-08-25T00:00:00.000Z",
+      "2026-09-24T00:00:00.000Z"
+    );
+    stored.turns = [
+      {
+        id: "user-gap",
+        role: "user",
+        text: "Where is the literature?",
+        createdAt: stored.createdAt,
+      },
+      {
+        id: "assistant-gap",
+        role: "assistant",
+        text: "No passages matched this question.",
+        createdAt: stored.createdAt,
+        response: {
+          request_id: "request-gap",
+          conversation_id: "history",
+          configuration_version: "config",
+          assistant_policy_version: "policy",
+          status: "no_evidence",
+          answer: "No passages matched this question.",
+          evidence_state: "no_relevant_corpus_evidence",
+          source_used: "literature_evidence",
+        },
+      },
+      {
+        id: "user-down",
+        role: "user",
+        text: "Try again",
+        createdAt: stored.createdAt,
+      },
+      {
+        id: "assistant-down",
+        role: "assistant",
+        text: "Evidence is temporarily unavailable.",
+        createdAt: stored.createdAt,
+        response: {
+          request_id: "request-down",
+          conversation_id: "history",
+          configuration_version: "config",
+          assistant_policy_version: "policy",
+          status: "evidence_unavailable",
+          answer: "Evidence is temporarily unavailable.",
+          evidence_state: "evidence_unavailable",
+          source_used: "literature_evidence",
+        },
+      },
+    ];
+    expect(conversationHistory(stored)).toStrictEqual([
+      { role: "user", content: "Where is the literature?" },
+      { role: "assistant", content: "No passages matched this question." },
+    ]);
+  });
 });

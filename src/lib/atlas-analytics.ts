@@ -55,6 +55,8 @@ export const uiControlIds = [
   "evidence_chat_close",
   "evidence_chat_new",
   "evidence_chat_submit",
+  "evidence_chat_retry",
+  "evidence_chat_edit_question",
   "evidence_chat_history_clear",
   "evidence_chat_history_select",
   "evidence_chat_history_delete",

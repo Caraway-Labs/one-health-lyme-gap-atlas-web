@@ -165,9 +165,16 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
     "No reviewed passages matched this question."
   );
   await expect(lastAssistant).toContainText(
-    "No relevant Atlas corpus evidence. Other scientific evidence may exist."
+    "Atlas does not currently have relevant reviewed literature in its governed corpus for this question."
   );
+  await expect(lastAssistant).toContainText(
+    "This does not mean no scientific evidence exists elsewhere."
+  );
+  await expect(lastAssistant).not.toContainText("PubMed");
+  await expect(lastAssistant.locator(".citation-list")).toHaveCount(0);
   await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+  await expect(page.getByLabel("Your question")).toHaveValue("No evidence?");
+  await expect(page.getByLabel("Your question")).toBeFocused();
 
   await ask(page, "Conflicts?");
   await expect(page.getByText("Evidence: Conflicting evidence")).toBeVisible();
@@ -186,16 +193,30 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
     "Evidence is temporarily unavailable."
   );
   await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
-  await page.getByRole("button", { name: "Retry question" }).click();
+  await expect(lastAssistant).toContainText("Evidence service unavailable.");
+  await expect(lastAssistant).not.toContainText("governed corpus");
+  const unavailableRetry = page.getByRole("button", {
+    name: "Retry",
+    exact: true,
+  });
+  await unavailableRetry.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByText("Evidence: Consistent evidence")).toBeVisible();
+  await expect(page.getByText("Evidence service unavailable.")).toHaveCount(0);
+  await expect(page.locator(".chat-turn.user")).toHaveCount(4);
 
   await ask(page, "Capacity?");
   await expect(lastAssistant).toContainText(
     "The assistant is at capacity. Please retry."
   );
+  await expect(lastAssistant).toContainText("Temporarily at capacity.");
   await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
-  await page.getByRole("button", { name: "Retry question" }).click();
+  await expect(lastAssistant.locator(".citation-list")).toHaveCount(0);
+  const capacityRetry = page.getByRole("button", { name: "Retry later" });
+  await capacityRetry.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByText("Evidence: Single-study evidence")).toBeVisible();
+  await expect(page.getByText("Temporarily at capacity.")).toHaveCount(0);
 });
 
 test("network and rate-limit errors preserve the question for retry", async ({
@@ -220,7 +241,79 @@ test("network and rate-limit errors preserve the question for retry", async ({
   await page.goto("/assistant");
   await ask(page, "Rate limited?");
   await expect(page.locator(".chat-error")).toContainText("busy");
+  await expect(page.locator(".chat-error")).toHaveAttribute(
+    "data-assistant-state",
+    "rate_limited"
+  );
+  await expect(page.getByText(/governed corpus/)).toHaveCount(0);
   await expect(page.getByLabel("Your question")).toHaveValue("Rate limited?");
-  await page.getByRole("button", { name: "Retry question" }).click();
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(page.getByText("Evidence: Single-study evidence")).toBeVisible();
+  await expect(page.locator(".chat-turn")).toHaveCount(2);
+});
+
+test("network failure, corpus edit, keyboard focus, and mobile overflow stay distinct", async ({
+  page,
+}) => {
+  let mode: "offline" | "gap" | "answered" = "offline";
+  await page.route("**/v1/knowledge-graph/chat", async (route) => {
+    if (mode === "offline") {
+      await route.abort("failed");
+      return;
+    }
+    const gap = mode === "gap";
+    await route.fulfill({
+      json: response(
+        gap ? "no_evidence" : "answered",
+        gap ? "no_relevant_corpus_evidence" : "limited",
+        gap
+          ? "No reviewed passages matched this question."
+          : "A narrower question matched one study.",
+        gap ? 1 : 2
+      ),
+    });
+  });
+  await page.goto("/assistant");
+  await ask(page, "Example surveillance question");
+  const failure = page.locator(".chat-error");
+  await expect(failure).toContainText("Connection problem.");
+  await expect(failure).toContainText("could not complete the request");
+  await expect(failure).toHaveAttribute(
+    "data-assistant-state",
+    "network_failure"
+  );
+  await expect(page.getByText(/governed corpus/)).toHaveCount(0);
+  await expect(page.locator(".chat-turn")).toHaveCount(0);
+  mode = "gap";
+  const retry = page.getByRole("button", { name: "Retry", exact: true });
+  await retry.focus();
+  await expect(retry).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByText(/governed corpus for this question/)
+  ).toBeVisible();
+  await expect(page.locator(".chat-error")).toHaveCount(0);
+  await expect(page.locator(".citation-list")).toHaveCount(0);
+  const edit = page.getByRole("button", { name: "Edit question" });
+  await edit.focus();
+  await page.keyboard.press("Enter");
+  const question = page.getByLabel("Your question");
+  await expect(question).toBeFocused();
+  await expect(question).toHaveValue("Example surveillance question");
+  mode = "answered";
+  await question.fill("Example surveillance question about Ixodes in Maine");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(page.getByText("Evidence: Limited evidence")).toBeVisible();
+  await expect(page.locator(".chat-turn.user")).toHaveCount(2);
+  await expect(
+    page.getByText(/governed corpus for this question/)
+  ).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth <= window.innerWidth + 1
+  );
+  expect(overflow).toBe(true);
+  const accessibility = await new AxeBuilder({ page })
+    .include(".evidence-chat")
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
 });
