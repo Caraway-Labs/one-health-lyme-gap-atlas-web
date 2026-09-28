@@ -49,7 +49,7 @@ export function UxLabPage() {
       <section aria-labelledby="ux-lab-concepts" className="ux-lab-section">
         <div>
           <h2 className="type-section" id="ux-lab-concepts">
-            Planned concepts
+            Concepts
           </h2>
           <p className="ux-lab-lead type-body">
             Each concept keeps its own navigation. This index is the shared

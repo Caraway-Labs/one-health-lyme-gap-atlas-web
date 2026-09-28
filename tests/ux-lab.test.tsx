@@ -42,7 +42,7 @@ describe("UX Lab harness", () => {
       UX_LAB_CONCEPTS.filter((concept) => concept.status === "available").map(
         (concept) => concept.id
       )
-    ).toStrictEqual(["persona-gateway", "public-site-pro-app"]);
+    ).toStrictEqual(["persona-gateway", "public-first", "public-site-pro-app"]);
   });
 
   it("keeps sample topics free of scores, classifications, and clinical direction", () => {
@@ -125,6 +125,20 @@ describe("UX Lab harness", () => {
         .getByRole("link", { name: "Open Persona Gateway" })
         .getAttribute("href")
     ).toBe("/ux-lab/persona-gateway");
+  });
+
+  it("links the public-first concept once that prototype exists", () => {
+    render(
+      <UxLabShell>
+        <UxLabPage />
+      </UxLabShell>
+    );
+
+    expect(
+      screen
+        .getByRole("link", { name: "Open Public-First Local Snapshot" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/public-first");
   });
 
   it("links the available public-site prototype from the index", () => {
