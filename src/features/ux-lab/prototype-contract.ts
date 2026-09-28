@@ -79,7 +79,7 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     href: "/ux-lab/three-lanes",
     hypothesis: "One Atlas with three peer top-level destinations.",
     id: "three-lanes",
-    status: "planned",
+    status: "available",
     title: "One Atlas / Three Lanes",
   },
   {
