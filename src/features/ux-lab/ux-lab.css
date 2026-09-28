@@ -1,0 +1,123 @@
+.ux-lab-shell {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.ux-lab-skip {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-4);
+  z-index: 6;
+  padding: var(--space-2) var(--space-3);
+  transform: translateY(-200%);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.ux-lab-skip:focus {
+  transform: none;
+}
+
+.ux-lab-banner {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--layout-inline);
+  border-bottom: 3px solid var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, var(--background));
+  color: var(--foreground);
+}
+
+.ux-lab-banner p {
+  margin: 0;
+  max-width: 40rem;
+  font-size: var(--type-small-size);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ux-lab-banner-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ux-lab-index {
+  display: grid;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: var(--layout-section-block) var(--layout-inline) var(--space-12);
+  gap: var(--space-10);
+}
+
+.ux-lab-index h1,
+.ux-lab-index h2,
+.ux-lab-index h3,
+.ux-lab-index p {
+  margin-block: 0;
+}
+
+.ux-lab-lead,
+.ux-lab-index header p {
+  max-width: 42rem;
+  color: var(--muted-foreground);
+}
+
+.ux-lab-section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ux-lab-concept-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-lab-concept-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.ux-lab-route {
+  color: var(--muted-foreground);
+  font-family: ui-monospace, monospace;
+  font-size: var(--type-small-size);
+}
+
+.ux-lab-sample-groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ux-lab-sample-groups ul {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+
+.ux-lab-shell summary:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+@media (min-width: 768px) {
+  .ux-lab-concept-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ux-lab-sample-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
