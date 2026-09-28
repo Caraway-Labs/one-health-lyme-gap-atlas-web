@@ -70,7 +70,7 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     hypothesis:
       "Understandable public and local value comes before professional tools.",
     id: "public-first",
-    status: "planned",
+    status: "available",
     title: "Public-First Local Snapshot",
   },
   {
