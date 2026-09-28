@@ -1,0 +1,225 @@
+.three-lanes {
+  color: var(--foreground);
+}
+
+.three-lanes-nav {
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.three-lanes-nav-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: var(--space-2) var(--layout-inline);
+  gap: var(--space-2) var(--space-4);
+}
+
+.three-lanes-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  margin-right: auto;
+  color: var(--navy);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.three-lanes-lanes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.three-lanes-lanes a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-weight: 700;
+  text-align: start;
+  text-decoration: none;
+  white-space: normal;
+}
+
+.three-lanes-lanes a[aria-current="page"],
+.three-lanes-brand[aria-current="page"] {
+  background: var(--navy);
+  color: var(--white);
+}
+
+.three-lanes-brand:focus-visible,
+.three-lanes-lanes a:focus-visible,
+.three-lanes-text-link:focus-visible,
+.three-lanes-workspace-link:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.three-lanes-main {
+  display: grid;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: var(--space-8) var(--layout-inline) var(--space-12);
+  gap: var(--space-8);
+}
+
+.three-lanes-main-learn {
+  max-width: 44rem;
+  gap: var(--space-8);
+}
+
+.three-lanes-main-pro {
+  gap: var(--space-4);
+}
+
+.three-lanes h1,
+.three-lanes h2,
+.three-lanes h3,
+.three-lanes p,
+.three-lanes dd,
+.three-lanes dt {
+  margin-block: 0;
+}
+
+.three-lanes-intro,
+.three-lanes-reading-header,
+.three-lanes-catalog-header,
+.three-lanes-reading-section,
+.three-lanes-front-learn,
+.three-lanes-front-clinical,
+.three-lanes-front-intel,
+.three-lanes-shared,
+.three-lanes-more,
+.three-lanes-boundary {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.three-lanes-intro p,
+.three-lanes-reading-header p {
+  max-width: 40rem;
+}
+
+.three-lanes-reading-section {
+  padding-left: var(--space-4);
+  border-left: 4px solid var(--teal);
+}
+
+.three-lanes-reading-list,
+.three-lanes-catalog,
+.three-lanes-shared ul,
+.three-lanes-more ul {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.three-lanes-reading-list {
+  gap: var(--space-6);
+}
+
+.three-lanes-front-learn,
+.three-lanes-front-clinical,
+.three-lanes-front-intel {
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+
+.three-lanes-text-link {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.three-lanes-sample {
+  color: var(--muted-foreground);
+}
+
+.three-lanes-boundary {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+
+.three-lanes-meta {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.three-lanes-meta div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.three-lanes-meta dt {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+  font-weight: 700;
+}
+
+.three-lanes-catalog-header .data-stamp,
+.three-lanes-main-catalog .data-stamp {
+  margin-top: var(--space-2);
+}
+
+.three-lanes-pro-band {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.three-lanes-pro-band p {
+  max-width: 42rem;
+  color: var(--white);
+}
+
+.three-lanes-table {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.three-lanes-shared,
+.three-lanes-more {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--teal) 8%, var(--background));
+}
+
+.three-lanes-main-pro .three-lanes-shared,
+.three-lanes-main-pro .three-lanes-more {
+  background: color-mix(in srgb, var(--navy) 6%, var(--background));
+}
+
+@media (min-width: 768px) {
+  .three-lanes-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .three-lanes-catalog {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .three-lanes-resource-card {
+    height: 100%;
+  }
+}
