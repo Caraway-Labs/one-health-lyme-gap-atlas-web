@@ -191,6 +191,8 @@
 
 .geography-first-handoff-list a {
   height: auto;
+  background: var(--primary);
+  color: var(--primary-foreground);
   white-space: normal;
 }
 
