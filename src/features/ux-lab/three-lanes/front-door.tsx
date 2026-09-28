@@ -27,7 +27,7 @@ import {
 import { ThreeLanesFrame } from "@/features/ux-lab/three-lanes/lane-nav";
 
 const laneLinkClassName = buttonVariants({
-  className: "h-[var(--control-height)] w-fit px-4",
+  className: "three-lanes-lane-link h-[var(--control-height)] w-fit px-4",
 });
 
 export function ThreeLanesFrontDoor() {

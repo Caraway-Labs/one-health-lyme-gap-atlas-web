@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 test("three lanes stay peers and move between shared topics", async ({
   page,
@@ -11,6 +11,7 @@ test("three lanes stay peers and move between shared topics", async ({
   await expect(
     page.getByRole("heading", { name: "One Atlas, three peer lanes" })
   ).toBeVisible();
+  await expectNoAxeViolations(page, testInfo);
   await expect(
     page.getByRole("region", { name: "Prototype status" })
   ).toContainText("Atlas UX Prototype — Product research only");
@@ -43,6 +44,7 @@ test("three lanes stay peers and move between shared topics", async ({
   await page.getByRole("link", { exact: true, name: "Tick awareness" }).click();
   await expect(page).toHaveURL("/ux-lab/three-lanes/learn/tick-awareness");
   await expect(page.getByRole("table")).toHaveCount(0);
+  await expectNoAxeViolations(page, testInfo);
 
   await page
     .getByRole("link", { name: "Clinical Resources: Tick awareness handout" })
@@ -53,12 +55,14 @@ test("three lanes stay peers and move between shared topics", async ({
   await expect(page.getByText("Source", { exact: true })).toBeVisible();
   await expect(page.getByText("Freshness", { exact: true })).toBeVisible();
   await expect(page.getByText(/specific patient/i)).toBeVisible();
+  await expectNoAxeViolations(page, testInfo);
 
   await page
     .getByRole("link", { exact: true, name: "Public Health & Intelligence" })
     .click();
   await expect(page).toHaveURL("/ux-lab/three-lanes/intelligence");
   await expect(page.getByRole("table")).toBeVisible();
+  await expectNoAxeViolations(page, testInfo);
   await expect(page.getByText("Action Center").first()).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Live investigation workspace" })
@@ -81,10 +85,15 @@ test("three lanes stay peers and move between shared topics", async ({
     )
   ).toBe(true);
 
-  if (!testInfo.project.name.includes("mobile")) {
-    const results = await new AxeBuilder({ page })
-      .include("#ux-lab-content")
-      .analyze();
-    expect(results.violations).toEqual([]);
-  }
+  await expectNoAxeViolations(page, testInfo);
 });
+
+async function expectNoAxeViolations(page: Page, testInfo: TestInfo) {
+  if (testInfo.project.name.includes("mobile")) {
+    return;
+  }
+  const results = await new AxeBuilder({ page })
+    .include("#ux-lab-content")
+    .analyze();
+  expect(results.violations).toEqual([]);
+}

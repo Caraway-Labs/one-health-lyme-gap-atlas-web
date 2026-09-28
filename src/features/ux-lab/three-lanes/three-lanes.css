@@ -142,6 +142,15 @@
   text-underline-offset: 0.2em;
 }
 
+/* Unlayered `a { color: inherit }` beats Tailwind text color utilities. */
+a.three-lanes-lane-link {
+  color: var(--primary-foreground);
+}
+
+a.three-lanes-workspace-link {
+  color: var(--secondary-foreground);
+}
+
 .three-lanes-sample {
   color: var(--muted-foreground);
 }
