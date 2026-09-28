@@ -59,6 +59,7 @@ describe("UX Lab harness", () => {
       follow: false,
       index: false,
     });
+    expect(uxLabMetadata().alternates?.canonical).toBeNull();
     expect(pageMetadataForRoute(UX_LAB_PATH)).toStrictEqual({
       description: uxLabMetadata().description,
       title: "UX Lab | One Health Lyme Gap Atlas",

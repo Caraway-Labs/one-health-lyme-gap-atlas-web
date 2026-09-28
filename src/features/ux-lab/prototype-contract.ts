@@ -161,6 +161,7 @@ export const UX_LAB_SAMPLE_TOPICS: readonly UxLabSampleTopic[] = [
 
 export function uxLabMetadata(): Metadata {
   return {
+    alternates: { canonical: null },
     description:
       "Product-research prototypes for comparing Atlas information architecture. Not a production experience.",
     robots: { follow: false, index: false },
