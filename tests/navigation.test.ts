@@ -19,6 +19,7 @@ describe("Atlas navigation contract", () => {
     expect(hrefs).toStrictEqual([
       "/",
       "/geographic_explorer",
+      "/investigate",
       "/assistant",
       "/docs",
     ]);
@@ -41,7 +42,7 @@ describe("Atlas navigation contract", () => {
       "/ai-ethics",
     ]);
     expect(findRouteMetadata("/account/settings")?.placement).toBe("utility");
-    expect(findRouteMetadata("/variant_6")?.status).toBe("experimental");
+    expect(findRouteMetadata("/variant_1")?.status).toBe("experimental");
     expect(findRouteMetadata("/design-system")?.shell).toBe("none");
     expect(findRouteMetadata("/auth/callback")?.shell).toBe("none");
   });
@@ -58,6 +59,31 @@ describe("Atlas navigation contract", () => {
     expect(
       isNavigationItemActive(assistant, "/assistant?conversation=abc")
     ).toBeTruthy();
+  });
+
+  it("marks the Investigation Workspace active without query sensitivity", () => {
+    const investigate = NAVIGATION_ITEMS.find(
+      (item) => item.href === "/investigate"
+    )!;
+
+    expect(investigate.group).toBe("explore");
+    expect(investigate.label).toBe("Investigation Workspace");
+    expect(isNavigationItemActive(investigate, "/investigate")).toBeTruthy();
+    expect(
+      isNavigationItemActive(investigate, "/investigate?county=08001&eco=70")
+    ).toBeTruthy();
+    expect(isNavigationItemActive(investigate, "/variant_6")).toBeFalsy();
+  });
+
+  it("keeps the legacy wide workspace routable but out of primary navigation", () => {
+    expect(findRouteMetadata("/variant_6")).toMatchObject({
+      placement: "none",
+      status: "hidden",
+    });
+    expect(getRouteShell("/investigate")).toBe("analytical");
+    expect(NAVIGATION_ITEMS.map((item) => item.href)).not.toContain(
+      "/variant_6"
+    );
   });
 
   it("matches dynamic route metadata by segment count", () => {

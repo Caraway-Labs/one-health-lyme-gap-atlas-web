@@ -123,6 +123,36 @@ describe("Atlas application shell", () => {
         .getByRole("link", { name: "Atlas Assistant — Coming Soon" })
         .getAttribute("aria-label")
     ).toBe("Atlas Assistant — Coming Soon");
+    expect(
+      screen
+        .getByRole("link", { name: "Investigation Workspace" })
+        .getAttribute("aria-label")
+    ).toBe("Investigation Workspace");
+  });
+
+  it("marks Investigation Workspace active on the canonical route", () => {
+    pathname = "/investigate";
+    renderShell(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    expect(
+      screen
+        .getByRole("link", { name: "Investigation Workspace" })
+        .getAttribute("href")
+    ).toBe("/investigate");
+    expect(
+      screen
+        .getByRole("link", { name: "Investigation Workspace" })
+        .getAttribute("aria-current")
+    ).toBe("page");
+    expect(
+      screen
+        .getByRole("link", { name: "Geographic Explorer" })
+        .getAttribute("aria-current")
+    ).toBeNull();
   });
 
   it("persists only the desktop presentation preference across shell sessions", async () => {
