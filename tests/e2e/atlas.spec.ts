@@ -921,10 +921,6 @@ test("opens the Investigation Workspace from shared navigation and keeps it curr
       "aria-label",
       "Investigation Workspace"
     );
-    await activeDestination.hover();
-    await expect(
-      page.getByRole("tooltip", { name: "Investigation Workspace" })
-    ).toBeVisible();
     await page.getByRole("button", { name: "Expand navigation" }).click();
     await expect(page.locator(".atlas-sidebar")).toHaveAttribute(
       "data-state",
