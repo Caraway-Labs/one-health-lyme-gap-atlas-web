@@ -35,6 +35,7 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 | `/docs` and nested docs routes | Sidebar destination / docs layout | Available | Docs | Sidebar selection opens the canonical docs site in a new tab; direct internal docs URLs remain available. |
 | `/variant_1`–`/variant_5`, `/variant_7` | Direct-link-only | Experimental | None | Remaining experimental workflows stay routable and isolated from production navigation and shell. |
 | `/design-system` | Internal/developer | Hidden | None | Unlinked reference gallery. |
+| `/ux-lab` and nested concept routes | Product-research prototypes | Hidden | None | Unlinked UX Lab. Direct URL only, with its own prototype shell and `noindex`. |
 | `/auth/callback`, `/auth/confirm` | Technical auth utility | Hidden | None | Route handlers, not human navigation surfaces. |
 | `/api/search` | Technical/API | Hidden | None | Fumadocs search route, never human navigation. |
 

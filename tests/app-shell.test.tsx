@@ -57,6 +57,16 @@ describe("Atlas application shell", () => {
     expect(screen.queryByRole("link", { name: /variant/i })).toBeNull();
   });
 
+  it("leaves the UX Lab out of primary navigation", () => {
+    renderShell(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    expect(screen.queryByRole("link", { name: /UX Lab/i })).toBeNull();
+  });
+
   it("labels the enabled literature Assistant as early access", () => {
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
     renderShell(

@@ -261,6 +261,20 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     status: "hidden",
   },
   {
+    description:
+      "Hidden product-research prototypes for multi-audience information architecture.",
+    href: "/ux-lab",
+    id: "ux-lab",
+    label: "UX Lab",
+    match: "prefix",
+    pageDescription:
+      "Product-research prototypes for comparing Atlas information architecture. Not a production experience.",
+    pageTitle: "UX Lab | One Health Lyme Gap Atlas",
+    placement: "none",
+    shell: "none",
+    status: "hidden",
+  },
+  {
     description: "Authentication callback utility route.",
     href: "/auth/callback",
     id: "auth-callback",

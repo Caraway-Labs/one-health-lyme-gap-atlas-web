@@ -24,6 +24,7 @@ describe("Atlas navigation contract", () => {
       "/docs",
     ]);
     expect(hrefs).not.toContain("/design-system");
+    expect(hrefs).not.toContain("/ux-lab");
   });
 
   it("keeps experimental routes out of the primary navigation", () => {
@@ -45,6 +46,16 @@ describe("Atlas navigation contract", () => {
     expect(findRouteMetadata("/variant_1")?.status).toBe("experimental");
     expect(findRouteMetadata("/design-system")?.shell).toBe("none");
     expect(findRouteMetadata("/auth/callback")?.shell).toBe("none");
+  });
+
+  it("keeps the UX Lab namespace hidden from production shells", () => {
+    expect(findRouteMetadata("/ux-lab")).toMatchObject({
+      placement: "none",
+      shell: "none",
+      status: "hidden",
+    });
+    expect(findRouteMetadata("/ux-lab/persona-gateway")?.status).toBe("hidden");
+    expect(getRouteShell("/ux-lab/persona-gateway")).toBe("none");
   });
 
   it("matches exact and nested routes without query sensitivity", () => {
