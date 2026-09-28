@@ -35,7 +35,9 @@ describe("UX Lab harness", () => {
     );
     for (const concept of UX_LAB_CONCEPTS) {
       expect(concept.href.startsWith(`${UX_LAB_PATH}/`)).toBeTruthy();
-      expect(concept.status).toBe("planned");
+      expect(concept.status).toBe(
+        concept.id === "geography-first" ? "available" : "planned"
+      );
       expect(concept.hypothesis.length).toBeGreaterThan(0);
     }
   });
@@ -99,7 +101,23 @@ describe("UX Lab harness", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Atlas UX Lab" })
     ).toBeTruthy();
-    expect(screen.getAllByText("Planned")).toHaveLength(UX_LAB_CONCEPTS.length);
+    expect(screen.getAllByText("Planned")).toHaveLength(
+      UX_LAB_CONCEPTS.filter((concept) => concept.status === "planned").length
+    );
+    expect(
+      screen
+        .getByRole("link", { name: "Open Geography-First" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first");
+  });
+
+  it("links the prototype shell back to the production Atlas", () => {
+    render(
+      <UxLabShell>
+        <UxLabPage />
+      </UxLabShell>
+    );
+
     expect(
       screen
         .getByRole("link", { name: "Production Atlas" })
