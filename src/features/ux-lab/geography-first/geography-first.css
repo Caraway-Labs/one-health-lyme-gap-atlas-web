@@ -189,6 +189,8 @@
   gap: var(--space-2);
 }
 
+/* globals.css sets `a { color: inherit }`, which overrides Tailwind text color
+   utilities. These links need an explicit foreground on the primary fill. */
 .geography-first-handoff-list a {
   height: auto;
   background: var(--primary);
