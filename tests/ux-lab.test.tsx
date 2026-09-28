@@ -35,12 +35,14 @@ describe("UX Lab harness", () => {
     );
     for (const concept of UX_LAB_CONCEPTS) {
       expect(concept.href.startsWith(`${UX_LAB_PATH}/`)).toBeTruthy();
+      expect(["available", "planned"]).toContain(concept.status);
       expect(concept.hypothesis.length).toBeGreaterThan(0);
     }
     expect(
-      UX_LAB_CONCEPTS.find((concept) => concept.id === "public-site-pro-app")
-        ?.status
-    ).toBe("available");
+      UX_LAB_CONCEPTS.filter((concept) => concept.status === "available").map(
+        (concept) => concept.id
+      )
+    ).toStrictEqual(["persona-gateway", "public-site-pro-app"]);
   });
 
   it("keeps sample topics free of scores, classifications, and clinical direction", () => {
@@ -113,6 +115,16 @@ describe("UX Lab harness", () => {
     expect(
       screen.getByRole("link", { name: "Skip to prototype content" })
     ).toBeTruthy();
+  });
+
+  it("links the available Persona Gateway concept from the index", () => {
+    render(<UxLabPage />);
+
+    expect(
+      screen
+        .getByRole("link", { name: "Open Persona Gateway" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/persona-gateway");
   });
 
   it("links the available public-site prototype from the index", () => {
