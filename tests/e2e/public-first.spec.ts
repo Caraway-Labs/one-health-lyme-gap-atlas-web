@@ -27,6 +27,11 @@ test("public-first snapshot leads, then opens professional paths", async ({
   ).toBeVisible();
   await expect(page.getByText(/not personal medical risk/i)).toBeVisible();
 
+  if (!testInfo.project.name.includes("mobile")) {
+    const frontDoor = await new AxeBuilder({ page }).analyze();
+    expect(frontDoor.violations).toEqual([]);
+  }
+
   await page.getByRole("combobox", { name: "Explore a sample place" }).click();
   await page
     .getByRole("option", { name: "River Parish, South Example" })
@@ -47,11 +52,18 @@ test("public-first snapshot leads, then opens professional paths", async ({
     page.getByRole("link", { name: "Public Health & Surveillance" })
   ).toHaveAttribute("aria-current", "page");
 
+  if (!testInfo.project.name.includes("mobile")) {
+    const surveillance = await new AxeBuilder({ page }).analyze();
+    expect(surveillance.violations).toEqual([]);
+  }
+
   await page.getByRole("link", { name: "Clinical Resources" }).click();
   await expect(
     page.getByRole("heading", { name: "Clinical Resources" })
   ).toBeVisible();
-  await expect(page.getByText(/not a clinical care pathway/i)).toBeVisible();
+  await expect(
+    page.getByText(/does not give medical direction/i)
+  ).toBeVisible();
 
   expect(
     await page.evaluate(

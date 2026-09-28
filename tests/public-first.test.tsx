@@ -104,7 +104,9 @@ describe("Public-first local snapshot", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Clinical Resources" })
     ).toBeTruthy();
-    expect(screen.getByText(/not a clinical care pathway/i)).toBeTruthy();
+    expect(
+      screen.getAllByText(/not a clinical care pathway/i).length
+    ).toBeGreaterThan(0);
     expect(
       screen
         .getByRole("link", { name: "Return to the Harbor Borough snapshot" })
@@ -126,7 +128,9 @@ describe("Public-first local snapshot", () => {
       })
     ).toBeTruthy();
     expect(screen.getByText(/Atlas professional workspace/i)).toBeTruthy();
-    expect(screen.getByText(/Action Center/i)).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Action Center reference" })
+    ).toBeTruthy();
     expect(
       screen
         .getByRole("link", { name: "Local snapshot" })

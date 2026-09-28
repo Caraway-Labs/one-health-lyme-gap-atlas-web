@@ -209,6 +209,12 @@
   width: fit-content;
 }
 
+.public-first-primary-link,
+.public-first-primary-link:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
 .public-first-nav a[aria-current="page"] {
   background: var(--secondary);
   color: var(--secondary-foreground);

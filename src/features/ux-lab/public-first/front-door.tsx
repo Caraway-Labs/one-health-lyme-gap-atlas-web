@@ -24,7 +24,7 @@ const pathwayLinkClassName = buttonVariants({
 });
 
 const educationLinkClassName = buttonVariants({
-  className: "public-first-education-link",
+  className: "public-first-education-link public-first-primary-link",
 });
 
 function publicFirstConcept() {

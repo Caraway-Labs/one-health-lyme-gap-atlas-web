@@ -23,7 +23,7 @@ const textLinkClassName = buttonVariants({
 });
 
 const primaryLinkClassName = buttonVariants({
-  className: "public-first-pathway-link",
+  className: "public-first-pathway-link public-first-primary-link",
 });
 
 export function PublicFirstClinicalPage({
