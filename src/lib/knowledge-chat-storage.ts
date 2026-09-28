@@ -136,6 +136,11 @@ export function createConversation(
   };
 }
 
+function isOperationalFailure(turn: LocalChatTurn): boolean {
+  const status = turn.response?.status;
+  return status === "evidence_unavailable" || status === "capacity_limited";
+}
+
 /** Send complete recent pairs only; the API enforces 12 turns and 30,000 characters. */
 export function conversationHistory(
   conversation?: LocalConversation
@@ -146,6 +151,7 @@ export function conversationHistory(
     const user = conversation.turns[index];
     const assistant = conversation.turns[index + 1];
     if (user.role !== "user" || assistant.role !== "assistant") continue;
+    if (isOperationalFailure(assistant)) continue;
     const question = user.text.trim().slice(0, 5000);
     const answer = assistant.text.trim().slice(0, 5000);
     if (question && answer) {

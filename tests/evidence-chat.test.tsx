@@ -23,10 +23,11 @@ import { CHAT_STORAGE_KEY } from "../src/lib/knowledge-chat-storage";
 function response(
   status = "answered",
   evidence_state = "limited",
-  answer = "Evidence varies by study setting."
+  answer = "Evidence varies by study setting.",
+  requestId = "request-1"
 ) {
   return {
-    request_id: "request-1",
+    request_id: requestId,
     conversation_id: "conversation-1",
     conversation_token: "browser-secret",
     assistant_policy_version: "policy-v1",
@@ -102,7 +103,13 @@ describe(EvidenceChat, () => {
     await expect(
       screen.findByText("Evidence varies by study setting.")
     ).resolves.toBeTruthy();
-    expect(screen.getByRole("button", { name: "Retry question" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(
+      document.querySelector("[data-assistant-state='evidence_unavailable']")
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("No relevant literature in the Atlas corpus.")
+    ).toBeNull();
     expect(screen.queryByLabelText("Evidence details")).toBeNull();
     await waitFor(() =>
       expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
@@ -135,15 +142,54 @@ describe(EvidenceChat, () => {
     });
     render(<EvidenceChat />);
     await submit();
-    await expect(
-      screen.findByText("No passages matched this question.")
-    ).resolves.toBeTruthy();
-    expect(
-      screen.getByText(
-        "No relevant Atlas corpus evidence. Other scientific evidence may exist."
-      )
-    ).toBeTruthy();
-    expect(screen.queryByLabelText("Evidence details")).toBeNull();
+    await screen.findByText("No passages matched this question.");
+    expect({
+      corpus: screen.getByText(/governed corpus for this question/).textContent,
+      elsewhere: screen.queryByText(
+        /does not mean no scientific evidence exists elsewhere/
+      )?.textContent,
+      evidenceDetails: screen.queryByLabelText("Evidence details"),
+      helpHref: screen
+        .getByRole("link", {
+          name: "Read how Atlas Assistant uses reviewed literature",
+        })
+        .getAttribute("href"),
+      pubmed: screen.queryByText(/PubMed/i),
+      source: screen.queryByText("Source: Literature evidence"),
+    }).toStrictEqual({
+      corpus: expect.stringContaining("governed corpus for this question"),
+      elsewhere: expect.stringContaining(
+        "does not mean no scientific evidence exists elsewhere"
+      ),
+      evidenceDetails: null,
+      helpHref: "/docs/ai-enabled-decision-intelligence",
+      pubmed: null,
+      source: null,
+    });
+  });
+
+  it("keeps the question focused for editing and announces corpus results", async () => {
+    chatRequest.mockResolvedValue({
+      data: response(
+        "no_evidence",
+        "no_relevant_corpus_evidence",
+        "No passages matched this question."
+      ),
+    });
+    render(<EvidenceChat />);
+    await submit();
+    const question = screen.getByLabelText("Your question");
+    await screen.findByText(/governed corpus for this question/);
+    await waitFor(() => expect(document.activeElement).toBe(question));
+    expect({
+      live: document
+        .querySelector(".chat-transcript")
+        ?.getAttribute("aria-live"),
+      value: (question as HTMLTextAreaElement).value,
+    }).toStrictEqual({
+      live: "polite",
+      value: "What does the evidence say?",
+    });
   });
 
   it("renders a safety refusal without evidence metadata", async () => {
@@ -156,11 +202,22 @@ describe(EvidenceChat, () => {
     });
     render(<EvidenceChat />);
     await submit();
-    await expect(
-      screen.findByText("I cannot give individual medical advice.")
-    ).resolves.toBeTruthy();
-    expect(screen.queryByText(/Evidence state not applicable/)).toBeNull();
-    expect(screen.queryByLabelText("Evidence details")).toBeNull();
+    await screen.findByText("I cannot give individual medical advice.");
+    expect({
+      evidenceDetails: screen.queryByLabelText("Evidence details"),
+      notApplicable: screen.queryByText(/Evidence state not applicable/),
+      paper: screen.queryByRole("link", { name: "A paper" }),
+      retry: screen.queryByRole("button", { name: "Retry" }),
+      state: document.querySelector<HTMLElement>(
+        "[data-assistant-state='safety_refusal']"
+      )?.dataset.assistantState,
+    }).toStrictEqual({
+      evidenceDetails: null,
+      notApplicable: null,
+      paper: null,
+      retry: null,
+      state: "safety_refusal",
+    });
   });
 
   it("renders a capacity response with retry and no evidence metadata", async () => {
@@ -180,11 +237,27 @@ describe(EvidenceChat, () => {
     );
     render(<EvidenceChat />);
     await submit();
-    await expect(
-      screen.findByText("The assistant is at capacity. Please retry.")
-    ).resolves.toBeTruthy();
-    expect(screen.getByRole("button", { name: "Retry question" })).toBeTruthy();
-    expect(screen.queryByLabelText("Evidence details")).toBeNull();
+    await screen.findByText("The assistant is at capacity. Please retry.");
+    expect({
+      corpus: screen.queryByText(/governed corpus/i),
+      evidenceDetails: screen.queryByLabelText("Evidence details"),
+      literature: screen.queryByText(
+        "No relevant literature in the Atlas corpus."
+      ),
+      retryLater: screen.getByRole("button", { name: "Retry later" })
+        .textContent,
+      source: screen.queryByText("Source: Literature evidence"),
+      state: document.querySelector<HTMLElement>(
+        "[data-assistant-state='capacity_limited']"
+      )?.dataset.assistantState,
+    }).toStrictEqual({
+      corpus: null,
+      evidenceDetails: null,
+      literature: null,
+      retryLater: "Retry later",
+      source: null,
+      state: "capacity_limited",
+    });
   });
 
   it("does not link to a non-PubMed citation URL", async () => {
@@ -195,5 +268,184 @@ describe(EvidenceChat, () => {
     await submit();
     await expect(screen.findByText("A paper")).resolves.toBeTruthy();
     expect(screen.queryByRole("link", { name: "A paper" })).toBeNull();
+  });
+
+  it("keeps one local turn pair when an operational failure is retried", async () => {
+    chatRequest
+      .mockRejectedValueOnce(
+        new AtlasApiError(
+          "unavailable",
+          "/v1/knowledge-graph/chat",
+          503,
+          null,
+          null,
+          response(
+            "evidence_unavailable",
+            "evidence_unavailable",
+            "Evidence is temporarily unavailable.",
+            "request-down"
+          )
+        )
+      )
+      .mockResolvedValueOnce({
+        data: response(
+          "answered",
+          "limited",
+          "Evidence is available again.",
+          "request-up"
+        ),
+      });
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence is temporarily unavailable.");
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await screen.findByText("Evidence is available again.");
+    const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}");
+    expect({
+      conversations: stored.conversations.length,
+      removedFailure: screen.queryByText(
+        "Evidence is temporarily unavailable."
+      ),
+      turns: stored.conversations[0].turns.length,
+    }).toStrictEqual({
+      conversations: 1,
+      removedFailure: null,
+      turns: 2,
+    });
+    expect(chatRequest).toHaveBeenLastCalledWith({
+      message: "What does the evidence say?",
+      history: [],
+    });
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByLabelText("Your question")
+      )
+    );
+  });
+
+  it("edits and resubmits after no corpus evidence without dropping the first result", async () => {
+    chatRequest
+      .mockResolvedValueOnce({
+        data: response(
+          "no_evidence",
+          "no_relevant_corpus_evidence",
+          "No passages matched this question.",
+          "request-gap"
+        ),
+      })
+      .mockResolvedValueOnce({
+        data: {
+          ...response(
+            "answered",
+            "single_study",
+            "One admitted study matched the narrower question.",
+            "request-next"
+          ),
+          conversation_id: "conversation-2",
+        },
+      });
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText(/governed corpus for this question/);
+    fireEvent.click(screen.getByRole("button", { name: "Edit question" }));
+    const question = screen.getByLabelText("Your question");
+    expect(document.activeElement).toBe(question);
+    fireEvent.change(question, {
+      target: {
+        value: "What does reviewed evidence say about Ixodes in Maine?",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByText("Evidence: Single-study evidence");
+    const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}");
+    expect({
+      corpusRemains: screen.getByText(/governed corpus for this question/)
+        .textContent,
+      id: stored.conversations[0].id,
+      savedConversations: stored.conversations.length,
+      turns: stored.conversations[0].turns.length,
+    }).toStrictEqual({
+      corpusRemains: expect.stringContaining("governed corpus"),
+      id: "conversation-1",
+      savedConversations: 1,
+      turns: 4,
+    });
+    expect(chatRequest).toHaveBeenLastCalledWith({
+      message: "What does reviewed evidence say about Ixodes in Maine?",
+      history: [
+        {
+          role: "user",
+          content: "What does the evidence say?",
+        },
+        {
+          role: "assistant",
+          content: "No passages matched this question.",
+        },
+      ],
+    });
+  });
+
+  it("does not render supplied citations for corpus gaps or refusals", async () => {
+    const gap = response(
+      "no_evidence",
+      "no_relevant_corpus_evidence",
+      "No passages matched this question."
+    );
+    gap.citations = [
+      {
+        citation_id: "c1",
+        pmid: "12345",
+        title: "A paper",
+        pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+        claim_ids: ["claim-1"],
+        passage_ids: ["passage-1"],
+      },
+    ];
+    chatRequest.mockResolvedValue({ data: gap });
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText(/governed corpus for this question/);
+    expect(screen.queryByRole("link", { name: "A paper" })).toBeNull();
+    expect(screen.queryByText("A paper")).toBeNull();
+  });
+
+  it("keeps a browser failure distinct from corpus absence and retries once", async () => {
+    chatRequest
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockResolvedValueOnce({
+        data: response(
+          "answered",
+          "limited",
+          "Evidence is available again.",
+          "request-up"
+        ),
+      });
+    render(<EvidenceChat />);
+    await submit();
+    const alert = await screen.findByRole("alert");
+    expect({
+      corpus: screen.queryByText(/governed corpus/i),
+      message: alert.textContent,
+      question: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
+        .value,
+      state: alert.dataset.assistantState,
+    }).toStrictEqual({
+      corpus: null,
+      message: expect.stringMatching(/could not complete the request/),
+      question: "What does the evidence say?",
+      state: "network_failure",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await screen.findByText("Evidence: Limited evidence");
+    const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}");
+    expect({
+      alert: screen.queryByRole("alert"),
+      conversations: stored.conversations.length,
+      turns: stored.conversations[0].turns.length,
+    }).toStrictEqual({
+      alert: null,
+      conversations: 1,
+      turns: 2,
+    });
   });
 });

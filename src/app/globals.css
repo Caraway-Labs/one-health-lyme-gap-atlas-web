@@ -2546,12 +2546,58 @@ footer > a {
   border-radius: 0.3rem;
   background: white;
 }
-.chat-turn .chat-corpus-note {
-  margin-top: 0.7rem;
-  padding-left: 0.6rem;
-  border-left: 2px solid var(--teal);
-  color: var(--muted-foreground);
-  font-size: 0.76rem;
+.chat-state {
+  min-width: 0;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+  border-left: 3px solid var(--line);
+  border-radius: 0.35rem;
+  background: white;
+  color: var(--ink);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.chat-state-corpus {
+  border-left-color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 8%, white);
+}
+.chat-state-unavailable {
+  border-left-color: var(--destructive);
+  background: color-mix(in srgb, var(--destructive) 8%, white);
+}
+.chat-state-capacity {
+  border-left-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, white);
+}
+.chat-state-refusal {
+  border-left-color: var(--navy);
+  background: color-mix(in srgb, var(--navy) 6%, white);
+}
+.chat-turn .chat-state p {
+  margin: 0.45rem 0 0;
+  color: inherit;
+  font-size: inherit;
+  white-space: normal;
+}
+.chat-turn .chat-state p:first-child {
+  margin-top: 0;
+}
+.chat-turn .chat-state strong {
+  font-size: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.chat-state a {
+  color: var(--teal-dark);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.chat-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 .citation-list {
   margin: 0.8rem 0 0;
@@ -2575,9 +2621,17 @@ footer > a {
 }
 .chat-error {
   padding: 0.75rem;
-  border-left: 3px solid #b63d26;
-  background: #fff0ed;
-  color: #7a2c1d;
+  overflow-wrap: anywhere;
+  border-left: 3px solid var(--destructive);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--destructive) 8%, white);
+  color: var(--ink);
+}
+.chat-error p {
+  margin: 0;
+}
+.chat-error strong {
+  color: var(--destructive);
 }
 .chat-form {
   padding: 1rem 1.25rem;
