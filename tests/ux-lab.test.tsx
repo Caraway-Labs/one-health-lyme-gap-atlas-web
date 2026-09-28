@@ -39,13 +39,10 @@ describe("UX Lab harness", () => {
       expect(concept.hypothesis.length).toBeGreaterThan(0);
     }
     expect(
-      UX_LAB_CONCEPTS.find((concept) => concept.id === "persona-gateway")
-        ?.status
-    ).toBe("available");
-    expect(
-      UX_LAB_CONCEPTS.find((concept) => concept.id === "geography-first")
-        ?.status
-    ).toBe("available");
+      UX_LAB_CONCEPTS.filter((concept) => concept.status === "available").map(
+        (concept) => concept.id
+      )
+    ).toStrictEqual(["persona-gateway", "public-first", "geography-first"]);
   });
 
   it("keeps sample topics free of scores, classifications, and clinical direction", () => {
@@ -142,5 +139,19 @@ describe("UX Lab harness", () => {
         .getByRole("link", { name: "Open Persona Gateway" })
         .getAttribute("href")
     ).toBe("/ux-lab/persona-gateway");
+  });
+
+  it("links the public-first concept once that prototype exists", () => {
+    render(
+      <UxLabShell>
+        <UxLabPage />
+      </UxLabShell>
+    );
+
+    expect(
+      screen
+        .getByRole("link", { name: "Open Public-First Local Snapshot" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/public-first");
   });
 });
