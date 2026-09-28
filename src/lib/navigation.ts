@@ -1,5 +1,12 @@
 import type { LucideIcon } from "lucide-react";
-import { BookOpenText, Compass, FileText, Map, UserCircle } from "lucide-react";
+import {
+  BookOpenText,
+  Compass,
+  FileText,
+  Map,
+  Microscope,
+  UserCircle,
+} from "lucide-react";
 
 export type NavigationGroupId = "explore" | "research" | "reference";
 export type NavigationStatus =
@@ -91,6 +98,22 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     status: "available",
   },
   {
+    description:
+      "Investigate a county with the map, evidence, and scoring assumptions together.",
+    group: "explore",
+    href: "/investigate",
+    icon: Microscope,
+    id: "investigation-workspace",
+    label: "Investigation Workspace",
+    match: "exact",
+    pageDescription:
+      "Use the expanded workspace to keep county selection, the map, and evidence in view while you investigate.",
+    pageTitle: "Investigation Workspace | One Health Lyme Gap Atlas",
+    placement: "sidebar",
+    shell: "analytical",
+    status: "available",
+  },
+  {
     description: "Ask questions grounded in reviewed literature.",
     group: "research",
     href: "/assistant",
@@ -113,6 +136,18 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     match: "prefix",
     pageDescription: "Redirects to the Atlas Assistant.",
     pageTitle: "Atlas Assistant | One Health Lyme Gap Atlas",
+    placement: "none",
+    shell: "analytical",
+    status: "hidden",
+  },
+  {
+    description: "Legacy wide-workbench deep link.",
+    href: "/variant_6",
+    id: "variant-6-legacy",
+    label: "Investigation Workspace redirect",
+    match: "exact",
+    pageDescription: "Redirects to the Investigation Workspace.",
+    pageTitle: "Investigation Workspace | One Health Lyme Gap Atlas",
     placement: "none",
     shell: "analytical",
     status: "hidden",
@@ -183,7 +218,6 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
       ["variant-3", "/variant_3", "Evidence workspace"],
       ["variant-4", "/variant_4", "Score explained"],
       ["variant-5", "/variant_5", "County comparison"],
-      ["variant-6", "/variant_6", "Wide workspace"],
       ["variant-7", "/variant_7", "Geographic explorer legacy route"],
     ] as const
   ).map(([id, href, label]) => ({

@@ -12,6 +12,7 @@ The initial hierarchy is task-oriented for epidemiologists and public-health pro
 | --- | --- | --- | --- | --- |
 | Explore | Atlas overview | `/` | Available | Sidebar |
 | Explore | Geographic Explorer | `/geographic_explorer` | Available | Sidebar |
+| Explore | Investigation Workspace | `/investigate` | Available | Sidebar |
 | Research | Atlas Assistant | `/assistant` | Early access when enabled; Coming Soon when disabled | Sidebar |
 | Reference | Docs | `https://carawaylabs.com/docs` | Available | Sidebar, new tab |
 | Utility | Account | `/account` | Available | Top utility bar |
@@ -24,14 +25,15 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 
 | Route family | Navigation role | Status | Shell | Rationale |
 | --- | --- | --- | --- | --- |
-| `/`, `/geographic_explorer` | Primary sidebar | Available | Analytical | Released public Atlas workflows. |
+| `/`, `/geographic_explorer`, `/investigate` | Primary sidebar | Available | Analytical | Released public Atlas workflows. The Investigation Workspace is the promoted wide-workbench county investigation experience. |
 | `/assistant` | Primary sidebar | In development | Analytical | Literature-only chat is feature-gated; enabled navigation says Early access and unavailable state uses the shared Coming Soon contract. |
 | `/knowledge-graph` | Legacy deep link | Hidden | Analytical | Redirects to `/assistant`, preserving the local conversation selector. |
+| `/variant_6` | Legacy deep link | Hidden | Analytical | Redirects to `/investigate`, preserving supported analytical query state. |
 | `/account` | Global utility | Available | Analytical | Optional account functionality is user-facing and usable. |
 | `/auth/sign-in` | Account-specific | Hidden from navigation | Analytical | User-facing sign-in adopts the shell without becoming primary navigation. |
 | `/privacy`, `/ai-ethics` | Footer/trust | Available | Lightweight public | Trust pages do not need the persistent analytical sidebar. |
 | `/docs` and nested docs routes | Sidebar destination / docs layout | Available | Docs | Sidebar selection opens the canonical docs site in a new tab; direct internal docs URLs remain available. |
-| `/variant_1`–`/variant_7` | Direct-link-only | Experimental | None | Existing experimental workflows remain routable and isolated from production navigation and shell. |
+| `/variant_1`–`/variant_5`, `/variant_7` | Direct-link-only | Experimental | None | Remaining experimental workflows stay routable and isolated from production navigation and shell. |
 | `/design-system` | Internal/developer | Hidden | None | Unlinked reference gallery. |
 | `/auth/callback`, `/auth/confirm` | Technical auth utility | Hidden | None | Route handlers, not human navigation surfaces. |
 | `/api/search` | Technical/API | Hidden | None | Fumadocs search route, never human navigation. |

@@ -1,20 +1,15 @@
-import { Suspense } from "react";
+import { permanentRedirect } from "next/navigation";
 
-import { ExperimentAtlas } from "@/components/experiment-atlas";
-import { pageMetadataForRoute } from "@/lib/navigation";
+import { investigationWorkspaceHref } from "@/lib/investigation-workspace-route";
 
-export const metadata = pageMetadataForRoute("/variant_6");
+type SearchParamValue = string | string[] | undefined;
 
-export default function VariantSixPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="experiment-load">
-          <h1>Loading experiment</h1>
-        </main>
-      }
-    >
-      <ExperimentAtlas variant="wide-workbench" />
-    </Suspense>
-  );
+interface LegacyVariantSixPageProps {
+  searchParams: Promise<Record<string, SearchParamValue>>;
+}
+
+export default async function LegacyVariantSixPage({
+  searchParams,
+}: LegacyVariantSixPageProps) {
+  permanentRedirect(investigationWorkspaceHref(await searchParams));
 }

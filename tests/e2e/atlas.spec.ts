@@ -592,7 +592,7 @@ test("renders every interview variant with selected county evidence in the first
     ["/variant_3?county=08001", "Explore county evidence in one place"],
     ["/variant_4?county=08001", "Understand what the score means"],
     ["/variant_5?county=08001", "Compare county evidence before deciding"],
-    ["/variant_6?county=08001", "Explore county evidence in one place"],
+    ["/investigate?county=08001", "Explore county evidence in one place"],
   ] as const;
 
   for (const [path, heading] of variants) {
@@ -696,7 +696,12 @@ test("focus mode compacts the shared shell without changing the analytical route
 test("keeps the shared shell responsive and preserves deep links during keyboard navigation", async ({
   page,
 }, testInfo) => {
-  const routes = ["/", "/geographic_explorer?county=08001", "/assistant"];
+  const routes = [
+    "/",
+    "/geographic_explorer?county=08001",
+    "/investigate?county=08001",
+    "/assistant",
+  ];
 
   for (const route of routes) {
     await page.goto(route);
@@ -710,7 +715,7 @@ test("keeps the shared shell responsive and preserves deep links during keyboard
     ).toBe(true);
   }
 
-  await page.goto("/variant_6?county=08001");
+  await page.goto("/variant_1?county=08001");
   await expect(page.locator(".app-shell")).toHaveCount(0);
   await expect(
     page.getByRole("navigation", { name: "Primary navigation" })
@@ -747,7 +752,7 @@ test("reduces shell motion when the user requests it", async ({ page }) => {
 test("keeps the wide workspace score calculation above the county panels and collapsed until requested", async ({
   page,
 }) => {
-  await page.goto("/variant_6?county=08001");
+  await page.goto("/investigate?county=08001");
   const scoreAccordion = page.locator("#scoring");
   await expect(scoreAccordion).not.toHaveAttribute("open", "");
   await expect(
@@ -777,7 +782,7 @@ test("keeps the wide workspace score calculation above the county panels and col
 test("shows URL-backed scoring assumptions in the collapsed preview before expanding", async ({
   page,
 }) => {
-  await page.goto("/variant_6?county=08001&eco=70&breakpoint=15&missing=80");
+  await page.goto("/investigate?county=08001&eco=70&breakpoint=15&missing=80");
   const scoreAccordion = page.locator("#scoring");
   const summary = scoreAccordion.locator("> summary");
 
@@ -790,7 +795,7 @@ test("shows URL-backed scoring assumptions in the collapsed preview before expan
 test("keeps the collapsed scoring accordion accessible via keyboard and axe", async ({
   page,
 }) => {
-  await page.goto("/variant_6?county=08001");
+  await page.goto("/investigate?county=08001");
   const scoreAccordion = page.locator("#scoring");
   const summary = scoreAccordion.locator("> summary");
 
@@ -808,7 +813,7 @@ test("keeps the collapsed scoring accordion accessible via keyboard and axe", as
 test("guides Variant 6 from review rationale through evidence, uncertainty, action, and resources", async ({
   page,
 }) => {
-  await page.goto("/variant_6?county=08001");
+  await page.goto("/investigate?county=08001");
 
   await expect(
     page.getByText("County Review Priority · not personal risk")
@@ -843,6 +848,140 @@ test("guides Variant 6 from review rationale through evidence, uncertainty, acti
     page.getByRole("heading", {
       name: "Evidence and data used for this county",
     })
+  ).toBeVisible();
+});
+
+const investigationDeepLink =
+  "/investigate?state=CO&county=08001&evidence=ecological&eco=70&breakpoint=15&missing=80&dataset=alpha-2026-08-06&q=Adams";
+
+function expectInvestigationDeepLink(url: string) {
+  const current = new URL(url);
+  expect(current.pathname).toBe("/investigate");
+  expect(current.searchParams.get("state")).toBe("CO");
+  expect(current.searchParams.get("county")).toBe("08001");
+  expect(current.searchParams.get("evidence")).toBe("ecological");
+  expect(current.searchParams.get("eco")).toBe("70");
+  expect(current.searchParams.get("breakpoint")).toBe("15");
+  expect(current.searchParams.get("missing")).toBe("80");
+  expect(current.searchParams.get("dataset")).toBe("alpha-2026-08-06");
+  expect(current.searchParams.get("q")).toBe("Adams");
+}
+
+test("opens the Investigation Workspace from shared navigation and keeps it current", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  const mobile = testInfo.project.name.includes("mobile");
+  if (mobile) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
+
+  const navigation = page.getByRole("navigation", {
+    name: "Primary navigation",
+  });
+  const explore = navigation
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Explore" }) });
+  const destination = explore.getByRole("link", {
+    name: "Investigation Workspace",
+  });
+  await expect(destination).toBeVisible();
+  await expect(destination).toHaveAttribute("href", "/investigate");
+  await destination.focus();
+  await expect(destination).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  await expect(page).toHaveURL(/\/investigate/);
+  expect(new URL(page.url()).pathname).toBe("/investigate");
+  await expect(
+    page.getByRole("heading", { name: "Explore county evidence in one place" })
+  ).toBeVisible();
+  if (mobile) {
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+
+  if (!mobile) {
+    await page.getByRole("button", { name: "Collapse navigation" }).click();
+  } else {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
+  const collapsedNavigation = page.getByRole("navigation", {
+    name: "Primary navigation",
+  });
+  const activeDestination = collapsedNavigation.getByRole("link", {
+    name: "Investigation Workspace",
+  });
+  await expect(activeDestination).toHaveAttribute("aria-current", "page");
+  if (!mobile) {
+    await expect(page.locator(".atlas-sidebar")).toHaveAttribute(
+      "data-state",
+      "collapsed"
+    );
+    await expect(activeDestination).toHaveAttribute(
+      "aria-label",
+      "Investigation Workspace"
+    );
+    await page.getByRole("button", { name: "Expand navigation" }).click();
+    await expect(page.locator(".atlas-sidebar")).toHaveAttribute(
+      "data-state",
+      "expanded"
+    );
+  } else {
+    await page
+      .getByRole("dialog", { name: "Primary navigation" })
+      .getByRole("button", { name: "Close navigation" })
+      .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+
+  const results = await new AxeBuilder({ page })
+    .exclude(".maplibre-atlas")
+    .analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("redirects the legacy wide workspace to the Investigation Workspace without a loop", async ({
+  page,
+}) => {
+  const legacyUrl = investigationDeepLink.replace("/investigate", "/variant_6");
+  const response = await page.goto(legacyUrl);
+  const redirectedFrom = response?.request().redirectedFrom();
+
+  expect(redirectedFrom?.url()).toContain("/variant_6?");
+  expect(redirectedFrom?.redirectedFrom()).toBeNull();
+  expectInvestigationDeepLink(page.url());
+  await expect(
+    page.getByRole("heading", { name: "Adams, Colorado" })
+  ).toBeVisible();
+  const summary = page.locator("#scoring > summary");
+  await expect(summary.getByText("70%", { exact: true })).toBeVisible();
+  await expect(summary.getByText("15 per 100,000")).toBeVisible();
+  await expect(summary.getByText("80", { exact: true })).toBeVisible();
+
+  await page.reload();
+  expectInvestigationDeepLink(page.url());
+  await expect(summary.getByText("70%", { exact: true })).toBeVisible();
+});
+
+test("initializes Investigation Workspace query state on the canonical route", async ({
+  page,
+}) => {
+  const response = await page.goto(investigationDeepLink);
+
+  expect(response?.request().redirectedFrom()).toBeNull();
+  expect(response?.status()).toBeLessThan(400);
+  expectInvestigationDeepLink(page.url());
+  await expect(
+    page.getByRole("heading", { name: "Adams, Colorado" })
+  ).toBeVisible();
+  await expect(
+    page.locator("#scoring > summary").getByText("70%", { exact: true })
+  ).toBeVisible();
+
+  await page.reload();
+  expectInvestigationDeepLink(page.url());
+  await expect(
+    page.getByRole("heading", { name: "Adams, Colorado" })
   ).toBeVisible();
 });
 

@@ -2,7 +2,7 @@ import type { ScoreSettings } from "@/lib/atlas-ui";
 
 /**
  * Read-only preview of the three active scoring assumptions, shown inside
- * the collapsed `variant_6` scoring accordion so users can see the current
+ * the collapsed Investigation Workspace scoring accordion so users can see the current
  * values without expanding the full scoring controls.
  *
  * Values are derived directly from the `settings` prop (the same
