@@ -147,25 +147,23 @@ cursor_request() {
   if [[ "$method" == "GET" ]]; then
     if ! http_code="$(
       curl -sS --max-time 60 --retry 2 --retry-delay 1 --retry-all-errors \
-        -u "${CURSOR_API_KEY}:" \
         -H "Accept: application/json" \
         -o "$body_file" \
         -w "%{http_code}" \
-        "$url" 2>"$stderr_file"
+        -u "${CURSOR_API_KEY}:" "$url" 2>"$stderr_file" # gitleaks:allow
     )"; then
       :
     fi
   else
     if ! http_code="$(
       curl -sS --max-time 60 \
-        -u "${CURSOR_API_KEY}:" \
         -H "Accept: application/json" \
         -H "Content-Type: application/json" \
         -o "$body_file" \
         -w "%{http_code}" \
         -X POST \
         --data-binary "$payload" \
-        "$url" 2>"$stderr_file"
+        -u "${CURSOR_API_KEY}:" "$url" 2>"$stderr_file" # gitleaks:allow
     )"; then
       :
     fi
