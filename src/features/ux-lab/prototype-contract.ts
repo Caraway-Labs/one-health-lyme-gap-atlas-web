@@ -61,7 +61,7 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     href: "/ux-lab/persona-gateway",
     hypothesis: "Explicit Public, Clinician, and Public Health entry points.",
     id: "persona-gateway",
-    status: "planned",
+    status: "available",
     title: "Persona Gateway",
   },
   {
