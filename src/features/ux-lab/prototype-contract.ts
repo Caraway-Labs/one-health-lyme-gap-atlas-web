@@ -97,7 +97,7 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     hypothesis:
       "A public and clinical informational site leads into a distinct professional application.",
     id: "public-site-pro-app",
-    status: "planned",
+    status: "available",
     title: "Public Site + Professional App",
   },
 ];
