@@ -24,8 +24,9 @@ import {
 } from "@/features/ux-lab/prototype-contract";
 
 const openConceptClassName = buttonVariants({
-  className: "h-[var(--control-height)] px-4",
+  className: "h-[var(--control-height)] bg-background px-4",
   size: "sm",
+  variant: "outline",
 });
 
 function ConceptStatus({ concept }: { concept: UxLabConcept }) {
