@@ -1,0 +1,220 @@
+.people-first-hub {
+  --people-first-featured-border: var(--teal);
+}
+
+.people-first-hub h1,
+.people-first-hub h2,
+.people-first-hub h3,
+.people-first-hub p {
+  margin-block: 0;
+}
+
+.people-first-hub-nav {
+  border-block-end: 1px solid var(--border);
+  background: var(--card);
+}
+
+.people-first-hub-nav-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-6);
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: var(--space-4) var(--layout-inline);
+}
+
+.people-first-hub-brand {
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: var(--type-body-size);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.people-first-hub-brand:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.people-first-hub-task-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.people-first-hub-task-link {
+  display: inline-block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: var(--type-small-size);
+  text-decoration: none;
+}
+
+.people-first-hub-task-link:hover {
+  background: var(--muted);
+}
+
+.people-first-hub-task-link[aria-current="page"] {
+  background: var(--muted);
+  font-weight: 600;
+}
+
+.people-first-hub-task-link-featured {
+  border: 1px solid var(--people-first-featured-border);
+}
+
+.people-first-hub-main {
+  display: grid;
+  gap: var(--space-8);
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: var(--space-8) var(--layout-inline) var(--space-12);
+}
+
+.people-first-hub-intro,
+.people-first-hub-page-intro,
+.people-first-hub-tasks,
+.people-first-hub-professional,
+.people-first-hub-local {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.people-first-hub-lead {
+  max-width: 42rem;
+  line-height: 1.6;
+}
+
+.people-first-hub-sample {
+  color: var(--muted-foreground);
+}
+
+.people-first-hub-task-grid {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.people-first-hub-card-featured {
+  border: 2px solid var(--people-first-featured-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.people-first-hub-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.people-first-hub-card-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.people-first-hub-professional {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+
+.people-first-hub-professional-grid {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.people-first-hub-resource-list,
+.people-first-hub-topic-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.people-first-hub-meta {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.people-first-hub-meta dt {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+  font-weight: 600;
+}
+
+.people-first-hub-meta dd {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.people-first-hub-local-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.people-first-hub-hypothesis {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+
+.people-first-hub-hypothesis p {
+  max-width: 48rem;
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.people-first-hub-text-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.people-first-hub-path-link {
+  width: fit-content;
+}
+
+.people-first-hub-path-link-primary {
+  border-color: var(--people-first-featured-border);
+}
+
+@media (width >= 48rem) {
+  .people-first-hub-task-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .people-first-hub-card-featured {
+    grid-column: 1 / -1;
+  }
+
+  .people-first-hub-professional-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width >= 64rem) {
+  .people-first-hub-task-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .people-first-hub-card-featured {
+    grid-column: span 2;
+  }
+}
