@@ -119,8 +119,9 @@ export default function PeoplePlusHomePage() {
         </h2>
         <p className="type-body">
           {OPEN_ATLAS_LABEL} is visible but not the default entrance. Opening it
-          is a deliberate mode change into denser Atlas tooling, still part of
-          the same ecosystem.
+          is a deliberate mode change into denser Atlas tooling. From there you
+          can walk a sample evidence review into a reviewed outreach preview and
+          back into these people-first pages without losing context.
         </p>
         <Link className={openAtlasClassName} href={PEOPLE_WORKSPACE_PATH}>
           {OPEN_ATLAS_LABEL}

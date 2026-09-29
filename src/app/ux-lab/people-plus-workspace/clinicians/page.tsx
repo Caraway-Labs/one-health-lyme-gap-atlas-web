@@ -9,14 +9,29 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { PEOPLE_CLINICIAN_RESOURCES } from "@/features/ux-lab/people-plus-workspace/content";
+import { HandoffContextBanner } from "@/features/ux-lab/people-plus-workspace/handoff-context-banner";
+import {
+  REVIEWED_HANDOFF_QUERY,
+  peopleReviewedHandoffFromParam,
+} from "@/features/ux-lab/people-plus-workspace/handoff-content";
 
 export const metadata: Metadata = {
   title: "Clinician resources",
 };
 
-export default function PeopleCliniciansPage() {
+export default async function PeopleCliniciansPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [REVIEWED_HANDOFF_QUERY]?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const handoff = peopleReviewedHandoffFromParam(params[REVIEWED_HANDOFF_QUERY]);
+
   return (
     <>
+      {handoff ? (
+        <HandoffContextBanner handoff={handoff} variant="clinicians" />
+      ) : null}
       <header>
         <p className="eyebrow">Clinician resources</p>
         <h1 className="type-page">
