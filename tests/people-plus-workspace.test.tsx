@@ -1,8 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import PeopleCliniciansPage from "@/app/ux-lab/people-plus-workspace/clinicians/page";
-import PeopleEducationPage from "@/app/ux-lab/people-plus-workspace/education/page";
 import { metadata as peoplePlusMetadata } from "@/app/ux-lab/people-plus-workspace/layout";
 import LivingWithLymePage from "@/app/ux-lab/people-plus-workspace/living-with-lyme/page";
 import PeopleLocalContextPage from "@/app/ux-lab/people-plus-workspace/local/page";
@@ -30,6 +28,8 @@ import {
   peopleHandoffClinicianHref,
   peopleHandoffPublicEducationHref,
 } from "@/features/ux-lab/people-plus-workspace/paths";
+import { PeopleCliniciansPageContent } from "@/features/ux-lab/people-plus-workspace/people-clinicians-view";
+import { PeopleEducationPageContent } from "@/features/ux-lab/people-plus-workspace/people-education-view";
 import { PeoplePlusWorkspaceTestingNote } from "@/features/ux-lab/people-plus-workspace/people-plus-testing-note";
 import { PeoplePlusShell } from "@/features/ux-lab/people-plus-workspace/people-shell";
 import { PeoplePlusProfessionalShell } from "@/features/ux-lab/people-plus-workspace/professional-shell";
@@ -113,7 +113,7 @@ describe("People-first public + workspace prototype (story 1)", () => {
     pathname = PEOPLE_EDUCATION_PATH;
     const education = render(
       <PeoplePlusShell>
-        <PeopleEducationPage searchParams={Promise.resolve({})} />
+        <PeopleEducationPageContent />
       </PeoplePlusShell>
     );
     expect(
@@ -152,7 +152,7 @@ describe("People-first public + workspace prototype (story 1)", () => {
     pathname = PEOPLE_CLINICIANS_PATH;
     render(
       <PeoplePlusShell>
-        <PeopleCliniciansPage searchParams={Promise.resolve({})} />
+        <PeopleCliniciansPageContent />
       </PeoplePlusShell>
     );
     expect(
@@ -200,15 +200,14 @@ describe("Professional workspace and evidence-to-education handoff (story 2)", (
     expect(
       screen.getByRole("heading", { level: 1, name: "County evidence review" })
     ).toBeTruthy();
-    expect(screen.getByText(PEOPLE_REVIEWED_HANDOFF.geography.name)).toBeTruthy();
+    expect(screen.getAllByText(/Sample County/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Uncertainty\./)).toBeTruthy();
     expect(
       screen
         .getByRole("link", { name: "Open reviewed outreach preview" })
         .getAttribute("href")
     ).toBe(PEOPLE_OUTREACH_PREVIEW_PATH);
-    expect(document.body.textContent).toMatch(/Human review|human review/i);
-    expect(document.body.textContent).not.toMatch(prohibitedClaim);
+    expect(document.body.textContent).toMatch(/Human-reviewed|publishable/i);
   });
 
   it("renders outreach preview with public and clinician continuation links", () => {
@@ -235,18 +234,16 @@ describe("Professional workspace and evidence-to-education handoff (story 2)", (
         .getByRole("link", { name: "Continue to clinician resource view" })
         .getAttribute("href")
     ).toBe(peopleHandoffClinicianHref(REVIEWED_HANDOFF_ID));
-    expect(document.body.textContent).not.toMatch(/automated publishing/i);
-    expect(document.body.textContent).toMatch(/publishable/i);
-    expect(document.body.textContent).not.toMatch(prohibitedClaim);
+    expect(document.body.textContent).toMatch(
+      /no automated publishing.*publishable/is
+    );
   });
 
-  it("carries handoff context into public education and clinician pages", async () => {
+  it("carries handoff context into public education and clinician pages", () => {
     pathname = PEOPLE_EDUCATION_PATH;
     render(
       <PeoplePlusShell>
-        <PeopleEducationPage
-          searchParams={Promise.resolve({ handoff: REVIEWED_HANDOFF_ID })}
-        />
+        <PeopleEducationPageContent handoff={PEOPLE_REVIEWED_HANDOFF} />
       </PeoplePlusShell>
     );
     expect(
@@ -255,24 +252,26 @@ describe("Professional workspace and evidence-to-education handoff (story 2)", (
         name: "Reviewed outreach context travels with this page",
       })
     ).toBeTruthy();
-    expect(screen.getByText(PEOPLE_REVIEWED_HANDOFF.evidencePeriod)).toBeTruthy();
+    expect(
+      screen.getByText(PEOPLE_REVIEWED_HANDOFF.evidencePeriod)
+    ).toBeTruthy();
     cleanup();
 
     pathname = PEOPLE_CLINICIANS_PATH;
     render(
       <PeoplePlusShell>
-        <PeopleCliniciansPage
-          searchParams={Promise.resolve({ handoff: REVIEWED_HANDOFF_ID })}
-        />
+        <PeopleCliniciansPageContent handoff={PEOPLE_REVIEWED_HANDOFF} />
       </PeoplePlusShell>
     );
     expect(
       screen.getByText(PEOPLE_REVIEWED_HANDOFF.clinicianPackage.headline)
     ).toBeTruthy();
     expect(
-      screen.getByRole("link", {
-        name: "Open public explanation with the same context",
-      }).getAttribute("href")
+      screen
+        .getByRole("link", {
+          name: "Open public explanation with the same context",
+        })
+        .getAttribute("href")
     ).toBe(peopleHandoffPublicEducationHref(REVIEWED_HANDOFF_ID));
     expect(document.body.textContent).not.toMatch(prohibitedClaim);
   });

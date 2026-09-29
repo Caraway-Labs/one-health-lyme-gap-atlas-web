@@ -61,8 +61,8 @@ export default function PeopleProfessionalOverviewPage() {
           <CardHeader>
             <h2 className="type-card">Sample workspace register</h2>
             <CardDescription>
-              Stakeholder walkthrough for Story 2. No live scores or incidence
-              values appear.
+              Stakeholder walkthrough for Story 2. No live scores or
+              surveillance counts appear.
             </CardDescription>
           </CardHeader>
           <CardContent>

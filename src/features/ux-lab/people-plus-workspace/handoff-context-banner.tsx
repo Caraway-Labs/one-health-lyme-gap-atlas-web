@@ -61,7 +61,8 @@ export function HandoffContextBanner({
         <div>
           <dt>Human review</dt>
           <dd>
-            {handoff.humanReview.approverLabel}. {handoff.humanReview.approvedAt}
+            {handoff.humanReview.approverLabel}.{" "}
+            {handoff.humanReview.approvedAt}
           </dd>
         </div>
         <div>
@@ -84,13 +85,17 @@ export function HandoffContextBanner({
               : handoff.clinicianPackage.summary}
           </p>
           {variant === "clinicians" ? (
-            <p className="type-small">{handoff.clinicianPackage.resourceShelfNote}</p>
+            <p className="type-small">
+              {handoff.clinicianPackage.resourceShelfNote}
+            </p>
           ) : null}
         </CardContent>
       </Card>
       <nav aria-label="Handoff trace" className="people-plus-handoff-trace">
         <Link href={PEOPLE_PRO_EVIDENCE_PATH}>Back to evidence review</Link>
-        <Link href={PEOPLE_OUTREACH_PREVIEW_PATH}>Back to outreach preview</Link>
+        <Link href={PEOPLE_OUTREACH_PREVIEW_PATH}>
+          Back to outreach preview
+        </Link>
         {variant === "education" ? (
           <Link href={peopleHandoffClinicianHref(handoff.id)}>
             Open clinician package with the same context

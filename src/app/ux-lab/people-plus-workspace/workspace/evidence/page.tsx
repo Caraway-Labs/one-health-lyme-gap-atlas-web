@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -44,7 +44,10 @@ export default function PeopleEvidenceReviewPage() {
         </CardHeader>
         <CardContent>
           <p className="type-body">{review.humanReview.approvalBoundary}</p>
-          <Link className={previewClassName} href={PEOPLE_OUTREACH_PREVIEW_PATH}>
+          <Link
+            className={previewClassName}
+            href={PEOPLE_OUTREACH_PREVIEW_PATH}
+          >
             Open reviewed outreach preview
           </Link>
         </CardContent>

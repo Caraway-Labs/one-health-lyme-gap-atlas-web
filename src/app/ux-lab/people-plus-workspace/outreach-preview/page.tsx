@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -36,8 +36,8 @@ export default function PeopleOutreachPreviewPage() {
         <h1 className="type-page">Outreach and resource package preview</h1>
         <p className="type-body people-plus-lead">
           This page stands in for what an epidemiology team would review before
-          any public explanation or clinician package is treated as
-          publishable. It is mock content only—no automated publishing runs here.
+          any public explanation or clinician package is treated as publishable.
+          It is mock content only—no automated publishing runs here.
         </p>
       </header>
 
@@ -56,7 +56,9 @@ export default function PeopleOutreachPreviewPage() {
         <div className="people-plus-path-grid">
           <Card>
             <CardHeader>
-              <h3 className="type-card">{handoff.publicExplanation.headline}</h3>
+              <h3 className="type-card">
+                {handoff.publicExplanation.headline}
+              </h3>
               <CardDescription>{handoff.evidencePeriod}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -72,7 +74,9 @@ export default function PeopleOutreachPreviewPage() {
           <Card>
             <CardHeader>
               <h3 className="type-card">{handoff.clinicianPackage.headline}</h3>
-              <CardDescription>{handoff.clinicianPackage.resourceShelfNote}</CardDescription>
+              <CardDescription>
+                {handoff.clinicianPackage.resourceShelfNote}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="type-body">{handoff.clinicianPackage.summary}</p>

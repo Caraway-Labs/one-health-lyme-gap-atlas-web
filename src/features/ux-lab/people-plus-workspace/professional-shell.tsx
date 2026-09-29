@@ -29,7 +29,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { UX_LAB_SAMPLE_NOTICE } from "@/features/ux-lab/prototype-contract";
 import {
   PEOPLE_CLINICIANS_PATH,
   PEOPLE_EDUCATION_PATH,
@@ -39,6 +38,7 @@ import {
   PEOPLE_WORKSPACE_PATH,
   RETURN_TO_PEOPLE_ENV_LABEL,
 } from "@/features/ux-lab/people-plus-workspace/paths";
+import { UX_LAB_SAMPLE_NOTICE } from "@/features/ux-lab/prototype-contract";
 import { isPrototypeRouteActive } from "@/features/ux-lab/public-site-pro-app/paths";
 
 function workspaceIcon(id: (typeof PEOPLE_PRO_NAV)[number]["id"]) {
@@ -56,7 +56,11 @@ function workspaceIcon(id: (typeof PEOPLE_PRO_NAV)[number]["id"]) {
   }
 }
 
-export function PeoplePlusProfessionalShell({ children }: { children: ReactNode }) {
+export function PeoplePlusProfessionalShell({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <SidebarProvider defaultOpen storageKey="ux-lab-people-plus-pro-sidebar">
       <PeoplePlusProfessionalFrame>{children}</PeoplePlusProfessionalFrame>

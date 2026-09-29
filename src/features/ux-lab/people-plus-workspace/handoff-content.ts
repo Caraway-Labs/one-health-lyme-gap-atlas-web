@@ -61,7 +61,7 @@ export const PEOPLE_REVIEWED_HANDOFF: PeopleReviewedHandoff = {
   },
   id: REVIEWED_HANDOFF_ID,
   limitations:
-    "Counts are incomplete for the sample window, geography is a fictional stand-in, and this prototype does not describe risk where you live or recommend prevention steps for a person.",
+    "Counts are incomplete for the sample window, geography is a fictional stand-in, and this prototype does not describe risk where you live or supply personal prevention instructions for a person.",
   professionalFindings:
     "Sample professional summary: placeholder tick-encounter reports in Sample County rose compared with the prior fictional quarter, with uneven lab confirmation and missing geography on a subset of forms. The pattern is useful for internal review, not for public risk labeling.",
   publicExplanation: {
