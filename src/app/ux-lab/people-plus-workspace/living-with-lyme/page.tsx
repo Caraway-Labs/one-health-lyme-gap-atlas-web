@@ -24,8 +24,8 @@ export default function LivingWithLymePage() {
         <p className="type-body people-plus-lead">
           This representative page is for people already affected by Lyme
           disease. It foregrounds understandable language, trusted-resource
-          patterns, and clear boundaries—not surveillance dashboards or
-          clinical care instructions.
+          patterns, and clear boundaries—not surveillance dashboards or clinical
+          care instructions.
         </p>
         <AtlasDataStamp label="Sample trusted-resource cue">
           Governed partner links and FAQs would appear here with review dates.
