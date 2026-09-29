@@ -83,6 +83,26 @@ export function LivingWithLymePage() {
           </ul>
         </section>
 
+        <section
+          aria-labelledby="living-with-lyme-continue"
+          className="people-first-hub-continue"
+        >
+          <h2 className="type-section" id="living-with-lyme-continue">
+            Need professional listings?
+          </h2>
+          <p className="type-body">
+            Clinician resource cards with source, freshness, and applicability
+            cues live on a dedicated path—without turning this page into a care
+            workflow.
+          </p>
+          <Link
+            className="people-first-hub-text-link"
+            href={peopleFirstHubHref("clinicians")}
+          >
+            Open clinician resources
+          </Link>
+        </section>
+
         <p className="type-body">
           <Link
             className="people-first-hub-text-link"

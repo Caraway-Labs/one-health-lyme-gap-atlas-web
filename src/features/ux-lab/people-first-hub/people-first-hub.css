@@ -195,6 +195,69 @@
   border-color: var(--people-first-featured-border);
 }
 
+.people-first-hub-boundary {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.people-first-hub-continue {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+
+.people-first-hub-cross-nav {
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--border);
+}
+
+.people-first-hub-workspace-mast {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--navy);
+}
+
+.people-first-hub-workspace-mast .eyebrow,
+.people-first-hub-workspace-mast h1,
+.people-first-hub-workspace-mast p,
+.people-first-hub-workspace-place {
+  color: var(--white);
+}
+
+.people-first-hub-workspace-mast .eyebrow {
+  color: var(--atlas-action-primary);
+}
+
+.people-first-hub-workspace-mast .people-first-hub-sample {
+  color: color-mix(in srgb, var(--white) 85%, transparent);
+}
+
+.people-first-hub-workspace-place {
+  font-size: var(--type-small-size);
+}
+
+.people-first-hub-workspace-badge {
+  border-color: var(--white);
+  color: var(--white);
+  width: fit-content;
+}
+
+.people-first-hub-module-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 @media (width >= 48rem) {
   .people-first-hub-task-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -216,5 +279,9 @@
 
   .people-first-hub-card-featured {
     grid-column: span 2;
+  }
+
+  .people-first-hub-module-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

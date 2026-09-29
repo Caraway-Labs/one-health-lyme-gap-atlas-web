@@ -2,12 +2,17 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { metadata as peopleFirstHubMetadata } from "@/app/ux-lab/people-first-hub/layout";
+import { PeopleFirstCliniciansPage } from "@/features/ux-lab/people-first-hub/clinicians-page";
 import {
   peopleFirstHubCopyCorpus,
   peopleFirstHubHref,
+  CLINICIAN_SURVEILLANCE_CONTEXT,
+  PEOPLE_FIRST_CLINICIAN_RESOURCES,
+  PEOPLE_FIRST_PUBLIC_HEALTH_MODULES,
 } from "@/features/ux-lab/people-first-hub/content";
 import { PeopleFirstHubFrontDoor } from "@/features/ux-lab/people-first-hub/front-door";
 import { LivingWithLymePage } from "@/features/ux-lab/people-first-hub/living-with-lyme-page";
+import { PeopleFirstPublicHealthPage } from "@/features/ux-lab/people-first-hub/public-health-page";
 import { PeopleFirstHubTestingStatement } from "@/features/ux-lab/people-first-hub/testing-statement";
 import { UX_LAB_ROBOTS as CONTRACT_ROBOTS } from "@/features/ux-lab/prototype-contract";
 import { UxLabShell } from "@/features/ux-lab/ux-lab-shell";
@@ -82,6 +87,56 @@ describe("People-first Atlas hub", () => {
     expect(screen.getAllByText(/Sample source label/i).length).toBeGreaterThan(
       0
     );
+  });
+
+  it("links public living-with-lyme content to clinician resources", () => {
+    render(<LivingWithLymePage />);
+
+    expect(
+      screen
+        .getByRole("link", { name: "Open clinician resources" })
+        .getAttribute("href")
+    ).toBe(peopleFirstHubHref("clinicians"));
+  });
+
+  it("renders clinician listings with provenance and surveillance separation", () => {
+    render(<PeopleFirstCliniciansPage />);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: CLINICIAN_SURVEILLANCE_CONTEXT.heading,
+      })
+    ).toBeTruthy();
+    for (const resource of PEOPLE_FIRST_CLINICIAN_RESOURCES) {
+      expect(screen.getByText(resource.title)).toBeTruthy();
+      expect(screen.getByText(resource.applicability)).toBeTruthy();
+    }
+    expect(
+      screen
+        .getByRole("link", { name: "Open public-health tools" })
+        .getAttribute("href")
+    ).toBe(peopleFirstHubHref("public-health"));
+  });
+
+  it("renders a differentiated public-health workspace with cross-audience links", () => {
+    render(<PeopleFirstPublicHealthPage />);
+
+    expect(screen.getByText("Atlas professional workspace")).toBeTruthy();
+    expect(screen.getByText("Sample workspace")).toBeTruthy();
+    for (const item of PEOPLE_FIRST_PUBLIC_HEALTH_MODULES) {
+      expect(screen.getByText(item.title)).toBeTruthy();
+    }
+    expect(
+      screen
+        .getByRole("link", { name: "Open clinician resources" })
+        .getAttribute("href")
+    ).toBe(peopleFirstHubHref("clinicians"));
+    expect(
+      screen.getByRole("navigation", {
+        name: "People-first Atlas tasks",
+      })
+    ).toBeTruthy();
   });
 
   it("repeats the testing statement with a comparison link", () => {
