@@ -9,7 +9,6 @@ import {
   PEOPLE_FIRST_HUB_SAMPLE_NOTICE,
   PEOPLE_FIRST_TASKS,
   peopleFirstHubHref,
-  type PeopleFirstTaskId,
 } from "@/features/ux-lab/people-first-hub/content";
 import { PeopleFirstHubShell } from "@/features/ux-lab/people-first-hub/hub-shell";
 
@@ -93,42 +92,6 @@ export function PeopleFirstLocalContextPage() {
             ))}
           </ul>
         </article>
-        <BackLink />
-      </main>
-    </PeopleFirstHubShell>
-  );
-}
-
-export function PeopleFirstProfessionalStubPage({
-  taskId,
-}: {
-  taskId: Extract<PeopleFirstTaskId, "clinicians" | "public-health">;
-}) {
-  const task = PEOPLE_FIRST_TASKS[taskId];
-
-  return (
-    <PeopleFirstHubShell current={taskId}>
-      <main className="people-first-hub-main">
-        <header className="people-first-hub-page-intro">
-          <p className="eyebrow">{task.navLabel}</p>
-          <h1 className="type-page">{task.navLabel}</h1>
-          <p className="type-body people-first-hub-lead">{task.description}</p>
-          <p className="people-first-hub-sample type-small">
-            {PEOPLE_FIRST_HUB_SAMPLE_NOTICE}
-          </p>
-        </header>
-        <Card className="people-first-hub-stub">
-          <CardHeader>
-            <h2 className="type-card">Prototype placeholder</h2>
-          </CardHeader>
-          <CardContent>
-            <p>
-              Deeper clinician and public-health pathways are expanded in a
-              follow-on story. This route exists so workshop participants can
-              test discoverability from the people-first front door.
-            </p>
-          </CardContent>
-        </Card>
         <BackLink />
       </main>
     </PeopleFirstHubShell>

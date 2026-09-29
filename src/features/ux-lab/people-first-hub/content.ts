@@ -4,7 +4,7 @@ import {
 } from "@/features/ux-lab/prototype-contract";
 
 /**
- * Disposable copy for the People-First Atlas Hub prototype (issue 309).
+ * Disposable copy for the People-First Atlas Hub prototype (issues 309–310).
  * Task-oriented paths without persona selection. No clinical direction,
  * scores, classifications, or local-risk claims.
  */
@@ -187,6 +187,108 @@ export const LOCAL_CONTEXT_ROWS = [
   },
 ] as const;
 
+export type PeopleFirstClinicianResource = {
+  applicability: string;
+  boundary: string;
+  freshness: string;
+  id: string;
+  kind: "clinical-guidance" | "patient-materials" | "reporting";
+  source: string;
+  summary: string;
+  title: string;
+};
+
+export const CLINICIAN_SURVEILLANCE_CONTEXT = {
+  body: "Population surveillance summaries, reporting cadence, and jurisdiction notes belong in the public-health tools path. They describe community patterns—not individual patients—and stay visually separate from clinical resource listings.",
+  heading: "Surveillance context is not clinical guidance",
+} as const;
+
+export const PEOPLE_FIRST_CLINICIAN_RESOURCES: readonly PeopleFirstClinicianResource[] =
+  [
+    {
+      applicability:
+        "Sample applicability: outpatient clinicians reviewing placeholder patient-education handouts.",
+      boundary:
+        "Listing only. Not instructions for a specific patient and not surveillance results.",
+      freshness:
+        "Sample freshness: placeholder catalog reviewed for layout in 2026-Q1.",
+      id: "patient-handouts",
+      kind: "patient-materials",
+      source: "Sample source: governed outreach stub (prototype only).",
+      summary:
+        "Sample card for patient-facing PDFs listed with provenance visible up front.",
+      title: "Patient-facing handout shelf",
+    },
+    {
+      applicability:
+        "Sample applicability: clinicians who need governed reference outlines, not live clinical protocols.",
+      boundary:
+        "Reference headings only. Does not direct care steps or interpret individual illness.",
+      freshness:
+        "Sample freshness: outline placeholder; not refreshed from a live library.",
+      id: "clinical-reference-outline",
+      kind: "clinical-guidance",
+      source: "Sample source: neutral professional reference stub.",
+      summary:
+        "Sample layout for where clinical reference material could appear with explicit boundaries.",
+      title: "Clinical reference outline",
+    },
+    {
+      applicability:
+        "Sample applicability: teams who need reporting contact placeholders, not live reporting workflow.",
+      boundary:
+        "Reporting links would appear with jurisdiction notes. No reporting action is wired in this prototype.",
+      freshness:
+        "Sample freshness: contact list placeholder; not refreshed from a live directory.",
+      id: "reporting-contacts",
+      kind: "reporting",
+      source: "Sample source: fictional public-health directory entry.",
+      summary:
+        "Sample layout for reporting resource discovery with source and applicability cues on the card.",
+      title: "Reporting resource contacts",
+    },
+  ];
+
+export type PeopleFirstPublicHealthModule = {
+  id: string;
+  summary: string;
+  title: string;
+};
+
+export const PEOPLE_FIRST_PUBLIC_HEALTH_MODULES: readonly PeopleFirstPublicHealthModule[] =
+  [
+    {
+      id: "evidence-summary",
+      summary:
+        "Sample description of an evidence-review summary. No scores or classifications are included.",
+      title: "Evidence summary",
+    },
+    {
+      id: "methods",
+      summary:
+        "Sample location for methodology, freshness, and limitation notes. The live Atlas methods pages are unchanged.",
+      title: "Methods and limitations",
+    },
+    {
+      id: "investigation-entry",
+      summary:
+        "Sample reference to the professional investigation workspace. The live workspace is unchanged.",
+      title: "Investigation entry reference",
+    },
+    {
+      id: "outreach-handoff",
+      summary:
+        "Sample outline for reviewed handoff from professional findings into understandable public and clinician artifacts.",
+      title: "Outreach handoff preview",
+    },
+  ];
+
+export const PEOPLE_FIRST_PUBLIC_HEALTH_PLACE = {
+  kind: "Sample jurisdiction",
+  name: "Sample County",
+  region: "North Example",
+} as const;
+
 export function peopleFirstHubCopyCorpus(): readonly string[] {
   return [
     PEOPLE_FIRST_HUB_SAMPLE_NOTICE,
@@ -212,5 +314,22 @@ export function peopleFirstHubCopyCorpus(): readonly string[] {
     LOCAL_CONTEXT_PLACE.name,
     LOCAL_CONTEXT_PLACE.region,
     ...LOCAL_CONTEXT_ROWS.flatMap((row) => [row.title, row.summary]),
+    CLINICIAN_SURVEILLANCE_CONTEXT.heading,
+    CLINICIAN_SURVEILLANCE_CONTEXT.body,
+    ...PEOPLE_FIRST_CLINICIAN_RESOURCES.flatMap((resource) => [
+      resource.title,
+      resource.summary,
+      resource.source,
+      resource.freshness,
+      resource.applicability,
+      resource.boundary,
+    ]),
+    PEOPLE_FIRST_PUBLIC_HEALTH_PLACE.kind,
+    PEOPLE_FIRST_PUBLIC_HEALTH_PLACE.name,
+    PEOPLE_FIRST_PUBLIC_HEALTH_PLACE.region,
+    ...PEOPLE_FIRST_PUBLIC_HEALTH_MODULES.flatMap((module) => [
+      module.title,
+      module.summary,
+    ]),
   ];
 }
