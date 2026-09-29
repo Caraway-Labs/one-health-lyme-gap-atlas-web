@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { GeographyFirstV2AudienceNav } from "@/features/ux-lab/geography-first-v2/geography-first-v2-audience-nav";
 import {
   GeographyFirstV2Experience,
   GeographyFirstV2Missing,
@@ -46,10 +47,16 @@ export async function GeographyFirstV2Page({
       {selection.status === "missing" ? (
         <GeographyFirstV2Missing requestedId={selection.requestedId} />
       ) : (
-        <div className="geography-first-v2-layout">
-          <GeographyFirstV2Picker activePlaceId={selection.place.id} />
-          <GeographyFirstV2Experience place={selection.place} />
-        </div>
+        <>
+          <GeographyFirstV2AudienceNav
+            current="public"
+            place={selection.place}
+          />
+          <div className="geography-first-v2-layout">
+            <GeographyFirstV2Picker activePlaceId={selection.place.id} />
+            <GeographyFirstV2Experience place={selection.place} />
+          </div>
+        </>
       )}
     </main>
   );

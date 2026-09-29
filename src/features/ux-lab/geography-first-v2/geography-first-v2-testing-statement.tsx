@@ -9,7 +9,7 @@ const GEOGRAPHY_FIRST_V2_HYPOTHESIS =
   "Whether leading with place makes Atlas immediately relevant while users can still tell surveillance context apart from personal medical risk.";
 
 const GEOGRAPHY_FIRST_V2_DIFFERENCE =
-  "Geography is the front door, essential uncertainty sits beside local claims, and general education plus Living with Lyme stay visible without choosing a location.";
+  "Geography is the front door, essential uncertainty sits beside local claims, general education plus Living with Lyme stay visible without choosing a location, and clinician plus public-health evidence open on separate same-place routes.";
 
 export function GeographyFirstV2TestingStatement() {
   return (

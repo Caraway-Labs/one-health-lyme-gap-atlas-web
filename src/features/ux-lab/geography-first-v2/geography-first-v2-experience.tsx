@@ -9,6 +9,8 @@ import {
   GEOGRAPHY_FIRST_V2_EVIDENCE_BOUNDARIES,
   GEOGRAPHY_FIRST_V2_GENERAL_EDUCATION,
   GEOGRAPHY_FIRST_V2_LIVED_EXPERIENCE,
+  geographyFirstV2CliniciansHref,
+  geographyFirstV2EvidenceHref,
   geographyFirstV2LocalClaims,
   geographyFirstV2PlaceHref,
   type GeographyFirstV2Place,
@@ -24,6 +26,12 @@ const nonGeographicLinkClassName = buttonVariants({
 const returnLinkClassName = buttonVariants({
   className: "h-[var(--control-height)] px-4",
   variant: "outline",
+});
+
+const depthLinkClassName = buttonVariants({
+  className:
+    "geography-first-v2-depth-link h-auto min-h-[var(--control-height)] justify-start px-4 py-2 text-left whitespace-normal",
+  variant: "default",
 });
 
 export function GeographyFirstV2Missing({
@@ -114,6 +122,38 @@ export function GeographyFirstV2Experience({
           surveillance into personal risk guidance.
         </p>
       </header>
+
+      <nav
+        aria-labelledby="geography-first-v2-deeper-paths"
+        className="geography-first-v2-depth-nav"
+      >
+        <h2 className="type-section" id="geography-first-v2-deeper-paths">
+          Go deeper for this place
+        </h2>
+        <p className="type-body">
+          Clinician resources and public-health evidence live on separate routes
+          so each audience keeps the right depth without mixing lanes on one
+          page.
+        </p>
+        <ul className="geography-first-v2-path-list">
+          <li>
+            <Link
+              className={depthLinkClassName}
+              href={geographyFirstV2CliniciansHref(place.id)}
+            >
+              Clinician context for {place.name}
+            </Link>
+          </li>
+          <li>
+            <Link
+              className={depthLinkClassName}
+              href={geographyFirstV2EvidenceHref(place.id)}
+            >
+              Public-health evidence for {place.name}
+            </Link>
+          </li>
+        </ul>
+      </nav>
 
       <section
         aria-labelledby="evidence-boundaries"

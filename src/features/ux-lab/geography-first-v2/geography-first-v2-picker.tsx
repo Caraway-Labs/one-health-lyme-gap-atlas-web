@@ -19,8 +19,10 @@ const placeLinkClassName = buttonVariants({
 
 export function GeographyFirstV2Picker({
   activePlaceId,
+  buildPlaceHref = geographyFirstV2PlaceHref,
 }: {
   activePlaceId?: string;
+  buildPlaceHref?: (placeId: string) => string;
 }) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
@@ -82,7 +84,7 @@ export function GeographyFirstV2Picker({
                   <Link
                     aria-current={selected ? "true" : undefined}
                     className={placeLinkClassName}
-                    href={geographyFirstV2PlaceHref(place.id)}
+                    href={buildPlaceHref(place.id)}
                   >
                     <span>
                       <span className="geography-first-v2-place-name">

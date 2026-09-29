@@ -41,6 +41,23 @@ test("walks the geography-first v2 local entry prototype", async ({
     page.getByRole("heading", { level: 1, name: "Meadow Sample Town" })
   ).toBeVisible();
 
+  await page
+    .getByRole("link", { name: /Clinician context for Meadow Sample Town/i })
+    .click();
+  await expect(page).toHaveURL(
+    /\/ux-lab\/geography-first-v2\/clinicians\?place=meadow-sample-town/
+  );
+  await expect(page.getByText(/Not clinical care direction/i)).toBeVisible();
+  await page.getByRole("link", { name: "Public-health evidence" }).click();
+  await expect(page).toHaveURL(
+    /\/ux-lab\/geography-first-v2\/evidence\?place=meadow-sample-town/
+  );
+  await expect(
+    page.getByRole("heading", { name: "State / regional review entry" })
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Public local entry" }).click();
+  await expect(page).toHaveURL(/place=meadow-sample-town/);
+
   await page.getByRole("searchbox", { name: "Search a sample place" }).focus();
   expect(
     await page.evaluate(

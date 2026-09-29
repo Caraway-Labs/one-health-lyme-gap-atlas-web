@@ -5,7 +5,33 @@
 
 export const GEOGRAPHY_FIRST_V2_PATH = "/ux-lab/geography-first-v2";
 
+export const GEOGRAPHY_FIRST_V2_CLINICIANS_PATH =
+  `${GEOGRAPHY_FIRST_V2_PATH}/clinicians` as const;
+
+export const GEOGRAPHY_FIRST_V2_EVIDENCE_PATH =
+  `${GEOGRAPHY_FIRST_V2_PATH}/evidence` as const;
+
 export const GEOGRAPHY_FIRST_V2_DEFAULT_PLACE_ID = "ridge-sample-county";
+
+export type GeographyFirstV2Audience = "public" | "clinicians" | "evidence";
+
+export const GEOGRAPHY_FIRST_V2_AUDIENCE_NAV = [
+  {
+    audience: "public" as const,
+    description: "Plain-language local summary and evidence boundaries.",
+    label: "Public local entry",
+  },
+  {
+    audience: "clinicians" as const,
+    description: "Resource discovery and reporting cues for this place.",
+    label: "Clinician context",
+  },
+  {
+    audience: "evidence" as const,
+    description: "Deeper surveillance review with provenance and uncertainty.",
+    label: "Public-health evidence",
+  },
+] as const;
 
 export type GeographyFirstV2Place = {
   id: string;
@@ -54,6 +80,149 @@ export const GEOGRAPHY_FIRST_V2_EVIDENCE_BOUNDARIES = [
     label: "Population surveillance is not personal risk guidance",
     detail:
       "What health departments observe for a place is not a personal medical label, a prognosis, or instructions for an individual. Clinical questions belong with a clinician.",
+  },
+] as const;
+
+export type GeographyFirstV2ClinicianResource = {
+  applicability: string;
+  boundary: string;
+  freshness: string;
+  id: string;
+  source: string;
+  summary: string;
+  title: string;
+};
+
+export const geographyFirstV2ClinicianResources = (
+  placeName: string
+): readonly GeographyFirstV2ClinicianResource[] => [
+  {
+    applicability: `Sample applicability: materials that could apply when discussing ${placeName} in outreach. Not a patient-specific label.`,
+    boundary:
+      "Listing only. These cards show where governed resources could appear. They are not surveillance counts and not care instructions for an individual.",
+    freshness:
+      "Sample freshness: layout catalog marked 2026-Q1 in this prototype.",
+    id: "jurisdiction-handouts",
+    source: "Sample source: fictional outreach catalog stub.",
+    summary: `Sample shelf for patient-facing handouts that mention ${placeName} as a jurisdiction label.`,
+    title: "Jurisdiction-linked handouts",
+  },
+  {
+    applicability:
+      "Sample applicability: clinicians who need reporting contact placeholders for this prototype county.",
+    boundary:
+      "No reporting workflow is connected. Contacts are fictional placeholders beside real-world expectations for source and jurisdiction notes.",
+    freshness:
+      "Sample freshness: directory placeholder; not refreshed from a live public-health feed.",
+    id: "reporting-contacts",
+    source: "Sample source: fictional health department directory entry.",
+    summary: `Sample reporting-resource cue for ${placeName}. Shows where case-reporting links could sit without starting a workflow.`,
+    title: "Reporting resource cues",
+  },
+  {
+    applicability:
+      "Sample applicability: professional education that stays separate from community surveillance summaries.",
+    boundary:
+      "Surveillance context for a place is not the same as individual clinical decisions. This card labels that separation explicitly.",
+    freshness: "Sample freshness: static prototype copy only.",
+    id: "clinical-education",
+    source: "Sample source: professional education stub (prototype).",
+    summary:
+      "Sample card for continuing education or clinician bulletins that reference place without turning surveillance into care direction.",
+    title: "Clinician education listings",
+  },
+];
+
+export const GEOGRAPHY_FIRST_V2_CLINICIAN_BOUNDARY =
+  "This view helps clinicians find applicable resources and reporting context for a sample place. It does not interpret symptoms, classify individual patients, or provide care pathways.";
+
+export type GeographyFirstV2EvidenceRow = {
+  label: string;
+  note: string;
+};
+
+export type GeographyFirstV2EvidenceTopic = {
+  body: string;
+  id: string;
+  rows: readonly GeographyFirstV2EvidenceRow[];
+  summary: string;
+  title: string;
+  uncertainty: string;
+};
+
+export const geographyFirstV2EvidenceTopics = (
+  placeName: string
+): readonly GeographyFirstV2EvidenceTopic[] => [
+  {
+    body: `Sample evidence desk entry for ${placeName}. A governed review would attach sources, vintage, and completeness beside each field.`,
+    id: "surveillance-review",
+    rows: [
+      {
+        label: "Source",
+        note: "Sample source: fictional surveillance feed placeholder (prototype only).",
+      },
+      {
+        label: "Vintage",
+        note: "Sample vintage: layout marked 2026-Q1. Not a live refresh timestamp.",
+      },
+      {
+        label: "Completeness",
+        note: "Sample completeness: intentionally blank fields mean missing information, not zero activity.",
+      },
+    ],
+    summary:
+      "Sample county-level review summary with provenance rows visible without opening methodology.",
+    title: "Place surveillance review",
+    uncertainty:
+      "Uncertainty sits beside the summary: incomplete reporting can hide activity even when Lyme occurs in the area.",
+  },
+  {
+    body: "Sample methodology disclosure for how a place-based review would describe coding, suppression, and linkage limits.",
+    id: "methodology",
+    rows: [
+      {
+        label: "Coding",
+        note: "Sample note: residence, exposure location, and care location may differ.",
+      },
+      {
+        label: "Suppression",
+        note: "Sample note: small counts may be withheld; suppression is missingness, not absence.",
+      },
+      {
+        label: "Linkage",
+        note: "Sample note: lab and case data may not align for every jurisdiction.",
+      },
+    ],
+    summary:
+      "Progressive detail for epidemiologists who need methodology adjacent to claims.",
+    title: "Methodology and missingness",
+    uncertainty:
+      "Methodology does not remove uncertainty; it explains why a place-based view can still be incomplete.",
+  },
+];
+
+export const GEOGRAPHY_FIRST_V2_STATE_REVIEW = {
+  description:
+    "Epidemiologists can start from a state or regional review before opening a specific geography. This prototype keeps that entry concept visible so county-by-county navigation is not the only path.",
+  id: "state-review",
+  label: "State / regional review entry",
+  note: "The fictional place stays in context when you move between review levels in a full Atlas build.",
+} as const;
+
+export const GEOGRAPHY_FIRST_V2_PROFESSIONAL_HANDOFFS = [
+  {
+    description:
+      "Opens the live investigation workspace without attaching this fictional county identifier.",
+    href: "/investigate",
+    id: "investigation-workspace",
+    label: "Investigation workspace",
+  },
+  {
+    description:
+      "Opens linked map, table, and chart views in the live Atlas without sample scores.",
+    href: "/geographic_explorer",
+    id: "geographic-explorer",
+    label: "Geographic Explorer",
   },
 ] as const;
 
@@ -163,7 +332,36 @@ export function resolveGeographyFirstV2Place(
 }
 
 export function geographyFirstV2PlaceHref(placeId: string): string {
-  return `${GEOGRAPHY_FIRST_V2_PATH}?place=${placeId}`;
+  return `${GEOGRAPHY_FIRST_V2_PATH}?place=${encodeURIComponent(placeId)}`;
+}
+
+export function geographyFirstV2CliniciansHref(placeId: string): string {
+  return `${GEOGRAPHY_FIRST_V2_CLINICIANS_PATH}?place=${encodeURIComponent(placeId)}`;
+}
+
+export function geographyFirstV2EvidenceHref(placeId: string): string {
+  return `${GEOGRAPHY_FIRST_V2_EVIDENCE_PATH}?place=${encodeURIComponent(placeId)}`;
+}
+
+export function geographyFirstV2AudienceHref(
+  audience: GeographyFirstV2Audience,
+  placeId: string
+): string {
+  switch (audience) {
+    case "public": {
+      return geographyFirstV2PlaceHref(placeId);
+    }
+    case "clinicians": {
+      return geographyFirstV2CliniciansHref(placeId);
+    }
+    case "evidence": {
+      return geographyFirstV2EvidenceHref(placeId);
+    }
+    default: {
+      const unreachable: never = audience;
+      throw new Error(`Unknown audience: ${unreachable}`);
+    }
+  }
 }
 
 export function geographyFirstV2CopyStrings(): readonly string[] {
@@ -189,6 +387,37 @@ export function geographyFirstV2CopyStrings(): readonly string[] {
       row.claim,
       row.limitation,
       row.title,
+    ]),
+    ...geographyFirstV2ClinicianResources("Ridge Sample County").flatMap(
+      (resource) => [
+        resource.applicability,
+        resource.boundary,
+        resource.freshness,
+        resource.source,
+        resource.summary,
+        resource.title,
+      ]
+    ),
+    GEOGRAPHY_FIRST_V2_CLINICIAN_BOUNDARY,
+    ...geographyFirstV2EvidenceTopics("Ridge Sample County").flatMap(
+      (topic) => [
+        topic.body,
+        topic.summary,
+        topic.title,
+        topic.uncertainty,
+        ...topic.rows.flatMap((row) => [row.label, row.note]),
+      ]
+    ),
+    GEOGRAPHY_FIRST_V2_STATE_REVIEW.description,
+    GEOGRAPHY_FIRST_V2_STATE_REVIEW.label,
+    GEOGRAPHY_FIRST_V2_STATE_REVIEW.note,
+    ...GEOGRAPHY_FIRST_V2_PROFESSIONAL_HANDOFFS.flatMap((link) => [
+      link.description,
+      link.label,
+    ]),
+    ...GEOGRAPHY_FIRST_V2_AUDIENCE_NAV.flatMap((item) => [
+      item.description,
+      item.label,
     ]),
   ];
 }
