@@ -159,9 +159,7 @@ describe("People-first Atlas hub", () => {
         name: "What this variant is testing",
       }).textContent
     ).toContain("persona choice");
-    expect(
-      screen.getByText(/Second-round research concept/i)
-    ).toBeTruthy();
+    expect(screen.getByText(/Second-round research concept/i)).toBeTruthy();
     expect(
       screen
         .getByRole("link", { name: "Comparison guide" })

@@ -58,7 +58,8 @@ export function UxLabPage() {
         <p className="type-body">
           Compare six information-architecture hypotheses for public visitors,
           clinicians, and public-health professionals. Five first-round concepts
-          (#291–#298) sit beside one second-round people-first hub (#306). Open
+          (issues 291–298) sit beside one second-round people-first hub (issue
+          306). Open
           a concept, read what it is testing, and use the same questions for
           every variant. The live Atlas stays the production experience until a
           later product decision.
@@ -105,7 +106,9 @@ export function UxLabPage() {
                   <div className="ux-lab-concept-title-row">
                     <h3 className="type-card">{concept.title}</h3>
                     {concept.researchRound === "second" ? (
-                      <Badge variant="outline">{UX_LAB_SECOND_ROUND_LABEL}</Badge>
+                      <Badge variant="outline">
+                        {UX_LAB_SECOND_ROUND_LABEL}
+                      </Badge>
                     ) : null}
                   </div>
                   <CardDescription>
