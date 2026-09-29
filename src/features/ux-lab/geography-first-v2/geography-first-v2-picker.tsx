@@ -8,7 +8,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   GEOGRAPHY_FIRST_V2_PLACES,
-  geographyFirstV2PlaceHref,
+  geographyFirstV2AudienceHref,
+  type GeographyFirstV2Audience,
 } from "@/features/ux-lab/geography-first-v2/sample-places";
 
 const placeLinkClassName = buttonVariants({
@@ -19,11 +20,13 @@ const placeLinkClassName = buttonVariants({
 
 export function GeographyFirstV2Picker({
   activePlaceId,
-  buildPlaceHref = geographyFirstV2PlaceHref,
+  audience = "public",
 }: {
   activePlaceId?: string;
-  buildPlaceHref?: (placeId: string) => string;
+  audience?: GeographyFirstV2Audience;
 }) {
+  const buildPlaceHref = (placeId: string) =>
+    geographyFirstV2AudienceHref(audience, placeId);
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
   const matches = useMemo(
