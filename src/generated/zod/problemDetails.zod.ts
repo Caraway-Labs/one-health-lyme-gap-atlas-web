@@ -14,6 +14,7 @@ export const ProblemDetails = zod.object({
   "detail": zod.string(),
   "instance": zod.string(),
   "request_id": zod.string(),
+  "code": zod.union([zod.string(),zod.null()]).optional(),
   "errors": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.null()]).optional()
 })
 
