@@ -26,6 +26,8 @@ Pull requests and pushes to `main` run the `quality` check concurrently. A green
 
 ## Documentation
 
+Canonical API migration for Atlas Web is tracked under epic [#283](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/283). The production browser → API dependency inventory lives in [docs/web-284-atlas-api-migration-inventory.md](docs/web-284-atlas-api-migration-inventory.md) (Web #284).
+
 The public help center is part of this Next.js application and is available at `/docs`. Fumadocs MDX content lives in `content/docs`; generated Fumadocs source files are created by `npm run docs:generate` and are intentionally ignored. `npm run docs:check` validates required page metadata, navigation references, and internal Atlas/docs links. The existing DigitalOcean App Platform service deploys the docs with the web app; no separate repository or infrastructure is required.
 
 The public frontend may use `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_AMPLITUDE_API_KEY`, and the Supabase publishable project URL/key. Treat those values as public. Never add Snowflake configuration, service-role keys, or other secrets to this repository or to `NEXT_PUBLIC_*` variables.
