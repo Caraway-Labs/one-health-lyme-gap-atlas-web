@@ -4,9 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
-import {
-  observeChatLauncherDockInsets,
-} from "@/lib/chat-launcher-dock";
+import { observeChatLauncherDockInsets } from "@/lib/chat-launcher-dock";
 
 import { EvidenceChat } from "./evidence-chat";
 
@@ -69,7 +67,7 @@ function EnabledChatLauncher() {
       stopObserving();
       delete document.documentElement.dataset.atlasChatLauncher;
     };
-  }, [pathname]);
+  }, []);
 
   return (
     <>

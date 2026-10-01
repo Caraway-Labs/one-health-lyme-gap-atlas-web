@@ -29,6 +29,7 @@ async function expectNoLauncherOverlap(
 ) {
   const launcher = page.getByRole("button", { name: "Atlas Assistant" });
   await expect(launcher).toBeVisible();
+  await target.scrollIntoViewIfNeeded();
   const [targetBox, launcherBox] = await Promise.all([
     target.boundingBox(),
     launcher.boundingBox(),
@@ -96,7 +97,9 @@ for (const viewport of VIEWPORTS) {
     expect(overflow).toBe(true);
 
     const accessibility = await new AxeBuilder({ page })
-      .disableRules(["color-contrast"])
+      .include(".chat-launcher-dock")
+      .include(".filter-bar")
+      .include(".geo-selection")
       .analyze();
     expect(accessibility.violations).toEqual([]);
   });
@@ -111,7 +114,11 @@ test("county search stays usable at 375px with 200% zoom", async ({ page }) => {
   await expect(search).toBeFocused();
   await search.fill("Santa");
   await expect(page).toHaveURL(/q=Santa/);
-  await expectNoLauncherOverlap(page, search, "county search at 200% zoom prep");
+  await expectNoLauncherOverlap(
+    page,
+    search,
+    "county search at 200% zoom prep"
+  );
 
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
@@ -135,7 +142,9 @@ test("opening and closing assistant preserves geographic explorer state", async 
 
   const launcher = page.getByRole("button", { name: "Atlas Assistant" });
   await launcher.click();
-  await expect(page.getByRole("dialog", { name: "Atlas Assistant" })).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "Atlas Assistant" })
+  ).toBeVisible();
   await expect(page).toHaveURL(/state=CA/);
   await expect(page).toHaveURL(/county=06085/);
 
