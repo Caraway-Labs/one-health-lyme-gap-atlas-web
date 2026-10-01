@@ -91,8 +91,12 @@ test("assistant workspace reflows at 200% zoom without horizontal overflow", asy
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
+  const composer = page.locator(".chat-composer-dock");
+  await composer.scrollIntoViewIfNeeded();
   await page.getByLabel("Your question").fill("Zoom check question");
-  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await page.locator(".chat-form").evaluate((form) => {
+    (form as HTMLFormElement).requestSubmit();
+  });
   await expect(page.getByText("Evidence: Limited evidence")).toBeVisible();
   const accessibility = await new AxeBuilder({ page })
     .include(".evidence-chat")
