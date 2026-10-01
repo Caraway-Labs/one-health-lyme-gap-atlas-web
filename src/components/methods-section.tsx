@@ -9,6 +9,7 @@ import {
   analyticsControlAttributes,
   trackProvenanceOpened,
 } from "@/lib/atlas-analytics";
+import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
 import { getDocsHref } from "@/lib/docs-config";
 
 export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
@@ -17,8 +18,8 @@ export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
       <AtlasSectionHeader
         aside={
           <AtlasDataStamp variant="inline">
-            Generated {new Date(metadata.generated_at).toLocaleDateString()} ·
-            Loaded {new Date(metadata.loaded_at).toLocaleDateString()}
+            Release generated {formatAtlasTimestamp(metadata.generated_at)} ·
+            Loaded {formatAtlasTimestamp(metadata.loaded_at)}
           </AtlasDataStamp>
         }
         description="County data are combined using standard FIPS codes. Each source retains its year, source, and known limitations."
