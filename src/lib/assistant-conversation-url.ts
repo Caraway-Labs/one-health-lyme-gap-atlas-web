@@ -1,0 +1,94 @@
+const ASSISTANT_PATH = "/assistant";
+
+export function readAssistantConversationId(
+  href = typeof window === "undefined" ? "" : window.location.href
+): string | null {
+  if (!href) {
+    return null;
+  }
+  try {
+    const url = new URL(href);
+    if (url.pathname !== ASSISTANT_PATH) {
+      return null;
+    }
+    return url.searchParams.get("conversation");
+  } catch {
+    return null;
+  }
+}
+
+export function assistantConversationHref(conversationId?: string): string {
+  if (!conversationId) {
+    return ASSISTANT_PATH;
+  }
+  return `${ASSISTANT_PATH}?conversation=${encodeURIComponent(conversationId)}`;
+}
+
+/**
+ * Keep the assistant workspace URL aligned with the active local conversation.
+ * Uses replaceState so high-frequency chat updates do not pollute browser history.
+ */
+export function synchronizeAssistantConversationUrl(
+  conversationId?: string,
+  href = window.location.href
+): void {
+  const url = new URL(href);
+  if (url.pathname !== ASSISTANT_PATH) {
+    return;
+  }
+  const current = url.searchParams.get("conversation");
+  if (!conversationId) {
+    if (!current) {
+      return;
+    }
+    url.searchParams.delete("conversation");
+  } else if (current === conversationId) {
+    return;
+  } else {
+    url.searchParams.set("conversation", conversationId);
+  }
+  window.history.replaceState(window.history.state, "", url.href);
+}
+
+export interface ConversationSelection {
+  activeId: string;
+  missingConversationId: string | null;
+}
+
+export function resolveConversationSelection(
+  requestedId: string | null | undefined,
+  conversations: { id: string }[],
+  preferLatestWhenEmpty = true
+): ConversationSelection {
+  if (!requestedId) {
+    return {
+      activeId: preferLatestWhenEmpty
+        ? (conversations[0]?.id ?? "__new__")
+        : "__new__",
+      missingConversationId: null,
+    };
+  }
+  const exists = conversations.some((item) => item.id === requestedId);
+  if (exists) {
+    return { activeId: requestedId, missingConversationId: null };
+  }
+  return { activeId: "__new__", missingConversationId: requestedId };
+}
+
+export function resolveActiveConversation(
+  activeId: string,
+  conversations: { id: string }[],
+  hydrated: boolean
+) {
+  if (activeId === "__new__" || activeId === "") {
+    return undefined;
+  }
+  const match = conversations.find((item) => item.id === activeId);
+  if (match) {
+    return match;
+  }
+  if (!hydrated || activeId !== "__latest__") {
+    return undefined;
+  }
+  return conversations[0];
+}

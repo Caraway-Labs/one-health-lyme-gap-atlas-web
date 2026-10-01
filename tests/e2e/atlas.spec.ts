@@ -313,7 +313,11 @@ test("redirects legacy research links to the single assistant workspace", async 
   page,
 }) => {
   await page.goto("/knowledge-graph?conversation=legacy-conversation");
-  await expect(page).toHaveURL(/\/assistant\?conversation=legacy-conversation/);
+  await expect(page).toHaveURL(/\/assistant(?:\?|$)/);
+  await expect(page).not.toHaveURL(/conversation=legacy-conversation/);
+  await expect(
+    page.getByText("Conversation not found in this browser.")
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Atlas Assistant" })
   ).toBeVisible();
