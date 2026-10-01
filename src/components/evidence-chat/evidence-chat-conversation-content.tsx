@@ -16,6 +16,7 @@ import { atlasAssistantWorkspaceHeadingId } from "@/lib/assistant-entry-points";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 import { AssistantOutcome } from "./assistant-outcome";
+import { AssistantStarterPrompts } from "./assistant-starter-prompts";
 import type { EvidenceChatConversationModel } from "./use-evidence-chat";
 
 export function EvidenceChatConversationContent({
@@ -191,6 +192,11 @@ export function EvidenceChatConversationContent({
         </div>
       </div>
       <div className="chat-composer-dock">
+        <AssistantStarterPrompts
+          mode={mode}
+          onSelect={editQuestion}
+          visible={showEmptyState}
+        />
         <form className="chat-form" onSubmit={submit}>
           <label htmlFor={`chat-message-${mode}`}>Your question</label>
           <textarea

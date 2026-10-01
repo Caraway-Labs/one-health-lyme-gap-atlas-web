@@ -78,6 +78,32 @@ describe(EvidenceChat, () => {
   });
   afterEach(() => cleanup());
 
+  it("shows literature starter prompts that populate the composer without submitting", async () => {
+    render(<EvidenceChat />);
+    const starter = screen.getByRole("button", {
+      name: "Tick vectors and reservoir hosts",
+    });
+    expect(starter.dataset.atlasAnalyticsControl).toBe(
+      "evidence_chat_starter_prompt"
+    );
+    fireEvent.click(starter);
+    const question = screen.getByLabelText(
+      "Your question"
+    ) as HTMLTextAreaElement;
+    expect(question.value).toContain("Ixodes tick vectors");
+    expect(chatRequest).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(question);
+  });
+
+  it("hides starter prompts after a conversation begins", async () => {
+    chatRequest.mockResolvedValue({ data: response() });
+    render(<EvidenceChat />);
+    expect(screen.getByText("Starter questions")).toBeTruthy();
+    await submit();
+    await screen.findByText("Evidence: Limited evidence");
+    expect(screen.queryByText("Starter questions")).toBeNull();
+  });
+
   it("renders evidence and source indicators with a safe paper link and no stored token", async () => {
     chatRequest.mockResolvedValue({ data: response() });
     render(<EvidenceChat />);
@@ -459,6 +485,7 @@ describe(EvidenceChat, () => {
     await submit();
     await screen.findByRole("alert");
     expect(screen.queryByText("Start with a research question")).toBeNull();
+    expect(screen.queryByText("Starter questions")).toBeNull();
   });
 
   it("de-emphasizes the character counter until the limit is near", async () => {
