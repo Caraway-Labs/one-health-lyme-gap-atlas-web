@@ -7,6 +7,7 @@ import type { FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
+import { EvidenceChatAnswerSources } from "@/components/evidence-chat-answer-sources";
 import { Button } from "@/components/ui/button";
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import type { KnowledgeChatResponse } from "@/generated/models";
@@ -25,17 +26,6 @@ import {
   removeConversation,
   saveConversations,
 } from "@/lib/knowledge-chat-storage";
-
-const evidenceStrengthLabels: Partial<
-  Record<KnowledgeChatResponse["evidence_state"], string>
-> = {
-  single_study: "Single-study evidence",
-  consistent: "Consistent evidence",
-  limited: "Limited evidence",
-  mixed: "Mixed evidence",
-  conflicting: "Conflicting evidence",
-  insufficient_to_compare: "Insufficient evidence to compare",
-};
 
 const CORPUS_LIMIT =
   "Atlas does not currently have relevant reviewed literature in its governed corpus for this question. This does not mean no scientific evidence exists elsewhere.";
@@ -112,21 +102,6 @@ function clientFailure(error: unknown): ClientFailure {
     state: "network_failure",
     title: "Service error.",
   };
-}
-
-function EvidenceContext({ response }: { response: KnowledgeChatResponse }) {
-  if (response.status !== "answered") return null;
-  const strength = evidenceStrengthLabels[response.evidence_state];
-  return (
-    <div
-      className="chat-evidence-meta"
-      aria-label="Evidence details"
-      data-assistant-state="answered"
-    >
-      <span>Source: Literature evidence</span>
-      {strength && <span>Evidence: {strength}</span>}
-    </div>
-  );
 }
 
 function OutcomeActions({ children }: { children: ReactNode }) {
@@ -270,21 +245,6 @@ function AssistantOutcome({
       const unhandled: never = response.status;
       return unhandled;
     }
-  }
-}
-
-function safePubMedUrl(url: string, pmid: string): string | null {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:" &&
-      parsed.hostname === "pubmed.ncbi.nlm.nih.gov" &&
-      (parsed.pathname === `/${pmid}/` || parsed.pathname === `/${pmid}`) &&
-      !parsed.search &&
-      !parsed.hash
-      ? parsed.href
-      : null;
-  } catch {
-    return null;
   }
 }
 
@@ -533,17 +493,15 @@ export function EvidenceChat({
           {(active?.turns ?? []).map((turn, index, turns) => {
             const priorQuestion =
               turn.role === "assistant" ? (turns[index - 1]?.text ?? "") : "";
-            const citations =
-              turn.response?.status === "answered"
-                ? (turn.response.citations ?? [])
-                : [];
             return (
               <article className={`chat-turn ${turn.role}`} key={turn.id}>
                 <strong>
                   {turn.role === "user" ? "You" : "Evidence assistant"}
                 </strong>
                 <p>{turn.text}</p>
-                {turn.response && <EvidenceContext response={turn.response} />}
+                {turn.response && (
+                  <EvidenceChatAnswerSources response={turn.response} />
+                )}
                 {turn.response && (
                   <AssistantOutcome
                     actionable={turn.id === turns.at(-1)?.id}
@@ -554,30 +512,6 @@ export function EvidenceChat({
                     response={turn.response}
                   />
                 )}
-                {citations.length > 0 ? (
-                  <ol className="citation-list">
-                    {citations.map((citation) => (
-                      <li key={citation.citation_id}>
-                        {safePubMedUrl(citation.pubmed_url, citation.pmid) ? (
-                          <a
-                            href={
-                              safePubMedUrl(
-                                citation.pubmed_url,
-                                citation.pmid
-                              ) ?? undefined
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {citation.title}
-                          </a>
-                        ) : (
-                          <span>{citation.title}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                ) : null}
               </article>
             );
           })}

@@ -82,10 +82,13 @@ describe(EvidenceChat, () => {
       screen.findByText("Evidence: Limited evidence")
     ).resolves.toBeTruthy();
     expect(screen.getByText("Source: Literature evidence")).toBeTruthy();
-    const link = screen.getByRole("link", { name: "A paper" });
+    expect(screen.getByText("1 source for this answer")).toBeTruthy();
+    const link = screen.getByRole("link", { name: /A paper/i });
     expect(link.getAttribute("href")).toBe(
       "https://pubmed.ncbi.nlm.nih.gov/12345/"
     );
+    expect(link.className).toContain("citation-source-link");
+    expect(link.textContent).toContain("PMID 12345");
     expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
       "browser-secret"
     );
