@@ -58,6 +58,7 @@ export const uiControlIds = [
   "evidence_chat_retry",
   "evidence_chat_edit_question",
   "evidence_chat_history_clear",
+  "evidence_chat_history_open",
   "evidence_chat_history_select",
   "evidence_chat_history_delete",
   "experiment_retry",

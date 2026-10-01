@@ -8,6 +8,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { EvidenceChatAnswerSources } from "@/components/evidence-chat-answer-sources";
+import {
+  ChatHistoryEmptyHint,
+  ChatHistoryMobileToggle,
+  ChatHistoryWorkspace,
+} from "@/components/evidence-chat-history";
 import { Button } from "@/components/ui/button";
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import type { KnowledgeChatResponse } from "@/generated/models";
@@ -267,6 +272,8 @@ export function EvidenceChat({
   const [retryQuestion, setRetryQuestion] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const focusQuestionOnSettle = useRef(false);
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+  const mobileHistoryToggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const refresh = () => setConversations(loadConversations());
@@ -399,64 +406,44 @@ export function EvidenceChat({
     setActiveId(next[0]?.id ?? "");
   }
 
+  function clearAllConversations() {
+    clearConversations();
+    setConversations([]);
+    setActiveId("");
+    setFailure(null);
+    setRetryQuestion("");
+    setMessage("");
+    setMobileHistoryOpen(false);
+  }
+
+  const hasSavedConversations = conversations.length > 0;
+  const workspaceClassName = [
+    "evidence-chat",
+    `evidence-chat-${mode}`,
+    mode === "workspace" && !hasSavedConversations
+      ? "evidence-chat-workspace--no-history"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`evidence-chat evidence-chat-${mode}`}>
-      {mode === "workspace" && (
-        <aside className="chat-history" aria-label="Local conversation history">
-          <div>
-            <strong>Recent chats</strong>
-            <button
-              type="button"
-              onClick={() => {
-                clearConversations();
-                setConversations([]);
-                setActiveId("");
-                setFailure(null);
-                setRetryQuestion("");
-                setMessage("");
-              }}
-              {...analyticsControlAttributes("evidence_chat_history_clear")}
-            >
-              Clear all
-            </button>
-          </div>
-          {conversations.length === 0 ? (
-            <p>No saved conversations yet.</p>
-          ) : (
-            conversations.map((item) => (
-              <div className="history-row" key={item.id}>
-                <button
-                  type="button"
-                  aria-current={active?.id === item.id}
-                  onClick={() => {
-                    setActiveId(item.id);
-                    setFailure(null);
-                    setRetryQuestion("");
-                  }}
-                  {...analyticsControlAttributes(
-                    "evidence_chat_history_select"
-                  )}
-                >
-                  {item.title}
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Delete ${item.title}`}
-                  onClick={() => deleteOne(item.id)}
-                  {...analyticsControlAttributes(
-                    "evidence_chat_history_delete"
-                  )}
-                >
-                  ×
-                </button>
-              </div>
-            ))
-          )}
-          <p className="retention-copy">
-            Up to five conversations are stored in this browser for 30 days.
-            Deleting here removes the local copy.
-          </p>
-        </aside>
+    <div className={workspaceClassName}>
+      {mode === "workspace" && hasSavedConversations && (
+        <ChatHistoryWorkspace
+          activeConversationId={active?.id}
+          conversations={conversations}
+          mobileHistoryOpen={mobileHistoryOpen}
+          mobileToggleRef={mobileHistoryToggleRef}
+          onClearAll={clearAllConversations}
+          onDelete={deleteOne}
+          onMobileHistoryOpenChange={setMobileHistoryOpen}
+          onSelect={(id) => {
+            setActiveId(id);
+            setFailure(null);
+            setRetryQuestion("");
+          }}
+        />
       )}
       <section className="chat-panel" aria-label="Atlas Assistant">
         <header>
@@ -464,20 +451,33 @@ export function EvidenceChat({
             <span className="kicker">Reviewed literature</span>
             <h1>{mode === "drawer" ? "Atlas Assistant" : "Atlas Assistant"}</h1>
           </div>
-          <Button
-            variant="secondary"
-            {...analyticsControlAttributes("evidence_chat_new")}
-            type="button"
-            onClick={() => {
-              setActiveId("__new__");
-              setFailure(null);
-              setRetryQuestion("");
-              setMessage("");
-            }}
-          >
-            New chat
-          </Button>
+          <div className="chat-panel-header-actions">
+            {mode === "workspace" && (
+              <ChatHistoryMobileToggle
+                conversationCount={conversations.length}
+                mobileToggleRef={mobileHistoryToggleRef}
+                onOpenChange={setMobileHistoryOpen}
+                open={mobileHistoryOpen}
+              />
+            )}
+            <Button
+              variant="secondary"
+              {...analyticsControlAttributes("evidence_chat_new")}
+              type="button"
+              onClick={() => {
+                setActiveId("__new__");
+                setFailure(null);
+                setRetryQuestion("");
+                setMessage("");
+              }}
+            >
+              New chat
+            </Button>
+          </div>
         </header>
+        {mode === "workspace" && !hasSavedConversations && (
+          <ChatHistoryEmptyHint />
+        )}
         <AssistantCountyContextNotice />
         <p className="medical-notice">{publicCopy.medical_notice}</p>
         <div className="chat-transcript" aria-live="polite">
