@@ -106,6 +106,21 @@ test.describe("evidence snapshot presentation", () => {
       page.getByText("governed-2026-09-18-unknown-coverage")
     ).toBeVisible();
     await expect(page.getByText("semantic-1.0.0")).toBeVisible();
+    const releaseEducation = page.locator("#release-education");
+    await releaseEducation.getByText("What these release labels mean").click();
+    await expect(
+      releaseEducation.getByText(
+        /underlying public inputs, not when Atlas generated/i
+      )
+    ).toBeVisible();
+    await releaseEducation
+      .getByText("How county scoring works in this release")
+      .click();
+    await expect(
+      releaseEducation.getByText(
+        /not a diagnosis, an individual exposure estimate/i
+      )
+    ).toBeVisible();
     if (testInfo.project.name === "mobile") {
       await page.evaluate(() => {
         document.documentElement.style.fontSize = "200%";

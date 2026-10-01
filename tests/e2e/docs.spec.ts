@@ -19,6 +19,10 @@ const docsPages = [
     heading: "Evidence, provenance, and uncertainty",
   },
   {
+    path: "/docs/releases-and-methodology",
+    heading: "Releases and methodology labels",
+  },
+  {
     path: "/docs/ai-enabled-decision-intelligence",
     heading: "AI-enabled decision intelligence",
   },

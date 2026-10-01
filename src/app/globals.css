@@ -1156,6 +1156,48 @@ a {
   margin: 0.85rem 0 0;
   font-size: 0.85rem;
 }
+.atlas-release-education {
+  margin-top: 1rem;
+}
+.atlas-release-education-intro {
+  margin: 0.75rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+.atlas-release-semantics {
+  display: grid;
+  gap: 0.85rem 1.25rem;
+  margin: 0.85rem 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.atlas-release-semantics dt {
+  font-weight: 700;
+}
+.atlas-release-semantics dd {
+  margin: 0.2rem 0 0;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.atlas-method-explainer {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0.85rem 0 0;
+}
+.atlas-method-explainer h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.atlas-method-explainer p {
+  margin: 0.35rem 0 0;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.methods-education-links {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
 .pulse {
   display: inline-block;
   width: 0.5rem;
@@ -2445,6 +2487,25 @@ footer > a {
 }
 html[data-atlas-chat-launcher-placement="county-workspace"] .geo-selection {
   padding-bottom: calc(
+    var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
+  );
+}
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar
+  input,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar
+  label,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar
+  [data-slot="button"] {
+  scroll-margin-bottom: calc(
     var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
   );
 }

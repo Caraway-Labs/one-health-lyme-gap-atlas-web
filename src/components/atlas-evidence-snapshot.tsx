@@ -1,3 +1,4 @@
+import { AtlasReleaseEducation } from "@/components/atlas-release-education";
 import type { AtlasMetadata } from "@/generated/models";
 import {
   describeMethodologyVersion,
@@ -107,6 +108,7 @@ export function AtlasEvidenceSnapshot({
             <dd>{describeMethodologyVersion(metadata.methodology_version)}</dd>
           </div>
         </dl>
+        <AtlasReleaseEducation />
         {technicalDetails}
       </section>
     );
@@ -126,6 +128,7 @@ export function AtlasEvidenceSnapshot({
         </span>
         <small className="atlas-evidence-summary">{summary}</small>
       </div>
+      <AtlasReleaseEducation />
       {technicalDetails}
     </div>
   );
