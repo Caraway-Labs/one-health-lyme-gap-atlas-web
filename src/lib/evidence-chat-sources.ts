@@ -44,5 +44,7 @@ export function orderedAnswerCitations(
   }
   return orderedIds
     .map((citationId) => byId.get(citationId))
-    .filter((citation): citation is KnowledgeCitation => citation !== undefined);
+    .filter(
+      (citation): citation is KnowledgeCitation => citation !== undefined
+    );
 }

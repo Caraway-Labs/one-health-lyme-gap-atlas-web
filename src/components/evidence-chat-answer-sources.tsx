@@ -31,7 +31,9 @@ function CitationRow({
 
   return (
     <li className="citation-item">
-      <div className="citation-item-index" aria-hidden="true">{index}</div>
+      <div className="citation-item-index" aria-hidden="true">
+        {index}
+      </div>
       <div className="citation-item-body">
         {href ? (
           <a
@@ -82,8 +84,13 @@ export function EvidenceChatAnswerSources({
       data-assistant-state="answered"
     >
       <div className="chat-answer-sources-heading">
-        <p className="chat-answer-sources-count" id={`sources-${response.request_id}`}>
-          {citations.length > 0 ? sourceCountLabel : "Reviewed literature source"}
+        <p
+          className="chat-answer-sources-count"
+          id={`sources-${response.request_id}`}
+        >
+          {citations.length > 0
+            ? sourceCountLabel
+            : "Reviewed literature source"}
         </p>
       </div>
       <div className="chat-evidence-meta" aria-label="Evidence details">

@@ -52,21 +52,19 @@ function answeredResponse(
   };
 }
 
-describe("safePubMedUrl", () => {
+describe(safePubMedUrl, () => {
   it("accepts only canonical https PubMed URLs for the cited PMID", () => {
     expect(
       safePubMedUrl("https://pubmed.ncbi.nlm.nih.gov/12345/", "12345")
     ).toBe("https://pubmed.ncbi.nlm.nih.gov/12345/");
-    expect(
-      safePubMedUrl("https://example.com/12345/", "12345")
-    ).toBeNull();
+    expect(safePubMedUrl("https://example.com/12345/", "12345")).toBeNull();
   });
 });
 
-describe("orderedAnswerCitations", () => {
+describe(orderedAnswerCitations, () => {
   it("orders citations by claim citation_ids and appends unreferenced citations", () => {
     const ordered = orderedAnswerCitations(answeredResponse());
-    expect(ordered.map((citation) => citation.citation_id)).toEqual([
+    expect(ordered.map((citation) => citation.citation_id)).toStrictEqual([
       "c1",
       "c2",
     ]);
@@ -88,6 +86,6 @@ describe("orderedAnswerCitations", () => {
     });
     expect(
       orderedAnswerCitations(response).map((citation) => citation.citation_id)
-    ).toEqual(["c1", "c2", "c3"]);
+    ).toStrictEqual(["c1", "c2", "c3"]);
   });
 });
