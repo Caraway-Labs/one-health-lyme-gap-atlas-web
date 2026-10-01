@@ -63,6 +63,8 @@ The status is metadata, not a page-specific conditional. The sidebar renders the
 
 The shell persists only the boolean expanded/collapsed sidebar presentation preference under `atlas-sidebar-open`. It never stores analytical URL state, profile values, credentials, or sensitive data. Focus mode temporarily forces the sidebar compact without changing or overwriting that preference; exiting focus mode restores the user's normal shell choice. Responsive mobile rules take precedence over desktop preference and use an accessible drawer.
 
+Primary navigation between `/`, `/geographic_explorer`, and `/investigate` copies supported query parameters from the current URL into each destination link via `src/lib/analytical-navigation-handoff.ts`. Shared county (`county`), release (`dataset`), and Overview or Investigation Workspace filters are preserved when the target route accepts them. Geographic Explorer-only parameters (`view`, `metric`, `selected`, `page`) are not invented on other routes, and other routes do not silently drop a validated county FIPS when the destination can represent it.
+
 The shell provides navigation landmarks, `aria-current="page"`, keyboard focus containment for the mobile drawer, visible focus, status text that does not rely on color alone, reduced-motion-compatible transitions, and the same route behavior across desktop and mobile presentations.
 
 ## Open decisions

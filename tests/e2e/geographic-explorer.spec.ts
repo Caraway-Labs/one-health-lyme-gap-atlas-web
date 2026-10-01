@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { expectNavLinkHandoffMatchesPage } from "./analytical-handoff-assertions";
 import { counties, metadata, mockApi } from "./geographic-explorer-mock";
 test.beforeEach(async ({ page }) => {
   await mockApi(page);
@@ -197,9 +198,12 @@ test("Primary navigation links to Geographic Explorer; grids link to accessible 
   const geographicExplorerLink = page
     .getByRole("navigation", { name: "Primary navigation" })
     .getByRole("link", { name: "Geographic Explorer" });
-  await expect(geographicExplorerLink).toHaveAttribute(
-    "href",
-    "/geographic_explorer"
+  await expect(page).toHaveURL(/dataset=alpha-explorer/);
+  expectNavLinkHandoffMatchesPage(
+    await geographicExplorerLink.getAttribute("href"),
+    "/geographic_explorer",
+    page.url(),
+    ["dataset"]
   );
   if (testInfo.project.name.includes("mobile")) {
     await page

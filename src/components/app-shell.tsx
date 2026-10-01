@@ -10,8 +10,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { DataDictionaryDialog } from "@/components/data-dictionary-dialog";
 import { FeedbackTrigger } from "@/components/feedback-dialog";
@@ -31,6 +31,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { analyticalNavigationHref } from "@/lib/analytical-navigation-handoff";
 import { getDocsUrl } from "@/lib/docs-config";
 import {
   NAVIGATION_GROUPS,
@@ -177,70 +178,22 @@ function AppShellContent({
           </SidebarTrigger>
         </SidebarHeader>
         <SidebarContent>
-          <nav aria-label="Primary navigation">
-            {NAVIGATION_GROUPS.map((group) => {
-              const items = navigationItemsForGroup(group.id);
-              return items.length ? (
-                <SidebarGroup key={group.id}>
-                  <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-                  <SidebarMenu>
-                    {items.map((item) => {
-                      const Icon = item.icon;
-                      if (!Icon) return null;
-                      const active = isNavigationItemActive(item, pathname);
-                      const statusLabel =
-                        item.id === "assistant" &&
-                        process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true"
-                          ? "Early access"
-                          : NAVIGATION_STATUS_LABELS[item.status];
-                      const accessibleLabel =
-                        item.status === "inDevelopment"
-                          ? `${item.label} — ${statusLabel}`
-                          : item.label;
-                      return (
-                        <SidebarMenuItem key={item.id}>
-                          <SidebarMenuButton
-                            active={active}
-                            aria-current={active ? "page" : undefined}
-                            aria-label={open ? undefined : accessibleLabel}
-                            href={item.external ? getDocsUrl() : item.href}
-                            onClick={
-                              item.external ? undefined : selectDestination
-                            }
-                            rel={
-                              item.external ? "noopener noreferrer" : undefined
-                            }
-                            target={item.external ? "_blank" : undefined}
-                            tooltip={accessibleLabel}
-                          >
-                            <Icon aria-hidden="true" />
-                            <span className="sidebar-item-label">
-                              {item.label}
-                            </span>
-                            {item.status === "inDevelopment" ? (
-                              <Badge
-                                aria-hidden="true"
-                                className="sidebar-status"
-                                variant="secondary"
-                              >
-                                {statusLabel}
-                              </Badge>
-                            ) : null}
-                            {item.external ? (
-                              <ExternalLink
-                                aria-hidden="true"
-                                className="sidebar-external-icon"
-                              />
-                            ) : null}
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    })}
-                  </SidebarMenu>
-                </SidebarGroup>
-              ) : null;
-            })}
-          </nav>
+          <Suspense
+            fallback={
+              <PrimaryNavigationMenu
+                onSelectDestination={selectDestination}
+                open={open}
+                pathname={pathname}
+                searchParams={new URLSearchParams()}
+              />
+            }
+          >
+            <PrimaryNavigationMenuWithSearchParams
+              onSelectDestination={selectDestination}
+              open={open}
+              pathname={pathname}
+            />
+          </Suspense>
         </SidebarContent>
       </Sidebar>
       {mobileOpen ? (
@@ -297,6 +250,91 @@ function AppShellContent({
       </SidebarInset>
     </div>
   );
+}
+
+type PrimaryNavigationMenuProps = {
+  onSelectDestination: () => void;
+  open: boolean;
+  pathname: string;
+  searchParams: Pick<URLSearchParams, "getAll" | "has">;
+};
+
+function PrimaryNavigationMenu({
+  onSelectDestination,
+  open,
+  pathname,
+  searchParams,
+}: PrimaryNavigationMenuProps) {
+  return (
+    <nav aria-label="Primary navigation">
+      {NAVIGATION_GROUPS.map((group) => {
+        const items = navigationItemsForGroup(group.id);
+        return items.length ? (
+          <SidebarGroup key={group.id}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarMenu>
+              {items.map((item) => {
+                const Icon = item.icon;
+                if (!Icon) return null;
+                const active = isNavigationItemActive(item, pathname);
+                const statusLabel =
+                  item.id === "assistant" &&
+                  process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true"
+                    ? "Early access"
+                    : NAVIGATION_STATUS_LABELS[item.status];
+                const accessibleLabel =
+                  item.status === "inDevelopment"
+                    ? `${item.label} — ${statusLabel}`
+                    : item.label;
+                const destinationHref = item.external
+                  ? getDocsUrl()
+                  : analyticalNavigationHref(item.href, pathname, searchParams);
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      active={active}
+                      aria-current={active ? "page" : undefined}
+                      aria-label={open ? undefined : accessibleLabel}
+                      href={destinationHref}
+                      onClick={item.external ? undefined : onSelectDestination}
+                      rel={item.external ? "noopener noreferrer" : undefined}
+                      target={item.external ? "_blank" : undefined}
+                      tooltip={accessibleLabel}
+                    >
+                      <Icon aria-hidden="true" />
+                      <span className="sidebar-item-label">{item.label}</span>
+                      {item.status === "inDevelopment" ? (
+                        <Badge
+                          aria-hidden="true"
+                          className="sidebar-status"
+                          variant="secondary"
+                        >
+                          {statusLabel}
+                        </Badge>
+                      ) : null}
+                      {item.external ? (
+                        <ExternalLink
+                          aria-hidden="true"
+                          className="sidebar-external-icon"
+                        />
+                      ) : null}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : null;
+      })}
+    </nav>
+  );
+}
+
+function PrimaryNavigationMenuWithSearchParams(
+  props: Omit<PrimaryNavigationMenuProps, "searchParams">
+) {
+  const searchParams = useSearchParams();
+  return <PrimaryNavigationMenu {...props} searchParams={searchParams} />;
 }
 
 function ButtonFocusMode({

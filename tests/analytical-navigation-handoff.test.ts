@@ -1,0 +1,97 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  analyticalNavigationHandoffSearchParams,
+  analyticalNavigationHref,
+} from "@/lib/analytical-navigation-handoff";
+
+function expectHrefQuery(href: string, expected: Record<string, string>) {
+  const url = new URL(href, "http://localhost");
+  for (const [key, value] of Object.entries(expected)) {
+    expect(url.searchParams.get(key)).toBe(value);
+  }
+}
+
+describe("analytical navigation handoff", () => {
+  it("copies shared county and release context between analytical routes", () => {
+    const source = new URLSearchParams(
+      "dataset=alpha-2026-08-06&county=18097&state=IN"
+    );
+    expectHrefQuery(
+      analyticalNavigationHref("/geographic_explorer", "/", source),
+      {
+        county: "18097",
+        dataset: "alpha-2026-08-06",
+        state: "IN",
+      }
+    );
+    expect(
+      new URL(
+        analyticalNavigationHref("/investigate", "/", source),
+        "http://localhost"
+      ).pathname
+    ).toBe("/investigate");
+    expectHrefQuery(analyticalNavigationHref("/investigate", "/", source), {
+      county: "18097",
+      dataset: "alpha-2026-08-06",
+      state: "IN",
+    });
+  });
+
+  it("does not fabricate Geographic Explorer-only parameters on other routes", () => {
+    const source = new URLSearchParams(
+      "county=08001&view=compare&selected=08001%2C06037&metric=completeness&page=2"
+    );
+    expect(
+      analyticalNavigationHandoffSearchParams(
+        "/geographic_explorer",
+        "/",
+        source
+      ).toString()
+    ).toBe("county=08001");
+    expect(
+      analyticalNavigationHandoffSearchParams(
+        "/geographic_explorer",
+        "/investigate",
+        source
+      ).toString()
+    ).toBe("county=08001");
+  });
+
+  it("keeps explorer-specific parameters when the destination is Geographic Explorer", () => {
+    const source = new URLSearchParams(
+      "county=08001&view=maps&metric=score&page=3"
+    );
+    const handoff = analyticalNavigationHandoffSearchParams(
+      "/",
+      "/geographic_explorer",
+      source
+    );
+    expect(handoff.get("county")).toBe("08001");
+    expect(handoff.get("view")).toBe("maps");
+    expect(handoff.get("metric")).toBe("score");
+    expect(handoff.get("page")).toBe("3");
+  });
+
+  it("skips invalid county values instead of inventing a replacement", () => {
+    const source = new URLSearchParams("county=not-a-fips&dataset=alpha");
+    expect(
+      analyticalNavigationHandoffSearchParams(
+        "/",
+        "/geographic_explorer",
+        source
+      ).toString()
+    ).toBe("dataset=alpha");
+  });
+
+  it("does not hand off analytical state from non-analytical routes", () => {
+    const source = new URLSearchParams("county=08001");
+    expect(analyticalNavigationHref("/", "/privacy", source)).toBe("/");
+  });
+
+  it("leaves external and utility destinations unchanged", () => {
+    const source = new URLSearchParams("county=08001");
+    expect(analyticalNavigationHref("/docs", "/", source)).toBe("/docs");
+    expect(analyticalNavigationHref("/account", "/", source)).toBe("/account");
+  });
+});

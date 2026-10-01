@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { expectNavLinkHandoffMatchesPage } from "./analytical-handoff-assertions";
+
 const metadata = {
   bundle_sha256: "a".repeat(64),
   generated_at: "2026-08-06T05:37:16Z",
@@ -624,9 +626,16 @@ test("offers route-aware sidebar navigation, early-access status, and a shared d
   await expect(
     navigation.getByRole("link", { name: "Geographic Explorer" })
   ).toHaveAttribute("aria-current", "page");
-  await expect(
-    navigation.getByRole("link", { name: "Geographic Explorer" })
-  ).toHaveAttribute("href", "/geographic_explorer");
+  await expect(page).toHaveURL(/county=08001/);
+  await expect(page).toHaveURL(/dataset=alpha-2026-08-06/);
+  expectNavLinkHandoffMatchesPage(
+    await navigation
+      .getByRole("link", { name: "Geographic Explorer" })
+      .getAttribute("href"),
+    "/geographic_explorer",
+    page.url(),
+    ["county", "dataset"]
+  );
   await expect(
     navigation.getByRole("link", { name: "Atlas Assistant" })
   ).toContainText("Early access");
@@ -870,8 +879,21 @@ function expectInvestigationDeepLink(url: string) {
 test("opens the Investigation Workspace from shared navigation and keeps it current", async ({
   page,
 }, testInfo) => {
-  await page.goto("/");
   const mobile = testInfo.project.name.includes("mobile");
+  await page.goto("/?county=08001&dataset=alpha-2026-08-06");
+  if (mobile) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
+  const handoffLink = page
+    .getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Investigation Workspace" });
+  const handoffHref = await handoffLink.getAttribute("href");
+  expect(handoffHref).toBeTruthy();
+  const handoffUrl = new URL(handoffHref!, "http://localhost");
+  expect(handoffUrl.searchParams.get("county")).toBe("08001");
+  expect(handoffUrl.searchParams.get("dataset")).toBe("alpha-2026-08-06");
+
+  await page.goto("/");
   if (mobile) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
@@ -892,7 +914,6 @@ test("opens the Investigation Workspace from shared navigation and keeps it curr
   await page.keyboard.press("Enter");
 
   await expect(page).toHaveURL(/\/investigate/);
-  expect(new URL(page.url()).pathname).toBe("/investigate");
   await expect(
     page.getByRole("heading", { name: "Explore county evidence in one place" })
   ).toBeVisible();

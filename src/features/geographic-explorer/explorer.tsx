@@ -193,15 +193,22 @@ export function GeographicExplorer() {
     () => new Set(scope.map((county) => county.fips)),
     [scope]
   );
-  const primaryFips = primaryCountyFips(
-    state.view,
-    state.selected,
-    state.county,
-    availableFips
-  );
-  const selected =
-    scope.find((county) => county.fips === primaryFips) ?? filtered[0];
-  const selectedFips = selected?.fips ?? "";
+  const countyUnavailableInRelease =
+    /^\d{5}$/.test(state.county) && !availableFips.has(state.county);
+  const primaryFips = countyUnavailableInRelease
+    ? undefined
+    : primaryCountyFips(
+        state.view,
+        state.selected,
+        state.county,
+        availableFips
+      );
+  const selected = countyUnavailableInRelease
+    ? undefined
+    : (scope.find((county) => county.fips === primaryFips) ?? filtered[0]);
+  const selectedFips = countyUnavailableInRelease
+    ? state.county
+    : (selected?.fips ?? "");
   const comparisons = state.selected.flatMap((fips) => {
     const county = scope.find((item) => item.fips === fips);
     return county ? [county] : [];
@@ -520,7 +527,17 @@ export function GeographicExplorer() {
           </section>
           <aside className="geo-selection" aria-label="Selected county">
             <span className="eyebrow">Selected county</span>
-            {selected ? (
+            {countyUnavailableInRelease ? (
+              <>
+                <h2>County unavailable in this release</h2>
+                <p role="alert">
+                  FIPS {state.county} is not available in the active governed
+                  release. The URL was kept so this handoff is not mistaken for
+                  a different county. Select a county from the evidence table to
+                  continue.
+                </p>
+              </>
+            ) : selected ? (
               <>
                 <h2>
                   {selected.county}, {selected.state}

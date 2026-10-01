@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,6 +15,8 @@ let pathname = "/assistant";
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => pathname,
+  useSearchParams: (): ReadonlyURLSearchParams =>
+    new URLSearchParams() as unknown as ReadonlyURLSearchParams,
 }));
 
 import { AppShell } from "@/components/app-shell";
