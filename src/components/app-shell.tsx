@@ -32,6 +32,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { analyticalNavigationHref } from "@/lib/analytical-navigation-handoff";
+import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import {
   assistantNavigationStatusLabel,
   isAtlasAssistantLiteratureEnabled,
@@ -301,7 +302,13 @@ function PrimaryNavigationMenu({
                     : item.label;
                 const destinationHref = item.external
                   ? getDocsUrl()
-                  : analyticalNavigationHref(item.href, pathname, searchParams);
+                  : item.href === "/assistant"
+                    ? assistantWorkspaceHref(pathname, searchParams)
+                    : analyticalNavigationHref(
+                        item.href,
+                        pathname,
+                        searchParams
+                      );
                 return (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton

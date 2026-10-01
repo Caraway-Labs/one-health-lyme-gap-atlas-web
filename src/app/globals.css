@@ -2621,6 +2621,37 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   font-size: clamp(1.4rem, 3vw, 2.1rem);
   font-weight: 500;
 }
+.chat-county-context {
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.chat-county-context p {
+  margin: 0;
+}
+.chat-county-context-release {
+  margin-top: 0.35rem;
+  color: var(--muted-foreground);
+}
+.chat-county-context-invalid,
+.chat-county-context-unavailable {
+  background: #fff6da;
+  color: #5b4b12;
+}
+.chat-county-context-identified {
+  background: color-mix(in srgb, var(--teal) 12%, var(--background));
+}
+.chat-county-context-loading {
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
 .medical-notice {
   margin: 0;
   padding: 0.75rem 1.25rem;
