@@ -113,6 +113,9 @@
   /* Shared application-shell sizing: keeps route chrome compact and predictable. */
   --shell-sidebar-width: 16rem;
   --shell-sidebar-compact-width: 4.25rem;
+  --chat-launcher-inset-inline: var(--space-6);
+  --chat-launcher-inset-block: var(--space-6);
+  --chat-launcher-clearance: calc(var(--space-12) + var(--space-2));
   --shell-utility-height: 3.5rem;
   --shell-navigation-target: 2.5rem;
   --layout-inline: clamp(1.25rem, 3vw, 3rem);
@@ -2350,12 +2353,25 @@ footer > a {
   background: var(--pale);
 }
 
-.chat-launcher {
+.chat-launcher-dock {
   position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
   z-index: 20;
+  bottom: calc(
+    var(--chat-launcher-inset-block) + env(safe-area-inset-bottom, 0px)
+  );
+  left: var(--chat-launcher-dock-left, 0px);
+  display: flex;
+  width: var(--chat-launcher-dock-width, 100vw);
+  box-sizing: border-box;
+  justify-content: flex-start;
+  padding-inline: var(--chat-launcher-inset-inline);
+  pointer-events: none;
+}
+.chat-launcher {
+  position: relative;
+  z-index: 1;
   min-height: 3rem;
+  max-width: calc(100% - var(--chat-launcher-inset-inline));
   padding: 0.8rem 1.2rem;
   border: 0;
   border-radius: 2rem;
@@ -2364,6 +2380,19 @@ footer > a {
   box-shadow: 0 12px 35px rgba(8, 42, 77, 0.3);
   cursor: pointer;
   font-weight: 800;
+  pointer-events: auto;
+}
+.chat-launcher:focus-visible {
+  outline: var(--focus-ring-width) solid var(--foreground);
+  outline-offset: 3px;
+}
+html[data-atlas-chat-launcher="enabled"] .app-content {
+  padding-bottom: calc(
+    var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
+  );
+  scroll-padding-bottom: calc(
+    var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
+  );
 }
 .chat-backdrop {
   position: fixed;

@@ -4,6 +4,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
+import {
+  observeChatLauncherDockInsets,
+} from "@/lib/chat-launcher-dock";
 
 import { EvidenceChat } from "./evidence-chat";
 
@@ -59,19 +62,30 @@ function EnabledChatLauncher() {
     previousPathname.current = pathname;
   }, [pathname]);
 
+  useEffect(() => {
+    document.documentElement.dataset.atlasChatLauncher = "enabled";
+    const stopObserving = observeChatLauncherDockInsets();
+    return () => {
+      stopObserving();
+      delete document.documentElement.dataset.atlasChatLauncher;
+    };
+  }, [pathname]);
+
   return (
     <>
-      <button
-        ref={launcher}
-        {...analyticsControlAttributes("evidence_chat_open")}
-        className="chat-launcher"
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-      >
-        Atlas Assistant
-      </button>
+      <div className="chat-launcher-dock">
+        <button
+          ref={launcher}
+          {...analyticsControlAttributes("evidence_chat_open")}
+          className="chat-launcher"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+        >
+          Atlas Assistant
+        </button>
+      </div>
       {open && (
         <div
           className="chat-backdrop"
