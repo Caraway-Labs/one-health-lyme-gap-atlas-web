@@ -3047,6 +3047,20 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   background: color-mix(in srgb, var(--destructive) 8%, white);
   color: var(--ink);
 }
+.chat-notice {
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+  border-left: 3px solid var(--warning);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--warning) 10%, white);
+  color: var(--ink);
+}
+.chat-notice p {
+  margin: 0 0 0.75rem;
+}
+.chat-notice strong {
+  color: var(--navy);
+}
 .chat-error p {
   margin: 0;
 }

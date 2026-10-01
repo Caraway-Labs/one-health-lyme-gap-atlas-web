@@ -9,7 +9,7 @@ import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/
 export const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
 export const CHAT_STORAGE_EVENT = "atlas-knowledge-chat-storage";
 const MAX_CONVERSATIONS = 5;
-const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+export const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface LocalChatTurn {
   id: string;
