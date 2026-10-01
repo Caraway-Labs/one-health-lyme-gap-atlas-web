@@ -70,7 +70,8 @@ test("answered evidence, safe citations, local continuation, and history control
   await ask(page, "What does the literature say?");
   await expect(page.getByText("Evidence: Limited evidence")).toBeVisible();
   await expect(page.getByText("Source: Literature evidence")).toBeVisible();
-  const citation = page.getByRole("link", { name: "Source paper" });
+  await expect(page.getByText("1 source for this answer")).toBeVisible();
+  const citation = page.getByRole("link", { name: /Source paper/i });
   await expect(citation).toHaveAttribute(
     "href",
     "https://pubmed.ncbi.nlm.nih.gov/12345/"
@@ -172,7 +173,7 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
   );
   await expect(lastAssistant).not.toContainText("PubMed");
   await expect(lastAssistant.locator(".citation-list")).toHaveCount(0);
-  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+  await expect(lastAssistant.locator(".chat-answer-sources")).toHaveCount(0);
   await expect(page.getByLabel("Your question")).toHaveValue("No evidence?");
   await expect(page.getByLabel("Your question")).toBeFocused();
 
@@ -183,7 +184,7 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
   await expect(lastAssistant).toContainText(
     "I cannot give individual medical advice."
   );
-  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+  await expect(lastAssistant.locator(".chat-answer-sources")).toHaveCount(0);
   await expect(
     page.getByText("Evidence: Evidence state not applicable")
   ).toHaveCount(0);
@@ -192,7 +193,7 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
   await expect(lastAssistant).toContainText(
     "Evidence is temporarily unavailable."
   );
-  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+  await expect(lastAssistant.locator(".chat-answer-sources")).toHaveCount(0);
   await expect(lastAssistant).toContainText("Evidence service unavailable.");
   await expect(lastAssistant).not.toContainText("governed corpus");
   const unavailableRetry = page.getByRole("button", {
@@ -210,7 +211,7 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
     "The assistant is at capacity. Please retry."
   );
   await expect(lastAssistant).toContainText("Temporarily at capacity.");
-  await expect(lastAssistant.locator(".chat-evidence-meta")).toHaveCount(0);
+  await expect(lastAssistant.locator(".chat-answer-sources")).toHaveCount(0);
   await expect(lastAssistant.locator(".citation-list")).toHaveCount(0);
   const capacityRetry = page.getByRole("button", { name: "Retry later" });
   await capacityRetry.focus();
