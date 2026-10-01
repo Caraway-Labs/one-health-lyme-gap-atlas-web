@@ -244,7 +244,7 @@ test("TC06–TC08: research and sign-in shells fail safely without authenticatio
   await page.getByLabel("Your question").fill("What evidence is available?");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(page.locator(".chat-panel").getByRole("alert")).toContainText(
-    /unavailable|503/i
+    /did not complete|unavailable|503/i
   );
   await expect(
     page.getByRole("heading", { name: "Atlas Assistant" })

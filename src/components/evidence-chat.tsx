@@ -699,7 +699,10 @@ export function EvidenceChat({
                   {message.length}/1,000
                 </small>
               ) : (
-                <span className="chat-char-count-placeholder" aria-hidden="true" />
+                <span
+                  className="chat-char-count-placeholder"
+                  aria-hidden="true"
+                />
               )}
               <Button
                 {...analyticsControlAttributes("evidence_chat_submit")}
