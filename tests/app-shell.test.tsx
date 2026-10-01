@@ -70,7 +70,7 @@ describe("Atlas application shell", () => {
     expect(screen.queryByRole("link", { name: /UX Lab/i })).toBeNull();
   });
 
-  it("labels the enabled literature Assistant as early access", () => {
+  it("labels the enabled literature Assistant as early access on the workspace route", () => {
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
     renderShell(
       <AppShell>
@@ -82,6 +82,18 @@ describe("Atlas application shell", () => {
       screen.getByRole("link", { name: "Atlas Assistant" }).textContent
     ).toContain("Early access");
     expect(screen.queryByText("Coming Soon")).toBeNull();
+  });
+
+  it("hides the Assistant nav link on explore routes when literature chat is enabled", () => {
+    vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
+    pathname = "/geographic_explorer";
+    renderShell(
+      <AppShell>
+        <p>Route content</p>
+      </AppShell>
+    );
+
+    expect(screen.queryByRole("link", { name: "Atlas Assistant" })).toBeNull();
   });
 
   it("renders utility and footer destinations from the route metadata", () => {

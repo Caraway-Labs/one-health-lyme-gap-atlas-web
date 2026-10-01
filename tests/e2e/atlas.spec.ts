@@ -638,7 +638,7 @@ test("offers route-aware sidebar navigation, early-access status, and a shared d
   );
   await expect(
     navigation.getByRole("link", { name: "Atlas Assistant" })
-  ).toContainText("Early access");
+  ).toHaveCount(0);
   await expect(navigation.getByRole("link", { name: "Docs" })).toHaveAttribute(
     "target",
     "_blank"
@@ -649,6 +649,9 @@ test("offers route-aware sidebar navigation, early-access status, and a shared d
       .getByRole("button", { name: "Close navigation" })
       .click();
   }
+  await expect(
+    page.getByRole("button", { name: /Atlas Assistant/i })
+  ).toContainText("Early access");
   await page.getByRole("button", { name: "Data dictionary" }).click();
   const dialog = page.getByRole("dialog", { name: "Data dictionary" });
   await expect(dialog).toContainText("County Review Priority");

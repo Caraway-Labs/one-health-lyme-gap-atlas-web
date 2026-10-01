@@ -2467,6 +2467,9 @@ html[data-atlas-chat-launcher="enabled"] .app-shell .app-inset > footer {
 .chat-launcher {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   min-height: var(--chat-launcher-control-height);
   max-width: calc(100% - var(--chat-launcher-inset-inline));
   padding: var(--chat-launcher-padding-block) 1.2rem;
@@ -2478,6 +2481,20 @@ html[data-atlas-chat-launcher="enabled"] .app-shell .app-inset > footer {
   cursor: pointer;
   font-weight: 800;
   pointer-events: auto;
+}
+.chat-launcher-title {
+  white-space: nowrap;
+}
+.chat-launcher-early-access {
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 .chat-launcher:focus-visible {
   outline: var(--focus-ring-width) solid var(--foreground);

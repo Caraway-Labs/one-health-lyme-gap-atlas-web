@@ -32,6 +32,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { analyticalNavigationHref } from "@/lib/analytical-navigation-handoff";
+import {
+  assistantNavigationStatusLabel,
+  isAtlasAssistantLiteratureEnabled,
+  shouldShowAssistantInPrimaryNavigation,
+} from "@/lib/assistant-entry-points";
 import { getDocsUrl } from "@/lib/docs-config";
 import {
   NAVIGATION_GROUPS,
@@ -265,10 +270,19 @@ function PrimaryNavigationMenu({
   pathname,
   searchParams,
 }: PrimaryNavigationMenuProps) {
+  const literatureAssistantEnabled = isAtlasAssistantLiteratureEnabled();
+  const showAssistantInPrimaryNavigation =
+    shouldShowAssistantInPrimaryNavigation(
+      pathname,
+      literatureAssistantEnabled
+    );
+
   return (
     <nav aria-label="Primary navigation">
       {NAVIGATION_GROUPS.map((group) => {
-        const items = navigationItemsForGroup(group.id);
+        const items = navigationItemsForGroup(group.id, {
+          showAssistantInPrimaryNavigation,
+        });
         return items.length ? (
           <SidebarGroup key={group.id}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
@@ -278,9 +292,8 @@ function PrimaryNavigationMenu({
                 if (!Icon) return null;
                 const active = isNavigationItemActive(item, pathname);
                 const statusLabel =
-                  item.id === "assistant" &&
-                  process.env.NEXT_PUBLIC_KG_CHAT_ENABLED === "true"
-                    ? "Early access"
+                  item.id === "assistant" && literatureAssistantEnabled
+                    ? assistantNavigationStatusLabel(literatureAssistantEnabled)
                     : NAVIGATION_STATUS_LABELS[item.status];
                 const accessibleLabel =
                   item.status === "inDevelopment"

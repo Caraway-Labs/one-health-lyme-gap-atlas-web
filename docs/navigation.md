@@ -13,7 +13,7 @@ The initial hierarchy is task-oriented for epidemiologists and public-health pro
 | Explore | Atlas overview | `/` | Available | Sidebar |
 | Explore | Geographic Explorer | `/geographic_explorer` | Available | Sidebar |
 | Explore | Investigation Workspace | `/investigate` | Available | Sidebar |
-| Research | Atlas Assistant | `/assistant` | Early access when enabled; Coming Soon when disabled | Sidebar |
+| Research | Atlas Assistant | `/assistant` | Early access when enabled; Coming Soon when disabled | Sidebar when chat is off, or on `/assistant` when chat is on (see [Assistant entry points](./assistant-entry-points.md)) |
 | Reference | Docs | `https://carawaylabs.com/docs` | Available | Sidebar, new tab |
 | Utility | Account | `/account` | Available | Top utility bar |
 | Trust | Privacy | `/privacy` | Available | Global footer |
@@ -26,7 +26,7 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 | Route family | Navigation role | Status | Shell | Rationale |
 | --- | --- | --- | --- | --- |
 | `/`, `/geographic_explorer`, `/investigate` | Primary sidebar | Available | Analytical | Released public Atlas workflows. The Investigation Workspace is the promoted wide-workbench county investigation experience. |
-| `/assistant` | Primary sidebar | In development | Analytical | Literature-only chat is feature-gated; enabled navigation says Early access and unavailable state uses the shared Coming Soon contract. |
+| `/assistant` | Primary sidebar or launcher handoff | In development | Analytical | Literature-only chat is feature-gated. When enabled, the floating launcher is the primary entry on other analytical routes; the sidebar link appears on `/assistant` for wayfinding. See [Assistant entry points](./assistant-entry-points.md). |
 | `/knowledge-graph` | Legacy deep link | Hidden | Analytical | Redirects to `/assistant`, preserving the local conversation selector. |
 | `/variant_6` | Legacy deep link | Hidden | Analytical | Redirects to `/investigate`, preserving supported analytical query state. |
 | `/account` | Global utility | Available | Analytical | Optional account functionality is user-facing and usable. |
