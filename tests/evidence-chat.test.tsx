@@ -453,6 +453,32 @@ describe(EvidenceChat, () => {
     );
   });
 
+  it("hides the empty-state hero when a browser failure is shown", async () => {
+    chatRequest.mockRejectedValueOnce(new Error("Failed to fetch"));
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByRole("alert");
+    expect(screen.queryByText("Start with a research question")).toBeNull();
+  });
+
+  it("de-emphasizes the character counter until the limit is near", async () => {
+    render(<EvidenceChat />);
+    const question = screen.getByLabelText("Your question");
+    fireEvent.change(question, { target: { value: "a".repeat(50) } });
+    expect(screen.queryByText("50/1,000")).toBeNull();
+    fireEvent.change(question, { target: { value: "a".repeat(920) } });
+    expect(screen.getByText("920/1,000").className).toContain(
+      "chat-char-count-near-limit"
+    );
+  });
+
+  it("exposes the transcript region as keyboard-focusable", () => {
+    render(<EvidenceChat />);
+    const transcript = document.querySelector(".chat-transcript");
+    expect(transcript?.getAttribute("tabindex")).toBe("0");
+    expect(transcript?.getAttribute("role")).toBe("region");
+  });
+
   it("keeps a browser failure distinct from corpus absence and retries once", async () => {
     chatRequest
       .mockRejectedValueOnce(new Error("Failed to fetch"))

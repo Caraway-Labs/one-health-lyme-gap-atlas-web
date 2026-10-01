@@ -23,7 +23,7 @@ export default async function AssistantPage({
   const selected =
     typeof params.conversation === "string" ? params.conversation : undefined;
   return (
-    <main className="knowledge-workspace">
+    <main className="knowledge-workspace knowledge-workspace-assistant">
       <EvidenceChat initialConversationId={selected} />
     </main>
   );

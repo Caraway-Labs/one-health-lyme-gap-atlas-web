@@ -2538,9 +2538,34 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   cursor: pointer;
   font-size: 1.25rem;
 }
+.app-inset:has(> .app-content > .knowledge-workspace-assistant) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.app-inset:has(> .app-content > .knowledge-workspace-assistant) > .app-content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app-inset:has(> .app-content > .knowledge-workspace-assistant) > footer {
+  flex: none;
+}
 .knowledge-workspace {
   min-height: 100vh;
   padding: 8rem 3rem 3rem;
+  background: var(--pale);
+}
+.knowledge-workspace-assistant {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  overflow: hidden;
   background: var(--pale);
 }
 .evidence-chat {
@@ -2548,13 +2573,14 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   color: var(--ink);
 }
 .evidence-chat-workspace {
-  grid-template-columns: minmax(14rem, 0.34fr) minmax(0, 1fr);
-  max-width: 1280px;
-  min-height: calc(100vh - 11rem);
-  margin: auto;
+  grid-template-columns: minmax(14rem, 0.3fr) minmax(0, 1fr);
+  align-items: stretch;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
   background: white;
   box-shadow: var(--shadow);
 }
@@ -2706,25 +2732,31 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   line-height: 1.5;
 }
 .chat-panel {
-  display: flex;
+  display: grid;
   min-width: 0;
   min-height: 0;
-  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
   background: white;
+}
+.evidence-chat-workspace > .chat-panel {
+  min-height: 0;
 }
 .chat-panel > header {
   display: flex;
-  padding: 1.25rem;
+  padding: 0.85rem 1rem;
   align-items: start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   border-bottom: 1px solid var(--line);
+  flex: none;
 }
 .chat-panel h1 {
-  margin: 0.3rem 0 0;
+  margin: 0.2rem 0 0;
   color: var(--navy);
   font-family: var(--font-display);
-  font-size: clamp(1.4rem, 3vw, 2.1rem);
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
   font-weight: 500;
 }
 .chat-county-context {
@@ -2760,51 +2792,91 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
 }
 .medical-notice {
   margin: 0;
-  padding: 0.75rem 1.25rem;
+  padding: 0.55rem 1rem;
   background: #fff6da;
   color: #5b4b12;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   line-height: 1.45;
+  flex: none;
 }
 .chat-transcript {
-  flex: 1;
-  min-height: 16rem;
-  padding: 1rem 1.25rem;
+  min-height: 0;
+  padding: 0.65rem 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-bottom: 1.25rem;
+}
+.chat-transcript:focus {
+  outline: none;
+}
+.chat-transcript:focus-visible {
+  outline: 3px solid rgba(15, 119, 130, 0.2);
+  outline-offset: -2px;
+}
+.chat-transcript-flow {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  min-height: min(12rem, 100%);
+  padding: 0 1rem 1.25rem;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 .chat-empty {
   display: grid;
-  min-height: 14rem;
+  min-height: 8rem;
+  margin: 0.5rem 0 1rem;
+  padding: 1rem;
   place-content: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
   text-align: center;
   color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--pale) 65%, white);
 }
 .chat-empty strong {
   color: var(--navy);
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.05rem;
   font-weight: 500;
 }
 .chat-empty p {
-  max-width: 30rem;
-  line-height: 1.55;
+  max-width: 28rem;
+  margin: 0.35rem auto 0;
+  line-height: 1.5;
+  font-size: 0.85rem;
 }
 .chat-turn {
-  max-width: 88%;
-  margin: 0 0 1rem;
-  padding: 0.85rem 1rem;
+  max-width: min(34rem, 92%);
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
   border-radius: 0.75rem;
-  background: var(--pale);
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(3, 19, 37, 0.04);
+}
+.chat-turn.assistant {
+  max-width: min(48rem, 100%);
+  margin-right: auto;
+  border-color: color-mix(in srgb, var(--teal) 22%, var(--line));
+  background: color-mix(in srgb, var(--card) 92%, var(--mint));
 }
 .chat-turn.user {
   margin-left: auto;
+  max-width: min(30rem, 88%);
+  border-color: color-mix(in srgb, var(--navy) 35%, transparent);
   background: var(--navy);
   color: white;
+  box-shadow: 0 2px 8px rgba(3, 19, 37, 0.12);
 }
 .chat-turn strong {
-  font-size: 0.7rem;
+  display: block;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+}
+.chat-turn.user strong {
+  color: color-mix(in srgb, white 82%, var(--mint));
 }
 .chat-turn p {
   margin: 0.4rem 0 0;
@@ -3006,47 +3078,69 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
 .chat-error strong {
   color: var(--destructive);
 }
-.chat-form {
-  padding: 1rem 1.25rem;
+.chat-composer-dock {
+  position: relative;
+  z-index: 0;
+  flex: none;
+  isolation: isolate;
   border-top: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 -4px 16px rgba(3, 19, 37, 0.05);
+}
+.chat-form {
+  padding: 0.65rem 1rem 0.5rem;
 }
 .chat-form label {
   display: block;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.35rem;
   color: var(--navy);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
 }
 .chat-form textarea {
   width: 100%;
-  min-height: 5.5rem;
+  min-height: 2.75rem;
+  max-height: 12rem;
   resize: vertical;
-  padding: 0.7rem;
+  padding: 0.55rem 0.65rem;
   border: 1px solid #bdd0cb;
   border-radius: 0.55rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  field-sizing: content;
 }
 .chat-form textarea:focus {
   outline: 3px solid rgba(15, 119, 130, 0.16);
   border-color: var(--teal);
 }
-.chat-form > div {
+.chat-form-actions {
   display: flex;
-  margin-top: 0.5rem;
+  margin-top: 0.45rem;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
 }
-.chat-form small {
-  color: var(--muted-foreground);
+.chat-char-count-placeholder {
+  flex: 1;
+  min-width: 0;
+  min-height: 1rem;
+}
+.chat-char-count-near-limit {
+  flex: 1;
+  min-width: 0;
+  color: var(--destructive);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 .chat-attribution {
   display: flex;
   grid-template-columns: none;
-  padding: 0.65rem 1.25rem;
+  padding: 0.45rem 1rem 0.55rem;
   justify-content: space-between;
   gap: 1rem;
   background: #edf4f2;
   color: var(--muted-foreground);
-  font-size: 0.67rem;
+  font-size: 0.65rem;
 }
 .chat-attribution a {
   color: var(--teal-dark);
@@ -3061,20 +3155,37 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
 .evidence-chat-drawer .chat-transcript {
   min-height: 0;
 }
+.evidence-chat-drawer .chat-composer-dock {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
 @media (max-width: 760px) {
   .knowledge-workspace {
     padding: 6rem 0 0;
   }
+  .knowledge-workspace-assistant {
+    padding: var(--space-2) 0 0;
+  }
   .evidence-chat-workspace {
     display: flex;
-    min-height: calc(100vh - 6rem);
+    min-height: 0;
     border: 0;
     border-radius: 0;
+    flex: 1;
     flex-direction: column;
   }
   .evidence-chat-workspace--no-history {
     display: flex;
+  }
+  .evidence-chat-workspace > .chat-panel {
+    min-height: 0;
+    flex: 1;
+  }
+  .chat-composer-dock {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .chat-transcript-flow {
+    padding-inline: 0.75rem;
   }
   .chat-history-desktop {
     display: none;
