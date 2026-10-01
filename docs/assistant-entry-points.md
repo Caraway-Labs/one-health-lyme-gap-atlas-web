@@ -27,6 +27,17 @@ This hierarchy keeps Assistant discoverable on mobile and desktop (launcher on e
 - `src/components/app-shell.tsx` — filters Research navigation using `shouldShowAssistantInPrimaryNavigation`.
 - `src/components/chat-launcher.tsx` — respects `shouldShowAtlasAssistantLauncher` and launcher labeling.
 
+## Drawer and workspace continuity
+
+`EvidenceChat` uses one shared conversation model (`useEvidenceChat`) and one shared transcript/composer surface (`EvidenceChatConversationContent`). Layout shells differ only by presentation:
+
+| Shell | History | Transcript | Handoff |
+| --- | --- | --- | --- |
+| Drawer (`ChatLauncher`) | No persistent rail; resumes the latest saved local conversation | Compact spacing in `.evidence-chat-drawer` | **Open full workspace** links to `/assistant?conversation=<id>` when the active chat has at least one saved turn |
+| Workspace (`/assistant`) | Recent-chat rail (desktop) or sheet (mobile) | Full-height scrollable transcript with docked composer | URL `?conversation=` deep links; missing IDs show an explicit recoverable notice |
+
+**Not preserved across handoff:** composer text that has not been submitted yet, in-flight requests if the drawer is closed mid-flight, and conversations saved in another browser or after local storage was cleared. The drawer footer states when workspace handoff requires a saved answer; invalid deep links never silently start a different saved chat.
+
 ## Related contracts
 
 - [Navigation contract](./navigation.md) — route metadata and status semantics.
