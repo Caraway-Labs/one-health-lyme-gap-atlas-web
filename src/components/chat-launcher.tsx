@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { observeChatLauncherDockInsets } from "@/lib/chat-launcher-dock";
+import { chatLauncherPlacementForPath } from "@/lib/chat-launcher-placement";
 
 import { EvidenceChat } from "./evidence-chat";
 
@@ -60,18 +61,22 @@ function EnabledChatLauncher() {
     previousPathname.current = pathname;
   }, [pathname]);
 
+  const placement = chatLauncherPlacementForPath(pathname);
+
   useEffect(() => {
     document.documentElement.dataset.atlasChatLauncher = "enabled";
+    document.documentElement.dataset.atlasChatLauncherPlacement = placement;
     const stopObserving = observeChatLauncherDockInsets();
     return () => {
       stopObserving();
       delete document.documentElement.dataset.atlasChatLauncher;
+      delete document.documentElement.dataset.atlasChatLauncherPlacement;
     };
-  }, []);
+  }, [placement]);
 
   return (
     <>
-      <div className="chat-launcher-dock">
+      <div className={`chat-launcher-dock chat-launcher-dock--${placement}`}>
         <button
           ref={launcher}
           {...analyticsControlAttributes("evidence_chat_open")}

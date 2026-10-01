@@ -109,11 +109,15 @@ for (const viewport of VIEWPORTS) {
       page.getByRole("button", { name: "Add to comparison" }),
       "primary action"
     );
+    const evidenceList = page
+      .getByRole("complementary", { name: "Selected county" })
+      .locator("dl");
+    await evidenceList.evaluate((element) => {
+      element.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
     await expectNoLauncherOverlap(
       page,
-      page
-        .getByRole("complementary", { name: "Selected county" })
-        .locator("dl"),
+      evidenceList,
       "selected county evidence"
     );
 
@@ -177,6 +181,28 @@ test("county search stays usable at 375px with 200% zoom", async ({ page }) => {
     window.scrollTo(0, document.documentElement.scrollHeight);
   });
   await expectContentClearanceCoversDock(page);
+});
+
+test("homepage footer links stay clickable on mobile with the assistant dock", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  const privacy = page.getByRole("link", { name: "Privacy" });
+  await privacy.scrollIntoViewIfNeeded();
+  await expect(privacy).toBeVisible();
+  const launcher = page.getByRole("button", { name: "Atlas Assistant" });
+  const [privacyBox, launcherBox] = await Promise.all([
+    privacy.boundingBox(),
+    launcher.boundingBox(),
+  ]);
+  expect(privacyBox).not.toBeNull();
+  expect(launcherBox).not.toBeNull();
+  if (privacyBox && launcherBox) {
+    expect(await boxesOverlap(privacyBox, launcherBox)).toBe(false);
+  }
+  await privacy.click();
+  await expect(page).toHaveURL(/\/privacy$/);
 });
 
 test("opening and closing assistant preserves geographic explorer state", async ({

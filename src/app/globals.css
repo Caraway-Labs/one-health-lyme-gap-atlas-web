@@ -2372,6 +2372,35 @@ footer > a {
   padding-inline: var(--chat-launcher-inset-inline);
   pointer-events: none;
 }
+.chat-launcher-dock--default {
+  justify-content: flex-end;
+}
+@media (max-width: 1100px) {
+  .chat-launcher-dock--county-workspace {
+    justify-content: flex-end;
+  }
+}
+html[data-atlas-chat-launcher-placement="county-workspace"] .geo-selection {
+  padding-bottom: calc(
+    var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
+  );
+}
+html[data-atlas-chat-launcher-placement="county-workspace"] .geo-selection dl,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-selection
+  .geo-score,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-selection
+  [data-slot="button"] {
+  scroll-margin-bottom: calc(
+    var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
+  );
+}
+html[data-atlas-chat-launcher="enabled"] .app-shell .app-inset > footer {
+  padding-bottom: calc(
+    var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
+  );
+}
 .chat-launcher {
   position: relative;
   z-index: 1;
