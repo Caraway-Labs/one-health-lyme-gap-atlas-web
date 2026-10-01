@@ -2490,6 +2490,25 @@ html[data-atlas-chat-launcher-placement="county-workspace"] .geo-selection {
     var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
   );
 }
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar
+  input,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar
+  label,
+html[data-atlas-chat-launcher-placement="county-workspace"]
+  .geo-explorer
+  .filter-bar
+  [data-slot="button"] {
+  scroll-margin-bottom: calc(
+    var(--chat-launcher-clearance) + env(safe-area-inset-bottom, 0px)
+  );
+}
 html[data-atlas-chat-launcher-placement="county-workspace"] .geo-selection dl,
 html[data-atlas-chat-launcher-placement="county-workspace"]
   .geo-selection
