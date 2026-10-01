@@ -8,17 +8,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { Button } from "@/components/ui/button";
+import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
+import type { KnowledgeChatResponse } from "@/generated/models";
+import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
+import { AtlasApiError } from "@/lib/api-mutator";
+import { validateApiResponse } from "@/lib/api-response-validation";
 import {
   readAssistantConversationId,
   resolveActiveConversation,
   resolveConversationSelection,
   synchronizeAssistantConversationUrl,
 } from "@/lib/assistant-conversation-url";
-import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
-import type { KnowledgeChatResponse } from "@/generated/models";
-import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
-import { AtlasApiError } from "@/lib/api-mutator";
-import { validateApiResponse } from "@/lib/api-response-validation";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
@@ -29,6 +29,7 @@ import {
   createConversation,
   loadConversations,
   removeConversation,
+  RETENTION_MS,
   saveConversations,
 } from "@/lib/knowledge-chat-storage";
 
@@ -303,6 +304,7 @@ export function EvidenceChat({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const syncWorkspaceUrl = mode === "workspace";
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [activeId, setActiveId] = useState(
@@ -317,10 +319,12 @@ export function EvidenceChat({
   const [retryQuestion, setRetryQuestion] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const focusQuestionOnSettle = useRef(false);
-  const syncWorkspaceUrl = mode === "workspace";
 
   const applyConversationSelection = useCallback(
-    (requestedId: string | null | undefined, nextConversations: LocalConversation[]) => {
+    (
+      requestedId: string | null | undefined,
+      nextConversations: LocalConversation[]
+    ) => {
       const selection = resolveConversationSelection(
         requestedId,
         nextConversations
@@ -368,21 +372,25 @@ export function EvidenceChat({
   );
 
   useEffect(() => {
-    const refresh = () => {
-      const next = loadConversations();
-      setConversations(next);
-      return next;
-    };
-    const loaded = refresh();
+    const loaded = loadConversations();
+    const refresh = () => setConversations(loadConversations());
+    // eslint-disable-next-line react/set-state-in-effect -- hydrate browser-local chat history once on mount.
+    setConversations(loaded);
+    setHydrated(true);
     if (syncWorkspaceUrl) {
       const requestedId =
         initialConversationId ?? readAssistantConversationId() ?? undefined;
       applyConversationSelection(requestedId, loaded);
     }
-    setHydrated(true);
     window.addEventListener(CHAT_STORAGE_EVENT, refresh);
     return () => window.removeEventListener(CHAT_STORAGE_EVENT, refresh);
   }, [applyConversationSelection, initialConversationId, syncWorkspaceUrl]);
+
+  useEffect(() => {
+    if (syncWorkspaceUrl && missingConversationId) {
+      synchronizeAssistantConversationUrl();
+    }
+  }, [missingConversationId, syncWorkspaceUrl]);
 
   useEffect(() => {
     if (!syncWorkspaceUrl || !hydrated) {
@@ -490,7 +498,7 @@ export function EvidenceChat({
       : conversation.turns;
     const updated: LocalConversation = {
       ...conversation,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.parse(now) + RETENTION_MS).toISOString(),
       turns: [
         ...priorTurns,
         {

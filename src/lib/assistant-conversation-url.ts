@@ -75,11 +75,11 @@ export function resolveConversationSelection(
   return { activeId: "__new__", missingConversationId: requestedId };
 }
 
-export function resolveActiveConversation(
+export function resolveActiveConversation<T extends { id: string }>(
   activeId: string,
-  conversations: { id: string }[],
+  conversations: T[],
   hydrated: boolean
-) {
+): T | undefined {
   if (activeId === "__new__" || activeId === "") {
     return undefined;
   }

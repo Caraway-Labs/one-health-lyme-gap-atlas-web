@@ -25,7 +25,9 @@ describe("assistant conversation URL helpers", () => {
 
   it("reads conversation ids only from the assistant route", () => {
     expect(
-      readAssistantConversationId("https://atlas.example/assistant?conversation=abc")
+      readAssistantConversationId(
+        "https://atlas.example/assistant?conversation=abc"
+      )
     ).toBe("abc");
     expect(
       readAssistantConversationId("https://atlas.example/?conversation=abc")

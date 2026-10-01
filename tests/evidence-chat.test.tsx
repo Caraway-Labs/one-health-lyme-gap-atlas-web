@@ -468,25 +468,32 @@ describe(EvidenceChat, () => {
     await expect(
       screen.findByText("Conversation not found in this browser.")
     ).resolves.toBeTruthy();
-    expect(
-      document.querySelector("[data-assistant-state='conversation_not_found']")
-    ).toBeTruthy();
-    expect(
-      (screen.getByLabelText("Your question") as HTMLTextAreaElement).disabled
-    ).toBe(false);
-    expect(localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
-    expect(replaceState).toHaveBeenCalled();
     const notice = document.querySelector(
       "[data-assistant-state='conversation_not_found']"
     );
-    expect(notice).toBeTruthy();
+    expect({
+      composerEnabled: !(
+        screen.getByLabelText("Your question") as HTMLTextAreaElement
+      ).disabled,
+      noticeVisible: Boolean(notice),
+      storageEmpty: localStorage.getItem(CHAT_STORAGE_KEY) === null,
+      urlStripped: replaceState.mock.calls.length > 0,
+    }).toStrictEqual({
+      composerEnabled: true,
+      noticeVisible: true,
+      storageEmpty: true,
+      urlStripped: true,
+    });
     fireEvent.click(
       within(notice as HTMLElement).getByRole("button", { name: "New chat" })
     );
-    expect(
-      screen.queryByText("Conversation not found in this browser.")
-    ).toBeNull();
-    expect(document.activeElement).toBe(screen.getByLabelText("Your question"));
+    expect({
+      notice: screen.queryByText("Conversation not found in this browser."),
+      focus: document.activeElement,
+    }).toStrictEqual({
+      notice: null,
+      focus: screen.getByLabelText("Your question"),
+    });
   });
 
   it("opens a saved local conversation from a deep link", async () => {
