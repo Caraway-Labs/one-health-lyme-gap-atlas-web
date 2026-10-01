@@ -106,11 +106,21 @@ test("answered evidence, safe citations, local continuation, and history control
   await page
     .getByRole("button", { name: /Delete What does the literature say/ })
     .click();
-  await expect(page.getByText("No saved conversations yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Clear all" })).toHaveCount(0);
+  await expect(
+    page.getByText(/saved in this browser for up to 30 days/)
+  ).toBeVisible();
   await ask(page, "Another question");
   await expect(page.getByText("Evidence: Mixed evidence")).toBeVisible();
-  await page.getByRole("button", { name: "Clear all" }).click();
-  await expect(page.getByText("No saved conversations yet.")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Clear all", exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Clear all", exact: true })
+    .click();
+  await expect(page.getByRole("button", { name: "Clear all" })).toHaveCount(0);
   const accessibility = await new AxeBuilder({ page })
     .include(".evidence-chat")
     .analyze();
