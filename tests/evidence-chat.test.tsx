@@ -429,6 +429,30 @@ describe(EvidenceChat, () => {
     expect(screen.queryByText("A paper")).toBeNull();
   });
 
+  it("hides history chrome until a conversation is saved and confirms clear all", async () => {
+    chatRequest.mockResolvedValue({ data: response() });
+    render(<EvidenceChat />);
+    expect(screen.queryByRole("button", { name: "Clear all" })).toBeNull();
+    expect(
+      screen.getByText(/saved in this browser for up to 30 days/)
+    ).toBeTruthy();
+    await submit();
+    await screen.findByText("Evidence: Limited evidence");
+    expect(screen.getByRole("button", { name: "Clear all" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    expect(
+      screen.getByRole("heading", { name: "Clear all saved chats?" })
+    ).toBeTruthy();
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Clear all",
+      })
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Clear all" })).toBeNull()
+    );
+  });
+
   it("keeps a browser failure distinct from corpus absence and retries once", async () => {
     chatRequest
       .mockRejectedValueOnce(new Error("Failed to fetch"))
