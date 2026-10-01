@@ -36,6 +36,7 @@ export function EvidenceChatWorkspaceShell({
       {hasSavedConversations && (
         <ChatHistoryWorkspace
           activeConversationId={active?.id}
+          composerFocusRef={model.inputRef}
           conversations={conversations}
           mobileHistoryOpen={model.mobileHistoryOpen}
           mobileToggleRef={model.mobileHistoryToggleRef}

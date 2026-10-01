@@ -2662,8 +2662,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   gap: 0.75rem;
 }
 .chat-history-clear {
-  min-width: 2.75rem;
-  min-height: 2.75rem;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
   padding: 0.35rem 0.5rem;
   border: 0;
   border-radius: 0.35rem;
@@ -2676,7 +2676,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   text-underline-offset: 2px;
 }
 .chat-history-clear:focus-visible {
-  outline: 3px solid rgba(15, 119, 130, 0.22);
+  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
   outline-offset: 2px;
 }
 .chat-history-list {
@@ -2693,7 +2693,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   background: white;
 }
 .history-row-select {
-  min-height: 2.75rem;
+  min-height: var(--control-height);
   padding: 0.55rem 0.65rem;
   overflow: hidden;
   border: 0;
@@ -2703,7 +2703,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   text-align: left;
 }
 .history-row-select:focus-visible {
-  outline: 3px solid rgba(15, 119, 130, 0.22);
+  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
   outline-offset: -2px;
 }
 .history-row-select[aria-current="true"] {
@@ -2748,8 +2748,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
 .history-row-delete {
   display: grid;
   place-items: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
   padding: 0;
   border: 0;
   border-left: 1px solid var(--line);
@@ -2760,7 +2760,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   line-height: 1;
 }
 .history-row-delete:focus-visible {
-  outline: 3px solid rgba(15, 119, 130, 0.22);
+  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
   outline-offset: -2px;
   color: var(--destructive);
 }
@@ -2770,8 +2770,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   border-bottom: 1px solid var(--line);
   background: #f6faf8;
   color: var(--muted-foreground);
-  font-size: 0.72rem;
-  line-height: 1.45;
+  font-size: var(--type-small-size);
+  line-height: 1.5;
 }
 .chat-panel-header-actions {
   display: flex;
@@ -2789,7 +2789,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
 .retention-copy {
   margin-top: 1.5rem;
   color: var(--muted-foreground);
-  font-size: 0.7rem;
+  font-size: var(--type-small-size);
   line-height: 1.5;
 }
 .chat-panel {
@@ -3075,7 +3075,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   border-color: var(--teal);
 }
 .citation-source-link:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: var(--focus-ring-width) solid var(--ring);
   outline-offset: 2px;
 }
 .citation-source-title {
@@ -3170,8 +3170,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   line-height: 1.45;
   field-sizing: content;
 }
-.chat-form textarea:focus {
-  outline: 3px solid rgba(15, 119, 130, 0.16);
+.chat-form textarea:focus-visible {
+  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 16%, transparent);
   border-color: var(--teal);
 }
 .chat-form-actions {
@@ -3298,8 +3298,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   .chat-history-mobile-close {
     display: grid;
     place-items: center;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    min-width: var(--control-height);
+    min-height: var(--control-height);
     padding: 0;
     border: 0;
     border-radius: 0.35rem;
@@ -3310,7 +3310,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
     line-height: 1;
   }
   .chat-history-mobile-close:focus-visible {
-    outline: 3px solid rgba(15, 119, 130, 0.22);
+    outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
     outline-offset: 2px;
   }
   .chat-dialog {

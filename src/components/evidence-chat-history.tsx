@@ -21,6 +21,7 @@ import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
 interface ChatHistoryActionsProps {
   activeConversationId?: string;
+  composerFocusRef: RefObject<HTMLTextAreaElement | null>;
   conversations: LocalConversation[];
   mobileHistoryOpen: boolean;
   mobileToggleRef: RefObject<HTMLButtonElement | null>;
@@ -197,6 +198,7 @@ export function ChatHistoryMobileToggle({
 
 export function ChatHistoryWorkspace({
   activeConversationId,
+  composerFocusRef,
   conversations,
   mobileHistoryOpen,
   mobileToggleRef,
@@ -219,13 +221,13 @@ export function ChatHistoryWorkspace({
   function handleSelect(id: string) {
     onSelect(id);
     onMobileHistoryOpenChange(false);
-    mobileToggleRef.current?.focus();
+    composerFocusRef.current?.focus();
   }
 
   function handleClearConfirmed() {
     onClearAll();
     setClearDialogOpen(false);
-    mobileToggleRef.current?.focus();
+    composerFocusRef.current?.focus();
   }
 
   function requestClearAll(target: "desktop" | "mobile") {
@@ -258,6 +260,7 @@ export function ChatHistoryWorkspace({
             ref={desktopClearRef}
             type="button"
             className="chat-history-clear"
+            aria-haspopup="dialog"
             onClick={() => requestClearAll("desktop")}
           >
             Clear all
@@ -291,6 +294,7 @@ export function ChatHistoryWorkspace({
                 <button
                   type="button"
                   className="chat-history-clear"
+                  aria-haspopup="dialog"
                   onClick={() => requestClearAll("mobile")}
                 >
                   Clear all

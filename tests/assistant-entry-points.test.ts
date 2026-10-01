@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   atlasAssistantLauncherAccessibleName,
+  atlasAssistantWorkspaceHeadingId,
   shouldShowAssistantInPrimaryNavigation,
   shouldShowAtlasAssistantLauncher,
 } from "@/lib/assistant-entry-points";
@@ -42,6 +43,15 @@ describe("Atlas Assistant entry points", () => {
   it("labels the launcher with early access when literature chat is enabled", () => {
     expect(atlasAssistantLauncherAccessibleName(true)).toBe(
       "Atlas Assistant, early access"
+    );
+  });
+
+  it("uses stable heading ids for drawer and workspace surfaces", () => {
+    expect(atlasAssistantWorkspaceHeadingId("drawer")).toBe(
+      "atlas-assistant-heading-drawer"
+    );
+    expect(atlasAssistantWorkspaceHeadingId("workspace")).toBe(
+      "atlas-assistant-heading-workspace"
     );
   });
 });

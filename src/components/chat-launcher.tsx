@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ATLAS_ASSISTANT_LAUNCHER_LABEL,
   atlasAssistantLauncherAccessibleName,
+  atlasAssistantWorkspaceHeadingId,
   shouldShowAtlasAssistantLauncher,
 } from "@/lib/assistant-entry-points";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
@@ -119,7 +120,7 @@ function EnabledChatLauncher() {
             className="chat-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Atlas Assistant"
+            aria-labelledby={atlasAssistantWorkspaceHeadingId("drawer")}
           >
             <button
               className="chat-close"

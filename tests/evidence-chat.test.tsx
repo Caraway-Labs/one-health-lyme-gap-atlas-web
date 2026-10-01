@@ -617,4 +617,102 @@ describe(EvidenceChat, () => {
     });
     expect(historySelect.getAttribute("aria-current")).toBe("true");
   });
+
+  it("names the workspace with one Assistant region tied to the page heading", () => {
+    render(<EvidenceChat />);
+    const heading = screen.getByRole("heading", {
+      level: 1,
+      name: "Atlas Assistant",
+    });
+    expect(heading.id).toBe("atlas-assistant-heading-workspace");
+    expect(
+      screen.getAllByRole("region", { name: "Atlas Assistant" })
+    ).toHaveLength(1);
+  });
+
+  it("drawer surface avoids a second Assistant region inside the dialog", () => {
+    render(<EvidenceChat mode="drawer" />);
+    expect(
+      screen.queryByRole("region", { name: "Atlas Assistant" })
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Atlas Assistant" }).id
+    ).toBe("atlas-assistant-heading-drawer");
+  });
+
+  it("focuses the composer after switching saved conversations", async () => {
+    const future = "2030-01-01T00:00:00.000Z";
+    saveConversations([
+      {
+        createdAt: "2026-01-01T00:00:00.000Z",
+        expiresAt: future,
+        id: "first-conversation",
+        title: "First saved question",
+        turns: [
+          {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            id: "turn-user-1",
+            role: "user",
+            text: "First question",
+          },
+          {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            id: "turn-assistant-1",
+            role: "assistant",
+            text: "First answer",
+          },
+        ],
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        createdAt: "2026-01-02T00:00:00.000Z",
+        expiresAt: future,
+        id: "second-conversation",
+        title: "Second saved question",
+        turns: [
+          {
+            createdAt: "2026-01-02T00:00:00.000Z",
+            id: "turn-user-2",
+            role: "user",
+            text: "Second question",
+          },
+          {
+            createdAt: "2026-01-02T00:00:00.000Z",
+            id: "turn-assistant-2",
+            role: "assistant",
+            text: "Second answer",
+          },
+        ],
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    ]);
+    render(<EvidenceChat initialConversationId="first-conversation" />);
+    await screen.findByText("First question");
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Second saved question/ })
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByLabelText("Your question"))
+    );
+    expect(screen.getByText("Second question")).toBeTruthy();
+  });
+
+  it("moves focus to retry after a browser failure", async () => {
+    chatRequest.mockRejectedValueOnce(new Error("Failed to fetch"));
+    render(<EvidenceChat />);
+    await submit();
+    const retry = await screen.findByRole("button", { name: "Retry" });
+    await waitFor(() => expect(document.activeElement).toBe(retry));
+  });
+
+  it("describes near-limit character counts without a second live region", async () => {
+    render(<EvidenceChat />);
+    const question = screen.getByLabelText("Your question");
+    fireEvent.change(question, { target: { value: "a".repeat(920) } });
+    const counter = screen.getByText("920/1,000");
+    expect(counter.getAttribute("aria-live")).toBeNull();
+    expect(question.getAttribute("aria-describedby")).toBe(
+      "chat-char-count-workspace"
+    );
+  });
 });
