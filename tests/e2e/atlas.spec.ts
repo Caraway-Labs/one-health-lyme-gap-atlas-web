@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { expectNavLinkHandoffMatchesPage } from "./analytical-handoff-assertions";
+
 const metadata = {
   bundle_sha256: "a".repeat(64),
   generated_at: "2026-08-06T05:37:16Z",
@@ -624,9 +626,16 @@ test("offers route-aware sidebar navigation, early-access status, and a shared d
   await expect(
     navigation.getByRole("link", { name: "Geographic Explorer" })
   ).toHaveAttribute("aria-current", "page");
-  await expect(
-    navigation.getByRole("link", { name: "Geographic Explorer" })
-  ).toHaveAttribute("href", "/geographic_explorer");
+  await expect(page).toHaveURL(/county=08001/);
+  await expect(page).toHaveURL(/dataset=alpha-2026-08-06/);
+  expectNavLinkHandoffMatchesPage(
+    await navigation
+      .getByRole("link", { name: "Geographic Explorer" })
+      .getAttribute("href"),
+    "/geographic_explorer",
+    page.url(),
+    ["county", "dataset"]
+  );
   await expect(
     navigation.getByRole("link", { name: "Atlas Assistant" })
   ).toContainText("Early access");

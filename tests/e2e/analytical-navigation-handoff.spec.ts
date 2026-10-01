@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { expectAnalyticalHandoffHref } from "./analytical-handoff-assertions";
 import { mockApi } from "./geographic-explorer-mock";
 
 test.beforeEach(async ({ page }) => {
@@ -11,19 +12,6 @@ async function openPrimaryNavigation(page: import("@playwright/test").Page) {
   const mobileTrigger = page.getByRole("button", { name: "Open navigation" });
   if (await mobileTrigger.isVisible()) {
     await mobileTrigger.click();
-  }
-}
-
-function expectAnalyticalHandoffHref(
-  href: string | null,
-  pathname: string,
-  params: Record<string, string>
-) {
-  expect(href).toBeTruthy();
-  const url = new URL(href!, "http://localhost");
-  expect(url.pathname).toBe(pathname);
-  for (const [key, value] of Object.entries(params)) {
-    expect(url.searchParams.get(key)).toBe(value);
   }
 }
 
