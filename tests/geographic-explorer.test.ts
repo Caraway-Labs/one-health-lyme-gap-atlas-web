@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  allGroupedViews,
   evidenceLabel,
   explorerParams,
   filteredCountiesCsv,
@@ -10,7 +11,12 @@ import {
   parseComparison,
   primaryCountyFips,
   rankCounties,
+  RELEASE_TRENDS_PREREQUISITE,
   STATE_GRID,
+  VIEW_GROUPS,
+  VIEW_LABELS,
+  VIEW_PURPOSES,
+  VIEWS,
 } from "@/features/geographic-explorer/model";
 import type { CountyScoreSummary } from "@/generated/models";
 
@@ -45,6 +51,22 @@ function county(
   };
 }
 describe("geographic explorer state and comparisons", () => {
+  it("groups every view once with task cues and release-trends honesty", () => {
+    expect(allGroupedViews().sort()).toStrictEqual([...VIEWS].sort());
+    expect(new Set(allGroupedViews()).size).toBe(VIEWS.length);
+    for (const group of VIEW_GROUPS) {
+      expect(group.title.length).toBeGreaterThan(0);
+      expect(group.hint.length).toBeGreaterThan(0);
+      expect(group.views.length).toBeGreaterThan(0);
+    }
+    for (const view of VIEWS) {
+      expect(VIEW_LABELS[view].length).toBeGreaterThan(0);
+      expect(VIEW_PURPOSES[view].length).toBeGreaterThan(0);
+    }
+    expect(RELEASE_TRENDS_PREREQUISITE).toMatch(/not available yet/i);
+    expect(VIEW_PURPOSES.trends).toMatch(/history/i);
+  });
+
   it("interprets completeness as the released percentage, not a count", () => {
     expect(
       matchesExplorerEvidence(county("08001", 60, 67), "complete")

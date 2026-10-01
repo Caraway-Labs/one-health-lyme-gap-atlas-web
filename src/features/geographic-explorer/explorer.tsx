@@ -52,26 +52,17 @@ import {
   pageOf,
   primaryCountyFips,
   rankCounties,
+  VIEW_DESCRIPTIONS,
   VIEW_LABELS,
-  VIEWS,
 } from "./model";
 import type { Metric } from "./model";
+import { GeographicExplorerViewSelector } from "./view-selector";
 
 const ExplorerMaps = dynamic(() => import("./maps"), {
   ssr: false,
   loading: () => <p role="status">Loading map tools…</p>,
 });
 const EMPTY: CountyScoreSummary[] = [];
-const viewControlIds = {
-  tiles: "geo_view_tiles",
-  multiples: "geo_view_multiples",
-  matrix: "geo_view_matrix",
-  ranking: "geo_view_ranking",
-  maps: "geo_view_maps",
-  scatter: "geo_view_scatter",
-  compare: "geo_view_compare",
-  trends: "geo_view_trends",
-} as const;
 
 export function GeographicExplorer() {
   const [state, setState] = useQueryStates(explorerParams, {
@@ -358,30 +349,22 @@ export function GeographicExplorer() {
           onDownload={downloadCsv}
           settings={settings}
         />
-        <div
-          className="geo-view-switch"
-          role="group"
-          aria-label="Visualization views"
-        >
-          {VIEWS.map((view) => (
-            <Button
-              key={view}
-              {...analyticsControlAttributes(viewControlIds[view])}
-              className={view === state.view ? "hover:bg-primary" : undefined}
-              variant={view === state.view ? "default" : "secondary"}
-              aria-pressed={view === state.view}
-              onClick={() => setState({ view })}
-            >
-              {VIEW_LABELS[view]}
-            </Button>
-          ))}
-        </div>
+        <GeographicExplorerViewSelector
+          activeView={state.view}
+          onViewChange={(view) => setState({ view })}
+        />
         <div className="geo-workspace">
           <section className="geo-main-panel" aria-labelledby="geo-view-title">
             <div className="geo-panel-heading">
               <div>
                 <span className="eyebrow">Explore the evidence</span>
                 <h2 id="geo-view-title">{VIEW_LABELS[state.view]}</h2>
+                <p
+                  className="geo-view-active-description"
+                  id="geo-view-description"
+                >
+                  {VIEW_DESCRIPTIONS[state.view]}
+                </p>
               </div>
               <p role="status">{filtered.length} matching counties</p>
             </div>

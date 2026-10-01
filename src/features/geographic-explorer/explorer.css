@@ -31,11 +31,90 @@
   padding: 16px 0;
   max-width: 1000px;
 }
-.geo-view-switch {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.geo-view-nav {
   margin: 24px 0;
+}
+.geo-view-nav-intro {
+  margin: 0 0 16px;
+  max-width: 62rem;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
+.geo-view-groups {
+  display: grid;
+  gap: 18px;
+}
+.geo-view-group {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+.geo-view-group-heading {
+  margin-bottom: 10px;
+}
+.geo-view-group-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.geo-view-group-hint {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+.geo-view-group-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.geo-view-option {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: var(--control-height);
+  height: auto;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: normal;
+  justify-content: flex-start;
+}
+.geo-view-option-label {
+  font-weight: 600;
+}
+.geo-view-option-purpose {
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+}
+.geo-view-option.is-active .geo-view-option-purpose {
+  color: var(--primary-foreground);
+}
+.geo-view-prereq-badge {
+  justify-self: start;
+  font-size: 0.7rem;
+}
+.geo-view-active-description {
+  margin: 8px 0 0;
+  max-width: 46rem;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
+@media (min-width: 768px) {
+  .geo-view-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .geo-view-group-list {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+@media (min-width: 1280px) {
+  .geo-view-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 .geo-workspace {
   display: grid;
