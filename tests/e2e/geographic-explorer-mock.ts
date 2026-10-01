@@ -106,6 +106,20 @@ export async function mockApi(page: Page) {
           "Content-Disposition": 'attachment; filename="california-state.pdf"',
         },
       });
+    if (url.pathname.includes("/counties/")) {
+      const fips = url.pathname.match(/\/counties\/(\d{5})/)?.[1];
+      const county = counties.find((item) => item.fips === fips);
+      if (!county) {
+        return route.fulfill({ status: 404, json: { detail: "Not found" } });
+      }
+      return route.fulfill({
+        json: {
+          ...county,
+          population: 500_000,
+          release: metadata,
+        },
+      });
+    }
     if (url.pathname.endsWith("/geometry"))
       return route.fulfill({
         json: {
