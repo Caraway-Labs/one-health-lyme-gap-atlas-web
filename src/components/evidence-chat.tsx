@@ -4,7 +4,7 @@ import publicCopy from "@caraway-labs/one-health-lyme-gap-atlas-knowledge-graph/
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { EvidenceChatAnswerSources } from "@/components/evidence-chat-answer-sources";
@@ -20,6 +20,12 @@ import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
+import {
+  readAssistantConversationId,
+  resolveActiveConversation,
+  resolveConversationSelection,
+  synchronizeAssistantConversationUrl,
+} from "@/lib/assistant-conversation-url";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 import {
@@ -29,6 +35,7 @@ import {
   createConversation,
   loadConversations,
   removeConversation,
+  RETENTION_MS,
   saveConversations,
 } from "@/lib/knowledge-chat-storage";
 
@@ -262,10 +269,15 @@ export function EvidenceChat({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const syncWorkspaceUrl = mode === "workspace";
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [activeId, setActiveId] = useState(
     initialConversationId ?? "__latest__"
   );
+  const [missingConversationId, setMissingConversationId] = useState<
+    string | null
+  >(null);
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<ClientFailure | null>(null);
@@ -275,12 +287,102 @@ export function EvidenceChat({
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const mobileHistoryToggleRef = useRef<HTMLButtonElement>(null);
 
+  const applyConversationSelection = useCallback(
+    (
+      requestedId: string | null | undefined,
+      nextConversations: LocalConversation[]
+    ) => {
+      const selection = resolveConversationSelection(
+        requestedId,
+        nextConversations
+      );
+      setActiveId(selection.activeId);
+      setMissingConversationId(selection.missingConversationId);
+      if (syncWorkspaceUrl && selection.missingConversationId) {
+        synchronizeAssistantConversationUrl();
+      }
+    },
+    [syncWorkspaceUrl]
+  );
+
+  const syncActiveConversationUrl = useCallback(
+    (conversationId: string) => {
+      if (!syncWorkspaceUrl || conversationId === "__latest__") {
+        return;
+      }
+      if (conversationId === "__new__" || conversationId === "") {
+        synchronizeAssistantConversationUrl();
+        return;
+      }
+      if (conversations.some((item) => item.id === conversationId)) {
+        synchronizeAssistantConversationUrl(conversationId);
+      }
+    },
+    [conversations, syncWorkspaceUrl]
+  );
+
+  const startNewChat = useCallback(
+    (focusComposer = true) => {
+      setActiveId("__new__");
+      setMissingConversationId(null);
+      setFailure(null);
+      setRetryQuestion("");
+      setMessage("");
+      if (syncWorkspaceUrl) {
+        synchronizeAssistantConversationUrl();
+      }
+      if (focusComposer) {
+        inputRef.current?.focus();
+      }
+    },
+    [syncWorkspaceUrl]
+  );
+
   useEffect(() => {
+    const loaded = loadConversations();
     const refresh = () => setConversations(loadConversations());
-    refresh();
+    // eslint-disable-next-line react/set-state-in-effect -- hydrate browser-local chat history once on mount.
+    setConversations(loaded);
+    setHydrated(true);
+    if (syncWorkspaceUrl) {
+      const requestedId =
+        initialConversationId ?? readAssistantConversationId() ?? undefined;
+      applyConversationSelection(requestedId, loaded);
+    }
     window.addEventListener(CHAT_STORAGE_EVENT, refresh);
     return () => window.removeEventListener(CHAT_STORAGE_EVENT, refresh);
-  }, []);
+  }, [applyConversationSelection, initialConversationId, syncWorkspaceUrl]);
+
+  useEffect(() => {
+    if (syncWorkspaceUrl && missingConversationId) {
+      synchronizeAssistantConversationUrl();
+    }
+  }, [missingConversationId, syncWorkspaceUrl]);
+
+  useEffect(() => {
+    if (!syncWorkspaceUrl || !hydrated) {
+      return;
+    }
+    function onPopState() {
+      const requestedId = readAssistantConversationId();
+      applyConversationSelection(requestedId, loadConversations());
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [applyConversationSelection, hydrated, syncWorkspaceUrl]);
+
+  useEffect(() => {
+    if (!syncWorkspaceUrl || !hydrated || missingConversationId) {
+      return;
+    }
+    syncActiveConversationUrl(activeId);
+  }, [
+    activeId,
+    hydrated,
+    missingConversationId,
+    syncActiveConversationUrl,
+    syncWorkspaceUrl,
+  ]);
 
   useEffect(() => {
     if (pending || !focusQuestionOnSettle.current) return;
@@ -288,11 +390,7 @@ export function EvidenceChat({
     inputRef.current?.focus();
   }, [pending]);
 
-  const active =
-    activeId === "__new__"
-      ? undefined
-      : (conversations.find((item) => item.id === activeId) ??
-        conversations[0]);
+  const active = resolveActiveConversation(activeId, conversations, hydrated);
 
   function rememberOutcome(question: string, response: KnowledgeChatResponse) {
     setFailure(null);
@@ -367,7 +465,7 @@ export function EvidenceChat({
       : conversation.turns;
     const updated: LocalConversation = {
       ...conversation,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.parse(now) + RETENTION_MS).toISOString(),
       turns: [
         ...priorTurns,
         {
@@ -393,6 +491,7 @@ export function EvidenceChat({
     saveConversations(next);
     setConversations(next);
     setActiveId(updated.id);
+    setMissingConversationId(null);
   }
 
   function submit(event: FormEvent) {
@@ -403,17 +502,17 @@ export function EvidenceChat({
   function deleteOne(id: string) {
     const next = removeConversation(id);
     setConversations(next);
-    setActiveId(next[0]?.id ?? "");
+    if (activeId === id) {
+      setActiveId(next[0]?.id ?? "__new__");
+      setMissingConversationId(null);
+    }
   }
 
   function clearAllConversations() {
     clearConversations();
     setConversations([]);
-    setActiveId("");
-    setFailure(null);
-    setRetryQuestion("");
-    setMessage("");
     setMobileHistoryOpen(false);
+    startNewChat(false);
   }
 
   const hasSavedConversations = conversations.length > 0;
@@ -440,6 +539,7 @@ export function EvidenceChat({
           onMobileHistoryOpenChange={setMobileHistoryOpen}
           onSelect={(id) => {
             setActiveId(id);
+            setMissingConversationId(null);
             setFailure(null);
             setRetryQuestion("");
           }}
@@ -464,12 +564,7 @@ export function EvidenceChat({
               variant="secondary"
               {...analyticsControlAttributes("evidence_chat_new")}
               type="button"
-              onClick={() => {
-                setActiveId("__new__");
-                setFailure(null);
-                setRetryQuestion("");
-                setMessage("");
-              }}
+              onClick={() => startNewChat()}
             >
               New chat
             </Button>
@@ -481,7 +576,30 @@ export function EvidenceChat({
         <AssistantCountyContextNotice />
         <p className="medical-notice">{publicCopy.medical_notice}</p>
         <div className="chat-transcript" aria-live="polite">
-          {!active?.turns.length && (
+          {missingConversationId ? (
+            <div
+              className="chat-notice"
+              data-assistant-state="conversation_not_found"
+              role="status"
+            >
+              <p>
+                <strong>Conversation not found in this browser.</strong> This
+                link points to a chat that is not saved here. Start a new chat
+                to continue.
+              </p>
+              <div className="chat-state-actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => startNewChat()}
+                  {...analyticsControlAttributes("evidence_chat_new")}
+                >
+                  New chat
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {!active?.turns.length && !missingConversationId ? (
             <div className="chat-empty">
               <strong>Start with a research question</strong>
               <p>
@@ -489,7 +607,7 @@ export function EvidenceChat({
                 exposure, diagnostics, interventions, or outcomes.
               </p>
             </div>
-          )}
+          ) : null}
           {(active?.turns ?? []).map((turn, index, turns) => {
             const priorQuestion =
               turn.role === "assistant" ? (turns[index - 1]?.text ?? "") : "";

@@ -27,7 +27,10 @@ vi.mock(import("../src/generated/atlas"), async (importOriginal) => ({
 
 import { EvidenceChat } from "../src/components/evidence-chat";
 import { AtlasApiError } from "../src/lib/api-mutator";
-import { CHAT_STORAGE_KEY } from "../src/lib/knowledge-chat-storage";
+import {
+  CHAT_STORAGE_KEY,
+  saveConversations,
+} from "../src/lib/knowledge-chat-storage";
 
 function response(
   status = "answered",
@@ -488,5 +491,78 @@ describe(EvidenceChat, () => {
       conversations: 1,
       turns: 2,
     });
+  });
+
+  it("shows a recoverable notice for a missing conversation deep link", async () => {
+    const replaceState = vi.spyOn(window.history, "replaceState");
+    window.history.replaceState({}, "", "/assistant?conversation=missing-id");
+    render(<EvidenceChat initialConversationId="missing-id" />);
+    await expect(
+      screen.findByText("Conversation not found in this browser.")
+    ).resolves.toBeTruthy();
+    const notice = document.querySelector(
+      "[data-assistant-state='conversation_not_found']"
+    );
+    expect({
+      composerEnabled: !(
+        screen.getByLabelText("Your question") as HTMLTextAreaElement
+      ).disabled,
+      noticeVisible: Boolean(notice),
+      storageEmpty: localStorage.getItem(CHAT_STORAGE_KEY) === null,
+      urlStripped: replaceState.mock.calls.length > 0,
+    }).toStrictEqual({
+      composerEnabled: true,
+      noticeVisible: true,
+      storageEmpty: true,
+      urlStripped: true,
+    });
+    fireEvent.click(
+      within(notice as HTMLElement).getByRole("button", { name: "New chat" })
+    );
+    expect({
+      notice: screen.queryByText("Conversation not found in this browser."),
+      focus: document.activeElement,
+    }).toStrictEqual({
+      notice: null,
+      focus: screen.getByLabelText("Your question"),
+    });
+  });
+
+  it("opens a saved local conversation from a deep link", async () => {
+    const future = "2030-01-01T00:00:00.000Z";
+    saveConversations([
+      {
+        createdAt: "2026-01-01T00:00:00.000Z",
+        expiresAt: future,
+        id: "saved-conversation",
+        title: "Saved Lyme question",
+        turns: [
+          {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            id: "turn-user",
+            role: "user",
+            text: "What is reviewed for deer ticks?",
+          },
+          {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            id: "turn-assistant",
+            role: "assistant",
+            text: "Reviewed evidence varies by region.",
+          },
+        ],
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+    render(<EvidenceChat initialConversationId="saved-conversation" />);
+    await expect(
+      screen.findByText("What is reviewed for deer ticks?")
+    ).resolves.toBeTruthy();
+    expect(
+      screen.queryByText("Conversation not found in this browser.")
+    ).toBeNull();
+    const historySelect = screen.getByRole("button", {
+      name: /^Saved Lyme question/,
+    });
+    expect(historySelect.getAttribute("aria-current")).toBe("true");
   });
 });
