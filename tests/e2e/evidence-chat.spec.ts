@@ -40,6 +40,18 @@ function response(
   };
 }
 
+async function openSavedHistoryIfMobile(page: Page) {
+  const recentChats = page.getByRole("button", {
+    name: /^Recent chats \(\d+\)$/,
+  });
+  if (!(await recentChats.isVisible())) {
+    return;
+  }
+  if ((await recentChats.getAttribute("aria-expanded")) !== "true") {
+    await recentChats.click();
+  }
+}
+
 async function ask(page: Page, question: string) {
   const input = page.getByLabel("Your question");
   const button = page.getByRole("button", { name: "Ask", exact: true });
@@ -103,6 +115,7 @@ test("answered evidence, safe citations, local continuation, and history control
   await expect(page.getByText("Evidence: Mixed evidence")).toBeVisible();
   await page.getByRole("button", { name: "New chat" }).click();
   await expect(page.getByText("Start with a research question")).toBeVisible();
+  await openSavedHistoryIfMobile(page);
   await page
     .getByRole("button", { name: /Delete What does the literature say/ })
     .click();
@@ -112,6 +125,7 @@ test("answered evidence, safe citations, local continuation, and history control
   ).toBeVisible();
   await ask(page, "Another question");
   await expect(page.getByText("Evidence: Mixed evidence")).toBeVisible();
+  await openSavedHistoryIfMobile(page);
   await page
     .getByRole("button", { name: "Clear all", exact: true })
     .first()

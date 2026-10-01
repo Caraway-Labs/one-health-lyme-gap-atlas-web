@@ -228,6 +228,14 @@ export function ChatHistoryWorkspace({
     mobileToggleRef.current?.focus();
   }
 
+  function requestClearAll(target: "desktop" | "mobile") {
+    setClearDialogFocusTarget(target);
+    if (target === "mobile") {
+      onMobileHistoryOpenChange(false);
+    }
+    setClearDialogOpen(true);
+  }
+
   const list = (
     <ChatHistoryList
       activeConversationId={activeConversationId}
@@ -250,10 +258,7 @@ export function ChatHistoryWorkspace({
             ref={desktopClearRef}
             type="button"
             className="chat-history-clear"
-            onClick={() => {
-              setClearDialogFocusTarget("desktop");
-              setClearDialogOpen(true);
-            }}
+            onClick={() => requestClearAll("desktop")}
           >
             Clear all
           </button>
@@ -286,10 +291,7 @@ export function ChatHistoryWorkspace({
                 <button
                   type="button"
                   className="chat-history-clear"
-                  onClick={() => {
-                    setClearDialogFocusTarget("mobile");
-                    setClearDialogOpen(true);
-                  }}
+                  onClick={() => requestClearAll("mobile")}
                 >
                   Clear all
                 </button>

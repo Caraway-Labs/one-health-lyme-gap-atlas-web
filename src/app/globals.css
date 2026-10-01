@@ -3072,7 +3072,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 60;
+    z-index: 40;
     padding: 0;
     background: rgb(15 35 45 / 42%);
   }
