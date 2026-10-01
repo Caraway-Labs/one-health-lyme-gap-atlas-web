@@ -12,6 +12,7 @@ import {
 } from "@/components/evidence-chat-history";
 import { Button } from "@/components/ui/button";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
+import { atlasAssistantWorkspaceHeadingId } from "@/lib/assistant-entry-points";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 import { AssistantOutcome } from "./assistant-outcome";
@@ -31,6 +32,7 @@ export function EvidenceChatConversationContent({
     conversations,
     editQuestion,
     failure,
+    failureRegionRef,
     hasSavedConversations,
     inputRef,
     message,
@@ -48,12 +50,21 @@ export function EvidenceChatConversationContent({
     workspaceHandoffConversationId,
   } = model;
 
+  const assistantHeadingId = atlasAssistantWorkspaceHeadingId(mode);
+  const charCountId = `chat-char-count-${mode}`;
+  const ChatPanel = mode === "workspace" ? "section" : "div";
+
   return (
-    <section className="chat-panel" aria-label="Atlas Assistant">
+    <ChatPanel
+      className="chat-panel"
+      {...(mode === "workspace"
+        ? { "aria-labelledby": assistantHeadingId }
+        : {})}
+    >
       <header>
         <div>
           <span className="kicker">Reviewed literature</span>
-          <h1>Atlas Assistant</h1>
+          <h1 id={assistantHeadingId}>Atlas Assistant</h1>
         </div>
         <div className="chat-panel-header-actions">
           {mode === "workspace" && (
@@ -153,9 +164,11 @@ export function EvidenceChatConversationContent({
           )}
           {failure && (
             <div
+              ref={failureRegionRef}
               role="alert"
               className="chat-error"
               data-assistant-state={failure.state}
+              tabIndex={-1}
             >
               <p>
                 <strong>{failure.title}</strong> {failure.message}
@@ -186,6 +199,7 @@ export function EvidenceChatConversationContent({
             rows={2}
             value={message}
             maxLength={1000}
+            aria-describedby={charCountNearLimit ? charCountId : undefined}
             onChange={(event) => setMessage(event.target.value)}
             disabled={pending}
             placeholder="What does reviewed evidence say about…"
@@ -193,8 +207,8 @@ export function EvidenceChatConversationContent({
           <div className="chat-form-actions">
             {charCountNearLimit ? (
               <small
+                id={charCountId}
                 className="chat-char-count chat-char-count-near-limit"
-                aria-live="polite"
               >
                 {message.length}/1,000
               </small>
@@ -235,6 +249,6 @@ export function EvidenceChatConversationContent({
             ))}
         </footer>
       </div>
-    </section>
+    </ChatPanel>
   );
 }

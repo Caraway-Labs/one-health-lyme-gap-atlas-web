@@ -45,6 +45,7 @@ export interface EvidenceChatConversationModel {
   deleteOne: (id: string) => void;
   editQuestion: (question: string) => void;
   failure: ClientFailure | null;
+  failureRegionRef: RefObject<HTMLDivElement | null>;
   hasSavedConversations: boolean;
   hydrated: boolean;
   inputRef: RefObject<HTMLTextAreaElement | null>;
@@ -85,6 +86,7 @@ export function useEvidenceChat({
   const [failure, setFailure] = useState<ClientFailure | null>(null);
   const [retryQuestion, setRetryQuestion] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const failureRegionRef = useRef<HTMLDivElement>(null);
   const focusQuestionOnSettle = useRef(false);
   const handoffFocusApplied = useRef(false);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
@@ -192,6 +194,20 @@ export function useEvidenceChat({
     focusQuestionOnSettle.current = false;
     inputRef.current?.focus();
   }, [pending]);
+
+  useEffect(() => {
+    if (!failure) {
+      return;
+    }
+    const retryButton = failureRegionRef.current?.querySelector<HTMLElement>(
+      "button[type='button']"
+    );
+    if (retryButton) {
+      retryButton.focus();
+      return;
+    }
+    failureRegionRef.current?.focus();
+  }, [failure]);
 
   const active = resolveActiveConversation(activeId, conversations, hydrated);
 
@@ -365,6 +381,7 @@ export function useEvidenceChat({
     deleteOne,
     editQuestion,
     failure,
+    failureRegionRef,
     hasSavedConversations: conversations.length > 0,
     hydrated,
     inputRef,

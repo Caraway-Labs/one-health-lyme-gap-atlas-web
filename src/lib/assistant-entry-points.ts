@@ -42,6 +42,12 @@ export function assistantNavigationStatusLabel(
 
 export const ATLAS_ASSISTANT_LAUNCHER_LABEL = "Atlas Assistant";
 
+export function atlasAssistantWorkspaceHeadingId(
+  surface: "drawer" | "workspace"
+): string {
+  return `atlas-assistant-heading-${surface}`;
+}
+
 export function atlasAssistantLauncherAccessibleName(
   literatureEnabled: boolean = isAtlasAssistantLiteratureEnabled()
 ): string {
