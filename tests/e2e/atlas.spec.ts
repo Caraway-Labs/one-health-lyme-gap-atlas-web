@@ -316,7 +316,7 @@ test("redirects legacy research links to the single assistant workspace", async 
   await expect(page).toHaveURL(/\/assistant(?:\?|$)/);
   await expect(page).not.toHaveURL(/conversation=legacy-conversation/);
   await expect(
-    page.getByText("Conversation not found in this browser.")
+    page.locator("[data-assistant-state='conversation_not_found']")
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Atlas Assistant" })
