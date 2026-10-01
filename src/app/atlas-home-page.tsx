@@ -5,7 +5,7 @@ import { useQueryStates } from "nuqs";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { AtlasDashboard } from "@/components/atlas-dashboard";
-import { AtlasDataStamp } from "@/components/atlas-data-stamp";
+import { AtlasEvidenceSnapshot } from "@/components/atlas-evidence-snapshot";
 import { AtlasFilters } from "@/components/atlas-filters";
 import { AtlasHero } from "@/components/atlas-hero";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
@@ -39,6 +39,10 @@ import type {
   GeographySelectionSurface,
   ScoreControlId,
 } from "@/lib/atlas-analytics";
+import {
+  describeMethodologyVersion,
+  summarizeSourceVintages,
+} from "@/lib/atlas-evidence-metadata";
 import {
   atlasSearchParams,
   synchronizeGovernedDataset,
@@ -272,21 +276,19 @@ function AtlasPage() {
           <span>Public One Health signal groups</span>
         </div>
         <div>
-          <strong>2022–25</strong>
-          <span>Source vintages in this Alpha release</span>
+          <strong>{summarizeSourceVintages(metadata.sources)}</strong>
+          <span>Source data periods in this release</span>
         </div>
         <div>
-          <strong>v0.2.0</strong>
-          <span>Transparent deterministic methodology</span>
+          <strong>
+            {describeMethodologyVersion(metadata.methodology_version)}
+          </strong>
+          <span>Scoring methodology for this release</span>
         </div>
       </section>
       <section className="atlas-shell section" id="atlas">
         <AtlasSectionHeader
-          aside={
-            <AtlasDataStamp>
-              {metadata.release_id} · {metadata.methodology_version}
-            </AtlasDataStamp>
-          }
+          aside={<AtlasEvidenceSnapshot metadata={metadata} />}
           description="Filter the ranked counties, select a place, and review the evidence before taking action."
           eyebrow="Interactive county atlas"
           title="Where should surveillance partners look next?"

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo } from "react";
 
+import { AtlasEvidenceSnapshot } from "@/components/atlas-evidence-snapshot";
 import { AtlasFilters } from "@/components/atlas-filters";
 import { FeedbackTrigger } from "@/components/feedback-dialog";
 import { MethodsSection } from "@/components/methods-section";
@@ -31,6 +32,7 @@ import {
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
+import { describeReleaseAssembly } from "@/lib/atlas-evidence-metadata";
 import { toScoreSettings } from "@/lib/atlas-search-params";
 
 import {
@@ -338,15 +340,7 @@ export function GeographicExplorer() {
         />
       </header>
       <section id="atlas" aria-label="Geographic exploration workspace">
-        <div className="geo-release">
-          <strong>Release {releaseId}</strong>
-          <span>Method {metadata.data.methodology_version}</span>
-          <span>Scope: contiguous U.S. counties included in this release</span>
-          <span>
-            Generated {metadata.data.generated_at} · Loaded{" "}
-            {metadata.data.loaded_at}
-          </span>
-        </div>
+        <AtlasEvidenceSnapshot layout="banner" metadata={metadata.data} />
         <p className="geo-boundary">
           For surveillance follow-up. Review priority is not a diagnosis, an
           individual disease-risk estimate, or evidence of causation. Missing
@@ -518,7 +512,8 @@ export function GeographicExplorer() {
                   timelines can be displayed.
                 </p>
                 <p>
-                  Available snapshot: <strong>{releaseId}</strong>. Its
+                  Available snapshot:{" "}
+                  {describeReleaseAssembly(metadata.data.release_id)}. Its
                   generation date is a release timestamp, not a disease
                   observation date.
                 </p>
@@ -628,7 +623,7 @@ export function GeographicExplorer() {
         </p>
         <p>
           Evidence completeness is the percentage of six scored inputs available
-          in this Alpha release, rounded to a whole percent. It is not a
+          in this governed release, rounded to a whole percent. It is not a
           confidence interval or measure of evidence quality. The scale stays at
           0–100% across every view and filter. “Most data fields available”
           means at least five of six inputs (83%).

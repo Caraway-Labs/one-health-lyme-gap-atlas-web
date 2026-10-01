@@ -1093,6 +1093,69 @@ a {
   color: var(--muted-foreground);
   font-weight: 500;
 }
+.atlas-evidence-snapshot--banner {
+  padding: 18px 0;
+  border-block: 1px solid var(--border);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.atlas-evidence-snapshot--card .atlas-evidence-disclosure {
+  margin-top: 0.75rem;
+}
+.atlas-evidence-summary {
+  margin: 0.5rem 0 0;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.atlas-evidence-highlights {
+  display: grid;
+  gap: 0.75rem 1.5rem;
+  margin: 1rem 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+.atlas-evidence-highlights dt {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.atlas-evidence-highlights dd {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+}
+.atlas-evidence-disclosure {
+  margin-top: 1rem;
+}
+.atlas-evidence-disclosure summary {
+  cursor: pointer;
+  font-weight: 650;
+  color: var(--teal-dark);
+}
+.atlas-evidence-technical {
+  display: grid;
+  gap: 0.75rem 1.25rem;
+  margin: 0.85rem 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.atlas-evidence-technical dt {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.atlas-evidence-technical dd {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.atlas-evidence-source {
+  display: block;
+}
+.atlas-evidence-methods-link {
+  margin: 0.85rem 0 0;
+  font-size: 0.85rem;
+}
 .pulse {
   display: inline-block;
   width: 0.5rem;

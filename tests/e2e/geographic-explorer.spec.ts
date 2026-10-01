@@ -345,9 +345,8 @@ test("release mismatch is explicit and unavailable history never becomes a fabri
       name: "Comparable release history is not available yet",
     })
   ).toBeVisible();
-  await expect(
-    page.getByText("Method alpha-0.2.0", { exact: true })
-  ).toBeVisible();
+  await page.getByText("Technical release and methodology identifiers").click();
+  await expect(page.getByText("alpha-0.2.0", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("link", { name: /CDC Lyme surveillance/ })
   ).toBeVisible();
