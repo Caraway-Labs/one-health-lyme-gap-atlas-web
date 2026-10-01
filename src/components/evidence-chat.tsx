@@ -13,13 +13,13 @@ import type { KnowledgeChatResponse } from "@/generated/models";
 import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
+import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import {
   readAssistantConversationId,
   resolveActiveConversation,
   resolveConversationSelection,
   synchronizeAssistantConversationUrl,
 } from "@/lib/assistant-conversation-url";
-import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 import {
