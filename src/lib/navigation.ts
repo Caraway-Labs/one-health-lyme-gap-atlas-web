@@ -394,12 +394,21 @@ export function pageMetadataForRoute(href: string): {
   return { description: route.pageDescription, title: route.pageTitle };
 }
 
+export type NavigationItemsForGroupOptions = {
+  knowledgeGraphEnabledOrFeatures?:
+    | boolean
+    | Partial<Record<NavigationCapability, boolean>>;
+  showAssistantInPrimaryNavigation?: boolean;
+};
+
 export function navigationItemsForGroup(
   group: NavigationGroupId,
-  knowledgeGraphEnabledOrFeatures:
-    | boolean
-    | Partial<Record<NavigationCapability, boolean>> = {}
+  options: NavigationItemsForGroupOptions = {}
 ): RouteMetadata[] {
+  const {
+    knowledgeGraphEnabledOrFeatures = {},
+    showAssistantInPrimaryNavigation = true,
+  } = options;
   const features =
     typeof knowledgeGraphEnabledOrFeatures === "boolean"
       ? { knowledgeGraph: knowledgeGraphEnabledOrFeatures }
@@ -409,6 +418,7 @@ export function navigationItemsForGroup(
       item.group === group &&
       item.status !== "hidden" &&
       item.status !== "experimental" &&
-      (!item.requiresFeature || features[item.requiresFeature] === true)
+      (!item.requiresFeature || features[item.requiresFeature] === true) &&
+      (showAssistantInPrimaryNavigation || item.id !== "assistant")
   );
 }

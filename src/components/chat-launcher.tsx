@@ -3,6 +3,11 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  ATLAS_ASSISTANT_LAUNCHER_LABEL,
+  atlasAssistantLauncherAccessibleName,
+  shouldShowAtlasAssistantLauncher,
+} from "@/lib/assistant-entry-points";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { observeChatLauncherDockInsets } from "@/lib/chat-launcher-dock";
 import { chatLauncherPlacementForPath } from "@/lib/chat-launcher-placement";
@@ -10,9 +15,6 @@ import { chatLauncherPlacementForPath } from "@/lib/chat-launcher-placement";
 import { EvidenceChat } from "./evidence-chat";
 
 export function ChatLauncher() {
-  if (process.env.NEXT_PUBLIC_KG_CHAT_ENABLED !== "true") {
-    return null;
-  }
   return <EnabledChatLauncher />;
 }
 
@@ -62,8 +64,12 @@ function EnabledChatLauncher() {
   }, [pathname]);
 
   const placement = chatLauncherPlacementForPath(pathname);
+  const showLauncher = shouldShowAtlasAssistantLauncher(pathname);
 
   useEffect(() => {
+    if (!showLauncher) {
+      return;
+    }
     document.documentElement.dataset.atlasChatLauncher = "enabled";
     document.documentElement.dataset.atlasChatLauncherPlacement = placement;
     const stopObserving = observeChatLauncherDockInsets();
@@ -72,7 +78,11 @@ function EnabledChatLauncher() {
       delete document.documentElement.dataset.atlasChatLauncher;
       delete document.documentElement.dataset.atlasChatLauncherPlacement;
     };
-  }, [placement]);
+  }, [placement, showLauncher]);
+
+  if (!showLauncher) {
+    return null;
+  }
 
   return (
     <>
@@ -84,9 +94,11 @@ function EnabledChatLauncher() {
           type="button"
           aria-haspopup="dialog"
           aria-expanded={open}
+          aria-label={atlasAssistantLauncherAccessibleName()}
           onClick={() => setOpen(true)}
         >
-          Atlas Assistant
+          <span className="chat-launcher-title">{ATLAS_ASSISTANT_LAUNCHER_LABEL}</span>
+          <span className="chat-launcher-early-access">Early access</span>
         </button>
       </div>
       {open && (
