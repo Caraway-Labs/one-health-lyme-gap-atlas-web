@@ -5,7 +5,15 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock(import("next/navigation"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  usePathname: () => "/assistant",
+  useSearchParams: (): ReadonlyURLSearchParams =>
+    new URLSearchParams() as unknown as ReadonlyURLSearchParams,
+}));
 
 const { chatRequest } = vi.hoisted(() => ({
   chatRequest: vi.fn<(...args: unknown[]) => Promise<unknown>>(),

@@ -6,9 +6,9 @@ When reviewed-literature chat is enabled (`NEXT_PUBLIC_KG_CHAT_ENABLED=true`):
 
 | Surface | Role | When visible |
 | --- | --- | --- |
-| Floating launcher (`ChatLauncher`) | **Primary** in-flow entry | All analytical shell routes except `/assistant`. Opens the compact drawer; drawer footer links to the full workspace. Carries the **Early access** label. |
+| Floating launcher (`ChatLauncher`) | **Primary** in-flow entry | All analytical shell routes except `/assistant`. Opens the compact drawer; drawer footer links to the full workspace with validated `county` and `dataset` query parameters when present. Carries the **Early access** label. |
 | Primary navigation link to `/assistant` | **Secondary** wayfinding | Only while the user is on the full workspace route, so the Research group reflects the active destination without competing with the launcher elsewhere. |
-| Direct URL `/assistant` and legacy `/knowledge-graph` redirect | **Secondary** deep links | Always available; same workspace as the drawer handoff. |
+| Direct URL `/assistant` and legacy `/knowledge-graph` redirect | **Secondary** deep links | Always available; same workspace as the drawer handoff. Accepts validated `county` and `dataset` deep links and shows an explicit fallback when a FIPS cannot be represented. |
 
 When literature chat is disabled:
 
@@ -22,6 +22,8 @@ This hierarchy keeps Assistant discoverable on mobile and desktop (launcher on e
 ## Implementation
 
 - `src/lib/assistant-entry-points.ts` — visibility helpers consumed by the shell and launcher.
+- `src/lib/assistant-context-handoff.ts` — copies validated county and release context into `/assistant` links from analytical routes.
+- `src/components/assistant-county-context.tsx` — county identification and fallback messaging in the chat workspace and drawer.
 - `src/components/app-shell.tsx` — filters Research navigation using `shouldShowAssistantInPrimaryNavigation`.
 - `src/components/chat-launcher.tsx` — respects `shouldShowAtlasAssistantLauncher` and launcher labeling.
 
