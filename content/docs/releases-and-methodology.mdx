@@ -1,0 +1,38 @@
+---
+title: Releases and methodology labels
+description: Plain-language definitions for Atlas release snapshots, source periods, processing times, and scoring methodology versions.
+---
+
+Atlas shows a short **evidence snapshot** on the [Overview](/) and [Geographic Explorer](/geographic_explorer) before technical release identifiers. Use this guide when you need to explain those labels to colleagues or the public.
+
+## Release semantics
+
+| Label | What it means |
+| --- | --- |
+| **Evidence snapshot** | A summary of the active governed release: geography in scope, source periods, and the methodology version behind the county review score. |
+| **Selected release** | The governed county bundle you are viewing. The readable label may include when Atlas assembled the bundle; that is not a surveillance observation date. |
+| **Evidence scope** | Which counties or geographies this release includes or excludes, as documented in governed metadata. |
+| **Source periods** | Observation, reporting, or publication periods for each upstream source (for example, a surveillance table vintage). These describe public inputs—not when Atlas built or loaded the release. |
+| **Scoring methodology** | The versioned rules that combine released inputs into the county review score. Distinct from source periods and from release assembly time. |
+| **Release generated** | When Atlas finished building this governed bundle. A processing timestamp, not a case observation date. |
+| **Release loaded** | When this release became available through the public API the application reads. May differ from generation time. |
+| **Methodology version (technical ID)** | Stable identifier for scoring rules. Use it to confirm comparisons use the same methodology. When metadata is missing, the app shows **Unavailable** rather than inferring a version. |
+| **Release ID (technical ID)** | Stable identifier for the county bundle. Use it for reproducible links, exports, and support requests. |
+
+Open **Technical release and methodology identifiers** on Overview or Explorer when you need exact IDs and timestamps.
+
+## How county scoring works
+
+The county review score is a **derived follow-up-priority measure**. It highlights where published Lyme surveillance, tick and pathogen evidence, and selected contextual inputs may warrant review together. It is not a diagnosis, individual exposure estimate, proof of underreporting, or forecast of future cases.
+
+**Deterministic scoring methodology** applies fixed, inspectable rules to released inputs. **Semantic scoring methodology** follows the same transparency goals with a newer ruleset named in governed metadata. Compare counties within one active release and one methodology version.
+
+Keep three time concepts separate:
+
+1. **Source periods** — what upstream publishers reported.
+2. **Release generated / loaded** — how and when Atlas processed and delivered the bundle.
+3. **Methodology version** — how inputs were combined into scores.
+
+If a value is absent or invalid, Atlas shows **Unavailable**. The application does not invent source retrieval dates or hide technical identifiers.
+
+For value states, missingness, and uncertainty language, continue with [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { AtlasDataStamp } from "@/components/atlas-data-stamp";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +12,6 @@ import {
   trackProvenanceOpened,
 } from "@/lib/atlas-analytics";
 import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
-import { getDocsHref } from "@/lib/docs-config";
 
 export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
   return (
@@ -26,14 +27,25 @@ export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
         eyebrow="Data sources and limitations"
         title="How to interpret the Atlas"
       />
-      <a
-        className="methods-docs-link"
-        href={getDocsHref("read-the-evidence-carefully")}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        Read the documentation guide for interpreting evidence ↗
-      </a>
+      <p className="methods-education-links">
+        <a href="#release-education">
+          What release labels and methodology versions mean
+        </a>
+        {" · "}
+        <Link
+          className="methods-docs-link"
+          href="/docs/releases-and-methodology"
+        >
+          Read the release and methodology guide
+        </Link>
+        {" · "}
+        <Link
+          className="methods-docs-link"
+          href="/docs/evidence-and-uncertainty"
+        >
+          Interpreting evidence and uncertainty
+        </Link>
+      </p>
       <div className="source-grid">
         {metadata.sources.map((source, index) => (
           <a
