@@ -560,10 +560,9 @@ describe(EvidenceChat, () => {
     expect(
       screen.queryByText("Conversation not found in this browser.")
     ).toBeNull();
-    expect(
-      screen
-        .getByRole("button", { name: "Saved Lyme question" })
-        .getAttribute("aria-current")
-    ).toBe("true");
+    const historySelect = screen.getByRole("button", {
+      name: /^Saved Lyme question/,
+    });
+    expect(historySelect.getAttribute("aria-current")).toBe("true");
   });
 });
