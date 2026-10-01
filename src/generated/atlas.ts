@@ -26,17 +26,25 @@ import type {
 
 import type {
   AtlasMetadata,
+  CollectionEnvelopeIndicator,
+  CollectionEnvelopeMeasure,
+  CollectionEnvelopeObservation,
+  CollectionEnvelopeSource,
   CountyDetail,
   CountyReportPdfV1CountiesFipsReportPdfGetParams,
   CountyV1CountiesFipsGetParams,
   FeedbackSubmissionRequest,
   FeedbackSubmissionResponse,
+  GeographyType,
   GeometryV1AtlasGeometryGetParams,
   HTTPValidationError,
+  IndicatorsV1IndicatorsGetParams,
   KnowledgeChatRequest,
   KnowledgeChatResponse,
   LiveHealthLiveGet200,
+  MeasuresV1MeasuresGetParams,
   MetadataV1AtlasMetadataGetParams,
+  ObservationsV1ObservationsGetParams,
   PrivacyRequestConfirm,
   PrivacyRequestCreate,
   PrivacyRequestCreated,
@@ -44,14 +52,27 @@ import type {
   ProblemDetails,
   RankingCsvV1AtlasRankingCsvGetParams,
   ReadyHealthReadyGet200,
+  ResourceEnvelopeGeography,
+  ResourceEnvelopeIndicator,
+  ResourceEnvelopeMeasure,
+  ResourceEnvelopeMethodology,
+  ResourceEnvelopeSource,
   ScoreCollection,
   ScoresV1AtlasScoresGetParams,
+  SourcesV1SourcesGetParams,
   StateReportPdfV1StatesStateReportPdfGetParams,
   UserProfileResponse,
   UserProfileWrite
 } from './models';
 
 import { apiMutator } from '../lib/api-mutator';
+
+export type HTTPStatusCode1xx = 100 | 101 | 102 | 103;
+export type HTTPStatusCode2xx = 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207;
+export type HTTPStatusCode3xx = 300 | 301 | 302 | 303 | 304 | 305 | 307 | 308;
+export type HTTPStatusCode4xx = 400 | 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 419 | 420 | 421 | 422 | 423 | 424 | 426 | 428 | 429 | 431 | 451;
+export type HTTPStatusCode5xx = 500 | 501 | 502 | 503 | 504 | 505 | 507 | 511;
+export type HTTPStatusCodes = HTTPStatusCode1xx | HTTPStatusCode2xx | HTTPStatusCode3xx | HTTPStatusCode4xx | HTTPStatusCode5xx;
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -72,6 +93,1421 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export type indicatorsV1IndicatorsGetResponse200 = {
+  data: CollectionEnvelopeIndicator
+  status: 200
+}
+
+export type indicatorsV1IndicatorsGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type indicatorsV1IndicatorsGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type indicatorsV1IndicatorsGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type indicatorsV1IndicatorsGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type indicatorsV1IndicatorsGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type indicatorsV1IndicatorsGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type indicatorsV1IndicatorsGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type indicatorsV1IndicatorsGetResponseSuccess = (indicatorsV1IndicatorsGetResponse200) & {
+  headers: Headers;
+};
+export type indicatorsV1IndicatorsGetResponseError = (indicatorsV1IndicatorsGetResponse400 | indicatorsV1IndicatorsGetResponse404 | indicatorsV1IndicatorsGetResponse413 | indicatorsV1IndicatorsGetResponse414 | indicatorsV1IndicatorsGetResponse429 | indicatorsV1IndicatorsGetResponse503 | indicatorsV1IndicatorsGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type indicatorsV1IndicatorsGetResponse = (indicatorsV1IndicatorsGetResponseSuccess | indicatorsV1IndicatorsGetResponseError)
+
+export const getIndicatorsV1IndicatorsGetUrl = (params?: IndicatorsV1IndicatorsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/indicators?${stringifiedParams}` : `/v1/indicators`
+}
+
+/**
+ * @summary Discover indicators
+ */
+export const indicatorsV1IndicatorsGet = async (params?: IndicatorsV1IndicatorsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<indicatorsV1IndicatorsGetResponse> => {
+
+  return apiMutator<indicatorsV1IndicatorsGetResponse>(getIndicatorsV1IndicatorsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getIndicatorsV1IndicatorsGetQueryKey = (params?: IndicatorsV1IndicatorsGetParams,) => {
+    return [
+    `/v1/indicators`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getIndicatorsV1IndicatorsGetQueryOptions = <TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getIndicatorsV1IndicatorsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>> = ({ signal }) => indicatorsV1IndicatorsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type IndicatorsV1IndicatorsGetQueryResult = NonNullable<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>>
+export type IndicatorsV1IndicatorsGetQueryError = ProblemDetails
+
+
+export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
+ params: undefined |  IndicatorsV1IndicatorsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>,
+          TError,
+          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
+ params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>,
+          TError,
+          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
+ params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Discover indicators
+ */
+
+export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
+ params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getIndicatorsV1IndicatorsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse200 = {
+  data: ResourceEnvelopeIndicator
+  status: 200
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse304 = {
+  data: void
+  status: 304
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type indicatorV1IndicatorsIndicatorIdGetResponseSuccess = (indicatorV1IndicatorsIndicatorIdGetResponse200) & {
+  headers: Headers;
+};
+export type indicatorV1IndicatorsIndicatorIdGetResponseError = (indicatorV1IndicatorsIndicatorIdGetResponse304 | indicatorV1IndicatorsIndicatorIdGetResponse400 | indicatorV1IndicatorsIndicatorIdGetResponse404 | indicatorV1IndicatorsIndicatorIdGetResponse413 | indicatorV1IndicatorsIndicatorIdGetResponse414 | indicatorV1IndicatorsIndicatorIdGetResponse429 | indicatorV1IndicatorsIndicatorIdGetResponse503 | indicatorV1IndicatorsIndicatorIdGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type indicatorV1IndicatorsIndicatorIdGetResponse = (indicatorV1IndicatorsIndicatorIdGetResponseSuccess | indicatorV1IndicatorsIndicatorIdGetResponseError)
+
+export const getIndicatorV1IndicatorsIndicatorIdGetUrl = (indicatorId: string,) => {
+
+
+
+
+  return `/v1/indicators/${indicatorId}`
+}
+
+/**
+ * @summary Indicator
+ */
+export const indicatorV1IndicatorsIndicatorIdGet = async (indicatorId: string, options?: Parameters<typeof apiMutator>[1]): Promise<indicatorV1IndicatorsIndicatorIdGetResponse> => {
+
+  return apiMutator<indicatorV1IndicatorsIndicatorIdGetResponse>(getIndicatorV1IndicatorsIndicatorIdGetUrl(indicatorId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getIndicatorV1IndicatorsIndicatorIdGetQueryKey = (indicatorId: string,) => {
+    return [
+    `/v1/indicators/${indicatorId}`
+    ] as const;
+    }
+
+
+export const getIndicatorV1IndicatorsIndicatorIdGetQueryOptions = <TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getIndicatorV1IndicatorsIndicatorIdGetQueryKey(indicatorId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>> = ({ signal }) => indicatorV1IndicatorsIndicatorIdGet(indicatorId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: indicatorId !== null && indicatorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type IndicatorV1IndicatorsIndicatorIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>>
+export type IndicatorV1IndicatorsIndicatorIdGetQueryError = void | ProblemDetails
+
+
+export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
+ indicatorId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
+ indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
+ indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Indicator
+ */
+
+export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
+ indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getIndicatorV1IndicatorsIndicatorIdGetQueryOptions(indicatorId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type measuresV1MeasuresGetResponse200 = {
+  data: CollectionEnvelopeMeasure
+  status: 200
+}
+
+export type measuresV1MeasuresGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type measuresV1MeasuresGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type measuresV1MeasuresGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type measuresV1MeasuresGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type measuresV1MeasuresGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type measuresV1MeasuresGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type measuresV1MeasuresGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type measuresV1MeasuresGetResponseSuccess = (measuresV1MeasuresGetResponse200) & {
+  headers: Headers;
+};
+export type measuresV1MeasuresGetResponseError = (measuresV1MeasuresGetResponse400 | measuresV1MeasuresGetResponse404 | measuresV1MeasuresGetResponse413 | measuresV1MeasuresGetResponse414 | measuresV1MeasuresGetResponse429 | measuresV1MeasuresGetResponse503 | measuresV1MeasuresGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type measuresV1MeasuresGetResponse = (measuresV1MeasuresGetResponseSuccess | measuresV1MeasuresGetResponseError)
+
+export const getMeasuresV1MeasuresGetUrl = (params?: MeasuresV1MeasuresGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/measures?${stringifiedParams}` : `/v1/measures`
+}
+
+/**
+ * @summary Measures
+ */
+export const measuresV1MeasuresGet = async (params?: MeasuresV1MeasuresGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<measuresV1MeasuresGetResponse> => {
+
+  return apiMutator<measuresV1MeasuresGetResponse>(getMeasuresV1MeasuresGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getMeasuresV1MeasuresGetQueryKey = (params?: MeasuresV1MeasuresGetParams,) => {
+    return [
+    `/v1/measures`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getMeasuresV1MeasuresGetQueryOptions = <TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMeasuresV1MeasuresGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof measuresV1MeasuresGet>>> = ({ signal }) => measuresV1MeasuresGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MeasuresV1MeasuresGetQueryResult = NonNullable<Awaited<ReturnType<typeof measuresV1MeasuresGet>>>
+export type MeasuresV1MeasuresGetQueryError = ProblemDetails
+
+
+export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
+ params: undefined |  MeasuresV1MeasuresGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof measuresV1MeasuresGet>>,
+          TError,
+          Awaited<ReturnType<typeof measuresV1MeasuresGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
+ params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof measuresV1MeasuresGet>>,
+          TError,
+          Awaited<ReturnType<typeof measuresV1MeasuresGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
+ params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Measures
+ */
+
+export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
+ params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getMeasuresV1MeasuresGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type measureV1MeasuresMeasureIdGetResponse200 = {
+  data: ResourceEnvelopeMeasure
+  status: 200
+}
+
+export type measureV1MeasuresMeasureIdGetResponse304 = {
+  data: void
+  status: 304
+}
+
+export type measureV1MeasuresMeasureIdGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type measureV1MeasuresMeasureIdGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type measureV1MeasuresMeasureIdGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type measureV1MeasuresMeasureIdGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type measureV1MeasuresMeasureIdGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type measureV1MeasuresMeasureIdGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type measureV1MeasuresMeasureIdGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type measureV1MeasuresMeasureIdGetResponseSuccess = (measureV1MeasuresMeasureIdGetResponse200) & {
+  headers: Headers;
+};
+export type measureV1MeasuresMeasureIdGetResponseError = (measureV1MeasuresMeasureIdGetResponse304 | measureV1MeasuresMeasureIdGetResponse400 | measureV1MeasuresMeasureIdGetResponse404 | measureV1MeasuresMeasureIdGetResponse413 | measureV1MeasuresMeasureIdGetResponse414 | measureV1MeasuresMeasureIdGetResponse429 | measureV1MeasuresMeasureIdGetResponse503 | measureV1MeasuresMeasureIdGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type measureV1MeasuresMeasureIdGetResponse = (measureV1MeasuresMeasureIdGetResponseSuccess | measureV1MeasuresMeasureIdGetResponseError)
+
+export const getMeasureV1MeasuresMeasureIdGetUrl = (measureId: string,) => {
+
+
+
+
+  return `/v1/measures/${measureId}`
+}
+
+/**
+ * @summary Measure
+ */
+export const measureV1MeasuresMeasureIdGet = async (measureId: string, options?: Parameters<typeof apiMutator>[1]): Promise<measureV1MeasuresMeasureIdGetResponse> => {
+
+  return apiMutator<measureV1MeasuresMeasureIdGetResponse>(getMeasureV1MeasuresMeasureIdGetUrl(measureId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getMeasureV1MeasuresMeasureIdGetQueryKey = (measureId: string,) => {
+    return [
+    `/v1/measures/${measureId}`
+    ] as const;
+    }
+
+
+export const getMeasureV1MeasuresMeasureIdGetQueryOptions = <TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMeasureV1MeasuresMeasureIdGetQueryKey(measureId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>> = ({ signal }) => measureV1MeasuresMeasureIdGet(measureId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: measureId !== null && measureId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MeasureV1MeasuresMeasureIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>>
+export type MeasureV1MeasuresMeasureIdGetQueryError = void | ProblemDetails
+
+
+export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
+ measureId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
+ measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
+ measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Measure
+ */
+
+export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
+ measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getMeasureV1MeasuresMeasureIdGetQueryOptions(measureId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type sourcesV1SourcesGetResponse200 = {
+  data: CollectionEnvelopeSource
+  status: 200
+}
+
+export type sourcesV1SourcesGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type sourcesV1SourcesGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type sourcesV1SourcesGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type sourcesV1SourcesGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type sourcesV1SourcesGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type sourcesV1SourcesGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type sourcesV1SourcesGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type sourcesV1SourcesGetResponseSuccess = (sourcesV1SourcesGetResponse200) & {
+  headers: Headers;
+};
+export type sourcesV1SourcesGetResponseError = (sourcesV1SourcesGetResponse400 | sourcesV1SourcesGetResponse404 | sourcesV1SourcesGetResponse413 | sourcesV1SourcesGetResponse414 | sourcesV1SourcesGetResponse429 | sourcesV1SourcesGetResponse503 | sourcesV1SourcesGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type sourcesV1SourcesGetResponse = (sourcesV1SourcesGetResponseSuccess | sourcesV1SourcesGetResponseError)
+
+export const getSourcesV1SourcesGetUrl = (params?: SourcesV1SourcesGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sources?${stringifiedParams}` : `/v1/sources`
+}
+
+/**
+ * @summary Sources
+ */
+export const sourcesV1SourcesGet = async (params?: SourcesV1SourcesGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<sourcesV1SourcesGetResponse> => {
+
+  return apiMutator<sourcesV1SourcesGetResponse>(getSourcesV1SourcesGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSourcesV1SourcesGetQueryKey = (params?: SourcesV1SourcesGetParams,) => {
+    return [
+    `/v1/sources`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSourcesV1SourcesGetQueryOptions = <TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSourcesV1SourcesGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof sourcesV1SourcesGet>>> = ({ signal }) => sourcesV1SourcesGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SourcesV1SourcesGetQueryResult = NonNullable<Awaited<ReturnType<typeof sourcesV1SourcesGet>>>
+export type SourcesV1SourcesGetQueryError = ProblemDetails
+
+
+export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
+ params: undefined |  SourcesV1SourcesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sourcesV1SourcesGet>>,
+          TError,
+          Awaited<ReturnType<typeof sourcesV1SourcesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
+ params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sourcesV1SourcesGet>>,
+          TError,
+          Awaited<ReturnType<typeof sourcesV1SourcesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
+ params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Sources
+ */
+
+export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
+ params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSourcesV1SourcesGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type sourceV1SourcesSourceIdGetResponse200 = {
+  data: ResourceEnvelopeSource
+  status: 200
+}
+
+export type sourceV1SourcesSourceIdGetResponse304 = {
+  data: void
+  status: 304
+}
+
+export type sourceV1SourcesSourceIdGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type sourceV1SourcesSourceIdGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type sourceV1SourcesSourceIdGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type sourceV1SourcesSourceIdGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type sourceV1SourcesSourceIdGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type sourceV1SourcesSourceIdGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type sourceV1SourcesSourceIdGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type sourceV1SourcesSourceIdGetResponseSuccess = (sourceV1SourcesSourceIdGetResponse200) & {
+  headers: Headers;
+};
+export type sourceV1SourcesSourceIdGetResponseError = (sourceV1SourcesSourceIdGetResponse304 | sourceV1SourcesSourceIdGetResponse400 | sourceV1SourcesSourceIdGetResponse404 | sourceV1SourcesSourceIdGetResponse413 | sourceV1SourcesSourceIdGetResponse414 | sourceV1SourcesSourceIdGetResponse429 | sourceV1SourcesSourceIdGetResponse503 | sourceV1SourcesSourceIdGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type sourceV1SourcesSourceIdGetResponse = (sourceV1SourcesSourceIdGetResponseSuccess | sourceV1SourcesSourceIdGetResponseError)
+
+export const getSourceV1SourcesSourceIdGetUrl = (sourceId: string,) => {
+
+
+
+
+  return `/v1/sources/${sourceId}`
+}
+
+/**
+ * @summary Source
+ */
+export const sourceV1SourcesSourceIdGet = async (sourceId: string, options?: Parameters<typeof apiMutator>[1]): Promise<sourceV1SourcesSourceIdGetResponse> => {
+
+  return apiMutator<sourceV1SourcesSourceIdGetResponse>(getSourceV1SourcesSourceIdGetUrl(sourceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSourceV1SourcesSourceIdGetQueryKey = (sourceId: string,) => {
+    return [
+    `/v1/sources/${sourceId}`
+    ] as const;
+    }
+
+
+export const getSourceV1SourcesSourceIdGetQueryOptions = <TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSourceV1SourcesSourceIdGetQueryKey(sourceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>> = ({ signal }) => sourceV1SourcesSourceIdGet(sourceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sourceId !== null && sourceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SourceV1SourcesSourceIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>>
+export type SourceV1SourcesSourceIdGetQueryError = void | ProblemDetails
+
+
+export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
+ sourceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
+ sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
+ sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Source
+ */
+
+export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
+ sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSourceV1SourcesSourceIdGetQueryOptions(sourceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse200 = {
+  data: ResourceEnvelopeMethodology
+  status: 200
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse304 = {
+  data: void
+  status: 304
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type methodologyV1MethodologiesMethodologyIdGetResponseSuccess = (methodologyV1MethodologiesMethodologyIdGetResponse200) & {
+  headers: Headers;
+};
+export type methodologyV1MethodologiesMethodologyIdGetResponseError = (methodologyV1MethodologiesMethodologyIdGetResponse304 | methodologyV1MethodologiesMethodologyIdGetResponse400 | methodologyV1MethodologiesMethodologyIdGetResponse404 | methodologyV1MethodologiesMethodologyIdGetResponse413 | methodologyV1MethodologiesMethodologyIdGetResponse414 | methodologyV1MethodologiesMethodologyIdGetResponse429 | methodologyV1MethodologiesMethodologyIdGetResponse503 | methodologyV1MethodologiesMethodologyIdGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type methodologyV1MethodologiesMethodologyIdGetResponse = (methodologyV1MethodologiesMethodologyIdGetResponseSuccess | methodologyV1MethodologiesMethodologyIdGetResponseError)
+
+export const getMethodologyV1MethodologiesMethodologyIdGetUrl = (methodologyId: string,) => {
+
+
+
+
+  return `/v1/methodologies/${methodologyId}`
+}
+
+/**
+ * @summary Methodology
+ */
+export const methodologyV1MethodologiesMethodologyIdGet = async (methodologyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<methodologyV1MethodologiesMethodologyIdGetResponse> => {
+
+  return apiMutator<methodologyV1MethodologiesMethodologyIdGetResponse>(getMethodologyV1MethodologiesMethodologyIdGetUrl(methodologyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getMethodologyV1MethodologiesMethodologyIdGetQueryKey = (methodologyId: string,) => {
+    return [
+    `/v1/methodologies/${methodologyId}`
+    ] as const;
+    }
+
+
+export const getMethodologyV1MethodologiesMethodologyIdGetQueryOptions = <TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMethodologyV1MethodologiesMethodologyIdGetQueryKey(methodologyId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>> = ({ signal }) => methodologyV1MethodologiesMethodologyIdGet(methodologyId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: methodologyId !== null && methodologyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MethodologyV1MethodologiesMethodologyIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>>
+export type MethodologyV1MethodologiesMethodologyIdGetQueryError = void | ProblemDetails
+
+
+export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
+ methodologyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
+ methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
+ methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Methodology
+ */
+
+export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
+ methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getMethodologyV1MethodologiesMethodologyIdGetQueryOptions(methodologyId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse200 = {
+  data: ResourceEnvelopeGeography
+  status: 200
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseSuccess = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse200) & {
+  headers: Headers;
+};
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseError = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse503 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse = (geographyV1GeographiesGeographyTypeGeographyIdGetResponseSuccess | geographyV1GeographiesGeographyTypeGeographyIdGetResponseError)
+
+export const getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl = (geographyType: GeographyType,
+    geographyId: string,) => {
+
+
+
+
+  return `/v1/geographies/${geographyType}/${geographyId}`
+}
+
+/**
+ * @summary Geography
+ */
+export const geographyV1GeographiesGeographyTypeGeographyIdGet = async (geographyType: GeographyType,
+    geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<geographyV1GeographiesGeographyTypeGeographyIdGetResponse> => {
+
+  return apiMutator<geographyV1GeographiesGeographyTypeGeographyIdGetResponse>(getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl(geographyType,geographyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryKey = (geographyType: GeographyType,
+    geographyId: string,) => {
+    return [
+    `/v1/geographies/${geographyType}/${geographyId}`
+    ] as const;
+    }
+
+
+export const getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryOptions = <TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryKey(geographyType,geographyId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>> = ({ signal }) => geographyV1GeographiesGeographyTypeGeographyIdGet(geographyType,geographyId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: geographyType !== null && geographyType !== undefined && geographyId !== null && geographyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GeographyV1GeographiesGeographyTypeGeographyIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>>
+export type GeographyV1GeographiesGeographyTypeGeographyIdGetQueryError = ProblemDetails
+
+
+export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Geography
+ */
+
+export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryOptions(geographyType,geographyId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type observationsV1ObservationsGetResponse200 = {
+  data: CollectionEnvelopeObservation
+  status: 200
+}
+
+export type observationsV1ObservationsGetResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type observationsV1ObservationsGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type observationsV1ObservationsGetResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type observationsV1ObservationsGetResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type observationsV1ObservationsGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type observationsV1ObservationsGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type observationsV1ObservationsGetResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type observationsV1ObservationsGetResponseSuccess = (observationsV1ObservationsGetResponse200) & {
+  headers: Headers;
+};
+export type observationsV1ObservationsGetResponseError = (observationsV1ObservationsGetResponse400 | observationsV1ObservationsGetResponse404 | observationsV1ObservationsGetResponse413 | observationsV1ObservationsGetResponse414 | observationsV1ObservationsGetResponse429 | observationsV1ObservationsGetResponse503 | observationsV1ObservationsGetResponse4xx) & {
+  headers: Headers;
+};
+
+export type observationsV1ObservationsGetResponse = (observationsV1ObservationsGetResponseSuccess | observationsV1ObservationsGetResponseError)
+
+export const getObservationsV1ObservationsGetUrl = (params: ObservationsV1ObservationsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["geography_id","stratification"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : String(v));
+      });
+      return;
+    }
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/observations?${stringifiedParams}` : `/v1/observations`
+}
+
+/**
+ * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. The current release contains only the 2023 annual period and has no supported strata. A measure and bounded county/time selection are required; no user sorting or aggregation.
+ * @summary Observations
+ */
+export const observationsV1ObservationsGet = async (params: ObservationsV1ObservationsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<observationsV1ObservationsGetResponse> => {
+
+  return apiMutator<observationsV1ObservationsGetResponse>(getObservationsV1ObservationsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getObservationsV1ObservationsGetQueryKey = (params?: ObservationsV1ObservationsGetParams,) => {
+    return [
+    `/v1/observations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getObservationsV1ObservationsGetQueryOptions = <TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getObservationsV1ObservationsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof observationsV1ObservationsGet>>> = ({ signal }) => observationsV1ObservationsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ObservationsV1ObservationsGetQueryResult = NonNullable<Awaited<ReturnType<typeof observationsV1ObservationsGet>>>
+export type ObservationsV1ObservationsGetQueryError = ProblemDetails
+
+
+export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
+ params: ObservationsV1ObservationsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof observationsV1ObservationsGet>>,
+          TError,
+          Awaited<ReturnType<typeof observationsV1ObservationsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
+ params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof observationsV1ObservationsGet>>,
+          TError,
+          Awaited<ReturnType<typeof observationsV1ObservationsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
+ params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Observations
+ */
+
+export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
+ params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getObservationsV1ObservationsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type liveHealthLiveGetResponse200 = {
   data: LiveHealthLiveGet200
@@ -1182,6 +2618,7 @@ export const getGeometryV1AtlasGeometryGetUrl = (params?: GeometryV1AtlasGeometr
 }
 
 /**
+ * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
  * @summary Geometry
  */
 export const geometryV1AtlasGeometryGet = async (params?: GeometryV1AtlasGeometryGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<geometryV1AtlasGeometryGetResponse> => {

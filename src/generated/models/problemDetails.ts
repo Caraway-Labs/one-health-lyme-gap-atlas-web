@@ -14,5 +14,6 @@ export interface ProblemDetails {
   detail: string;
   instance: string;
   request_id: string;
+  code?: string | null;
   errors?: ProblemDetailsErrors;
 }

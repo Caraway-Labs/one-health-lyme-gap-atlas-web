@@ -6,6 +6,1194 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/v1/indicators": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Discover indicators",
+        "operationId": "indicators_v1_indicators_get",
+        "parameters": [
+          {
+            "name": "indicator_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Indicator Id"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionEnvelope_Indicator_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/indicators/{indicator_id}": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Indicator",
+        "operationId": "indicator_v1_indicators__indicator_id__get",
+        "parameters": [
+          {
+            "name": "indicator_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Indicator Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEnvelope_Indicator_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified. ETag matches If-None-Match; empty response body."
+          }
+        }
+      }
+    },
+    "/v1/measures": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Measures",
+        "operationId": "measures_v1_measures_get",
+        "parameters": [
+          {
+            "name": "measure_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Measure Id"
+            }
+          },
+          {
+            "name": "indicator_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Indicator Id"
+            }
+          },
+          {
+            "name": "geography_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Geography Type"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionEnvelope_Measure_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/measures/{measure_id}": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Measure",
+        "operationId": "measure_v1_measures__measure_id__get",
+        "parameters": [
+          {
+            "name": "measure_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Measure Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEnvelope_Measure_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified. ETag matches If-None-Match; empty response body."
+          }
+        }
+      }
+    },
+    "/v1/sources": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Sources",
+        "operationId": "sources_v1_sources_get",
+        "parameters": [
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionEnvelope_Source_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{source_id}": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Source",
+        "operationId": "source_v1_sources__source_id__get",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEnvelope_Source_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified. ETag matches If-None-Match; empty response body."
+          }
+        }
+      }
+    },
+    "/v1/methodologies/{methodology_id}": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Methodology",
+        "operationId": "methodology_v1_methodologies__methodology_id__get",
+        "parameters": [
+          {
+            "name": "methodology_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Methodology Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEnvelope_Methodology_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified. ETag matches If-None-Match; empty response body."
+          }
+        }
+      }
+    },
+    "/v1/geographies/{geography_type}/{geography_id}": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Geography",
+        "operationId": "geography_v1_geographies__geography_type___geography_id__get",
+        "parameters": [
+          {
+            "name": "geography_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GeographyType"
+            }
+          },
+          {
+            "name": "geography_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Geography Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEnvelope_Geography_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/observations": {
+      "get": {
+        "tags": ["public-v1"],
+        "summary": "Observations",
+        "description": "Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. The current release contains only the 2023 annual period and has no supported strata. A measure and bounded county/time selection are required; no user sorting or aggregation.",
+        "operationId": "observations_v1_observations_get",
+        "parameters": [
+          {
+            "name": "measure_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Measure Id"
+            }
+          },
+          {
+            "name": "geography_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GeographyType"
+            }
+          },
+          {
+            "name": "geography_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "maxItems": 500,
+              "title": "Geography Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1900
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "name": "stratification",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stratification"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionEnvelope_Observation_"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canonical data service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "tags": ["health"],
@@ -621,6 +1809,7 @@
       "get": {
         "tags": ["atlas"],
         "summary": "Geometry",
+        "description": "Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.",
         "operationId": "geometry_v1_atlas_geometry_get",
         "parameters": [
           {
@@ -1499,6 +2688,125 @@
         "required": ["role", "content"],
         "title": "ChatHistoryTurn"
       },
+      "CollectionEnvelope_Indicator_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Indicator"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta", "links"],
+        "title": "CollectionEnvelope[Indicator]"
+      },
+      "CollectionEnvelope_Measure_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Measure"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta", "links"],
+        "title": "CollectionEnvelope[Measure]"
+      },
+      "CollectionEnvelope_Observation_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta", "links"],
+        "title": "CollectionEnvelope[Observation]"
+      },
+      "CollectionEnvelope_Source_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
+        },
+        "type": "object",
+        "required": ["data", "meta", "links"],
+        "title": "CollectionEnvelope[Source]"
+      },
+      "CollectionLinks": {
+        "properties": {
+          "self": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Self"
+          }
+        },
+        "type": "object",
+        "title": "CollectionLinks"
+      },
+      "CollectionMeta": {
+        "properties": {
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token"
+          },
+          "response_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Response At"
+          }
+        },
+        "type": "object",
+        "title": "CollectionMeta"
+      },
       "CountyDetail": {
         "properties": {
           "fips": {
@@ -1756,6 +3064,87 @@
           "color"
         ],
         "title": "CountyScoreSummary"
+      },
+      "EvidenceReference": {
+        "properties": {
+          "resource_type": {
+            "type": "string",
+            "title": "Resource Type"
+          },
+          "resource_id": {
+            "type": "string",
+            "title": "Resource Id"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "provenance_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance Ref"
+          },
+          "semantic_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantic Version"
+          },
+          "methodology_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Methodology Version"
+          },
+          "release_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Id"
+          },
+          "uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uri"
+          }
+        },
+        "type": "object",
+        "required": ["resource_type", "resource_id"],
+        "title": "EvidenceReference"
       },
       "FeedbackContext": {
         "properties": {
@@ -2057,6 +3446,51 @@
         "required": ["feedback_id", "received_at", "replayed"],
         "title": "FeedbackSubmissionResponse"
       },
+      "Geography": {
+        "properties": {
+          "geography": {
+            "$ref": "#/components/schemas/GeographyIdentity"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeographyIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["geography", "label"],
+        "title": "Geography",
+        "description": "County/state identity metadata; geometry is a separate display resource."
+      },
+      "GeographyIdentity": {
+        "properties": {
+          "geography_type": {
+            "$ref": "#/components/schemas/GeographyType"
+          },
+          "geography_id": {
+            "type": "string",
+            "title": "Geography Id"
+          }
+        },
+        "type": "object",
+        "required": ["geography_type", "geography_id"],
+        "title": "GeographyIdentity",
+        "description": "Stable FIPS join identity, independent of display or analysis polygons."
+      },
+      "GeographyType": {
+        "type": "string",
+        "enum": ["county", "state"],
+        "title": "GeographyType"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2069,6 +3503,103 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "Indicator": {
+        "properties": {
+          "indicator_id": {
+            "type": "string",
+            "title": "Indicator Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "measure_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Measure Ids"
+          },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Version"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "standards_mappings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StandardsMapping"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standards Mappings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "indicator_id",
+          "label",
+          "definition",
+          "measure_ids",
+          "semantic_version"
+        ],
+        "title": "Indicator"
       },
       "KnowledgeChatRequest": {
         "properties": {
@@ -2377,6 +3908,526 @@
         "required": ["claim_id", "text", "citation_ids"],
         "title": "KnowledgeClaim"
       },
+      "Measure": {
+        "properties": {
+          "measure_id": {
+            "type": "string",
+            "title": "Measure Id"
+          },
+          "indicator_id": {
+            "type": "string",
+            "title": "Indicator Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Version"
+          },
+          "measure_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measure Type"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "denominator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Denominator"
+          },
+          "geography_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GeographyType"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geography Types"
+          },
+          "temporal_grains": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temporal Grains"
+          },
+          "geography_semantics": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geography Semantics"
+          },
+          "temporal_semantics": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temporal Semantics"
+          },
+          "allowed_value_states": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ValueState"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Value States"
+          },
+          "allowed_strata": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Strata"
+          },
+          "missingness_semantics": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missingness Semantics"
+          },
+          "methodology_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Methodology Id"
+          },
+          "methodology": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Methodology"
+          },
+          "source_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ids"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "standards_mappings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StandardsMapping"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standards Mappings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "measure_id",
+          "indicator_id",
+          "label",
+          "definition",
+          "semantic_version"
+        ],
+        "title": "Measure"
+      },
+      "Methodology": {
+        "properties": {
+          "methodology_id": {
+            "type": "string",
+            "title": "Methodology Id"
+          },
+          "measure_id": {
+            "type": "string",
+            "title": "Measure Id"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_version": {
+            "type": "string",
+            "title": "Release Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "methodology_id",
+          "measure_id",
+          "version",
+          "description",
+          "limitations",
+          "semantic_version",
+          "release_version"
+        ],
+        "title": "Methodology"
+      },
+      "Observation": {
+        "properties": {
+          "observation_id": {
+            "type": "string",
+            "title": "Observation Id"
+          },
+          "measure_id": {
+            "type": "string",
+            "title": "Measure Id"
+          },
+          "geography": {
+            "$ref": "#/components/schemas/GeographyIdentity"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Period End"
+          },
+          "temporal_grain": {
+            "type": "string",
+            "title": "Temporal Grain"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "value_state": {
+            "$ref": "#/components/schemas/ValueState"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "denominator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Denominator"
+          },
+          "strata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Strata"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "lineage_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lineage Source Id"
+          },
+          "dataset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Id"
+          },
+          "methodology_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Methodology Id"
+          },
+          "methodology": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Methodology"
+          },
+          "release_methodology_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Methodology Version"
+          },
+          "methodology_version": {
+            "type": "string",
+            "title": "Methodology Version"
+          },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_id": {
+            "type": "string",
+            "title": "Release Id"
+          },
+          "provenance_ref": {
+            "type": "string",
+            "title": "Provenance Ref"
+          },
+          "source_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Label"
+          },
+          "source_vintage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Vintage"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source_published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Published At"
+          },
+          "atlas_acquired_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atlas Acquired At"
+          },
+          "atlas_processed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atlas Processed At"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceReference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "observation_id",
+          "measure_id",
+          "geography",
+          "period_start",
+          "period_end",
+          "temporal_grain",
+          "value",
+          "value_state",
+          "unit",
+          "denominator",
+          "source_id",
+          "methodology_id",
+          "methodology_version",
+          "semantic_version",
+          "release_id",
+          "provenance_ref",
+          "limitations",
+          "evidence"
+        ],
+        "title": "Observation"
+      },
       "PrivacyOmission": {
         "properties": {
           "system": {
@@ -2620,6 +4671,17 @@
             "type": "string",
             "title": "Request Id"
           },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
           "errors": {
             "anyOf": [
               {
@@ -2646,6 +4708,56 @@
           "request_id"
         ],
         "title": "ProblemDetails"
+      },
+      "ResourceEnvelope_Geography_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Geography"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "ResourceEnvelope[Geography]"
+      },
+      "ResourceEnvelope_Indicator_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Indicator"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "ResourceEnvelope[Indicator]"
+      },
+      "ResourceEnvelope_Measure_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Measure"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "ResourceEnvelope[Measure]"
+      },
+      "ResourceEnvelope_Methodology_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Methodology"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "ResourceEnvelope[Methodology]"
+      },
+      "ResourceEnvelope_Source_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Source"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "ResourceEnvelope[Source]"
       },
       "Score": {
         "properties": {
@@ -2752,6 +4864,146 @@
         ],
         "title": "ScoreCollection"
       },
+      "Source": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "publisher": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher"
+          },
+          "lineage_source_id": {
+            "type": "string",
+            "title": "Lineage Source Id"
+          },
+          "dataset_id": {
+            "type": "string",
+            "title": "Dataset Id"
+          },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_version": {
+            "type": "string",
+            "title": "Release Version"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source_vintage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Vintage"
+          },
+          "source_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Version"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At",
+            "deprecated": true
+          },
+          "atlas_acquired_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atlas Acquired At",
+            "deprecated": true
+          },
+          "upstream_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upstream Updated At"
+          },
+          "source_retrieved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Retrieved At"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "label",
+          "publisher",
+          "lineage_source_id",
+          "dataset_id",
+          "semantic_version",
+          "release_version"
+        ],
+        "title": "Source"
+      },
       "SourceMetadata": {
         "properties": {
           "key": {
@@ -2778,6 +5030,40 @@
         "type": "object",
         "required": ["key", "label", "vintage", "url", "note"],
         "title": "SourceMetadata"
+      },
+      "StandardsMapping": {
+        "properties": {
+          "standard": {
+            "type": "string",
+            "title": "Standard"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "relationship": {
+            "type": "string",
+            "title": "Relationship"
+          },
+          "mapping_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapping Reference"
+          }
+        },
+        "type": "object",
+        "required": ["standard", "version", "target", "relationship"],
+        "title": "StandardsMapping"
       },
       "UserProfile": {
         "properties": {
@@ -2952,6 +5238,769 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "ValueState": {
+        "type": "string",
+        "enum": [
+          "OBSERVED",
+          "ZERO",
+          "MISSING",
+          "SUPPRESSED",
+          "UNAVAILABLE",
+          "NO_COUNTY_LINKED_RECORD"
+        ],
+        "title": "ValueState",
+        "description": "Public V1 states, including the governed county status added by API #54."
+      },
+      "BriefingArtifact": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "generation_version": {
+            "const": "deterministic-digest-v1",
+            "default": "deterministic-digest-v1",
+            "title": "Generation Version",
+            "type": "string"
+          },
+          "mode": {
+            "const": "digest",
+            "default": "digest",
+            "title": "Mode",
+            "type": "string"
+          },
+          "notice": {
+            "const": "Periodic intelligence digest; not an official public-health alert or a disease-risk estimate.",
+            "default": "Periodic intelligence digest; not an official public-health alert or a disease-risk estimate.",
+            "title": "Notice",
+            "type": "string"
+          },
+          "artifact_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "input_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Input Sha256",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "generated_at": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "preference_revision": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Preference Revision",
+            "type": "string"
+          },
+          "digest_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Digest Version",
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/BriefingWindow"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/BriefingScope"
+          },
+          "ranked_items": {
+            "items": {
+              "$ref": "#/components/schemas/RankedBriefingItem"
+            },
+            "title": "Ranked Items",
+            "type": "array"
+          },
+          "matching_publications": {
+            "minimum": 0,
+            "title": "Matching Publications",
+            "type": "integer"
+          },
+          "omitted_publications": {
+            "minimum": 0,
+            "title": "Omitted Publications",
+            "type": "integer"
+          },
+          "limitations": {
+            "items": {
+              "maxLength": 1000,
+              "minLength": 1,
+              "pattern": "^[^<>\\x00-\\x1f]*$",
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "input_sha256",
+          "snapshot_id",
+          "generated_at",
+          "preference_revision",
+          "digest_version",
+          "window",
+          "scope",
+          "ranked_items",
+          "matching_publications",
+          "omitted_publications",
+          "limitations"
+        ],
+        "title": "BriefingArtifact",
+        "type": "object"
+      },
+      "BriefingEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/IntelligenceItem"
+          },
+          "source": {
+            "$ref": "#/components/schemas/BriefingSource"
+          },
+          "why_matched": {
+            "items": {
+              "$ref": "#/components/schemas/BriefingMatch"
+            },
+            "title": "Why Matched",
+            "type": "array"
+          }
+        },
+        "required": ["item", "source", "why_matched"],
+        "title": "BriefingEvidence",
+        "type": "object"
+      },
+      "BriefingGenerationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "mode": {
+            "const": "digest",
+            "default": "digest",
+            "title": "Mode",
+            "type": "string"
+          },
+          "subscriber_key": {
+            "description": "Private opaque subscriber key; never an email address.",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Subscriber Key",
+            "type": "string"
+          },
+          "preference_revision": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Preference Revision",
+            "type": "string"
+          },
+          "digest_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Digest Version",
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/BriefingWindow"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/BriefingScope"
+          },
+          "max_items": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Max Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "subscriber_key",
+          "preference_revision",
+          "digest_version",
+          "window",
+          "scope"
+        ],
+        "title": "BriefingGenerationRequest",
+        "type": "object"
+      },
+      "BriefingMatch": {
+        "additionalProperties": false,
+        "properties": {
+          "dimension": {
+            "enum": ["geography", "topic", "source", "unfiltered"],
+            "title": "Dimension",
+            "type": "string"
+          },
+          "value": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Value",
+            "type": "string"
+          },
+          "origin": {
+            "enum": ["publisher", "inferred", "source_identity", "unfiltered"],
+            "title": "Origin",
+            "type": "string"
+          }
+        },
+        "required": ["dimension", "value", "origin"],
+        "title": "BriefingMatch",
+        "type": "object"
+      },
+      "BriefingScope": {
+        "additionalProperties": false,
+        "properties": {
+          "geographies": {
+            "default": [],
+            "items": {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Geographies",
+            "type": "array"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Topics",
+            "type": "array"
+          },
+          "sources": {
+            "default": [],
+            "items": {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "title": "BriefingScope",
+        "type": "object"
+      },
+      "BriefingSource": {
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "registry_version": {
+            "minimum": 1,
+            "title": "Registry Version",
+            "type": "integer"
+          },
+          "organization": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "pattern": "^[^<>\\x00-\\x1f]*$",
+            "title": "Organization",
+            "type": "string"
+          },
+          "reviewed_trust_classification": {
+            "enum": [
+              "official_public_health",
+              "research_index",
+              "reviewed_other"
+            ],
+            "title": "Reviewed Trust Classification",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "registry_version",
+          "organization",
+          "reviewed_trust_classification"
+        ],
+        "title": "BriefingSource",
+        "type": "object"
+      },
+      "BriefingWindow": {
+        "additionalProperties": false,
+        "properties": {
+          "start": {
+            "description": "Inclusive UTC capture retrieval cutoff.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "Start",
+            "type": "string"
+          },
+          "end": {
+            "description": "Exclusive UTC capture retrieval cutoff.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "basis": {
+            "const": "fetched_at",
+            "default": "fetched_at",
+            "title": "Basis",
+            "type": "string"
+          }
+        },
+        "required": ["start", "end"],
+        "title": "BriefingWindow",
+        "type": "object"
+      },
+      "IntelligenceFieldStates": {
+        "additionalProperties": false,
+        "properties": {
+          "canonical_url": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Canonical Url",
+            "type": "string"
+          },
+          "title": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Title",
+            "type": "string"
+          },
+          "published_at": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Published At",
+            "type": "string"
+          },
+          "updated_at": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Updated At",
+            "type": "string"
+          },
+          "event_at": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Event At",
+            "type": "string"
+          },
+          "excerpt": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Excerpt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "canonical_url",
+          "title",
+          "published_at",
+          "updated_at",
+          "event_at",
+          "excerpt"
+        ],
+        "title": "IntelligenceFieldStates",
+        "type": "object"
+      },
+      "IntelligenceItem": {
+        "additionalProperties": false,
+        "description": "Typed consumer of normalized DATA #131 v1 items, without renormalization.",
+        "properties": {
+          "contract_version": {
+            "const": "1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "item_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "source_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "registry_version": {
+            "minimum": 1,
+            "title": "Registry Version",
+            "type": "integer"
+          },
+          "canonical_url": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "pattern": "^[^<>\\x00-\\x1f]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "event_at": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event At"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "minLength": 1,
+                "pattern": "^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "fetched_at": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "field_states": {
+            "$ref": "#/components/schemas/IntelligenceFieldStates"
+          },
+          "geographies": {
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceTag"
+            },
+            "maxItems": 100,
+            "title": "Geographies",
+            "type": "array"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceTag"
+            },
+            "maxItems": 100,
+            "title": "Topics",
+            "type": "array"
+          },
+          "transport": {
+            "enum": ["rss", "atom", "email", "web"],
+            "title": "Transport",
+            "type": "string"
+          },
+          "transport_identity_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Transport Identity Sha256",
+            "type": "string"
+          },
+          "deduplication_key": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Deduplication Key",
+            "type": "string"
+          },
+          "content_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/IntelligenceProvenance"
+          },
+          "limitations": {
+            "items": {
+              "maxLength": 1000,
+              "minLength": 1,
+              "pattern": "^[^<>\\x00-\\x1f]*$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "content_is_untrusted": {
+            "const": true,
+            "title": "Content Is Untrusted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contract_version",
+          "item_id",
+          "revision_id",
+          "source_id",
+          "registry_version",
+          "canonical_url",
+          "title",
+          "published_at",
+          "updated_at",
+          "event_at",
+          "excerpt",
+          "fetched_at",
+          "field_states",
+          "geographies",
+          "topics",
+          "transport",
+          "transport_identity_sha256",
+          "deduplication_key",
+          "content_sha256",
+          "provenance",
+          "limitations",
+          "content_is_untrusted"
+        ],
+        "title": "IntelligenceItem",
+        "type": "object"
+      },
+      "IntelligenceProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "artifact_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "artifact_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Artifact Sha256",
+            "type": "string"
+          },
+          "parser_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Parser Version",
+            "type": "string"
+          },
+          "fetch_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Fetch Version",
+            "type": "string"
+          },
+          "normalization_version": {
+            "const": "intelligence-identity-v1",
+            "title": "Normalization Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "artifact_id",
+          "artifact_sha256",
+          "parser_version",
+          "fetch_version",
+          "normalization_version"
+        ],
+        "title": "IntelligenceProvenance",
+        "type": "object"
+      },
+      "IntelligenceSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "snapshot_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "as_of": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "As Of",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceItem"
+            },
+            "maxItems": 1000,
+            "title": "Items",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/BriefingSource"
+            },
+            "maxItems": 1000,
+            "title": "Sources",
+            "type": "array"
+          },
+          "limitations": {
+            "default": [],
+            "items": {
+              "maxLength": 1000,
+              "minLength": 1,
+              "pattern": "^[^<>\\x00-\\x1f]*$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Limitations",
+            "type": "array"
+          }
+        },
+        "required": ["snapshot_id", "as_of", "items", "sources"],
+        "title": "IntelligenceSnapshot",
+        "type": "object"
+      },
+      "IntelligenceTag": {
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Value",
+            "type": "string"
+          },
+          "origin": {
+            "enum": ["publisher", "inferred"],
+            "title": "Origin",
+            "type": "string"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          },
+          "method_version": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method Version"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          }
+        },
+        "required": [
+          "value",
+          "origin",
+          "method",
+          "method_version",
+          "confidence"
+        ],
+        "title": "IntelligenceTag",
+        "type": "object"
+      },
+      "RankedBriefingItem": {
+        "additionalProperties": false,
+        "properties": {
+          "rank": {
+            "minimum": 1,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "item_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "matching_values": {
+            "minimum": 0,
+            "title": "Matching Values",
+            "type": "integer"
+          },
+          "publisher_recency": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher Recency"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/BriefingEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rank",
+          "item_id",
+          "matching_values",
+          "publisher_recency",
+          "evidence"
+        ],
+        "title": "RankedBriefingItem",
+        "type": "object"
       }
     }
   }

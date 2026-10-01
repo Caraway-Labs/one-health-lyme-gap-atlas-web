@@ -9,6 +9,363 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Discover indicators
+ */
+export const indicatorsV1IndicatorsGetQueryPageSizeOneMax = 500;
+
+
+
+export const IndicatorsV1IndicatorsGetQueryParams = zod.object({
+  "indicator_id": zod.union([zod.string(),zod.null()]).optional(),
+  "page_size": zod.union([zod.int().min(1).max(indicatorsV1IndicatorsGetQueryPageSizeOneMax),zod.null()]).optional(),
+  "page_token": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const IndicatorsV1IndicatorsGetResponse = zod.object({
+  "data": zod.array(zod.object({
+  "indicator_id": zod.string(),
+  "label": zod.string(),
+  "definition": zod.union([zod.string(),zod.null()]),
+  "measure_ids": zod.array(zod.string()),
+  "semantic_version": zod.string(),
+  "release_version": zod.union([zod.string(),zod.null()]).optional(),
+  "domain": zod.union([zod.string(),zod.null()]).optional(),
+  "category": zod.union([zod.string(),zod.null()]).optional(),
+  "limitations": zod.array(zod.string()).optional(),
+  "standards_mappings": zod.union([zod.array(zod.object({
+  "standard": zod.string(),
+  "version": zod.string(),
+  "target": zod.string(),
+  "relationship": zod.string(),
+  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
+})),zod.null()]).optional()
+})),
+  "meta": zod.object({
+  "next_page_token": zod.union([zod.string(),zod.null()]).optional(),
+  "response_at": zod.iso.datetime({"offset":true}).optional()
+}),
+  "links": zod.object({
+  "self": zod.union([zod.string(),zod.null()]).optional()
+})
+})
+
+
+/**
+ * @summary Indicator
+ */
+export const IndicatorV1IndicatorsIndicatorIdGetParams = zod.object({
+  "indicator_id": zod.string()
+})
+
+export const IndicatorV1IndicatorsIndicatorIdGetResponse = zod.object({
+  "data": zod.object({
+  "indicator_id": zod.string(),
+  "label": zod.string(),
+  "definition": zod.union([zod.string(),zod.null()]),
+  "measure_ids": zod.array(zod.string()),
+  "semantic_version": zod.string(),
+  "release_version": zod.union([zod.string(),zod.null()]).optional(),
+  "domain": zod.union([zod.string(),zod.null()]).optional(),
+  "category": zod.union([zod.string(),zod.null()]).optional(),
+  "limitations": zod.array(zod.string()).optional(),
+  "standards_mappings": zod.union([zod.array(zod.object({
+  "standard": zod.string(),
+  "version": zod.string(),
+  "target": zod.string(),
+  "relationship": zod.string(),
+  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
+})),zod.null()]).optional()
+})
+})
+
+
+/**
+ * @summary Measures
+ */
+export const measuresV1MeasuresGetQueryPageSizeOneMax = 500;
+
+
+
+export const MeasuresV1MeasuresGetQueryParams = zod.object({
+  "measure_id": zod.union([zod.string(),zod.null()]).optional(),
+  "indicator_id": zod.union([zod.string(),zod.null()]).optional(),
+  "geography_type": zod.union([zod.string(),zod.null()]).optional(),
+  "page_size": zod.union([zod.int().min(1).max(measuresV1MeasuresGetQueryPageSizeOneMax),zod.null()]).optional(),
+  "page_token": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const MeasuresV1MeasuresGetResponse = zod.object({
+  "data": zod.array(zod.object({
+  "measure_id": zod.string(),
+  "indicator_id": zod.string(),
+  "label": zod.string(),
+  "definition": zod.union([zod.string(),zod.null()]),
+  "semantic_version": zod.string(),
+  "release_version": zod.union([zod.string(),zod.null()]).optional(),
+  "measure_type": zod.union([zod.string(),zod.null()]).optional(),
+  "unit": zod.union([zod.string(),zod.null()]).optional(),
+  "denominator": zod.union([zod.string(),zod.null()]).optional(),
+  "geography_types": zod.union([zod.array(zod.enum(['county', 'state'])),zod.null()]).optional(),
+  "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
+  "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
+  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
+  "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
+  "methodology_id": zod.union([zod.string(),zod.null()]).optional(),
+  "methodology": zod.union([zod.string(),zod.null()]).optional(),
+  "source_ids": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "limitations": zod.array(zod.string()).optional(),
+  "standards_mappings": zod.union([zod.array(zod.object({
+  "standard": zod.string(),
+  "version": zod.string(),
+  "target": zod.string(),
+  "relationship": zod.string(),
+  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
+})),zod.null()]).optional()
+})),
+  "meta": zod.object({
+  "next_page_token": zod.union([zod.string(),zod.null()]).optional(),
+  "response_at": zod.iso.datetime({"offset":true}).optional()
+}),
+  "links": zod.object({
+  "self": zod.union([zod.string(),zod.null()]).optional()
+})
+})
+
+
+/**
+ * @summary Measure
+ */
+export const MeasureV1MeasuresMeasureIdGetParams = zod.object({
+  "measure_id": zod.string()
+})
+
+export const MeasureV1MeasuresMeasureIdGetResponse = zod.object({
+  "data": zod.object({
+  "measure_id": zod.string(),
+  "indicator_id": zod.string(),
+  "label": zod.string(),
+  "definition": zod.union([zod.string(),zod.null()]),
+  "semantic_version": zod.string(),
+  "release_version": zod.union([zod.string(),zod.null()]).optional(),
+  "measure_type": zod.union([zod.string(),zod.null()]).optional(),
+  "unit": zod.union([zod.string(),zod.null()]).optional(),
+  "denominator": zod.union([zod.string(),zod.null()]).optional(),
+  "geography_types": zod.union([zod.array(zod.enum(['county', 'state'])),zod.null()]).optional(),
+  "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
+  "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
+  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
+  "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
+  "methodology_id": zod.union([zod.string(),zod.null()]).optional(),
+  "methodology": zod.union([zod.string(),zod.null()]).optional(),
+  "source_ids": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "limitations": zod.array(zod.string()).optional(),
+  "standards_mappings": zod.union([zod.array(zod.object({
+  "standard": zod.string(),
+  "version": zod.string(),
+  "target": zod.string(),
+  "relationship": zod.string(),
+  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
+})),zod.null()]).optional()
+})
+})
+
+
+/**
+ * @summary Sources
+ */
+export const sourcesV1SourcesGetQueryPageSizeOneMax = 500;
+
+
+
+export const SourcesV1SourcesGetQueryParams = zod.object({
+  "page_size": zod.union([zod.int().min(1).max(sourcesV1SourcesGetQueryPageSizeOneMax),zod.null()]).optional(),
+  "page_token": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const SourcesV1SourcesGetResponse = zod.object({
+  "data": zod.array(zod.object({
+  "source_id": zod.string(),
+  "label": zod.string(),
+  "publisher": zod.union([zod.string(),zod.null()]),
+  "lineage_source_id": zod.string(),
+  "dataset_id": zod.string(),
+  "semantic_version": zod.string(),
+  "release_version": zod.string(),
+  "source_url": zod.union([zod.string(),zod.null()]).optional(),
+  "source_vintage": zod.union([zod.string(),zod.null()]).optional(),
+  "source_version": zod.union([zod.string(),zod.null()]).optional(),
+  "published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "atlas_acquired_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "upstream_updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "source_retrieved_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "limitations": zod.array(zod.string()).optional()
+})),
+  "meta": zod.object({
+  "next_page_token": zod.union([zod.string(),zod.null()]).optional(),
+  "response_at": zod.iso.datetime({"offset":true}).optional()
+}),
+  "links": zod.object({
+  "self": zod.union([zod.string(),zod.null()]).optional()
+})
+})
+
+
+/**
+ * @summary Source
+ */
+export const SourceV1SourcesSourceIdGetParams = zod.object({
+  "source_id": zod.string()
+})
+
+export const SourceV1SourcesSourceIdGetResponse = zod.object({
+  "data": zod.object({
+  "source_id": zod.string(),
+  "label": zod.string(),
+  "publisher": zod.union([zod.string(),zod.null()]),
+  "lineage_source_id": zod.string(),
+  "dataset_id": zod.string(),
+  "semantic_version": zod.string(),
+  "release_version": zod.string(),
+  "source_url": zod.union([zod.string(),zod.null()]).optional(),
+  "source_vintage": zod.union([zod.string(),zod.null()]).optional(),
+  "source_version": zod.union([zod.string(),zod.null()]).optional(),
+  "published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "atlas_acquired_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "upstream_updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "source_retrieved_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "limitations": zod.array(zod.string()).optional()
+})
+})
+
+
+/**
+ * @summary Methodology
+ */
+export const MethodologyV1MethodologiesMethodologyIdGetParams = zod.object({
+  "methodology_id": zod.string()
+})
+
+export const MethodologyV1MethodologiesMethodologyIdGetResponse = zod.object({
+  "data": zod.object({
+  "methodology_id": zod.string(),
+  "measure_id": zod.string(),
+  "version": zod.string(),
+  "description": zod.string(),
+  "limitations": zod.array(zod.string()),
+  "semantic_version": zod.string(),
+  "release_version": zod.string()
+})
+})
+
+
+/**
+ * @summary Geography
+ */
+export const GeographyV1GeographiesGeographyTypeGeographyIdGetParams = zod.object({
+  "geography_type": zod.enum(['county', 'state']),
+  "geography_id": zod.string()
+})
+
+export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.object({
+  "data": zod.object({
+  "geography": zod.object({
+  "geography_type": zod.enum(['county', 'state']),
+  "geography_id": zod.string()
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
+  "label": zod.string(),
+  "parent": zod.union([zod.object({
+  "geography_type": zod.enum(['county', 'state']),
+  "geography_id": zod.string()
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),zod.null()]).optional()
+}).describe('County\/state identity metadata; geometry is a separate display resource.')
+})
+
+
+/**
+ * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. The current release contains only the 2023 annual period and has no supported strata. A measure and bounded county/time selection are required; no user sorting or aggregation.
+ * @summary Observations
+ */
+
+export const observationsV1ObservationsGetQueryGeographyIdMax = 500;
+
+export const observationsV1ObservationsGetQueryYearOneMin = 1900;
+export const observationsV1ObservationsGetQueryYearOneMax = 2100;
+
+export const observationsV1ObservationsGetQueryPageSizeOneMax = 500;
+
+
+
+export const ObservationsV1ObservationsGetQueryParams = zod.object({
+  "measure_id": zod.string().min(1),
+  "geography_type": zod.enum(['county', 'state']),
+  "geography_id": zod.array(zod.string()).min(1).max(observationsV1ObservationsGetQueryGeographyIdMax),
+  "year": zod.union([zod.int().min(observationsV1ObservationsGetQueryYearOneMin).max(observationsV1ObservationsGetQueryYearOneMax),zod.null()]).optional(),
+  "start_date": zod.union([zod.iso.date(),zod.null()]).optional(),
+  "end_date": zod.union([zod.iso.date(),zod.null()]).optional(),
+  "stratification": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "page_size": zod.union([zod.int().min(1).max(observationsV1ObservationsGetQueryPageSizeOneMax),zod.null()]).optional(),
+  "page_token": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const ObservationsV1ObservationsGetResponse = zod.object({
+  "data": zod.array(zod.object({
+  "observation_id": zod.string(),
+  "measure_id": zod.string(),
+  "geography": zod.object({
+  "geography_type": zod.enum(['county', 'state']),
+  "geography_id": zod.string()
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
+  "period_start": zod.iso.date(),
+  "period_end": zod.iso.date(),
+  "temporal_grain": zod.string(),
+  "value": zod.union([zod.number(),zod.string(),zod.null()]),
+  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.'),
+  "unit": zod.string(),
+  "denominator": zod.union([zod.string(),zod.null()]),
+  "strata": zod.record(zod.string(), zod.string()).optional(),
+  "source_id": zod.string(),
+  "lineage_source_id": zod.union([zod.string(),zod.null()]).optional(),
+  "dataset_id": zod.union([zod.string(),zod.null()]).optional(),
+  "methodology_id": zod.union([zod.string(),zod.null()]),
+  "methodology": zod.union([zod.string(),zod.null()]).optional(),
+  "release_methodology_version": zod.union([zod.string(),zod.null()]).optional(),
+  "methodology_version": zod.string(),
+  "semantic_version": zod.string(),
+  "release_id": zod.string(),
+  "provenance_ref": zod.string(),
+  "source_label": zod.union([zod.string(),zod.null()]).optional(),
+  "source_vintage": zod.union([zod.string(),zod.null()]).optional(),
+  "source_url": zod.union([zod.string(),zod.null()]).optional(),
+  "source_published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "atlas_acquired_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "atlas_processed_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "limitations": zod.array(zod.string()),
+  "evidence": zod.object({
+  "resource_type": zod.string(),
+  "resource_id": zod.string(),
+  "source_id": zod.union([zod.string(),zod.null()]).optional(),
+  "provenance_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "semantic_version": zod.union([zod.string(),zod.null()]).optional(),
+  "methodology_version": zod.union([zod.string(),zod.null()]).optional(),
+  "release_id": zod.union([zod.string(),zod.null()]).optional(),
+  "uri": zod.union([zod.string(),zod.null()]).optional()
+})
+})),
+  "meta": zod.object({
+  "next_page_token": zod.union([zod.string(),zod.null()]).optional(),
+  "response_at": zod.iso.datetime({"offset":true}).optional()
+}),
+  "links": zod.object({
+  "self": zod.union([zod.string(),zod.null()]).optional()
+})
+})
+
+
+/**
  * @summary Live
  */
 export const LiveHealthLiveGetResponse = zod.record(zod.string(), zod.string())
@@ -228,6 +585,7 @@ export const MetadataV1AtlasMetadataGetResponse = zod.object({
 
 
 /**
+ * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
  * @summary Geometry
  */
 export const GeometryV1AtlasGeometryGetQueryParams = zod.object({
