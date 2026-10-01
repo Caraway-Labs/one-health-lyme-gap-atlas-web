@@ -40,7 +40,7 @@
     "lucide-react": "^1.35.0",
     "maplibre-gl": "6.4.1",
     "mdast-util-directive": "^3.1.0",
-    "next": "16.3.3",
+    "next": "16.3.8",
     "nuqs": "^2.10.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -59,7 +59,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitest/coverage-v8": "^4.1.11",
-    "eslint-config-next": "16.3.1",
+    "eslint-config-next": "16.3.8",
     "jsdom": "^26.0.0",
     "orval": "^8.2.0",
     "oxfmt": "^0.65.0",
@@ -70,6 +70,9 @@
     "vitest": "^4.1.11"
   },
   "overrides": {
+    "minimatch@3": {
+      "brace-expansion": "1.1.21"
+    },
     "orval": {
       "js-yaml": "4.3.2"
     }
