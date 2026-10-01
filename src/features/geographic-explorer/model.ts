@@ -27,6 +27,85 @@ export const VIEW_LABELS: Record<View, string> = {
   compare: "County comparison",
   trends: "Release trends",
 };
+
+export const VIEW_PURPOSES: Record<View, string> = {
+  tiles: "National state grid for place overview",
+  multiples: "Overview panels with a shared scale",
+  matrix: "Exact county evidence in the table",
+  ranking: "Compare counties by score or completeness",
+  maps: "Pan and select counties on linked maps",
+  scatter: "Map plus scatterplot for map interaction",
+  compare: "Side-by-side county comparison",
+  trends: "Release-over-release change when history exists",
+};
+
+export const VIEW_DESCRIPTIONS: Record<View, string> = {
+  tiles:
+    "Scan state-level patterns before drilling into county evidence below.",
+  multiples:
+    "Compare states with the same completeness scale across small panels.",
+  matrix:
+    "Read human, tick, and pathogen evidence for each county row in the table.",
+  ranking: "Order filtered counties by review score or evidence completeness.",
+  maps: "Explore geography with synchronized priority and completeness maps.",
+  scatter:
+    "Relate map selection to completeness and score in a linked scatterplot.",
+  compare: "Review up to five counties with aligned evidence fields.",
+  trends:
+    "Shows change across governed releases once comparable history is available.",
+};
+
+export const RELEASE_TRENDS_PREREQUISITE =
+  "Comparable release history is not available yet. This view needs archived releases before it can show a time series.";
+
+export type ViewGroupId =
+  | "overview"
+  | "evidence"
+  | "compare"
+  | "map"
+  | "history";
+
+export const VIEW_GROUPS: readonly {
+  id: ViewGroupId;
+  title: string;
+  hint: string;
+  views: readonly View[];
+}[] = [
+  {
+    id: "overview",
+    title: "Place overview",
+    hint: "Start here to see regional patterns before opening county evidence.",
+    views: ["tiles", "multiples"],
+  },
+  {
+    id: "evidence",
+    title: "County evidence",
+    hint: "Use the matrix when you need exact evidence fields per county.",
+    views: ["matrix"],
+  },
+  {
+    id: "compare",
+    title: "Compare counties",
+    hint: "Rank filtered counties or compare a short list side by side.",
+    views: ["ranking", "compare"],
+  },
+  {
+    id: "map",
+    title: "Map interaction",
+    hint: "Select counties from maps and linked charts.",
+    views: ["maps", "scatter"],
+  },
+  {
+    id: "history",
+    title: "Release change",
+    hint: "Reserved for timelines once multiple governed releases exist.",
+    views: ["trends"],
+  },
+];
+
+export function allGroupedViews(): View[] {
+  return VIEW_GROUPS.flatMap((group) => [...group.views]);
+}
 const FIPS = /^\d{5}$/;
 export function parseComparison(value: string) {
   return [...new Set(value.split(",").filter((part) => FIPS.test(part)))].slice(
