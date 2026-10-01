@@ -692,7 +692,9 @@ describe(EvidenceChat, () => {
       screen.getByRole("button", { name: /^Second saved question/ })
     );
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByLabelText("Your question"))
+      expect(document.activeElement).toBe(
+        screen.getByLabelText("Your question")
+      )
     );
     expect(screen.getByText("Second question")).toBeTruthy();
   });

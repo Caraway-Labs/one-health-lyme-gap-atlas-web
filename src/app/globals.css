@@ -2676,7 +2676,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   text-underline-offset: 2px;
 }
 .chat-history-clear:focus-visible {
-  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
+  outline: var(--focus-ring-width) solid
+    color-mix(in srgb, var(--ring) 22%, transparent);
   outline-offset: 2px;
 }
 .chat-history-list {
@@ -2703,7 +2704,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   text-align: left;
 }
 .history-row-select:focus-visible {
-  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
+  outline: var(--focus-ring-width) solid
+    color-mix(in srgb, var(--ring) 22%, transparent);
   outline-offset: -2px;
 }
 .history-row-select[aria-current="true"] {
@@ -2760,7 +2762,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   line-height: 1;
 }
 .history-row-delete:focus-visible {
-  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
+  outline: var(--focus-ring-width) solid
+    color-mix(in srgb, var(--ring) 22%, transparent);
   outline-offset: -2px;
   color: var(--destructive);
 }
@@ -3171,7 +3174,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   field-sizing: content;
 }
 .chat-form textarea:focus-visible {
-  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 16%, transparent);
+  outline: var(--focus-ring-width) solid
+    color-mix(in srgb, var(--ring) 16%, transparent);
   border-color: var(--teal);
 }
 .chat-form-actions {
@@ -3310,7 +3314,8 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
     line-height: 1;
   }
   .chat-history-mobile-close:focus-visible {
-    outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ring) 22%, transparent);
+    outline: var(--focus-ring-width) solid
+      color-mix(in srgb, var(--ring) 22%, transparent);
     outline-offset: 2px;
   }
   .chat-dialog {
