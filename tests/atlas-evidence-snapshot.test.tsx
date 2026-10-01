@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { AtlasEvidenceSnapshot } from "@/components/atlas-evidence-snapshot";
 import type { AtlasMetadata } from "@/generated/models";
@@ -27,6 +27,8 @@ const metadata: AtlasMetadata = {
 };
 
 describe(AtlasEvidenceSnapshot, () => {
+  afterEach(() => cleanup());
+
   it("keeps technical identifiers in progressive disclosure", () => {
     render(<AtlasEvidenceSnapshot metadata={metadata} />);
     const disclosure = screen
@@ -39,5 +41,21 @@ describe(AtlasEvidenceSnapshot, () => {
     expect(screen.getByText("alpha-2026-08-06")).toBeTruthy();
     expect(screen.getByText("alpha-0.2.0")).toBeTruthy();
     expect(screen.getByText("CDC Lyme surveillance: 2023")).toBeTruthy();
+  });
+
+  it("exposes release education before technical identifiers", () => {
+    render(<AtlasEvidenceSnapshot metadata={metadata} />);
+    expect(screen.getByText("What these release labels mean")).toBeTruthy();
+    expect(
+      screen.getByText("How county scoring works in this release")
+    ).toBeTruthy();
+    fireEvent.click(screen.getByText("What these release labels mean"));
+    expect(
+      screen.getByText(/underlying public inputs, not when Atlas generated/i)
+    ).toBeTruthy();
+    const technical = screen
+      .getByText("Technical release and methodology identifiers")
+      .closest("details");
+    expect(technical?.hasAttribute("open")).toBeFalsy();
   });
 });
