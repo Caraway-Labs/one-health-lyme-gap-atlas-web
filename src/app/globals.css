@@ -3146,6 +3146,11 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   color: var(--teal-dark);
   font-size: inherit;
 }
+.chat-attribution-handoff-hint {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
 .evidence-chat-drawer {
   height: 100%;
 }

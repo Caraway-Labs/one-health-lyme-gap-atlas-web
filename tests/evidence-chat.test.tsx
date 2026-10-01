@@ -554,6 +554,32 @@ describe(EvidenceChat, () => {
     });
   });
 
+  it("uses the same evidence semantics in drawer layout", async () => {
+    chatRequest.mockResolvedValue({ data: response() });
+    render(<EvidenceChat mode="drawer" />);
+    await submit();
+    await expect(
+      screen.findByText("Evidence: Limited evidence")
+    ).resolves.toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Open full workspace" })
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Clear all" })).toBeNull();
+  });
+
+  it("documents drawer handoff before the first saved answer", () => {
+    render(<EvidenceChat mode="drawer" />);
+    expect(
+      screen.getByText(/Unsent text in this drawer is not carried over/)
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "start in the workspace" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("link", { name: "Open full workspace" })
+    ).toBeNull();
+  });
+
   it("opens a saved local conversation from a deep link", async () => {
     const future = "2030-01-01T00:00:00.000Z";
     saveConversations([
