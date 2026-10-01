@@ -8,12 +8,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { Button } from "@/components/ui/button";
-import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import type { KnowledgeChatResponse } from "@/generated/models";
 import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
+import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 import {

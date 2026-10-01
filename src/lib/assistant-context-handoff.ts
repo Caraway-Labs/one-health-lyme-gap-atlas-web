@@ -7,7 +7,9 @@ const DATASET_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 /** County and governed release only — no analytical filter equivalence. */
 export const ASSISTANT_CONTEXT_HANDOFF_PARAMS = ["county", "dataset"] as const;
 
-type SearchParamSource = Pick<URLSearchParams, "get" | "getAll" | "has">;
+type SearchParamSource = Pick<URLSearchParams, "getAll" | "has"> & {
+  get: URLSearchParams["get"];
+};
 
 function shouldCopyHandoffParam(key: string, value: string): boolean {
   if (key === "county") {

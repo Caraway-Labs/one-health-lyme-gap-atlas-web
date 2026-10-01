@@ -86,10 +86,9 @@ test("shows county context in the floating assistant after Explorer selection", 
 }) => {
   await page.goto("/geographic_explorer?county=08001");
   await page.getByRole("button", { name: /Atlas Assistant/ }).click();
-  await expect(
-    page.getByLabel("County context").getByText("Adams, Colorado")
-  ).toBeVisible();
-  await expect(page.getByText("FIPS 08001")).toBeVisible();
+  const countyContext = page.getByLabel("County context");
+  await expect(countyContext.getByText("Adams, Colorado")).toBeVisible();
+  await expect(countyContext.getByText(/FIPS 08001/)).toBeVisible();
 });
 
 test("carries county context into the assistant workspace route", async ({
@@ -109,6 +108,8 @@ test("explains unavailable county FIPS instead of switching silently", async ({
   page,
 }) => {
   await page.goto("/assistant?county=99999");
-  await expect(page.getByText("County unavailable in this release")).toBeVisible();
+  await expect(
+    page.getByText("County unavailable in this release")
+  ).toBeVisible();
   await expect(page).toHaveURL(/county=99999/);
 });

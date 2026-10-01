@@ -11,8 +11,8 @@ import {
   MetadataV1AtlasMetadataGetResponse,
   ScoresV1AtlasScoresGetResponse,
 } from "@/generated/zod/atlas";
-import { parseAssistantCountyUrlContext } from "@/lib/assistant-context-handoff";
 import { validateApiResponse } from "@/lib/api-response-validation";
+import { parseAssistantCountyUrlContext } from "@/lib/assistant-context-handoff";
 import { describeReleaseAssembly } from "@/lib/atlas-evidence-metadata";
 
 export function AssistantCountyContextNotice() {
@@ -31,9 +31,9 @@ export function AssistantCountyContextNotice() {
         role="alert"
       >
         <p>
-          <strong>County context not applied.</strong> &ldquo;{parsed.raw}&rdquo;
-          is not a valid five-digit county FIPS code. Atlas Assistant will not
-          attach literature to an unrelated county.
+          <strong>County context not applied.</strong> &ldquo;{parsed.raw}
+          &rdquo; is not a valid five-digit county FIPS code. Atlas Assistant
+          will not attach literature to an unrelated county.
         </p>
       </div>
     );
@@ -84,7 +84,10 @@ function ResolvedCountyContext({
 
   if (metadataQuery.isPending || scoresQuery.isPending) {
     return (
-      <p className="chat-county-context chat-county-context-loading" role="status">
+      <p
+        className="chat-county-context chat-county-context-loading"
+        role="status"
+      >
         Loading county context…
       </p>
     );

@@ -262,7 +262,7 @@ type PrimaryNavigationMenuProps = {
   onSelectDestination: () => void;
   open: boolean;
   pathname: string;
-  searchParams: Pick<URLSearchParams, "getAll" | "has">;
+  searchParams: Pick<URLSearchParams, "get" | "getAll" | "has">;
 };
 
 function PrimaryNavigationMenu({
