@@ -2487,10 +2487,11 @@ html[data-atlas-chat-launcher="enabled"] .app-shell .app-inset > footer {
 }
 .chat-launcher-early-access {
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.15rem 0.55rem;
-  font-size: 0.72rem;
-  font-weight: 700;
+  background: #fff;
+  color: var(--navy);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;

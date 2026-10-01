@@ -97,7 +97,9 @@ function EnabledChatLauncher() {
           aria-label={atlasAssistantLauncherAccessibleName()}
           onClick={() => setOpen(true)}
         >
-          <span className="chat-launcher-title">{ATLAS_ASSISTANT_LAUNCHER_LABEL}</span>
+          <span className="chat-launcher-title">
+            {ATLAS_ASSISTANT_LAUNCHER_LABEL}
+          </span>
           <span className="chat-launcher-early-access">Early access</span>
         </button>
       </div>

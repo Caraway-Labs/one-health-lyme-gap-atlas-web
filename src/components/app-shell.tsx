@@ -31,12 +31,12 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { analyticalNavigationHref } from "@/lib/analytical-navigation-handoff";
 import {
   assistantNavigationStatusLabel,
   isAtlasAssistantLiteratureEnabled,
   shouldShowAssistantInPrimaryNavigation,
 } from "@/lib/assistant-entry-points";
-import { analyticalNavigationHref } from "@/lib/analytical-navigation-handoff";
 import { getDocsUrl } from "@/lib/docs-config";
 import {
   NAVIGATION_GROUPS,
@@ -272,7 +272,10 @@ function PrimaryNavigationMenu({
 }: PrimaryNavigationMenuProps) {
   const literatureAssistantEnabled = isAtlasAssistantLiteratureEnabled();
   const showAssistantInPrimaryNavigation =
-    shouldShowAssistantInPrimaryNavigation(pathname, literatureAssistantEnabled);
+    shouldShowAssistantInPrimaryNavigation(
+      pathname,
+      literatureAssistantEnabled
+    );
 
   return (
     <nav aria-label="Primary navigation">

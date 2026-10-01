@@ -8,7 +8,7 @@ export function isAtlasAssistantLiteratureEnabled(): boolean {
 }
 
 /**
- * Product decision (issue #335): when literature chat is enabled, the floating
+ * Product decision (GitHub issue 335): when literature chat is enabled, the floating
  * launcher is the primary entry for in-flow questions; the sidebar link appears
  * only on the full `/assistant` workspace for wayfinding. When chat is
  * disabled, the sidebar shows the bounded Coming Soon destination and the

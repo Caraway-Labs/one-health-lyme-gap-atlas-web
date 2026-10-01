@@ -11,10 +11,10 @@ describe("Atlas Assistant entry points", () => {
   it("hides the sidebar link while literature chat is enabled on explore routes", () => {
     expect(
       shouldShowAssistantInPrimaryNavigation("/geographic_explorer", true)
-    ).toBe(false);
-    expect(shouldShowAtlasAssistantLauncher("/geographic_explorer", true)).toBe(
-      true
-    );
+    ).toBeFalsy();
+    expect(
+      shouldShowAtlasAssistantLauncher("/geographic_explorer", true)
+    ).toBeTruthy();
     expect(
       navigationItemsForGroup("research", {
         showAssistantInPrimaryNavigation: false,
@@ -23,10 +23,10 @@ describe("Atlas Assistant entry points", () => {
   });
 
   it("shows the sidebar link on the workspace and hides the launcher there", () => {
-    expect(shouldShowAssistantInPrimaryNavigation("/assistant", true)).toBe(
-      true
-    );
-    expect(shouldShowAtlasAssistantLauncher("/assistant", true)).toBe(false);
+    expect(
+      shouldShowAssistantInPrimaryNavigation("/assistant", true)
+    ).toBeTruthy();
+    expect(shouldShowAtlasAssistantLauncher("/assistant", true)).toBeFalsy();
     expect(
       navigationItemsForGroup("research", {
         showAssistantInPrimaryNavigation: true,
@@ -35,8 +35,8 @@ describe("Atlas Assistant entry points", () => {
   });
 
   it("uses sidebar Coming Soon when literature chat is disabled", () => {
-    expect(shouldShowAssistantInPrimaryNavigation("/", false)).toBe(true);
-    expect(shouldShowAtlasAssistantLauncher("/", false)).toBe(false);
+    expect(shouldShowAssistantInPrimaryNavigation("/", false)).toBeTruthy();
+    expect(shouldShowAtlasAssistantLauncher("/", false)).toBeFalsy();
   });
 
   it("labels the launcher with early access when literature chat is enabled", () => {
