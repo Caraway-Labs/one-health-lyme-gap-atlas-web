@@ -2705,11 +2705,29 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   white-space: pre-wrap;
   line-height: 1.55;
 }
+.chat-answer-sources {
+  margin-top: 0.85rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--teal) 5%, white);
+}
+.chat-answer-sources-heading {
+  margin: 0;
+}
+.chat-answer-sources-count {
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
 .chat-evidence-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 0.75rem;
-  margin-top: 0.7rem;
+  margin-top: 0.55rem;
   color: var(--teal-dark);
   font-size: 0.72rem;
   font-weight: 700;
@@ -2774,16 +2792,77 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   margin-top: 0.75rem;
 }
 .citation-list {
-  margin: 0.8rem 0 0;
-  padding-left: 1.2rem;
-  font-size: 0.76rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
 }
-.citation-list li {
-  margin-top: 0.45rem;
+.citation-item {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.55rem;
+  margin-top: 0.5rem;
 }
-.citation-list a {
+.citation-item:first-child {
+  margin-top: 0;
+}
+.citation-item-index {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding-top: 0.55rem;
   color: var(--teal-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.citation-source-link,
+.citation-source-static {
+  display: block;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  background: white;
+}
+.citation-source-link {
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.citation-source-link:hover {
+  border-color: var(--teal);
+}
+.citation-source-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.citation-source-title {
+  display: block;
+  color: var(--teal-dark);
+  font-weight: 700;
+  line-height: 1.35;
   text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+.citation-source-identifier {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.citation-source-action {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--teal-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 .citation-list small {
   display: block;
