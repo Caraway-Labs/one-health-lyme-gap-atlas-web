@@ -5,7 +5,9 @@ const RELEASE_ASSEMBLY_DATE =
   /^(?:governed|alpha)-(?<assemblyDate>\d{4}-\d{2}-\d{2})\b/;
 
 function extractYearTokens(vintage: string): number[] {
-  const shortRange = vintage.match(/(?<startYear>\d{4})\s*[–-]\s*(?<endYear>\d{2,4})/);
+  const shortRange = vintage.match(
+    /(?<startYear>\d{4})\s*[–-]\s*(?<endYear>\d{2,4})/
+  );
   if (shortRange?.groups) {
     const startYear = Number.parseInt(shortRange.groups.startYear, 10);
     let endYear = Number.parseInt(shortRange.groups.endYear, 10);

@@ -92,9 +92,9 @@ test.describe("evidence snapshot presentation", () => {
     ).toHaveCount(0);
     await expect(page.getByText("v0.2.0")).toHaveCount(0);
     await expect(
-      page.getByRole("region", { name: "Atlas summary" }).getByText(
-        "Semantic scoring methodology"
-      )
+      page
+        .getByRole("region", { name: "Atlas summary" })
+        .getByText("Semantic scoring methodology")
     ).toBeVisible();
     await expect(
       page.getByText("governed-2026-09-18-unknown-coverage")

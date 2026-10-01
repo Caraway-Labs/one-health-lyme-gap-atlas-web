@@ -32,7 +32,7 @@ describe(AtlasEvidenceSnapshot, () => {
     const disclosure = screen
       .getByText("Technical release and methodology identifiers")
       .closest("details");
-    expect(disclosure?.hasAttribute("open")).toBe(false);
+    expect(disclosure?.hasAttribute("open")).toBeFalsy();
     fireEvent.click(
       screen.getByText("Technical release and methodology identifiers")
     );
