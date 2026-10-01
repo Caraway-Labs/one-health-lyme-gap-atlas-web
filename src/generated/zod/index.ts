@@ -7,6 +7,13 @@
  */
 
 export * from './atlasMetadata.zod';
+export * from './briefingArtifact.zod';
+export * from './briefingEvidence.zod';
+export * from './briefingGenerationRequest.zod';
+export * from './briefingMatch.zod';
+export * from './briefingScope.zod';
+export * from './briefingSource.zod';
+export * from './briefingWindow.zod';
 export * from './chatHistoryTurn.zod';
 export * from './collectionEnvelopeIndicator.zod';
 export * from './collectionEnvelopeMeasure.zod';
@@ -36,6 +43,11 @@ export * from './getProfileV1MeProfileGetHeaders.zod';
 export * from './hTTPValidationError.zod';
 export * from './indicator.zod';
 export * from './indicatorsV1IndicatorsGetParams.zod';
+export * from './intelligenceFieldStates.zod';
+export * from './intelligenceItem.zod';
+export * from './intelligenceProvenance.zod';
+export * from './intelligenceSnapshot.zod';
+export * from './intelligenceTag.zod';
 export * from './knowledgeChatRequest.zod';
 export * from './knowledgeChatResponse.zod';
 export * from './knowledgeCitation.zod';
@@ -54,6 +66,7 @@ export * from './privacyRequestCreate.zod';
 export * from './privacyRequestCreated.zod';
 export * from './privacyRequestStatus.zod';
 export * from './problemDetails.zod';
+export * from './rankedBriefingItem.zod';
 export * from './rankingCsvV1AtlasRankingCsvGetParams.zod';
 export * from './readyHealthReadyGet200.zod';
 export * from './resourceEnvelopeGeography.zod';

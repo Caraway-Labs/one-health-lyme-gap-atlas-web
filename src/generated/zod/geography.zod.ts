@@ -11,13 +11,13 @@ export const Geography = zod.object({
   "geography": zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string()
-}),
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
   "label": zod.string(),
   "parent": zod.union([zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string()
-}),zod.null()]).optional()
-})
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),zod.null()]).optional()
+}).describe('County\/state identity metadata; geometry is a separate display resource.')
 
 export type Geography = zod.input<typeof Geography>;
 export type GeographyOutput = zod.output<typeof Geography>;

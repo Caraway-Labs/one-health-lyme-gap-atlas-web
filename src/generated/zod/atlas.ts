@@ -275,13 +275,13 @@ export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.obj
   "geography": zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string()
-}),
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
   "label": zod.string(),
   "parent": zod.union([zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string()
-}),zod.null()]).optional()
-})
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),zod.null()]).optional()
+}).describe('County\/state identity metadata; geometry is a separate display resource.')
 })
 
 
@@ -318,7 +318,7 @@ export const ObservationsV1ObservationsGetResponse = zod.object({
   "geography": zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string()
-}),
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "temporal_grain": zod.string(),
@@ -585,6 +585,7 @@ export const MetadataV1AtlasMetadataGetResponse = zod.object({
 
 
 /**
+ * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
  * @summary Geometry
  */
 export const GeometryV1AtlasGeometryGetQueryParams = zod.object({

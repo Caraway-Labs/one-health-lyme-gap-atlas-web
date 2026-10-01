@@ -10,7 +10,7 @@ import * as zod from 'zod';
 export const GeographyIdentity = zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string()
-})
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.')
 
 export type GeographyIdentity = zod.input<typeof GeographyIdentity>;
 export type GeographyIdentityOutput = zod.output<typeof GeographyIdentity>;

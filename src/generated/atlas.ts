@@ -2618,6 +2618,7 @@ export const getGeometryV1AtlasGeometryGetUrl = (params?: GeometryV1AtlasGeometr
 }
 
 /**
+ * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
  * @summary Geometry
  */
 export const geometryV1AtlasGeometryGet = async (params?: GeometryV1AtlasGeometryGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<geometryV1AtlasGeometryGetResponse> => {

@@ -17,7 +17,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Indicator Id"
             }
           },
@@ -27,8 +34,14 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "integer", "maximum": 500, "minimum": 1 },
-                { "type": "null" }
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "Page Size"
             }
@@ -38,7 +51,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Page Token"
             }
           }
@@ -58,7 +78,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -66,7 +88,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -74,7 +98,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -82,7 +108,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -90,7 +118,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -98,7 +128,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -106,7 +138,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           }
@@ -123,7 +157,10 @@
             "name": "indicator_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Indicator Id" }
+            "schema": {
+              "type": "string",
+              "title": "Indicator Id"
+            }
           }
         ],
         "responses": {
@@ -141,7 +178,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -149,7 +188,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -157,7 +198,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -165,7 +208,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -173,7 +218,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -181,7 +228,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -189,7 +238,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -210,7 +261,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Measure Id"
             }
           },
@@ -219,7 +277,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Indicator Id"
             }
           },
@@ -228,7 +293,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Geography Type"
             }
           },
@@ -238,8 +310,14 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "integer", "maximum": 500, "minimum": 1 },
-                { "type": "null" }
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "Page Size"
             }
@@ -249,7 +327,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Page Token"
             }
           }
@@ -269,7 +354,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -277,7 +364,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -285,7 +374,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -293,7 +384,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -301,7 +394,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -309,7 +404,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -317,7 +414,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           }
@@ -334,7 +433,10 @@
             "name": "measure_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Measure Id" }
+            "schema": {
+              "type": "string",
+              "title": "Measure Id"
+            }
           }
         ],
         "responses": {
@@ -352,7 +454,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -360,7 +464,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -368,7 +474,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -376,7 +484,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -384,7 +494,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -392,7 +504,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -400,7 +514,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -422,8 +538,14 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "integer", "maximum": 500, "minimum": 1 },
-                { "type": "null" }
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "Page Size"
             }
@@ -433,7 +555,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Page Token"
             }
           }
@@ -453,7 +582,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -461,7 +592,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -469,7 +602,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -477,7 +612,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -485,7 +622,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -493,7 +632,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -501,7 +642,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           }
@@ -518,7 +661,10 @@
             "name": "source_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Source Id" }
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
           }
         ],
         "responses": {
@@ -536,7 +682,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -544,7 +692,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -552,7 +702,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -560,7 +712,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -568,7 +722,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -576,7 +732,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -584,7 +742,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -604,7 +764,10 @@
             "name": "methodology_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Methodology Id" }
+            "schema": {
+              "type": "string",
+              "title": "Methodology Id"
+            }
           }
         ],
         "responses": {
@@ -622,7 +785,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -630,7 +795,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -638,7 +805,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -646,7 +815,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -654,7 +825,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -662,7 +835,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -670,7 +845,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -690,13 +867,18 @@
             "name": "geography_type",
             "in": "path",
             "required": true,
-            "schema": { "$ref": "#/components/schemas/GeographyType" }
+            "schema": {
+              "$ref": "#/components/schemas/GeographyType"
+            }
           },
           {
             "name": "geography_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Geography Id" }
+            "schema": {
+              "type": "string",
+              "title": "Geography Id"
+            }
           }
         ],
         "responses": {
@@ -714,7 +896,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -722,7 +906,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -730,7 +916,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -738,7 +926,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -746,7 +936,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -754,7 +946,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -762,7 +956,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           }
@@ -790,7 +986,9 @@
             "name": "geography_type",
             "in": "query",
             "required": true,
-            "schema": { "$ref": "#/components/schemas/GeographyType" }
+            "schema": {
+              "$ref": "#/components/schemas/GeographyType"
+            }
           },
           {
             "name": "geography_id",
@@ -798,7 +996,9 @@
             "required": true,
             "schema": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "minItems": 1,
               "maxItems": 500,
               "title": "Geography Id"
@@ -810,8 +1010,14 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "integer", "maximum": 2100, "minimum": 1900 },
-                { "type": "null" }
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1900
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "Year"
             }
@@ -822,8 +1028,13 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "string", "format": "date" },
-                { "type": "null" }
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "Start Date"
             }
@@ -834,8 +1045,13 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "string", "format": "date" },
-                { "type": "null" }
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "End Date"
             }
@@ -846,8 +1062,15 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "array", "items": { "type": "string" } },
-                { "type": "null" }
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "Stratification"
             }
@@ -858,8 +1081,14 @@
             "required": false,
             "schema": {
               "anyOf": [
-                { "type": "integer", "maximum": 500, "minimum": 1 },
-                { "type": "null" }
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
               ],
               "title": "Page Size"
             }
@@ -869,7 +1098,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Page Token"
             }
           }
@@ -889,7 +1125,9 @@
             "description": "Canonical client errors use application/problem+json.",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -897,7 +1135,9 @@
             "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -905,7 +1145,9 @@
             "description": "RESOURCE_NOT_FOUND; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -913,7 +1155,9 @@
             "description": "Rate limited; Retry-After; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -921,7 +1165,9 @@
             "description": "GET request body rejected; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -929,7 +1175,9 @@
             "description": "Query string too long; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
@@ -937,7 +1185,9 @@
             "description": "Canonical data service unavailable; application/problem+json",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           }
@@ -955,7 +1205,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": { "type": "string" },
+                  "additionalProperties": {
+                    "type": "string"
+                  },
                   "type": "object",
                   "title": "Response Live Health Live Get"
                 }
@@ -976,7 +1228,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": { "type": "string" },
+                  "additionalProperties": {
+                    "type": "string"
+                  },
                   "type": "object",
                   "title": "Response Ready Health Ready Get"
                 }
@@ -997,7 +1251,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Authorization"
             }
           }
@@ -1007,14 +1268,18 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UserProfileResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
               }
             }
           },
           "401": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unauthorized"
@@ -1022,7 +1287,9 @@
           "503": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1031,7 +1298,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1047,7 +1316,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Authorization"
             }
           }
@@ -1056,7 +1332,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UserProfileWrite" }
+              "schema": {
+                "$ref": "#/components/schemas/UserProfileWrite"
+              }
             }
           }
         },
@@ -1065,14 +1343,18 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UserProfileResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
               }
             }
           },
           "401": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unauthorized"
@@ -1080,7 +1362,9 @@
           "503": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1089,7 +1373,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1107,7 +1393,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Authorization"
             }
           }
@@ -1116,7 +1409,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/PrivacyRequestCreate" }
+              "schema": {
+                "$ref": "#/components/schemas/PrivacyRequestCreate"
+              }
             }
           }
         },
@@ -1134,7 +1429,9 @@
           "401": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unauthorized"
@@ -1142,7 +1439,9 @@
           "503": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1151,7 +1450,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1179,7 +1480,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Authorization"
             }
           }
@@ -1188,7 +1496,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/PrivacyRequestConfirm" }
+              "schema": {
+                "$ref": "#/components/schemas/PrivacyRequestConfirm"
+              }
             }
           }
         },
@@ -1206,7 +1516,9 @@
           "400": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Bad Request"
@@ -1214,7 +1526,9 @@
           "401": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unauthorized"
@@ -1222,7 +1536,9 @@
           "404": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Not Found"
@@ -1230,7 +1546,9 @@
           "409": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Conflict"
@@ -1238,7 +1556,9 @@
           "503": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1247,7 +1567,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1275,7 +1597,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Authorization"
             }
           }
@@ -1294,7 +1623,9 @@
           "401": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unauthorized"
@@ -1302,7 +1633,9 @@
           "404": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Not Found"
@@ -1310,7 +1643,9 @@
           "503": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1319,7 +1654,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1347,7 +1684,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Authorization"
             }
           }
@@ -1355,12 +1699,18 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "401": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unauthorized"
@@ -1368,7 +1718,9 @@
           "404": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Not Found"
@@ -1376,7 +1728,9 @@
           "409": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Conflict"
@@ -1384,7 +1738,9 @@
           "503": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1393,7 +1749,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1411,7 +1769,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Dataset Version"
             }
           }
@@ -1421,7 +1786,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AtlasMetadata" }
+                "schema": {
+                  "$ref": "#/components/schemas/AtlasMetadata"
+                }
               }
             }
           },
@@ -1429,7 +1796,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1440,6 +1809,7 @@
       "get": {
         "tags": ["atlas"],
         "summary": "Geometry",
+        "description": "Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.",
         "operationId": "geometry_v1_atlas_geometry_get",
         "parameters": [
           {
@@ -1447,7 +1817,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Dataset Version"
             }
           }
@@ -1455,13 +1832,19 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1479,7 +1862,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Dataset Version"
             }
           },
@@ -1527,7 +1917,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ScoreCollection" }
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreCollection"
+                }
               }
             }
           },
@@ -1535,7 +1927,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1563,7 +1957,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Dataset Version"
             }
           },
@@ -1611,7 +2012,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CountyDetail" }
+                "schema": {
+                  "$ref": "#/components/schemas/CountyDetail"
+                }
               }
             }
           },
@@ -1619,7 +2022,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1647,7 +2052,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Dataset Version"
             }
           },
@@ -1704,12 +2116,16 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/pdf": {} }
+            "content": {
+              "application/pdf": {}
+            }
           },
           "404": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Not Found"
@@ -1717,7 +2133,9 @@
           "413": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Request Entity Too Large"
@@ -1725,16 +2143,26 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unprocessable Entity"
           },
           "503": {
-            "headers": { "Retry-After": { "schema": { "type": "string" } } },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1763,7 +2191,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Dataset Version"
             }
           },
@@ -1820,12 +2255,16 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/pdf": {} }
+            "content": {
+              "application/pdf": {}
+            }
           },
           "404": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Not Found"
@@ -1833,7 +2272,9 @@
           "413": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Request Entity Too Large"
@@ -1841,16 +2282,26 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unprocessable Entity"
           },
           "503": {
-            "headers": { "Retry-After": { "schema": { "type": "string" } } },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -1939,13 +2390,19 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1963,7 +2420,14 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Authorization"
             }
           }
@@ -1992,7 +2456,9 @@
           "401": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unauthorized"
@@ -2000,7 +2466,9 @@
           "409": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Conflict"
@@ -2008,7 +2476,9 @@
           "413": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Request Entity Too Large"
@@ -2016,7 +2486,9 @@
           "415": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unsupported Media Type"
@@ -2024,7 +2496,9 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Unprocessable Entity"
@@ -2032,7 +2506,9 @@
           "429": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Too Many Requests"
@@ -2040,7 +2516,9 @@
           "503": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             },
             "description": "Service Unavailable"
@@ -2056,7 +2534,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/KnowledgeChatRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeChatRequest"
+              }
             }
           },
           "required": true
@@ -2076,13 +2556,21 @@
             "description": "Too Many Requests",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
               }
             }
           },
           "503": {
             "description": "Service Unavailable",
-            "headers": { "Retry-After": { "schema": { "type": "string" } } },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -2095,7 +2583,9 @@
             "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -2107,8 +2597,14 @@
     "schemas": {
       "AtlasMetadata": {
         "properties": {
-          "release_id": { "type": "string", "title": "Release Id" },
-          "schema_version": { "type": "string", "title": "Schema Version" },
+          "release_id": {
+            "type": "string",
+            "title": "Release Id"
+          },
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version"
+          },
           "generated_at": {
             "type": "string",
             "format": "date-time",
@@ -2119,8 +2615,14 @@
             "format": "date-time",
             "title": "Loaded At"
           },
-          "scope": { "type": "string", "title": "Scope" },
-          "bundle_sha256": { "type": "string", "title": "Bundle Sha256" },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "bundle_sha256": {
+            "type": "string",
+            "title": "Bundle Sha256"
+          },
           "score_defaults": {
             "additionalProperties": true,
             "type": "object",
@@ -2130,15 +2632,22 @@
             "type": "string",
             "title": "Methodology Version"
           },
-          "limitations": { "type": "string", "title": "Limitations" },
+          "limitations": {
+            "type": "string",
+            "title": "Limitations"
+          },
           "sources": {
-            "items": { "$ref": "#/components/schemas/SourceMetadata" },
+            "items": {
+              "$ref": "#/components/schemas/SourceMetadata"
+            },
             "type": "array",
             "title": "Sources"
           },
           "states": {
             "items": {
-              "additionalProperties": { "type": "string" },
+              "additionalProperties": {
+                "type": "string"
+              },
               "type": "object"
             },
             "type": "array",
@@ -2182,12 +2691,18 @@
       "CollectionEnvelope_Indicator_": {
         "properties": {
           "data": {
-            "items": { "$ref": "#/components/schemas/Indicator" },
+            "items": {
+              "$ref": "#/components/schemas/Indicator"
+            },
             "type": "array",
             "title": "Data"
           },
-          "meta": { "$ref": "#/components/schemas/CollectionMeta" },
-          "links": { "$ref": "#/components/schemas/CollectionLinks" }
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
         },
         "type": "object",
         "required": ["data", "meta", "links"],
@@ -2196,12 +2711,18 @@
       "CollectionEnvelope_Measure_": {
         "properties": {
           "data": {
-            "items": { "$ref": "#/components/schemas/Measure" },
+            "items": {
+              "$ref": "#/components/schemas/Measure"
+            },
             "type": "array",
             "title": "Data"
           },
-          "meta": { "$ref": "#/components/schemas/CollectionMeta" },
-          "links": { "$ref": "#/components/schemas/CollectionLinks" }
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
         },
         "type": "object",
         "required": ["data", "meta", "links"],
@@ -2210,12 +2731,18 @@
       "CollectionEnvelope_Observation_": {
         "properties": {
           "data": {
-            "items": { "$ref": "#/components/schemas/Observation" },
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
             "type": "array",
             "title": "Data"
           },
-          "meta": { "$ref": "#/components/schemas/CollectionMeta" },
-          "links": { "$ref": "#/components/schemas/CollectionLinks" }
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
         },
         "type": "object",
         "required": ["data", "meta", "links"],
@@ -2224,12 +2751,18 @@
       "CollectionEnvelope_Source_": {
         "properties": {
           "data": {
-            "items": { "$ref": "#/components/schemas/Source" },
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
             "type": "array",
             "title": "Data"
           },
-          "meta": { "$ref": "#/components/schemas/CollectionMeta" },
-          "links": { "$ref": "#/components/schemas/CollectionLinks" }
+          "meta": {
+            "$ref": "#/components/schemas/CollectionMeta"
+          },
+          "links": {
+            "$ref": "#/components/schemas/CollectionLinks"
+          }
         },
         "type": "object",
         "required": ["data", "meta", "links"],
@@ -2238,7 +2771,14 @@
       "CollectionLinks": {
         "properties": {
           "self": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Self"
           }
         },
@@ -2248,7 +2788,14 @@
       "CollectionMeta": {
         "properties": {
           "next_page_token": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Next Page Token"
           },
           "response_at": {
@@ -2262,16 +2809,34 @@
       },
       "CountyDetail": {
         "properties": {
-          "fips": { "type": "string", "title": "Fips" },
-          "county": { "type": "string", "title": "County" },
-          "state": { "type": "string", "title": "State" },
-          "state_name": { "type": "string", "title": "State Name" },
+          "fips": {
+            "type": "string",
+            "title": "Fips"
+          },
+          "county": {
+            "type": "string",
+            "title": "County"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "state_name": {
+            "type": "string",
+            "title": "State Name"
+          },
           "in_contiguous_tick_scope": {
             "type": "boolean",
             "title": "In Contiguous Tick Scope"
           },
-          "human_status": { "type": "string", "title": "Human Status" },
-          "tick_status": { "type": "string", "title": "Tick Status" },
+          "human_status": {
+            "type": "string",
+            "title": "Human Status"
+          },
+          "tick_status": {
+            "type": "string",
+            "title": "Tick Status"
+          },
           "burgdorferi_status": {
             "type": "string",
             "title": "Burgdorferi Status"
@@ -2280,50 +2845,130 @@
             "type": "integer",
             "title": "Evidence Completeness"
           },
-          "score": { "$ref": "#/components/schemas/Score" },
-          "priority": { "type": "string", "title": "Priority" },
-          "color": { "type": "string", "title": "Color" },
+          "score": {
+            "$ref": "#/components/schemas/Score"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color"
+          },
           "population": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Population"
           },
           "case_count_floor_2023": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Case Count Floor 2023"
           },
           "incidence_floor_2023": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Incidence Floor 2023"
           },
           "state_unallocated_records_2023": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "State Unallocated Records 2023"
           },
           "scapularis_status": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Scapularis Status"
           },
           "pacificus_status": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Pacificus Status"
           },
           "svi_percentile": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Svi Percentile"
           },
           "uninsured_percentile": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Uninsured Percentile"
           },
           "uninsured_percent": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Uninsured Percent"
           },
           "rucc_2023": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Rucc 2023"
           },
-          "release": { "$ref": "#/components/schemas/AtlasMetadata" }
+          "release": {
+            "$ref": "#/components/schemas/AtlasMetadata"
+          }
         },
         "type": "object",
         "required": [
@@ -2355,16 +3000,34 @@
       },
       "CountyScoreSummary": {
         "properties": {
-          "fips": { "type": "string", "title": "Fips" },
-          "county": { "type": "string", "title": "County" },
-          "state": { "type": "string", "title": "State" },
-          "state_name": { "type": "string", "title": "State Name" },
+          "fips": {
+            "type": "string",
+            "title": "Fips"
+          },
+          "county": {
+            "type": "string",
+            "title": "County"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "state_name": {
+            "type": "string",
+            "title": "State Name"
+          },
           "in_contiguous_tick_scope": {
             "type": "boolean",
             "title": "In Contiguous Tick Scope"
           },
-          "human_status": { "type": "string", "title": "Human Status" },
-          "tick_status": { "type": "string", "title": "Tick Status" },
+          "human_status": {
+            "type": "string",
+            "title": "Human Status"
+          },
+          "tick_status": {
+            "type": "string",
+            "title": "Tick Status"
+          },
           "burgdorferi_status": {
             "type": "string",
             "title": "Burgdorferi Status"
@@ -2373,9 +3036,17 @@
             "type": "integer",
             "title": "Evidence Completeness"
           },
-          "score": { "$ref": "#/components/schemas/Score" },
-          "priority": { "type": "string", "title": "Priority" },
-          "color": { "type": "string", "title": "Color" }
+          "score": {
+            "$ref": "#/components/schemas/Score"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color"
+          }
         },
         "type": "object",
         "required": [
@@ -2396,30 +3067,78 @@
       },
       "EvidenceReference": {
         "properties": {
-          "resource_type": { "type": "string", "title": "Resource Type" },
-          "resource_id": { "type": "string", "title": "Resource Id" },
+          "resource_type": {
+            "type": "string",
+            "title": "Resource Type"
+          },
+          "resource_id": {
+            "type": "string",
+            "title": "Resource Id"
+          },
           "source_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Id"
           },
           "provenance_ref": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Provenance Ref"
           },
           "semantic_version": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Semantic Version"
           },
           "methodology_version": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Methodology Version"
           },
           "release_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Release Id"
           },
           "uri": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Uri"
           }
         },
@@ -2430,27 +3149,52 @@
       "FeedbackContext": {
         "properties": {
           "state": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "State"
           },
           "county_fips": {
             "anyOf": [
-              { "type": "string", "pattern": "^\\d{5}$" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "pattern": "^\\d{5}$"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "County Fips"
           },
           "compare_county_fips": {
             "anyOf": [
-              { "type": "string", "pattern": "^\\d{5}$" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "pattern": "^\\d{5}$"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Compare County Fips"
           },
           "selected_county_fips": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array", "maxItems": 5 },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 5
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Selected County Fips"
           },
@@ -2461,7 +3205,9 @@
                 "maxLength": 64,
                 "pattern": "^[A-Za-z0-9._-]{1,64}$"
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Dataset"
           },
@@ -2471,7 +3217,9 @@
                 "type": "string",
                 "enum": ["all", "ecological", "human", "complete"]
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Evidence View"
           },
@@ -2490,14 +3238,21 @@
                   "trends"
                 ]
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Explorer View"
           },
           "explorer_metric": {
             "anyOf": [
-              { "type": "string", "enum": ["score", "completeness"] },
-              { "type": "null" }
+              {
+                "type": "string",
+                "enum": ["score", "completeness"]
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Explorer Metric"
           },
@@ -2509,14 +3264,22 @@
                 "maximum": 85.0,
                 "minimum": 40.0
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Ecological Share"
           },
           "low_incidence_breakpoint": {
             "anyOf": [
-              { "type": "integer", "maximum": 25.0, "minimum": 5.0 },
-              { "type": "null" }
+              {
+                "type": "integer",
+                "maximum": 25.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Low Incidence Breakpoint"
           },
@@ -2528,28 +3291,54 @@
                 "maximum": 90.0,
                 "minimum": 40.0
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Missing Human Weakness"
           },
           "source_ids": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array", "maxItems": 8 },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 8
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Source Ids"
           },
           "evidence_item_ids": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array", "maxItems": 8 },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 8
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Evidence Item Ids"
           },
           "item_ids": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array", "maxItems": 8 },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 8
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Item Ids"
           }
@@ -2585,8 +3374,13 @@
           },
           "contact_email": {
             "anyOf": [
-              { "type": "string", "maxLength": 254 },
-              { "type": "null" }
+              {
+                "type": "string",
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Contact Email"
           },
@@ -2605,8 +3399,12 @@
           },
           "context": {
             "anyOf": [
-              { "$ref": "#/components/schemas/FeedbackContext" },
-              { "type": "null" }
+              {
+                "$ref": "#/components/schemas/FeedbackContext"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "app_version": {
@@ -2638,7 +3436,10 @@
             "format": "date-time",
             "title": "Received At"
           },
-          "replayed": { "type": "boolean", "title": "Replayed" }
+          "replayed": {
+            "type": "boolean",
+            "title": "Replayed"
+          }
         },
         "additionalProperties": false,
         "type": "object",
@@ -2647,27 +3448,43 @@
       },
       "Geography": {
         "properties": {
-          "geography": { "$ref": "#/components/schemas/GeographyIdentity" },
-          "label": { "type": "string", "title": "Label" },
+          "geography": {
+            "$ref": "#/components/schemas/GeographyIdentity"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
           "parent": {
             "anyOf": [
-              { "$ref": "#/components/schemas/GeographyIdentity" },
-              { "type": "null" }
+              {
+                "$ref": "#/components/schemas/GeographyIdentity"
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         },
         "type": "object",
         "required": ["geography", "label"],
-        "title": "Geography"
+        "title": "Geography",
+        "description": "County/state identity metadata; geometry is a separate display resource."
       },
       "GeographyIdentity": {
         "properties": {
-          "geography_type": { "$ref": "#/components/schemas/GeographyType" },
-          "geography_id": { "type": "string", "title": "Geography Id" }
+          "geography_type": {
+            "$ref": "#/components/schemas/GeographyType"
+          },
+          "geography_id": {
+            "type": "string",
+            "title": "Geography Id"
+          }
         },
         "type": "object",
         "required": ["geography_type", "geography_id"],
-        "title": "GeographyIdentity"
+        "title": "GeographyIdentity",
+        "description": "Stable FIPS join identity, independent of display or analysis polygons."
       },
       "GeographyType": {
         "type": "string",
@@ -2677,7 +3494,9 @@
       "HTTPValidationError": {
         "properties": {
           "detail": {
-            "items": { "$ref": "#/components/schemas/ValidationError" },
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
             "type": "array",
             "title": "Detail"
           }
@@ -2687,42 +3506,87 @@
       },
       "Indicator": {
         "properties": {
-          "indicator_id": { "type": "string", "title": "Indicator Id" },
-          "label": { "type": "string", "title": "Label" },
+          "indicator_id": {
+            "type": "string",
+            "title": "Indicator Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
           "definition": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Definition"
           },
           "measure_ids": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "title": "Measure Ids"
           },
-          "semantic_version": { "type": "string", "title": "Semantic Version" },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
           "release_version": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Release Version"
           },
           "domain": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Domain"
           },
           "category": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Category"
           },
           "limitations": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "title": "Limitations"
           },
           "standards_mappings": {
             "anyOf": [
               {
-                "items": { "$ref": "#/components/schemas/StandardsMapping" },
+                "items": {
+                  "$ref": "#/components/schemas/StandardsMapping"
+                },
                 "type": "array"
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Standards Mappings"
           }
@@ -2747,20 +3611,32 @@
           },
           "conversation_id": {
             "anyOf": [
-              { "type": "string", "maxLength": 100 },
-              { "type": "null" }
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Conversation Id"
           },
           "conversation_token": {
             "anyOf": [
-              { "type": "string", "maxLength": 200 },
-              { "type": "null" }
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Conversation Token"
           },
           "history": {
-            "items": { "$ref": "#/components/schemas/ChatHistoryTurn" },
+            "items": {
+              "$ref": "#/components/schemas/ChatHistoryTurn"
+            },
             "type": "array",
             "maxItems": 12,
             "title": "History"
@@ -2773,10 +3649,23 @@
       },
       "KnowledgeChatResponse": {
         "properties": {
-          "request_id": { "type": "string", "title": "Request Id" },
-          "conversation_id": { "type": "string", "title": "Conversation Id" },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
           "conversation_token": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Conversation Token"
           },
           "configuration_version": {
@@ -2798,7 +3687,10 @@
             ],
             "title": "Status"
           },
-          "answer": { "type": "string", "title": "Answer" },
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
           "evidence_state": {
             "type": "string",
             "enum": [
@@ -2820,16 +3712,27 @@
             "title": "Source Used"
           },
           "model_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Model Id"
           },
           "claims": {
-            "items": { "$ref": "#/components/schemas/KnowledgeClaim" },
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeClaim"
+            },
             "type": "array",
             "title": "Claims"
           },
           "citations": {
-            "items": { "$ref": "#/components/schemas/KnowledgeCitation" },
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeCitation"
+            },
             "type": "array",
             "title": "Citations"
           }
@@ -2849,22 +3752,35 @@
       },
       "KnowledgeCitation": {
         "properties": {
-          "citation_id": { "type": "string", "title": "Citation Id" },
+          "citation_id": {
+            "type": "string",
+            "title": "Citation Id"
+          },
           "pmid": {
             "type": "string",
             "pattern": "^\\d{1,10}$",
             "title": "Pmid"
           },
-          "title": { "type": "string", "title": "Title" },
-          "pubmed_url": { "type": "string", "title": "Pubmed Url" },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "pubmed_url": {
+            "type": "string",
+            "title": "Pubmed Url"
+          },
           "claim_ids": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "minItems": 1,
             "title": "Claim Ids"
           },
           "passage_ids": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "minItems": 1,
             "title": "Passage Ids"
@@ -2875,37 +3791,86 @@
             "default": "PubMed / PMC Open Access"
           },
           "pmcid": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Pmcid"
           },
           "corpus_unit_ids": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array" },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Corpus Unit Ids"
           },
           "section_labels": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array" },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Section Labels"
           },
           "corpus_rules_version": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Corpus Rules Version"
           },
           "artifact_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Artifact Id"
           },
           "contribution_sha256": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Contribution Sha256"
           },
           "jats_sha256": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Jats Sha256"
           }
         },
@@ -2922,10 +3887,18 @@
       },
       "KnowledgeClaim": {
         "properties": {
-          "claim_id": { "type": "string", "title": "Claim Id" },
-          "text": { "type": "string", "title": "Text" },
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
           "citation_ids": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "minItems": 1,
             "title": "Citation Ids"
@@ -2937,103 +3910,220 @@
       },
       "Measure": {
         "properties": {
-          "measure_id": { "type": "string", "title": "Measure Id" },
-          "indicator_id": { "type": "string", "title": "Indicator Id" },
-          "label": { "type": "string", "title": "Label" },
+          "measure_id": {
+            "type": "string",
+            "title": "Measure Id"
+          },
+          "indicator_id": {
+            "type": "string",
+            "title": "Indicator Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
           "definition": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Definition"
           },
-          "semantic_version": { "type": "string", "title": "Semantic Version" },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
           "release_version": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Release Version"
           },
           "measure_type": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Measure Type"
           },
           "unit": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Unit"
           },
           "denominator": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Denominator"
           },
           "geography_types": {
             "anyOf": [
               {
-                "items": { "$ref": "#/components/schemas/GeographyType" },
+                "items": {
+                  "$ref": "#/components/schemas/GeographyType"
+                },
                 "type": "array"
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Geography Types"
           },
           "temporal_grains": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array" },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Temporal Grains"
           },
           "geography_semantics": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Geography Semantics"
           },
           "temporal_semantics": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Temporal Semantics"
           },
           "allowed_value_states": {
             "anyOf": [
               {
-                "items": { "$ref": "#/components/schemas/ValueState" },
+                "items": {
+                  "$ref": "#/components/schemas/ValueState"
+                },
                 "type": "array"
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Allowed Value States"
           },
           "allowed_strata": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array" },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Allowed Strata"
           },
           "missingness_semantics": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Missingness Semantics"
           },
           "methodology_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Methodology Id"
           },
           "methodology": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Methodology"
           },
           "source_ids": {
             "anyOf": [
-              { "items": { "type": "string" }, "type": "array" },
-              { "type": "null" }
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Source Ids"
           },
           "limitations": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "title": "Limitations"
           },
           "standards_mappings": {
             "anyOf": [
               {
-                "items": { "$ref": "#/components/schemas/StandardsMapping" },
+                "items": {
+                  "$ref": "#/components/schemas/StandardsMapping"
+                },
                 "type": "array"
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Standards Mappings"
           }
@@ -3050,17 +4140,37 @@
       },
       "Methodology": {
         "properties": {
-          "methodology_id": { "type": "string", "title": "Methodology Id" },
-          "measure_id": { "type": "string", "title": "Measure Id" },
-          "version": { "type": "string", "title": "Version" },
-          "description": { "type": "string", "title": "Description" },
+          "methodology_id": {
+            "type": "string",
+            "title": "Methodology Id"
+          },
+          "measure_id": {
+            "type": "string",
+            "title": "Measure Id"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
           "limitations": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "title": "Limitations"
           },
-          "semantic_version": { "type": "string", "title": "Semantic Version" },
-          "release_version": { "type": "string", "title": "Release Version" }
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_version": {
+            "type": "string",
+            "title": "Release Version"
+          }
         },
         "type": "object",
         "required": [
@@ -3076,9 +4186,17 @@
       },
       "Observation": {
         "properties": {
-          "observation_id": { "type": "string", "title": "Observation Id" },
-          "measure_id": { "type": "string", "title": "Measure Id" },
-          "geography": { "$ref": "#/components/schemas/GeographyIdentity" },
+          "observation_id": {
+            "type": "string",
+            "title": "Observation Id"
+          },
+          "measure_id": {
+            "type": "string",
+            "title": "Measure Id"
+          },
+          "geography": {
+            "$ref": "#/components/schemas/GeographyIdentity"
+          },
           "period_start": {
             "type": "string",
             "format": "date",
@@ -3089,93 +4207,203 @@
             "format": "date",
             "title": "Period End"
           },
-          "temporal_grain": { "type": "string", "title": "Temporal Grain" },
+          "temporal_grain": {
+            "type": "string",
+            "title": "Temporal Grain"
+          },
           "value": {
             "anyOf": [
-              { "type": "number" },
-              { "type": "string" },
-              { "type": "null" }
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Value"
           },
-          "value_state": { "$ref": "#/components/schemas/ValueState" },
-          "unit": { "type": "string", "title": "Unit" },
+          "value_state": {
+            "$ref": "#/components/schemas/ValueState"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
           "denominator": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Denominator"
           },
           "strata": {
-            "additionalProperties": { "type": "string" },
+            "additionalProperties": {
+              "type": "string"
+            },
             "type": "object",
             "title": "Strata"
           },
-          "source_id": { "type": "string", "title": "Source Id" },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
           "lineage_source_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Lineage Source Id"
           },
           "dataset_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Dataset Id"
           },
           "methodology_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Methodology Id"
           },
           "methodology": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Methodology"
           },
           "release_methodology_version": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Release Methodology Version"
           },
           "methodology_version": {
             "type": "string",
             "title": "Methodology Version"
           },
-          "semantic_version": { "type": "string", "title": "Semantic Version" },
-          "release_id": { "type": "string", "title": "Release Id" },
-          "provenance_ref": { "type": "string", "title": "Provenance Ref" },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_id": {
+            "type": "string",
+            "title": "Release Id"
+          },
+          "provenance_ref": {
+            "type": "string",
+            "title": "Provenance Ref"
+          },
           "source_label": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Label"
           },
           "source_vintage": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Vintage"
           },
           "source_url": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Url"
           },
           "source_published_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Source Published At"
           },
           "atlas_acquired_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Atlas Acquired At"
           },
           "atlas_processed_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Atlas Processed At"
           },
           "limitations": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "title": "Limitations"
           },
-          "evidence": { "$ref": "#/components/schemas/EvidenceReference" }
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceReference"
+          }
         },
         "type": "object",
         "required": [
@@ -3202,13 +4430,19 @@
       },
       "PrivacyOmission": {
         "properties": {
-          "system": { "type": "string", "title": "System" },
+          "system": {
+            "type": "string",
+            "title": "System"
+          },
           "reason": {
             "type": "string",
             "enum": ["not_connected", "not_account_linked", "browser_only"],
             "title": "Reason"
           },
-          "detail": { "type": "string", "title": "Detail" }
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
         },
         "type": "object",
         "required": ["system", "reason", "detail"],
@@ -3243,7 +4477,10 @@
       },
       "PrivacyRequestCreated": {
         "properties": {
-          "request_id": { "type": "string", "title": "Request Id" },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
           "action": {
             "type": "string",
             "enum": ["export", "deletion"],
@@ -3268,8 +4505,13 @@
           },
           "completed_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Completed At"
           },
@@ -3279,18 +4521,32 @@
             "default": false
           },
           "omissions": {
-            "items": { "$ref": "#/components/schemas/PrivacyOmission" },
+            "items": {
+              "$ref": "#/components/schemas/PrivacyOmission"
+            },
             "type": "array",
             "title": "Omissions"
           },
           "support_reason": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Support Reason"
           },
           "confirmation_expires_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Confirmation Expires At"
           },
@@ -3311,7 +4567,10 @@
       },
       "PrivacyRequestStatus": {
         "properties": {
-          "request_id": { "type": "string", "title": "Request Id" },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
           "action": {
             "type": "string",
             "enum": ["export", "deletion"],
@@ -3336,8 +4595,13 @@
           },
           "completed_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Completed At"
           },
@@ -3347,18 +4611,32 @@
             "default": false
           },
           "omissions": {
-            "items": { "$ref": "#/components/schemas/PrivacyOmission" },
+            "items": {
+              "$ref": "#/components/schemas/PrivacyOmission"
+            },
             "type": "array",
             "title": "Omissions"
           },
           "support_reason": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Support Reason"
           },
           "confirmation_expires_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Confirmation Expires At"
           }
@@ -3369,23 +4647,53 @@
       },
       "ProblemDetails": {
         "properties": {
-          "type": { "type": "string", "title": "Type" },
-          "title": { "type": "string", "title": "Title" },
-          "status": { "type": "integer", "title": "Status" },
-          "detail": { "type": "string", "title": "Detail" },
-          "instance": { "type": "string", "title": "Instance" },
-          "request_id": { "type": "string", "title": "Request Id" },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "instance": {
+            "type": "string",
+            "title": "Instance"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
           "code": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Code"
           },
           "errors": {
             "anyOf": [
               {
-                "items": { "additionalProperties": true, "type": "object" },
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
                 "type": "array"
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Errors"
           }
@@ -3402,33 +4710,51 @@
         "title": "ProblemDetails"
       },
       "ResourceEnvelope_Geography_": {
-        "properties": { "data": { "$ref": "#/components/schemas/Geography" } },
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Geography"
+          }
+        },
         "type": "object",
         "required": ["data"],
         "title": "ResourceEnvelope[Geography]"
       },
       "ResourceEnvelope_Indicator_": {
-        "properties": { "data": { "$ref": "#/components/schemas/Indicator" } },
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Indicator"
+          }
+        },
         "type": "object",
         "required": ["data"],
         "title": "ResourceEnvelope[Indicator]"
       },
       "ResourceEnvelope_Measure_": {
-        "properties": { "data": { "$ref": "#/components/schemas/Measure" } },
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Measure"
+          }
+        },
         "type": "object",
         "required": ["data"],
         "title": "ResourceEnvelope[Measure]"
       },
       "ResourceEnvelope_Methodology_": {
         "properties": {
-          "data": { "$ref": "#/components/schemas/Methodology" }
+          "data": {
+            "$ref": "#/components/schemas/Methodology"
+          }
         },
         "type": "object",
         "required": ["data"],
         "title": "ResourceEnvelope[Methodology]"
       },
       "ResourceEnvelope_Source_": {
-        "properties": { "data": { "$ref": "#/components/schemas/Source" } },
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Source"
+          }
+        },
         "type": "object",
         "required": ["data"],
         "title": "ResourceEnvelope[Source]"
@@ -3506,18 +4832,25 @@
       },
       "ScoreCollection": {
         "properties": {
-          "release_id": { "type": "string", "title": "Release Id" },
+          "release_id": {
+            "type": "string",
+            "title": "Release Id"
+          },
           "methodology_version": {
             "type": "string",
             "title": "Methodology Version"
           },
           "settings": {
-            "additionalProperties": { "type": "integer" },
+            "additionalProperties": {
+              "type": "integer"
+            },
             "type": "object",
             "title": "Settings"
           },
           "counties": {
-            "items": { "$ref": "#/components/schemas/CountyScoreSummary" },
+            "items": {
+              "$ref": "#/components/schemas/CountyScoreSummary"
+            },
             "type": "array",
             "title": "Counties"
           }
@@ -3533,63 +4866,128 @@
       },
       "Source": {
         "properties": {
-          "source_id": { "type": "string", "title": "Source Id" },
-          "label": { "type": "string", "title": "Label" },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
           "publisher": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Publisher"
           },
           "lineage_source_id": {
             "type": "string",
             "title": "Lineage Source Id"
           },
-          "dataset_id": { "type": "string", "title": "Dataset Id" },
-          "semantic_version": { "type": "string", "title": "Semantic Version" },
-          "release_version": { "type": "string", "title": "Release Version" },
+          "dataset_id": {
+            "type": "string",
+            "title": "Dataset Id"
+          },
+          "semantic_version": {
+            "type": "string",
+            "title": "Semantic Version"
+          },
+          "release_version": {
+            "type": "string",
+            "title": "Release Version"
+          },
           "source_url": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Url"
           },
           "source_vintage": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Vintage"
           },
           "source_version": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Version"
           },
           "published_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Published At",
             "deprecated": true
           },
           "atlas_acquired_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Atlas Acquired At",
             "deprecated": true
           },
           "upstream_updated_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Upstream Updated At"
           },
           "source_retrieved_at": {
             "anyOf": [
-              { "type": "string", "format": "date-time" },
-              { "type": "null" }
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Source Retrieved At"
           },
           "limitations": {
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "type": "array",
             "title": "Limitations"
           }
@@ -3608,11 +5006,26 @@
       },
       "SourceMetadata": {
         "properties": {
-          "key": { "type": "string", "title": "Key" },
-          "label": { "type": "string", "title": "Label" },
-          "vintage": { "type": "string", "title": "Vintage" },
-          "url": { "type": "string", "title": "Url" },
-          "note": { "type": "string", "title": "Note" }
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "vintage": {
+            "type": "string",
+            "title": "Vintage"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
         },
         "type": "object",
         "required": ["key", "label", "vintage", "url", "note"],
@@ -3620,12 +5033,31 @@
       },
       "StandardsMapping": {
         "properties": {
-          "standard": { "type": "string", "title": "Standard" },
-          "version": { "type": "string", "title": "Version" },
-          "target": { "type": "string", "title": "Target" },
-          "relationship": { "type": "string", "title": "Relationship" },
+          "standard": {
+            "type": "string",
+            "title": "Standard"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "relationship": {
+            "type": "string",
+            "title": "Relationship"
+          },
           "mapping_reference": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Mapping Reference"
           }
         },
@@ -3647,25 +5079,45 @@
                   "national_level_epidemiologist"
                 ]
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Role"
           },
           "state_code": {
-            "anyOf": [{ "type": "string", "maxLength": 2 }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "State Code"
           },
           "organization": {
             "anyOf": [
-              { "type": "string", "maxLength": 120 },
-              { "type": "null" }
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Organization"
           },
           "job_title": {
             "anyOf": [
-              { "type": "string", "maxLength": 120 },
-              { "type": "null" }
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Job Title"
           }
@@ -3677,8 +5129,12 @@
         "properties": {
           "profile": {
             "anyOf": [
-              { "$ref": "#/components/schemas/UserProfile" },
-              { "type": "null" }
+              {
+                "$ref": "#/components/schemas/UserProfile"
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         },
@@ -3700,25 +5156,45 @@
                   "national_level_epidemiologist"
                 ]
               },
-              { "type": "null" }
+              {
+                "type": "null"
+              }
             ],
             "title": "Role"
           },
           "state_code": {
-            "anyOf": [{ "type": "string", "maxLength": 2 }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "State Code"
           },
           "organization": {
             "anyOf": [
-              { "type": "string", "maxLength": 120 },
-              { "type": "null" }
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Organization"
           },
           "job_title": {
             "anyOf": [
-              { "type": "string", "maxLength": 120 },
-              { "type": "null" }
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Job Title"
           }
@@ -3730,14 +5206,34 @@
       "ValidationError": {
         "properties": {
           "loc": {
-            "items": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
             "type": "array",
             "title": "Location"
           },
-          "msg": { "type": "string", "title": "Message" },
-          "type": { "type": "string", "title": "Error Type" },
-          "input": { "title": "Input" },
-          "ctx": { "type": "object", "title": "Context" }
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
         },
         "type": "object",
         "required": ["loc", "msg", "type"],
@@ -3755,6 +5251,756 @@
         ],
         "title": "ValueState",
         "description": "Public V1 states, including the governed county status added by API #54."
+      },
+      "BriefingArtifact": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "generation_version": {
+            "const": "deterministic-digest-v1",
+            "default": "deterministic-digest-v1",
+            "title": "Generation Version",
+            "type": "string"
+          },
+          "mode": {
+            "const": "digest",
+            "default": "digest",
+            "title": "Mode",
+            "type": "string"
+          },
+          "notice": {
+            "const": "Periodic intelligence digest; not an official public-health alert or a disease-risk estimate.",
+            "default": "Periodic intelligence digest; not an official public-health alert or a disease-risk estimate.",
+            "title": "Notice",
+            "type": "string"
+          },
+          "artifact_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "input_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Input Sha256",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "generated_at": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "preference_revision": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Preference Revision",
+            "type": "string"
+          },
+          "digest_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Digest Version",
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/BriefingWindow"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/BriefingScope"
+          },
+          "ranked_items": {
+            "items": {
+              "$ref": "#/components/schemas/RankedBriefingItem"
+            },
+            "title": "Ranked Items",
+            "type": "array"
+          },
+          "matching_publications": {
+            "minimum": 0,
+            "title": "Matching Publications",
+            "type": "integer"
+          },
+          "omitted_publications": {
+            "minimum": 0,
+            "title": "Omitted Publications",
+            "type": "integer"
+          },
+          "limitations": {
+            "items": {
+              "maxLength": 1000,
+              "minLength": 1,
+              "pattern": "^[^<>\\x00-\\x1f]*$",
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "input_sha256",
+          "snapshot_id",
+          "generated_at",
+          "preference_revision",
+          "digest_version",
+          "window",
+          "scope",
+          "ranked_items",
+          "matching_publications",
+          "omitted_publications",
+          "limitations"
+        ],
+        "title": "BriefingArtifact",
+        "type": "object"
+      },
+      "BriefingEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/IntelligenceItem"
+          },
+          "source": {
+            "$ref": "#/components/schemas/BriefingSource"
+          },
+          "why_matched": {
+            "items": {
+              "$ref": "#/components/schemas/BriefingMatch"
+            },
+            "title": "Why Matched",
+            "type": "array"
+          }
+        },
+        "required": ["item", "source", "why_matched"],
+        "title": "BriefingEvidence",
+        "type": "object"
+      },
+      "BriefingGenerationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "mode": {
+            "const": "digest",
+            "default": "digest",
+            "title": "Mode",
+            "type": "string"
+          },
+          "subscriber_key": {
+            "description": "Private opaque subscriber key; never an email address.",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Subscriber Key",
+            "type": "string"
+          },
+          "preference_revision": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Preference Revision",
+            "type": "string"
+          },
+          "digest_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Digest Version",
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/BriefingWindow"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/BriefingScope"
+          },
+          "max_items": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Max Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "subscriber_key",
+          "preference_revision",
+          "digest_version",
+          "window",
+          "scope"
+        ],
+        "title": "BriefingGenerationRequest",
+        "type": "object"
+      },
+      "BriefingMatch": {
+        "additionalProperties": false,
+        "properties": {
+          "dimension": {
+            "enum": ["geography", "topic", "source", "unfiltered"],
+            "title": "Dimension",
+            "type": "string"
+          },
+          "value": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Value",
+            "type": "string"
+          },
+          "origin": {
+            "enum": ["publisher", "inferred", "source_identity", "unfiltered"],
+            "title": "Origin",
+            "type": "string"
+          }
+        },
+        "required": ["dimension", "value", "origin"],
+        "title": "BriefingMatch",
+        "type": "object"
+      },
+      "BriefingScope": {
+        "additionalProperties": false,
+        "properties": {
+          "geographies": {
+            "default": [],
+            "items": {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Geographies",
+            "type": "array"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Topics",
+            "type": "array"
+          },
+          "sources": {
+            "default": [],
+            "items": {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "title": "BriefingScope",
+        "type": "object"
+      },
+      "BriefingSource": {
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "registry_version": {
+            "minimum": 1,
+            "title": "Registry Version",
+            "type": "integer"
+          },
+          "organization": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "pattern": "^[^<>\\x00-\\x1f]*$",
+            "title": "Organization",
+            "type": "string"
+          },
+          "reviewed_trust_classification": {
+            "enum": [
+              "official_public_health",
+              "research_index",
+              "reviewed_other"
+            ],
+            "title": "Reviewed Trust Classification",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "registry_version",
+          "organization",
+          "reviewed_trust_classification"
+        ],
+        "title": "BriefingSource",
+        "type": "object"
+      },
+      "BriefingWindow": {
+        "additionalProperties": false,
+        "properties": {
+          "start": {
+            "description": "Inclusive UTC capture retrieval cutoff.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "Start",
+            "type": "string"
+          },
+          "end": {
+            "description": "Exclusive UTC capture retrieval cutoff.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "basis": {
+            "const": "fetched_at",
+            "default": "fetched_at",
+            "title": "Basis",
+            "type": "string"
+          }
+        },
+        "required": ["start", "end"],
+        "title": "BriefingWindow",
+        "type": "object"
+      },
+      "IntelligenceFieldStates": {
+        "additionalProperties": false,
+        "properties": {
+          "canonical_url": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Canonical Url",
+            "type": "string"
+          },
+          "title": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Title",
+            "type": "string"
+          },
+          "published_at": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Published At",
+            "type": "string"
+          },
+          "updated_at": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Updated At",
+            "type": "string"
+          },
+          "event_at": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Event At",
+            "type": "string"
+          },
+          "excerpt": {
+            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "title": "Excerpt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "canonical_url",
+          "title",
+          "published_at",
+          "updated_at",
+          "event_at",
+          "excerpt"
+        ],
+        "title": "IntelligenceFieldStates",
+        "type": "object"
+      },
+      "IntelligenceItem": {
+        "additionalProperties": false,
+        "description": "Typed consumer of normalized DATA #131 v1 items, without renormalization.",
+        "properties": {
+          "contract_version": {
+            "const": "1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "item_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "source_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "registry_version": {
+            "minimum": 1,
+            "title": "Registry Version",
+            "type": "integer"
+          },
+          "canonical_url": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "pattern": "^[^<>\\x00-\\x1f]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "event_at": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event At"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "minLength": 1,
+                "pattern": "^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "fetched_at": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "field_states": {
+            "$ref": "#/components/schemas/IntelligenceFieldStates"
+          },
+          "geographies": {
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceTag"
+            },
+            "maxItems": 100,
+            "title": "Geographies",
+            "type": "array"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceTag"
+            },
+            "maxItems": 100,
+            "title": "Topics",
+            "type": "array"
+          },
+          "transport": {
+            "enum": ["rss", "atom", "email", "web"],
+            "title": "Transport",
+            "type": "string"
+          },
+          "transport_identity_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Transport Identity Sha256",
+            "type": "string"
+          },
+          "deduplication_key": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Deduplication Key",
+            "type": "string"
+          },
+          "content_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/IntelligenceProvenance"
+          },
+          "limitations": {
+            "items": {
+              "maxLength": 1000,
+              "minLength": 1,
+              "pattern": "^[^<>\\x00-\\x1f]*$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "content_is_untrusted": {
+            "const": true,
+            "title": "Content Is Untrusted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contract_version",
+          "item_id",
+          "revision_id",
+          "source_id",
+          "registry_version",
+          "canonical_url",
+          "title",
+          "published_at",
+          "updated_at",
+          "event_at",
+          "excerpt",
+          "fetched_at",
+          "field_states",
+          "geographies",
+          "topics",
+          "transport",
+          "transport_identity_sha256",
+          "deduplication_key",
+          "content_sha256",
+          "provenance",
+          "limitations",
+          "content_is_untrusted"
+        ],
+        "title": "IntelligenceItem",
+        "type": "object"
+      },
+      "IntelligenceProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "artifact_id": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "artifact_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Artifact Sha256",
+            "type": "string"
+          },
+          "parser_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Parser Version",
+            "type": "string"
+          },
+          "fetch_version": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Fetch Version",
+            "type": "string"
+          },
+          "normalization_version": {
+            "const": "intelligence-identity-v1",
+            "title": "Normalization Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "artifact_id",
+          "artifact_sha256",
+          "parser_version",
+          "fetch_version",
+          "normalization_version"
+        ],
+        "title": "IntelligenceProvenance",
+        "type": "object"
+      },
+      "IntelligenceSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "snapshot_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "as_of": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+            "title": "As Of",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceItem"
+            },
+            "maxItems": 1000,
+            "title": "Items",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/BriefingSource"
+            },
+            "maxItems": 1000,
+            "title": "Sources",
+            "type": "array"
+          },
+          "limitations": {
+            "default": [],
+            "items": {
+              "maxLength": 1000,
+              "minLength": 1,
+              "pattern": "^[^<>\\x00-\\x1f]*$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Limitations",
+            "type": "array"
+          }
+        },
+        "required": ["snapshot_id", "as_of", "items", "sources"],
+        "title": "IntelligenceSnapshot",
+        "type": "object"
+      },
+      "IntelligenceTag": {
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+            "title": "Value",
+            "type": "string"
+          },
+          "origin": {
+            "enum": ["publisher", "inferred"],
+            "title": "Origin",
+            "type": "string"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          },
+          "method_version": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method Version"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          }
+        },
+        "required": [
+          "value",
+          "origin",
+          "method",
+          "method_version",
+          "confidence"
+        ],
+        "title": "IntelligenceTag",
+        "type": "object"
+      },
+      "RankedBriefingItem": {
+        "additionalProperties": false,
+        "properties": {
+          "rank": {
+            "minimum": 1,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "item_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "matching_values": {
+            "minimum": 0,
+            "title": "Matching Values",
+            "type": "integer"
+          },
+          "publisher_recency": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher Recency"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/BriefingEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rank",
+          "item_id",
+          "matching_values",
+          "publisher_recency",
+          "evidence"
+        ],
+        "title": "RankedBriefingItem",
+        "type": "object"
       }
     }
   }

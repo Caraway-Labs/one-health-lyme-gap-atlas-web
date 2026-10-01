@@ -7,6 +7,9 @@
  */
 import type { GeographyIdentity } from './geographyIdentity';
 
+/**
+ * County/state identity metadata; geometry is a separate display resource.
+ */
 export interface Geography {
   geography: GeographyIdentity;
   label: string;

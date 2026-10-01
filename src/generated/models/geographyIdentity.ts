@@ -7,6 +7,9 @@
  */
 import type { GeographyType } from './geographyType';
 
+/**
+ * Stable FIPS join identity, independent of display or analysis polygons.
+ */
 export interface GeographyIdentity {
   geography_type: GeographyType;
   geography_id: string;

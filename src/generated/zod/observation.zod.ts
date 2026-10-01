@@ -13,7 +13,7 @@ export const Observation = zod.object({
   "geography": zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string()
-}),
+}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "temporal_grain": zod.string(),
