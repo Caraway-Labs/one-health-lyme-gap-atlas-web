@@ -342,3 +342,62 @@ test("network failure, corpus edit, keyboard focus, and mobile overflow stay dis
     .analyze();
   expect(accessibility.violations).toEqual([]);
 });
+
+test("assistant workspace keeps a docked composer and scrollable transcript", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.route("**/v1/knowledge-graph/chat", async (route) => {
+    const payload = route.request().postDataJSON() as { message?: string };
+    const index = payload.message?.includes("second") ? 2 : 1;
+    await route.fulfill({
+      json: response(
+        "answered",
+        "limited",
+        `Answer paragraph ${index}. `.repeat(24),
+        index
+      ),
+    });
+  });
+  await page.goto("/assistant");
+  const composer = page.locator(".chat-composer-dock");
+  const transcript = page.locator(".chat-transcript");
+  await expect(composer).toBeVisible();
+  await expect(transcript).toBeVisible();
+  await ask(page, "First long thread question");
+  await expect(page.locator(".chat-turn.assistant").first()).toBeVisible();
+  await ask(page, "Second long thread question");
+  await expect(page.locator(".chat-turn.assistant")).toHaveCount(2);
+  const layout = await page.evaluate(() => {
+    const dock = document.querySelector(".chat-composer-dock");
+    const viewport = document.querySelector(".chat-transcript");
+    const assistant = document.querySelector(".chat-turn.assistant");
+    const panel = document.querySelector(".chat-panel");
+    if (!dock || !viewport || !assistant || !panel) {
+      return null;
+    }
+    const dockBox = dock.getBoundingClientRect();
+    const viewportBox = viewport.getBoundingClientRect();
+    const panelWidth = panel.getBoundingClientRect().width;
+    return {
+      assistantMeasure: assistant.getBoundingClientRect().width,
+      dockVisible: dockBox.top < window.innerHeight && dockBox.bottom > 0,
+      panelWidth,
+      transcriptScrollable: viewport.scrollHeight > viewport.clientHeight,
+      transcriptAboveComposer: viewportBox.bottom <= dockBox.top + 8,
+    };
+  });
+  expect(layout?.dockVisible).toBe(true);
+  expect(layout?.transcriptScrollable).toBe(true);
+  expect(layout?.transcriptAboveComposer).toBe(true);
+  expect(layout?.assistantMeasure).toBeLessThanOrEqual(768);
+  expect(layout?.assistantMeasure).toBeLessThan(
+    (layout?.panelWidth ?? 0) * 0.9
+  );
+  await page.setViewportSize({ width: 375, height: 667 });
+  await expect(
+    composer.getByRole("button", { name: "Ask", exact: true })
+  ).toBeVisible();
+  await expect(composer).toBeInViewport();
+  await expect(transcript).toBeVisible();
+});
