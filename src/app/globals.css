@@ -115,7 +115,12 @@
   --shell-sidebar-compact-width: 4.25rem;
   --chat-launcher-inset-inline: var(--space-6);
   --chat-launcher-inset-block: var(--space-6);
-  --chat-launcher-clearance: calc(var(--space-12) + var(--space-2));
+  --chat-launcher-control-height: 3rem;
+  --chat-launcher-padding-block: 0.8rem;
+  --chat-launcher-clearance: calc(
+    var(--chat-launcher-inset-block) + var(--chat-launcher-control-height) +
+      (var(--chat-launcher-padding-block) * 2) + var(--space-4)
+  );
   --shell-utility-height: 3.5rem;
   --shell-navigation-target: 2.5rem;
   --layout-inline: clamp(1.25rem, 3vw, 3rem);
@@ -2370,9 +2375,9 @@ footer > a {
 .chat-launcher {
   position: relative;
   z-index: 1;
-  min-height: 3rem;
+  min-height: var(--chat-launcher-control-height);
   max-width: calc(100% - var(--chat-launcher-inset-inline));
-  padding: 0.8rem 1.2rem;
+  padding: var(--chat-launcher-padding-block) 1.2rem;
   border: 0;
   border-radius: 2rem;
   background: var(--teal);

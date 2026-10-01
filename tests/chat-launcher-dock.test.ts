@@ -36,18 +36,27 @@ describe("chat launcher dock insets", () => {
     syncChatLauncherDockInsets();
 
     expect(
-      document.documentElement.style.getPropertyValue("--chat-launcher-dock-left")
+      document.documentElement.style.getPropertyValue(
+        "--chat-launcher-dock-left"
+      )
     ).toBe("128px");
     expect(
-      document.documentElement.style.getPropertyValue("--chat-launcher-dock-width")
+      document.documentElement.style.getPropertyValue(
+        "--chat-launcher-dock-width"
+      )
     ).toBe("960px");
   });
 
   it("clears custom properties when inset is absent", () => {
-    document.documentElement.style.setProperty("--chat-launcher-dock-left", "1px");
+    document.documentElement.style.setProperty(
+      "--chat-launcher-dock-left",
+      "1px"
+    );
     clearChatLauncherDockInsets();
     expect(
-      document.documentElement.style.getPropertyValue("--chat-launcher-dock-left")
+      document.documentElement.style.getPropertyValue(
+        "--chat-launcher-dock-left"
+      )
     ).toBe("");
   });
 });

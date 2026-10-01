@@ -22,6 +22,35 @@ async function boxesOverlap(
   );
 }
 
+async function expectContentClearanceCoversDock(page: Page) {
+  const metrics = await page.evaluate(() => {
+    const content = document.querySelector(".app-content");
+    const launcher = document.querySelector(".chat-launcher");
+    if (!content || !launcher) {
+      return null;
+    }
+    const paddingBottom = Number.parseFloat(
+      getComputedStyle(content).paddingBottom
+    );
+    const launcherRect = launcher.getBoundingClientRect();
+    const footprint = window.innerHeight - launcherRect.top;
+    const minimumFootprint =
+      4.5 *
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return { paddingBottom, footprint, minimumFootprint };
+  });
+  expect(metrics, "launcher dock metrics missing").not.toBeNull();
+  if (!metrics) return;
+  expect(
+    metrics.footprint,
+    "dock footprint should meet the documented minimum"
+  ).toBeGreaterThanOrEqual(metrics.minimumFootprint - 1);
+  expect(
+    metrics.paddingBottom,
+    "app-content padding-bottom must cover the dock footprint"
+  ).toBeGreaterThanOrEqual(metrics.footprint - 1);
+}
+
 async function expectNoLauncherOverlap(
   page: Page,
   target: Locator,
@@ -82,13 +111,30 @@ for (const viewport of VIEWPORTS) {
     );
     await expectNoLauncherOverlap(
       page,
-      page.getByRole("complementary", { name: "Selected county" }),
-      "selected county panel"
+      page
+        .getByRole("complementary", { name: "Selected county" })
+        .locator("dl"),
+      "selected county evidence"
     );
 
     const mapControl = page.locator(".maplibregl-ctrl-group").first();
     if (await mapControl.count()) {
       await expectNoLauncherOverlap(page, mapControl, "map control");
+    }
+
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    });
+    await expectContentClearanceCoversDock(page);
+    const nextCounties = page.getByRole("button", { name: "Next counties" });
+    if (await nextCounties.isEnabled()) {
+      await expectNoLauncherOverlap(page, nextCounties, "pagination action");
+    } else {
+      await expectNoLauncherOverlap(
+        page,
+        page.getByRole("button", { name: "View comparison" }),
+        "bottom primary action"
+      );
     }
 
     const overflow = await page.evaluate(
@@ -127,6 +173,10 @@ test("county search stays usable at 375px with 200% zoom", async ({ page }) => {
   await search.focus();
   await expect(search).toBeFocused();
   await expectNoLauncherOverlap(page, search, "county search at 200% zoom");
+  await page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  });
+  await expectContentClearanceCoversDock(page);
 });
 
 test("opening and closing assistant preserves geographic explorer state", async ({
