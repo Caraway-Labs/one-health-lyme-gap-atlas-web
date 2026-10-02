@@ -1,5 +1,6 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { ApiResponseValidationError } from "@/lib/api-response-validation";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
 export interface ClientFailure {
@@ -39,6 +40,14 @@ export function shouldReplaceOperationalTurn(
 }
 
 export function clientFailure(error: unknown): ClientFailure {
+  if (error instanceof ApiResponseValidationError) {
+    return {
+      message: error.message,
+      retry: true,
+      state: "network_failure",
+      title: "Response could not be verified.",
+    };
+  }
   if (!(error instanceof AtlasApiError)) {
     return {
       message:
