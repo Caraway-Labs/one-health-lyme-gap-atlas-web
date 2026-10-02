@@ -104,6 +104,22 @@ describe(EvidenceChat, () => {
     expect(screen.queryByText("Starter questions")).toBeNull();
   });
 
+  it("surfaces a controlled error when the chat response fails schema validation", async () => {
+    chatRequest.mockResolvedValue({
+      data: { ...response(), status: "unverified" },
+    });
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Response could not be verified.");
+    expect(
+      screen.getByText(
+        "Evidence chat response could not be verified. Please try again later."
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText("unverified")).toBeNull();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
+  });
+
   it("renders evidence and source indicators with a safe paper link and no stored token", async () => {
     chatRequest.mockResolvedValue({ data: response() });
     render(<EvidenceChat />);
