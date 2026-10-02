@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
+import { metadata as geographyFirstV2Metadata } from "@/app/ux-lab/geography-first-v2/layout";
 import { metadata as geographyFirstMetadata } from "@/app/ux-lab/geography-first/layout";
 import { UxLabPage } from "@/app/ux-lab/page";
 import { metadata as peopleFirstHubMetadata } from "@/app/ux-lab/people-first-hub/layout";
@@ -41,7 +42,7 @@ import {
 describe("UX Lab harness", () => {
   afterEach(cleanup);
 
-  it("publishes six distinct concept routes under the hidden namespace", () => {
+  it("publishes seven distinct concept routes under the hidden namespace", () => {
     expect(UX_LAB_CONCEPTS.map((concept) => concept.id)).toStrictEqual([
       ...UX_LAB_CONCEPT_IDS,
     ]);
@@ -78,6 +79,7 @@ describe("UX Lab harness", () => {
     expect(uxLabMetadata().robots).toStrictEqual(UX_LAB_ROBOTS);
     for (const conceptMetadata of [
       geographyFirstMetadata,
+      geographyFirstV2Metadata,
       peopleFirstHubMetadata,
       personaGatewayMetadata,
       publicFirstMetadata,
@@ -187,7 +189,7 @@ describe("UX Lab harness", () => {
     ).toBe("/ux-lab/three-lanes");
   });
 
-  it("links the people-first hub second-round concept from the index", () => {
+  it("links second-round concepts from the index", () => {
     render(
       <UxLabShell>
         <UxLabPage />
@@ -196,10 +198,16 @@ describe("UX Lab harness", () => {
 
     expect(
       screen
+        .getByRole("link", { name: "Open Geography-First v2" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first-v2");
+    expect(
+      screen
         .getByRole("link", { name: "Open People-First Atlas Hub" })
         .getAttribute("href")
     ).toBe("/ux-lab/people-first-hub");
-    expect(screen.getByText(UX_LAB_SECOND_ROUND_LABEL)).toBeTruthy();
+    expect(screen.getAllByText(UX_LAB_SECOND_ROUND_LABEL)).toHaveLength(2);
+    expect(uxLabConceptById("geography-first-v2").researchRound).toBe("second");
     expect(uxLabConceptById("people-first-hub").researchRound).toBe("second");
   });
 

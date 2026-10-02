@@ -31,7 +31,7 @@ const returnLinkClassName = buttonVariants({
 const depthLinkClassName = buttonVariants({
   className:
     "geography-first-v2-depth-link h-auto min-h-[var(--control-height)] justify-start px-4 py-2 text-left whitespace-normal",
-  variant: "default",
+  variant: "outline",
 });
 
 export function GeographyFirstV2Missing({
