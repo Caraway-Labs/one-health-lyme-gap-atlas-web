@@ -1,3 +1,5 @@
+import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
+
 const EXCLUDED_MAP_STATE_FIPS = new Set(["02", "15"]);
 
 /** The initial viewport intentionally frames the contiguous U.S. only. */
@@ -10,9 +12,10 @@ export function isContiguousUsCounty(fips: string): boolean {
   return !EXCLUDED_MAP_STATE_FIPS.has(fips.slice(0, 2));
 }
 
+/** Filters display-geometry features to the contiguous U.S. map viewport. */
 export function contiguousUsGeometry(
-  geometry: GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }>
-): GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips: string }> {
+  geometry: CountyDisplayGeometryFeatureCollection
+): CountyDisplayGeometryFeatureCollection {
   return {
     ...geometry,
     features: geometry.features.filter((feature) =>

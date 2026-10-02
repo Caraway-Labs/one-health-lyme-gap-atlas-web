@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import {
   countyV1CountiesFipsGet,
-  geometryV1AtlasGeometryGet,
   metadataV1AtlasMetadataGet,
   scoresV1AtlasScoresGet,
 } from "@/generated/atlas";
@@ -56,6 +55,10 @@ import {
   reviewReasonsFor,
 } from "@/lib/atlas-ui";
 import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
+import {
+  countyDisplayGeometryQueryKey,
+  fetchCountyDisplayGeometry,
+} from "@/lib/county-geography";
 
 export type ExperimentVariant =
   | "decision"
@@ -157,15 +160,11 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
       ),
     queryKey: ["metadata"],
   });
+  const variantReleaseId = metadataQuery.data?.release_id;
   const geometryQuery = useQuery({
-    enabled: Boolean(metadataQuery.data),
-    queryFn: async () =>
-      (
-        await geometryV1AtlasGeometryGet({
-          dataset_version: metadataQuery.data!.release_id,
-        })
-      ).data as GeoJSON.FeatureCollection,
-    queryKey: ["geometry", metadataQuery.data?.release_id],
+    enabled: Boolean(variantReleaseId),
+    queryFn: async () => fetchCountyDisplayGeometry(variantReleaseId!),
+    queryKey: countyDisplayGeometryQueryKey("variant", variantReleaseId),
     staleTime: Infinity,
   });
   const scoresQuery = useQuery({
