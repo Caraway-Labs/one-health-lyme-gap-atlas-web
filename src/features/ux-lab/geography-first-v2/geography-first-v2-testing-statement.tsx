@@ -1,15 +1,14 @@
 import Link from "next/link";
 
 import {
+  GEOGRAPHY_FIRST_V2_DIFFERENCE,
+  GEOGRAPHY_FIRST_V2_HYPOTHESIS,
+} from "@/features/ux-lab/geography-first-v2/sample-places";
+import {
   UX_LAB_PATH,
+  UX_LAB_SECOND_ROUND_LABEL,
   UX_LAB_TESTING_LABEL,
 } from "@/features/ux-lab/prototype-contract";
-
-const GEOGRAPHY_FIRST_V2_HYPOTHESIS =
-  "Whether leading with place makes Atlas immediately relevant while users can still tell surveillance context apart from personal medical risk.";
-
-const GEOGRAPHY_FIRST_V2_DIFFERENCE =
-  "Geography is the front door, essential uncertainty sits beside local claims, general education plus Living with Lyme stay visible without choosing a location, and clinician plus public-health evidence open on separate same-place routes.";
 
 export function GeographyFirstV2TestingStatement() {
   return (
@@ -25,11 +24,15 @@ export function GeographyFirstV2TestingStatement() {
         {GEOGRAPHY_FIRST_V2_DIFFERENCE}
       </p>
       <p className="type-small">
-        <strong>Compared with Geography-First (round 1).</strong> This v2 route
-        keeps stronger evidence boundaries on the local entry screen. The
-        original{" "}
-        <Link href="/ux-lab/geography-first">Geography-First prototype</Link> is
-        unchanged.
+        <strong>{UX_LAB_SECOND_ROUND_LABEL}.</strong> This issue 307 prototype
+        sits alongside the first-round UX Lab concepts (issues 291–298). It does
+        not replace them.
+      </p>
+      <p className="type-small">
+        <strong>Compared with Geography-First (round 1).</strong> The original{" "}
+        <Link href="/ux-lab/geography-first">Geography-First prototype</Link>{" "}
+        (issue 296) is unchanged. Use both routes in a workshop to compare local
+        entry, lived-experience depth, and evidence boundaries.
       </p>
       <Link href={`${UX_LAB_PATH}#ux-lab-comparison`}>Comparison guide</Link>
     </aside>

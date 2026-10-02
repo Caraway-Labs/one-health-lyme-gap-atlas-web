@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 
+import {
+  GEOGRAPHY_FIRST_V2_DIFFERENCE,
+  GEOGRAPHY_FIRST_V2_HYPOTHESIS,
+  GEOGRAPHY_FIRST_V2_DEFAULT_PLACE_ID,
+  GEOGRAPHY_FIRST_V2_PATH,
+} from "@/features/ux-lab/geography-first-v2/sample-places";
+
 /**
  * Shared contract for disposable Atlas UX Lab prototypes.
  * Concept routes live under `/ux-lab/<concept>` and inherit this harness.
@@ -24,6 +31,7 @@ export const UX_LAB_CONCEPT_IDS = [
   "public-first",
   "three-lanes",
   "geography-first",
+  "geography-first-v2",
   "public-site-pro-app",
   "people-first-hub",
 ] as const;
@@ -102,6 +110,15 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     id: "geography-first",
     status: "available",
     title: "Geography-First",
+  },
+  {
+    difference: GEOGRAPHY_FIRST_V2_DIFFERENCE,
+    href: "/ux-lab/geography-first-v2",
+    hypothesis: GEOGRAPHY_FIRST_V2_HYPOTHESIS,
+    id: "geography-first-v2",
+    researchRound: "second",
+    status: "available",
+    title: "Geography-First v2",
   },
   {
     difference:
@@ -209,6 +226,11 @@ export const UX_LAB_MOCKED_INTERACTIONS: readonly UxLabMockedInteraction[] = [
       "Place search and surveillance disclosures use fictional sample text. Professional links open the live Atlas without a county identifier or a sample finding.",
   },
   {
+    conceptId: "geography-first-v2",
+    detail:
+      "Place search filters fictional Ridge Sample County and Meadow Sample Town. Local claims, uncertainty notes, and audience handoffs use static copy. Clinician and evidence routes keep the same place parameter without loading governed data.",
+  },
+  {
     conceptId: "public-site-pro-app",
     detail:
       "Open Atlas changes the visual shell only. Evidence and investigation pages outline the professional workspace. They do not load live tools.",
@@ -260,6 +282,31 @@ export const UX_LAB_SESSION_ROUTES: readonly UxLabSessionRoute[] = [
     label: "Three Lanes · Public Health & Intelligence",
   },
   { href: "/ux-lab/geography-first", label: "Geography-First" },
+  { href: GEOGRAPHY_FIRST_V2_PATH, label: "Geography-First v2" },
+  {
+    href: `${GEOGRAPHY_FIRST_V2_PATH}?place=${GEOGRAPHY_FIRST_V2_DEFAULT_PLACE_ID}`,
+    label: "Geography-First v2 · Ridge Sample County (public)",
+  },
+  {
+    href: `${GEOGRAPHY_FIRST_V2_PATH}/clinicians?place=${GEOGRAPHY_FIRST_V2_DEFAULT_PLACE_ID}`,
+    label: "Geography-First v2 · Ridge Sample County (clinicians)",
+  },
+  {
+    href: `${GEOGRAPHY_FIRST_V2_PATH}/evidence?place=${GEOGRAPHY_FIRST_V2_DEFAULT_PLACE_ID}`,
+    label: "Geography-First v2 · Ridge Sample County (evidence)",
+  },
+  {
+    href: `${GEOGRAPHY_FIRST_V2_PATH}?place=meadow-sample-town`,
+    label: "Geography-First v2 · Meadow Sample Town (public)",
+  },
+  {
+    href: `${GEOGRAPHY_FIRST_V2_PATH}/clinicians?place=meadow-sample-town`,
+    label: "Geography-First v2 · Meadow Sample Town (clinicians)",
+  },
+  {
+    href: `${GEOGRAPHY_FIRST_V2_PATH}/evidence?place=meadow-sample-town`,
+    label: "Geography-First v2 · Meadow Sample Town (evidence)",
+  },
   {
     href: "/ux-lab/public-site-pro-app",
     label: "Public Site + Professional App",

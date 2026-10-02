@@ -83,7 +83,9 @@
 }
 
 .geography-first-v2-place[aria-current="true"] {
+  background: var(--secondary);
   border-color: var(--ring);
+  color: var(--secondary-foreground);
 }
 
 .geography-first-v2-title-row {
@@ -115,6 +117,14 @@
 
 .geography-first-v2-audience-list {
   margin-block-start: var(--space-3);
+}
+
+.geography-first-v2-audience-nav
+  .geography-first-v2-audience-link[aria-current="page"] {
+  background: var(--secondary);
+  border-color: var(--ring);
+  color: var(--secondary-foreground);
+  font-weight: 600;
 }
 
 .geography-first-v2-audience-label {
