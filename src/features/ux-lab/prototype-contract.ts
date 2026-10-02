@@ -34,6 +34,7 @@ export const UX_LAB_CONCEPT_IDS = [
   "geography-first-v2",
   "public-site-pro-app",
   "people-first-hub",
+  "people-plus-workspace",
 ] as const;
 
 export type UxLabConceptId = (typeof UX_LAB_CONCEPT_IDS)[number];
@@ -141,6 +142,17 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     status: "available",
     title: "People-First Atlas Hub",
   },
+  {
+    difference:
+      "Lived-experience-first public entry and clinician resources stay in a calm people-first shell, separate from a denser epidemiology workspace opened on purpose. Reviewed evidence can hand off into public education and clinician views with geography, provenance, caveats, and a human-approval boundary—not only a shell switch. Compared with Public Site + Professional App, the public door leads with lived experience and models an evidence-to-education path instead of stopping at site-to-app transition.",
+    href: "/ux-lab/people-plus-workspace",
+    hypothesis:
+      "Whether a people-first public and clinician environment, connected to but lighter than a professional workspace, can carry reviewed evidence into understandable education without collapsing public and investigation into one interaction model.",
+    id: "people-plus-workspace",
+    researchRound: "second",
+    status: "available",
+    title: "People-First Public + Professional Workspace",
+  },
 ];
 
 export const UX_LAB_COMPARISON_CRITERIA = [
@@ -239,6 +251,11 @@ export const UX_LAB_MOCKED_INTERACTIONS: readonly UxLabMockedInteraction[] = [
     conceptId: "people-first-hub",
     detail:
       "Task navigation moves among static sample pages in one shared shell. Clinician listings and the public-health workspace show provenance placeholders only—no live reporting, county lookup, or investigation tools.",
+  },
+  {
+    conceptId: "people-plus-workspace",
+    detail:
+      "Open Atlas switches into the professional workspace shell only. Evidence review, outreach preview, and handoff query links are static samples—no live county data, automated publishing, or sign-in. Handoff banners show how reviewed context would travel; they do not save state.",
   },
 ];
 
@@ -340,6 +357,30 @@ export const UX_LAB_SESSION_ROUTES: readonly UxLabSessionRoute[] = [
   {
     href: "/ux-lab/people-first-hub/public-health",
     label: "People-First · Public-health tools",
+  },
+  {
+    href: "/ux-lab/people-plus-workspace",
+    label: "People-First Public + Professional Workspace",
+  },
+  {
+    href: "/ux-lab/people-plus-workspace/living-with-lyme",
+    label: "People + Workspace · Lived-experience entry",
+  },
+  {
+    href: "/ux-lab/people-plus-workspace/clinicians",
+    label: "People + Workspace · Clinician resources",
+  },
+  {
+    href: "/ux-lab/people-plus-workspace/workspace",
+    label: "People + Workspace · Professional workspace",
+  },
+  {
+    href: "/ux-lab/people-plus-workspace/workspace/evidence",
+    label: "People + Workspace · Evidence review",
+  },
+  {
+    href: "/ux-lab/people-plus-workspace/outreach-preview",
+    label: "People + Workspace · Outreach preview handoff",
   },
 ];
 
