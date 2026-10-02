@@ -12,6 +12,8 @@ export const UX_LAB_BANNER_LABEL = "Atlas UX Prototype — Product research only
 
 export const UX_LAB_TESTING_LABEL = "What this variant is testing";
 
+export const UX_LAB_SECOND_ROUND_LABEL = "Second-round research concept";
+
 export const UX_LAB_ROBOTS = { follow: false, index: false } as const;
 
 export const UX_LAB_SAMPLE_NOTICE =
@@ -23,17 +25,21 @@ export const UX_LAB_CONCEPT_IDS = [
   "three-lanes",
   "geography-first",
   "public-site-pro-app",
+  "people-first-hub",
 ] as const;
 
 export type UxLabConceptId = (typeof UX_LAB_CONCEPT_IDS)[number];
 
 export type UxLabConceptStatus = "available" | "planned";
 
+export type UxLabResearchRound = "second";
+
 export type UxLabConcept = {
   difference: string;
   href: `${typeof UX_LAB_PATH}/${UxLabConceptId}`;
   hypothesis: string;
   id: UxLabConceptId;
+  researchRound?: UxLabResearchRound;
   status: UxLabConceptStatus;
   title: string;
 };
@@ -106,6 +112,17 @@ export const UX_LAB_CONCEPTS: readonly UxLabConcept[] = [
     id: "public-site-pro-app",
     status: "available",
     title: "Public Site + Professional App",
+  },
+  {
+    difference:
+      "One task-oriented Atlas shell keeps lived-experience, clinician, and professional paths in the same navigation—without mandatory persona selection at the front door.",
+    href: "/ux-lab/people-first-hub",
+    hypothesis:
+      "Whether one task-oriented Atlas front door can welcome prevention-oriented visitors and people already affected by Lyme without forcing a persona choice.",
+    id: "people-first-hub",
+    researchRound: "second",
+    status: "available",
+    title: "People-First Atlas Hub",
   },
 ];
 
@@ -196,6 +213,11 @@ export const UX_LAB_MOCKED_INTERACTIONS: readonly UxLabMockedInteraction[] = [
     detail:
       "Open Atlas changes the visual shell only. Evidence and investigation pages outline the professional workspace. They do not load live tools.",
   },
+  {
+    conceptId: "people-first-hub",
+    detail:
+      "Task navigation moves among static sample pages in one shared shell. Clinician listings and the public-health workspace show provenance placeholders only—no live reporting, county lookup, or investigation tools.",
+  },
 ];
 
 export type UxLabSessionRoute = {
@@ -251,6 +273,27 @@ export const UX_LAB_SESSION_ROUTES: readonly UxLabSessionRoute[] = [
     label: "Public site · Clinicians",
   },
   { href: "/ux-lab/public-site-pro-app/app", label: "Professional app" },
+  { href: "/ux-lab/people-first-hub", label: "People-First Atlas Hub" },
+  {
+    href: "/ux-lab/people-first-hub/living-with-lyme",
+    label: "People-First · Living with Lyme",
+  },
+  {
+    href: "/ux-lab/people-first-hub/learn",
+    label: "People-First · Learn about Lyme",
+  },
+  {
+    href: "/ux-lab/people-first-hub/local-context",
+    label: "People-First · Local context",
+  },
+  {
+    href: "/ux-lab/people-first-hub/clinicians",
+    label: "People-First · Clinician resources",
+  },
+  {
+    href: "/ux-lab/people-first-hub/public-health",
+    label: "People-First · Public-health tools",
+  },
 ];
 
 export const UX_LAB_SAMPLE_TOPICS: readonly UxLabSampleTopic[] = [

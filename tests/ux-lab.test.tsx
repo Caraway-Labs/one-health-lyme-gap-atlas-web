@@ -5,6 +5,7 @@ import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import { metadata as geographyFirstMetadata } from "@/app/ux-lab/geography-first/layout";
 import { UxLabPage } from "@/app/ux-lab/page";
+import { metadata as peopleFirstHubMetadata } from "@/app/ux-lab/people-first-hub/layout";
 import { metadata as personaGatewayMetadata } from "@/app/ux-lab/persona-gateway/layout";
 import { metadata as publicFirstMetadata } from "@/app/ux-lab/public-first/layout";
 import { metadata as publicSiteMetadata } from "@/app/ux-lab/public-site-pro-app/layout";
@@ -21,6 +22,7 @@ import {
   UX_LAB_ROBOTS,
   UX_LAB_SAMPLE_NOTICE,
   UX_LAB_SAMPLE_TOPICS,
+  UX_LAB_SECOND_ROUND_LABEL,
   UX_LAB_SESSION_ROUTES,
   UX_LAB_TESTING_LABEL,
   uxLabConceptById,
@@ -39,7 +41,7 @@ import {
 describe("UX Lab harness", () => {
   afterEach(cleanup);
 
-  it("publishes five distinct concept routes under the hidden namespace", () => {
+  it("publishes six distinct concept routes under the hidden namespace", () => {
     expect(UX_LAB_CONCEPTS.map((concept) => concept.id)).toStrictEqual([
       ...UX_LAB_CONCEPT_IDS,
     ]);
@@ -76,6 +78,7 @@ describe("UX Lab harness", () => {
     expect(uxLabMetadata().robots).toStrictEqual(UX_LAB_ROBOTS);
     for (const conceptMetadata of [
       geographyFirstMetadata,
+      peopleFirstHubMetadata,
       personaGatewayMetadata,
       publicFirstMetadata,
       publicSiteMetadata,
@@ -184,6 +187,22 @@ describe("UX Lab harness", () => {
     ).toBe("/ux-lab/three-lanes");
   });
 
+  it("links the people-first hub second-round concept from the index", () => {
+    render(
+      <UxLabShell>
+        <UxLabPage />
+      </UxLabShell>
+    );
+
+    expect(
+      screen
+        .getByRole("link", { name: "Open People-First Atlas Hub" })
+        .getAttribute("href")
+    ).toBe("/ux-lab/people-first-hub");
+    expect(screen.getByText(UX_LAB_SECOND_ROUND_LABEL)).toBeTruthy();
+    expect(uxLabConceptById("people-first-hub").researchRound).toBe("second");
+  });
+
   it("links the available public-site prototype from the index", () => {
     render(
       <UxLabShell>
@@ -249,6 +268,19 @@ describe("UX Lab harness", () => {
     expect(UX_LAB_SESSION_ROUTES.map((route) => route.href)).toStrictEqual(
       expect.arrayContaining(UX_LAB_CONCEPTS.map((concept) => concept.href))
     );
+  });
+
+  it("keeps first-round concept copy unchanged on the index", () => {
+    const firstRoundIds = UX_LAB_CONCEPT_IDS.filter(
+      (id) => uxLabConceptById(id).researchRound === undefined
+    );
+    expect(firstRoundIds).toHaveLength(5);
+    render(<UxLabPage />);
+    for (const id of firstRoundIds) {
+      const concept = uxLabConceptById(id);
+      expect(screen.getByText(concept.hypothesis)).toBeTruthy();
+      expect(screen.getByText(concept.difference)).toBeTruthy();
+    }
   });
 
   it("repeats the testing statement on a concept route", () => {

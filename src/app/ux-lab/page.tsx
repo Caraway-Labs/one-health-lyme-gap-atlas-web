@@ -16,6 +16,7 @@ import {
   UX_LAB_KNOWN_LIMITATIONS,
   UX_LAB_MOCKED_INTERACTIONS,
   UX_LAB_SAMPLE_NOTICE,
+  UX_LAB_SECOND_ROUND_LABEL,
   UX_LAB_SESSION_ROUTES,
   UX_LAB_TESTING_LABEL,
   type UxLabConcept,
@@ -55,10 +56,12 @@ export function UxLabPage() {
         <p className="eyebrow">Product research</p>
         <h1 className="type-page">Atlas UX Lab</h1>
         <p className="type-body">
-          Compare five information-architecture hypotheses for public visitors,
-          clinicians, and public-health professionals. Open a concept, read what
-          it is testing, and use the same questions for every variant. The live
-          Atlas stays the production experience until a later product decision.
+          Compare six information-architecture hypotheses for public visitors,
+          clinicians, and public-health professionals. Five first-round concepts
+          (issues 291–298) sit beside one second-round people-first hub (issue
+          306). Open a concept, read what it is testing, and use the same
+          questions for every variant. The live Atlas stays the production
+          experience until a later product decision.
         </p>
       </header>
 
@@ -89,8 +92,9 @@ export function UxLabPage() {
             Concepts
           </h2>
           <p className="ux-lab-lead type-body">
-            Each concept keeps its own navigation. The five links below are the
-            direct ways into the prototypes.
+            Each concept keeps its own navigation. The six links below are the
+            direct ways into the prototypes. Second-round concepts are labeled
+            explicitly and do not replace first-round variants.
           </p>
         </div>
         <ul className="ux-lab-concept-list">
@@ -98,7 +102,14 @@ export function UxLabPage() {
             <li key={concept.id}>
               <Card>
                 <CardHeader>
-                  <h3 className="type-card">{concept.title}</h3>
+                  <div className="ux-lab-concept-title-row">
+                    <h3 className="type-card">{concept.title}</h3>
+                    {concept.researchRound === "second" ? (
+                      <Badge variant="outline">
+                        {UX_LAB_SECOND_ROUND_LABEL}
+                      </Badge>
+                    ) : null}
+                  </div>
                   <CardDescription>
                     <strong>{UX_LAB_TESTING_LABEL}.</strong>{" "}
                     {concept.hypothesis}

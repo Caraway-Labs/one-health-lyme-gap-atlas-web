@@ -17,7 +17,7 @@ export const PEOPLE_FIRST_HUB_HYPOTHESIS =
   "Whether one task-oriented Atlas front door can welcome prevention-oriented visitors and people already affected by Lyme without forcing a persona choice.";
 
 export const PEOPLE_FIRST_HUB_DIFFERENCE =
-  "Paths follow information needs (learn, live with Lyme, local context) while clinician and public-health tools stay visible but secondary.";
+  "One task-oriented Atlas shell keeps lived-experience, clinician, and professional paths in the same navigation—without mandatory persona selection at the front door.";
 
 export const PEOPLE_FIRST_TASK_IDS = [
   "learn",

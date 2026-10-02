@@ -83,6 +83,13 @@
   list-style: none;
 }
 
+.ux-lab-concept-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .ux-lab-concept-meta {
   display: flex;
   flex-wrap: wrap;

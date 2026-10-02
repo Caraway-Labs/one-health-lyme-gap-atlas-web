@@ -8,13 +8,18 @@ import {
   peopleFirstHubHref,
   CLINICIAN_SURVEILLANCE_CONTEXT,
   PEOPLE_FIRST_CLINICIAN_RESOURCES,
+  PEOPLE_FIRST_HUB_DIFFERENCE,
+  PEOPLE_FIRST_HUB_HYPOTHESIS,
   PEOPLE_FIRST_PUBLIC_HEALTH_MODULES,
 } from "@/features/ux-lab/people-first-hub/content";
 import { PeopleFirstHubFrontDoor } from "@/features/ux-lab/people-first-hub/front-door";
 import { LivingWithLymePage } from "@/features/ux-lab/people-first-hub/living-with-lyme-page";
 import { PeopleFirstPublicHealthPage } from "@/features/ux-lab/people-first-hub/public-health-page";
 import { PeopleFirstHubTestingStatement } from "@/features/ux-lab/people-first-hub/testing-statement";
-import { UX_LAB_ROBOTS as CONTRACT_ROBOTS } from "@/features/ux-lab/prototype-contract";
+import {
+  UX_LAB_ROBOTS as CONTRACT_ROBOTS,
+  uxLabConceptById,
+} from "@/features/ux-lab/prototype-contract";
 import { UxLabShell } from "@/features/ux-lab/ux-lab-shell";
 
 const prohibited =
@@ -25,6 +30,13 @@ describe("People-first Atlas hub", () => {
 
   it("marks the concept route noindex", () => {
     expect(peopleFirstHubMetadata.robots).toStrictEqual(CONTRACT_ROBOTS);
+  });
+
+  it("matches the UX Lab workshop comparison contract", () => {
+    const concept = uxLabConceptById("people-first-hub");
+    expect(concept.hypothesis).toBe(PEOPLE_FIRST_HUB_HYPOTHESIS);
+    expect(concept.difference).toBe(PEOPLE_FIRST_HUB_DIFFERENCE);
+    expect(concept.researchRound).toBe("second");
   });
 
   it("keeps sample copy free of scores and clinical direction", () => {
@@ -147,6 +159,7 @@ describe("People-first Atlas hub", () => {
         name: "What this variant is testing",
       }).textContent
     ).toContain("persona choice");
+    expect(screen.getByText(/Second-round research concept/i)).toBeTruthy();
     expect(
       screen
         .getByRole("link", { name: "Comparison guide" })

@@ -7,6 +7,7 @@ const CONCEPT_ROUTES = [
   "/ux-lab/three-lanes",
   "/ux-lab/geography-first",
   "/ux-lab/public-site-pro-app",
+  "/ux-lab/people-first-hub",
 ] as const;
 
 test("loads the UX Lab outside production navigation", async ({
@@ -50,7 +51,11 @@ test("loads the UX Lab outside production navigation", async ({
   await expect(
     page.getByRole("heading", { name: "Comparison guide" })
   ).toBeVisible();
-  await expect(page.getByText("What this variant is testing.")).toHaveCount(5);
+  await expect(page.getByText("What this variant is testing.")).toHaveCount(6);
+  await expect(
+    page.getByRole("link", { name: "Open People-First Atlas Hub" })
+  ).toBeVisible();
+  await expect(page.getByText("Second-round research concept")).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Prototype limits" })
   ).toBeVisible();
