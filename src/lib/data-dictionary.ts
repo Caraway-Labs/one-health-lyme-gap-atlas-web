@@ -31,6 +31,11 @@ export const DATA_DICTIONARY = [
   },
   {
     definition:
+      "Generalized county polygons used only for map display in Atlas. Environmental and scoring data join counties by FIPS; they do not use separate analysis-grade boundary files in the browser.",
+    term: "County map geometry (display)",
+  },
+  {
+    definition:
       "The 2023 Rural-Urban Continuum Code. A value of 1 is most metropolitan and 9 is most rural.",
     term: "RUCC",
   },

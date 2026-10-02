@@ -16,7 +16,6 @@ import { ScoringLab } from "@/components/scoring-lab";
 import { Button } from "@/components/ui/button";
 import {
   countyV1CountiesFipsGet,
-  geometryV1AtlasGeometryGet,
   getRankingCsvV1AtlasRankingCsvGetUrl,
   metadataV1AtlasMetadataGet,
   scoresV1AtlasScoresGet,
@@ -50,6 +49,10 @@ import {
 } from "@/lib/atlas-search-params";
 import { matchesEvidence, reasonsFor } from "@/lib/atlas-ui";
 import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
+import {
+  countyDisplayGeometryQueryKey,
+  fetchCountyDisplayGeometry,
+} from "@/lib/county-geography";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -116,15 +119,11 @@ function AtlasPage() {
       ),
     queryKey: ["metadata"],
   });
+  const releaseId = metadataQuery.data?.release_id;
   const geometryQuery = useQuery({
-    enabled: Boolean(metadataQuery.data),
-    queryFn: async () =>
-      (
-        await geometryV1AtlasGeometryGet({
-          dataset_version: metadataQuery.data!.release_id,
-        })
-      ).data as GeoJSON.FeatureCollection,
-    queryKey: ["geometry", metadataQuery.data?.release_id],
+    enabled: Boolean(releaseId),
+    queryFn: async () => fetchCountyDisplayGeometry(releaseId!),
+    queryKey: countyDisplayGeometryQueryKey("atlas-home", releaseId),
     staleTime: Infinity,
   });
   const scoresQuery = useQuery({

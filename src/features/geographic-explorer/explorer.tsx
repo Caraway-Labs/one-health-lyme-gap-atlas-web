@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  geometryV1AtlasGeometryGet,
   metadataV1AtlasMetadataGet,
   scoresV1AtlasScoresGet,
 } from "@/generated/atlas";
@@ -34,6 +33,10 @@ import { validateApiResponse } from "@/lib/api-response-validation";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { describeReleaseAssembly } from "@/lib/atlas-evidence-metadata";
 import { toScoreSettings } from "@/lib/atlas-search-params";
+import {
+  countyDisplayGeometryQueryKey,
+  fetchCountyDisplayGeometry,
+} from "@/lib/county-geography";
 
 import {
   CountyComparisons,
@@ -120,27 +123,10 @@ export function GeographicExplorer() {
   });
   const needsMap = state.view === "maps" || state.view === "scatter";
   const geometry = useQuery({
-    queryKey: ["explorer-geometry", releaseId],
+    queryKey: countyDisplayGeometryQueryKey("explorer", releaseId),
     enabled: Boolean(releaseId) && needsMap,
     staleTime: Infinity,
-    queryFn: async ({ signal }) => {
-      const data = (
-        await geometryV1AtlasGeometryGet(
-          { dataset_version: releaseId },
-          { signal }
-        )
-      ).data;
-      if (
-        !data ||
-        typeof data !== "object" ||
-        !("type" in data) ||
-        data.type !== "FeatureCollection" ||
-        !("features" in data) ||
-        !Array.isArray(data.features)
-      )
-        throw new Error("County geometry is unavailable.");
-      return data as unknown as GeoJSON.FeatureCollection;
-    },
+    queryFn: ({ signal }) => fetchCountyDisplayGeometry(releaseId!, { signal }),
   });
   const all = scores.data?.counties ?? EMPTY;
   const scope = useMemo(
