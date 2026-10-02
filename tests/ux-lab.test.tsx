@@ -216,11 +216,15 @@ describe("UX Lab harness", () => {
         .getAttribute("href")
     ).toBe("/ux-lab/people-plus-workspace");
     expect(screen.getAllByText(UX_LAB_SECOND_ROUND_LABEL)).toHaveLength(3);
-    expect(uxLabConceptById("geography-first-v2").researchRound).toBe("second");
-    expect(uxLabConceptById("people-first-hub").researchRound).toBe("second");
-    expect(uxLabConceptById("people-plus-workspace").researchRound).toBe(
-      "second"
-    );
+    expect(
+      (
+        [
+          "geography-first-v2",
+          "people-first-hub",
+          "people-plus-workspace",
+        ] as const
+      ).map((id) => uxLabConceptById(id).researchRound)
+    ).toStrictEqual(["second", "second", "second"]);
   });
 
   it("contrasts the people-plus workspace concept with public-site-pro-app without evaluative language", () => {
