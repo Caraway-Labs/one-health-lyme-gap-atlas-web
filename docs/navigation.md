@@ -71,3 +71,7 @@ The shell provides navigation landmarks, `aria-current="page"`, keyboard focus c
 
 - Future Surveillance, Intelligence, and Outputs destinations require product approval and real implementation before visible navigation is added.
 - Future authenticated or role-aware destinations must use explicit metadata capability fields; presentation must not infer authorization from labels or route names.
+
+## Route taxonomy audit (#195)
+
+The full App Router inventory, `ATLAS_ROUTES` reconciliation, classification table, and rename recommendations for epic [#194](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/194) live in [atlas-route-taxonomy-audit.md](./product/atlas-route-taxonomy-audit.md). That document is audit-only; implement route changes only after [#196](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/196) approves a compatibility contract.
