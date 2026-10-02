@@ -21,7 +21,6 @@ import {
 import {
   UX_LAB_ROBOTS,
   UX_LAB_SAMPLE_NOTICE,
-  UX_LAB_SECOND_ROUND_LABEL,
   uxLabConceptById,
 } from "@/features/ux-lab/prototype-contract";
 import { NAVIGATION_ITEMS } from "@/lib/navigation";
@@ -76,14 +75,15 @@ describe("Geography-First v2 prototype", () => {
         name: "What this variant is testing",
       }).textContent
     ).toContain("personal medical risk");
-    expect(screen.getByText(UX_LAB_SECOND_ROUND_LABEL)).toBeTruthy();
+    expect(screen.getByText(/Second-round research concept/i)).toBeTruthy();
     expect(
       screen
         .getByRole("link", { name: "Comparison guide" })
         .getAttribute("href")
     ).toBe("/ux-lab#ux-lab-comparison");
     expect(
-      screen.getByRole("link", { name: /Geography-First prototype/i })
+      screen
+        .getByRole("link", { name: /Geography-First prototype/i })
         .getAttribute("href")
     ).toBe("/ux-lab/geography-first");
   });

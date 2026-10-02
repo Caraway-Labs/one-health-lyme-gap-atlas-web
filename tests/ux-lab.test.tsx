@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
-import { metadata as geographyFirstMetadata } from "@/app/ux-lab/geography-first/layout";
 import { metadata as geographyFirstV2Metadata } from "@/app/ux-lab/geography-first-v2/layout";
+import { metadata as geographyFirstMetadata } from "@/app/ux-lab/geography-first/layout";
 import { UxLabPage } from "@/app/ux-lab/page";
 import { metadata as peopleFirstHubMetadata } from "@/app/ux-lab/people-first-hub/layout";
 import { metadata as personaGatewayMetadata } from "@/app/ux-lab/persona-gateway/layout";
@@ -207,9 +207,7 @@ describe("UX Lab harness", () => {
         .getAttribute("href")
     ).toBe("/ux-lab/people-first-hub");
     expect(screen.getAllByText(UX_LAB_SECOND_ROUND_LABEL)).toHaveLength(2);
-    expect(uxLabConceptById("geography-first-v2").researchRound).toBe(
-      "second"
-    );
+    expect(uxLabConceptById("geography-first-v2").researchRound).toBe("second");
     expect(uxLabConceptById("people-first-hub").researchRound).toBe("second");
   });
 
