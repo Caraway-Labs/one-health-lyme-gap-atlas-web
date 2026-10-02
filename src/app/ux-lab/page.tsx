@@ -59,10 +59,9 @@ export function UxLabPage() {
           Compare six information-architecture hypotheses for public visitors,
           clinicians, and public-health professionals. Five first-round concepts
           (issues 291–298) sit beside one second-round people-first hub (issue
-          306). Open
-          a concept, read what it is testing, and use the same questions for
-          every variant. The live Atlas stays the production experience until a
-          later product decision.
+          306). Open a concept, read what it is testing, and use the same
+          questions for every variant. The live Atlas stays the production
+          experience until a later product decision.
         </p>
       </header>
 

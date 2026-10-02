@@ -22,8 +22,8 @@ export function PeopleFirstHubTestingStatement() {
       </p>
       <p className="type-small">
         <strong>{UX_LAB_SECOND_ROUND_LABEL}.</strong> This issue 306 prototype
-        sits alongside the first-round UX Lab concepts (issues 291–298). It
-        does not replace them.
+        sits alongside the first-round UX Lab concepts (issues 291–298). It does
+        not replace them.
       </p>
       <p className="type-small">
         <strong>Compared with first-round concepts.</strong> Task paths replace
