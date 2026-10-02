@@ -5,10 +5,13 @@ import { GeographyFirstV2CliniciansPage } from "@/app/ux-lab/geography-first-v2/
 import { GeographyFirstV2EvidencePage } from "@/app/ux-lab/geography-first-v2/evidence/page";
 import { metadata as geographyFirstV2Metadata } from "@/app/ux-lab/geography-first-v2/layout";
 import { GeographyFirstV2Page } from "@/app/ux-lab/geography-first-v2/page";
+import { GeographyFirstV2TestingStatement } from "@/features/ux-lab/geography-first-v2/geography-first-v2-testing-statement";
 import {
   GEOGRAPHY_FIRST_V2_CLINICIANS_PATH,
+  GEOGRAPHY_FIRST_V2_DIFFERENCE,
   GEOGRAPHY_FIRST_V2_EVIDENCE_BOUNDARIES,
   GEOGRAPHY_FIRST_V2_EVIDENCE_PATH,
+  GEOGRAPHY_FIRST_V2_HYPOTHESIS,
   GEOGRAPHY_FIRST_V2_PATH,
   GEOGRAPHY_FIRST_V2_PLACES,
   GEOGRAPHY_FIRST_V2_STATE_REVIEW,
@@ -18,6 +21,8 @@ import {
 import {
   UX_LAB_ROBOTS,
   UX_LAB_SAMPLE_NOTICE,
+  UX_LAB_SECOND_ROUND_LABEL,
+  uxLabConceptById,
 } from "@/features/ux-lab/prototype-contract";
 import { NAVIGATION_ITEMS } from "@/lib/navigation";
 
@@ -54,6 +59,33 @@ describe("Geography-First v2 prototype", () => {
     );
     expect(GEOGRAPHY_FIRST_V2_PLACES.length).toBeGreaterThan(1);
     expect(violations).toStrictEqual([]);
+  });
+
+  it("matches the UX Lab workshop comparison contract", () => {
+    const concept = uxLabConceptById("geography-first-v2");
+    expect(concept.hypothesis).toBe(GEOGRAPHY_FIRST_V2_HYPOTHESIS);
+    expect(concept.difference).toBe(GEOGRAPHY_FIRST_V2_DIFFERENCE);
+    expect(concept.researchRound).toBe("second");
+  });
+
+  it("repeats the testing statement with a comparison link", () => {
+    render(<GeographyFirstV2TestingStatement />);
+
+    expect(
+      screen.getByRole("complementary", {
+        name: "What this variant is testing",
+      }).textContent
+    ).toContain("personal medical risk");
+    expect(screen.getByText(UX_LAB_SECOND_ROUND_LABEL)).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: "Comparison guide" })
+        .getAttribute("href")
+    ).toBe("/ux-lab#ux-lab-comparison");
+    expect(
+      screen.getByRole("link", { name: /Geography-First prototype/i })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first");
   });
 
   it("defaults to the representative county and keeps the route out of production navigation", () => {

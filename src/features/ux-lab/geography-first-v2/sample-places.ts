@@ -5,6 +5,12 @@
 
 export const GEOGRAPHY_FIRST_V2_PATH = "/ux-lab/geography-first-v2";
 
+export const GEOGRAPHY_FIRST_V2_HYPOTHESIS =
+  "Whether leading with place makes Atlas immediately relevant while users can still tell surveillance context apart from personal medical risk.";
+
+export const GEOGRAPHY_FIRST_V2_DIFFERENCE =
+  "Compared with Geography-First (round 1): a stronger non-geographic lived-experience path; essential uncertainty beside local claims; no AQI-like personal-risk framing; clinician and public-health evidence on same-place routes.";
+
 export const GEOGRAPHY_FIRST_V2_CLINICIANS_PATH =
   `${GEOGRAPHY_FIRST_V2_PATH}/clinicians` as const;
 

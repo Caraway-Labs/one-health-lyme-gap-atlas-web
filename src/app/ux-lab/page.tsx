@@ -56,12 +56,12 @@ export function UxLabPage() {
         <p className="eyebrow">Product research</p>
         <h1 className="type-page">Atlas UX Lab</h1>
         <p className="type-body">
-          Compare six information-architecture hypotheses for public visitors,
+          Compare seven information-architecture hypotheses for public visitors,
           clinicians, and public-health professionals. Five first-round concepts
-          (issues 291–298) sit beside one second-round people-first hub (issue
-          306). Open a concept, read what it is testing, and use the same
-          questions for every variant. The live Atlas stays the production
-          experience until a later product decision.
+          (issues 291–298) sit beside second-round Geography-First v2 (issue 307)
+          and the people-first hub (issue 306). Open a concept, read what it is
+          testing, and use the same questions for every variant. The live Atlas
+          stays the production experience until a later product decision.
         </p>
       </header>
 
@@ -92,7 +92,7 @@ export function UxLabPage() {
             Concepts
           </h2>
           <p className="ux-lab-lead type-body">
-            Each concept keeps its own navigation. The six links below are the
+            Each concept keeps its own navigation. The seven links below are the
             direct ways into the prototypes. Second-round concepts are labeled
             explicitly and do not replace first-round variants.
           </p>
