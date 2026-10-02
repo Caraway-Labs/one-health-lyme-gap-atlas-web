@@ -481,6 +481,24 @@ test("does not contact Amplitude before consent or after opt-out", async ({
   await expect.poll(() => amplitudeCalls).toEqual([]);
 });
 
+test("sends Amplitude events after analytics consent", async ({ page }) => {
+  const amplitudeCalls: string[] = [];
+  await page.route(/amplitude/i, async (route) => {
+    amplitudeCalls.push(route.request().url());
+    await route.fulfill({ status: 200, body: "{}" });
+  });
+  await page.goto("/");
+  await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
+  await page.getByRole("button", { name: "Privacy settings" }).click();
+  await page
+    .getByRole("dialog", { name: "Privacy settings" })
+    .getByRole("button", { name: "Allow optional analytics" })
+    .click();
+  await expect
+    .poll(() => amplitudeCalls.length, { timeout: 10_000 })
+    .toBeGreaterThan(0);
+});
+
 test("keeps Amplitude off when Do Not Track is enabled", async ({ page }) => {
   const amplitudeCalls: string[] = [];
   await page.addInitScript(() => {

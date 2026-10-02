@@ -47,6 +47,9 @@ services:
       - key: NEXT_PUBLIC_AMPLITUDE_API_KEY
         value: ${NEXT_PUBLIC_AMPLITUDE_API_KEY}
         scope: BUILD_TIME
+      - key: NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET
+        value: production
+        scope: BUILD_TIME
       - key: NEXT_PUBLIC_SUPABASE_URL
         value: ${NEXT_PUBLIC_SUPABASE_URL}
         scope: BUILD_TIME

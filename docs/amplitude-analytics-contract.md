@@ -113,6 +113,42 @@ Send 100% of approved events from consented sessions at launch; do not compensat
 
 The initial dashboard questions are: route adoption; filter-to-geography-selection completion; map versus accessible-table use; CSV and summary-copy uptake; methodology/provenance engagement; scoring-control use; and, when separately launched, feedback and account-flow completion. Use aggregate counts and consented-session conversion rates; do not create individual behavioral profiles or cohorts for outreach.
 
+## Operator verification (ingestion)
+
+Use this checklist after deploy or when Amplitude shows zero events. It does not rely on GitHub ticket status.
+
+### Build-time configuration
+
+| Environment | `NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET` | Amplitude project (id) | API key source |
+| --- | --- | --- | --- |
+| Production (DigitalOcean / main deploy) | `production` | Atlas Web - Production (`856061`) | App Platform build secret `NEXT_PUBLIC_AMPLITUDE_API_KEY` (production project key) |
+| Local development / Playwright | `development` | Atlas Web Development Project (`860994`) | Developer `.env.local` `NEXT_PUBLIC_AMPLITUDE_API_KEY` (development project key) |
+
+Production and development must never share the same Browser SDK API key. The non-secret `NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET` label must match the key's project so mis-routing is visible during verification.
+
+Confirm the key is baked into the client bundle (Next.js inlines `NEXT_PUBLIC_*` at build time):
+
+1. Open a deployed Atlas build in the browser.
+2. Open DevTools → Sources (or Network) and search the compiled client for `NEXT_PUBLIC_AMPLITUDE` — the **value** should be present as an inlined string when configured; an empty string means the Docker/CI build did not receive the build arg.
+
+### Consent → browser request → Amplitude project
+
+1. Use a fresh profile or clear site data for the Atlas origin.
+2. Confirm **no** network requests to `amplitude.com` (or Amplitude ingestion hosts) before accepting optional analytics.
+3. Open **Privacy settings** → **Allow optional analytics**.
+4. In DevTools → Network, filter for `amplitude` and reload or navigate within Atlas (for example open the home route). Expect at least one successful ingestion request (HTTP 2xx) within a few seconds.
+5. In the Amplitude UI for the project that matches `NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET`, open **User Lookup** or **Event Stream** (if enabled for your role) and confirm a semantic event such as `atlas_route_viewed` or `atlas_ui_interaction` with only allowlisted properties (`schema_version`, `release_version`, `route_id`, etc.).
+6. Record the verification timestamp and event name in the release or incident notes.
+
+Withdrawal check: choose **Keep optional analytics off**, reload, and confirm Amplitude requests stop and vendor `AMP_` / `amplitude` storage keys are cleared from session/local storage (consent preference key remains).
+
+### Automated regression
+
+- Vitest asserts `getAmplitudeBrowserInitOptions().offline` is `OfflineDisabled` (falsy), not a truthy string that suppresses delivery.
+- Playwright grants consent with a synthetic API key and expects at least one Amplitude network request.
+
+Live confirmation that events land in projects `856061` and `860994` requires valid project API keys (Matthew / platform owners).
+
 ## Pre-production acceptance tests
 
 1. A fresh browser has no Amplitude network request, cookie, local/session storage, or event before consent.

@@ -1,3 +1,5 @@
+import { OfflineDisabled } from "@amplitude/analytics-core";
+
 type AmplitudeModule = {
   init: (apiKey: string, options: Record<string, unknown>) => unknown;
   reset: () => unknown;
@@ -248,13 +250,15 @@ function clearAmplitudeBrowserStorage(storage: Storage): void {
   }
 }
 
-function browserConfig(): Record<string, unknown> {
+export function getAmplitudeBrowserInitOptions(): Record<string, unknown> {
   return {
     autocapture: false,
     defaultTracking: false,
+    enableDiagnostics: false,
     fetchRemoteConfig: false,
     identityStorage: "sessionStorage",
-    offline: "disabled",
+    // OfflineDisabled is null; the string "disabled" is truthy and blocks all flushes.
+    offline: OfflineDisabled,
     trackingOptions: {
       ipAddress: false,
       language: false,
@@ -271,7 +275,7 @@ export function createAtlasAnalytics(loadAmplitude: AmplitudeLoader) {
       if (!apiKey || amplitude) return Boolean(amplitude);
 
       amplitude = await loadAmplitude();
-      amplitude.init(apiKey, browserConfig());
+      amplitude.init(apiKey, getAmplitudeBrowserInitOptions());
       amplitude.setOptOut(false);
       return true;
     },
