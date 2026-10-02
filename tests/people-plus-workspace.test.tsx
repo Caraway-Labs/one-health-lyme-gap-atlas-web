@@ -1,14 +1,18 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import PeopleCliniciansPage from "@/app/ux-lab/people-plus-workspace/clinicians/page";
-import PeopleEducationPage from "@/app/ux-lab/people-plus-workspace/education/page";
 import { metadata as peoplePlusMetadata } from "@/app/ux-lab/people-plus-workspace/layout";
 import LivingWithLymePage from "@/app/ux-lab/people-plus-workspace/living-with-lyme/page";
 import PeopleLocalContextPage from "@/app/ux-lab/people-plus-workspace/local/page";
+import PeopleOutreachPreviewPage from "@/app/ux-lab/people-plus-workspace/outreach-preview/page";
 import PeoplePlusHomePage from "@/app/ux-lab/people-plus-workspace/page";
-import PeopleWorkspacePlaceholderPage from "@/app/ux-lab/people-plus-workspace/workspace/page";
+import PeopleEvidenceReviewPage from "@/app/ux-lab/people-plus-workspace/workspace/evidence/page";
+import PeopleProfessionalOverviewPage from "@/app/ux-lab/people-plus-workspace/workspace/page";
 import { PEOPLE_CLINICIAN_RESOURCES } from "@/features/ux-lab/people-plus-workspace/content";
+import {
+  PEOPLE_REVIEWED_HANDOFF,
+  REVIEWED_HANDOFF_ID,
+} from "@/features/ux-lab/people-plus-workspace/handoff-content";
 import {
   OPEN_ATLAS_LABEL,
   PEOPLE_CLINICIANS_PATH,
@@ -16,12 +20,19 @@ import {
   PEOPLE_HOME,
   PEOPLE_LIVING_PATH,
   PEOPLE_LOCAL_PATH,
+  PEOPLE_OUTREACH_PREVIEW_PATH,
   PEOPLE_PLUS_TESTING_HYPOTHESIS,
+  PEOPLE_PRO_EVIDENCE_PATH,
   PEOPLE_WORKSPACE_PATH,
   RETURN_TO_PEOPLE_ENV_LABEL,
+  peopleHandoffClinicianHref,
+  peopleHandoffPublicEducationHref,
 } from "@/features/ux-lab/people-plus-workspace/paths";
+import { PeopleCliniciansPageContent } from "@/features/ux-lab/people-plus-workspace/people-clinicians-view";
+import { PeopleEducationPageContent } from "@/features/ux-lab/people-plus-workspace/people-education-view";
 import { PeoplePlusWorkspaceTestingNote } from "@/features/ux-lab/people-plus-workspace/people-plus-testing-note";
 import { PeoplePlusShell } from "@/features/ux-lab/people-plus-workspace/people-shell";
+import { PeoplePlusProfessionalShell } from "@/features/ux-lab/people-plus-workspace/professional-shell";
 import {
   UX_LAB_ROBOTS,
   UX_LAB_TESTING_LABEL,
@@ -102,7 +113,7 @@ describe("People-first public + workspace prototype (story 1)", () => {
     pathname = PEOPLE_EDUCATION_PATH;
     const education = render(
       <PeoplePlusShell>
-        <PeopleEducationPage />
+        <PeopleEducationPageContent />
       </PeoplePlusShell>
     );
     expect(
@@ -141,7 +152,7 @@ describe("People-first public + workspace prototype (story 1)", () => {
     pathname = PEOPLE_CLINICIANS_PATH;
     render(
       <PeoplePlusShell>
-        <PeopleCliniciansPage />
+        <PeopleCliniciansPageContent />
       </PeoplePlusShell>
     );
     expect(
@@ -153,20 +164,130 @@ describe("People-first public + workspace prototype (story 1)", () => {
     ).toBeTruthy();
     expect(document.body.textContent).not.toMatch(prohibitedClaim);
   });
+});
 
-  it("opens a workspace placeholder outside the public shell with a return path", () => {
+describe("Professional workspace and evidence-to-education handoff (story 2)", () => {
+  afterEach(() => {
+    cleanup();
+    pathname = PEOPLE_HOME;
+  });
+
+  it("uses the denser professional app shell outside the people-first header", () => {
     pathname = PEOPLE_WORKSPACE_PATH;
-    render(<PeopleWorkspacePlaceholderPage />);
+    render(
+      <PeoplePlusProfessionalShell>
+        <PeopleProfessionalOverviewPage />
+      </PeoplePlusProfessionalShell>
+    );
+
+    expect(document.querySelector(".people-plus-header")).toBeNull();
+    expect(document.querySelector(".app-shell.ux-lab-pro-app")).toBeTruthy();
+    expect(
+      screen.getByRole("navigation", { name: "Professional workspace" })
+        .textContent
+    ).toMatch(/Evidence review.*Outreach resource preview/);
+    expect(document.body.textContent).not.toMatch(prohibitedClaim);
+  });
+
+  it("shows county evidence review with provenance and a link to outreach preview", () => {
+    pathname = PEOPLE_PRO_EVIDENCE_PATH;
+    render(
+      <PeoplePlusProfessionalShell>
+        <PeopleEvidenceReviewPage />
+      </PeoplePlusProfessionalShell>
+    );
 
     expect(
-      screen.getByText("You left the people-first environment.")
+      screen.getByRole("heading", { level: 1, name: "County evidence review" })
     ).toBeTruthy();
+    expect(screen.getAllByText(/Sample County/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Uncertainty\./)).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: "Open reviewed outreach preview" })
+        .getAttribute("href")
+    ).toBe(PEOPLE_OUTREACH_PREVIEW_PATH);
+    expect(document.body.textContent).toMatch(/Human-reviewed|publishable/i);
+  });
+
+  it("renders outreach preview with public and clinician continuation links", () => {
+    pathname = PEOPLE_OUTREACH_PREVIEW_PATH;
+    render(
+      <PeoplePlusShell>
+        <PeopleOutreachPreviewPage />
+      </PeoplePlusShell>
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Outreach and resource package preview",
+      })
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: "Continue to public education view" })
+        .getAttribute("href")
+    ).toBe(peopleHandoffPublicEducationHref(REVIEWED_HANDOFF_ID));
+    expect(
+      screen
+        .getByRole("link", { name: "Continue to clinician resource view" })
+        .getAttribute("href")
+    ).toBe(peopleHandoffClinicianHref(REVIEWED_HANDOFF_ID));
+    expect(document.body.textContent).toMatch(
+      /no automated publishing.*publishable/is
+    );
+  });
+
+  it("carries handoff context into public education and clinician pages", () => {
+    pathname = PEOPLE_EDUCATION_PATH;
+    render(
+      <PeoplePlusShell>
+        <PeopleEducationPageContent handoff={PEOPLE_REVIEWED_HANDOFF} />
+      </PeoplePlusShell>
+    );
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Reviewed outreach context travels with this page",
+      })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(PEOPLE_REVIEWED_HANDOFF.evidencePeriod)
+    ).toBeTruthy();
+    cleanup();
+
+    pathname = PEOPLE_CLINICIANS_PATH;
+    render(
+      <PeoplePlusShell>
+        <PeopleCliniciansPageContent handoff={PEOPLE_REVIEWED_HANDOFF} />
+      </PeoplePlusShell>
+    );
+    expect(
+      screen.getByText(PEOPLE_REVIEWED_HANDOFF.clinicianPackage.headline)
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", {
+          name: "Open public explanation with the same context",
+        })
+        .getAttribute("href")
+    ).toBe(peopleHandoffPublicEducationHref(REVIEWED_HANDOFF_ID));
+    expect(document.body.textContent).not.toMatch(prohibitedClaim);
+  });
+
+  it("keeps a return path from the professional workspace to the people-first home", () => {
+    pathname = PEOPLE_WORKSPACE_PATH;
+    render(
+      <PeoplePlusProfessionalShell>
+        <PeopleProfessionalOverviewPage />
+      </PeoplePlusProfessionalShell>
+    );
+
     expect(
       screen
         .getAllByRole("link", { name: RETURN_TO_PEOPLE_ENV_LABEL })[0]
         ?.getAttribute("href")
     ).toBe(PEOPLE_HOME);
-    expect(document.querySelector(".people-plus-header")).toBeNull();
-    expect(document.body.textContent).not.toMatch(prohibitedClaim);
   });
 });
