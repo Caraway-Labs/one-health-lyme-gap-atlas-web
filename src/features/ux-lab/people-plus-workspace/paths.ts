@@ -2,6 +2,7 @@
  * Disposable routes for the People-First Public + Professional Workspace prototype.
  */
 
+import { uxLabConceptById } from "@/features/ux-lab/prototype-contract";
 import type { PrototypeRoute } from "@/features/ux-lab/public-site-pro-app/paths";
 
 export const PEOPLE_PLUS_WORKSPACE_PATH =
@@ -33,11 +34,13 @@ export const OPEN_ATLAS_LABEL = "Open Atlas for Public Health";
 
 export const RETURN_TO_PEOPLE_ENV_LABEL = "Return to people-first Atlas";
 
+const peoplePlusWorkspaceConcept = uxLabConceptById("people-plus-workspace");
+
 export const PEOPLE_PLUS_TESTING_HYPOTHESIS =
-  "Whether a people-first public and clinician environment, connected to but lighter than a professional workspace, feels more understandable than asking everyone into the same interaction model.";
+  peoplePlusWorkspaceConcept.hypothesis;
 
 export const PEOPLE_PLUS_TESTING_DIFFERENCE =
-  "Lived-experience and clinician paths stay in a calm public shell. The epidemiology workspace is denser, opened on purpose, and connects to reviewed outreach previews that carry geography, provenance, caveats, and a human-approval boundary into public and clinician views.";
+  peoplePlusWorkspaceConcept.difference;
 
 export const PEOPLE_PRO_NAV = [
   {

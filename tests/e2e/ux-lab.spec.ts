@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-const UX_LAB_CONCEPT_COUNT = 7;
+const UX_LAB_CONCEPT_COUNT = 8;
 
 const CONCEPT_ROUTES = [
   "/ux-lab/persona-gateway",
@@ -11,6 +11,7 @@ const CONCEPT_ROUTES = [
   "/ux-lab/geography-first-v2",
   "/ux-lab/public-site-pro-app",
   "/ux-lab/people-first-hub",
+  "/ux-lab/people-plus-workspace",
 ] as const;
 
 const GEOGRAPHY_FIRST_V2_WORKSHOP_ROUTES = [
@@ -96,9 +97,14 @@ test("loads the UX Lab outside production navigation", async ({
     page.getByRole("link", { name: "Open Geography-First v2" })
   ).toBeVisible();
   await expect(
+    page.getByRole("link", {
+      name: "Open People-First Public + Professional Workspace",
+    })
+  ).toBeVisible();
+  await expect(
     page.getByRole("link", { name: "Open People-First Atlas Hub" })
   ).toBeVisible();
-  await expect(page.getByText("Second-round research concept")).toHaveCount(2);
+  await expect(page.getByText("Second-round research concept")).toHaveCount(3);
   await expect(
     page.getByRole("heading", { name: "Prototype limits" })
   ).toBeVisible();

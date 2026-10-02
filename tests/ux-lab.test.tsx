@@ -7,6 +7,7 @@ import { metadata as geographyFirstV2Metadata } from "@/app/ux-lab/geography-fir
 import { metadata as geographyFirstMetadata } from "@/app/ux-lab/geography-first/layout";
 import { UxLabPage } from "@/app/ux-lab/page";
 import { metadata as peopleFirstHubMetadata } from "@/app/ux-lab/people-first-hub/layout";
+import { metadata as peoplePlusWorkspaceMetadata } from "@/app/ux-lab/people-plus-workspace/layout";
 import { metadata as personaGatewayMetadata } from "@/app/ux-lab/persona-gateway/layout";
 import { metadata as publicFirstMetadata } from "@/app/ux-lab/public-first/layout";
 import { metadata as publicSiteMetadata } from "@/app/ux-lab/public-site-pro-app/layout";
@@ -42,7 +43,7 @@ import {
 describe("UX Lab harness", () => {
   afterEach(cleanup);
 
-  it("publishes seven distinct concept routes under the hidden namespace", () => {
+  it("publishes eight distinct concept routes under the hidden namespace", () => {
     expect(UX_LAB_CONCEPTS.map((concept) => concept.id)).toStrictEqual([
       ...UX_LAB_CONCEPT_IDS,
     ]);
@@ -81,6 +82,7 @@ describe("UX Lab harness", () => {
       geographyFirstMetadata,
       geographyFirstV2Metadata,
       peopleFirstHubMetadata,
+      peoplePlusWorkspaceMetadata,
       personaGatewayMetadata,
       publicFirstMetadata,
       publicSiteMetadata,
@@ -206,9 +208,35 @@ describe("UX Lab harness", () => {
         .getByRole("link", { name: "Open People-First Atlas Hub" })
         .getAttribute("href")
     ).toBe("/ux-lab/people-first-hub");
-    expect(screen.getAllByText(UX_LAB_SECOND_ROUND_LABEL)).toHaveLength(2);
-    expect(uxLabConceptById("geography-first-v2").researchRound).toBe("second");
-    expect(uxLabConceptById("people-first-hub").researchRound).toBe("second");
+    expect(
+      screen
+        .getByRole("link", {
+          name: "Open People-First Public + Professional Workspace",
+        })
+        .getAttribute("href")
+    ).toBe("/ux-lab/people-plus-workspace");
+    expect(screen.getAllByText(UX_LAB_SECOND_ROUND_LABEL)).toHaveLength(3);
+    expect(
+      (
+        [
+          "geography-first-v2",
+          "people-first-hub",
+          "people-plus-workspace",
+        ] as const
+      ).map((id) => uxLabConceptById(id).researchRound)
+    ).toStrictEqual(["second", "second", "second"]);
+  });
+
+  it("contrasts the people-plus workspace concept with public-site-pro-app without evaluative language", () => {
+    const peoplePlus = uxLabConceptById("people-plus-workspace");
+    const publicSite = uxLabConceptById("public-site-pro-app");
+
+    expect(peoplePlus.difference).toMatch(
+      /lived-experience|evidence-to-education|human-approval/i
+    );
+    expect(peoplePlus.difference).toContain(publicSite.title);
+    expect(peoplePlus.difference).not.toMatch(/better|winner|recommend/i);
+    expect(publicSite.hypothesis).not.toMatch(peoplePlus.hypothesis);
   });
 
   it("links the available public-site prototype from the index", () => {
