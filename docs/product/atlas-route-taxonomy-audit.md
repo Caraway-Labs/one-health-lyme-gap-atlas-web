@@ -58,7 +58,7 @@ find src/app -type f \( -name 'page.tsx' -o -name 'route.ts' \) | sort
 
 ## Proposed canonical route map (for #196 review)
 
-This is the **recommended production taxonomy** assuming URLs stay as implemented today. #196 should approve or reject each *change* from this map—not re-litigate whether these paths are already canonical.
+This is the **recommended production taxonomy** assuming URLs stay as implemented today. #196 should approve or reject each _change_ from this map—not re-litigate whether these paths are already canonical.
 
 | Group | Canonical path | `ATLAS_ROUTES` id | Navigation | Notes |
 | --- | --- | --- | --- | --- |
@@ -133,10 +133,10 @@ All such endpoints are children of a prefix-covered family (`/docs/*`, `/ux-lab/
 
 ### Trust / public informational
 
-| Route family | Path | `ATLAS_ROUTES` | Shell |
-| --- | --- | --- | --- |
-| Privacy | `/privacy` | `privacy` | public |
-| AI Ethics | `/ai-ethics` | `ai-ethics` | public |
+| Route family | Path         | `ATLAS_ROUTES` | Shell  |
+| ------------ | ------------ | -------------- | ------ |
+| Privacy      | `/privacy`   | `privacy`      | public |
+| AI Ethics    | `/ai-ethics` | `ai-ethics`    | public |
 
 ### Account / auth
 
@@ -176,8 +176,8 @@ All use `status: experimental`, `placement: direct`, `shell: none` in `ATLAS_ROU
 
 ### Technical / API
 
-| Path | Purpose |
-| --- | --- |
+| Path          | Purpose                                           |
+| ------------- | ------------------------------------------------- |
 | `/api/search` | Fumadocs documentation search (`docs-search-api`) |
 
 ### UX Lab (`/ux-lab/**`) — product research namespace
@@ -259,11 +259,11 @@ Only changes that **materially** improve clarity are listed. **None are approved
 
 **Rationale:** `/variant_7` is an intentional experimental entry with `shell: none`; some stakeholders may use it to compare shell-less explorer behavior.
 
-| Impact area | Assessment |
-| --- | --- |
-| Deep links | Unknown external usage; treat as experimental |
-| Query params | Same explorer param model as canonical route |
-| Product | Collapsing loses A/B shell comparison |
+| Impact area  | Assessment                                    |
+| ------------ | --------------------------------------------- |
+| Deep links   | Unknown external usage; treat as experimental |
+| Query params | Same explorer param model as canonical route  |
+| Product      | Collapsing loses A/B shell comparison         |
 
 **Recommendation for #196:** **Reject** consolidation by default; optional **approve** only if telemetry shows zero meaningful traffic and product signs off.
 
@@ -283,10 +283,10 @@ Only changes that **materially** improve clarity are listed. **None are approved
 
 **Rationale:** Metadata status, not a URL change.
 
-| Impact area | Assessment |
-| --- | --- |
-| Navigation | `navigationItemsForGroup("research")` and Coming Soon badge |
-| Feature flag | `NEXT_PUBLIC_KG_CHAT_ENABLED` |
+| Impact area  | Assessment                                                  |
+| ------------ | ----------------------------------------------------------- |
+| Navigation   | `navigationItemsForGroup("research")` and Coming Soon badge |
+| Feature flag | `NEXT_PUBLIC_KG_CHAT_ENABLED`                               |
 
 **Recommendation for #196:** Track as **metadata-only** follow-up when product declares GA (no URL impact).
 
@@ -318,9 +318,9 @@ Use this template in #196 when a route change is approved:
 
 ## Related contracts (unchanged by this audit)
 
-- [navigation.md](../navigation.md) — production navigation contract  
-- [assistant-entry-points.md](../assistant-entry-points.md) — Assistant launcher hierarchy  
-- [web-271-route-gap-analysis.md](../web-271-route-gap-analysis.md) — prior `/assistant` / `/knowledge-graph` consolidation record  
+- [navigation.md](../navigation.md) — production navigation contract
+- [assistant-entry-points.md](../assistant-entry-points.md) — Assistant launcher hierarchy
+- [web-271-route-gap-analysis.md](../web-271-route-gap-analysis.md) — prior `/assistant` / `/knowledge-graph` consolidation record
 
 When #196 approves changes, update `navigation.md` and `ATLAS_ROUTES` together in the implementation story—never one without the other.
 
