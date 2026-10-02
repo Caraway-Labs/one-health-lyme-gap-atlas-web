@@ -60,9 +60,9 @@ export function UxLabPage() {
           clinicians, and public-health professionals. Five first-round concepts
           (issues 291–298) sit beside second-round Geography-First v2 (issue
           307), the people-first hub (issue 306), and the people-first public
-          plus professional workspace prototype (issue 308). Open a concept, read
-          what it is testing, and use the same questions for every variant. The
-          live Atlas stays the production experience until a later product
+          plus professional workspace prototype (issue 308). Open a concept,
+          read what it is testing, and use the same questions for every variant.
+          The live Atlas stays the production experience until a later product
           decision.
         </p>
       </header>
