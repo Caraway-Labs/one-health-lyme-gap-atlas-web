@@ -58,13 +58,15 @@ describe("People-first public + workspace prototype (story 1)", () => {
     expect(peoplePlusMetadata.robots).toStrictEqual(UX_LAB_ROBOTS);
   });
 
-  it("shows the research testing note without requiring UX Lab index registration", () => {
+  it("shows the research testing note aligned with the UX Lab concept contract", () => {
     render(<PeoplePlusWorkspaceTestingNote />);
 
     expect(
       screen.getByRole("complementary", { name: UX_LAB_TESTING_LABEL })
         .textContent
     ).toContain(PEOPLE_PLUS_TESTING_HYPOTHESIS);
+    expect(screen.getByText(/Workshop non-goals/i)).toBeTruthy();
+    expect(screen.getByText(/^Compared with /)).toBeTruthy();
   });
 
   it("keeps public paths in a lighter people-first shell without app-shell chrome", () => {
