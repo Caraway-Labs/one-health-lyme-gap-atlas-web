@@ -1,12 +1,17 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { GeographyFirstV2CliniciansPage } from "@/app/ux-lab/geography-first-v2/clinicians/page";
+import { GeographyFirstV2EvidencePage } from "@/app/ux-lab/geography-first-v2/evidence/page";
 import { metadata as geographyFirstV2Metadata } from "@/app/ux-lab/geography-first-v2/layout";
 import { GeographyFirstV2Page } from "@/app/ux-lab/geography-first-v2/page";
 import {
+  GEOGRAPHY_FIRST_V2_CLINICIANS_PATH,
   GEOGRAPHY_FIRST_V2_EVIDENCE_BOUNDARIES,
+  GEOGRAPHY_FIRST_V2_EVIDENCE_PATH,
   GEOGRAPHY_FIRST_V2_PATH,
   GEOGRAPHY_FIRST_V2_PLACES,
+  GEOGRAPHY_FIRST_V2_STATE_REVIEW,
   geographyFirstV2CopyStrings,
   resolveGeographyFirstV2Place,
 } from "@/features/ux-lab/geography-first-v2/sample-places";
@@ -21,6 +26,20 @@ const prohibited =
 
 async function renderPlace(place?: string | string[]) {
   const page = await GeographyFirstV2Page({
+    searchParams: Promise.resolve(place === undefined ? {} : { place }),
+  });
+  return render(page);
+}
+
+async function renderClinicians(place?: string | string[]) {
+  const page = await GeographyFirstV2CliniciansPage({
+    searchParams: Promise.resolve(place === undefined ? {} : { place }),
+  });
+  return render(page);
+}
+
+async function renderEvidence(place?: string | string[]) {
+  const page = await GeographyFirstV2EvidencePage({
     searchParams: Promise.resolve(place === undefined ? {} : { place }),
   });
   return render(page);
@@ -132,5 +151,82 @@ describe("Geography-First v2 prototype", () => {
         .getByRole("link", { name: "Return to Ridge Sample County" })
         .getAttribute("href")
     ).toBe("/ux-lab/geography-first-v2?place=ridge-sample-county");
+  });
+
+  it("links public, clinician, and evidence views for the same place", async () => {
+    await renderPlace();
+
+    expect(
+      screen
+        .getByRole("link", {
+          name: /Clinician context for Ridge Sample County/i,
+        })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first-v2/clinicians?place=ridge-sample-county");
+    expect(
+      screen
+        .getByRole("link", {
+          name: /Public-health evidence for Ridge Sample County/i,
+        })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first-v2/evidence?place=ridge-sample-county");
+    expect(
+      screen
+        .getAllByRole("link", { name: /Public local entry/i })[0]
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first-v2?place=ridge-sample-county");
+  });
+
+  it("keeps clinician resources separate from care direction", async () => {
+    await renderClinicians();
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Ridge Sample County",
+      })
+    ).toBeTruthy();
+    expect(screen.getByText(/Not clinical care direction/i)).toBeTruthy();
+    expect(screen.getAllByText(/^Source$/i).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("links clinician view to evidence while keeping the place parameter", async () => {
+    await renderClinicians();
+
+    expect(
+      screen
+        .getByRole("link", { name: /Public-health evidence/i })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first-v2/evidence?place=ridge-sample-county");
+  });
+
+  it("shows deeper evidence with state review entry and professional handoffs", async () => {
+    await renderEvidence();
+
+    expect(
+      screen.getByRole("heading", {
+        name: GEOGRAPHY_FIRST_V2_STATE_REVIEW.label,
+      })
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText(/^Uncertainty\./i).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen
+        .getByRole("link", { name: "Investigation workspace" })
+        .getAttribute("href")
+    ).toBe("/investigate");
+    expect(
+      screen
+        .getByRole("link", { name: /Clinician context/i })
+        .getAttribute("href")
+    ).toBe("/ux-lab/geography-first-v2/clinicians?place=ridge-sample-county");
+  });
+
+  it("keeps audience routes out of production navigation", () => {
+    const productionNav = NAVIGATION_ITEMS.map((item) => item.href);
+    expect(productionNav).not.toContain(GEOGRAPHY_FIRST_V2_PATH);
+    expect(productionNav).not.toContain(GEOGRAPHY_FIRST_V2_CLINICIANS_PATH);
+    expect(productionNav).not.toContain(GEOGRAPHY_FIRST_V2_EVIDENCE_PATH);
   });
 });
