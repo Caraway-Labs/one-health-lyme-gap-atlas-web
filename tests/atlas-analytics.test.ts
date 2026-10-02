@@ -1,3 +1,4 @@
+import { OfflineDisabled } from "@amplitude/analytics-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -5,6 +6,7 @@ import {
   ANALYTICS_SCHEMA_VERSION,
   analyticsControlAttributes,
   createAtlasAnalytics,
+  getAmplitudeBrowserInitOptions,
   isCountyFips,
   isUiControlId,
   isValidScoreValue,
@@ -77,6 +79,12 @@ describe("Atlas Amplitude boundary", () => {
     );
   });
 
+  it("does not pass a truthy offline flag that suppresses Amplitude delivery", () => {
+    const options = getAmplitudeBrowserInitOptions();
+    expect(options.offline).toBe(OfflineDisabled);
+    expect(Boolean(options.offline)).toBeFalsy();
+  });
+
   it("uses session-only identity and disables every automatic collection path", async () => {
     const analytics = createAtlasAnalytics(async () => amplitude);
 
@@ -97,7 +105,8 @@ describe("Atlas Amplitude boundary", () => {
         defaultTracking: false,
         fetchRemoteConfig: false,
         identityStorage: "sessionStorage",
-        offline: "disabled",
+        offline: OfflineDisabled,
+        enableDiagnostics: false,
         trackingOptions: {
           ipAddress: false,
           language: false,

@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { readAmplitudeApiKey } from "@/lib/amplitude-deployment";
 import {
   analyticsMayStart,
   honorsDoNotTrack,
@@ -45,9 +46,7 @@ export function AnalyticsClient() {
 
     let cancelled = false;
     async function startAnalytics() {
-      const started = await atlasAnalytics.start(
-        process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY
-      );
+      const started = await atlasAnalytics.start(readAmplitudeApiKey());
       if (started && !cancelled) trackRouteView(pathname);
     }
 

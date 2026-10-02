@@ -16,6 +16,8 @@ export default defineConfig({
     command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
     env: {
       ATLAS_E2E: "1",
+      NEXT_PUBLIC_AMPLITUDE_API_KEY: "00000000000000000000000000000000",
+      NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET: "development",
       NEXT_PUBLIC_KG_CHAT_ENABLED: "true",
     },
     reuseExistingServer: false,
