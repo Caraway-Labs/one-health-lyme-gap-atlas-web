@@ -10,6 +10,7 @@ export default defineConfig({
     ...(core.ignorePatterns ?? []),
     ".next/**",
     "node_modules/**",
+    "vendor/**",
     "node_modules.broken-*/**",
     "playwright-report/**",
     "src/generated/**",
