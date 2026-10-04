@@ -7,6 +7,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { CompareAlignment } from "@/features/ux-reset/compare/compare-alignment";
 import {
+  compareCatalogCoolingDown,
+  compareCatalogRetryDelay,
+  forgetCompareCatalogCooldown,
+  rememberCompareCatalogCooldown,
+  waitForCompareCatalogCooldown,
+} from "@/features/ux-reset/compare/compare-catalog-cooldown";
+import {
   classifyCompareEntry,
   compareCountyOptionLabel,
   compareRecoveryMessages,
@@ -70,6 +77,7 @@ export type CompareCountyOption = {
 export type CompareWorkspace = {
   actionHref: string;
   alignment: CompareAlignment | null;
+  catalogCoolingDown: boolean;
   catalogError: string | null;
   catalogRetrying: boolean;
   clearPair: () => void;
@@ -267,11 +275,27 @@ export function useCompareWorkspace(): CompareWorkspace {
       if (!releaseId) {
         throw new Error("Compare measures require a release.");
       }
-      return fetchExploreMeasures(signal, releaseId);
+      await waitForCompareCatalogCooldown(releaseId, signal);
+      try {
+        const measures = await fetchExploreMeasures(signal, releaseId);
+        forgetCompareCatalogCooldown(releaseId);
+        return measures;
+      } catch (error) {
+        if (error instanceof AtlasApiError) {
+          rememberCompareCatalogCooldown(releaseId, error.retryAfterSeconds);
+        }
+        throw error;
+      }
     },
     queryKey: ["ux-reset-compare-measures", releaseId],
     retry: (failureCount, error) =>
       shouldRetryCompareRequest(failureCount, error, retrySetting),
+    retryDelay: (failureCount, error) =>
+      compareCatalogRetryDelay(
+        failureCount,
+        error,
+        queryClient.getDefaultOptions().queries?.retryDelay
+      ),
   });
   const measures = measuresQuery.data ?? [];
   const measureIds = measures.map((measure) => measure.measure_id);
@@ -423,6 +447,12 @@ export function useCompareWorkspace(): CompareWorkspace {
       evidenceQuery.data.rightFips === rightFips
         ? evidenceQuery.data
         : null,
+    // failureCount changes on an automatic retry while status stays pending.
+    // The catalog deadline lives outside the query, so this read is what
+    // lets the wait message render before the next request is allowed.
+    catalogCoolingDown: compareCatalogCoolingDown(
+      measuresQuery.failureCount >= 0 ? releaseId : null
+    ),
     catalogError:
       recoveryState === "ready" && measuresQuery.isError
         ? "Governed measures could not be loaded."

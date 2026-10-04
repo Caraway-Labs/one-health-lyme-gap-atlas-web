@@ -34,6 +34,28 @@ import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
 
 const MAX_COLLECTION_PAGES = 20;
+const MILLISECONDS_PER_SECOND = 1000;
+
+function retryAfterSecondsFromHeaders(
+  headers: Headers | undefined
+): number | null {
+  const value = headers?.get("Retry-After") ?? null;
+  if (!value) {
+    return null;
+  }
+  const asInteger = Number.parseInt(value, 10);
+  if (String(asInteger) === value.trim() && asInteger >= 0) {
+    return asInteger;
+  }
+  const asDate = Date.parse(value);
+  if (Number.isNaN(asDate)) {
+    return null;
+  }
+  return Math.max(
+    0,
+    Math.ceil((asDate - Date.now()) / MILLISECONDS_PER_SECOND)
+  );
+}
 const PAGE_TOKEN_FINGERPRINT_HEX_LENGTH = 64;
 const PAGE_TOKEN_SIGNATURE_BYTES = 32;
 const MAX_PAGE_TOKEN_OFFSET = 10_000;
@@ -249,7 +271,8 @@ async function fetchMeasuresForSemantic(
         "Governed measures are temporarily unavailable.",
         "/v1/measures",
         response.status,
-        null
+        response.headers.get("X-Request-ID"),
+        retryAfterSecondsFromHeaders(response.headers)
       );
     }
     const parsed = validateApiResponse(

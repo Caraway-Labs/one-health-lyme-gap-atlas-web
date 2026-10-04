@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -11,6 +12,7 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { clearCompareCatalogRetryDeadlines } from "@/features/ux-reset/compare/compare-catalog-cooldown";
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
 import { ResetCompareExperience } from "@/features/ux-reset/compare/reset-compare-experience";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
@@ -30,7 +32,9 @@ import { investigateMetadataFixture } from "./fixtures/investigate-api-fixtures"
 const observationRequests: string[] = [];
 const catalogRequests: string[] = [];
 const observationFailureBudgets = new Map<string, number>();
+let catalogFailureStatus = 503;
 let catalogFailuresRemaining = 0;
+let catalogRetryAfter: string | null = null;
 let navigationSearchParams = new URLSearchParams();
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
@@ -49,10 +53,14 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
       catalogRequests.push(params?.geography_type ?? "");
       if (catalogFailuresRemaining > 0) {
         catalogFailuresRemaining -= 1;
+        const headers = new Headers();
+        if (catalogRetryAfter) {
+          headers.set("Retry-After", catalogRetryAfter);
+        }
         return {
           data: { detail: "unavailable" },
-          headers: new Headers(),
-          status: 503,
+          headers,
+          status: catalogFailureStatus,
         } as never;
       }
       if (params?.page_token === null || params?.geography_type === "county") {
@@ -175,6 +183,20 @@ async function pickCounty(slotName: string, optionName: RegExp) {
   fireEvent.click(option);
 }
 
+async function flushCompare(ready: () => boolean) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (ready()) {
+      return;
+    }
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+  }
+  throw new Error(
+    `Compare did not settle (${catalogRequests.length} catalog calls).`
+  );
+}
+
 function pairFips(): string {
   return screen.getByTestId("compare-pair").dataset.fips ?? "";
 }
@@ -194,8 +216,12 @@ function cell(measureId: string, fips: string) {
 describe("two-county aligned comparison", () => {
   afterEach(() => {
     cleanup();
+    catalogFailureStatus = 503;
     catalogFailuresRemaining = 0;
     catalogRequests.length = 0;
+    catalogRetryAfter = null;
+    clearCompareCatalogRetryDeadlines();
+    vi.useRealTimers();
     observationFailureBudgets.clear();
     observationRequests.length = 0;
     vi.unstubAllGlobals();
@@ -517,6 +543,154 @@ describe("two-county aligned comparison", () => {
       period: true,
       recovery: "ready",
       samePair: true,
+    });
+  });
+
+  it("waits out Retry-After before a manual catalog retry", async () => {
+    catalogFailureStatus = 429;
+    catalogFailuresRemaining = 1;
+    catalogRetryAfter = "60";
+    vi.useFakeTimers();
+    renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=2024-06-01",
+      1
+    );
+    await flushCompare(
+      () =>
+        catalogRequests.length === 1 &&
+        screen.queryByTestId("compare-catalog-wait") !== null
+    );
+    fireEvent.click(screen.getByTestId("compare-retry-catalog"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(59_000);
+    });
+    const waiting = screen.getByTestId("compare-retry-catalog");
+    expect({
+      calls: catalogRequests.length,
+      pair: pairFips(),
+      waiting: waiting.dataset.waiting,
+      window: (
+        screen.getByTestId("compare-catalog-wait").textContent ?? ""
+      ).includes("server retry window"),
+    }).toStrictEqual({
+      calls: 1,
+      pair: "08001,08013",
+      waiting: "true",
+      window: true,
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await flushCompare(
+      () =>
+        screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
+    );
+    const href =
+      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect({
+      pair: pairFips(),
+      period: href.includes("period=2024-06-01"),
+      release: href.includes("dataset=alpha-2026"),
+    }).toStrictEqual({
+      pair: "08001,08013",
+      period: true,
+      release: true,
+    });
+  });
+
+  it("keeps a catalog Retry-After when remount cancels the wait", async () => {
+    catalogFailureStatus = 429;
+    catalogFailuresRemaining = 1;
+    catalogRetryAfter = "60";
+    vi.useFakeTimers();
+    const search =
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=2024-06-01";
+    renderCompare(search, 1);
+    await flushCompare(
+      () =>
+        catalogRequests.length === 1 &&
+        screen.queryByTestId("compare-retry-catalog") !== null
+    );
+    fireEvent.click(screen.getByTestId("compare-retry-catalog"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    cleanup();
+    renderCompare(search, 1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(58_000);
+    });
+    await flushCompare(
+      () => screen.queryByTestId("compare-catalog-wait") !== null
+    );
+    expect({
+      calls: catalogRequests.length,
+      pair: pairFips(),
+      waiting: (
+        screen.getByTestId("compare-catalog-wait").textContent ?? ""
+      ).includes("server retry window"),
+    }).toStrictEqual({
+      calls: 1,
+      pair: "08001,08013",
+      waiting: true,
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await flushCompare(
+      () =>
+        screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
+    );
+    const href =
+      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect({
+      pair: pairFips(),
+      period: href.includes("period=2024-06-01"),
+      release: href.includes("dataset=alpha-2026"),
+    }).toStrictEqual({
+      pair: "08001,08013",
+      period: true,
+      release: true,
+    });
+  });
+
+  it("waits out Retry-After before an automatic catalog retry", async () => {
+    catalogFailureStatus = 503;
+    catalogFailuresRemaining = 1;
+    catalogRetryAfter = "60";
+    vi.useFakeTimers();
+    renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=2024-06-01",
+      1
+    );
+    await flushCompare(
+      () =>
+        catalogRequests.length === 1 &&
+        screen.queryByTestId("compare-catalog-wait") !== null
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    const afterOneSecond = catalogRequests.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(59_000);
+    });
+    await flushCompare(
+      () =>
+        screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
+    );
+    const href =
+      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect({
+      afterOneSecond,
+      pair: pairFips(),
+      period: href.includes("period=2024-06-01"),
+      release: href.includes("dataset=alpha-2026"),
+    }).toStrictEqual({
+      afterOneSecond: 1,
+      pair: "08001,08013",
+      period: true,
+      release: true,
     });
   });
 

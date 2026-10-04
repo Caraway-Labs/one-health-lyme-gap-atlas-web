@@ -177,6 +177,7 @@ function CompareExperienceInner() {
       data-page="compare"
       data-pair-issue={workspace.pairIssue}
       data-query-pair={pair.join(",")}
+      data-catalog-cooling={workspace.catalogCoolingDown ? "true" : "false"}
       data-recovery={workspace.recoveryState}
       data-stale-url={workspace.entry.staleUrlIgnored ? "true" : "false"}
       data-testid="compare-workspace"
@@ -302,12 +303,41 @@ function CompareExperienceInner() {
           {workspace.directoryError}
         </AtlasStatusMessage>
       ) : null}
+      {workspace.catalogCoolingDown ? (
+        <AtlasStatusMessage
+          action={
+            workspace.catalogError ? null : (
+              <Button
+                aria-busy
+                data-testid="compare-retry-catalog"
+                data-waiting="true"
+                disabled
+                type="button"
+                variant="secondary"
+              >
+                Waiting for the server retry window…
+              </Button>
+            )
+          }
+          tone="loading"
+        >
+          <p data-testid="compare-catalog-wait">
+            Waiting for the server retry window before requesting the measure
+            catalog again.
+          </p>
+        </AtlasStatusMessage>
+      ) : null}
       {workspace.catalogError ? (
         <AtlasStatusMessage
           action={
             <Button
               aria-busy={workspace.catalogRetrying}
               data-testid="compare-retry-catalog"
+              data-waiting={
+                workspace.catalogCoolingDown && workspace.catalogRetrying
+                  ? "true"
+                  : "false"
+              }
               disabled={workspace.catalogRetrying}
               type="button"
               variant="secondary"
@@ -315,8 +345,8 @@ function CompareExperienceInner() {
                 workspace.retryCatalog();
               }}
             >
-              {workspace.catalogRetrying
-                ? "Retrying measure catalog…"
+              {workspace.catalogCoolingDown && workspace.catalogRetrying
+                ? "Waiting for the server retry window…"
                 : "Retry measure catalog"}
             </Button>
           }
@@ -325,7 +355,7 @@ function CompareExperienceInner() {
           {workspace.catalogError}
         </AtlasStatusMessage>
       ) : null}
-      {workspace.evidenceLoading ? (
+      {workspace.evidenceLoading && !workspace.catalogCoolingDown ? (
         <AtlasStatusMessage tone="loading">
           Loading aligned evidence…
         </AtlasStatusMessage>
