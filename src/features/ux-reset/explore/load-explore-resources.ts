@@ -1,4 +1,5 @@
 import {
+  assertExploreCatalogRelease,
   assertExploreObservations,
   buildExploreSelection,
   countyDirectoryFromScoreSummaries,
@@ -273,21 +274,30 @@ async function fetchMeasuresForSemantic(
 }
 
 export async function fetchExploreMeasures(
-  signal: AbortSignal
+  signal: AbortSignal,
+  requestedReleaseId: string
 ): Promise<Measure[]> {
-  const measures: Measure[] = [];
-  const seenIds = new Set<string>();
+  const collected: Measure[] = [];
   for (const geographySemantics of EXPLORE_COUNTY_GEOGRAPHY_SEMANTICS) {
     const page = await fetchMeasuresForSemantic(geographySemantics, signal);
     for (const measure of page) {
-      if (seenIds.has(measure.measure_id)) {
-        continue;
-      }
-      seenIds.add(measure.measure_id);
-      measures.push(measure);
+      collected.push(measure);
     }
   }
-  return countyExploreMeasures(measures);
+  assertExploreCatalogRelease({
+    measures: collected,
+    requestedReleaseId,
+  });
+  const measures: Measure[] = [];
+  const seenIds = new Set<string>();
+  for (const measure of countyExploreMeasures(collected)) {
+    if (seenIds.has(measure.measure_id)) {
+      continue;
+    }
+    seenIds.add(measure.measure_id);
+    measures.push(measure);
+  }
+  return measures;
 }
 
 export async function fetchExploreCountyDirectory(
@@ -355,6 +365,7 @@ async function fetchObservationPage(input: {
 }
 
 export async function fetchExploreObservations(input: {
+  catalogReleaseId: string | null;
   fips: readonly string[];
   measureId: string;
   releaseId: string;
@@ -389,6 +400,7 @@ export async function fetchExploreObservations(input: {
     }
   }
   assertExploreObservations({
+    catalogReleaseId: input.catalogReleaseId,
     measureId: input.measureId,
     observations,
     releaseId: input.releaseId,
@@ -407,6 +419,7 @@ export async function loadExploreSelection(input: {
 }): Promise<ExploreCommittedSelection> {
   const fips = input.directory.map((county) => county.fips);
   const observations = await fetchExploreObservations({
+    catalogReleaseId: input.measure.release_version?.trim() || null,
     fips,
     measureId: input.measure.measure_id,
     releaseId: input.releaseId,

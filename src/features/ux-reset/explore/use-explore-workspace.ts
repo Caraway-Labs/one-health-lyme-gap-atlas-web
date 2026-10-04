@@ -5,6 +5,7 @@ import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  authoritativeExploreComparePair,
   commitExploreSelection,
   ExploreContractError,
   filterDirectoryByMapScope,
@@ -132,7 +133,12 @@ export function useExploreWorkspace() {
 
   const measuresQuery = useQuery({
     enabled: Boolean(releaseId),
-    queryFn: async ({ signal }) => fetchExploreMeasures(signal),
+    queryFn: async ({ signal }) => {
+      if (!releaseId) {
+        throw new Error("Explore measures require a release.");
+      }
+      return fetchExploreMeasures(signal, releaseId);
+    },
     queryKey: ["ux-reset-explore-measures", releaseId],
   });
   const measures = useMemo(
@@ -231,6 +237,7 @@ export function useExploreWorkspace() {
       isError: observationsQuery.isError,
       isSuccess: observationsQuery.isSuccess,
     }),
+    requestedHandoffPeriod: timeBound?.handoffPeriod ?? null,
     requestedMapScope: mapScope,
     requestedMeasureId,
     requestedReleaseId: releaseId,
@@ -260,14 +267,48 @@ export function useExploreWorkspace() {
   }, [measures, requestedMeasureId, setUrlState]);
 
   useEffect(() => {
-    if (!timeBound || urlState.period === timeBound.handoffPeriod) {
+    if (!committed || !timeBound || !releaseId || !requestedMeasureId) {
+      return;
+    }
+    const selectionMatchesRequest =
+      committed.measureId === requestedMeasureId &&
+      committed.mapScope === mapScope &&
+      committed.releaseId === releaseId &&
+      committed.handoffPeriod === timeBound.handoffPeriod;
+    if (
+      !selectionMatchesRequest ||
+      urlState.period === committed.handoffPeriod
+    ) {
       return;
     }
     void setUrlState(
-      { period: timeBound.handoffPeriod },
+      { period: committed.handoffPeriod },
       { history: "replace" }
     );
-  }, [setUrlState, timeBound, urlState.period]);
+  }, [
+    committed,
+    mapScope,
+    releaseId,
+    requestedMeasureId,
+    setUrlState,
+    timeBound,
+    urlState.period,
+  ]);
+
+  useEffect(() => {
+    const pair = authoritativeExploreComparePair(
+      urlState.compare,
+      urlState.selected
+    );
+    const pairKey = pair.join(",");
+    if (
+      urlState.compare.join(",") === pairKey &&
+      urlState.selected.join(",") === pairKey
+    ) {
+      return;
+    }
+    void setUrlState({ compare: pair, selected: pair }, { history: "replace" });
+  }, [setUrlState, urlState.compare, urlState.selected]);
 
   useEffect(() => {
     if (!committed) {
@@ -299,7 +340,12 @@ export function useExploreWorkspace() {
     geometryReleaseId: releaseId,
     mapScope,
     measures,
-    measuresError: measuresQuery.isError,
+    measuresErrorMessage:
+      measuresQuery.error instanceof ExploreContractError
+        ? measuresQuery.error.message
+        : measuresQuery.isError
+          ? "Governed measures are temporarily unavailable."
+          : null,
     measuresLoading: measuresQuery.isPending && Boolean(releaseId),
     metadata: metadataQuery.data,
     metadataError: metadataQuery.isError
@@ -312,7 +358,7 @@ export function useExploreWorkspace() {
     releaseId,
     requestedMeasure,
     requestedMeasureId,
-    handoffPeriod: timeBound?.handoffPeriod ?? null,
+    timeBound,
     retryGeometry: () => {
       void geometryQuery.refetch();
     },

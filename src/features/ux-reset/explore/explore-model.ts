@@ -79,6 +79,8 @@ export type ExploreCountyRow = {
 };
 
 export type ExploreCommittedSelection = {
+  /** Period that belongs to this successful selection. */
+  handoffPeriod: string;
   mapScope: string;
   measureId: string;
   measureLabel: string;
@@ -302,16 +304,85 @@ function observationMatchesTimeBound(
 }
 
 /**
+ * Compare wins when it is present. Explore `selected` is only the pair when
+ * `compare` is empty, matching the shared handoff fallback.
+ */
+export function authoritativeExploreComparePair(
+  compare: readonly string[],
+  selected: readonly string[]
+): string[] {
+  if (compare.length > 0) {
+    return [...compare];
+  }
+  return [...selected];
+}
+
+function catalogReleaseId(measure: {
+  release_version?: string | null;
+}): string | null {
+  const version = measure.release_version?.trim() ?? "";
+  return version || null;
+}
+
+/**
+ * Every catalog page and geography call must name the same governed release.
+ * An empty catalog does not prove which release was answered.
+ */
+export function assertExploreCatalogRelease(input: {
+  measures: readonly { release_version?: string | null }[];
+  requestedReleaseId: string;
+}): string {
+  if (input.measures.length === 0) {
+    throw new ExploreContractError(
+      "Catalog response does not identify a governed release."
+    );
+  }
+  const versions = new Set<string>();
+  for (const measure of input.measures) {
+    const version = catalogReleaseId(measure);
+    if (!version) {
+      throw new ExploreContractError(
+        "Catalog measure is missing a governed release."
+      );
+    }
+    versions.add(version);
+  }
+  if (versions.size > 1) {
+    throw new ExploreContractError(
+      "Catalog response mixes release identities."
+    );
+  }
+  const catalogRelease = [...versions][0] ?? "";
+  if (catalogRelease !== input.requestedReleaseId) {
+    throw new ExploreContractError(
+      "Catalog release does not match the requested release."
+    );
+  }
+  return catalogRelease;
+}
+
+/**
  * Returned observation identities must match the requested release and time
- * bound. An empty page has no identity to contradict. Mixed or foreign
- * releases are rejected instead of stamped onto the layer.
+ * bound. An empty page is accepted only after the catalog release matches
+ * the request. Mixed or foreign releases are rejected.
  */
 export function assertExploreObservations(input: {
+  catalogReleaseId: string | null;
   measureId: string;
   observations: readonly Observation[];
   releaseId: string;
   timeBound: ExploreTimeBound;
 }): string {
+  if (!input.catalogReleaseId) {
+    throw new ExploreContractError(
+      "Catalog measure is missing a governed release."
+    );
+  }
+  if (input.catalogReleaseId !== input.releaseId) {
+    throw new ExploreContractError(
+      "Catalog release does not match the requested release."
+    );
+  }
   const seenFips = new Set<string>();
   const responseReleases = new Set<string>();
   for (const observation of input.observations) {
@@ -397,6 +468,7 @@ export function buildExploreSelection(input: {
   timeBound: ExploreTimeBound;
 }): ExploreCommittedSelection {
   const releaseId = assertExploreObservations({
+    catalogReleaseId: catalogReleaseId(input.measure),
     measureId: input.measure.measure_id,
     observations: input.observations,
     releaseId: input.releaseId,
@@ -462,6 +534,7 @@ export function buildExploreSelection(input: {
   }
 
   return {
+    handoffPeriod: input.timeBound.handoffPeriod,
     mapScope: input.mapScope,
     measureId: input.measure.measure_id,
     measureLabel: input.measure.label,
@@ -481,13 +554,14 @@ export function buildExploreSelection(input: {
 
 /**
  * The displayed layer changes only after a successful response for the
- * requested measure, map area, and release. Pending and failed requests keep
- * the previous selection so the map is not relabeled early.
+ * requested measure, map area, release, and time bound. Pending and failed
+ * requests keep the previous selection so the map is not relabeled early.
  */
 export function commitExploreSelection(input: {
   current: ExploreCommittedSelection | null;
   incoming: ExploreCommittedSelection | null;
   requestStatus: ExploreRequestStatus;
+  requestedHandoffPeriod: string | null;
   requestedMapScope: string;
   requestedMeasureId: string | null;
   requestedReleaseId: string | null;
@@ -498,40 +572,62 @@ export function commitExploreSelection(input: {
   if (
     !input.incoming ||
     !input.requestedMeasureId ||
-    !input.requestedReleaseId
+    !input.requestedReleaseId ||
+    !input.requestedHandoffPeriod
   ) {
     return input.current;
   }
   const matchesRequest =
     input.incoming.measureId === input.requestedMeasureId &&
     input.incoming.mapScope === input.requestedMapScope &&
-    input.incoming.releaseId === input.requestedReleaseId;
+    input.incoming.releaseId === input.requestedReleaseId &&
+    input.incoming.handoffPeriod === input.requestedHandoffPeriod;
   if (!matchesRequest) {
     return input.current;
   }
   return input.incoming;
 }
 
+function selectionLabel(measureLabel: string, period: string | null): string {
+  if (!period) {
+    return measureLabel;
+  }
+  return `${measureLabel} for ${period}`;
+}
+
 export function exploreRequestStatusCopy(input: {
   committedMapScopeLabel: string | null;
   committedMeasureLabel: string | null;
+  committedPeriod: string | null;
   failed: boolean;
   matchesCommitted: boolean;
   requestedMapScopeLabel: string;
   requestedMeasureLabel: string;
+  requestedPeriod: string | null;
 }): { message: string; tone: "error" | "loading" } | null {
   if (input.matchesCommitted || !input.committedMeasureLabel) {
     return null;
   }
-  const stillShows = `The map still shows ${input.committedMeasureLabel} in ${input.committedMapScopeLabel}.`;
+  const periodsDiffer = Boolean(
+    input.committedPeriod &&
+    input.requestedPeriod &&
+    input.committedPeriod !== input.requestedPeriod
+  );
+  const requestedLabel = periodsDiffer
+    ? selectionLabel(input.requestedMeasureLabel, input.requestedPeriod)
+    : input.requestedMeasureLabel;
+  const committedLabel = periodsDiffer
+    ? selectionLabel(input.committedMeasureLabel, input.committedPeriod)
+    : input.committedMeasureLabel;
+  const stillShows = `The map still shows ${committedLabel} in ${input.committedMapScopeLabel}.`;
   if (input.failed) {
     return {
-      message: `${input.requestedMeasureLabel} in ${input.requestedMapScopeLabel} could not be loaded. ${stillShows}`,
+      message: `${requestedLabel} in ${input.requestedMapScopeLabel} could not be loaded. ${stillShows}`,
       tone: "error",
     };
   }
   return {
-    message: `Loading ${input.requestedMeasureLabel} in ${input.requestedMapScopeLabel}. ${stillShows}`,
+    message: `Loading ${requestedLabel} in ${input.requestedMapScopeLabel}. ${stillShows}`,
     tone: "loading",
   };
 }

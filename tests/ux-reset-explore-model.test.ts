@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import {
+  assertExploreCatalogRelease,
   assertExploreObservations,
+  authoritativeExploreComparePair,
   buildExploreSelection,
   choroplethBin,
   commitExploreSelection,
@@ -213,6 +216,7 @@ describe("Explore displayed selection", () => {
         current,
         incoming,
         requestStatus: "pending",
+        requestedHandoffPeriod: "2023-01-01",
         requestedMapScope: "CO",
         requestedMeasureId: EXPLORE_CASES_MEASURE_ID,
         requestedReleaseId: "alpha-2026",
@@ -223,6 +227,7 @@ describe("Explore displayed selection", () => {
         current,
         incoming,
         requestStatus: "error",
+        requestedHandoffPeriod: "2023-01-01",
         requestedMapScope: "CO",
         requestedMeasureId: EXPLORE_CASES_MEASURE_ID,
         requestedReleaseId: "alpha-2026",
@@ -233,6 +238,7 @@ describe("Explore displayed selection", () => {
         current,
         incoming,
         requestStatus: "success",
+        requestedHandoffPeriod: "2023-01-01",
         requestedMapScope: "NY",
         requestedMeasureId: EXPLORE_CASES_MEASURE_ID,
         requestedReleaseId: "alpha-2026",
@@ -243,6 +249,7 @@ describe("Explore displayed selection", () => {
         current,
         incoming,
         requestStatus: "success",
+        requestedHandoffPeriod: "2023-01-01",
         requestedMapScope: "CO",
         requestedMeasureId: EXPLORE_CASES_MEASURE_ID,
         requestedReleaseId: "alpha-2026",
@@ -254,10 +261,12 @@ describe("Explore displayed selection", () => {
     const copy = exploreRequestStatusCopy({
       committedMapScopeLabel: "Colorado (CO)",
       committedMeasureLabel: "Daily precipitation",
+      committedPeriod: "2025-01-01",
       failed: false,
       matchesCommitted: false,
       requestedMapScopeLabel: "Colorado (CO)",
       requestedMeasureLabel: "Reported Lyme cases",
+      requestedPeriod: "2023-01-01",
     });
     expect(copy?.tone).toBe("loading");
     expect(copy?.message).toContain("Reported Lyme cases");
@@ -266,10 +275,12 @@ describe("Explore displayed selection", () => {
       exploreRequestStatusCopy({
         committedMapScopeLabel: "Colorado (CO)",
         committedMeasureLabel: "Daily precipitation",
+        committedPeriod: "2025-01-01",
         failed: true,
         matchesCommitted: true,
         requestedMapScopeLabel: "Colorado (CO)",
         requestedMeasureLabel: "Daily precipitation",
+        requestedPeriod: "2025-01-02",
       })
     ).toBeNull();
   });
@@ -302,6 +313,7 @@ describe("Explore release identity", () => {
     }
     expect(() =>
       assertExploreObservations({
+        catalogReleaseId: "alpha-2026",
         measureId: casesMeasure.measure_id,
         observations: exploreObservationsForMeasure(
           casesMeasure.measure_id,
@@ -325,6 +337,7 @@ describe("Explore release identity", () => {
     }
     expect(() =>
       assertExploreObservations({
+        catalogReleaseId: "alpha-2026",
         measureId: casesMeasure.measure_id,
         observations: [{ ...second, release_id: "beta-2026" }, first],
         releaseId: "alpha-2026",
@@ -347,10 +360,109 @@ describe("Explore release identity", () => {
         current,
         incoming,
         requestStatus: "success",
+        requestedHandoffPeriod: "2023-01-01",
         requestedMapScope: "CO",
         requestedMeasureId: EXPLORE_CASES_MEASURE_ID,
         requestedReleaseId: "alpha-2026",
       })
     ).toBe(current);
+  });
+
+  it("does not commit a different time bound over the displayed period", () => {
+    if (!precipitationMeasure) {
+      throw new Error("Missing precipitation measure fixture.");
+    }
+    const current = selectionFor(precipitationMeasure);
+    expect(
+      commitExploreSelection({
+        current,
+        incoming: current,
+        requestStatus: "success",
+        requestedHandoffPeriod: "2025-01-02",
+        requestedMapScope: "CO",
+        requestedMeasureId: current.measureId,
+        requestedReleaseId: current.releaseId,
+      })
+    ).toBe(current);
+    expect(
+      commitExploreSelection({
+        current,
+        incoming: { ...current, handoffPeriod: "2025-01-02" },
+        requestStatus: "error",
+        requestedHandoffPeriod: "2025-01-02",
+        requestedMapScope: "CO",
+        requestedMeasureId: current.measureId,
+        requestedReleaseId: current.releaseId,
+      })
+    ).toBe(current);
+  });
+
+  it("does not treat an empty current catalog as the pinned release", () => {
+    if (!precipitationMeasure) {
+      throw new Error("Missing precipitation measure fixture.");
+    }
+    expect(() =>
+      buildExploreSelection({
+        directory: countyDirectoryFromScoreSummaries(
+          exploreScoresFixture.counties
+        ),
+        mapScope: "CO",
+        measure: { ...precipitationMeasure, release_version: "beta-2026" },
+        observations: [],
+        releaseId: "alpha-2026",
+        timeBound: timeBoundFor(precipitationMeasure),
+      })
+    ).toThrow(/Catalog release does not match/);
+    const honestEmpty = buildExploreSelection({
+      directory: countyDirectoryFromScoreSummaries(
+        exploreScoresFixture.counties
+      ),
+      mapScope: "CO",
+      measure: precipitationMeasure,
+      observations: [],
+      releaseId: "alpha-2026",
+      timeBound: timeBoundFor(precipitationMeasure),
+    });
+    expect(honestEmpty.releaseId).toBe("alpha-2026");
+    expect(honestEmpty.rows[0]?.availability).toBe("unavailable");
+  });
+
+  it("rejects an empty or mixed catalog release", () => {
+    expect(() =>
+      assertExploreCatalogRelease({
+        measures: [],
+        requestedReleaseId: "alpha-2026",
+      })
+    ).toThrow(/does not identify a governed release/);
+    expect(() =>
+      assertExploreCatalogRelease({
+        measures: [
+          { release_version: "alpha-2026" },
+          { release_version: "beta-2026" },
+        ],
+        requestedReleaseId: "alpha-2026",
+      })
+    ).toThrow(/mixes release identities/);
+    expect(() =>
+      assertExploreCatalogRelease({
+        measures: [{ release_version: "beta-2026" }],
+        requestedReleaseId: "alpha-2026",
+      })
+    ).toThrow(/does not match the requested release/);
+  });
+
+  it("follows shared compare precedence when selected conflicts", () => {
+    const pair = authoritativeExploreComparePair(["08013", "36001"], ["08001"]);
+    const shell = uxResetShellHandoffHref(
+      "/app/compare",
+      "/app/explore",
+      new URLSearchParams(
+        "compare=08013,36001&selected=08001&county=08001&scope=CO"
+      )
+    );
+    expect(pair).toStrictEqual(["08013", "36001"]);
+    expect(new URL(shell, "http://localhost").searchParams.get("compare")).toBe(
+      "08013,36001"
+    );
   });
 });

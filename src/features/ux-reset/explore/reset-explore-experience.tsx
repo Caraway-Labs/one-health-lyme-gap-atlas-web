@@ -36,7 +36,10 @@ import {
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import { ExploreMapPanel } from "@/features/ux-reset/explore/explore-map-panel";
-import { exploreRequestStatusCopy } from "@/features/ux-reset/explore/explore-model";
+import {
+  authoritativeExploreComparePair,
+  exploreRequestStatusCopy,
+} from "@/features/ux-reset/explore/explore-model";
 import { exploreHandoffSearchParams } from "@/features/ux-reset/explore/explore-search-params";
 import { useExploreWorkspace } from "@/features/ux-reset/explore/use-explore-workspace";
 import { resetRouteById } from "@/features/ux-reset/paths";
@@ -48,7 +51,7 @@ import { reviewScopeLabel } from "@/lib/atlas-state-geography";
 import { cn } from "@/lib/utils";
 
 function replaceCompareMember(pair: readonly string[], fips: string): string[] {
-  if (pair.includes(fips) || pair.length === 0) {
+  if (!fips || pair.includes(fips)) {
     return parseCompareFipsList(pair.join(","));
   }
   if (pair.length < UX_RESET_COMPARE_COUNTY_LIMIT) {
@@ -71,17 +74,17 @@ function ResetExploreExperienceInner() {
     geometryReleaseId,
     mapScope,
     measures,
-    measuresError,
+    measuresErrorMessage,
     measuresLoading,
     metadata,
     metadataError,
     metadataLoading,
-    handoffPeriod,
     observationsError,
     observationsLoading,
     releaseId,
     requestedMeasure,
     requestedMeasureId,
+    timeBound,
     retryGeometry,
     setComparePair,
     setCounty,
@@ -99,18 +102,22 @@ function ResetExploreExperienceInner() {
     committed &&
     requestedMeasureId &&
     releaseId &&
+    timeBound &&
     committed.measureId === requestedMeasureId &&
     committed.mapScope === mapScope &&
-    committed.releaseId === releaseId
+    committed.releaseId === releaseId &&
+    committed.handoffPeriod === timeBound.handoffPeriod
   );
   const requestCopy = exploreRequestStatusCopy({
     committedMapScopeLabel: committedScopeLabel,
     committedMeasureLabel: committed?.measureLabel ?? null,
-    failed: observationsError,
+    committedPeriod: committed?.handoffPeriod ?? null,
+    failed: observationsError || measuresErrorMessage !== null,
     matchesCommitted,
     requestedMapScopeLabel: requestedScopeLabel,
     requestedMeasureLabel:
       requestedMeasure?.label ?? requestedMeasureId ?? "The next measure",
+    requestedPeriod: timeBound?.handoffPeriod ?? null,
   });
   const focusedFips =
     committed?.rows.some((row) => row.fips === urlState.county) &&
@@ -119,21 +126,23 @@ function ResetExploreExperienceInner() {
       : (committed?.rows[0]?.fips ?? "");
   const focusedRow =
     committed?.rows.find((row) => row.fips === focusedFips) ?? null;
-  const effectiveComparePair =
-    urlState.selected.length > 0 ? urlState.selected : urlState.compare;
+  const effectiveComparePair = authoritativeExploreComparePair(
+    urlState.compare,
+    urlState.selected
+  );
   const handoffParams = useMemo(
     () =>
       exploreHandoffSearchParams({
         compare: effectiveComparePair,
         county: focusedFips || urlState.county,
-        dataset: urlState.dataset,
+        dataset: committed?.releaseId ?? null,
         map_scope: urlState.map_scope,
-        metric: urlState.metric,
-        period: handoffPeriod ?? urlState.period,
+        metric: committed?.measureId ?? null,
+        period: committed?.handoffPeriod ?? null,
         scope: urlState.scope,
         selected: effectiveComparePair,
       }),
-    [effectiveComparePair, focusedFips, handoffPeriod, urlState]
+    [committed, effectiveComparePair, focusedFips, urlState]
   );
   const investigateHref = uxResetShellHandoffHref(
     RESET_INVESTIGATE_PATH,
@@ -244,9 +253,9 @@ function ResetExploreExperienceInner() {
         <AtlasStatusMessage tone="error">{metadataError}</AtlasStatusMessage>
       ) : null}
 
-      {measuresError ? (
+      {measuresErrorMessage ? (
         <AtlasStatusMessage tone="error">
-          Governed measures are temporarily unavailable.
+          {measuresErrorMessage}
         </AtlasStatusMessage>
       ) : null}
 
@@ -257,7 +266,7 @@ function ResetExploreExperienceInner() {
       ) : null}
 
       {!measuresLoading &&
-      !measuresError &&
+      !measuresErrorMessage &&
       metadata &&
       measures.length === 0 ? (
         <AtlasStatusMessage tone="empty">

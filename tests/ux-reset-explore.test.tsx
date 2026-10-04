@@ -7,8 +7,10 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
+import { useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import { ResetExploreExperience } from "@/features/ux-reset/explore/reset-explore-experience";
 
 import {
@@ -23,9 +25,15 @@ import {
 } from "./fixtures/explore-api-fixtures";
 
 const observationControls = {
+  delayDate: null as string | null,
   delayMeasureId: null as string | null,
+  failDate: null as string | null,
   failMeasureId: null as string | null,
   releaseId: "alpha-2026",
+};
+
+const catalogControls = {
+  releaseVersion: "alpha-2026" as string | null,
 };
 
 const metadataControls = {
@@ -105,9 +113,14 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 400,
         } as never;
       }
-      const data = exploreMeasuresEnvelope.data.filter(
-        (measure) => measure.geography_semantics === params?.geography_type
-      );
+      const data = exploreMeasuresEnvelope.data
+        .filter(
+          (measure) => measure.geography_semantics === params?.geography_type
+        )
+        .map((measure) => ({
+          ...measure,
+          release_version: catalogControls.releaseVersion,
+        }));
       return {
         data: { ...exploreMeasuresEnvelope, data },
         headers: new Headers(),
@@ -130,10 +143,16 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 400,
         } as never;
       }
-      if (params.measure_id === observationControls.failMeasureId) {
+      if (
+        params.measure_id === observationControls.failMeasureId ||
+        params.start_date === observationControls.failDate
+      ) {
         throw new Error("observations failed");
       }
-      if (params.measure_id === observationControls.delayMeasureId) {
+      if (
+        params.measure_id === observationControls.delayMeasureId ||
+        params.start_date === observationControls.delayDate
+      ) {
         await delayedObservations;
       }
       const matchesBound =
@@ -188,7 +207,7 @@ function stubDesktopMatchMedia() {
   );
 }
 
-function renderExplore(search = "") {
+function renderExplore(search = "", onUrlUpdate?: (query: string) => void) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -196,6 +215,9 @@ function renderExplore(search = "") {
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter
         hasMemory
+        onUrlUpdate={({ queryString }) => {
+          onUrlUpdate?.(queryString);
+        }}
         searchParams={new URL(`http://localhost/app/explore${search}`).search}
       >
         <ResetExploreExperience />
@@ -263,9 +285,12 @@ function expectDisplayedMeasure(input: {
 describe("Explore workspace", () => {
   beforeEach(() => {
     geometryShouldFail = false;
+    observationControls.delayDate = null;
     observationControls.delayMeasureId = null;
+    observationControls.failDate = null;
     observationControls.failMeasureId = null;
     observationControls.releaseId = "alpha-2026";
+    catalogControls.releaseVersion = "alpha-2026";
     metadataControls.releaseId = "alpha-2026";
     const delayed = Promise.withResolvers<boolean>();
     releaseDelayedObservations = () => {
@@ -360,6 +385,38 @@ describe("Explore workspace", () => {
   });
 
   it("does not relabel the layer when the next measure request fails", async () => {
+    const updates: string[] = [];
+    renderExplore("?scope=CO&county=08001&period=2025-01-01", (query) => {
+      updates.push(query);
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("explore-layer-identity").dataset.measureId
+      ).toBe(EXPLORE_PRECIPITATION_MEASURE_ID)
+    );
+    observationControls.failMeasureId = EXPLORE_CASES_MEASURE_ID;
+    await chooseMeasure("Reported Lyme cases");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("explore-request-status").textContent
+      ).toContain("could not be loaded")
+    );
+    expectDisplayedMeasure({
+      measureId: EXPLORE_PRECIPITATION_MEASURE_ID,
+      periodIncludes: "2025",
+      unit: "mm",
+      value: "18 mm",
+    });
+    const href =
+      screen.getByTestId("explore-investigate").getAttribute("href") ?? "";
+    expect(href).toContain("period=2025-01-01");
+    expect(href).not.toContain("2023-01-01");
+    expect(
+      updates.some((query) => query.includes("period=2023-01-01"))
+    ).toBeFalsy();
+  });
+
+  it("does not relabel cases when tick abundance fails", async () => {
     renderExplore("?scope=CO&county=08001&metric=reported-cases");
     await waitFor(() =>
       expect(
@@ -458,27 +515,203 @@ describe("Explore workspace", () => {
     );
   });
 
-  it("does not commit a pinned release when observations are from another release", async () => {
+  it("does not commit a pinned release when the catalog is current-only", async () => {
     metadataControls.releaseId = "pinned-old";
     renderExplore(
       "?scope=CO&county=08001&period=2025-01-01&dataset=pinned-old"
     );
     await expect(
-      screen.findByText("The selected measure could not be loaded.")
+      screen.findByText("Catalog release does not match the requested release.")
     ).resolves.toBeTruthy();
-    expect(screen.queryByTestId("explore-layer-identity")).toBeNull();
+    expect(screen.queryByTestId("explore-results")).toBeNull();
   });
 
-  it("edits one compare pair and hands off that pair", async () => {
-    renderExplore(
-      "?map_scope=ALL&county=08001&period=2025-01-01&compare=08013,36001&selected=08001"
+  it("keeps displayed evidence on Investigate when a later release fails", async () => {
+    function PinBeta() {
+      const [search, setSearch] = useState(
+        "?scope=CO&county=08001&period=2025-01-01"
+      );
+      return (
+        <NuqsTestingAdapter hasMemory searchParams={search}>
+          <button
+            type="button"
+            onClick={() => {
+              metadataControls.releaseId = "beta-2026";
+              setSearch(
+                "?scope=CO&county=08001&period=2025-01-01&dataset=beta-2026"
+              );
+            }}
+          >
+            Pin beta
+          </button>
+          <ResetExploreExperience />
+        </NuqsTestingAdapter>
+      );
+    }
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <PinBeta />
+      </QueryClientProvider>
     );
-    const selection = await screen.findByTestId("explore-compare-selection");
-    expect(selection.dataset.fips).toBe("08001");
-    const initialCompare = screen.getByTestId("explore-compare");
-    expect(initialCompare.getAttribute("href")).toContain("compare=08001");
-    expect(initialCompare.getAttribute("href")).not.toContain("08013");
+    await screen.findByTestId("evidence-display-value");
+    fireEvent.click(screen.getByRole("button", { name: "Pin beta" }));
+    await expect(
+      screen.findByText("Catalog release does not match the requested release.")
+    ).resolves.toBeTruthy();
+    const href = screen.getByTestId("explore-investigate").getAttribute("href");
+    expect(href).toContain("dataset=alpha-2026");
+    expect(href).toContain("period=2025-01-01");
+    expect(href).not.toContain("beta-2026");
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+  });
 
+  it("keeps the displayed day when the next day fails, including history back", async () => {
+    function DayHistory() {
+      const [search, setSearch] = useState(
+        "?scope=CO&county=08001&period=2025-01-01"
+      );
+      const stack = useRef<string[]>([]);
+      return (
+        <NuqsTestingAdapter hasMemory searchParams={search}>
+          <button
+            type="button"
+            onClick={() => {
+              stack.current.push(search);
+              observationControls.failDate = "2025-01-02";
+              setSearch("?scope=CO&county=08001&period=2025-01-02");
+            }}
+          >
+            Open January 2
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const previous = stack.current.pop();
+              if (previous) {
+                setSearch(previous);
+              }
+            }}
+          >
+            Back
+          </button>
+          <ResetExploreExperience />
+        </NuqsTestingAdapter>
+      );
+    }
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <DayHistory />
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("evidence-display-value");
+    fireEvent.click(screen.getByRole("button", { name: "Open January 2" }));
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("explore-request-status").textContent
+      ).toContain("could not be loaded")
+    );
+    expect(screen.getByTestId("explore-request-status").textContent).toContain(
+      "2025-01-02"
+    );
+    expect(
+      screen.getByTestId("explore-investigate").getAttribute("href")
+    ).toContain("period=2025-01-01");
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() =>
+      expect(screen.queryByTestId("explore-request-status")).toBeNull()
+    );
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+  });
+
+  it("shows a pending notice when only the day changes", async () => {
+    function DayHistory() {
+      const [search, setSearch] = useState(
+        "?scope=CO&county=08001&period=2025-01-01"
+      );
+      return (
+        <NuqsTestingAdapter hasMemory searchParams={search}>
+          <button
+            type="button"
+            onClick={() => {
+              observationControls.delayDate = "2025-01-02";
+              setSearch("?scope=CO&county=08001&period=2025-01-02");
+            }}
+          >
+            Open January 2
+          </button>
+          <ResetExploreExperience />
+        </NuqsTestingAdapter>
+      );
+    }
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <DayHistory />
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("evidence-display-value");
+    fireEvent.click(screen.getByRole("button", { name: "Open January 2" }));
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("explore-request-status").textContent
+      ).toContain("Loading")
+    );
+    expect(screen.getByTestId("explore-request-status").textContent).toContain(
+      "2025-01-02"
+    );
+    expect(
+      screen.getByTestId("explore-investigate").getAttribute("href")
+    ).toContain("period=2025-01-01");
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+  });
+
+  it("uses the shared compare pair for the page and the shell", async () => {
+    const conflicting =
+      "map_scope=ALL&county=08001&period=2025-01-01&compare=08013,36001&selected=08001";
+    renderExplore(`?${conflicting}`);
+    const selection = await screen.findByTestId("explore-compare-selection");
+    expect(selection.dataset.fips).toBe("08013,36001");
+    const pageHref =
+      screen.getByTestId("explore-compare").getAttribute("href") ?? "";
+    const shellHref = uxResetShellHandoffHref(
+      "/app/compare",
+      "/app/explore",
+      new URLSearchParams(conflicting)
+    );
+    expect(
+      new URL(pageHref, "http://localhost").searchParams.get("compare")
+    ).toBe("08013,36001");
+    expect(
+      new URL(shellHref, "http://localhost").searchParams.get("compare")
+    ).toBe("08013,36001");
+  });
+
+  it("adds the first compare county, then a second, then again after clear", async () => {
+    renderExplore("?map_scope=ALL&county=08001&period=2025-01-01");
+    await screen.findByRole("button", { name: "Adams, Colorado 08001" });
+    fireEvent.click(screen.getByRole("button", { name: "Add to compare" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("explore-compare-selection").dataset.fips).toBe(
+        "08001"
+      )
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Boulder, Colorado 08013" })
     );
@@ -488,32 +721,19 @@ describe("Explore workspace", () => {
         "08001,08013"
       )
     );
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Adams, New York 36001" })
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Replace in compare" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("explore-compare-selection").dataset.fips).toBe(
-        "08001,36001"
-      )
-    );
-    expect(
-      screen.getByTestId("explore-compare").getAttribute("href")
-    ).toContain("compare=08001%2C36001");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Remove Adams, Colorado 08001" })
-    );
-    await waitFor(() =>
-      expect(screen.getByTestId("explore-compare-selection").dataset.fips).toBe(
-        "36001"
-      )
-    );
     fireEvent.click(screen.getByRole("button", { name: "Clear compare" }));
     await waitFor(() =>
       expect(screen.getByTestId("explore-compare-selection").dataset.fips).toBe(
         ""
+      )
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Adams, Colorado 08001" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add to compare" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("explore-compare-selection").dataset.fips).toBe(
+        "08001"
       )
     );
   });
