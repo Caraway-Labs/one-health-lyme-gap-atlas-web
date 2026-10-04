@@ -21,6 +21,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { uxResetShellHandoffHref } from "@/features/ux-reset";
 import {
   LEGACY_ATLAS_PATH,
   RESET_ACCESS_NAV,
@@ -30,7 +31,6 @@ import {
   resetRouteById,
   type ResetRoute,
 } from "@/features/ux-reset/paths";
-import { resetShellNavigationHref } from "@/features/ux-reset/shared-navigation-query";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 
 export function ResetProfessionalShell({ children }: { children: ReactNode }) {
@@ -44,9 +44,9 @@ export function ResetProfessionalShell({ children }: { children: ReactNode }) {
 function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentSearch = searchParams.toString();
   const { mobileOpen, open, setMobileOpen } = useSidebar();
   const isMobileViewport = useMobileViewport();
+  const mobileDrawerActive = isMobileViewport && mobileOpen;
   const mobileDrawerClosed = isMobileViewport && !mobileOpen;
   const sidebarRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -58,12 +58,22 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
 
   const shellHref = useCallback(
     (route: ResetRoute) =>
-      resetShellNavigationHref(route, currentSearch ? `?${currentSearch}` : ""),
-    [currentSearch]
+      uxResetShellHandoffHref(
+        route.externalHref ?? route.href,
+        pathname,
+        searchParams
+      ),
+    [pathname, searchParams]
   );
 
   useEffect(() => {
-    if (!mobileOpen) {
+    if (!isMobileViewport && mobileOpen) {
+      setMobileOpen(false);
+    }
+  }, [isMobileViewport, mobileOpen, setMobileOpen]);
+
+  useEffect(() => {
+    if (!mobileDrawerActive) {
       previousFocusRef.current?.focus();
       previousFocusRef.current = null;
       return;
@@ -102,7 +112,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeMobileNavigation, mobileOpen]);
+  }, [closeMobileNavigation, mobileDrawerActive]);
 
   const openMobileNavigation = () => {
     previousFocusRef.current =
@@ -118,12 +128,12 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         ref={sidebarRef}
         aria-hidden={mobileDrawerClosed || undefined}
         aria-label="Professional workspace"
-        aria-modal={mobileOpen || undefined}
+        aria-modal={mobileDrawerActive || undefined}
         className={
           mobileDrawerClosed ? "ux-reset-sidebar-mobile-closed" : undefined
         }
         inert={mobileDrawerClosed || undefined}
-        role={mobileOpen ? "dialog" : undefined}
+        role={mobileDrawerActive ? "dialog" : undefined}
       >
         <SidebarHeader>
           <Link
@@ -224,7 +234,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           </nav>
         </SidebarContent>
       </Sidebar>
-      {mobileOpen ? (
+      {mobileDrawerActive ? (
         <button
           aria-label="Dismiss navigation"
           className="app-sidebar-scrim"
@@ -233,14 +243,14 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         />
       ) : null}
       <SidebarInset
-        aria-hidden={mobileOpen || undefined}
+        aria-hidden={mobileDrawerActive || undefined}
         className="app-inset"
-        inert={mobileOpen || undefined}
+        inert={mobileDrawerActive || undefined}
       >
         <header className="app-header">
           <SidebarTrigger
             aria-controls="ux-reset-pro-navigation"
-            aria-expanded={mobileOpen}
+            aria-expanded={mobileDrawerActive}
             aria-label="Open navigation"
             className="app-mobile-nav-trigger"
             mobile

@@ -12,7 +12,31 @@ import {
   Zap,
 } from "lucide-react";
 
-export const RESET_APP_PATH = "/app" as const;
+export {
+  DOCS_PATH,
+  RESET_ACTION_PATH,
+  RESET_ASSISTANT_PATH,
+  RESET_COMPARE_PATH,
+  RESET_EXPLORE_PATH,
+  RESET_FEED_PATH,
+  RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
+  RESET_SETTINGS_PATH,
+  UX_RESET_APP_PREFIX as RESET_APP_PATH,
+} from "@/features/ux-reset/routes";
+
+import {
+  DOCS_PATH,
+  RESET_ACTION_PATH,
+  RESET_ASSISTANT_PATH,
+  RESET_COMPARE_PATH,
+  RESET_EXPLORE_PATH,
+  RESET_FEED_PATH,
+  RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
+  RESET_SETTINGS_PATH,
+  UX_RESET_APP_PREFIX,
+} from "@/features/ux-reset/routes";
 
 export type ResetRouteMatch = "exact" | "prefix";
 
@@ -32,17 +56,7 @@ export type ResetRoute = {
   externalHref?: string;
 };
 
-export const RESET_REVIEW_PATH = `${RESET_APP_PATH}/review` as const;
-export const RESET_EXPLORE_PATH = `${RESET_APP_PATH}/explore` as const;
-export const RESET_INVESTIGATE_PATH = `${RESET_APP_PATH}/investigate` as const;
-export const RESET_COMPARE_PATH = `${RESET_APP_PATH}/compare` as const;
-export const RESET_ACTION_PATH = `${RESET_APP_PATH}/action` as const;
-export const RESET_ASSISTANT_PATH = `${RESET_APP_PATH}/assistant` as const;
-export const RESET_FEED_PATH = `${RESET_APP_PATH}/feed` as const;
-export const RESET_SETTINGS_PATH = `${RESET_APP_PATH}/settings` as const;
-
 export const LEGACY_ATLAS_PATH = "/" as const;
-export const DOCS_PATH = "/docs" as const;
 
 export const RETURN_TO_LEGACY_ATLAS_LABEL = "Open legacy Atlas";
 
@@ -50,7 +64,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
   {
     description:
       "Start from surveillance review priorities and county follow-up.",
-    href: RESET_APP_PATH,
+    href: UX_RESET_APP_PREFIX,
     icon: LayoutDashboard,
     id: "overview",
     label: "Workspace overview",

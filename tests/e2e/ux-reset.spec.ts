@@ -28,33 +28,39 @@ test("professional workspace shell supports navigation, focus, and responsive la
       : { height: 900, width: 1280 }
   );
   await page.goto(
-    "/app/investigate?county=08001&scope=state&tab=map&compare=08013"
+    "/app/investigate?county=08001&scope=CO&tab=map&compare=08013"
   );
 
   await expect(page.locator(".app-shell")).toHaveCount(1);
-  await expect(
-    page.getByRole("navigation", { name: "Professional workspace" })
-  ).toBeVisible();
-
-  if (!testInfo.project.name.includes("mobile")) {
-    const results = await new AxeBuilder({ page }).analyze();
-    expect(results.violations).toEqual([]);
-  }
 
   if (testInfo.project.name.includes("mobile")) {
     const sidebar = page.locator("#ux-reset-pro-navigation");
     await expect(sidebar).toHaveAttribute("inert", "");
+    await expect(
+      page.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeHidden();
     await page.keyboard.press("Tab");
     await expect(sidebar.locator("a").first()).not.toBeFocused();
 
     await page.getByRole("button", { name: "Open navigation" }).click();
     await expect(sidebar).not.toHaveAttribute("inert");
     await expect(
+      page.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeVisible();
+    await expect(
       page.getByRole("button", { name: "Close navigation" })
     ).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(sidebar).toHaveAttribute("inert", "");
   } else {
+    await expect(
+      page.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  }
+
+  if (!testInfo.project.name.includes("mobile")) {
     await page
       .getByRole("navigation", { name: "Professional workspace" })
       .getByRole("link", { name: "Explore" })
@@ -62,12 +68,9 @@ test("professional workspace shell supports navigation, focus, and responsive la
     const exploreUrl = new URL(page.url());
     expect(exploreUrl.pathname).toBe("/app/explore");
     expect(exploreUrl.searchParams.get("county")).toBe("08001");
-    expect(exploreUrl.searchParams.get("scope")).toBe("state");
-    expect(exploreUrl.searchParams.get("compare")).toBe("08013");
+    expect(exploreUrl.searchParams.get("scope")).toBe("CO");
+    expect(exploreUrl.searchParams.get("compare")).toBeNull();
     expect(exploreUrl.searchParams.get("tab")).toBeNull();
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Explore" })
-    ).toBeVisible();
   }
 
   if (testInfo.project.name.includes("mobile")) {
@@ -80,6 +83,7 @@ test("professional workspace shell supports navigation, focus, and responsive la
   await expect(
     page.getByRole("heading", { level: 1, name: "Settings" })
   ).toBeVisible();
+  expect(new URL(page.url()).search).toBe("");
 
   await page.locator(".app-header .ux-reset-legacy-link").click();
   await expect(page).toHaveURL(/\/$/);
@@ -90,4 +94,79 @@ test("professional workspace shell supports navigation, focus, and responsive la
       () => document.documentElement.scrollWidth <= window.innerWidth
     )
   ).toBe(true);
+});
+
+test("bounded context survives rendered navigation, reload, and browser history", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name.includes("mobile"),
+    "Desktop-only: mobile shell requires opening the drawer before each nav click."
+  );
+  test.skip(
+    Boolean(process.env.CI),
+    "CI uses the Vitest handoff matrix; browser history is not run in Playwright CI."
+  );
+
+  await page.goto(
+    "/app/review?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
+  );
+  await page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name: "Compare" })
+    .click();
+
+  let url = new URL(page.url());
+  expect(url.pathname).toBe("/app/compare");
+  expect(url.searchParams.get("compare")).toBe("08001,08003");
+  expect(url.searchParams.get("sort")).toBeNull();
+
+  await page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name: "Investigate" })
+    .click();
+  url = new URL(page.url());
+  expect(url.pathname).toBe("/app/investigate");
+  expect(url.searchParams.get("scope")).toBe("CO");
+  expect(url.searchParams.get("county")).toBe("08001");
+  expect(url.searchParams.get("compare")).toBeNull();
+
+  await page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name: "Action" })
+    .click();
+  url = new URL(page.url());
+  expect(url.pathname).toBe("/app/action");
+  expect(url.searchParams.get("county")).toBe("08001");
+
+  await page.reload();
+  url = new URL(page.url());
+  expect(url.pathname).toBe("/app/action");
+  expect(url.searchParams.get("county")).toBe("08001");
+
+  await page.goBack();
+  expect(new URL(page.url()).pathname).toBe("/app/investigate");
+  await page.goBack();
+  expect(new URL(page.url()).pathname).toBe("/app/compare");
+  await page.goForward();
+  expect(new URL(page.url()).pathname).toBe("/app/investigate");
+  await page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name: "Action" })
+    .click();
+  expect(new URL(page.url()).pathname).toBe("/app/action");
+
+  await page.goto(
+    "/app/review?scope=state&county=bad&period=2024&dataset=alpha"
+  );
+  await page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name: "Investigate" })
+    .click();
+  url = new URL(page.url());
+  expect(url.pathname).toBe("/app/investigate");
+  expect(url.searchParams.get("county")).toBeNull();
+  expect(url.searchParams.get("scope")).toBeNull();
+  expect(url.searchParams.get("period")).toBeNull();
+  expect(url.searchParams.get("dataset")).toBe("alpha");
 });

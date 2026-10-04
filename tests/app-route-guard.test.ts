@@ -16,7 +16,7 @@ describe("professional app route guard", () => {
 
   it("treats partial Supabase configuration as not configured", () => {
     expect(
-      isSupabaseAuthConfigured("https://example.supabase.co", undefined)
+      isSupabaseAuthConfigured("https://example.supabase.co", "")
     ).toBeFalsy();
     expect(isSupabaseAuthConfigured(undefined, "publishable-key")).toBeFalsy();
     expect(

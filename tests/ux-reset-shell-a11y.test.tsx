@@ -21,19 +21,39 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
   useSearchParams: () => searchParams as ReadonlyURLSearchParams,
 }));
 
-function mockMobileViewport(matches: boolean) {
+function createResponsiveMatchMedia(initialMobile: boolean) {
+  let isMobile = initialMobile;
+  const listeners = new Set<() => void>();
   vi.stubGlobal(
     "matchMedia",
     (query: string): MediaQueryList =>
       ({
-        addEventListener: () => {},
+        addEventListener: (_type: string, listener: () => void) => {
+          listeners.add(listener);
+        },
         dispatchEvent: () => true,
-        matches: query.includes("800px") ? matches : false,
+        get matches() {
+          return query.includes("800px") ? isMobile : false;
+        },
         media: query,
         onchange: null,
-        removeEventListener: () => {},
+        removeEventListener: (_type: string, listener: () => void) => {
+          listeners.delete(listener);
+        },
       }) as unknown as MediaQueryList
   );
+  return {
+    setMobile(next: boolean) {
+      isMobile = next;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+  };
+}
+
+function mockMobileViewport(matches: boolean) {
+  createResponsiveMatchMedia(matches);
 }
 
 describe("UX Reset shell accessibility", () => {
@@ -115,5 +135,29 @@ describe("UX Reset shell accessibility", () => {
       expect(sidebar?.hasAttribute("inert")).toBeTruthy();
     });
     expect(document.activeElement).toBe(openButton);
+  });
+
+  it("clears mobile modal state when the viewport grows past the drawer breakpoint", async () => {
+    const viewport = createResponsiveMatchMedia(true);
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
+    const sidebar = document.querySelector("#ux-reset-pro-navigation");
+    const inset = document.querySelector(".app-inset");
+    await waitFor(() => {
+      expect(sidebar?.getAttribute("role")).toBe("dialog");
+      expect(inset?.hasAttribute("inert")).toBeTruthy();
+    });
+
+    viewport.setMobile(false);
+    await waitFor(() => {
+      expect(sidebar?.getAttribute("role")).toBeNull();
+      expect(inset?.hasAttribute("inert")).toBeFalsy();
+      expect(sidebar?.hasAttribute("aria-modal")).toBeFalsy();
+    });
   });
 });

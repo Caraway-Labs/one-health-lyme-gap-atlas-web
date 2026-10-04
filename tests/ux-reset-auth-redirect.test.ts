@@ -4,9 +4,8 @@ import { shouldRedirectUnauthenticatedAppRoute } from "@/lib/auth/app-route-guar
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 
 const { exchangeCodeForSession } = vi.hoisted(() => ({
-  exchangeCodeForSession: vi.fn<
-    (code: string) => Promise<{ error: { message: string } | null }>
-  >(),
+  exchangeCodeForSession:
+    vi.fn<(code: string) => Promise<{ error: { message: string } | null }>>(),
 }));
 
 vi.mock(

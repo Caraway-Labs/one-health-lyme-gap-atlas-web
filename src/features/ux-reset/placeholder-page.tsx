@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import {
   Card,
@@ -6,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
+import { uxResetShellHandoffHref } from "@/features/ux-reset";
 import {
   LEGACY_ATLAS_PATH,
   RESET_ROUTES,
@@ -18,6 +22,8 @@ type ResetPlaceholderPageProps = {
 };
 
 export function ResetPlaceholderPage({ routeId }: ResetPlaceholderPageProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const route = resetRouteById(routeId);
   const destinationRoutes = RESET_ROUTES.filter(
     (candidate) => candidate.id !== "overview" && !candidate.externalHref
@@ -25,6 +31,9 @@ export function ResetPlaceholderPage({ routeId }: ResetPlaceholderPageProps) {
   const siblingRoutes = destinationRoutes.filter(
     (candidate) => candidate.id !== route.id
   );
+
+  const handoffHref = (candidate: ResetRoute) =>
+    uxResetShellHandoffHref(candidate.href, pathname, searchParams);
 
   return (
     <>
@@ -68,7 +77,7 @@ export function ResetPlaceholderPage({ routeId }: ResetPlaceholderPageProps) {
                 : siblingRoutes
               ).map((candidate) => (
                 <li key={candidate.id}>
-                  <Link href={candidate.href}>{candidate.label}</Link>
+                  <Link href={handoffHref(candidate)}>{candidate.label}</Link>
                 </li>
               ))}
             </ul>
