@@ -9,7 +9,11 @@ import {
   type ReactNode,
 } from "react";
 
-import { RESET_EXPLORE_PATH } from "@/features/ux-reset/routes";
+import {
+  RESET_EXPLORE_PATH,
+  RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
+} from "@/features/ux-reset/routes";
 
 /** Release, period, and county that belong to the displayed Explore selection. */
 export type ExploreCommittedNavigation = {
@@ -79,16 +83,22 @@ function normalizePath(pathname: string): string {
   return pathname.split(/[?#]/, 1)[0] || "/";
 }
 
+const COMMITTED_SHELL_PATHS = new Set<string>([
+  RESET_EXPLORE_PATH,
+  RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
+]);
+
 /**
- * Shell links on Explore use the committed release, period, and county.
- * The requested URL can still name an in-flight or rejected selection.
+ * Shell links on Explore, Investigate, and Review use the committed release,
+ * period, and county. The requested URL can still name an in-flight selection.
  */
 export function searchParamsWithCommittedExploreContext(
   pathname: string,
   searchParams: SearchParamSource,
   committed: ExploreCommittedNavigation | null
 ): Pick<URLSearchParams, "get" | "getAll" | "has"> {
-  if (normalizePath(pathname) !== RESET_EXPLORE_PATH || !committed) {
+  if (!COMMITTED_SHELL_PATHS.has(normalizePath(pathname)) || !committed) {
     return searchParams;
   }
   const params = new URLSearchParams(searchParams.toString());

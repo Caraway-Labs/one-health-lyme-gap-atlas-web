@@ -44,6 +44,12 @@ function ResetReviewExperienceInner() {
     },
     [setUrlState]
   );
+  const setCounty = useCallback(
+    (fips: string, history: "push" | "replace") => {
+      void setUrlState({ county: fips }, { history });
+    },
+    [setUrlState]
+  );
 
   useApplyProfileStartingScope({
     activeScope: scope,
@@ -125,10 +131,13 @@ function ResetReviewExperienceInner() {
             />
           ) : (
             <ReviewStatePanel
+              county={urlState.county}
               mapCounties={presentationQuery.presentation.mapCounties}
+              period={urlState.period}
               rankedCounties={presentationQuery.presentation.stateCounties}
               releaseId={presentationQuery.metadata!.release_id}
               scopeCode={scope}
+              onCountyChange={setCounty}
             />
           )}
         </section>

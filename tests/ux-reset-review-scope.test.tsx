@@ -191,6 +191,72 @@ describe("Reset Review scope UI", () => {
     );
   });
 
+  it("follows a restored URL county after an interactive selection", async () => {
+    const updates: string[] = [];
+    const coCounties = reviewScopeScoresFixture.counties.filter(
+      (county) => county.state === "CO"
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const panel = (county: string) => (
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          county={county}
+          mapCounties={coCounties}
+          period={null}
+          rankedCounties={coCounties}
+          releaseId="alpha-2026"
+          scopeCode="CO"
+          onCountyChange={(fips, history) => {
+            updates.push(`${history}:${fips}`);
+          }}
+        />
+      </QueryClientProvider>
+    );
+    const view = render(panel("08001"));
+    await waitFor(() =>
+      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
+        "08001"
+      )
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
+    view.rerender(panel("08013"));
+    await waitFor(() =>
+      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
+        "08013"
+      )
+    );
+    const beforeRestore = updates.length;
+    view.rerender(panel("08001"));
+    await waitFor(() =>
+      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
+        "08001"
+      )
+    );
+    expect({
+      restored: screen.getByTestId("review-investigate").dataset.county,
+      selection: updates[0],
+      updatesAfterRestore: updates.slice(beforeRestore),
+    }).toStrictEqual({
+      restored: "08001",
+      selection: "push:08013",
+      updatesAfterRestore: [],
+    });
+  });
+
+  it("keeps the URL county as the Investigate handoff", async () => {
+    renderReview("?scope=CO&county=08013");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
+        "08013"
+      )
+    );
+    expect(
+      screen.getByTestId("review-investigate").getAttribute("href")
+    ).toContain("county=08013");
+  });
+
   it("passes only in-state counties to the map", async () => {
     renderReview("?scope=CO");
     await waitFor(() =>

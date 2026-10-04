@@ -243,3 +243,55 @@
     z-index: 25;
   }
 }
+
+.ux-reset-investigate {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ux-reset-investigate-header,
+.ux-reset-investigate-toolbar,
+.ux-reset-investigate-summary,
+.ux-reset-investigate-family,
+.ux-reset-investigate-next,
+.ux-reset-investigate-callout {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-investigate-header,
+.ux-reset-investigate-toolbar {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-investigate-header {
+  border-left: 4px solid var(--primary);
+}
+
+.ux-reset-investigate-observations {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-investigate-next {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-pro-main a.ux-reset-investigate-action {
+  width: fit-content;
+  text-decoration: none;
+}
+
+.ux-reset-pro-main a.ux-reset-investigate-action[data-variant="primary"] {
+  color: var(--primary-foreground);
+}
+
+.ux-reset-pro-main a.ux-reset-investigate-action[data-variant="secondary"] {
+  color: var(--secondary-foreground);
+}
