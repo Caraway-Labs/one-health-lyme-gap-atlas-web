@@ -115,6 +115,7 @@ export function AtlasMap({
   scores,
   selectedFips,
   selectedState = "ALL",
+  cameraFrameState,
   selectedDistrict = "ALL",
   onSelect,
   className,
@@ -132,6 +133,8 @@ export function AtlasMap({
   scores: CountyScoreSummary[];
   selectedFips: string;
   selectedState?: string;
+  /** When set, fits the map camera to this state scope (Review). Independent of highlight `selectedState`. */
+  cameraFrameState?: string | null;
   selectedDistrict?: string;
   onSelect: (fips: string, surface: GeographySelectionSurface) => void;
   className?: string;
@@ -343,14 +346,16 @@ export function AtlasMap({
     if (!mapReady || !instance?.getLayer("selected-outline")) {
       return;
     }
-    if (selectedState === "ALL") {
+    const frameState =
+      cameraFrameState && cameraFrameState !== "ALL" ? cameraFrameState : null;
+    if (!frameState) {
       previousFramedState.current = null;
-    } else if (previousFramedState.current !== selectedState) {
-      previousFramedState.current = selectedState;
+    } else if (previousFramedState.current !== frameState) {
+      previousFramedState.current = frameState;
       const stateBounds = stateScopeBoundsFromGeometry(
         geometry,
         scores,
-        selectedState
+        frameState
       );
       if (stateBounds) {
         applyingExternalMove.current = true;
@@ -409,7 +414,7 @@ export function AtlasMap({
       duration: mapCameraDuration(),
       stop: false,
     });
-  }, [geometry, mapReady, scores, selectedFips, selectedState]);
+  }, [cameraFrameState, geometry, mapReady, scores, selectedFips]);
 
   return (
     <div

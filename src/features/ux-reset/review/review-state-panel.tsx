@@ -101,6 +101,7 @@ export function ReviewStatePanel({
         <div className="map-wrap" data-testid="review-state-map-region">
           {geometryReady && hasCounties ? (
             <AtlasMap
+              cameraFrameState={scopeCode}
               geometry={geometryQuery.data as never}
               scores={mapScores}
               selectedFips={selectedFips}
