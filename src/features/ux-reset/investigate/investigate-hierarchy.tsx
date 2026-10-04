@@ -192,9 +192,11 @@ function FamilySection({
 export function InvestigateEvidenceHierarchy({
   bundle,
   onRetryFailures,
+  retrying = false,
 }: {
   bundle: CountyEvidenceBundle;
   onRetryFailures?: () => void;
+  retrying?: boolean;
 }) {
   const finding = bundle.leadFinding;
   const limitation = bundle.leadLimitation;
@@ -307,12 +309,17 @@ export function InvestigateEvidenceHierarchy({
             </ul>
             {onRetryFailures ? (
               <Button
+                aria-busy={retrying}
+                data-retrying={retrying ? "true" : "false"}
                 data-testid="investigate-retry-evidence"
+                disabled={retrying}
                 type="button"
                 variant="secondary"
                 onClick={handleRetryFailures}
               >
-                Retry evidence that did not load
+                {retrying
+                  ? "Retrying evidence…"
+                  : "Retry evidence that did not load"}
               </Button>
             ) : null}
           </AtlasStatusMessage>

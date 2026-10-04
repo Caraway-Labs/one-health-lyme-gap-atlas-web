@@ -253,6 +253,22 @@ describe("county evidence loading", () => {
     });
     const afterPeriod = calls.length;
     calls.length = 0;
+    await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(1),
+      period: null,
+      preserve: {
+        ...preserved,
+        releaseId: "other-release",
+      },
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    const afterRelease = calls.length;
+    calls.length = 0;
     const crossed = await loadCountyEvidenceBundle({
       domainsRequestFailed: false,
       fips: "08013",
@@ -270,11 +286,13 @@ describe("county evidence loading", () => {
       ),
       county: crossed.county.fips,
       periodRefetched: afterPeriod > beforePeriod,
+      releaseRefetched: afterRelease > 0,
       requestedBoulder: calls.length > 0,
     }).toStrictEqual({
       carriedDenver: false,
       county: "08013",
       periodRefetched: true,
+      releaseRefetched: true,
       requestedBoulder: true,
     });
   });

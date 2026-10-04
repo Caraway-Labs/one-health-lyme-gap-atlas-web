@@ -273,6 +273,7 @@ function InvestigateExperienceInner() {
       {bundle ? (
         <InvestigateEvidenceHierarchy
           bundle={bundle}
+          retrying={workspace.evidenceFetching}
           onRetryFailures={
             bundle.measureFailures.length > 0
               ? workspace.retryEvidence

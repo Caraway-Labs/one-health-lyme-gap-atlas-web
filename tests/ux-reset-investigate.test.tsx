@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -30,11 +31,17 @@ const controls: {
   delayFips: string | null;
   failMeasureId: string | null;
   geographyStatus: "identity" | "ok";
+  metadataReleaseId: string | null;
+  rateLimitRemaining: number;
+  retryAfterSeconds: number;
   scenario: InvestigateScenario;
 } = {
   delayFips: null,
   failMeasureId: null,
   geographyStatus: "ok",
+  metadataReleaseId: null,
+  rateLimitRemaining: 0,
+  retryAfterSeconds: 0,
   scenario: "mixed",
 };
 
@@ -136,7 +143,12 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     >(
       async () =>
         ({
-          data: investigateMetadataFixture,
+          data: {
+            ...investigateMetadataFixture,
+            release_id:
+              controls.metadataReleaseId ??
+              investigateMetadataFixture.release_id,
+          },
           headers: new Headers(),
           status: 200,
         }) as never
@@ -165,12 +177,24 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         delayedCompletions += 1;
       }
       if (params.measure_id === controls.failMeasureId) {
-        throw new AtlasApiError(
-          "observations failed",
-          "/v1/observations",
-          500,
-          null
-        );
+        if (controls.rateLimitRemaining > 0) {
+          controls.rateLimitRemaining -= 1;
+          throw new AtlasApiError(
+            "rate limited",
+            "/v1/observations",
+            429,
+            null,
+            controls.retryAfterSeconds
+          );
+        }
+        if (controls.retryAfterSeconds === 0) {
+          throw new AtlasApiError(
+            "observations failed",
+            "/v1/observations",
+            500,
+            null
+          );
+        }
       }
       return {
         data: {
@@ -205,11 +229,16 @@ function setSearch(search: string) {
   );
 }
 
-function renderInvestigate(search: string) {
+function renderInvestigate(
+  search: string,
+  options: { client?: QueryClient } = {}
+) {
   setSearch(search);
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const client =
+    options.client ??
+    new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
   const view = render(
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter hasMemory searchParams={search}>
@@ -236,6 +265,32 @@ async function waitForCounty(fips: string) {
   await waitFor(() => {
     if (screen.getByTestId("investigate-header").dataset.county !== fips) {
       throw new Error(`Waiting for county ${fips}.`);
+    }
+  });
+}
+
+function caseRequestCount(fips = "08001"): number {
+  return observationRequests.filter(
+    (request) =>
+      request.includes(INVESTIGATE_CASES_MEASURE_ID) && request.includes(fips)
+  ).length;
+}
+
+function tickRequestCount(): number {
+  return observationRequests.filter((request) =>
+    request.includes(INVESTIGATE_TICK_MEASURE_ID)
+  ).length;
+}
+
+async function waitForRetryableCases() {
+  await waitFor(() => {
+    const evidence =
+      screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+    if (
+      !evidence.includes("12 cases") ||
+      !screen.queryByTestId("investigate-retry-evidence")
+    ) {
+      throw new Error("Cached cases and the retry action have not rendered.");
     }
   });
 }
@@ -270,6 +325,9 @@ describe("County Investigate workspace", () => {
     controls.delayFips = null;
     controls.failMeasureId = null;
     controls.geographyStatus = "ok";
+    controls.metadataReleaseId = null;
+    controls.rateLimitRemaining = 0;
+    controls.retryAfterSeconds = 0;
     controls.scenario = "mixed";
     delayedCompletions = 0;
     delayedObservations = Promise.resolve();
@@ -417,6 +475,144 @@ describe("County Investigate workspace", () => {
       county: "08001",
       ticks: true,
     });
+  });
+
+  it("keeps cached successes after remount, another county, and another release", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 300_000 } },
+    });
+    controls.failMeasureId = INVESTIGATE_TICK_MEASURE_ID;
+    controls.scenario = "mixed";
+    const first = renderInvestigate("?county=08001&scope=CO", { client });
+    await waitForRetryableCases();
+    const casesAfterLoad = caseRequestCount();
+    first.unmount();
+
+    const returned = renderInvestigate("?county=08001&scope=CO", { client });
+    await waitForRetryableCases();
+    const casesAfterRemount = caseRequestCount();
+    await returned.rerenderSearch("?county=08013&scope=CO");
+    await waitFor(() => {
+      if (screen.getByTestId("investigate-header").dataset.county !== "08013") {
+        throw new Error("Boulder has not rendered.");
+      }
+    });
+    await returned.rerenderSearch("?county=08001&scope=CO");
+    await waitForRetryableCases();
+    const casesAfterCountyReturn = caseRequestCount();
+
+    controls.metadataReleaseId = "beta-2026";
+    await returned.rerenderSearch("?county=08001&scope=CO&dataset=beta-2026");
+    await waitFor(() => {
+      const evidence =
+        screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+      if (
+        evidence.includes("12 cases") ||
+        screen.getByTestId("investigate-header").dataset.release !== "beta-2026"
+      ) {
+        throw new Error("The other release is still showing Denver cases.");
+      }
+    });
+
+    controls.metadataReleaseId = null;
+    controls.failMeasureId = INVESTIGATE_CASES_MEASURE_ID;
+    await returned.rerenderSearch("?county=08001&scope=CO");
+    await waitForRetryableCases();
+    const casesBeforeRetry = caseRequestCount();
+    fireEvent.click(screen.getByTestId("investigate-retry-evidence"));
+    await waitFor(() => {
+      const evidence =
+        screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+      if (!evidence.includes("4 detections")) {
+        throw new Error("The retried tick observation has not loaded.");
+      }
+    });
+    const evidence =
+      screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+    expect({
+      caseRequests: caseRequestCount(),
+      cases: evidence.includes("12 cases"),
+      casesAfterCountyReturn,
+      casesAfterRemount,
+      county: screen.getByTestId("investigate-header").dataset.county,
+      otherReleaseCases: evidence.includes("40 cases"),
+    }).toStrictEqual({
+      caseRequests: casesBeforeRetry,
+      cases: true,
+      casesAfterCountyReturn: casesAfterLoad,
+      casesAfterRemount: casesAfterLoad,
+      county: "08001",
+      otherReleaseCases: false,
+    });
+  });
+
+  it("does not keep the previous period when that request is a different identity", async () => {
+    controls.failMeasureId = INVESTIGATE_TICK_MEASURE_ID;
+    controls.scenario = "mixed";
+    const view = renderInvestigate("?county=08001&scope=CO");
+    await waitForRetryableCases();
+    controls.failMeasureId = INVESTIGATE_CASES_MEASURE_ID;
+    await view.rerenderSearch("?county=08001&scope=CO&period=2024-06-01");
+    await waitFor(() => {
+      const evidence =
+        screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+      if (evidence.includes("12 cases") || !evidence.includes("4 detections")) {
+        throw new Error("The new period is still showing the previous cases.");
+      }
+    });
+    expect(screen.getByTestId("investigate-header").dataset.county).toBe(
+      "08001"
+    );
+  });
+
+  it("ignores a second retry click during Retry-After", async () => {
+    controls.failMeasureId = INVESTIGATE_TICK_MEASURE_ID;
+    controls.scenario = "mixed";
+    renderInvestigate("?county=08001&scope=CO");
+    await waitForRetryableCases();
+    const ticksBefore = tickRequestCount();
+    controls.rateLimitRemaining = 1;
+    controls.retryAfterSeconds = 60;
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("investigate-retry-evidence"));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+        fireEvent.click(screen.getByTestId("investigate-retry-evidence"));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const retrying = screen.getByTestId("investigate-retry-evidence");
+      const duringCooldown = {
+        disabled: retrying.hasAttribute("disabled"),
+        requests: tickRequestCount(),
+        retrying: retrying.dataset.retrying,
+      };
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(58_000);
+      });
+      const beforePermittedRetry = tickRequestCount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect({
+        beforePermittedRetry,
+        disabled: duringCooldown.disabled,
+        duringCooldown: duringCooldown.requests,
+        retrying: duringCooldown.retrying,
+        settledTicks: tickRequestCount(),
+      }).toStrictEqual({
+        beforePermittedRetry: ticksBefore + 1,
+        disabled: true,
+        duringCooldown: ticksBefore + 1,
+        retrying: "true",
+        settledTicks: ticksBefore + 2,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("uses an explicit recovery state for malformed, unknown, and unsupported counties", async () => {

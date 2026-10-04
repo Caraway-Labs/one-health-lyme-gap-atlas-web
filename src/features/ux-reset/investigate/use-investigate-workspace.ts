@@ -56,6 +56,7 @@ export type InvestigateWorkspace = {
   directoryError: string | null;
   directoryLoading: boolean;
   evidenceError: string | null;
+  evidenceFetching: boolean;
   evidenceLoading: boolean;
   identity: ResolvedCountyIdentity | null;
   metadata: AtlasMetadata | null;
@@ -73,6 +74,28 @@ export type InvestigateWorkspace = {
   setCounty: (fips: string) => void;
   stateLabel: string | null;
 };
+
+function preservedMeasuresForCachedBundle(input: {
+  bundle: CountyEvidenceBundle | undefined;
+  fips: string;
+  period: string | null;
+  releaseId: string;
+}): PreservedCountyMeasures | null {
+  const { bundle } = input;
+  if (
+    !bundle ||
+    bundle.county.fips !== input.fips ||
+    bundle.releaseId !== input.releaseId
+  ) {
+    return null;
+  }
+  return {
+    fips: bundle.county.fips,
+    outcomes: reusableMeasureOutcomes(bundle),
+    period: input.period,
+    releaseId: bundle.releaseId,
+  };
+}
 
 function metadataErrorMessage(
   error: unknown,
@@ -246,8 +269,6 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
             `${indicator.indicator_id}:${indicator.domain ?? ""}:${indicator.release_version ?? ""}`
         )
         .join("|");
-  const preservedEvidenceRef = useRef<PreservedCountyMeasures | null>(null);
-  const retryFailedMeasuresRef = useRef(false);
   const evidenceQuery = useQuery({
     enabled: Boolean(
       releaseId &&
@@ -258,41 +279,33 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       indicatorsQuery.isFetched &&
       !indicatorsQuery.isFetching
     ),
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ client, queryKey, signal }) => {
       if (!(releaseId && requestedFips && identity)) {
         throw new InvestigateContractError(
           "County evidence requires a resolved county and release.",
           "rejected"
         );
       }
-      const retryFailures = retryFailedMeasuresRef.current;
-      retryFailedMeasuresRef.current = false;
-      const preserved = preservedEvidenceRef.current;
-      const sameContext = Boolean(
-        retryFailures &&
-        preserved &&
-        preserved.fips === requestedFips &&
-        preserved.releaseId === releaseId &&
-        preserved.period === urlState.period
-      );
-      const bundle = await loadCountyEvidenceBundle({
+      // Production staleTime can render this query's cached bundle without
+      // running queryFn. Read that cache here so a later retry keeps successes
+      // for this county, release, and period only.
+      const preserve = preservedMeasuresForCachedBundle({
+        bundle: client.getQueryData<CountyEvidenceBundle>(queryKey),
+        fips: requestedFips,
+        period: urlState.period,
+        releaseId,
+      });
+      return loadCountyEvidenceBundle({
         domainsRequestFailed: indicatorsQuery.isError,
         fips: requestedFips,
         identity,
         indicators: indicatorsQuery.data ?? [],
         measures: measuresQuery.data ?? [],
         period: urlState.period,
-        preserve: sameContext ? preserved : null,
+        preserve,
         releaseId,
         signal,
       });
-      preservedEvidenceRef.current = {
-        fips: bundle.county.fips,
-        outcomes: reusableMeasureOutcomes(bundle),
-        period: urlState.period,
-        releaseId: bundle.releaseId,
-      };
-      return bundle;
     },
     queryKey: [
       "ux-reset-investigate-evidence",
@@ -309,9 +322,17 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
   const retryDirectory = useCallback(() => {
     void directoryQuery.refetch();
   }, [directoryQuery]);
-  const retryEvidence = useCallback(() => {
-    retryFailedMeasuresRef.current = true;
-    void evidenceQuery.refetch();
+  const retryGateRef = useRef(false);
+  const retryEvidence = useCallback(async () => {
+    if (retryGateRef.current || evidenceQuery.isFetching) {
+      return;
+    }
+    retryGateRef.current = true;
+    try {
+      await evidenceQuery.refetch({ cancelRefetch: false });
+    } finally {
+      retryGateRef.current = false;
+    }
   }, [evidenceQuery]);
 
   const setCounty = useCallback(
@@ -358,6 +379,11 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     evidenceError: evidenceQuery.isError
       ? "County evidence did not load for the requested county."
       : null,
+    evidenceFetching:
+      !recovery &&
+      selection.kind === "county" &&
+      evidenceQuery.isFetching &&
+      Boolean(evidenceQuery.data),
     evidenceLoading:
       !recovery &&
       selection.kind === "county" &&
