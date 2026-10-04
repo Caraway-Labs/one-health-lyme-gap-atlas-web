@@ -114,7 +114,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Investigate | One Health Lyme Gap Atlas",
   },
   {
-    description: "Compare counties and scoring assumptions side by side.",
+    description: "Compare two counties on aligned governed measures.",
     href: RESET_COMPARE_PATH,
     icon: GitCompare,
     id: "compare",
@@ -122,7 +122,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Placeholder for the professional Compare destination in the UX Reset workspace.",
+      "Two-county evidence comparison with each measure's unit, period, and availability. Not a score ranking.",
     pageTitle: "Compare | One Health Lyme Gap Atlas",
   },
   {

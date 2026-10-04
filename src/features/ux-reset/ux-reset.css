@@ -295,3 +295,72 @@
 .ux-reset-pro-main a.ux-reset-investigate-action[data-variant="secondary"] {
   color: var(--secondary-foreground);
 }
+
+.ux-reset-compare {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ux-reset-compare-header,
+.ux-reset-compare-pair,
+.ux-reset-compare-table,
+.ux-reset-compare-next {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-compare-header,
+.ux-reset-compare-pair,
+.ux-reset-compare-next {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-compare-header {
+  border-left: 4px solid var(--primary);
+}
+
+.ux-reset-compare-slots {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 800px) {
+  .ux-reset-compare-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ux-reset-compare-slot,
+.ux-reset-compare-pair-actions,
+.ux-reset-compare-next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: end;
+}
+
+.ux-reset-compare-slot {
+  display: grid;
+  align-items: stretch;
+}
+
+.ux-reset-compare th .type-small,
+.ux-reset-compare td .type-small {
+  display: block;
+}
+
+.ux-reset-pro-main a.ux-reset-compare-action {
+  width: fit-content;
+  text-decoration: none;
+}
+
+.ux-reset-pro-main a.ux-reset-compare-action[data-variant="primary"] {
+  color: var(--primary-foreground);
+}
+
+.ux-reset-pro-main a.ux-reset-compare-action[data-variant="secondary"] {
+  color: var(--secondary-foreground);
+}
