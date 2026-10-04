@@ -68,7 +68,9 @@ test("ux-reset evidence provenance keyboard, expanded axe, and doc/source links"
   await expect(sourceLink).toHaveAttribute("target", "_blank");
   await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
 
-  await tabUntilFocused(page, async () => sourceLink.evaluate((node) => node === document.activeElement));
+  await tabUntilFocused(page, async () =>
+    sourceLink.evaluate((node) => node === document.activeElement)
+  );
   await expect(sourceLink).toBeFocused();
 
   const sourcePopupPromise = page.waitForEvent("popup");
@@ -79,7 +81,9 @@ test("ux-reset evidence provenance keyboard, expanded axe, and doc/source links"
     hostnameWithoutWww(CDC_SOURCE_URL)
   );
 
-  const technical = specimen.locator("details.ux-reset-evidence-provenance-technical");
+  const technical = specimen.locator(
+    "details.ux-reset-evidence-provenance-technical"
+  );
   const technicalSummary = technical.locator("summary", {
     hasText: "Technical reproducibility identifiers",
   });
@@ -95,7 +99,9 @@ test("ux-reset evidence provenance keyboard, expanded axe, and doc/source links"
   await expect(docsLink).toHaveAttribute("target", "_blank");
   await expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
 
-  await tabUntilFocused(page, async () => docsLink.evaluate((node) => node === document.activeElement));
+  await tabUntilFocused(page, async () =>
+    docsLink.evaluate((node) => node === document.activeElement)
+  );
   await expect(docsLink).toBeFocused();
 
   const docsPopupPromise = page.waitForEvent("popup");
