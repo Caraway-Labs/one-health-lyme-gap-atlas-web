@@ -100,12 +100,16 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     );
     if (!closeButton) return;
 
+    const workspaceNav = sidebar.querySelector<HTMLElement>(
+      'nav[aria-label="Professional workspace"]'
+    );
+
     const focusCloseNavigationIfNeeded = () => {
       const active = document.activeElement;
       if (active === closeButton) {
         return;
       }
-      if (active instanceof HTMLElement && sidebar.contains(active)) {
+      if (active instanceof HTMLElement && workspaceNav?.contains(active)) {
         return;
       }
       closeButton.focus({ preventScroll: true });
