@@ -34,3 +34,12 @@ export function getDocsHref(anchor?: string): string {
     getDocsUrl()
   ).toString();
 }
+
+/** Link to a published docs page slug (for example `evidence-and-uncertainty`). */
+export function getDocsPageHref(pageSlug: string): string {
+  const normalized = pageSlug.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (!normalized) {
+    return getDocsUrl();
+  }
+  return new URL(normalized, `${getDocsUrl().replace(/\/$/, "")}/`).toString();
+}

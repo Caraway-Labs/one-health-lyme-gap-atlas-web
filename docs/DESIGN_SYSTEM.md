@@ -71,6 +71,7 @@ These compose primitives and domain CSS. They are not rename-wrappers:
 - `AtlasStatusMessage` — loading, error, and empty copy
 - `AtlasMapLegend` — review-priority ramp with non-map caption
 - `AtlasPriorityBadge` — `Badge` plus `.priority-pill` severity colors
+- `EvidenceObject`, `EvidenceStateStrip`, `EvidenceProvenanceInspect` — UX Reset shared evidence/provenance presentation (`src/features/ux-reset/evidence/`; see [ux-reset-evidence-contract.md](./ux-reset-evidence-contract.md))
 
 Keep scoring, filter, geography, and provenance logic in feature code.
 

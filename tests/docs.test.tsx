@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { DocsLink } from "@/components/docs-link";
-import { getDocsHref, getDocsUrl } from "@/lib/docs-config";
+import { getDocsHref, getDocsPageHref, getDocsUrl } from "@/lib/docs-config";
 
 describe("documentation configuration", () => {
   afterEach(() => cleanup());
@@ -11,6 +11,9 @@ describe("documentation configuration", () => {
     expect(getDocsUrl({})).toBe("https://carawaylabs.com/docs");
     expect(getDocsHref("missing-is-not-zero")).toBe(
       "https://carawaylabs.com/docs#missing-is-not-zero"
+    );
+    expect(getDocsPageHref("evidence-and-uncertainty")).toBe(
+      "https://carawaylabs.com/docs/evidence-and-uncertainty"
     );
   });
 
