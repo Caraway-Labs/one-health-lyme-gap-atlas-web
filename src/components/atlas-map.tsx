@@ -9,7 +9,6 @@ import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Ref } from "react";
 
-import type { CountyScoreSummary } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   CONTIGUOUS_US_INITIAL_VIEW,
@@ -44,6 +43,15 @@ export type AtlasMapCamera = {
 
 export type AtlasMapHandle = {
   getMap: () => MapLibreMap | null;
+};
+
+/** County paint record for map rendering. Review scores satisfy this shape. */
+export type AtlasMapCounty = {
+  color?: string;
+  county?: string;
+  evidence_completeness?: number;
+  fips: string;
+  state: string;
 };
 
 function mapWithExternalJumpTo(
@@ -130,7 +138,7 @@ export function AtlasMap({
   ref,
 }: {
   geometry: FeatureCollection;
-  scores: CountyScoreSummary[];
+  scores: readonly AtlasMapCounty[];
   selectedFips: string;
   selectedState?: string;
   /** When set, fits the map camera to this state scope (Review). Independent of highlight `selectedState`. */
@@ -194,7 +202,7 @@ export function AtlasMap({
               completeness: county?.evidence_completeness ?? 0,
               selected: feature.properties.fips === selectedFips,
               selectedDistrict: Boolean(
-                county &&
+                county?.county &&
                 countyBelongsToDistrict(
                   county.state,
                   county.county,
@@ -216,14 +224,33 @@ export function AtlasMap({
       return;
     }
     setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
-    const instance = new MapLibre({
-      container: container.current,
-      style: { layers: [], sources: {}, version: 8 },
-      ...CONTIGUOUS_US_INITIAL_VIEW,
-      minZoom: 2,
-      maxZoom: 8,
-      attributionControl: false,
-    });
+    let instance: MapLibreMap;
+    try {
+      instance = new MapLibre({
+        container: container.current,
+        style: { layers: [], sources: {}, version: 8 },
+        ...CONTIGUOUS_US_INITIAL_VIEW,
+        minZoom: 2,
+        maxZoom: 8,
+        attributionControl: false,
+      });
+    } catch {
+      onErrorRef.current?.();
+      return;
+    }
+    const canvas = instance.getCanvas();
+    if (
+      typeof canvas.getContext === "function" &&
+      !canvas.getContext("webgl2")
+    ) {
+      onErrorRef.current?.();
+      try {
+        instance.remove();
+      } catch {
+        // WebGL setup can fail before MapLibre creates a painter.
+      }
+      return;
+    }
     instance.addControl(
       new NavigationControl({ showCompass: false }),
       "top-right"

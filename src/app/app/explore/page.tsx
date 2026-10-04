@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
+import { ResetExploreExperience } from "@/features/ux-reset/explore/reset-explore-experience";
 import { pageMetadataForResetRoute } from "@/features/ux-reset/paths";
-import { ResetPlaceholderPage } from "@/features/ux-reset/placeholder-page";
 
 export const metadata: Metadata = pageMetadataForResetRoute("explore");
 
 export default function ResetExplorePage() {
-  return <ResetPlaceholderPage routeId="explore" />;
+  return <ResetExploreExperience />;
 }

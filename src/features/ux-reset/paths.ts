@@ -88,7 +88,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Review | One Health Lyme Gap Atlas",
   },
   {
-    description: "Explore linked map, table, chart, and evidence views.",
+    description:
+      "Discover geographic patterns across governed measures before a county investigation.",
     href: RESET_EXPLORE_PATH,
     icon: Compass,
     id: "explore",
@@ -96,7 +97,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Placeholder for the professional Explore destination in the UX Reset workspace.",
+      "Map-led spatial discovery for governed measures, with the same values available without the map.",
     pageTitle: "Explore | One Health Lyme Gap Atlas",
   },
   {

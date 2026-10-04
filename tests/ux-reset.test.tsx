@@ -1,5 +1,7 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import ResetExplorePage from "@/app/app/explore/page";
@@ -75,10 +77,17 @@ describe("UX Reset professional workspace", () => {
 
   it("marks the active destination without matching sibling prefixes", () => {
     pathname = RESET_EXPLORE_PATH;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     render(
-      <ResetProfessionalShell>
-        <ResetExplorePage />
-      </ResetProfessionalShell>
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter>
+          <ResetProfessionalShell>
+            <ResetExplorePage />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
     );
 
     const navigation = screen.getByRole("navigation", {
