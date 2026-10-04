@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   identityFromPublishedCounty,
@@ -6,6 +6,7 @@ import {
   reusableMeasureOutcomes,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
+  clearObservationRetryDeadlines,
   INVESTIGATE_OBSERVATION_CONCURRENCY,
   loadCountyEvidenceBundle,
 } from "@/features/ux-reset/investigate/load-county-evidence";
@@ -23,6 +24,7 @@ let inFlight = 0;
 let maxInFlight = 0;
 const transientRemaining = new Map<string, number>();
 let retryAfterSeconds = 0;
+let transientStatus = 429;
 
 vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
@@ -43,7 +45,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         throw new AtlasApiError(
           "rate limited",
           "/v1/observations",
-          429,
+          transientStatus,
           null,
           retryAfterSeconds
         );
@@ -77,6 +79,13 @@ function measures(count: number): Measure[] {
 }
 
 describe("county evidence loading", () => {
+  afterEach(() => {
+    clearObservationRetryDeadlines();
+    transientStatus = 429;
+    retryAfterSeconds = 0;
+    transientRemaining.clear();
+  });
+
   it("limits concurrent reads and retries a rate limit", async () => {
     calls.length = 0;
     inFlight = 0;
@@ -281,6 +290,142 @@ describe("county evidence loading", () => {
       transientRemaining.clear();
       vi.useRealTimers();
     }
+  });
+
+  async function cooldownAfterAbortedRead(status: number) {
+    vi.useFakeTimers();
+    calls.length = 0;
+    transientRemaining.set("measure-0", 99);
+    retryAfterSeconds = 60;
+    transientStatus = status;
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    const boulder = identityFromPublishedCounty({
+      county: "Boulder",
+      fips: "08013",
+      state: "CO",
+    });
+    const started = new AbortController();
+    const firstLoad = loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(1),
+      period: null,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: started.signal,
+    });
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      const atResponse = calls.length;
+      await vi.advanceTimersByTimeAsync(1000);
+      started.abort();
+      await firstLoad.catch(() => false);
+      const resumed = new AbortController();
+      const secondLoad = loadCountyEvidenceBundle({
+        domainsRequestFailed: false,
+        fips: "08001",
+        identity: identity!,
+        indicators: [],
+        measures: measures(1),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: resumed.signal,
+      });
+      await vi.advanceTimersByTimeAsync(58_000);
+      const whileCooling = calls.length;
+      await vi.advanceTimersByTimeAsync(1000);
+      const atDeadline = calls.length;
+      resumed.abort();
+      await secondLoad.catch(() => false);
+      calls.length = 0;
+      const otherCountySignal = new AbortController();
+      const otherCountyLoad = loadCountyEvidenceBundle({
+        domainsRequestFailed: false,
+        fips: "08013",
+        identity: boulder!,
+        indicators: [],
+        measures: measures(1),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: otherCountySignal.signal,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      const otherCounty = calls.length;
+      otherCountySignal.abort();
+      await otherCountyLoad.catch(() => false);
+      calls.length = 0;
+      const otherPeriodSignal = new AbortController();
+      const otherPeriodLoad = loadCountyEvidenceBundle({
+        domainsRequestFailed: false,
+        fips: "08001",
+        identity: identity!,
+        indicators: [],
+        measures: measures(1),
+        period: "2024-06-01",
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: otherPeriodSignal.signal,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      const otherPeriod = calls.length;
+      otherPeriodSignal.abort();
+      await otherPeriodLoad.catch(() => false);
+      calls.length = 0;
+      const otherReleaseSignal = new AbortController();
+      const otherReleaseLoad = loadCountyEvidenceBundle({
+        domainsRequestFailed: false,
+        fips: "08001",
+        identity: identity!,
+        indicators: [],
+        measures: measures(1),
+        period: null,
+        releaseId: "other-release",
+        signal: otherReleaseSignal.signal,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      const otherRelease = calls.length;
+      otherReleaseSignal.abort();
+      await otherReleaseLoad.catch(() => false);
+      return {
+        atDeadline,
+        atResponse,
+        otherCounty,
+        otherPeriod,
+        otherRelease,
+        whileCooling,
+      };
+    } finally {
+      started.abort();
+      vi.useRealTimers();
+    }
+  }
+
+  it("keeps a 429 Retry-After when the wait is aborted", async () => {
+    const result = await cooldownAfterAbortedRead(429);
+    expect(result).toStrictEqual({
+      atDeadline: 2,
+      atResponse: 1,
+      otherCounty: 1,
+      otherPeriod: 1,
+      otherRelease: 1,
+      whileCooling: 1,
+    });
+  });
+
+  it("keeps a 503 Retry-After when the wait is aborted", async () => {
+    const result = await cooldownAfterAbortedRead(503);
+    expect(result).toStrictEqual({
+      atDeadline: 2,
+      atResponse: 1,
+      otherCounty: 1,
+      otherPeriod: 1,
+      otherRelease: 1,
+      whileCooling: 1,
+    });
   });
 
   it("does not reuse evidence from a different county or period", async () => {

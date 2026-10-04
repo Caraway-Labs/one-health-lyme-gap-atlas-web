@@ -11,6 +11,7 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ResetInvestigateExperience } from "@/features/ux-reset/investigate/reset-investigate-experience";
 import { AtlasApiError } from "@/lib/api-mutator";
 
@@ -37,6 +38,7 @@ const controls: {
   rateLimitRemaining: number;
   retryAfterSeconds: number;
   scenario: InvestigateScenario;
+  transientStatus: number;
 } = {
   delayFips: null,
   failMeasureId: null,
@@ -47,6 +49,7 @@ const controls: {
   rateLimitRemaining: 0,
   retryAfterSeconds: 0,
   scenario: "mixed",
+  transientStatus: 429,
 };
 
 let metadataGate = Promise.withResolvers<boolean>();
@@ -195,7 +198,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           throw new AtlasApiError(
             "rate limited",
             "/v1/observations",
-            429,
+            controls.transientStatus,
             null,
             controls.retryAfterSeconds
           );
@@ -350,6 +353,8 @@ describe("County Investigate workspace", () => {
     controls.metadataStatus = 200;
     controls.rateLimitRemaining = 0;
     controls.retryAfterSeconds = 0;
+    controls.transientStatus = 429;
+    clearObservationRetryDeadlines();
     metadataGate.resolve(true);
     metadataGate = Promise.withResolvers<boolean>();
     controls.scenario = "mixed";
@@ -689,6 +694,86 @@ describe("County Investigate workspace", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  async function remountDuringServerCooldown(status: number) {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 300_000 } },
+    });
+    controls.failMeasureId = INVESTIGATE_TICK_MEASURE_ID;
+    controls.scenario = "mixed";
+    controls.transientStatus = status;
+    const first = renderInvestigate("?county=08001&scope=CO", { client });
+    await waitForRetryableCases();
+    const ticksBefore = tickRequestCount();
+    controls.rateLimitRemaining = 4;
+    controls.retryAfterSeconds = 60;
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("investigate-retry-evidence"));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const atLimited = tickRequestCount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      first.unmount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      renderInvestigate("?county=08001&scope=CO", { client });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const evidence =
+        screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+      if (
+        !evidence.includes("12 cases") ||
+        !screen.queryByTestId("investigate-retry-evidence")
+      ) {
+        throw new Error("The cached county did not remount.");
+      }
+      const cases = true;
+      const afterRemount = tickRequestCount();
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("investigate-retry-evidence"));
+        await vi.advanceTimersByTimeAsync(58_000);
+      });
+      const whileCooling = tickRequestCount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      return {
+        cases,
+        sentAtDeadline: tickRequestCount() === afterRemount + 1,
+        sentDuringCooldown: whileCooling > afterRemount,
+        stayedCached:
+          afterRemount === atLimited && atLimited === ticksBefore + 1,
+      };
+    } finally {
+      vi.useRealTimers();
+    }
+  }
+
+  it("waits for a 429 Retry-After that arrived before remount", async () => {
+    const result = await remountDuringServerCooldown(429);
+    expect(result).toStrictEqual({
+      cases: true,
+      sentAtDeadline: true,
+      sentDuringCooldown: false,
+      stayedCached: true,
+    });
+  });
+
+  it("waits for a 503 Retry-After that arrived before remount", async () => {
+    const result = await remountDuringServerCooldown(503);
+    expect(result).toStrictEqual({
+      cases: true,
+      sentAtDeadline: true,
+      sentDuringCooldown: false,
+      stayedCached: true,
+    });
   });
 
   it("keeps the requested dataset on return links until the release resolves", async () => {

@@ -315,6 +315,8 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
         period: urlState.period,
         releaseId,
       });
+      // The cached bundle can predate a Retry-After received during a cancelled
+      // retry. The loader also waits on that identity-scoped deadline.
       return loadCountyEvidenceBundle({
         cooldowns: cooldownsForCachedBundle({
           bundle: cached,

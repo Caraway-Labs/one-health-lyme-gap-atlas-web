@@ -46,6 +46,56 @@ const TRANSIENT_ATTEMPT_LIMIT = 3;
 const MILLISECONDS_PER_SECOND = 1000;
 const UNSCHEDULED_RETRY_BACKOFF_MS = 50;
 
+type ObservationCooldownScope = {
+  fips: string;
+  measureId: string;
+  period: string | null;
+  releaseId: string;
+};
+
+/**
+ * Deadlines received from Retry-After. Kept outside the evidence query so an
+ * abort during the wait does not leave the previous bundle as the only record.
+ */
+const observationRetryDeadlines = new Map<string, number>();
+
+function observationCooldownKey(scope: ObservationCooldownScope): string {
+  return [
+    scope.releaseId,
+    scope.fips,
+    scope.period ?? "",
+    scope.measureId,
+  ].join("\u0000");
+}
+
+function rememberObservationCooldown(
+  scope: ObservationCooldownScope,
+  retryAfterSeconds: number | null
+): void {
+  if (retryAfterSeconds === null || retryAfterSeconds < 0) {
+    return;
+  }
+  const retryAtMs = Date.now() + retryAfterSeconds * MILLISECONDS_PER_SECOND;
+  const key = observationCooldownKey(scope);
+  const existing = observationRetryDeadlines.get(key);
+  if (existing === undefined || retryAtMs > existing) {
+    observationRetryDeadlines.set(key, retryAtMs);
+  }
+}
+
+function rememberedCooldownMs(scope: ObservationCooldownScope): number | null {
+  return observationRetryDeadlines.get(observationCooldownKey(scope)) ?? null;
+}
+
+function forgetObservationCooldown(scope: ObservationCooldownScope): void {
+  observationRetryDeadlines.delete(observationCooldownKey(scope));
+}
+
+/** Drops identity-scoped deadlines. Tests use this so later cases are not blocked. */
+export function clearObservationRetryDeadlines(): void {
+  observationRetryDeadlines.clear();
+}
+
 type QueryRetrySetting =
   | boolean
   | number
@@ -353,6 +403,7 @@ export function indicatorDomainsById(
 async function fetchMeasureObservations(input: {
   fips: string;
   measureId: string;
+  period: string | null;
   releaseId: string;
   signal: AbortSignal;
   timeBound: ExploreTimeBound;
@@ -367,7 +418,16 @@ async function fetchMeasureObservations(input: {
       pageToken,
       timeBound: input.timeBound,
     });
-    const response = await readObservationPage(params, input.signal);
+    const response = await readObservationPage(
+      params,
+      {
+        fips: input.fips,
+        measureId: input.measureId,
+        period: input.period,
+        releaseId: input.releaseId,
+      },
+      input.signal
+    );
     const parsed = validateApiResponse(
       "Observations",
       ObservationsV1ObservationsGetResponse,
@@ -392,15 +452,18 @@ async function fetchMeasureObservations(input: {
 
 async function readObservationPage(
   params: ObservationsV1ObservationsGetParams,
+  scope: ObservationCooldownScope,
   signal: AbortSignal
 ) {
   for (let attempt = 1; attempt <= TRANSIENT_ATTEMPT_LIMIT; attempt += 1) {
     try {
       const response = await observationsV1ObservationsGet(params, { signal });
       if (response.status === 200) {
+        forgetObservationCooldown(scope);
         return response;
       }
       const retryAfter = retryAfterSecondsFromHeaders(response.headers);
+      rememberObservationCooldown(scope, retryAfter);
       const retryable =
         isTransientStatus(response.status) && attempt < TRANSIENT_ATTEMPT_LIMIT;
       if (!retryable) {
@@ -416,6 +479,9 @@ async function readObservationPage(
     } catch (error) {
       if (isAbortError(error) || signal.aborted) {
         throw error;
+      }
+      if (error instanceof AtlasApiError) {
+        rememberObservationCooldown(scope, error.retryAfterSeconds);
       }
       const retryable =
         error instanceof AtlasApiError &&
@@ -453,16 +519,19 @@ function retryAtMsFromError(error: unknown): number | null {
   return Date.now() + error.retryAfterSeconds * MILLISECONDS_PER_SECOND;
 }
 
-async function waitForMeasureCooldown(
-  cooldowns: readonly MeasureRetryCooldown[] | null | undefined,
-  measureId: string,
-  signal: AbortSignal
-): Promise<void> {
-  const cooldown = cooldowns?.find((entry) => entry.measureId === measureId);
-  if (!cooldown) {
-    return;
-  }
-  await delay(cooldown.retryAtMs - Date.now(), signal);
+async function waitForMeasureCooldown(input: {
+  cooldowns: readonly MeasureRetryCooldown[] | null | undefined;
+  scope: ObservationCooldownScope;
+  signal: AbortSignal;
+}): Promise<void> {
+  const fromBundle = input.cooldowns?.find(
+    (entry) => entry.measureId === input.scope.measureId
+  )?.retryAtMs;
+  const retryAtMs = Math.max(
+    fromBundle ?? 0,
+    rememberedCooldownMs(input.scope) ?? 0
+  );
+  await delay(retryAtMs - Date.now(), input.signal);
 }
 
 export type PreservedCountyMeasures = {
@@ -537,14 +606,21 @@ export async function loadCountyEvidenceBundle(input: {
         };
       }
       try {
-        await waitForMeasureCooldown(
-          input.cooldowns,
-          measure.measure_id,
-          input.signal
-        );
+        const scope = {
+          fips: input.fips,
+          measureId: measure.measure_id,
+          period: input.period,
+          releaseId: input.releaseId,
+        };
+        await waitForMeasureCooldown({
+          cooldowns: input.cooldowns,
+          scope,
+          signal: input.signal,
+        });
         const observations = await fetchMeasureObservations({
           fips: input.fips,
           measureId: measure.measure_id,
+          period: input.period,
           releaseId: input.releaseId,
           signal: input.signal,
           timeBound,
