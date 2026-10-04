@@ -1,5 +1,20 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function expectHistoryPath(
+  page: Page,
+  pathname: string,
+  direction: "back" | "forward"
+) {
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === pathname, {
+      waitUntil: "domcontentloaded",
+    }),
+    direction === "back"
+      ? page.goBack({ waitUntil: "domcontentloaded" })
+      : page.goForward({ waitUntil: "domcontentloaded" }),
+  ]);
+}
 
 test("preserves reset deep links through sign-in when auth is configured", async ({
   page,
@@ -149,22 +164,13 @@ test("bounded context survives rendered navigation, reload, and browser history"
   expect(url.pathname).toBe("/app/action");
   expect(url.searchParams.get("county")).toBe("08001");
 
-  await page.goBack({ waitUntil: "commit" });
-  await expect
-    .poll(() => new URL(page.url()).pathname)
-    .toBe("/app/investigate");
+  await expectHistoryPath(page, "/app/investigate", "back");
   expectInvestigateContext(new URL(page.url()));
 
-  await page.goBack({ waitUntil: "commit" });
-  await expect.poll(() => new URL(page.url()).pathname).toBe("/app/compare");
+  await expectHistoryPath(page, "/app/compare", "back");
   expectCompareSelection(new URL(page.url()));
 
-  await Promise.all([
-    page.waitForURL((url) => url.pathname === "/app/investigate", {
-      waitUntil: "commit",
-    }),
-    page.goForward({ waitUntil: "commit" }),
-  ]);
+  await expectHistoryPath(page, "/app/investigate", "forward");
   expectInvestigateContext(new URL(page.url()));
   await page
     .getByRole("navigation", { name: "Professional workspace" })

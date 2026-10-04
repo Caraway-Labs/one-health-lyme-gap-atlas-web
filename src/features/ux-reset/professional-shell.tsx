@@ -3,7 +3,7 @@
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type { MouseEvent, ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +72,16 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     }
   }, [isMobileViewport, mobileOpen, setMobileOpen]);
 
+  useLayoutEffect(() => {
+    if (!(mobileOpen && isMobileViewport)) {
+      return;
+    }
+
+    sidebarRef.current
+      ?.querySelector<HTMLElement>(".app-mobile-nav-close")
+      ?.focus({ preventScroll: true });
+  }, [isMobileViewport, mobileOpen]);
+
   useEffect(() => {
     if (!mobileOpen) {
       previousFocusRef.current?.focus({ preventScroll: true });
@@ -85,17 +95,27 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
 
-    const focusCloseNavigation = () => {
-      sidebar
-        .querySelector<HTMLElement>(".app-mobile-nav-close")
-        ?.focus({ preventScroll: true });
+    const closeButton = sidebar.querySelector<HTMLElement>(
+      ".app-mobile-nav-close"
+    );
+    if (!closeButton) return;
+
+    const focusCloseNavigationIfNeeded = () => {
+      const active = document.activeElement;
+      if (active === closeButton) {
+        return;
+      }
+      if (active instanceof HTMLElement && sidebar.contains(active)) {
+        return;
+      }
+      closeButton.focus({ preventScroll: true });
     };
 
-    focusCloseNavigation();
+    focusCloseNavigationIfNeeded();
     let followUpFrame = 0;
     const initialFrame = window.requestAnimationFrame(() => {
-      focusCloseNavigation();
-      followUpFrame = window.requestAnimationFrame(focusCloseNavigation);
+      focusCloseNavigationIfNeeded();
+      followUpFrame = window.requestAnimationFrame(focusCloseNavigationIfNeeded);
     });
 
     const focusableSelector =
