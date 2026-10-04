@@ -20,6 +20,7 @@ import {
   countyIsSubstantiallyVisible,
   fitCountyBounds,
   mapCameraDuration,
+  stateScopeBoundsFromGeometry,
   type CountyBounds,
 } from "@/lib/atlas-map-camera";
 import { countyBelongsToDistrict } from "@/lib/health-districts";
@@ -148,6 +149,7 @@ export function AtlasMap({
   const map = useRef<MapLibreMap | null>(null);
   const applyingExternalMove = useRef(false);
   const previousSelectedFips = useRef<string | null>(null);
+  const previousFramedState = useRef<string | null>(null);
   const cameraFitGeneration = useRef(0);
   const [mapReady, setMapReady] = useState(false);
   const selectRef = useRef(onSelect);
@@ -341,6 +343,33 @@ export function AtlasMap({
     if (!mapReady || !instance?.getLayer("selected-outline")) {
       return;
     }
+    if (selectedState === "ALL") {
+      previousFramedState.current = null;
+    } else if (previousFramedState.current !== selectedState) {
+      previousFramedState.current = selectedState;
+      const stateBounds = stateScopeBoundsFromGeometry(
+        geometry,
+        scores,
+        selectedState
+      );
+      if (stateBounds) {
+        applyingExternalMove.current = true;
+        const generation = cameraFitGeneration.current + 1;
+        cameraFitGeneration.current = generation;
+        instance.stop();
+        instance.once("moveend", () => {
+          if (cameraFitGeneration.current === generation) {
+            applyingExternalMove.current = false;
+          }
+        });
+        fitCountyBounds(instance, stateBounds, {
+          duration: mapCameraDuration(),
+          stop: false,
+        });
+        previousSelectedFips.current = selectedFips;
+        return;
+      }
+    }
     if (previousSelectedFips.current === null) {
       previousSelectedFips.current = selectedFips;
       return;
@@ -380,7 +409,7 @@ export function AtlasMap({
       duration: mapCameraDuration(),
       stop: false,
     });
-  }, [geometry, mapReady, selectedFips]);
+  }, [geometry, mapReady, scores, selectedFips, selectedState]);
 
   return (
     <div

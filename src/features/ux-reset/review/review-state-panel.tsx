@@ -50,10 +50,14 @@ export function ReviewStatePanel({
     () => new Set(rankedCounties.map((county) => county.fips)),
     [rankedCounties]
   );
-  const [selectedFips, setSelectedFips] = useState(
-    () => rankedCounties[0]?.fips ?? ""
-  );
+  const [pickedFips, setPickedFips] = useState("");
   const [showTable, setShowTable] = useState(false);
+  const selectedFips = useMemo(() => {
+    if (pickedFips && inScopeFips.has(pickedFips)) {
+      return pickedFips;
+    }
+    return rankedCounties[0]?.fips ?? "";
+  }, [inScopeFips, pickedFips, rankedCounties]);
 
   const geometryQuery = useQuery({
     enabled: Boolean(releaseId),
@@ -67,7 +71,7 @@ export function ReviewStatePanel({
       if (!inScopeFips.has(fips)) {
         return;
       }
-      setSelectedFips(fips);
+      setPickedFips(fips);
     },
     [inScopeFips]
   );

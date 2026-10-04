@@ -369,6 +369,53 @@ describe("AtlasMap county camera", () => {
     });
   });
 
+  it("frames the map to the selected state on initial load", () => {
+    stubPrefersReducedMotion(false);
+    const view = render(
+      <AtlasMap
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const map = loadMap();
+    expect(map?.fitBounds).toHaveBeenCalledExactlyOnceWith(
+      [-105, 39, -104, 40],
+      { duration: 450, maxZoom: 8, padding: 48 }
+    );
+    view.unmount();
+  });
+
+  it("reframes the map when the selected state changes", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    view.rerender(
+      <AtlasMap
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="06037"
+        selectedState="CA"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(
+      [-118.7, 33.7, -118.3, 34],
+      { duration: 450, maxZoom: 8, padding: 48 }
+    );
+  });
+
   it("does not treat camera movement as a county selection", () => {
     stubPrefersReducedMotion(false);
     const onSelect = vi.fn<(fips: string, surface: string) => void>();

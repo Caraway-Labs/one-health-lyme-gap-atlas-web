@@ -182,7 +182,7 @@ test("bounded context survives rendered navigation, reload, and browser history"
   url = new URL(page.url());
   expect(url.pathname).toBe("/app/investigate");
   expect(url.searchParams.get("county")).toBeNull();
-  expect(url.searchParams.get("scope")).toBeNull();
+  expect(url.searchParams.get("scope")).toBe("ALL");
   expect(url.searchParams.get("period")).toBeNull();
   expect(url.searchParams.get("dataset")).toBe("alpha");
 });

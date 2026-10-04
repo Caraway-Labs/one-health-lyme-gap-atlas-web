@@ -7,11 +7,14 @@ import {
   waitFor,
 } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
+import { useQueryStates } from "nuqs";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetDestinationHref } from "@/features/ux-reset";
 import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
+import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
+import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
 import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
 
@@ -101,7 +104,12 @@ function stubDesktopMatchMedia() {
   );
 }
 
-function renderReview(search = "") {
+function renderReview(
+  search = "",
+  options: {
+    onUrlUpdate?: (queryString: string) => void;
+  } = {}
+) {
   mockedSearch = search.startsWith("?") ? search.slice(1) : search;
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -109,6 +117,7 @@ function renderReview(search = "") {
   return render(
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter
+        onUrlUpdate={({ queryString }) => options.onUrlUpdate?.(queryString)}
         searchParams={new URL(`http://localhost/app/review${search}`).search}
       >
         <ResetReviewExperience />
@@ -227,6 +236,87 @@ describe("Reset Review scope UI", () => {
       screen.getByRole("button", { name: "View full county list" })
     );
     expect(screen.getAllByRole("row").length).toBeGreaterThan(41);
+  });
+
+  it("writes scope=ALL through the nuqs setter when national scope is chosen", async () => {
+    const urlUpdates: string[] = [];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    function ScopeSetterProbe() {
+      const [, setUrlState] = useQueryStates(reviewSearchParams, {
+        history: "push",
+      });
+      return (
+        <button
+          data-testid="set-scope-all"
+          type="button"
+          onClick={() => setUrlState({ scope: "ALL" })}
+        >
+          Set national scope
+        </button>
+      );
+    }
+
+    render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter
+          onUrlUpdate={({ queryString }) => urlUpdates.push(queryString)}
+          searchParams=""
+        >
+          <ScopeSetterProbe />
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(screen.getByTestId("set-scope-all"));
+    await waitFor(() => expect(urlUpdates.at(-1) ?? "").toContain("scope=ALL"));
+  });
+
+  it("surfaces unavailable dataset metadata without a perpetual loading state", async () => {
+    const { metadataV1AtlasMetadataGet } = await import("@/generated/atlas");
+    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValueOnce({
+      data: null,
+      status: 404,
+    } as never);
+    renderReview("?scope=CO&dataset=older-release");
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain("older-release")
+    );
+    expect(screen.queryByText("Loading county scores…")).toBeNull();
+  });
+
+  it("realigns the active county when switching state scopes", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { rerender } = render(
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          mapCounties={[reviewScopeScoresFixture.counties[0]]}
+          rankedCounties={[reviewScopeScoresFixture.counties[0]]}
+          releaseId="alpha-2026"
+          scopeCode="CO"
+        />
+      </QueryClientProvider>
+    );
+    expect(document.querySelector(".rank-row.active")?.textContent).toContain(
+      "Denver"
+    );
+    rerender(
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          mapCounties={[reviewScopeScoresFixture.counties[2]]}
+          rankedCounties={[reviewScopeScoresFixture.counties[2]]}
+          releaseId="alpha-2026"
+          scopeCode="NY"
+        />
+      </QueryClientProvider>
+    );
+    expect(document.querySelector(".rank-row.active")?.textContent).toContain(
+      "Albany"
+    );
   });
 
   it("preserves scope=ALL across explore handoff URLs", () => {

@@ -20,10 +20,10 @@ export function ReviewReleaseEvidence({
   isLoading,
   metadata,
 }: ReviewReleaseEvidenceProps) {
-  const loadState = isLoading
-    ? releaseEvidenceLoadStateValues.loading
-    : isError
-      ? releaseEvidenceLoadStateValues.error
+  const loadState = isError
+    ? releaseEvidenceLoadStateValues.error
+    : isLoading
+      ? releaseEvidenceLoadStateValues.loading
       : releaseEvidenceLoadStateValues.ready;
 
   const context = metadata

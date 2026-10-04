@@ -35,6 +35,24 @@ async function installReviewApiMocks(
 }
 
 test.describe("Review national and state scope controls", () => {
+  test("writes scope=ALL when selecting United States from profile default state", async ({
+    page,
+  }) => {
+    await installReviewApiMocks(page, { profileState: "CO" });
+    await page.goto("/app/review");
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "CO"
+    );
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "United States" }).click();
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+  });
+
   test("keeps explicit national scope after reload when profile defaults to a state", async ({
     page,
   }) => {

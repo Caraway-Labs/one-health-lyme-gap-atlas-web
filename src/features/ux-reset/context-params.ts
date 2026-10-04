@@ -164,7 +164,9 @@ function canonicalPeriodFromQuery(values: readonly string[]): string | null {
 const reviewScopeParser = createMultiParser({
   parse: (values) => canonicalScopeFromQueryValues(values),
   serialize: (value) => [value],
-}).withDefault("ALL");
+})
+  .withOptions({ clearOnDefault: false })
+  .withDefault("ALL");
 
 const countyFipsParser = createMultiParser({
   parse: (values) => canonicalCountyFromQueryValues(values),

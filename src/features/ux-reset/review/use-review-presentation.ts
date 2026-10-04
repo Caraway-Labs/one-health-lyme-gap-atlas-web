@@ -88,7 +88,9 @@ export function useReviewPresentation(
     return buildReviewScopePresentation(scope, scoresQuery.data.counties);
   }, [scope, scoresQuery.data]);
 
-  const isLoading = metadataQuery.isPending || scoresQuery.isPending;
+  const scoresQueryEnabled = Boolean(releaseId) && !metadataQuery.isError;
+  const isLoading =
+    metadataQuery.isPending || (scoresQueryEnabled && scoresQuery.isPending);
   const metadataIsError = metadataQuery.isError;
   const scoresIsError = scoresQuery.isError;
   const metadataError = metadataIsError
