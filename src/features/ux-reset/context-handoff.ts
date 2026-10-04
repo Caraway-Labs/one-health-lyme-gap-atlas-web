@@ -1,8 +1,10 @@
 import {
+  parseUxResetSharedContext,
   readExploreSelectedFips,
-  serializeCompareFipsList,
+  sharedContextToSearchParams,
   UX_RESET_PAGE_LOCAL_PARAM_KEYS,
   UX_RESET_SHARED_CONTEXT_PARAM_KEYS,
+  type UxResetSharedContext,
   type UxResetSharedContextParamKey,
 } from "@/features/ux-reset/context-params";
 import {
@@ -11,11 +13,6 @@ import {
   type UxResetDestinationId,
   uxResetDestinationFromPath,
 } from "@/features/ux-reset/routes";
-import { isCountyFips } from "@/lib/county-geography";
-
-const DATASET_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const STATE_SCOPE_PATTERN = /^[A-Z]{2}$/;
 
 type SearchParamSource = Pick<URLSearchParams, "get" | "getAll" | "has">;
 
@@ -37,6 +34,24 @@ export const UX_RESET_HANDOFF_ACCEPTANCE: Record<
   settings: [],
 };
 
+/**
+ * Shared keys each source route may export during handoff.
+ * Feed and Settings export nothing even if the URL contains query params.
+ */
+export const UX_RESET_HANDOFF_EXPORT: Record<
+  UxResetDestinationId,
+  readonly UxResetSharedContextParamKey[]
+> = {
+  action: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  assistant: ["county", "dataset"],
+  compare: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  explore: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  feed: [],
+  investigate: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  review: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  settings: [],
+};
+
 export type UxResetHandoffResult = {
   /** Query keys copied onto the destination URL. */
   params: URLSearchParams;
@@ -46,33 +61,6 @@ export type UxResetHandoffResult = {
 
 function normalizePath(pathname: string): string {
   return pathname.split(/[?#]/, 1)[0] || "/";
-}
-
-function shouldCopySharedValue(
-  key: UxResetSharedContextParamKey,
-  value: string
-): boolean {
-  switch (key) {
-    case "scope": {
-      return value === "ALL" || STATE_SCOPE_PATTERN.test(value);
-    }
-    case "county": {
-      return isCountyFips(value);
-    }
-    case "compare": {
-      return value.split(",").some((part) => isCountyFips(part.trim()));
-    }
-    case "dataset": {
-      return DATASET_PATTERN.test(value);
-    }
-    case "period": {
-      return ISO_DATE_PATTERN.test(value);
-    }
-    default: {
-      const _exhaustive: never = key;
-      return _exhaustive;
-    }
-  }
 }
 
 const ALL_TRACKED_SOURCE_KEYS = [
@@ -96,7 +84,7 @@ const ALL_TRACKED_SOURCE_KEYS = [
 
 function collectSourceKeys(
   searchParams: SearchParamSource,
-  sourceDestination: UxResetDestinationId | null
+  sourceDestination: UxResetDestinationId
 ): Set<string> {
   const keys = new Set<string>();
   for (const key of ALL_TRACKED_SOURCE_KEYS) {
@@ -104,43 +92,82 @@ function collectSourceKeys(
       keys.add(key);
     }
   }
-  if (sourceDestination) {
-    for (const key of UX_RESET_PAGE_LOCAL_PARAM_KEYS[sourceDestination]) {
-      if (searchParams.has(key)) {
-        keys.add(key);
-      }
+  for (const key of UX_RESET_PAGE_LOCAL_PARAM_KEYS[sourceDestination]) {
+    if (searchParams.has(key)) {
+      keys.add(key);
     }
   }
   return keys;
 }
 
-function appendCompareFromSource(
-  handoff: URLSearchParams,
+function intersectHandoffKeys(
+  sourceDestination: UxResetDestinationId,
+  targetDestination: UxResetDestinationId
+): UxResetSharedContextParamKey[] {
+  const exported = new Set(UX_RESET_HANDOFF_EXPORT[sourceDestination]);
+  return UX_RESET_HANDOFF_ACCEPTANCE[targetDestination].filter((key) =>
+    exported.has(key)
+  );
+}
+
+function contextWithExploreCompareFallback(
+  context: UxResetSharedContext,
   sourceSearchParams: SearchParamSource,
-  sourceDestination: UxResetDestinationId | null
-): void {
-  if (handoff.has("compare")) {
-    return;
+  sourceDestination: UxResetDestinationId,
+  handoffKeys: readonly UxResetSharedContextParamKey[]
+): UxResetSharedContext {
+  if (
+    !handoffKeys.includes("compare") ||
+    context.compare.length > 0 ||
+    sourceDestination !== "explore"
+  ) {
+    return context;
   }
-  if (sourceSearchParams.has("compare")) {
-    for (const value of sourceSearchParams.getAll("compare")) {
-      if (shouldCopySharedValue("compare", value)) {
-        handoff.append("compare", value);
-      }
-    }
-    return;
+  const selected = readExploreSelectedFips(sourceSearchParams);
+  if (selected.length === 0) {
+    return context;
   }
-  if (sourceDestination === "explore") {
-    const selected = readExploreSelectedFips(sourceSearchParams);
-    if (selected.length > 0) {
-      handoff.set("compare", serializeCompareFipsList(selected));
-    }
+  return { ...context, compare: selected };
+}
+
+function emptySharedContext(): UxResetSharedContext {
+  return {
+    compare: [],
+    county: null,
+    dataset: null,
+    period: null,
+    scope: "ALL",
+  };
+}
+
+function pickSharedContext(
+  context: UxResetSharedContext,
+  keys: readonly UxResetSharedContextParamKey[]
+): UxResetSharedContext {
+  const allowed = new Set(keys);
+  const next = emptySharedContext();
+  if (allowed.has("scope")) {
+    next.scope = context.scope;
   }
+  if (allowed.has("county")) {
+    next.county = context.county;
+  }
+  if (allowed.has("compare")) {
+    next.compare = context.compare;
+  }
+  if (allowed.has("dataset")) {
+    next.dataset = context.dataset;
+  }
+  if (allowed.has("period")) {
+    next.period = context.period;
+  }
+  return next;
 }
 
 /**
  * Build destination query parameters for UX Reset shell navigation.
- * Copies only semantically valid shared context; never promotes page-local controls.
+ * Parses and canonicalizes source context once, applies source export and
+ * destination acceptance policies, then serializes one value per key.
  */
 export function uxResetContextHandoffSearchParams(
   sourcePathname: string,
@@ -155,43 +182,58 @@ export function uxResetContextHandoffSearchParams(
   }
 
   const targetDestination = uxResetDestinationFromPath(targetPath);
-  if (!targetDestination) {
+  const sourceDestination = uxResetDestinationFromPath(sourcePath);
+  if (!targetDestination || !sourceDestination) {
     return { dropped: [], params: new URLSearchParams() };
   }
 
-  const sourceDestination = uxResetDestinationFromPath(sourcePath);
-
-  const accepted = new Set(UX_RESET_HANDOFF_ACCEPTANCE[targetDestination]);
-  const handoff = new URLSearchParams();
+  const handoffKeys = intersectHandoffKeys(
+    sourceDestination,
+    targetDestination
+  );
   const sourceKeys = collectSourceKeys(sourceSearchParams, sourceDestination);
-  const copied = new Set<string>();
 
-  for (const key of UX_RESET_SHARED_CONTEXT_PARAM_KEYS) {
-    if (!accepted.has(key) || !sourceSearchParams.has(key)) {
-      continue;
-    }
-    for (const value of sourceSearchParams.getAll(key)) {
-      if (!shouldCopySharedValue(key, value)) {
-        continue;
-      }
-      handoff.append(key, value);
-      copied.add(key);
-    }
+  if (handoffKeys.length === 0) {
+    return {
+      dropped: [...sourceKeys].sort(),
+      params: new URLSearchParams(),
+    };
   }
 
-  if (accepted.has("compare")) {
-    appendCompareFromSource(handoff, sourceSearchParams, sourceDestination);
-    if (handoff.has("compare")) {
-      copied.add("compare");
+  const parsed = parseUxResetSharedContext(sourceSearchParams);
+  const withCompare = contextWithExploreCompareFallback(
+    parsed,
+    sourceSearchParams,
+    sourceDestination,
+    handoffKeys
+  );
+  const handoffContext = pickSharedContext(withCompare, handoffKeys);
+  const params = sharedContextToSearchParams(handoffContext, {
+    keys: handoffKeys,
+  });
+
+  const copied = new Set<string>();
+  for (const key of handoffKeys) {
+    const exported =
+      (key === "scope" && handoffContext.scope !== "ALL") ||
+      (key === "county" && handoffContext.county !== null) ||
+      (key === "compare" && handoffContext.compare.length > 0) ||
+      (key === "dataset" && handoffContext.dataset !== null) ||
+      (key === "period" && handoffContext.period !== null);
+    if (exported) {
+      copied.add(key);
     }
   }
 
   const dropped = [...sourceKeys].filter((key) => !copied.has(key)).sort();
 
-  return { dropped, params: handoff };
+  return { dropped, params };
 }
 
-export function uxResetNavigationHref(
+/**
+ * Primary handoff entry point for the authenticated UX Reset shell (#406).
+ */
+export function uxResetShellHandoffHref(
   targetHref: string,
   sourcePathname: string,
   sourceSearchParams: SearchParamSource
@@ -208,12 +250,25 @@ export function uxResetNavigationHref(
   return targetHash ? `${withQuery}#${targetHash}` : withQuery;
 }
 
+/** @deprecated Use `uxResetShellHandoffHref` from the UX Reset shell. */
+export function uxResetNavigationHref(
+  targetHref: string,
+  sourcePathname: string,
+  sourceSearchParams: SearchParamSource
+): string {
+  return uxResetShellHandoffHref(
+    targetHref,
+    sourcePathname,
+    sourceSearchParams
+  );
+}
+
 export function uxResetDestinationHref(
   destination: UxResetDestinationId,
   sourcePathname: string,
   sourceSearchParams: SearchParamSource
 ): string {
-  return uxResetNavigationHref(
+  return uxResetShellHandoffHref(
     UX_RESET_ROUTE_PATHS[destination],
     sourcePathname,
     sourceSearchParams
