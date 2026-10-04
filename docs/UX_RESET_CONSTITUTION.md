@@ -75,7 +75,7 @@ These three labels are the **top-level evidence states** for Reset UX copy, badg
 ### Missing is not zero
 
 - **Observed or published zero** (for example `0` published county-linked cases) is a valid **Available** outcome and must stay visually and verbally distinct from **missing** or **unavailable** human evidence.
-- Copy pattern (legacy reference): *“Missing, suppressed, or unallocated records are not converted to zero.”* ([`county-evidence-panel.tsx`](../src/components/county-evidence-panel.tsx), [`atlas-release-education-content.ts`](../src/lib/atlas-release-education-content.ts))
+- Copy pattern (legacy reference): _“Missing, suppressed, or unallocated records are not converted to zero.”_ ([`county-evidence-panel.tsx`](../src/components/county-evidence-panel.tsx), [`atlas-release-education-content.ts`](../src/lib/atlas-release-education-content.ts))
 - Filters and charts must not treat null, suppressed, or not-reported cells as numeric zero without an explicit, governed rule.
 
 ### Review priority is not disease risk

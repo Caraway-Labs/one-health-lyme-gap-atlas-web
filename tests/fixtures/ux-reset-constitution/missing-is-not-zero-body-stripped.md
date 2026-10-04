@@ -74,7 +74,6 @@ These three labels are the **top-level evidence states** for Reset UX copy, badg
 
 ### Missing is not zero
 
-
 ### Review priority is not disease risk
 
 - The **county review score** and **review-priority** map ramp (`.priority-pill`, `--map-ramp-*`, `AtlasPriorityBadge`, `AtlasMapLegend`) express **follow-up investigation priority** within a governed release—not individual risk, diagnosis, exposure location, or predicted case counts.
