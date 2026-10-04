@@ -18,18 +18,71 @@ type ExploreRouteControls = {
   failMeasureId: string | null;
 };
 
+function rejectInvalidExploreRequest(url: URL): number | null {
+  if (url.pathname.endsWith("/v1/measures")) {
+    const geography = url.searchParams.get("geography_type");
+    if (
+      url.searchParams.get("page_token") === "null" ||
+      geography === "county" ||
+      geography === null
+    ) {
+      return 400;
+    }
+  }
+  if (url.pathname.endsWith("/v1/observations")) {
+    const year = url.searchParams.get("year");
+    const start = url.searchParams.get("start_date");
+    const end = url.searchParams.get("end_date");
+    const hasYear = year !== null;
+    const hasRange = start !== null && end !== null;
+    if (url.search.length - 1 > 8192) {
+      return 414;
+    }
+    if (
+      url.searchParams.get("page_token") === "null" ||
+      url.searchParams.get("geography_type") !== "county" ||
+      hasYear === hasRange
+    ) {
+      return 400;
+    }
+  }
+  return null;
+}
+
 async function installExploreApiMocks(
   page: Page,
   controls: ExploreRouteControls,
-  delayedRequest: Promise<void>
+  delayedRequest: Promise<void>,
+  requestedUrls: string[]
 ) {
   await page.route("**/v1/atlas/metadata**", async (route) => {
+    requestedUrls.push(route.request().url());
     await route.fulfill({ json: exploreMetadataFixture, status: 200 });
   });
   await page.route("**/v1/measures**", async (route) => {
-    await route.fulfill({ json: exploreMeasuresEnvelope, status: 200 });
+    const url = new URL(route.request().url());
+    requestedUrls.push(url.toString());
+    const rejected = rejectInvalidExploreRequest(url);
+    if (rejected) {
+      await route.fulfill({
+        json: { code: "INVALID_REQUEST" },
+        status: rejected,
+      });
+      return;
+    }
+    const geography = url.searchParams.get("geography_type");
+    await route.fulfill({
+      json: {
+        ...exploreMeasuresEnvelope,
+        data: exploreMeasuresEnvelope.data.filter(
+          (measure) => measure.geography_semantics === geography
+        ),
+      },
+      status: 200,
+    });
   });
   await page.route("**/v1/atlas/scores**", async (route) => {
+    requestedUrls.push(route.request().url());
     await route.fulfill({ json: exploreScoresFixture, status: 200 });
   });
   await page.route("**/v1/atlas/geometry**", async (route) => {
@@ -43,9 +96,32 @@ async function installExploreApiMocks(
     await route.fulfill({ json: exploreGeometryFixture, status: 200 });
   });
   await page.route("**/v1/observations**", async (route) => {
-    const measureId = new URL(route.request().url()).searchParams.get(
-      "measure_id"
-    );
+    const url = new URL(route.request().url());
+    requestedUrls.push(url.toString());
+    const rejected = rejectInvalidExploreRequest(url);
+    if (rejected) {
+      await route.fulfill({
+        json: {
+          code: rejected === 414 ? "INVALID_REQUEST" : "INVALID_REQUEST",
+        },
+        status: rejected,
+      });
+      return;
+    }
+    const measureId = url.searchParams.get("measure_id");
+    const matchesBound =
+      (measureId === EXPLORE_PRECIPITATION_MEASURE_ID &&
+        url.searchParams.get("start_date") === "2025-01-01" &&
+        url.searchParams.get("end_date") === "2025-01-01") ||
+      (measureId !== EXPLORE_PRECIPITATION_MEASURE_ID &&
+        url.searchParams.get("year") === "2023");
+    if (!matchesBound) {
+      await route.fulfill({
+        json: { data: [], links: { self: "/v1/observations" }, meta: {} },
+        status: 200,
+      });
+      return;
+    }
     if (measureId && measureId === controls.failMeasureId) {
       await route.fulfill({
         json: { detail: "observations unavailable" },
@@ -73,7 +149,7 @@ async function expectMeasureAgreement(
   const legend = page.getByTestId("explore-map-legend");
   const evidence = page.getByTestId("explore-selected-evidence");
   const adams = page.getByTestId("explore-county-row").filter({
-    has: page.getByRole("button", { name: "Adams" }),
+    has: page.getByRole("button", { name: "Adams, Colorado 08001" }),
   });
   await expect(layer).toHaveAttribute("data-measure-id", expected.measureId);
   await expect(layer).toHaveAttribute("data-unit", expected.unit);
@@ -105,19 +181,37 @@ test.describe("Explore spatial workspace", () => {
     const delayedRequest = new Promise<void>((resolve) => {
       releaseDelayed = resolve;
     });
-    await installExploreApiMocks(page, controls, delayedRequest);
-    await page.goto("/app/explore?scope=CO&county=08001");
+    const requestedUrls: string[] = [];
+    await installExploreApiMocks(page, controls, delayedRequest, requestedUrls);
+    await page.goto("/app/explore?scope=CO&county=08001&period=2025-01-01");
     await expectMeasureAgreement(page, {
       measureId: EXPLORE_PRECIPITATION_MEASURE_ID,
-      period: "January 1, 2025 (daily)",
+      period: "January 1, 2025 (DAY)",
       unit: "mm",
-      value: "4.5 mm",
+      value: "18 mm",
     });
+    const observationUrl = requestedUrls.find((url) =>
+      url.includes("/v1/observations")
+    );
+    const measureUrls = requestedUrls.filter((url) =>
+      url.includes("/v1/measures")
+    );
+    expect(observationUrl).toContain("start_date=2025-01-01");
+    expect(observationUrl).not.toContain("page_token");
+    expect(
+      measureUrls.some((url) => url.includes("geography_type=COUNTY_FIPS_5"))
+    ).toBe(true);
+    expect(
+      measureUrls.some((url) => url.includes("geography_type=county"))
+    ).toBe(false);
     const countyNames = await page
       .getByTestId("explore-county-row")
       .locator("button")
       .allTextContents();
-    expect(countyNames).toEqual(["Adams", "Boulder"]);
+    expect(countyNames).toEqual([
+      "Adams, Colorado 08001",
+      "Boulder, Colorado 08013",
+    ]);
 
     await page.getByTestId("explore-measure-select").click();
     await page.getByRole("option", { name: "Reported Lyme cases" }).click();
@@ -171,18 +265,18 @@ test.describe("Explore spatial workspace", () => {
       failGeometry: true,
       failMeasureId: null,
     };
-    await installExploreApiMocks(page, controls, Promise.resolve());
-    await page.goto("/app/explore?scope=CO&county=08001");
+    await installExploreApiMocks(page, controls, Promise.resolve(), []);
+    await page.goto("/app/explore?scope=CO&county=08001&period=2025-01-01");
     await expect(page.getByTestId("explore-map-fallback")).toBeVisible();
     await expectMeasureAgreement(page, {
       measureId: EXPLORE_PRECIPITATION_MEASURE_ID,
-      period: "January 1, 2025 (daily)",
+      period: "January 1, 2025 (DAY)",
       unit: "mm",
-      value: "4.5 mm",
+      value: "18 mm",
     });
     await expect(page.locator(".maplibregl-canvas")).toHaveCount(0);
 
-    const adams = page.getByRole("button", { name: "Adams" });
+    const adams = page.getByRole("button", { name: "Adams, Colorado 08001" });
     await adams.focus();
     await expect(adams).toBeFocused();
     await page.keyboard.press("Enter");
@@ -225,11 +319,11 @@ test.describe("Explore spatial workspace", () => {
       failGeometry: false,
       failMeasureId: null,
     };
-    await installExploreApiMocks(page, controls, Promise.resolve());
-    await page.goto("/app/explore?scope=CO&county=08001");
+    await installExploreApiMocks(page, controls, Promise.resolve(), []);
+    await page.goto("/app/explore?scope=CO&county=08001&period=2025-01-01");
     await expect(page.getByTestId("explore-map-fallback")).toBeVisible();
     await expect(page.getByTestId("explore-selected-evidence")).toContainText(
-      "4.5 mm"
+      "18 mm"
     );
     const investigate = page.getByTestId("explore-investigate");
     await investigate.focus();

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AtlasDashboard } from "@/components/atlas-dashboard";
 import { AtlasMap } from "@/components/atlas-map";
 import type { CountyScoreSummary } from "@/generated/models";
+import { CONTIGUOUS_US_INITIAL_VIEW } from "@/lib/atlas-geometry";
 import { estimatedFitZoom } from "@/lib/atlas-map-camera";
 
 const engine = vi.hoisted(() => {
@@ -21,7 +22,13 @@ const engine = vi.hoisted(() => {
     south = 24;
     east = -66;
     north = 50;
-    jumpTo = vi.fn<() => void>();
+    jumpTo = vi.fn<(view: { center: [number, number]; zoom: number }) => void>(
+      (view) => {
+        this.center = { lat: view.center[1], lng: view.center[0] };
+        this.zoom = view.zoom;
+        this.emit("move");
+      }
+    );
     stop = vi.fn<() => void>();
     fitBounds = vi.fn<
       (
@@ -454,6 +461,103 @@ describe("AtlasMap county camera", () => {
     expect(map?.fitBounds).toHaveBeenLastCalledWith(
       [-118.7, 33.7, -118.3, 34],
       { duration: 450, maxZoom: 8, padding: 48 }
+    );
+  });
+
+  it("returns to the contiguous United States camera when Explore resets nationally", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    expect(map?.zoom).toBe(8);
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.jumpTo).toHaveBeenCalledWith(CONTIGUOUS_US_INITIAL_VIEW);
+    expect(map?.zoom).toBe(CONTIGUOUS_US_INITIAL_VIEW.zoom);
+    expect(map?.center).toStrictEqual({
+      lat: CONTIGUOUS_US_INITIAL_VIEW.center[1],
+      lng: CONTIGUOUS_US_INITIAL_VIEW.center[0],
+    });
+    expect(map?.fitBounds).toHaveBeenCalledOnce();
+  });
+
+  it("leaves the camera in place when a national frame is not opted in", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.jumpTo).not.toHaveBeenCalled();
+    expect(map?.zoom).toBe(8);
+  });
+
+  it("updates county source colors when scores change", () => {
+    stubPrefersReducedMotion(false);
+    const view = render(
+      <AtlasMap
+        geometry={geometry}
+        scores={[{ ...adams, color: "#112233" }]}
+        selectedFips="08001"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const map = loadMap();
+    view.rerender(
+      <AtlasMap
+        geometry={geometry}
+        scores={[{ ...adams, color: "#445566" }]}
+        selectedFips="08001"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const source = map?.sources.get("counties");
+    const latest = source?.setData.mock.calls.at(-1)?.[0] as {
+      features: { properties: { color?: string; fips?: string } }[];
+    };
+    const adamsFeature = latest.features.find(
+      (feature) => feature.properties.fips === "08001"
+    );
+    expect(adamsFeature?.properties.color).toBe("#445566");
+    expect(map?.setPaintProperty).toHaveBeenCalledWith(
+      "counties-fill",
+      "fill-color",
+      ["coalesce", ["get", "color"], "#e4e9ea"]
     );
   });
 

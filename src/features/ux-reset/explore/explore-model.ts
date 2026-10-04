@@ -1,3 +1,4 @@
+import { parseCalendarIsoDate } from "@/features/ux-reset/context-params";
 import { evidenceObjectFromObservation } from "@/features/ux-reset/evidence/from-observation";
 import type {
   EvidenceAvailability,
@@ -6,9 +7,47 @@ import type {
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import type { Measure, Observation } from "@/generated/models";
 import { ValueState } from "@/generated/models";
+import {
+  observationsV1ObservationsGetQueryYearOneMax,
+  observationsV1ObservationsGetQueryYearOneMin,
+} from "@/generated/zod/atlas";
 import { isCountyFips } from "@/lib/county-geography";
 
 const CHOROPLETH_BIN_COUNT = 6;
+const GOVERNED_YEAR_SEMANTICS = /^\d{4}$/;
+const DAILY_TEMPORAL_SEMANTICS = "DAY";
+
+/**
+ * Published county discovery values. Measures are filtered by exact
+ * `geography_semantics`. These tokens are not interchangeable, and neither is
+ * the observations geography enum.
+ */
+export const EXPLORE_COUNTY_GEOGRAPHY_SEMANTICS = [
+  "COUNTY_FIPS_5",
+  "COUNTY",
+] as const;
+
+export type ExploreCountyGeographySemantic =
+  (typeof EXPLORE_COUNTY_GEOGRAPHY_SEMANTICS)[number];
+
+export class ExploreContractError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ExploreContractError";
+  }
+}
+
+export type ExploreTimeBound =
+  | {
+      handoffPeriod: string;
+      kind: "year";
+      year: number;
+    }
+  | {
+      date: string;
+      handoffPeriod: string;
+      kind: "day";
+    };
 
 const NON_NUMERIC_VALUE_STATES: ReadonlySet<ValueState> = new Set([
   ValueState.MISSING,
@@ -60,9 +99,11 @@ type ScoreDirectoryCounty = {
 };
 
 type CatalogMeasure = {
-  geography_types?: Measure["geography_types"];
+  geography_semantics?: Measure["geography_semantics"];
   label: string;
   measure_id: string;
+  temporal_grains?: Measure["temporal_grains"];
+  temporal_semantics?: Measure["temporal_semantics"];
 };
 
 /**
@@ -97,18 +138,19 @@ export function filterDirectoryByMapScope(
   return directory.filter((county) => county.state === mapScope);
 }
 
-/** County-capable measures from canonical catalog metadata, in label order. */
+export function isExploreCountyGeographySemantic(
+  value: string | null | undefined
+): value is ExploreCountyGeographySemantic {
+  return value === "COUNTY_FIPS_5" || value === "COUNTY";
+}
+
+/** County measures whose published geography semantics match discovery exactly. */
 export function countyExploreMeasures<T extends CatalogMeasure>(
   measures: readonly T[]
 ): T[] {
   const countyMeasures: T[] = [];
   for (const measure of measures) {
-    const geographyTypes = measure.geography_types;
-    if (
-      !geographyTypes ||
-      geographyTypes.length === 0 ||
-      geographyTypes.includes("county")
-    ) {
+    if (isExploreCountyGeographySemantic(measure.geography_semantics)) {
       countyMeasures.push(measure);
     }
   }
@@ -119,12 +161,56 @@ export function countyExploreMeasures<T extends CatalogMeasure>(
   );
 }
 
+/**
+ * A governed year uses the observations `year` bound. A governed day uses one
+ * `start_date`/`end_date` pair. The shared period is applied only when it is
+ * that day; it is not a substitute for a missing year.
+ */
+export function resolveExploreTimeBound(
+  measure: Pick<CatalogMeasure, "temporal_grains" | "temporal_semantics">,
+  period: string | null
+): ExploreTimeBound | null {
+  const semantics = measure.temporal_semantics?.trim() ?? "";
+  if (GOVERNED_YEAR_SEMANTICS.test(semantics)) {
+    const year = Number(semantics);
+    if (
+      year < observationsV1ObservationsGetQueryYearOneMin ||
+      year > observationsV1ObservationsGetQueryYearOneMax
+    ) {
+      return null;
+    }
+    return {
+      handoffPeriod: `${semantics}-01-01`,
+      kind: "year",
+      year,
+    };
+  }
+  const grains = measure.temporal_grains ?? [];
+  const daily =
+    semantics === DAILY_TEMPORAL_SEMANTICS ||
+    grains.includes(DAILY_TEMPORAL_SEMANTICS);
+  if (!daily || !period || parseCalendarIsoDate(period) !== period) {
+    return null;
+  }
+  return {
+    date: period,
+    handoffPeriod: period,
+    kind: "day",
+  };
+}
+
 export function resolveRequestedMeasureId(
   measures: readonly CatalogMeasure[],
-  metric: string | null
+  metric: string | null,
+  period: string | null
 ): string | null {
   if (metric && measures.some((measure) => measure.measure_id === metric)) {
     return metric;
+  }
+  for (const measure of measures) {
+    if (resolveExploreTimeBound(measure, period)) {
+      return measure.measure_id;
+    }
   }
   return measures[0]?.measure_id ?? null;
 }
@@ -193,37 +279,88 @@ export function choroplethBin(
   );
 }
 
-function preferLaterObservation(
-  candidate: Observation,
-  current: Observation
+function observationMatchesTimeBound(
+  observation: Observation,
+  timeBound: ExploreTimeBound
 ): boolean {
-  const periodCompare = candidate.period_end.localeCompare(current.period_end);
-  if (periodCompare !== 0) {
-    return periodCompare > 0;
+  const start = observation.period_start;
+  const end = observation.period_end;
+  switch (timeBound.kind) {
+    case "year": {
+      const firstDay = `${timeBound.year}-01-01`;
+      const lastDay = `${timeBound.year}-12-31`;
+      return start >= firstDay && end <= lastDay;
+    }
+    case "day": {
+      return start === timeBound.date && end === timeBound.date;
+    }
+    default: {
+      const exhaustive: never = timeBound;
+      return exhaustive;
+    }
   }
-  return candidate.observation_id.localeCompare(current.observation_id) > 0;
+}
+
+/**
+ * Returned observation identities must match the requested release and time
+ * bound. An empty page has no identity to contradict. Mixed or foreign
+ * releases are rejected instead of stamped onto the layer.
+ */
+export function assertExploreObservations(input: {
+  measureId: string;
+  observations: readonly Observation[];
+  releaseId: string;
+  timeBound: ExploreTimeBound;
+}): string {
+  const seenFips = new Set<string>();
+  const responseReleases = new Set<string>();
+  for (const observation of input.observations) {
+    if (observation.measure_id !== input.measureId) {
+      throw new ExploreContractError(
+        "Observation measure does not match the request."
+      );
+    }
+    if (!observation.release_id) {
+      throw new ExploreContractError("Observation release is missing.");
+    }
+    responseReleases.add(observation.release_id);
+    if (!observationMatchesTimeBound(observation, input.timeBound)) {
+      throw new ExploreContractError(
+        "Observation period is outside the requested time bound."
+      );
+    }
+    const fips = observation.geography.geography_id;
+    if (
+      observation.geography.geography_type !== "county" ||
+      !isCountyFips(fips)
+    ) {
+      throw new ExploreContractError("Observation geography is not a county.");
+    }
+    if (seenFips.has(fips)) {
+      throw new ExploreContractError("Observation response repeats a county.");
+    }
+    seenFips.add(fips);
+  }
+  if (responseReleases.size > 1) {
+    throw new ExploreContractError(
+      "Observation response mixes release identities."
+    );
+  }
+  const responseRelease = [...responseReleases][0] ?? null;
+  if (responseRelease && responseRelease !== input.releaseId) {
+    throw new ExploreContractError(
+      "Observation release does not match the requested release."
+    );
+  }
+  return responseRelease ?? input.releaseId;
 }
 
 function indexObservationsByFips(
-  observations: readonly Observation[],
-  measureId: string
+  observations: readonly Observation[]
 ): Map<string, Observation> {
   const byFips = new Map<string, Observation>();
   for (const observation of observations) {
-    if (observation.measure_id !== measureId) {
-      continue;
-    }
-    if (observation.geography.geography_type !== "county") {
-      continue;
-    }
-    const fips = observation.geography.geography_id;
-    if (!isCountyFips(fips)) {
-      continue;
-    }
-    const existing = byFips.get(fips);
-    if (!existing || preferLaterObservation(observation, existing)) {
-      byFips.set(fips, observation);
-    }
+    byFips.set(observation.geography.geography_id, observation);
   }
   return byFips;
 }
@@ -257,11 +394,15 @@ export function buildExploreSelection(input: {
   measure: Measure;
   observations: readonly Observation[];
   releaseId: string;
+  timeBound: ExploreTimeBound;
 }): ExploreCommittedSelection {
-  const indexed = indexObservationsByFips(
-    input.observations,
-    input.measure.measure_id
-  );
+  const releaseId = assertExploreObservations({
+    measureId: input.measure.measure_id,
+    observations: input.observations,
+    releaseId: input.releaseId,
+    timeBound: input.timeBound,
+  });
+  const indexed = indexObservationsByFips(input.observations);
   const ordered = sortDirectory(input.directory);
   const numericValues: number[] = [];
   for (const county of ordered) {
@@ -329,7 +470,7 @@ export function buildExploreSelection(input: {
       rows.map((row) => row.observationPeriod),
       "Multiple observation periods"
     ),
-    releaseId: input.releaseId,
+    releaseId,
     rows,
     unit: sharedLabel(
       rows.map((row) => row.unit),

@@ -1,17 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  assertExploreObservations,
   buildExploreSelection,
   choroplethBin,
   commitExploreSelection,
   countyDirectoryFromScoreSummaries,
   countyExploreMeasures,
+  ExploreContractError,
   exploreRequestStatusCopy,
   filterDirectoryByMapScope,
   numericExploreValue,
   resolveExploreMapScope,
+  resolveExploreTimeBound,
   resolveRequestedMeasureId,
   type ExploreCommittedSelection,
+  type ExploreTimeBound,
 } from "@/features/ux-reset/explore/explore-model";
 import type { Measure } from "@/generated/models";
 import { ValueState } from "@/generated/models";
@@ -33,6 +37,17 @@ const precipitationMeasure = measures.find(
   (measure) => measure.measure_id === EXPLORE_PRECIPITATION_MEASURE_ID
 );
 
+function timeBoundFor(measure: Measure): ExploreTimeBound {
+  const bound = resolveExploreTimeBound(
+    measure,
+    measure.temporal_semantics === "DAY" ? "2025-01-01" : null
+  );
+  if (!bound) {
+    throw new Error("Fixture measure has no governed time bound.");
+  }
+  return bound;
+}
+
 function selectionFor(
   measure: Measure,
   observations = exploreObservationsForMeasure(measure.measure_id)
@@ -43,18 +58,27 @@ function selectionFor(
     measure,
     observations,
     releaseId: "alpha-2026",
+    timeBound: timeBoundFor(measure),
   });
 }
 
 describe("Explore measure selection", () => {
-  it("lists county measures from catalog metadata in label order", () => {
+  it("lists measures by exact geography semantics in label order", () => {
     const ordered = countyExploreMeasures([
       ...measures,
       {
         ...measures[0],
+        geography_semantics: "STATE",
         geography_types: ["state"],
         label: "State only",
         measure_id: "state-only",
+      },
+      {
+        ...measures[0],
+        geography_semantics: null,
+        geography_types: ["county"],
+        label: "Untyped county",
+        measure_id: "untyped-county",
       },
     ] as Measure[]);
     expect(ordered.map((measure) => measure.measure_id)).toStrictEqual([
@@ -64,14 +88,18 @@ describe("Explore measure selection", () => {
     ]);
   });
 
-  it("keeps an explicit metric when it is in the catalog", () => {
+  it("keeps an explicit metric and otherwise chooses a resolvable bound", () => {
     const catalog = countyExploreMeasures(measures);
-    expect(resolveRequestedMeasureId(catalog, EXPLORE_CASES_MEASURE_ID)).toBe(
+    expect(
+      resolveRequestedMeasureId(catalog, EXPLORE_CASES_MEASURE_ID, null)
+    ).toBe(EXPLORE_CASES_MEASURE_ID);
+    expect(resolveRequestedMeasureId(catalog, "not-a-measure", null)).toBe(
       EXPLORE_CASES_MEASURE_ID
     );
-    expect(resolveRequestedMeasureId(catalog, "not-a-measure")).toBe(
+    expect(resolveRequestedMeasureId(catalog, null, "2025-01-01")).toBe(
       EXPLORE_PRECIPITATION_MEASURE_ID
     );
+    expect(resolveExploreTimeBound(catalog[0], null)).toBeNull();
   });
 
   it("frames the map from map_scope without replacing review scope", () => {
@@ -106,10 +134,9 @@ describe("Explore displayed selection", () => {
       throw new Error("Missing cases measure fixture.");
     }
     const selection = selectionFor(casesMeasure);
-    expect(selection.rows.map((row) => row.countyName)).toStrictEqual([
-      "Adams",
-      "Boulder",
-    ]);
+    expect(
+      selection.rows.map((row) => `${row.countyName}, ${row.state}`)
+    ).toStrictEqual(["Adams, CO", "Adams, NY", "Boulder, CO"]);
     expect(selection).not.toHaveProperty("priority");
     expect(selection.rows[0]).not.toHaveProperty("score");
     expect(selection.rows[0]).not.toHaveProperty("color");
@@ -123,8 +150,11 @@ describe("Explore displayed selection", () => {
     expect(selection.measureId).toBe(EXPLORE_CASES_MEASURE_ID);
     expect(selection.unit).toBe("cases");
     expect(selection.observationPeriod).toBe("2023");
-    expect(selection.rows[0]?.displayValue).toBe("2 cases");
-    expect(selection.rows[1]?.displayValue).toBe("40 cases");
+    expect(selection.rows.map((row) => row.displayValue)).toStrictEqual([
+      "2 cases",
+      "9 cases",
+      "40 cases",
+    ]);
   });
 
   it("uses a different unit and period for the other measure", () => {
@@ -151,6 +181,7 @@ describe("Explore displayed selection", () => {
       measure: casesMeasure,
       observations: [exploreMissingZeroObservation],
       releaseId: "alpha-2026",
+      timeBound: timeBoundFor(casesMeasure),
     });
     expect(numericExploreValue(exploreMissingZeroObservation)).toBeNull();
     expect(selection.rows[0]?.displayValue).toBe("Unavailable");
@@ -250,6 +281,7 @@ describe("Explore displayed selection", () => {
     expect(directory.map((county) => county.fips).toSorted()).toStrictEqual([
       "08001",
       "08013",
+      "36001",
     ]);
     expect(directory[0]).toStrictEqual({
       county: expect.any(String),
@@ -260,5 +292,65 @@ describe("Explore displayed selection", () => {
     expect(directory[0]).not.toHaveProperty("priority");
     expect(directory[0]).not.toHaveProperty("score");
     expect(directory[0]).not.toHaveProperty("color");
+  });
+});
+
+describe("Explore release identity", () => {
+  it("rejects observations from another release", () => {
+    if (!casesMeasure) {
+      throw new Error("Missing cases measure fixture.");
+    }
+    expect(() =>
+      assertExploreObservations({
+        measureId: casesMeasure.measure_id,
+        observations: exploreObservationsForMeasure(
+          casesMeasure.measure_id,
+          "beta-2026"
+        ),
+        releaseId: "alpha-2026",
+        timeBound: timeBoundFor(casesMeasure),
+      })
+    ).toThrow(ExploreContractError);
+  });
+
+  it("rejects a response that mixes release identities", () => {
+    if (!casesMeasure) {
+      throw new Error("Missing cases measure fixture.");
+    }
+    const [first, second] = exploreObservationsForMeasure(
+      casesMeasure.measure_id
+    );
+    if (!(first && second)) {
+      throw new Error("Missing observation fixtures.");
+    }
+    expect(() =>
+      assertExploreObservations({
+        measureId: casesMeasure.measure_id,
+        observations: [{ ...second, release_id: "beta-2026" }, first],
+        releaseId: "alpha-2026",
+        timeBound: timeBoundFor(casesMeasure),
+      })
+    ).toThrow(/mixes release identities/);
+  });
+
+  it("keeps the previous layer when the incoming release does not match", () => {
+    if (!casesMeasure || !precipitationMeasure) {
+      throw new Error("Missing measure fixtures.");
+    }
+    const current = selectionFor(precipitationMeasure);
+    const incoming = {
+      ...selectionFor(casesMeasure),
+      releaseId: "beta-2026",
+    };
+    expect(
+      commitExploreSelection({
+        current,
+        incoming,
+        requestStatus: "success",
+        requestedMapScope: "CO",
+        requestedMeasureId: EXPLORE_CASES_MEASURE_ID,
+        requestedReleaseId: "alpha-2026",
+      })
+    ).toBe(current);
   });
 });

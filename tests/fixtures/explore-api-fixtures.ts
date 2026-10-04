@@ -36,18 +36,21 @@ export const exploreMetadataFixture = {
 export const exploreMeasuresFixture = [
   {
     definition: "County-linked reported Lyme disease cases.",
-    geography_types: ["county"],
+    geography_semantics: "COUNTY_FIPS_5",
+    geography_types: null,
     indicator_id: "human-cases",
     label: "Reported Lyme cases",
     limitations: [],
     measure_id: EXPLORE_CASES_MEASURE_ID,
     measure_type: "count",
     semantic_version: "1.0.0",
-    temporal_grains: ["annual"],
+    temporal_grains: null,
+    temporal_semantics: "2023",
     unit: "cases",
   },
   {
     definition: "Daily precipitation total.",
+    geography_semantics: "COUNTY",
     geography_types: ["county"],
     indicator_id: "precipitation",
     label: "Daily precipitation",
@@ -55,19 +58,22 @@ export const exploreMeasuresFixture = [
     measure_id: EXPLORE_PRECIPITATION_MEASURE_ID,
     measure_type: "continuous",
     semantic_version: "1.0.0",
-    temporal_grains: ["daily"],
+    temporal_grains: ["DAY"],
+    temporal_semantics: "DAY",
     unit: "mm",
   },
   {
     definition: "County tick abundance index.",
-    geography_types: ["county"],
+    geography_semantics: "COUNTY_FIPS_5",
+    geography_types: null,
     indicator_id: "ticks",
     label: "Tick abundance",
     limitations: [],
     measure_id: EXPLORE_TICK_MEASURE_ID,
     measure_type: "index",
     semantic_version: "1.0.0",
-    temporal_grains: ["annual"],
+    temporal_grains: null,
+    temporal_semantics: "2023",
     unit: "ticks",
   },
 ];
@@ -83,6 +89,8 @@ function scoreCounty(input: {
   county: string;
   fips: string;
   score: number;
+  state?: string;
+  stateName?: string;
 }) {
   return {
     burgdorferi_status: "observed",
@@ -94,8 +102,8 @@ function scoreCounty(input: {
     in_contiguous_tick_scope: true,
     priority: "Priority 3 — Review",
     score: { ...scoreBreakdown, score: input.score },
-    state: "CO",
-    state_name: "Colorado",
+    state: input.state ?? "CO",
+    state_name: input.stateName ?? "Colorado",
     tick_status: "observed",
   };
 }
@@ -114,6 +122,14 @@ export const exploreScoresFixture = {
       county: "Adams",
       fips: "08001",
       score: 10,
+    }),
+    scoreCounty({
+      color: "#778899",
+      county: "Adams",
+      fips: "36001",
+      score: 20,
+      state: "NY",
+      stateName: "New York",
     }),
   ],
   methodology_version: "1",
@@ -169,6 +185,7 @@ function observation(input: {
   measureId: string;
   periodEnd: string;
   periodStart: string;
+  releaseId?: string;
   sourceLabel: string;
   temporalGrain: string;
   unit: string;
@@ -196,7 +213,7 @@ function observation(input: {
     period_end: input.periodEnd,
     period_start: input.periodStart,
     provenance_ref: `prov/${input.measureId}/${input.fips}`,
-    release_id: "alpha-2026",
+    release_id: input.releaseId ?? "alpha-2026",
     release_methodology_version: null,
     semantic_version: "1.0.0",
     source_id: input.measureId,
@@ -212,18 +229,24 @@ function observation(input: {
 }
 
 export function exploreObservationsForMeasure(
-  measureId: string
+  measureId: string,
+  releaseId = "alpha-2026"
 ): Observation[] {
-  if (measureId === EXPLORE_CASES_MEASURE_ID) {
+  if (
+    measureId === EXPLORE_CASES_MEASURE_ID ||
+    measureId === EXPLORE_TICK_MEASURE_ID
+  ) {
+    const unit = measureId === EXPLORE_CASES_MEASURE_ID ? "cases" : "ticks";
     return [
       observation({
         fips: "08013",
         measureId,
         periodEnd: "2023-12-31",
         periodStart: "2023-01-01",
+        releaseId,
         sourceLabel: "CDC surveillance",
-        temporalGrain: "annual",
-        unit: "cases",
+        temporalGrain: "YEAR",
+        unit,
         value: 40,
       }),
       observation({
@@ -231,10 +254,22 @@ export function exploreObservationsForMeasure(
         measureId,
         periodEnd: "2023-12-31",
         periodStart: "2023-01-01",
+        releaseId,
         sourceLabel: "CDC surveillance",
-        temporalGrain: "annual",
-        unit: "cases",
+        temporalGrain: "YEAR",
+        unit,
         value: 2,
+      }),
+      observation({
+        fips: "36001",
+        measureId,
+        periodEnd: "2023-12-31",
+        periodStart: "2023-01-01",
+        releaseId,
+        sourceLabel: "CDC surveillance",
+        temporalGrain: "YEAR",
+        unit,
+        value: 9,
       }),
     ];
   }
@@ -244,20 +279,33 @@ export function exploreObservationsForMeasure(
       measureId: EXPLORE_PRECIPITATION_MEASURE_ID,
       periodEnd: "2025-01-01",
       periodStart: "2025-01-01",
+      releaseId,
       sourceLabel: "NOAA precipitation",
-      temporalGrain: "daily",
+      temporalGrain: "DAY",
       unit: "mm",
-      value: 4.5,
+      value: 18,
+    }),
+    observation({
+      fips: "36001",
+      measureId: EXPLORE_PRECIPITATION_MEASURE_ID,
+      periodEnd: "2025-01-01",
+      periodStart: "2025-01-01",
+      releaseId,
+      sourceLabel: "NOAA precipitation",
+      temporalGrain: "DAY",
+      unit: "mm",
+      value: 1,
     }),
     observation({
       fips: "08013",
       measureId: EXPLORE_PRECIPITATION_MEASURE_ID,
       periodEnd: "2025-01-01",
       periodStart: "2025-01-01",
+      releaseId,
       sourceLabel: "NOAA precipitation",
-      temporalGrain: "daily",
+      temporalGrain: "DAY",
       unit: "mm",
-      value: 18,
+      value: 4.5,
     }),
   ];
 }
@@ -276,7 +324,7 @@ export const exploreMissingZeroObservation = observation({
   periodEnd: "2023-12-31",
   periodStart: "2023-01-01",
   sourceLabel: "CDC surveillance",
-  temporalGrain: "annual",
+  temporalGrain: "YEAR",
   unit: "cases",
   value: 0,
   valueState: ValueState.MISSING,

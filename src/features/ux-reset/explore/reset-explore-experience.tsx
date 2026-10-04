@@ -47,17 +47,14 @@ import {
 import { reviewScopeLabel } from "@/lib/atlas-state-geography";
 import { cn } from "@/lib/utils";
 
-function includeCountyInCompare(
-  selected: readonly string[],
-  fips: string
-): string[] {
-  if (selected.includes(fips)) {
-    return [...selected];
+function replaceCompareMember(pair: readonly string[], fips: string): string[] {
+  if (pair.includes(fips) || pair.length === 0) {
+    return parseCompareFipsList(pair.join(","));
   }
-  if (selected.length >= UX_RESET_COMPARE_COUNTY_LIMIT) {
-    return [...selected];
+  if (pair.length < UX_RESET_COMPARE_COUNTY_LIMIT) {
+    return parseCompareFipsList([...pair, fips].join(","));
   }
-  return parseCompareFipsList([...selected, fips].join(","));
+  return parseCompareFipsList([pair[0] ?? "", fips].join(","));
 }
 
 function ResetExploreExperienceInner() {
@@ -79,13 +76,14 @@ function ResetExploreExperienceInner() {
     metadata,
     metadataError,
     metadataLoading,
+    handoffPeriod,
     observationsError,
     observationsLoading,
     releaseId,
     requestedMeasure,
     requestedMeasureId,
     retryGeometry,
-    setCompareSelection,
+    setComparePair,
     setCounty,
     setMapScope,
     setMeasureId,
@@ -121,19 +119,21 @@ function ResetExploreExperienceInner() {
       : (committed?.rows[0]?.fips ?? "");
   const focusedRow =
     committed?.rows.find((row) => row.fips === focusedFips) ?? null;
+  const effectiveComparePair =
+    urlState.selected.length > 0 ? urlState.selected : urlState.compare;
   const handoffParams = useMemo(
     () =>
       exploreHandoffSearchParams({
-        compare: urlState.compare,
+        compare: effectiveComparePair,
         county: focusedFips || urlState.county,
         dataset: urlState.dataset,
         map_scope: urlState.map_scope,
         metric: urlState.metric,
-        period: urlState.period,
+        period: handoffPeriod ?? urlState.period,
         scope: urlState.scope,
-        selected: urlState.selected,
+        selected: effectiveComparePair,
       }),
-    [focusedFips, urlState]
+    [effectiveComparePair, focusedFips, handoffPeriod, urlState]
   );
   const investigateHref = uxResetShellHandoffHref(
     RESET_INVESTIGATE_PATH,
@@ -145,9 +145,15 @@ function ResetExploreExperienceInner() {
     pathname,
     handoffParams
   );
-  const compareSelectionFull =
-    urlState.selected.length >= UX_RESET_COMPARE_COUNTY_LIMIT &&
-    !urlState.selected.includes(focusedFips);
+  const pairIncludesFocused = effectiveComparePair.includes(focusedFips);
+  const pairIsFull =
+    effectiveComparePair.length >= UX_RESET_COMPARE_COUNTY_LIMIT;
+  let compareActionLabel = "Add to compare";
+  if (pairIncludesFocused) {
+    compareActionLabel = "Remove from compare";
+  } else if (pairIsFull) {
+    compareActionLabel = "Replace in compare";
+  }
   const releaseLoadState = metadataError
     ? releaseEvidenceLoadStateValues.error
     : metadataLoading
@@ -394,33 +400,81 @@ function ResetExploreExperienceInner() {
                   Open Compare
                 </Link>
                 <Button
-                  disabled={
-                    !focusedFips ||
-                    compareSelectionFull ||
-                    urlState.selected.includes(focusedFips)
-                  }
+                  disabled={!focusedFips}
                   type="button"
                   variant="outline"
                   onClick={() => {
                     if (!focusedFips) {
                       return;
                     }
-                    setCompareSelection(
-                      includeCountyInCompare(urlState.selected, focusedFips)
+                    if (pairIncludesFocused) {
+                      setComparePair(
+                        parseCompareFipsList(
+                          effectiveComparePair
+                            .filter((fips) => fips !== focusedFips)
+                            .join(",")
+                        )
+                      );
+                      return;
+                    }
+                    setComparePair(
+                      replaceCompareMember(effectiveComparePair, focusedFips)
                     );
                   }}
                 >
-                  {urlState.selected.includes(focusedFips)
-                    ? "Included in compare"
-                    : "Include in compare"}
+                  {compareActionLabel}
+                </Button>
+                <Button
+                  disabled={effectiveComparePair.length === 0}
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setComparePair([]);
+                  }}
+                >
+                  Clear compare
                 </Button>
               </div>
-              <p className="type-small" data-testid="explore-compare-selection">
-                Compare selection:{" "}
-                {urlState.selected.length > 0
-                  ? urlState.selected.join(", ")
-                  : "none yet"}
-              </p>
+              <div
+                data-fips={effectiveComparePair.join(",")}
+                data-testid="explore-compare-selection"
+              >
+                <p className="type-small">Compare selection</p>
+                {effectiveComparePair.length === 0 ? (
+                  <p className="type-small">None yet</p>
+                ) : (
+                  <ul className="ux-reset-explore-compare-pair">
+                    {effectiveComparePair.map((fips) => {
+                      const member = committed.rows.find(
+                        (row) => row.fips === fips
+                      );
+                      const label = member
+                        ? `${member.countyName}, ${member.stateName || member.state} ${fips}`
+                        : fips;
+                      return (
+                        <li key={fips}>
+                          <span>{label}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                              setComparePair(
+                                parseCompareFipsList(
+                                  effectiveComparePair
+                                    .filter((item) => item !== fips)
+                                    .join(",")
+                                )
+                              );
+                            }}
+                          >
+                            Remove {label}
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </Card>
           </div>
 
@@ -463,7 +517,7 @@ function ResetExploreExperienceInner() {
                         }
                         onClick={() => setCounty(row.fips)}
                       >
-                        {row.countyName}
+                        {`${row.countyName}, ${row.stateName || row.state} ${row.fips}`}
                       </Button>
                     </TableCell>
                     <TableCell>{row.displayValue}</TableCell>

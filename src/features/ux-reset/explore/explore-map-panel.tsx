@@ -198,6 +198,7 @@ export function ExploreMapPanel({
         cameraFrameState={
           committed.mapScope === "ALL" ? null : committed.mapScope
         }
+        resetNationalView={committed.mapScope === "ALL"}
         geometry={geometry}
         includeUnscoredCounties
         scores={paint}

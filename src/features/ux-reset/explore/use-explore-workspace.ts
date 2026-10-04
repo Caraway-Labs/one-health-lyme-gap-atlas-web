@@ -1,22 +1,26 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 
 import {
   commitExploreSelection,
+  ExploreContractError,
   filterDirectoryByMapScope,
   resolveExploreMapScope,
+  resolveExploreTimeBound,
   resolveRequestedMeasureId,
   type ExploreCommittedSelection,
   type ExploreRequestStatus,
+  type ExploreTimeBound,
 } from "@/features/ux-reset/explore/explore-model";
 import { exploreSearchParams } from "@/features/ux-reset/explore/explore-search-params";
 import {
   fetchExploreCountyDirectory,
   fetchExploreMeasures,
   loadExploreSelection,
+  shouldRetryExploreObservation,
 } from "@/features/ux-reset/explore/load-explore-resources";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
@@ -40,6 +44,24 @@ function metadataErrorMessage(error: unknown, requestedDataset: string | null) {
     return error.message;
   }
   return "Unable to load governed release metadata for Explore.";
+}
+
+function exploreTimeBoundKey(timeBound: ExploreTimeBound | null): string {
+  if (!timeBound) {
+    return "unresolved";
+  }
+  switch (timeBound.kind) {
+    case "year": {
+      return `year:${timeBound.year}`;
+    }
+    case "day": {
+      return `day:${timeBound.date}`;
+    }
+    default: {
+      const exhaustive: never = timeBound;
+      return exhaustive;
+    }
+  }
 }
 
 function requestStatus(input: {
@@ -119,11 +141,20 @@ export function useExploreWorkspace() {
   );
   const requestedMeasureId = resolveRequestedMeasureId(
     measures,
-    urlState.metric
+    urlState.metric,
+    urlState.period
   );
   const requestedMeasure =
     measures.find((measure) => measure.measure_id === requestedMeasureId) ??
     null;
+  const timeBound = useMemo(
+    () =>
+      requestedMeasure
+        ? resolveExploreTimeBound(requestedMeasure, urlState.period)
+        : null,
+    [requestedMeasure, urlState.period]
+  );
+  const timeBoundKey = exploreTimeBoundKey(timeBound);
 
   const directoryQuery = useQuery({
     enabled: Boolean(releaseId),
@@ -141,14 +172,17 @@ export function useExploreWorkspace() {
     [directoryQuery.data, mapScope]
   );
   const framedFipsKey = framedDirectory.map((county) => county.fips).join(",");
+  const queryClient = useQueryClient();
 
   const observationsQuery = useQuery({
     enabled: Boolean(
       releaseId && requestedMeasure && framedDirectory.length > 0
     ),
     queryFn: async ({ signal }) => {
-      if (!releaseId || !requestedMeasure) {
-        throw new Error("Explore observations require a measure and release.");
+      if (!releaseId || !requestedMeasure || !timeBound) {
+        throw new ExploreContractError(
+          "This measure has no supported time bound for the current period."
+        );
       }
       return loadExploreSelection({
         directory: framedDirectory,
@@ -156,6 +190,7 @@ export function useExploreWorkspace() {
         measure: requestedMeasure,
         releaseId,
         signal,
+        timeBound,
       });
     },
     queryKey: [
@@ -164,7 +199,14 @@ export function useExploreWorkspace() {
       requestedMeasureId,
       mapScope,
       framedFipsKey,
+      timeBoundKey,
     ],
+    retry: (failureCount, error) =>
+      shouldRetryExploreObservation(
+        failureCount,
+        error,
+        queryClient.getDefaultOptions().queries?.retry
+      ),
   });
 
   const geometryQuery = useQuery({
@@ -218,6 +260,16 @@ export function useExploreWorkspace() {
   }, [measures, requestedMeasureId, setUrlState]);
 
   useEffect(() => {
+    if (!timeBound || urlState.period === timeBound.handoffPeriod) {
+      return;
+    }
+    void setUrlState(
+      { period: timeBound.handoffPeriod },
+      { history: "replace" }
+    );
+  }, [setUrlState, timeBound, urlState.period]);
+
+  useEffect(() => {
     if (!committed) {
       return;
     }
@@ -260,14 +312,15 @@ export function useExploreWorkspace() {
     releaseId,
     requestedMeasure,
     requestedMeasureId,
+    handoffPeriod: timeBound?.handoffPeriod ?? null,
     retryGeometry: () => {
       void geometryQuery.refetch();
     },
     setCounty: (county: string) => {
       void setUrlState({ county });
     },
-    setCompareSelection: (selected: string[]) => {
-      void setUrlState({ selected });
+    setComparePair: (pair: string[]) => {
+      void setUrlState({ compare: pair, selected: pair });
     },
     setMapScope: (nextMapScope: string) => {
       void setUrlState({ map_scope: nextMapScope });
