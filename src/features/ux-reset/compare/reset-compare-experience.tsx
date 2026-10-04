@@ -104,6 +104,10 @@ function CompareCellView({
   );
 }
 
+function countPhrase(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 function summaryCounts(rows: readonly CompareAlignedRow[]) {
   let different = 0;
   let similar = 0;
@@ -317,8 +321,15 @@ function CompareExperienceInner() {
             title="Side-by-side evidence"
           />
           <p data-testid="compare-summary">
-            {counts.similar} measures share the same value. {counts.different}{" "}
-            measures differ. {counts.withheld} comparisons are withheld.
+            {countPhrase(counts.similar, "measure shares", "measures share")}{" "}
+            the same value.{" "}
+            {countPhrase(
+              counts.different,
+              "measure differs",
+              "measures differ"
+            )}
+            . {countPhrase(counts.withheld, "comparison is", "comparisons are")}{" "}
+            withheld.
           </p>
           <Table>
             <TableCaption>

@@ -347,6 +347,10 @@
   align-items: stretch;
 }
 
+.ux-reset-compare-table table {
+  min-width: 52rem;
+}
+
 .ux-reset-compare th .type-small,
 .ux-reset-compare td .type-small {
   display: block;

@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { CompareAlignment } from "@/features/ux-reset/compare/compare-alignment";
 import {
@@ -169,9 +169,19 @@ export function useCompareWorkspace(): CompareWorkspace {
     statePair: urlState.compare,
   });
   const pairKey = entry.pair.join(",");
+  const committedPairKey = useRef(pairKey);
+  useEffect(() => {
+    committedPairKey.current = pairKey;
+  }, [committedPairKey, pairKey]);
 
   const commitPair = (next: readonly string[]) => {
     const pair = parseCompareFipsList(next.join(","));
+    const nextKey = pair.join(",");
+    if (nextKey === committedPairKey.current) {
+      setSlotMessage(null);
+      return;
+    }
+    committedPairKey.current = nextKey;
     setPendingPair(pair);
     setSlotMessage(null);
     void setUrlState({ compare: pair });

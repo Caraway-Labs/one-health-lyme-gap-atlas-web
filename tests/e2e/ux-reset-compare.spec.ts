@@ -53,16 +53,27 @@ async function installCompareMocks(page: Page, requested: string[]) {
     const url = new URL(route.request().url());
     requested.push(url.toString());
     const year = url.searchParams.get("year");
+    const pageToken = url.searchParams.get("page_token");
+    const geographyType = url.searchParams.get("geography_type");
+    const startDate = url.searchParams.get("start_date");
+    const endDate = url.searchParams.get("end_date");
     const rejection = compareObservationRequestRejection({
-      end_date: url.searchParams.get("end_date"),
+      end_date: endDate ?? undefined,
       geography_id: url.searchParams.getAll("geography_id"),
-      geography_type:
-        url.searchParams.get("geography_type") === "state" ? "state" : "county",
+      geography_type: geographyType === "state" ? "state" : "county",
       measure_id: url.searchParams.get("measure_id") ?? "",
-      page_token: url.searchParams.get("page_token"),
-      start_date: url.searchParams.get("start_date"),
+      page_token: pageToken ?? undefined,
+      start_date: startDate ?? undefined,
       year: year === null ? undefined : Number(year),
     });
+    if (
+      pageToken === "null" ||
+      pageToken === "" ||
+      (geographyType !== "county" && geographyType !== "state")
+    ) {
+      await fulfill(route, { detail: "invalid observation request" }, 400);
+      return;
+    }
     if (rejection) {
       await fulfill(
         route,
@@ -232,12 +243,10 @@ test.describe("two-county Compare", () => {
       "data-fips",
       "08001,08013"
     );
+    await expect(page.getByTestId("compare-pair")).toContainText("Boulder");
     const second = page.getByRole("combobox", { name: "Second county" });
     await second.focus();
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.press("Home");
-    await page.keyboard.type("Albany");
-    await page.keyboard.press("Enter");
+    await page.keyboard.type("Albany", { delay: 20 });
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001,36001"
@@ -267,9 +276,11 @@ test.describe("two-county Compare", () => {
     );
 
     await page.goto("/app/compare?compare=08001");
-    await page.getByRole("combobox", { name: "Second county" }).focus();
+    await expect(page.getByTestId("compare-pair")).toContainText("Denver");
+    const secondCounty = page.getByRole("combobox", { name: "Second county" });
+    await secondCounty.focus();
     await page.keyboard.press("ArrowDown");
-    await page.keyboard.type("Washington, R");
+    await page.keyboard.type("Washington, R", { delay: 20 });
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
@@ -279,9 +290,9 @@ test.describe("two-county Compare", () => {
       "Rhode Island"
     );
 
-    await page.getByRole("combobox", { name: "Second county" }).focus();
+    await secondCounty.focus();
     await page.keyboard.press("ArrowDown");
-    await page.keyboard.type("Washington, M");
+    await page.keyboard.type("Washington, M", { delay: 20 });
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
