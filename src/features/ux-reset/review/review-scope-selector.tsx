@@ -7,10 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ReviewScope } from "@/features/ux-reset/review/resolve-review-scope";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 import { reviewScopeLabel } from "@/lib/atlas-state-geography";
-
-import type { ReviewScope } from "@/features/ux-reset/review/resolve-review-scope";
 
 type ReviewScopeSelectorProps = {
   scope: ReviewScope;

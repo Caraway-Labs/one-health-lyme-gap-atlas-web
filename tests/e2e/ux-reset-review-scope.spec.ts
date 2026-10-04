@@ -35,6 +35,17 @@ async function installReviewApiMocks(
 }
 
 test.describe("Review national and state scope controls", () => {
+  test("keeps explicit national scope after reload when profile defaults to a state", async ({
+    page,
+  }) => {
+    await installReviewApiMocks(page, { profileState: "CO" });
+    await page.goto("/app/review?scope=ALL");
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await page.reload();
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect(page).toHaveURL(/scope=ALL/);
+  });
+
   test("supports direct links for national and state scope", async ({
     page,
   }) => {
@@ -101,7 +112,11 @@ test.describe("Review national and state scope controls", () => {
 
     await page.goBack({ waitUntil: "commit" });
     await expect
-      .poll(() => page.getByTestId("review-scope-results").getAttribute("data-rendered-scope"))
+      .poll(() =>
+        page
+          .getByTestId("review-scope-results")
+          .getAttribute("data-rendered-scope")
+      )
       .toBe("CO");
 
     await page.goForward({ waitUntil: "commit" });
@@ -113,19 +128,22 @@ test.describe("Review national and state scope controls", () => {
 
   test("does not change Settings default jurisdiction after scope switches", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await installReviewApiMocks(page, { profileState: "CO" });
     await page.goto("/app/review?scope=NY");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "United States" }).click();
 
+    if (testInfo.project.name.includes("mobile")) {
+      await page.getByRole("button", { name: "Open navigation" }).click();
+    }
     await page
       .getByRole("navigation", { name: "Professional workspace" })
       .getByRole("link", { name: "Settings" })
       .click();
-    await expect(page.getByTestId("settings-default-jurisdiction")).toContainText(
-      "Colorado"
-    );
+    await expect(
+      page.getByTestId("settings-default-jurisdiction")
+    ).toContainText("Colorado");
     await expect(
       page.locator("[data-default-jurisdiction='CO']")
     ).toBeVisible();

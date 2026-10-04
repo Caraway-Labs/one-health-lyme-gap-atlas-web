@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { STATE_GRID } from "@/features/geographic-explorer/model";
-
 import type { StateOrientationRow } from "@/features/ux-reset/review/build-review-presentation";
 
 type ReviewNationalOrientationProps = {

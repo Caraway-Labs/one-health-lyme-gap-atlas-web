@@ -1,5 +1,7 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+
 import {
   Card,
   CardContent,
@@ -14,7 +16,6 @@ import {
   atlasStateOptionsFromMetadata,
   reviewScopeLabel,
 } from "@/lib/atlas-state-geography";
-import { useQuery } from "@tanstack/react-query";
 
 export function DefaultJurisdictionReadout() {
   const profileQuery = useProfileDefaultJurisdiction();
@@ -32,23 +33,46 @@ export function DefaultJurisdictionReadout() {
     ? atlasStateOptionsFromMetadata(metadataQuery.data.states)
     : [];
   const code = profileQuery.data?.stateCode ?? null;
-  const label = code
-    ? reviewScopeLabel(code, stateOptions)
-    : "No default state (national)";
+
+  let body: string;
+  let dataAttribute: string;
+  if (profileQuery.isPending) {
+    body = "Loading profile…";
+    dataAttribute = "pending";
+  } else if (profileQuery.isError) {
+    body =
+      "Unable to load your default jurisdiction. Try again later before relying on this setting.";
+    dataAttribute = "error";
+  } else if (code) {
+    body = reviewScopeLabel(code, stateOptions);
+    dataAttribute = code;
+  } else {
+    body = "No default state (national)";
+    dataAttribute = "ALL";
+  }
 
   return (
     <Card data-testid="settings-default-jurisdiction">
       <CardHeader>
         <h2 className="type-card">Default jurisdiction</h2>
         <CardDescription>
-          Starting Review scope when the URL omits{" "}
-          <code>scope</code>. Changing scope on Review does not update this
-          setting.
+          Starting Review scope when the URL omits <code>scope</code>. Changing
+          scope on Review does not update this setting.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="type-body" data-default-jurisdiction={code ?? "ALL"}>
-          {profileQuery.isPending ? "Loading profile…" : label}
+        <p
+          className="type-body"
+          data-default-jurisdiction={dataAttribute}
+          data-profile-readout-state={
+            profileQuery.isError
+              ? "error"
+              : profileQuery.isSuccess
+                ? "ready"
+                : "pending"
+          }
+        >
+          {body}
         </p>
       </CardContent>
     </Card>

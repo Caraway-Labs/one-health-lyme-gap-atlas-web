@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  parseUxResetSharedContext,
+  sharedContextToSearchParams,
+} from "@/features/ux-reset/context-params";
 import { buildReviewScopePresentation } from "@/features/ux-reset/review/build-review-presentation";
 import {
   hasExplicitReviewScopeParam,
@@ -46,31 +50,44 @@ function county(
 
 describe("Review scope resolution", () => {
   it("treats an explicit scope query param as authoritative over profile default", () => {
-    expect(
-      resolveStartingReviewScope(true, "NY", "CO", stateOptions)
-    ).toBe("NY");
+    expect(resolveStartingReviewScope(true, "NY", "CO", stateOptions)).toBe(
+      "NY"
+    );
   });
 
   it("applies profile default when scope is omitted from the URL", () => {
-    expect(
-      resolveStartingReviewScope(false, "ALL", "CO", stateOptions)
-    ).toBe("CO");
+    expect(resolveStartingReviewScope(false, "ALL", "CO", stateOptions)).toBe(
+      "CO"
+    );
   });
 
   it("falls back to national scope when profile default is missing or invalid", () => {
-    expect(
-      resolveStartingReviewScope(false, "ALL", null, stateOptions)
-    ).toBe("ALL");
-    expect(
-      resolveStartingReviewScope(false, "ALL", "ZZ", stateOptions)
-    ).toBe("ALL");
+    expect(resolveStartingReviewScope(false, "ALL", null, stateOptions)).toBe(
+      "ALL"
+    );
+    expect(resolveStartingReviewScope(false, "ALL", "ZZ", stateOptions)).toBe(
+      "ALL"
+    );
   });
 
   it("detects explicit scope params", () => {
     expect(
       hasExplicitReviewScopeParam(new URLSearchParams("scope=CO"))
-    ).toBe(true);
-    expect(hasExplicitReviewScopeParam(new URLSearchParams())).toBe(false);
+    ).toBeTruthy();
+    expect(
+      hasExplicitReviewScopeParam(new URLSearchParams("scope=ALL"))
+    ).toBeTruthy();
+    expect(hasExplicitReviewScopeParam(new URLSearchParams())).toBeFalsy();
+  });
+
+  it("round-trips explicit national scope in shared URL context", () => {
+    const context = parseUxResetSharedContext(
+      new URLSearchParams("scope=ALL&dataset=alpha-2026")
+    );
+    expect(context.scope).toBe("ALL");
+    const serialized = sharedContextToSearchParams(context);
+    expect(serialized.get("scope")).toBe("ALL");
+    expect(parseUxResetSharedContext(serialized).scope).toBe("ALL");
   });
 });
 
@@ -83,7 +100,7 @@ describe("Review scope presentation", () => {
     ]);
     expect(presentation.scope).toBe("ALL");
     expect(presentation.stateCounties).toHaveLength(0);
-    expect(presentation.orientationRows).toEqual([
+    expect(presentation.orientationRows).toStrictEqual([
       {
         code: "CO",
         countyCount: 2,
@@ -102,15 +119,27 @@ describe("Review scope presentation", () => {
       county("08001", "CO", 90),
       county("36001", "NY", 80),
     ]);
-    expect(presentation.stateCounties.map((entry) => entry.fips)).toEqual([
+    expect(presentation.stateCounties.map((entry) => entry.fips)).toStrictEqual(
+      ["08001"]
+    );
+  });
+
+  it("limits map counties to the active state scope", () => {
+    const presentation = buildReviewScopePresentation("CO", [
+      county("08001", "CO", 90),
+      county("36001", "NY", 80),
+    ]);
+    expect(presentation.mapCounties.map((entry) => entry.fips)).toStrictEqual([
       "08001",
     ]);
   });
 
   it("guards rendered presentation against scope drift", () => {
-    expect(reviewScopeMatchesPresentation("CO", "CO")).toBe(true);
-    expect(reviewScopeMatchesPresentation("CO", "NY")).toBe(false);
-    expect(reviewScopeMatchesPresentation("CO", undefined)).toBe(false);
+    expect(reviewScopeMatchesPresentation("CO", "CO")).toBeTruthy();
+    expect(reviewScopeMatchesPresentation("CO", "NY")).toBeFalsy();
+    expect(reviewScopeMatchesPresentation("CO", "CO")).not.toBe(
+      reviewScopeMatchesPresentation("CO", "NY")
+    );
   });
 });
 
@@ -119,7 +148,8 @@ describe("Review scope generation guard", () => {
     let generation = 0;
     const rendered: string[] = [];
     const schedule = (scope: string) => {
-      const token = ++generation;
+      generation += 1;
+      const token = generation;
       queueMicrotask(() => {
         if (token === generation) {
           rendered.push(scope);
@@ -130,9 +160,8 @@ describe("Review scope generation guard", () => {
     schedule("CO");
     generation += 1;
     schedule("NY");
-    await new Promise<void>((resolve) => {
-      queueMicrotask(() => resolve());
-    });
-    expect(rendered).toEqual(["NY"]);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(rendered).toStrictEqual(["NY"]);
   });
 });

@@ -1,6 +1,5 @@
-import type { CountyScoreSummary } from "@/generated/models";
-
 import type { ReviewScope } from "@/features/ux-reset/review/resolve-review-scope";
+import type { CountyScoreSummary } from "@/generated/models";
 
 export type StateOrientationRow = {
   code: string;
@@ -51,11 +50,12 @@ export function buildReviewScopePresentation(
     })
     .toSorted((a, b) => a.code.localeCompare(b.code));
 
-  const mapCounties = countiesInReviewScope(counties, "ALL");
   const stateCounties =
     scope === "ALL"
       ? []
       : inScope.toSorted((a, b) => b.score.score - a.score.score);
+  const mapCounties =
+    scope === "ALL" ? countiesInReviewScope(counties, "ALL") : stateCounties;
 
   return {
     mapCounties,

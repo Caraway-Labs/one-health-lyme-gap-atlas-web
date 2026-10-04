@@ -163,7 +163,7 @@ function canonicalPeriodFromQuery(values: readonly string[]): string | null {
 
 const reviewScopeParser = createMultiParser({
   parse: (values) => canonicalScopeFromQueryValues(values),
-  serialize: (value) => (value === "ALL" ? [] : [value]),
+  serialize: (value) => [value],
 }).withDefault("ALL");
 
 const countyFipsParser = createMultiParser({
@@ -253,7 +253,7 @@ export function sharedContextToSearchParams(
     ? new Set(options.keys)
     : new Set(UX_RESET_SHARED_CONTEXT_PARAM_KEYS);
   const params = new URLSearchParams();
-  if (allowed.has("scope") && context.scope !== "ALL") {
+  if (allowed.has("scope")) {
     params.set("scope", context.scope);
   }
   if (allowed.has("county") && context.county) {

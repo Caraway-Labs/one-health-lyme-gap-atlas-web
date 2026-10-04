@@ -1,25 +1,21 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
-import {
-  buildReviewScopePresentation,
-  type ReviewScopePresentation,
-} from "@/features/ux-reset/review/build-review-presentation";
+import { buildReviewScopePresentation } from "@/features/ux-reset/review/build-review-presentation";
 import type { ReviewScope } from "@/features/ux-reset/review/resolve-review-scope";
-import { metadataV1AtlasMetadataGet, scoresV1AtlasScoresGet } from "@/generated/atlas";
+import {
+  metadataV1AtlasMetadataGet,
+  scoresV1AtlasScoresGet,
+} from "@/generated/atlas";
 import {
   MetadataV1AtlasMetadataGetResponse,
   ScoresV1AtlasScoresGetResponse,
 } from "@/generated/zod/atlas";
+import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import type { ScoreSettings } from "@/lib/atlas-ui";
-
-type ReviewPresentationState = {
-  presentation: ReviewScopePresentation | null;
-  requestScope: ReviewScope | null;
-};
 
 const DEFAULT_SCORE_SETTINGS: ScoreSettings = {
   ecological_share: 65,
@@ -27,21 +23,44 @@ const DEFAULT_SCORE_SETTINGS: ScoreSettings = {
   missing_human_weakness: 75,
 };
 
-/** Loads governed county scores and projects them for the active Review scope. */
-export function useReviewPresentation(scope: ReviewScope) {
-  const [scoped, setScoped] = useState<ReviewPresentationState>({
-    presentation: null,
-    requestScope: null,
-  });
+function metadataErrorMessage(error: unknown, requestedDataset: string | null) {
+  if (error instanceof AtlasApiError) {
+    if (requestedDataset) {
+      return `The requested release "${requestedDataset}" is not available. ${error.message}`;
+    }
+    return error.message;
+  }
+  return "Unable to load governed release metadata for Review.";
+}
 
+/** Loads governed county scores and projects them for the active Review scope. */
+export function useReviewPresentation(
+  scope: ReviewScope,
+  requestedDataset: string | null
+) {
   const metadataQuery = useQuery({
-    queryFn: async ({ signal }) =>
-      validateApiResponse(
+    queryFn: async ({ signal }) => {
+      const response = await metadataV1AtlasMetadataGet(
+        requestedDataset ? { dataset_version: requestedDataset } : undefined,
+        { signal }
+      );
+      if (response.status !== 200) {
+        throw new AtlasApiError(
+          requestedDataset
+            ? `Release "${requestedDataset}" is not available.`
+            : "Atlas metadata is temporarily unavailable.",
+          "/v1/atlas/metadata",
+          response.status,
+          null
+        );
+      }
+      return validateApiResponse(
         "Atlas metadata",
         MetadataV1AtlasMetadataGetResponse,
-        (await metadataV1AtlasMetadataGet(undefined, { signal })).data
-      ),
-    queryKey: ["ux-reset-review-metadata"],
+        response.data
+      );
+    },
+    queryKey: ["ux-reset-review-metadata", requestedDataset],
   });
 
   const releaseId = metadataQuery.data?.release_id;
@@ -62,32 +81,29 @@ export function useReviewPresentation(scope: ReviewScope) {
     queryKey: ["ux-reset-review-scores", releaseId, DEFAULT_SCORE_SETTINGS],
   });
 
-  useEffect(() => {
+  const presentation = useMemo(() => {
     if (!scoresQuery.data) {
-      setScoped({ presentation: null, requestScope: null });
-      return;
+      return null;
     }
-    setScoped({
-      presentation: buildReviewScopePresentation(
-        scope,
-        scoresQuery.data.counties
-      ),
-      requestScope: scope,
-    });
+    return buildReviewScopePresentation(scope, scoresQuery.data.counties);
   }, [scope, scoresQuery.data]);
 
   const isLoading = metadataQuery.isPending || scoresQuery.isPending;
-  const isError = metadataQuery.isError || scoresQuery.isError;
-
-  const presentationMatchesScope =
-    scoped.presentation !== null && scoped.requestScope === scope;
+  const metadataIsError = metadataQuery.isError;
+  const scoresIsError = scoresQuery.isError;
+  const metadataError = metadataIsError
+    ? metadataErrorMessage(metadataQuery.error, requestedDataset)
+    : null;
 
   return {
-    isError,
+    isError: metadataIsError || scoresIsError,
     isLoading,
     metadata: metadataQuery.data,
-    presentation: presentationMatchesScope ? scoped.presentation : null,
-    requestScope: presentationMatchesScope ? scoped.requestScope : null,
+    metadataError,
+    metadataIsError,
+    presentation,
+    requestScope: presentation?.scope ?? null,
+    scoresIsError,
     scoresQuery,
   };
 }

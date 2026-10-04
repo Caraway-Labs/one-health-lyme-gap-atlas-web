@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, render, screen } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,31 +20,46 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
   useSearchParams: () => searchParams as ReadonlyURLSearchParams,
 }));
 
-vi.mock("@/generated/atlas", () => ({
-  getProfileV1MeProfileGet: vi.fn(async () => ({
-    data: { profile: null },
-    status: 200,
-  })),
-  metadataV1AtlasMetadataGet: vi.fn(async () => ({
-    data: {
-      bundle_sha256: "abc",
-      generated_at: "2026-01-01T00:00:00Z",
-      limitations: "",
-      loaded_at: "2026-01-01T00:00:00Z",
-      methodology_version: "1",
-      release_id: "alpha-2026-08-06",
-      schema_version: "1",
-      scope: "US",
-      score_defaults: {},
-      sources: [],
-      states: [{ code: "CO", name: "Colorado" }],
-    },
-    status: 200,
-  })),
-  scoresV1AtlasScoresGet: vi.fn(async () => ({
-    data: { counties: [] },
-    status: 200,
-  })),
+vi.mock(import("@/generated/atlas"), () => ({
+  getProfileV1MeProfileGet: vi.fn<
+    typeof import("@/generated/atlas").getProfileV1MeProfileGet
+  >(
+    async () =>
+      ({
+        data: { profile: null },
+        status: 200,
+      }) as never
+  ),
+  metadataV1AtlasMetadataGet: vi.fn<
+    typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
+  >(
+    async () =>
+      ({
+        data: {
+          bundle_sha256: "abc",
+          generated_at: "2026-01-01T00:00:00Z",
+          limitations: "",
+          loaded_at: "2026-01-01T00:00:00Z",
+          methodology_version: "1",
+          release_id: "alpha-2026-08-06",
+          schema_version: "1",
+          scope: "US",
+          score_defaults: {},
+          sources: [],
+          states: [{ code: "CO", name: "Colorado" }],
+        },
+        status: 200,
+      }) as never
+  ),
+  scoresV1AtlasScoresGet: vi.fn<
+    typeof import("@/generated/atlas").scoresV1AtlasScoresGet
+  >(
+    async () =>
+      ({
+        data: { counties: [] },
+        status: 200,
+      }) as never
+  ),
 }));
 
 function stubDesktopMatchMedia() {
@@ -128,7 +143,7 @@ describe("UX Reset shell rendered handoff", () => {
       uxResetDestinationHref("investigate", pathname, searchParams)
     );
     expect(href).not.toContain("county=");
-    expect(href).not.toContain("scope=");
+    expect(href).toContain("scope=ALL");
     expect(href).not.toContain("period=");
   });
 });

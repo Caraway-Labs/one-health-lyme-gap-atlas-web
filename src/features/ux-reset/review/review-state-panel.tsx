@@ -1,23 +1,28 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { AtlasMapLegend } from "@/components/atlas-map-legend";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { RankedCounties } from "@/components/ranked-counties";
+import { ResultsTable } from "@/components/results-table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { CountyScoreSummary } from "@/generated/models";
+import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   countyDisplayGeometryQueryKey,
   fetchCountyDisplayGeometry,
 } from "@/lib/county-geography";
-import { useQuery } from "@tanstack/react-query";
 
 const AtlasMap = dynamic(
-  () => import("@/components/atlas-map").then((mod) => mod.AtlasMap),
+  async () => {
+    const mod = await import("@/components/atlas-map");
+    return mod.AtlasMap;
+  },
   {
     loading: () => (
       <AtlasStatusMessage className="map-loading" tone="loading">
@@ -41,6 +46,10 @@ export function ReviewStatePanel({
   mapCounties,
   releaseId,
 }: ReviewStatePanelProps) {
+  const inScopeFips = useMemo(
+    () => new Set(rankedCounties.map((county) => county.fips)),
+    [rankedCounties]
+  );
   const [selectedFips, setSelectedFips] = useState(
     () => rankedCounties[0]?.fips ?? ""
   );
@@ -53,8 +62,26 @@ export function ReviewStatePanel({
     staleTime: Infinity,
   });
 
+  const selectCounty = useCallback(
+    (fips: string, _surface: GeographySelectionSurface) => {
+      if (!inScopeFips.has(fips)) {
+        return;
+      }
+      setSelectedFips(fips);
+    },
+    [inScopeFips]
+  );
+
+  const mapScores = useMemo(() => [...mapCounties], [mapCounties]);
+  const geometryError = Boolean(geometryQuery.isError);
+  const geometryReady = Boolean(geometryQuery.data);
+  const hasCounties = rankedCounties.length > 0;
+
   return (
-    <div className="ux-reset-review-state-layout" data-testid="review-state-panel">
+    <div
+      className="ux-reset-review-state-layout"
+      data-testid="review-state-panel"
+    >
       <Card className="map-card gap-0 py-0">
         <AtlasSectionHeader
           aside={
@@ -67,30 +94,61 @@ export function ReviewStatePanel({
           headingLevel="h2"
           title="County review priority in this state"
         />
-        <div className="map-wrap">
-          {geometryQuery.data && rankedCounties.length > 0 ? (
+        <div className="map-wrap" data-testid="review-state-map-region">
+          {geometryReady && hasCounties ? (
             <AtlasMap
               geometry={geometryQuery.data as never}
-              scores={[...mapCounties]}
+              scores={mapScores}
               selectedFips={selectedFips}
               selectedState={scopeCode}
-              onSelect={(fips) => setSelectedFips(fips)}
+              onSelect={selectCounty}
             />
+          ) : geometryError ? (
+            <AtlasStatusMessage
+              className="map-loading"
+              data-testid="review-state-map-error"
+              tone="error"
+            >
+              <p>
+                The map is temporarily unavailable. Use the county list or table
+                to inspect the same findings.
+              </p>
+            </AtlasStatusMessage>
+          ) : !hasCounties && !geometryQuery.isPending ? (
+            <AtlasStatusMessage
+              className="map-loading"
+              data-testid="review-state-map-empty"
+              tone="empty"
+            >
+              <p>No counties in this state match the current release scope.</p>
+            </AtlasStatusMessage>
           ) : (
-            <AtlasStatusMessage className="map-loading" tone="loading">
+            <AtlasStatusMessage
+              className="map-loading"
+              data-testid="review-state-map-loading"
+              tone="loading"
+            >
               Loading map…
             </AtlasStatusMessage>
           )}
         </div>
-        <AtlasMapLegend caption={`Map framed for ${scopeCode} counties in this release.`} />
+        <AtlasMapLegend
+          caption={`Map framed for ${scopeCode} counties in this release.`}
+        />
       </Card>
       <RankedCounties
         counties={[...rankedCounties]}
         selectedFips={selectedFips}
         showTable={showTable}
-        onSelect={(fips) => setSelectedFips(fips)}
+        onSelect={selectCounty}
         onToggleTable={() => setShowTable((value) => !value)}
       />
+      {showTable ? (
+        <ResultsTable
+          counties={[...rankedCounties]}
+          onSelect={(fips) => selectCounty(fips, "results_table")}
+        />
+      ) : null}
     </div>
   );
 }

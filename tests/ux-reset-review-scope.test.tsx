@@ -1,11 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ReadonlyURLSearchParams } from "next/navigation";
-
+import { uxResetDestinationHref } from "@/features/ux-reset";
 import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
+import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
+import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
 
 let mockedSearch = "";
 
@@ -21,29 +29,58 @@ import {
   reviewScopeScoresFixture,
 } from "./fixtures/review-scope-api-fixtures";
 
+let lastMapScoreFips = "";
+
 vi.mock(import("@/lib/county-geography"), async (importOriginal) => ({
   ...(await importOriginal()),
   countyDisplayGeometryQueryKey: (...args: unknown[]) => args,
-  fetchCountyDisplayGeometry: vi.fn(async () => ({
+  fetchCountyDisplayGeometry: vi.fn<
+    () => Promise<{ features: unknown[]; type: string }>
+  >(async () => ({
     features: [],
     type: "FeatureCollection",
   })),
 }));
 
-vi.mock("@/components/atlas-map", () => ({
-  AtlasMap: () => <div data-testid="mock-atlas-map" />,
+vi.mock(import("@/components/atlas-map"), () => ({
+  AtlasMap: ({
+    onSelect,
+    scores,
+  }: {
+    onSelect: (fips: string) => void;
+    scores: { fips: string }[];
+  }) => {
+    lastMapScoreFips = scores.map((entry) => entry.fips).join(",");
+    return (
+      <div data-map-score-fips={lastMapScoreFips} data-testid="mock-atlas-map">
+        <button
+          data-testid="mock-map-select-ny"
+          type="button"
+          onClick={() => onSelect("36001", "map")}
+        >
+          Select NY county on map
+        </button>
+      </div>
+    );
+  },
 }));
 
-vi.mock("@/generated/atlas", () => ({
-  getProfileV1MeProfileGet: vi.fn(async () => ({
+vi.mock(import("@/generated/atlas"), () => ({
+  getProfileV1MeProfileGet: vi.fn<
+    () => Promise<{ data: { profile: null }; status: number }>
+  >(async () => ({
     data: { profile: null },
     status: 200,
   })),
-  metadataV1AtlasMetadataGet: vi.fn(async () => ({
+  metadataV1AtlasMetadataGet: vi.fn<
+    () => Promise<{ data: typeof reviewScopeMetadataFixture; status: number }>
+  >(async () => ({
     data: reviewScopeMetadataFixture,
     status: 200,
   })),
-  scoresV1AtlasScoresGet: vi.fn(async () => ({
+  scoresV1AtlasScoresGet: vi.fn<
+    () => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
+  >(async () => ({
     data: reviewScopeScoresFixture,
     status: 200,
   })),
@@ -83,6 +120,7 @@ function renderReview(search = "") {
 describe("Reset Review scope UI", () => {
   beforeEach(() => {
     mockedSearch = "";
+    lastMapScoreFips = "";
     stubDesktopMatchMedia();
   });
 
@@ -96,7 +134,7 @@ describe("Reset Review scope UI", () => {
     await waitFor(() =>
       expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
     );
-    expect(screen.getByTestId("review-scope-status").getAttribute("data-request-scope")).toBe(
+    expect(screen.getByTestId("review-scope-status").dataset.requestScope).toBe(
       "ALL"
     );
   });
@@ -109,12 +147,139 @@ describe("Reset Review scope UI", () => {
     } as never);
     renderReview("?scope=NY");
     await waitFor(() =>
-      expect(screen.getByTestId("review-scope-results").getAttribute("data-rendered-scope")).toBe(
-        "NY"
-      )
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("NY")
     );
     expect(screen.getByTestId("review-scope-status").textContent).toContain(
       "New York"
     );
+  });
+
+  it("keeps explicit national scope when profile default is a state", async () => {
+    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    } as never);
+    renderReview("?scope=ALL");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
+    );
+    expect(screen.getByTestId("review-scope-status").dataset.requestScope).toBe(
+      "ALL"
+    );
+  });
+
+  it("requests metadata for a supplied dataset query param", async () => {
+    const { metadataV1AtlasMetadataGet } = await import("@/generated/atlas");
+    renderReview("?scope=CO&dataset=legacy-release");
+    await waitFor(() =>
+      expect(metadataV1AtlasMetadataGet).toHaveBeenCalledWith(
+        { dataset_version: "legacy-release" },
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      )
+    );
+  });
+
+  it("passes only in-state counties to the map", async () => {
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-atlas-map")).toBeTruthy()
+    );
+    expect(lastMapScoreFips).toBe("08001,08013");
+  });
+
+  it("rejects out-of-state map selection", async () => {
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-atlas-map")).toBeTruthy()
+    );
+    fireEvent.click(screen.getByTestId("mock-map-select-ny"));
+    const activeRow = document.querySelector(".rank-row.active");
+    expect(activeRow?.textContent).toContain("Denver");
+  });
+
+  it("renders the full county table when expanded", async () => {
+    const manyCounties = Array.from({ length: 41 }, (_, index) => {
+      const fips = String(8000 + index).padStart(5, "0");
+      return {
+        ...reviewScopeScoresFixture.counties[0],
+        county: `County ${index + 1}`,
+        fips,
+        score: {
+          ...reviewScopeScoresFixture.counties[0].score,
+          score: 90 - index,
+        },
+      };
+    });
+    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
+    vi.mocked(scoresV1AtlasScoresGet).mockResolvedValue({
+      data: { ...reviewScopeScoresFixture, counties: manyCounties },
+      status: 200,
+    } as never);
+
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-state-panel")).toBeTruthy()
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "View full county list" })
+    );
+    expect(screen.getAllByRole("row").length).toBeGreaterThan(41);
+  });
+
+  it("preserves scope=ALL across explore handoff URLs", () => {
+    const href = uxResetDestinationHref(
+      "explore",
+      UX_RESET_ROUTE_PATHS.review,
+      new URLSearchParams("scope=ALL&dataset=alpha-2026")
+    );
+    expect(href).toContain("scope=ALL");
+    const returnHref = uxResetDestinationHref(
+      "review",
+      UX_RESET_ROUTE_PATHS.explore,
+      new URLSearchParams(href.split("?")[1] ?? "")
+    );
+    expect(returnHref).toContain("scope=ALL");
+  });
+});
+
+describe("Settings default jurisdiction readout", () => {
+  beforeEach(() => {
+    stubDesktopMatchMedia();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("surfaces profile read failures distinctly from national default", async () => {
+    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValueOnce({
+      data: null,
+      status: 503,
+    } as never);
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <DefaultJurisdictionReadout />
+      </QueryClientProvider>
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("settings-default-jurisdiction").textContent
+      ).toContain("Unable to load your default jurisdiction")
+    );
+    expect(
+      screen
+        .getByTestId("settings-default-jurisdiction")
+        .querySelector("[data-default-jurisdiction='error']")
+    ).toBeTruthy();
   });
 });

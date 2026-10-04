@@ -1,7 +1,7 @@
 "use client";
 
-import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
 import { resetRouteById } from "@/features/ux-reset/paths";
+import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
 
 export function ResetSettingsExperience() {
   const route = resetRouteById("settings");
