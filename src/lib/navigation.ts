@@ -275,6 +275,21 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     status: "hidden",
   },
   {
+    auth: "required",
+    description:
+      "Authenticated professional workspace for the UX Reset program.",
+    href: "/app",
+    id: "ux-reset-app",
+    label: "Professional workspace",
+    match: "prefix",
+    pageDescription:
+      "Authenticated professional workspace for the UX Reset program.",
+    pageTitle: "Professional workspace | One Health Lyme Gap Atlas",
+    placement: "none",
+    shell: "none",
+    status: "hidden",
+  },
+  {
     description: "Authentication callback utility route.",
     href: "/auth/callback",
     id: "auth-callback",
