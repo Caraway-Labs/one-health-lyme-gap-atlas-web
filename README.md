@@ -9,6 +9,8 @@ Public single-page One Health Lyme Gap Atlas built with React, strict TypeScript
 
 Read the workspace [agent instructions](../AGENTS.md) and [technology and governance baseline](../TECHNOLOGY_AND_GOVERNANCE.md) before implementation. They define the required API, provenance, accessibility, security, testing, and decision-record rules.
 
+**UX Reset Phase 1:** Canonical product and agent rules for the professional workspace reset are in [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md) (parent epic [#394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394)).
+
 ```powershell
 npm ci
 npm run generate:api

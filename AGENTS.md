@@ -35,6 +35,18 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Editorial dark-hero CTAs may use `.hero-cta-primary` and `.cta-on-dark` on top of Button/`buttonVariants`. Do not reintroduce generic `.button` or `.card` classes.
 
+<!-- BEGIN:ux-reset-constitution-agent-rules-407 -->
+
+## UX Reset constitution (coding agents)
+
+For **UX Reset Phase 1** work (authenticated professional workspace under `/app/*` and related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation) unless an owner-approved issue or ADR explicitly changes them.
+
+- Run `npm run check:ux-reset` with other quality gates when touching Reset UI or this guidance.
+- Use [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives first; do not invent a parallel Reset design system.
+- Parent epic context: [GitHub #394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394).
+
+<!-- END:ux-reset-constitution-agent-rules-407 -->
+
 ## Atlas web instructions
 
 Before material work, read the workspace [AGENTS.md](../AGENTS.md), the [technology and governance baseline](../TECHNOLOGY_AND_GOVERNANCE.md), this repository's `README.md`, and the applicable workspace ADRs—especially [0001 frontend platform](../docs/adr/0001-frontend-platform.md), [0002 public API and Snowflake access](../docs/adr/0002-public-api-and-snowflake-access.md), and [0003 geospatial delivery](../docs/adr/0003-geospatial-delivery.md).
@@ -57,6 +69,7 @@ npm run format
 npm run typecheck
 npm run lint
 npm run check:design-system
+npm run check:ux-reset
 npm test
 npm run build
 docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.carawaylabs.com .
