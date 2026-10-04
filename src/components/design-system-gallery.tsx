@@ -172,16 +172,23 @@ export function DesignSystemGallery() {
           aside={<AtlasDataStamp>alpha-example · alpha-0.2.0</AtlasDataStamp>}
           description="Compose primitives; keep scoring and geography logic in feature code."
           eyebrow="Reusable pattern"
+          headingLevel="h3"
           title="Section header and data stamp"
         />
-        <AtlasStatusMessage title="Example empty state" tone="empty">
+        <AtlasStatusMessage
+          title="Example empty state"
+          titleAs="h3"
+          tone="empty"
+        >
           <p>Select a county to see its details.</p>
         </AtlasStatusMessage>
         <AtlasPriorityBadge priority="Priority 2 — Review" />
         <AtlasMapLegend caption="Example legend for review-priority colors." />
         <EvidenceObject
+          claimHeadingLevel="h4"
           model={evidenceObjectFromObservation({
             claimLabel: "Example governed observation",
+            measureType: "count",
             observation: {
               atlas_acquired_at: null,
               atlas_processed_at: null,
@@ -192,7 +199,9 @@ export function DesignSystemGallery() {
                 resource_type: "source",
               },
               geography: { geography_id: "36061", geography_type: "county" },
-              limitations: [],
+              limitations: [
+                "Example limitation: county allocation may be incomplete for this specimen.",
+              ],
               lineage_source_id: null,
               measure_id: "case-rate",
               methodology: null,

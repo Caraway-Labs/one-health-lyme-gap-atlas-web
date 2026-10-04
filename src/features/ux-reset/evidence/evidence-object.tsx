@@ -8,8 +8,11 @@ import type { EvidenceObjectModel } from "./types";
 
 import "./evidence-contract.css";
 
+type ClaimHeadingLevel = "h3" | "h4" | "h5";
+
 type EvidenceObjectProps = {
   className?: string;
+  claimHeadingLevel?: ClaimHeadingLevel;
   contentSurface?: ContentSurface;
   model: EvidenceObjectModel;
   showReason?: boolean;
@@ -21,17 +24,20 @@ type EvidenceObjectProps = {
  */
 export function EvidenceObject({
   className,
+  claimHeadingLevel = "h3",
   contentSurface = "source_card",
   model,
   showReason = false,
 }: EvidenceObjectProps) {
+  const ClaimHeading = claimHeadingLevel;
   return (
     <Card
       className={cn("ux-reset-evidence-object", className)}
       data-evidence-availability={model.availability}
+      data-testid="ux-reset-evidence-object"
     >
       <div className="ux-reset-evidence-object-heading">
-        <h3 className="type-card">{model.claimLabel}</h3>
+        <ClaimHeading className="type-card">{model.claimLabel}</ClaimHeading>
         <p
           className="ux-reset-evidence-value type-metric"
           data-testid="evidence-display-value"

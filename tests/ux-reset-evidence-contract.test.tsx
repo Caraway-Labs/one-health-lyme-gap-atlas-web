@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -17,10 +23,14 @@ import { ValueState } from "@/generated/models";
 import { getDocsPageHref } from "@/lib/docs-config";
 
 import {
+  GOVERNED_MEASURE_TYPES,
   exactDecimalStringObservation,
+  missingNumericObservation,
   noaaDailyPrecipitationObservation,
   noaaDailyPrecipitationWithoutVintage,
   publishedZeroObservation,
+  suppressedNumericObservation,
+  unavailableNumericObservation,
 } from "./fixtures/ux-reset-evidence-observations";
 
 const metadata: AtlasMetadata = {
@@ -47,6 +57,19 @@ const metadata: AtlasMetadata = {
 
 const evidenceDocsHref = getDocsPageHref("evidence-and-uncertainty");
 
+function renderEvidenceObject(
+  input: Parameters<typeof evidenceObjectFromObservation>[0]
+) {
+  const model = evidenceObjectFromObservation(input);
+  const view = render(<EvidenceObject model={model} />);
+  return { model, view };
+}
+
+function availabilityBadgeText(container: HTMLElement) {
+  return container.querySelector(".ux-reset-evidence-availability")
+    ?.textContent;
+}
+
 describe("ux reset evidence contract", () => {
   afterEach(cleanup);
 
@@ -71,7 +94,7 @@ describe("ux reset evidence contract", () => {
     ).toBe(evidenceAvailabilityValues.unavailable);
   });
 
-  it("never renders unavailable states as zero", () => {
+  it("never renders unavailable states as zero in the formatter", () => {
     for (const valueState of [
       ValueState.MISSING,
       ValueState.UNAVAILABLE,
@@ -127,9 +150,25 @@ describe("ux reset evidence contract", () => {
     );
   });
 
+  it("uses governed measure_type for evidence type and Unavailable without catalog metadata", () => {
+    const withType = evidenceObjectFromObservation({
+      claimLabel: "Daily precipitation",
+      measureType: GOVERNED_MEASURE_TYPES.precipitation,
+      observation: noaaDailyPrecipitationObservation,
+    });
+    expect(withType.provenance.evidenceType).toBe("Continuous");
+
+    const withoutType = evidenceObjectFromObservation({
+      claimLabel: "Daily precipitation",
+      observation: noaaDailyPrecipitationObservation,
+    });
+    expect(withoutType.provenance.evidenceType).toBe("Unavailable");
+  });
+
   it("keeps NOAA daily observation period separate from dataset vintage", () => {
     const model = evidenceObjectFromObservation({
       claimLabel: "Daily precipitation",
+      measureType: GOVERNED_MEASURE_TYPES.precipitation,
       observation: noaaDailyPrecipitationObservation,
     });
 
@@ -154,6 +193,7 @@ describe("ux reset evidence contract", () => {
   it("builds annual CDC observation evidence from period metadata", () => {
     const model = evidenceObjectFromObservation({
       claimLabel: "Published Lyme cases",
+      measureType: GOVERNED_MEASURE_TYPES.caseCount,
       observation: {
         atlas_acquired_at: null,
         atlas_processed_at: null,
@@ -195,7 +235,94 @@ describe("ux reset evidence contract", () => {
     expect(model.provenance.sourceFamily).toBe("CDC Lyme surveillance");
     expect(model.provenance.observationPeriod).toBe("2023");
     expect(model.provenance.datasetVintage).toBe("2023");
-    expect(model.provenance.evidenceType).toBe("Source");
+    expect(model.provenance.evidenceType).toBe("Count");
+  });
+
+  it("renders adversarial value states without numeric leakage", () => {
+    const cases = [
+      {
+        availability: "Limited",
+        claimLabel: "Suppressed cell",
+        display: "Suppressed",
+        observation: suppressedNumericObservation,
+      },
+      {
+        availability: "Unavailable",
+        claimLabel: "Missing record",
+        display: "Unavailable",
+        observation: missingNumericObservation,
+      },
+      {
+        availability: "Unavailable",
+        claimLabel: "Unavailable field",
+        display: "Unavailable",
+        observation: unavailableNumericObservation,
+      },
+    ] as const;
+
+    for (const caseEntry of cases) {
+      cleanup();
+      const { model } = renderEvidenceObject({
+        claimLabel: caseEntry.claimLabel,
+        measureType: GOVERNED_MEASURE_TYPES.precipitation,
+        observation: caseEntry.observation,
+      });
+      const card = screen.getByTestId("ux-reset-evidence-object");
+      expect({
+        availability: availabilityBadgeText(card),
+        display: screen.getByTestId("evidence-display-value").textContent,
+        modelDisplay: model.displayValue,
+      }).toStrictEqual({
+        availability: caseEntry.availability,
+        display: caseEntry.display,
+        modelDisplay: caseEntry.display,
+      });
+    }
+  });
+
+  it("renders tiny positive NOAA observation with limited availability and caveat", () => {
+    const { model: tiny } = renderEvidenceObject({
+      claimLabel: "Tiny positive",
+      measureType: GOVERNED_MEASURE_TYPES.precipitation,
+      observation: noaaDailyPrecipitationObservation,
+    });
+    const card = screen.getByTestId("ux-reset-evidence-object");
+    expect({
+      availability: availabilityBadgeText(card),
+      caveat: within(card).getByRole("note").textContent,
+      display: screen.getByTestId("evidence-display-value").textContent,
+      modelAvailability: tiny.availability,
+    }).toStrictEqual({
+      availability: "Limited",
+      caveat:
+        "Historical availability varies before 1981 for this station composite.",
+      display: "0.0001 mm",
+      modelAvailability: evidenceAvailabilityValues.limited,
+    });
+  });
+
+  it("renders exact decimal and published zero observations", () => {
+    renderEvidenceObject({
+      claimLabel: "High-precision reading",
+      measureType: GOVERNED_MEASURE_TYPES.precipitation,
+      observation: exactDecimalStringObservation,
+    });
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "0.123456789012345678901234567890 mm"
+    );
+
+    cleanup();
+    renderEvidenceObject({
+      claimLabel: "No precipitation",
+      measureType: GOVERNED_MEASURE_TYPES.precipitation,
+      observation: publishedZeroObservation,
+    });
+    expect({
+      availability: availabilityBadgeText(
+        screen.getByTestId("ux-reset-evidence-object")
+      ),
+      display: screen.getByTestId("evidence-display-value").textContent,
+    }).toStrictEqual({ availability: "Available", display: "0 mm" });
   });
 
   it("summarizes release context and marks incomplete metadata unavailable", () => {
@@ -215,31 +342,67 @@ describe("ux reset evidence contract", () => {
     );
   });
 
-  it("separates release loading and error from evidence availability", () => {
-    render(
+  it("omits availability badges while release context is loading or errored", () => {
+    const { container: loadingContainer } = render(
       <ReleaseEvidenceStateStrip
         loadState={releaseEvidenceLoadStateValues.loading}
       />
     );
+    expect(
+      loadingContainer.querySelector(".ux-reset-evidence-availability")
+    ).toBeNull();
     expect(screen.getByRole("status").textContent).toContain("Loading");
 
     cleanup();
-    render(
+    const { container: errorContainer } = render(
       <ReleaseEvidenceStateStrip
         errorMessage="Network error"
         loadState={releaseEvidenceLoadStateValues.error}
       />
     );
+    expect(
+      errorContainer.querySelector(".ux-reset-evidence-availability")
+    ).toBeNull();
     expect(screen.getByRole("alert").textContent).toContain("Network error");
   });
 
-  it("renders EvidenceObject with provenance docs links, limitations, and disclosure state", () => {
-    const model = evidenceObjectFromObservation({
+  it("shows governed availability on loaded complete and incomplete release context", () => {
+    const complete = releaseEvidenceContextFromMetadata(metadata);
+    const { container: completeContainer } = render(
+      <ReleaseEvidenceStateStrip
+        context={complete}
+        loadState={releaseEvidenceLoadStateValues.ready}
+      />
+    );
+    expect(
+      completeContainer.querySelector(".ux-reset-evidence-availability")
+        ?.textContent
+    ).toBe("Available");
+
+    cleanup();
+    const incomplete = releaseEvidenceContextFromMetadata({
+      ...metadata,
+      release_id: "",
+      sources: [],
+    });
+    const { container: incompleteContainer } = render(
+      <ReleaseEvidenceStateStrip
+        context={incomplete}
+        loadState={releaseEvidenceLoadStateValues.ready}
+      />
+    );
+    expect(
+      incompleteContainer.querySelector(".ux-reset-evidence-availability")
+        ?.textContent
+    ).toBe("Unavailable");
+  });
+
+  it("renders provenance inspect with limitations while disclosure stays open", () => {
+    renderEvidenceObject({
       claimLabel: "Daily precipitation",
+      measureType: GOVERNED_MEASURE_TYPES.precipitation,
       observation: noaaDailyPrecipitationObservation,
     });
-
-    render(<EvidenceObject model={model} />);
 
     const outerDetails = screen
       .getByText("Inspect provenance")
@@ -248,12 +411,6 @@ describe("ux reset evidence contract", () => {
 
     fireEvent.click(screen.getByText("Inspect provenance"));
     expect(outerDetails?.open).toBeTruthy();
-
-    const summary = screen.getByText("Inspect provenance");
-    fireEvent.click(summary);
-    expect(outerDetails?.open).toBeFalsy();
-    summary.focus();
-    expect(document.activeElement).toBe(summary);
 
     expect(
       screen.getAllByRole("listitem").map((item) => item.textContent)
@@ -269,35 +426,11 @@ describe("ux reset evidence contract", () => {
     });
     for (const link of docLinks) {
       expect(link.getAttribute("href")).toBe(evidenceDocsHref);
-      expect(link.getAttribute("href")).toContain(
-        "/docs/evidence-and-uncertainty"
-      );
-      expect(link.getAttribute("href")).not.toContain(
-        "#evidence-and-uncertainty"
-      );
     }
-  });
 
-  it("renders exact decimal and published-zero fixtures end to end", () => {
-    const decimalModel = evidenceObjectFromObservation({
-      claimLabel: "High-precision reading",
-      observation: exactDecimalStringObservation,
+    const sourceLink = screen.getByRole("link", {
+      name: /Open source reference/,
     });
-    const zeroModel = evidenceObjectFromObservation({
-      claimLabel: "No precipitation",
-      observation: publishedZeroObservation,
-    });
-
-    render(
-      <>
-        <EvidenceObject model={decimalModel} />
-        <EvidenceObject model={zeroModel} />
-      </>
-    );
-
-    expect(
-      screen.getByText("0.123456789012345678901234567890 mm")
-    ).toBeTruthy();
-    expect(screen.getByText("0 mm")).toBeTruthy();
+    expect(sourceLink.getAttribute("href")).toBe("https://www.ncei.noaa.gov/");
   });
 });

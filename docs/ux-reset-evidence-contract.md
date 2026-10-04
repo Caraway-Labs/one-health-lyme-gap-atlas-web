@@ -51,6 +51,8 @@ Use `formatGovernedEvidenceValue`:
 
 **Limitations:** the strip may show the first limitation as a short caveat; **Inspect provenance** lists every governed limitation.
 
+**Evidence type:** use governed `Measure.measure_type` when the page has resolved catalog metadata. Do not infer from `evidence.resource_type`, resource IDs, or labels; show **Unavailable** when `measure_type` is absent.
+
 ## Components
 
 | Component | Role |
@@ -64,7 +66,7 @@ Use `formatGovernedEvidenceValue`:
 
 | Function | Input |
 | --- | --- |
-| `evidenceObjectFromObservation` | Canonical `Observation` + claim label |
+| `evidenceObjectFromObservation` | Canonical `Observation` + claim label; optional governed `Measure.measure_type` for evidence type |
 | `releaseEvidenceContextFromMetadata` | `AtlasMetadata` for page-level release strip |
 
 ## Page usage (Reset V1)

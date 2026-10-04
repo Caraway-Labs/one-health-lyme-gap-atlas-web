@@ -4,7 +4,11 @@ export {
   EvidenceStateStrip,
   ReleaseEvidenceStateStrip,
 } from "./evidence-state-strip";
-export { formatObservationPeriod, humanizeEvidenceType } from "./format-period";
+export { evidenceTypeFromGovernedMetadata } from "./evidence-type";
+export {
+  formatGovernedMeasureType,
+  formatObservationPeriod,
+} from "./format-period";
 export { evidenceObjectFromObservation } from "./from-observation";
 export {
   releaseEvidenceAvailabilityFromMetadata,

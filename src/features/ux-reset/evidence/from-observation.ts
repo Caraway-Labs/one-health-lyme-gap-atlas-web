@@ -1,6 +1,7 @@
 import type { Observation } from "@/generated/models";
 
-import { formatObservationPeriod, humanizeEvidenceType } from "./format-period";
+import { evidenceTypeFromGovernedMetadata } from "./evidence-type";
+import { formatObservationPeriod } from "./format-period";
 import type { EvidenceObjectModel } from "./types";
 import {
   availabilityFromGovernedValueState,
@@ -14,6 +15,8 @@ import {
 export type ObservationEvidenceInput = {
   observation: Observation;
   claimLabel: string;
+  /** Governed `Measure.measure_type` when the caller resolved catalog metadata. */
+  measureType?: string | null;
   valueNote?: string | null;
 };
 
@@ -26,6 +29,7 @@ function datasetVintageFromObservation(
 
 export function evidenceObjectFromObservation({
   claimLabel,
+  measureType,
   observation,
   valueNote,
 }: ObservationEvidenceInput): EvidenceObjectModel {
@@ -51,7 +55,7 @@ export function evidenceObjectFromObservation({
     observation.temporal_grain
   );
   const datasetVintage = datasetVintageFromObservation(observation);
-  const evidenceType = humanizeEvidenceType(observation.evidence.resource_type);
+  const evidenceType = evidenceTypeFromGovernedMetadata(measureType);
 
   const inspectSummary = [
     `${sourceFamily} covering ${observationPeriod}.`,

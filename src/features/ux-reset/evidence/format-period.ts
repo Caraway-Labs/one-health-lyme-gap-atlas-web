@@ -81,8 +81,9 @@ export function formatObservationPeriod(
   return `${start} – ${end}${grainSuffix}`;
 }
 
-export function humanizeEvidenceType(resourceType: string): string {
-  const normalized = resourceType.trim().replaceAll("_", " ");
+/** Formats governed `Measure.measure_type` for display (not API resource identity). */
+export function formatGovernedMeasureType(measureType: string): string {
+  const normalized = measureType.trim().replaceAll("_", " ");
   if (!normalized) {
     return "Unavailable";
   }
