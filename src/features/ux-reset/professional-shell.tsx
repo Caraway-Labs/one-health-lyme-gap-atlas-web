@@ -115,7 +115,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     let followUpFrame = 0;
     const initialFrame = window.requestAnimationFrame(() => {
       focusCloseNavigationIfNeeded();
-      followUpFrame = window.requestAnimationFrame(focusCloseNavigationIfNeeded);
+      followUpFrame = window.requestAnimationFrame(
+        focusCloseNavigationIfNeeded
+      );
     });
 
     const focusableSelector =
