@@ -1,5 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReadonlyURLSearchParams } from "next/navigation";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import ResetReviewPage from "@/app/app/review/page";
@@ -16,6 +18,33 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => pathname,
   useSearchParams: () => searchParams as ReadonlyURLSearchParams,
+}));
+
+vi.mock("@/generated/atlas", () => ({
+  getProfileV1MeProfileGet: vi.fn(async () => ({
+    data: { profile: null },
+    status: 200,
+  })),
+  metadataV1AtlasMetadataGet: vi.fn(async () => ({
+    data: {
+      bundle_sha256: "abc",
+      generated_at: "2026-01-01T00:00:00Z",
+      limitations: "",
+      loaded_at: "2026-01-01T00:00:00Z",
+      methodology_version: "1",
+      release_id: "alpha-2026-08-06",
+      schema_version: "1",
+      scope: "US",
+      score_defaults: {},
+      sources: [],
+      states: [{ code: "CO", name: "Colorado" }],
+    },
+    status: 200,
+  })),
+  scoresV1AtlasScoresGet: vi.fn(async () => ({
+    data: { counties: [] },
+    status: 200,
+  })),
 }));
 
 function stubDesktopMatchMedia() {
@@ -47,12 +76,23 @@ describe("UX Reset shell rendered handoff", () => {
     vi.unstubAllGlobals();
   });
 
-  it("applies the bounded handoff contract on sidebar navigation links", () => {
-    render(
-      <ResetProfessionalShell>
-        <ResetReviewPage />
-      </ResetProfessionalShell>
+  function renderReviewShell() {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter searchParams={searchParams.toString()}>
+          <ResetProfessionalShell>
+            <ResetReviewPage />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
     );
+  }
+
+  it("applies the bounded handoff contract on sidebar navigation links", () => {
+    renderReviewShell();
 
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",
@@ -76,11 +116,7 @@ describe("UX Reset shell rendered handoff", () => {
     searchParams = new URLSearchParams(
       "scope=state&county=bad&period=2024&dataset=alpha"
     );
-    render(
-      <ResetProfessionalShell>
-        <ResetReviewPage />
-      </ResetProfessionalShell>
-    );
+    renderReviewShell();
 
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",

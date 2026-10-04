@@ -82,6 +82,60 @@
   }
 }
 
+.ux-reset-review-toolbar {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-review-scope-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-review-scope-status {
+  margin: 0;
+}
+
+.ux-reset-review-results {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-review-state-layout {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-review-state-grid-scroll {
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.ux-reset-review-state-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(3.5rem, 1fr));
+  gap: var(--space-2);
+  min-width: 36rem;
+}
+
+.ux-reset-review-state-tile button {
+  display: grid;
+  width: 100%;
+  min-height: 3.5rem;
+  gap: 0.15rem;
+  justify-items: center;
+  text-align: center;
+  font-size: var(--type-small-size);
+}
+
+.ux-reset-review-state-tile strong {
+  font-size: var(--type-body-size);
+}
+
 @media (max-width: 800px) {
   .ux-reset-pro-app .atlas-sidebar {
     position: fixed;

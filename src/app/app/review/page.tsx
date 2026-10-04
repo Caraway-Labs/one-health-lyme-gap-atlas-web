@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
+import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
 import { pageMetadataForResetRoute } from "@/features/ux-reset/paths";
-import { ResetPlaceholderPage } from "@/features/ux-reset/placeholder-page";
 
 export const metadata: Metadata = pageMetadataForResetRoute("review");
 
 export default function ResetReviewPage() {
-  return <ResetPlaceholderPage routeId="review" />;
+  return <ResetReviewExperience />;
 }
