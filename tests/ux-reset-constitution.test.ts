@@ -17,7 +17,7 @@ const FIXTURES = path.join(
 
 describe("UX Reset constitution guard", () => {
   it("passes the static constitution and AGENTS.md linkage checks", () => {
-    expect(checkUxResetConstitution()).toEqual([]);
+    expect(checkUxResetConstitution()).toStrictEqual([]);
   });
 
   it("runs the npm script entrypoint", () => {
@@ -41,7 +41,7 @@ describe("UX Reset constitution guard", () => {
   it("fails when the constitution file is missing", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "ux-reset-missing-"));
     const issues = checkUxResetConstitution(dir);
-    expect(issues.some((issue) => issue.includes("is missing"))).toBe(true);
+    expect(issues.some((issue) => issue.includes("is missing"))).toBeTruthy();
   });
 
   it("fails when a required section heading is missing", () => {
@@ -61,7 +61,7 @@ describe("UX Reset constitution guard", () => {
     expect(issues.length).toBeGreaterThan(0);
     expect(
       issues.some((issue) => issue.includes("missing required section heading"))
-    ).toBe(true);
+    ).toBeTruthy();
   });
 
   it("fails when AGENTS.md loses constitution linkage", () => {
@@ -77,7 +77,7 @@ describe("UX Reset constitution guard", () => {
     );
     writeFileSync(path.join(dir, "AGENTS.md"), "# no linkage\n", "utf-8");
     const issues = checkUxResetConstitution(dir);
-    expect(issues.some((issue) => issue.includes("AGENTS.md"))).toBe(true);
+    expect(issues.some((issue) => issue.includes("AGENTS.md"))).toBeTruthy();
   });
 
   it("fails for a headings-only constitution without substantive rules", () => {
@@ -88,8 +88,10 @@ describe("UX Reset constitution guard", () => {
     const issues = validateConstitutionText(headingsOnly);
     expect(issues.length).toBeGreaterThan(0);
     expect(
-      issues.some((issue) => issue.includes("missing required substantive rule"))
-    ).toBe(true);
+      issues.some((issue) =>
+        issue.includes("missing required substantive rule")
+      )
+    ).toBeTruthy();
   });
 
   it("rejects mapping not-yet-loaded wording into evidence Unavailable", () => {
