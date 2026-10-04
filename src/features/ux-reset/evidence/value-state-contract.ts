@@ -92,6 +92,34 @@ export type FormatGovernedValueInput = {
   unit?: string | null;
 };
 
+function appendUnit(
+  formatted: string,
+  unit: string | null | undefined
+): string {
+  const normalizedUnit = unit?.trim();
+  if (!normalizedUnit) {
+    return formatted;
+  }
+  return `${formatted} ${normalizedUnit}`;
+}
+
+function formatGovernedNumericValue(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "Unavailable";
+  }
+  if (value === 0) {
+    return "0";
+  }
+  const abs = Math.abs(value);
+  if (abs >= 1) {
+    return value.toLocaleString("en-US", { maximumFractionDigits: 6 });
+  }
+  if (abs >= 0.01) {
+    return value.toLocaleString("en-US", { maximumFractionDigits: 8 });
+  }
+  return value.toLocaleString("en-US", { maximumSignificantDigits: 12 });
+}
+
 /**
  * Formats a governed observation value for display. Unavailable states never
  * render as numeric zero even when the payload carries `value: 0`.
@@ -112,26 +140,46 @@ export function formatGovernedEvidenceValue({
 
   if (value === null || value === "") {
     if (valueState === ValueState.ZERO) {
-      return unit ? `0 ${unit}` : "0";
+      return appendUnit("0", unit);
     }
     return "Unavailable";
   }
 
   if (typeof value === "number") {
-    const formatted = value.toLocaleString("en-US");
-    return unit ? `${formatted} ${unit}` : formatted;
+    return appendUnit(formatGovernedNumericValue(value), unit);
   }
 
   const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : "Unavailable";
+  if (!trimmed) {
+    return "Unavailable";
+  }
+  if (unit?.trim() && !trimmed.includes(unit.trim())) {
+    return appendUnit(trimmed, unit);
+  }
+  return trimmed;
 }
 
-export function materialLimitationFromList(
+export function normalizeGovernedLimitations(
+  limitations: readonly string[] | null | undefined
+): string[] {
+  if (!limitations?.length) {
+    return [];
+  }
+  return limitations
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+export function hasGovernedMaterialLimitations(
+  limitations: readonly string[] | null | undefined
+): boolean {
+  return normalizeGovernedLimitations(limitations).length > 0;
+}
+
+/** Short strip caveat: first governed limitation only. */
+export function materialCaveatShort(
   limitations: readonly string[] | null | undefined
 ): string | null {
-  if (!limitations?.length) {
-    return null;
-  }
-  const first = limitations.find((entry) => entry.trim().length > 0);
-  return first?.trim() ?? null;
+  const normalized = normalizeGovernedLimitations(limitations);
+  return normalized[0] ?? null;
 }

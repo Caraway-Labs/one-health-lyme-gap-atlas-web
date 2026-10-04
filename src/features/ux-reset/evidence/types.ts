@@ -29,8 +29,13 @@ export type EvidenceTechnicalProvenance = {
 export type EvidenceProvenanceModel = {
   sourceFamily: string;
   observationPeriod: string;
+  /** Dataset or source vintage from API metadata (distinct from observation period). */
+  datasetVintage?: string | null;
   evidenceType: string;
+  /** First limitation for compact strip copy. */
   materialCaveat?: string | null;
+  /** All governed limitations for provenance inspect. */
+  limitations: string[];
   /** One-paragraph human summary for the inspect panel. */
   inspectSummary: string;
   technical?: EvidenceTechnicalProvenance | null;
@@ -49,9 +54,20 @@ export type EvidenceObjectModel = {
 
 /** Release-level context shared across Review, Explore, Investigate, and Compare. */
 export type ReleaseEvidenceContextModel = {
+  availability: EvidenceAvailability;
   releaseSummary: string;
   sourcePeriods: string;
   evidenceScope: string;
   methodologyLabel: string;
   limitation?: string | null;
 };
+
+/** Release strip load lifecycle (not an evidence availability state). */
+export const releaseEvidenceLoadStateValues = {
+  error: "error",
+  loading: "loading",
+  ready: "ready",
+} as const;
+
+export type ReleaseEvidenceLoadState =
+  (typeof releaseEvidenceLoadStateValues)[keyof typeof releaseEvidenceLoadStateValues];

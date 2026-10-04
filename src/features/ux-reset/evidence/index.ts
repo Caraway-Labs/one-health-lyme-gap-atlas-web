@@ -6,7 +6,10 @@ export {
 } from "./evidence-state-strip";
 export { formatObservationPeriod, humanizeEvidenceType } from "./format-period";
 export { evidenceObjectFromObservation } from "./from-observation";
-export { releaseEvidenceContextFromMetadata } from "./from-release-metadata";
+export {
+  releaseEvidenceAvailabilityFromMetadata,
+  releaseEvidenceContextFromMetadata,
+} from "./from-release-metadata";
 export {
   evidenceAvailabilityValues,
   type EvidenceAvailability,
@@ -15,13 +18,17 @@ export {
   type EvidenceReasonCode,
   type EvidenceTechnicalProvenance,
   type ReleaseEvidenceContextModel,
+  type ReleaseEvidenceLoadState,
+  releaseEvidenceLoadStateValues,
 } from "./types";
 export {
   availabilityFromGovernedValueState,
   evidenceAvailabilityLabel,
   evidenceReasonLabel,
   formatGovernedEvidenceValue,
-  materialLimitationFromList,
+  hasGovernedMaterialLimitations,
+  materialCaveatShort,
+  normalizeGovernedLimitations,
   reasonCodeForEvidence,
   type AvailabilityDerivationInput,
   type FormatGovernedValueInput,

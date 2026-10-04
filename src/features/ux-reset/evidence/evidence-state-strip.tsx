@@ -1,7 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-import type { EvidenceObjectModel, ReleaseEvidenceContextModel } from "./types";
+import type {
+  EvidenceObjectModel,
+  ReleaseEvidenceContextModel,
+  ReleaseEvidenceLoadState,
+} from "./types";
+import { releaseEvidenceLoadStateValues } from "./types";
 import {
   evidenceAvailabilityLabel,
   evidenceReasonLabel,
@@ -48,6 +53,12 @@ export function EvidenceStateStrip({
           <dt>Observation period</dt>
           <dd>{provenance.observationPeriod}</dd>
         </div>
+        {provenance.datasetVintage ? (
+          <div>
+            <dt>Dataset vintage</dt>
+            <dd>{provenance.datasetVintage}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>Evidence type</dt>
           <dd>{provenance.evidenceType}</dd>
@@ -64,18 +75,59 @@ export function EvidenceStateStrip({
 
 type ReleaseEvidenceStateStripProps = {
   className?: string;
-  context: ReleaseEvidenceContextModel;
+  context?: ReleaseEvidenceContextModel | null;
+  errorMessage?: string | null;
+  loadState: ReleaseEvidenceLoadState;
 };
 
 /** Release-level strip for Reset pages that share one governed snapshot. */
 export function ReleaseEvidenceStateStrip({
   className,
-  context,
+  context = null,
+  errorMessage = null,
+  loadState,
 }: ReleaseEvidenceStateStripProps) {
+  if (loadState === releaseEvidenceLoadStateValues.loading) {
+    return (
+      <p
+        className={cn("ux-reset-release-evidence-status type-small", className)}
+        role="status"
+      >
+        Loading governed release context…
+      </p>
+    );
+  }
+
+  if (loadState === releaseEvidenceLoadStateValues.error) {
+    return (
+      <p
+        className={cn("ux-reset-release-evidence-status type-small", className)}
+        role="alert"
+      >
+        {errorMessage?.trim() ||
+          "Unable to load governed release context for this page."}
+      </p>
+    );
+  }
+
+  if (!context) {
+    return (
+      <p
+        className={cn("ux-reset-release-evidence-status type-small", className)}
+        role="status"
+      >
+        Release context is not available yet.
+      </p>
+    );
+  }
+
   return (
-    <div className={cn("ux-reset-evidence-strip", className)}>
+    <div
+      className={cn("ux-reset-evidence-strip", className)}
+      data-evidence-availability={context.availability}
+    >
       <Badge className="ux-reset-evidence-availability" variant="outline">
-        Available
+        {evidenceAvailabilityLabel(context.availability)}
       </Badge>
       <dl className="ux-reset-evidence-strip-meta">
         <div>

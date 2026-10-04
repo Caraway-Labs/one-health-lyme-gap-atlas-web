@@ -81,3 +81,13 @@
   margin: 0;
   word-break: break-word;
 }
+
+.ux-reset-evidence-limitations {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+}
+
+.ux-reset-release-evidence-status {
+  color: var(--muted-foreground);
+  margin: 0;
+}

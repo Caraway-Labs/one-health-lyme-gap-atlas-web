@@ -5,7 +5,9 @@ import type { EvidenceObjectModel } from "./types";
 import {
   availabilityFromGovernedValueState,
   formatGovernedEvidenceValue,
-  materialLimitationFromList,
+  hasGovernedMaterialLimitations,
+  materialCaveatShort,
+  normalizeGovernedLimitations,
   reasonCodeForEvidence,
 } from "./value-state-contract";
 
@@ -15,13 +17,25 @@ export type ObservationEvidenceInput = {
   valueNote?: string | null;
 };
 
+function datasetVintageFromObservation(
+  observation: Observation
+): string | null {
+  const sourceVintage = observation.source_vintage?.trim();
+  if (sourceVintage) {
+    return sourceVintage;
+  }
+  const semanticVersion = observation.semantic_version?.trim();
+  return semanticVersion || null;
+}
+
 export function evidenceObjectFromObservation({
   claimLabel,
   observation,
   valueNote,
 }: ObservationEvidenceInput): EvidenceObjectModel {
-  const materialCaveat = materialLimitationFromList(observation.limitations);
-  const hasMaterialLimitations = materialCaveat != null;
+  const limitations = normalizeGovernedLimitations(observation.limitations);
+  const hasMaterialLimitations = hasGovernedMaterialLimitations(limitations);
+  const materialCaveat = materialCaveatShort(limitations);
   const availability = availabilityFromGovernedValueState({
     hasMaterialLimitations,
     valueState: observation.value_state,
@@ -35,13 +49,17 @@ export function evidenceObjectFromObservation({
     observation.source_label?.trim() ||
     observation.source_id?.trim() ||
     "Unavailable";
-  const observationPeriod =
-    observation.source_vintage?.trim() ||
-    formatObservationPeriod(observation.period_start, observation.period_end);
+  const observationPeriod = formatObservationPeriod(
+    observation.period_start,
+    observation.period_end,
+    observation.temporal_grain
+  );
+  const datasetVintage = datasetVintageFromObservation(observation);
   const evidenceType = humanizeEvidenceType(observation.evidence.resource_type);
 
   const inspectSummary = [
-    `${sourceFamily} for ${observationPeriod}.`,
+    `${sourceFamily} covering ${observationPeriod}.`,
+    datasetVintage ? `Dataset vintage ${datasetVintage}.` : null,
     evidenceType === "Unavailable" ? null : `Evidence type: ${evidenceType}.`,
     materialCaveat,
   ]
@@ -57,8 +75,10 @@ export function evidenceObjectFromObservation({
       valueState: observation.value_state,
     }),
     provenance: {
+      datasetVintage,
       evidenceType,
       inspectSummary,
+      limitations,
       materialCaveat,
       observationPeriod,
       sourceFamily,

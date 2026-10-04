@@ -2,12 +2,14 @@
 
 import type { ContentSurface } from "@/lib/atlas-analytics";
 import { trackProvenanceOpened } from "@/lib/atlas-analytics";
-import { getDocsHref } from "@/lib/docs-config";
+import { getDocsPageHref } from "@/lib/docs-config";
 import { cn } from "@/lib/utils";
 
 import type { EvidenceProvenanceModel } from "./types";
 
 import "./evidence-contract.css";
+
+const EVIDENCE_DOCS_HREF = getDocsPageHref("evidence-and-uncertainty");
 
 type EvidenceProvenanceInspectProps = {
   className?: string;
@@ -37,6 +39,21 @@ export function EvidenceProvenanceInspect({
       <summary>Inspect provenance</summary>
       <div className="ux-reset-evidence-provenance-body">
         <p>{provenance.inspectSummary}</p>
+        {provenance.datasetVintage ? (
+          <p className="type-small">
+            Dataset vintage: {provenance.datasetVintage}
+          </p>
+        ) : null}
+        {provenance.limitations.length > 0 ? (
+          <div>
+            <p className="type-small">Governed limitations</p>
+            <ul className="ux-reset-evidence-limitations">
+              {provenance.limitations.map((limitation) => (
+                <li key={limitation}>{limitation}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         {provenance.sourceUrl ? (
           <p>
             <a
@@ -80,7 +97,7 @@ export function EvidenceProvenanceInspect({
             <p className="type-small">
               Full lineage and reproducibility guidance live in{" "}
               <a
-                href={getDocsHref("evidence-and-uncertainty")}
+                href={EVIDENCE_DOCS_HREF}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -92,7 +109,7 @@ export function EvidenceProvenanceInspect({
         ) : (
           <p className="type-small">
             <a
-              href={getDocsHref("evidence-and-uncertainty")}
+              href={EVIDENCE_DOCS_HREF}
               rel="noopener noreferrer"
               target="_blank"
             >

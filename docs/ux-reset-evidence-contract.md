@@ -43,15 +43,21 @@ Use `formatGovernedEvidenceValue`:
 
 - `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` → display **Unavailable** even if `value` is `0` or `null`.
 - `ZERO` with a numeric zero → format `0` (and unit when provided).
+- `OBSERVED` small nonzero values keep precision (for example `0.0001 mm`, not `0 mm`).
+- Decimal strings keep full precision and append units when missing from the string.
 - `SUPPRESSED` → display **Suppressed**, not a numeric substitute.
+
+**Observation period vs dataset vintage:** `observationPeriod` comes from `period_start`, `period_end`, and `temporal_grain` (only full calendar-year intervals collapse to a single year). `datasetVintage` comes from `source_vintage` (fallback `semantic_version`) and is shown separately in the strip and inspect panel.
+
+**Limitations:** the strip may show the first limitation as a short caveat; **Inspect provenance** lists every governed limitation.
 
 ## Components
 
 | Component | Role |
 | --- | --- |
 | `EvidenceObject` | Claim label, governed display value, strip, and provenance inspect action. |
-| `EvidenceStateStrip` | Availability badge plus source family, observation period, evidence type, and optional material caveat. |
-| `ReleaseEvidenceStateStrip` | Release-level snapshot shared across pages (from `AtlasMetadata`). |
+| `EvidenceStateStrip` | Availability badge plus source family, observation period, dataset vintage (when present), evidence type, and optional short caveat (first limitation). |
+| `ReleaseEvidenceStateStrip` | Release-level snapshot shared across pages (from `AtlasMetadata`). Uses `loadState` for **loading** and **error** copy—those are not evidence **Unavailable** states. |
 | `EvidenceProvenanceInspect` | One-action `<details>` for human-readable provenance; technical IDs are nested and documentation-linked. |
 
 ## Builders
