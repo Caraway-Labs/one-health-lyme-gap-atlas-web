@@ -103,10 +103,20 @@ test("bounded context survives rendered navigation, reload, and browser history"
     testInfo.project.name.includes("mobile"),
     "Desktop-only: mobile shell requires opening the drawer before each nav click."
   );
-  test.skip(
-    Boolean(process.env.CI),
-    "CI uses the Vitest handoff matrix; browser history is not run in Playwright CI."
-  );
+
+  const expectInvestigateContext = (target: URL) => {
+    expect(target.pathname).toBe("/app/investigate");
+    expect(target.searchParams.get("scope")).toBe("CO");
+    expect(target.searchParams.get("county")).toBe("08001");
+    expect(target.searchParams.get("dataset")).toBe("alpha-2026-08-06");
+    expect(target.searchParams.get("period")).toBe("2023-01-01");
+    expect(target.searchParams.get("compare")).toBeNull();
+  };
+
+  const expectCompareSelection = (target: URL) => {
+    expect(target.pathname).toBe("/app/compare");
+    expect(target.searchParams.get("compare")).toBe("08001,08003");
+  };
 
   await page.goto(
     "/app/review?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
@@ -117,19 +127,14 @@ test("bounded context survives rendered navigation, reload, and browser history"
     .click();
 
   let url = new URL(page.url());
-  expect(url.pathname).toBe("/app/compare");
-  expect(url.searchParams.get("compare")).toBe("08001,08003");
+  expectCompareSelection(url);
   expect(url.searchParams.get("sort")).toBeNull();
 
   await page
     .getByRole("navigation", { name: "Professional workspace" })
     .getByRole("link", { name: "Investigate" })
     .click();
-  url = new URL(page.url());
-  expect(url.pathname).toBe("/app/investigate");
-  expect(url.searchParams.get("scope")).toBe("CO");
-  expect(url.searchParams.get("county")).toBe("08001");
-  expect(url.searchParams.get("compare")).toBeNull();
+  expectInvestigateContext(new URL(page.url()));
 
   await page
     .getByRole("navigation", { name: "Professional workspace" })
@@ -144,12 +149,23 @@ test("bounded context survives rendered navigation, reload, and browser history"
   expect(url.pathname).toBe("/app/action");
   expect(url.searchParams.get("county")).toBe("08001");
 
-  await page.goBack();
-  expect(new URL(page.url()).pathname).toBe("/app/investigate");
-  await page.goBack();
-  expect(new URL(page.url()).pathname).toBe("/app/compare");
-  await page.goForward();
-  expect(new URL(page.url()).pathname).toBe("/app/investigate");
+  await page.goBack({ waitUntil: "commit" });
+  await expect
+    .poll(() => new URL(page.url()).pathname)
+    .toBe("/app/investigate");
+  expectInvestigateContext(new URL(page.url()));
+
+  await page.goBack({ waitUntil: "commit" });
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/app/compare");
+  expectCompareSelection(new URL(page.url()));
+
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === "/app/investigate", {
+      waitUntil: "commit",
+    }),
+    page.goForward({ waitUntil: "commit" }),
+  ]);
+  expectInvestigateContext(new URL(page.url()));
   await page
     .getByRole("navigation", { name: "Professional workspace" })
     .getByRole("link", { name: "Action" })
