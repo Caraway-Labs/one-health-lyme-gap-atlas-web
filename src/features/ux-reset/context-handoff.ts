@@ -231,7 +231,7 @@ export function uxResetContextHandoffSearchParams(
 }
 
 /**
- * Primary handoff entry point for the authenticated UX Reset shell (#406).
+ * Primary handoff entry point for the authenticated UX Reset shell (issue 406).
  */
 export function uxResetShellHandoffHref(
   targetHref: string,
