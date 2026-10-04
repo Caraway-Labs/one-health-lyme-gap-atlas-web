@@ -2,6 +2,8 @@
 
 This is the Lyme Atlas application design system. It is organized so later extraction is possible, but it is not a shared Caraway Labs package.
 
+**UX Reset:** Product and page-job rules for the professional workspace reset live in [UX_RESET_CONSTITUTION.md](./UX_RESET_CONSTITUTION.md). This document remains the source for tokens, primitives, and visual architecture; the constitution governs evidence semantics, destination boundaries, and agent product guardrails.
+
 Recorded refinement decisions (issue #24, owner-authorized 2026-09-03):
 
 1. Atlas-only system, named for later extraction.

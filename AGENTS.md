@@ -19,6 +19,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - MapLibre remains the geo rendering layer. Do not wrap or replace map rendering with shadcn.
 - Conversational AI / assistant UI is a separate track (`src/features/assistant`, evidence chat). Do not invent a second chat framework in this migration.
 - Follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). Run `npm run check:design-system` before completion. The `/design-system` gallery is unlinked internal reference, not a product surface.
+
+## UX Reset constitution (coding agents)
+
+For **UX Reset Phase 1** work (authenticated professional workspace under `/app/*` and related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation) unless an owner-approved issue or ADR explicitly changes them.
+
+- Run `npm run check:ux-reset` with other quality gates when touching Reset UI or this guidance.
+- Use [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives first; do not invent a parallel Reset design system.
+- Parent epic context: [GitHub #394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394).
 - Native HTML is correct when it is the better semantic choice. Documented exceptions:
 
 | Pattern | Location | Why native / domain CSS remains |
@@ -57,6 +65,7 @@ npm run format
 npm run typecheck
 npm run lint
 npm run check:design-system
+npm run check:ux-reset
 npm test
 npm run build
 docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.carawaylabs.com .

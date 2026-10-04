@@ -11,6 +11,7 @@
     "docs:generate": "fumadocs-mdx",
     "lint": "ultracite check",
     "check:design-system": "node scripts/check-design-system.mjs",
+    "check:ux-reset": "node scripts/check-ux-reset-constitution.mjs",
     "typecheck": "tsc --noEmit",
     "generate:api": "orval --config orval.config.ts",
     "test": "vitest run",

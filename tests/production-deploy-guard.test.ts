@@ -193,6 +193,7 @@ describe("quality and deploy workflow", () => {
         "npm run typecheck",
         "npm run lint",
         "npm run check:design-system",
+        "npm run check:ux-reset",
         "npx vitest run --coverage",
         "Auth/account unit tests (soft-fail)",
         "continue-on-error: true",
