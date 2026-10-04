@@ -3,8 +3,8 @@
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -73,29 +73,30 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   }, [isMobileViewport, mobileOpen, setMobileOpen]);
 
   useEffect(() => {
-    if (mobileOpen) {
+    if (!mobileOpen) {
+      previousFocusRef.current?.focus({ preventScroll: true });
+      previousFocusRef.current = null;
       return;
     }
-    previousFocusRef.current?.focus();
-    previousFocusRef.current = null;
-  }, [mobileOpen]);
-
-  useLayoutEffect(() => {
-    if (!(mobileOpen && isMobileViewport)) {
-      return;
-    }
-    sidebarRef.current
-      ?.querySelector<HTMLElement>(".app-mobile-nav-close")
-      ?.focus({ preventScroll: true });
-  }, [isMobileViewport, mobileOpen]);
-
-  useEffect(() => {
-    if (!mobileDrawerActive) {
+    if (!isMobileViewport) {
       return;
     }
 
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
+
+    const focusCloseNavigation = () => {
+      sidebar
+        .querySelector<HTMLElement>(".app-mobile-nav-close")
+        ?.focus({ preventScroll: true });
+    };
+
+    focusCloseNavigation();
+    let followUpFrame = 0;
+    const initialFrame = window.requestAnimationFrame(() => {
+      focusCloseNavigation();
+      followUpFrame = window.requestAnimationFrame(focusCloseNavigation);
+    });
 
     const focusableSelector =
       'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -125,14 +126,16 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeMobileNavigation, mobileDrawerActive]);
+    return () => {
+      window.cancelAnimationFrame(initialFrame);
+      window.cancelAnimationFrame(followUpFrame);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeMobileNavigation, isMobileViewport, mobileOpen]);
 
-  const openMobileNavigation = () => {
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+  const openMobileNavigation = (event: MouseEvent<HTMLButtonElement>) => {
+    previousFocusRef.current = event.currentTarget;
+    event.currentTarget.blur();
   };
 
   return (
