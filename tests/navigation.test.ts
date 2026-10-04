@@ -58,6 +58,16 @@ describe("Atlas navigation contract", () => {
     expect(getRouteShell("/ux-lab/persona-gateway")).toBe("none");
   });
 
+  it("keeps the UX Reset professional workspace off the legacy analytical shell", () => {
+    expect(findRouteMetadata("/app/explore")).toMatchObject({
+      auth: "required",
+      placement: "none",
+      shell: "none",
+      status: "hidden",
+    });
+    expect(getRouteShell("/app/review")).toBe("none");
+  });
+
   it("matches exact and nested routes without query sensitivity", () => {
     const overview = NAVIGATION_ITEMS.find((item) => item.href === "/")!;
     const assistant = NAVIGATION_ITEMS.find(

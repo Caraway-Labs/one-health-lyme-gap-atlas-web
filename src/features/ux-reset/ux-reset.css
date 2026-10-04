@@ -1,0 +1,103 @@
+.ux-reset-pro-app .atlas-sidebar {
+  position: relative;
+  z-index: 1;
+  top: auto;
+  height: auto;
+}
+
+.ux-reset-pro-app .app-header {
+  position: static;
+  flex-wrap: wrap;
+  height: auto;
+  gap: var(--space-2) var(--space-3);
+}
+
+.ux-reset-legacy-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  margin-left: auto;
+  color: var(--teal-dark);
+  font-size: var(--type-small-size);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.ux-reset-legacy-link:hover,
+.ux-reset-legacy-link:focus-visible {
+  color: var(--navy);
+}
+
+.ux-reset-pro-main {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-6);
+}
+
+.ux-reset-pro-main h1,
+.ux-reset-pro-main h2,
+.ux-reset-pro-main p {
+  margin-block: 0;
+}
+
+.ux-reset-pro-main h1 {
+  font-family: var(--font-display);
+  font-size: var(--type-section-size);
+  font-weight: 500;
+}
+
+.ux-reset-pro-main a {
+  color: var(--teal-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.ux-reset-page-header {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--mint) 55%, var(--card));
+}
+
+.ux-reset-page-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-destination-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+@media (min-width: 900px) {
+  .ux-reset-page-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 0.8fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .ux-reset-pro-app .atlas-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    width: min(18rem, 86vw);
+    height: 100dvh;
+    transform: translateX(-100%);
+  }
+
+  .ux-reset-pro-app .atlas-sidebar[data-mobile-open="true"] {
+    transform: translateX(0);
+  }
+
+  .ux-reset-pro-app .app-sidebar-scrim {
+    z-index: 25;
+  }
+}
