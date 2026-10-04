@@ -24,6 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  EvidenceObject,
+  evidenceObjectFromObservation,
+} from "@/features/ux-reset/evidence";
+import { ValueState } from "@/generated/models";
 
 const SEMANTIC_SWATCHES = [
   ["background", "var(--background)"],
@@ -174,6 +179,45 @@ export function DesignSystemGallery() {
         </AtlasStatusMessage>
         <AtlasPriorityBadge priority="Priority 2 — Review" />
         <AtlasMapLegend caption="Example legend for review-priority colors." />
+        <EvidenceObject
+          model={evidenceObjectFromObservation({
+            claimLabel: "Example governed observation",
+            observation: {
+              atlas_acquired_at: null,
+              atlas_processed_at: null,
+              dataset_id: null,
+              denominator: null,
+              evidence: {
+                resource_id: "cdc-lyme",
+                resource_type: "source",
+              },
+              geography: { geography_id: "36061", geography_type: "county" },
+              limitations: [],
+              lineage_source_id: null,
+              measure_id: "case-rate",
+              methodology: null,
+              methodology_id: "county-aggregation-v1",
+              methodology_version: "1.0.0",
+              observation_id: "design-system-obs",
+              period_end: "2023-12-31",
+              period_start: "2023-01-01",
+              provenance_ref: "prov/cdc-lyme/2023",
+              release_id: "release-2023",
+              release_methodology_version: null,
+              semantic_version: "2023.1",
+              source_id: "cdc-lyme",
+              source_label: "CDC Lyme surveillance",
+              source_published_at: null,
+              source_url: "https://cdc.gov",
+              source_vintage: "2023",
+              strata: undefined,
+              temporal_grain: "annual",
+              unit: "cases",
+              value: 4,
+              value_state: ValueState.OBSERVED,
+            },
+          })}
+        />
       </section>
     </main>
   );

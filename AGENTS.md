@@ -20,6 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Conversational AI / assistant UI is a separate track (`src/features/assistant`, evidence chat). Do not invent a second chat framework in this migration.
 - Follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). Run `npm run check:design-system` before completion. The `/design-system` gallery is unlinked internal reference, not a product surface.
 - UX Reset professional routes (`/app/*`) use the bounded cross-page context contract in [docs/ux-reset-cross-page-context.md](docs/ux-reset-cross-page-context.md); do not promote legacy analytical filters into global Reset URL state.
+- UX Reset professional pages reuse the shared evidence contract in [`src/features/ux-reset/evidence/`](src/features/ux-reset/evidence/) and [docs/ux-reset-evidence-contract.md](docs/ux-reset-evidence-contract.md) (Available / Limited / Unavailable, governed `value_state` mapping, progressive provenance inspect).
 - Native HTML is correct when it is the better semantic choice. Documented exceptions:
 
 | Pattern | Location | Why native / domain CSS remains |
