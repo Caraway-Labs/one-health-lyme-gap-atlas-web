@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { identityFromPublishedCounty } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  identityFromPublishedCounty,
+  reusableMeasureOutcomes,
+} from "@/features/ux-reset/investigate/county-evidence";
 import {
   INVESTIGATE_OBSERVATION_CONCURRENCY,
   loadCountyEvidenceBundle,
@@ -18,6 +21,7 @@ const calls: string[] = [];
 let inFlight = 0;
 let maxInFlight = 0;
 const transientRemaining = new Map<string, number>();
+let retryAfterSeconds = 0;
 
 vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
@@ -40,7 +44,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           "/v1/observations",
           429,
           null,
-          0
+          retryAfterSeconds
         );
       }
       return {
@@ -103,6 +107,175 @@ describe("county evidence loading", () => {
       maxInFlight: INVESTIGATE_OBSERVATION_CONCURRENCY,
       observations: 7,
       retried: 2,
+    });
+  });
+
+  it("waits the full Retry-After before the next attempt", async () => {
+    vi.useFakeTimers();
+    calls.length = 0;
+    transientRemaining.clear();
+    transientRemaining.set("measure-0", 1);
+    retryAfterSeconds = 60;
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    try {
+      const pending = loadCountyEvidenceBundle({
+        domainsRequestFailed: false,
+        fips: "08001",
+        identity: identity!,
+        indicators: [],
+        measures: measures(1),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: new AbortController().signal,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      const atStart = calls.length;
+      await vi.advanceTimersByTimeAsync(59_000);
+      const beforeRetry = calls.length;
+      await vi.advanceTimersByTimeAsync(1000);
+      const bundle = await pending;
+      expect({
+        atStart,
+        beforeRetry,
+        calls: [...calls],
+        failures: bundle.measureFailures.length,
+      }).toStrictEqual({
+        atStart: 1,
+        beforeRetry: 1,
+        calls: ["measure-0", "measure-0"],
+        failures: 0,
+      });
+    } finally {
+      retryAfterSeconds = 0;
+      vi.useRealTimers();
+    }
+  });
+
+  it("reloads failed measures and keeps observations from the same context", async () => {
+    calls.length = 0;
+    transientRemaining.clear();
+    transientRemaining.set("measure-1", 99);
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    const first = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(2),
+      period: null,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    const caseCalls = calls.filter(
+      (measureId) => measureId === "measure-0"
+    ).length;
+    transientRemaining.clear();
+    transientRemaining.set("measure-0", 99);
+    const second = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(2),
+      period: null,
+      preserve: {
+        fips: "08001",
+        outcomes: reusableMeasureOutcomes(first),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+      },
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    expect({
+      caseCalls: calls.filter((measureId) => measureId === "measure-0").length,
+      failures: second.measureFailures.map((failure) => failure.measureId),
+      firstFailures: first.measureFailures.map((failure) => failure.measureId),
+      ready: [...second.readyMeasureIds],
+      unchangedCaseCalls: caseCalls,
+    }).toStrictEqual({
+      caseCalls,
+      failures: [],
+      firstFailures: ["measure-1"],
+      ready: ["measure-0", "measure-1"],
+      unchangedCaseCalls: caseCalls,
+    });
+  });
+
+  it("does not reuse evidence from a different county or period", async () => {
+    calls.length = 0;
+    transientRemaining.clear();
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    const boulder = identityFromPublishedCounty({
+      county: "Boulder",
+      fips: "08013",
+      state: "CO",
+    });
+    const first = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(1),
+      period: null,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    const preserved = {
+      fips: "08001",
+      outcomes: reusableMeasureOutcomes(first),
+      period: null,
+      releaseId: INVESTIGATE_RELEASE_ID,
+    };
+    const beforePeriod = calls.length;
+    await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(1),
+      period: "2024-06-01",
+      preserve: preserved,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    const afterPeriod = calls.length;
+    calls.length = 0;
+    const crossed = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08013",
+      identity: boulder!,
+      indicators: [],
+      measures: measures(1),
+      period: null,
+      preserve: preserved,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    expect({
+      carriedDenver: crossed.unassigned.some(
+        (record) => record.observation.geography.geography_id === "08001"
+      ),
+      county: crossed.county.fips,
+      periodRefetched: afterPeriod > beforePeriod,
+      requestedBoulder: calls.length > 0,
+    }).toStrictEqual({
+      carriedDenver: false,
+      county: "08013",
+      periodRefetched: true,
+      requestedBoulder: true,
     });
   });
 });

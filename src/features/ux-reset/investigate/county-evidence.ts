@@ -491,6 +491,43 @@ function measureLabel(measures: readonly Measure[], measureId: string): string {
   );
 }
 
+/**
+ * Ready and unsent outcomes that can be kept while failed measures are retried.
+ * Failed measures are omitted so the next load requests only those.
+ */
+export function reusableMeasureOutcomes(
+  bundle: CountyEvidenceBundle
+): MeasureObservationOutcome[] {
+  const observationsByMeasure = new Map<string, Observation[]>();
+  const records = [
+    ...bundle.families.flatMap((family) => [...family.observations]),
+    ...bundle.unassigned,
+  ];
+  for (const record of records) {
+    const existing = observationsByMeasure.get(record.measureId);
+    if (existing) {
+      existing.push(record.observation);
+      continue;
+    }
+    observationsByMeasure.set(record.measureId, [record.observation]);
+  }
+  const outcomes: MeasureObservationOutcome[] = [];
+  for (const measureId of bundle.readyMeasureIds) {
+    outcomes.push({
+      measureId,
+      observations: observationsByMeasure.get(measureId) ?? [],
+      status: "ready",
+    });
+  }
+  for (const measureId of bundle.unsupportedPeriodMeasureIds) {
+    outcomes.push({
+      measureId,
+      status: "unsupported_period",
+    });
+  }
+  return outcomes;
+}
+
 export function buildCountyEvidenceBundle(input: {
   domainsRequestFailed: boolean;
   identity: ResolvedCountyIdentity;

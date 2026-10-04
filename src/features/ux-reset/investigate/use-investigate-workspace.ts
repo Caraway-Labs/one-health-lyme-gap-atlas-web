@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import {
@@ -15,6 +15,7 @@ import {
   countyEvidenceForRequest,
   identityFromPublishedCounty,
   InvestigateContractError,
+  reusableMeasureOutcomes,
   type CountyEvidenceBundle,
   type InvestigateCountySelection,
   type ResolvedCountyIdentity,
@@ -24,6 +25,7 @@ import {
   fetchInvestigateIndicators,
   loadCountyEvidenceBundle,
   shouldRetryInvestigateRequest,
+  type PreservedCountyMeasures,
 } from "@/features/ux-reset/investigate/load-county-evidence";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
 import type { AtlasMetadata } from "@/generated/models";
@@ -244,6 +246,8 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
             `${indicator.indicator_id}:${indicator.domain ?? ""}:${indicator.release_version ?? ""}`
         )
         .join("|");
+  const preservedEvidenceRef = useRef<PreservedCountyMeasures | null>(null);
+  const retryFailedMeasuresRef = useRef(false);
   const evidenceQuery = useQuery({
     enabled: Boolean(
       releaseId &&
@@ -261,16 +265,34 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
           "rejected"
         );
       }
-      return loadCountyEvidenceBundle({
+      const retryFailures = retryFailedMeasuresRef.current;
+      retryFailedMeasuresRef.current = false;
+      const preserved = preservedEvidenceRef.current;
+      const sameContext = Boolean(
+        retryFailures &&
+        preserved &&
+        preserved.fips === requestedFips &&
+        preserved.releaseId === releaseId &&
+        preserved.period === urlState.period
+      );
+      const bundle = await loadCountyEvidenceBundle({
         domainsRequestFailed: indicatorsQuery.isError,
         fips: requestedFips,
         identity,
         indicators: indicatorsQuery.data ?? [],
         measures: measuresQuery.data ?? [],
         period: urlState.period,
+        preserve: sameContext ? preserved : null,
         releaseId,
         signal,
       });
+      preservedEvidenceRef.current = {
+        fips: bundle.county.fips,
+        outcomes: reusableMeasureOutcomes(bundle),
+        period: urlState.period,
+        releaseId: bundle.releaseId,
+      };
+      return bundle;
     },
     queryKey: [
       "ux-reset-investigate-evidence",
@@ -288,6 +310,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     void directoryQuery.refetch();
   }, [directoryQuery]);
   const retryEvidence = useCallback(() => {
+    retryFailedMeasuresRef.current = true;
     void evidenceQuery.refetch();
   }, [evidenceQuery]);
 

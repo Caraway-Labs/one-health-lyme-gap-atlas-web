@@ -42,7 +42,8 @@ const MAX_COLLECTION_PAGES = 20;
 /** Public API concurrent read limit. Investigate stays inside it. */
 export const INVESTIGATE_OBSERVATION_CONCURRENCY = 5;
 const TRANSIENT_ATTEMPT_LIMIT = 3;
-const MAX_RETRY_AFTER_MS = 10_000;
+const MILLISECONDS_PER_SECOND = 1000;
+const UNSCHEDULED_RETRY_BACKOFF_MS = 50;
 
 type QueryRetrySetting =
   | boolean
@@ -197,14 +198,39 @@ function isTransientStatus(status: number): boolean {
   return status === 429 || (status >= 500 && status < 600);
 }
 
+/**
+ * Server Retry-After is waited in full. Shortening it spends the retry budget
+ * before the API allows another read. A missing header uses a short backoff.
+ */
 function transientDelayMs(
   retryAfterSeconds: number | null,
   attempt: number
 ): number {
-  if (retryAfterSeconds !== null) {
-    return Math.min(retryAfterSeconds * 1000, MAX_RETRY_AFTER_MS);
+  if (retryAfterSeconds !== null && retryAfterSeconds >= 0) {
+    return retryAfterSeconds * MILLISECONDS_PER_SECOND;
   }
-  return Math.min(50 * attempt, MAX_RETRY_AFTER_MS);
+  return UNSCHEDULED_RETRY_BACKOFF_MS * attempt;
+}
+
+function retryAfterSecondsFromHeaders(
+  headers: Headers | undefined
+): number | null {
+  const value = headers?.get("Retry-After") ?? null;
+  if (!value) {
+    return null;
+  }
+  const asInteger = Number.parseInt(value, 10);
+  if (String(asInteger) === value.trim() && asInteger >= 0) {
+    return asInteger;
+  }
+  const asDate = Date.parse(value);
+  if (Number.isNaN(asDate)) {
+    return null;
+  }
+  return Math.max(
+    0,
+    Math.ceil((asDate - Date.now()) / MILLISECONDS_PER_SECOND)
+  );
 }
 
 async function delay(ms: number, signal: AbortSignal): Promise<void> {
@@ -373,6 +399,7 @@ async function readObservationPage(
       if (response.status === 200) {
         return response;
       }
+      const retryAfter = retryAfterSecondsFromHeaders(response.headers);
       const retryable =
         isTransientStatus(response.status) && attempt < TRANSIENT_ATTEMPT_LIMIT;
       if (!retryable) {
@@ -380,10 +407,11 @@ async function readObservationPage(
           "Governed observations could not be loaded.",
           "/v1/observations",
           response.status,
-          null
+          null,
+          retryAfter
         );
       }
-      await delay(transientDelayMs(null, attempt), signal);
+      await delay(transientDelayMs(retryAfter, attempt), signal);
     } catch (error) {
       if (isAbortError(error) || signal.aborted) {
         throw error;
@@ -413,6 +441,37 @@ function failureMessage(error: unknown): string {
   return "This measure could not be loaded.";
 }
 
+export type PreservedCountyMeasures = {
+  fips: string;
+  outcomes: readonly MeasureObservationOutcome[];
+  period: string | null;
+  releaseId: string;
+};
+
+function preservedOutcomesForRequest(input: {
+  fips: string;
+  measures: readonly Measure[];
+  period: string | null;
+  preserve: PreservedCountyMeasures | null;
+  releaseId: string;
+}): MeasureObservationOutcome[] {
+  const preserve = input.preserve;
+  if (
+    !preserve ||
+    preserve.fips !== input.fips ||
+    preserve.releaseId !== input.releaseId ||
+    preserve.period !== input.period
+  ) {
+    return [];
+  }
+  const measureIds = new Set(
+    input.measures.map((measure) => measure.measure_id)
+  );
+  return preserve.outcomes.filter((outcome) =>
+    measureIds.has(outcome.measureId)
+  );
+}
+
 export async function loadCountyEvidenceBundle(input: {
   domainsRequestFailed: boolean;
   fips: string;
@@ -420,6 +479,7 @@ export async function loadCountyEvidenceBundle(input: {
   indicators: readonly Indicator[];
   measures: readonly Measure[];
   period: string | null;
+  preserve?: PreservedCountyMeasures | null;
   releaseId: string;
   signal: AbortSignal;
 }): Promise<CountyEvidenceBundle> {
@@ -429,8 +489,19 @@ export async function loadCountyEvidenceBundle(input: {
       "identity_mismatch"
     );
   }
-  const outcomes: MeasureObservationOutcome[] = await mapWithConcurrency(
-    input.measures,
+  const preserved = preservedOutcomesForRequest({
+    fips: input.fips,
+    measures: input.measures,
+    period: input.period,
+    preserve: input.preserve ?? null,
+    releaseId: input.releaseId,
+  });
+  const preservedIds = new Set(preserved.map((outcome) => outcome.measureId));
+  const measuresToFetch = input.measures.filter(
+    (measure) => !preservedIds.has(measure.measure_id)
+  );
+  const fetched: MeasureObservationOutcome[] = await mapWithConcurrency(
+    measuresToFetch,
     INVESTIGATE_OBSERVATION_CONCURRENCY,
     async (measure) => {
       const timeBound = resolveExploreTimeBound(measure, input.period);
@@ -470,7 +541,7 @@ export async function loadCountyEvidenceBundle(input: {
     identity: input.identity,
     indicatorDomains: indicatorDomainsById(input.indicators, input.releaseId),
     measures: input.measures,
-    outcomes,
+    outcomes: [...preserved, ...fetched],
     releaseId: input.releaseId,
   });
 }

@@ -65,17 +65,14 @@ export function ReviewStatePanel({
     () => new Set(rankedCounties.map((entry) => entry.fips)),
     [rankedCounties]
   );
-  const [pickedFips, setPickedFips] = useState("");
   const [showTable, setShowTable] = useState(false);
+  // The URL county is the selection, including after Back or Forward.
   const selectedFips = useMemo(() => {
-    if (pickedFips && inScopeFips.has(pickedFips)) {
-      return pickedFips;
-    }
     if (county && inScopeFips.has(county)) {
       return county;
     }
     return rankedCounties[0]?.fips ?? "";
-  }, [county, inScopeFips, pickedFips, rankedCounties]);
+  }, [county, inScopeFips, rankedCounties]);
   usePublishExploreCommittedNavigation(
     selectedFips
       ? {
@@ -86,11 +83,11 @@ export function ReviewStatePanel({
       : null
   );
   useEffect(() => {
-    if (!selectedFips || county === selectedFips) {
+    if ((county && inScopeFips.has(county)) || !selectedFips) {
       return;
     }
     onCountyChange?.(selectedFips, "replace");
-  }, [county, onCountyChange, selectedFips]);
+  }, [county, inScopeFips, onCountyChange, selectedFips]);
 
   const geometryQuery = useQuery({
     enabled: Boolean(releaseId),
@@ -104,7 +101,6 @@ export function ReviewStatePanel({
       if (!inScopeFips.has(fips)) {
         return;
       }
-      setPickedFips(fips);
       onCountyChange?.(fips, "push");
     },
     [inScopeFips, onCountyChange]

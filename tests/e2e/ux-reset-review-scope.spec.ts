@@ -144,6 +144,42 @@ test.describe("Review national and state scope controls", () => {
     );
   });
 
+  test("follows browser history after a Review county is selected", async ({
+    page,
+  }, testInfo) => {
+    await installReviewApiMocks(page, { profileState: "CO" });
+    await page.goto("/app/review?scope=CO&county=08001");
+    const handoff = page.getByTestId("review-investigate");
+    await expect(handoff).toHaveAttribute("data-county", "08001");
+    await page.getByRole("button", { name: /Boulder, CO/ }).click();
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(handoff).toHaveAttribute("data-county", "08013");
+
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(handoff).toHaveAttribute("data-county", "08001");
+    const investigateNav = page
+      .getByRole("navigation", { name: "Professional workspace" })
+      .getByRole("link", { name: "Investigate" });
+    if (testInfo.project.name.includes("mobile")) {
+      await page.getByRole("button", { name: "Open navigation" }).click();
+    }
+    await expect(investigateNav).toHaveAttribute("href", /county=08001/);
+
+    await page.goForward({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(handoff).toHaveAttribute("data-county", "08013");
+    if (
+      testInfo.project.name.includes("mobile") &&
+      !(await page
+        .getByRole("navigation", { name: "Professional workspace" })
+        .isVisible())
+    ) {
+      await page.getByRole("button", { name: "Open navigation" }).click();
+    }
+    await expect(investigateNav).toHaveAttribute("href", /county=08013/);
+  });
+
   test("does not change Settings default jurisdiction after scope switches", async ({
     page,
   }, testInfo) => {

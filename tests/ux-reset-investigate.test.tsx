@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +14,7 @@ import { ResetInvestigateExperience } from "@/features/ux-reset/investigate/rese
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
+  INVESTIGATE_CASES_MEASURE_ID,
   INVESTIGATE_TICK_LIMITATION,
   INVESTIGATE_TICK_MEASURE_ID,
   investigateGeographyFixture,
@@ -365,6 +372,50 @@ describe("County Investigate workspace", () => {
       heading: "Boulder",
       nextCounty: "08013",
       nextReturn: true,
+    });
+  });
+
+  it("keeps loaded observations when a later retry only reloads failures", async () => {
+    controls.failMeasureId = INVESTIGATE_TICK_MEASURE_ID;
+    controls.scenario = "mixed";
+    renderInvestigate("?county=08001&scope=CO");
+    await waitFor(() => {
+      if (
+        !screen
+          .queryByTestId("investigate-finding-text")
+          ?.textContent?.includes("12 cases") ||
+        !screen.queryByTestId("investigate-retry-evidence")
+      ) {
+        throw new Error("The successful cases observation has not loaded.");
+      }
+    });
+    const caseRequests = observationRequests.filter((request) =>
+      request.includes(INVESTIGATE_CASES_MEASURE_ID)
+    ).length;
+    controls.failMeasureId = INVESTIGATE_CASES_MEASURE_ID;
+    fireEvent.click(screen.getByTestId("investigate-retry-evidence"));
+    await waitFor(() => {
+      if (
+        !screen
+          .queryByTestId("investigate-family-vector_pathogen")
+          ?.textContent?.includes("4 detections")
+      ) {
+        throw new Error("The retried tick observation has not loaded.");
+      }
+    });
+    const snapshot = pageSnapshot();
+    expect({
+      caseRequests: observationRequests.filter((request) =>
+        request.includes(INVESTIGATE_CASES_MEASURE_ID)
+      ).length,
+      cases: snapshot.evidence.includes("12 cases"),
+      county: snapshot.county,
+      ticks: snapshot.evidence.includes("4 detections"),
+    }).toStrictEqual({
+      caseRequests,
+      cases: true,
+      county: "08001",
+      ticks: true,
     });
   });
 
