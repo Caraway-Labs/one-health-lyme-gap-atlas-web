@@ -5,7 +5,6 @@ import {
   INVESTIGATE_CASES_LIMITATION,
   INVESTIGATE_TICK_LIMITATION,
   INVESTIGATE_TICK_MEASURE_ID,
-  investigateGeographyFixture,
   investigateIndicatorsFixture,
   investigateMeasuresFixture,
   investigateMetadataFixture,
@@ -54,11 +53,15 @@ function rejectInvalidInvestigateRequest(url: URL): number | null {
     if (url.search.length - 1 > 8192) {
       return 414;
     }
+    const duplicateIds = new Set(ids).size !== ids.length;
+    const reversedRange = Boolean(hasRange && start && end && end < start);
     if (
       url.searchParams.get("page_token") === "null" ||
       url.searchParams.get("geography_type") !== "county" ||
       url.searchParams.has("stratification") ||
       hasYear === hasRange ||
+      reversedRange ||
+      duplicateIds ||
       ids.length === 0 ||
       ids.some((id) => !/^\d{5}$/.test(id))
     ) {
@@ -128,13 +131,7 @@ async function installInvestigateMocks(
       await fulfillJson(route, { code: "INVALID_REQUEST" }, rejected);
       return;
     }
-    const fips = url.pathname.split("/").at(-1) ?? "";
-    const geography = investigateGeographyFixture(fips);
-    if (!geography) {
-      await fulfillJson(route, { code: "RESOURCE_NOT_FOUND" }, 404);
-      return;
-    }
-    await fulfillJson(route, { data: geography });
+    await fulfillJson(route, { code: "CANONICAL_DATA_UNAVAILABLE" }, 503);
   });
   await page.route("**/v1/observations**", async (route) => {
     const url = new URL(route.request().url());
@@ -169,6 +166,13 @@ function observationUrls(urls: readonly string[]): string[] {
   return urls.filter((url) => url.includes("/v1/observations"));
 }
 
+async function revealWorkspaceNavigation(page: Page, projectName: string) {
+  if (!projectName.includes("mobile")) {
+    return;
+  }
+  await page.getByRole("button", { name: "Open navigation" }).click();
+}
+
 test.describe("County Investigate evidence hierarchy", () => {
   test("reads a direct county link after reload without Ask Atlas", async ({
     page,
@@ -181,9 +185,7 @@ test.describe("County Investigate evidence hierarchy", () => {
       requestedUrls
     );
     await page.goto("/app/investigate?county=08001&scope=CO");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Denver County"
-    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Denver");
     await expect(page.getByTestId("investigate-finding-text")).toContainText(
       "12 cases"
     );
@@ -209,6 +211,15 @@ test.describe("County Investigate evidence hierarchy", () => {
       .locator("a")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
     expect(nextHrefs.some((href) => href?.includes("/assistant"))).toBe(false);
+    await revealWorkspaceNavigation(page, testInfo.project.name);
+    const reviewNav = page
+      .getByRole("navigation", { name: "Professional workspace" })
+      .getByRole("link", { name: "Review" });
+    await expect(reviewNav).toHaveAttribute("href", /county=08001/);
+    await expect(reviewNav).toHaveAttribute("href", /dataset=alpha-2026/);
+    expect(requestedUrls.some((url) => url.includes("/v1/geographies/"))).toBe(
+      false
+    );
 
     await page.reload();
     await expect(page.getByTestId("investigate-finding-text")).toContainText(
@@ -236,23 +247,32 @@ test.describe("County Investigate evidence hierarchy", () => {
 
   test("opens Investigate from the selected Review county", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await installInvestigateMocks(
       page,
       { delayFips: null, failMeasureId: null, scenario: "mixed" },
       Promise.resolve(),
       []
     );
+    await page.goto("/app/review?scope=CO&county=08013");
+    const returned = page.getByTestId("review-investigate");
+    await expect(returned).toHaveAttribute("data-county", "08013");
+    await expect(page).toHaveURL(/county=08013/);
+    await revealWorkspaceNavigation(page, testInfo.project.name);
+    const investigateNav = page
+      .getByRole("navigation", { name: "Professional workspace" })
+      .getByRole("link", { name: "Investigate" });
+    await expect(investigateNav).toHaveAttribute("href", /county=08013/);
+
     await page.goto("/app/review?scope=CO");
     const handoff = page.getByTestId("review-investigate");
     await expect(handoff).toHaveAttribute("data-county", "08001");
+    await expect(page).toHaveURL(/county=08001/);
     await handoff.click();
     await expect(page).toHaveURL(/\/app\/investigate/);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).toHaveURL(/scope=CO/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Denver County"
-    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Denver");
     await expect(page.getByTestId("investigate-finding-text")).toContainText(
       "12 cases"
     );
@@ -285,9 +305,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.getByTestId("investigate-county-select").click();
     await page.getByRole("option", { name: "Boulder, Colorado" }).click();
     await expect(page).toHaveURL(/county=08013/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Boulder County"
-    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Boulder");
     await expect(page.getByTestId("investigate-finding-text")).toContainText(
       "40 cases"
     );
@@ -344,15 +362,14 @@ test.describe("County Investigate evidence hierarchy", () => {
     controls.scenario = "mixed";
     controls.failMeasureId = INVESTIGATE_TICK_MEASURE_ID;
     await page.goto("/app/investigate?county=08013&scope=CO");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Boulder County"
-    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Boulder");
     await expect(page.getByTestId("investigate-finding-text")).toContainText(
       "40 cases"
     );
     await expect(page.getByTestId("investigate-partial-failure")).toContainText(
       "Tick pathogen detections"
     );
+    await expect(page.getByTestId("investigate-retry-evidence")).toBeVisible();
     await expect(
       page.getByTestId("investigate-family-vector_pathogen")
     ).toHaveAttribute("data-publication", "request_failed");
@@ -390,17 +407,13 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.goto("/app/investigate?county=99999&scope=CO");
     await expect(page.getByTestId("investigate-recovery")).toHaveAttribute(
       "data-recovery",
-      "unknown"
+      "unsupported"
     );
     await expect(page.getByTestId("investigate-evidence")).toHaveCount(0);
-    await expect(page.getByRole("heading", { level: 1 })).not.toHaveText(
-      "Denver County"
-    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("99999");
 
     await page.goto("/app/investigate?county=08014&scope=CO");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Clear Creek County"
-    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("08014");
     await expect(page.getByTestId("investigate-recovery")).toHaveAttribute(
       "data-recovery",
       "unsupported"

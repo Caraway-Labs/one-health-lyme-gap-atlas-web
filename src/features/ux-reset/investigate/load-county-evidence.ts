@@ -11,13 +11,11 @@ import {
   acceptCountyObservations,
   buildCountyEvidenceBundle,
   InvestigateContractError,
-  resolveCountyIdentity,
   type CountyEvidenceBundle,
   type MeasureObservationOutcome,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
-  geographyV1GeographiesGeographyTypeGeographyIdGet,
   indicatorsV1IndicatorsGet,
   observationsV1ObservationsGet,
 } from "@/generated/atlas";
@@ -28,7 +26,6 @@ import type {
   ObservationsV1ObservationsGetParams,
 } from "@/generated/models";
 import {
-  GeographyV1GeographiesGeographyTypeGeographyIdGetResponse,
   IndicatorsV1IndicatorsGetResponse,
   ObservationsV1ObservationsGetResponse,
   indicatorsV1IndicatorsGetQueryPageSizeOneMax,
@@ -42,6 +39,10 @@ import { validateApiResponse } from "@/lib/api-response-validation";
 import { isCountyFips } from "@/lib/county-geography";
 
 const MAX_COLLECTION_PAGES = 20;
+/** Public API concurrent read limit. Investigate stays inside it. */
+export const INVESTIGATE_OBSERVATION_CONCURRENCY = 5;
+const TRANSIENT_ATTEMPT_LIMIT = 3;
+const MAX_RETRY_AFTER_MS = 10_000;
 
 type QueryRetrySetting =
   | boolean
@@ -101,8 +102,8 @@ function hasCompleteDateRange(
 }
 
 /**
- * Status the public observations API returns for a request it will not serve.
- * Investigate uses this before calling the client so mocks and the API agree.
+ * Status for observation requests the public API rejects before serving data.
+ * Covers the rules Investigate sends. It is not a full copy of every API check.
  */
 export function investigateObservationRequestRejection(
   params: ObservationsV1ObservationsGetParams
@@ -120,13 +121,23 @@ export function investigateObservationRequestRejection(
   const partialRange = Boolean(params.start_date) !== Boolean(params.end_date);
   const stratification = params.stratification ?? null;
   const pageToken = params.page_token;
+  const reversedRange = Boolean(
+    hasRange &&
+    params.start_date &&
+    params.end_date &&
+    params.end_date < params.start_date
+  );
+  const duplicateGeographyId =
+    new Set(geographyIds).size !== geographyIds.length;
   if (
     measureId.length === 0 ||
     params.geography_type !== "county" ||
     geographyIds.length === 0 ||
     geographyIds.length > observationsV1ObservationsGetQueryGeographyIdMax ||
     geographyIds.some((fips) => !isCountyFips(fips)) ||
+    duplicateGeographyId ||
     partialRange ||
+    reversedRange ||
     hasYear === hasRange ||
     (hasYear && !yearInRange) ||
     (stratification !== null && stratification.length > 0) ||
@@ -182,54 +193,64 @@ export function buildInvestigateObservationParams(input: {
   return params;
 }
 
-export async function fetchInvestigateGeography(
-  fips: string,
-  signal: AbortSignal
-): Promise<ResolvedCountyIdentity> {
-  if (!isCountyFips(fips)) {
-    throw new InvestigateContractError(
-      "County FIPS is not canonical.",
-      "rejected"
-    );
+function isTransientStatus(status: number): boolean {
+  return status === 429 || (status >= 500 && status < 600);
+}
+
+function transientDelayMs(
+  retryAfterSeconds: number | null,
+  attempt: number
+): number {
+  if (retryAfterSeconds !== null) {
+    return Math.min(retryAfterSeconds * 1000, MAX_RETRY_AFTER_MS);
   }
-  try {
-    const response = await geographyV1GeographiesGeographyTypeGeographyIdGet(
-      "county",
-      fips,
-      { signal }
-    );
-    if (response.status !== 200) {
-      throw new AtlasApiError(
-        "Governed geography could not be loaded.",
-        `/v1/geographies/county/${fips}`,
-        response.status,
-        null
-      );
-    }
-    const parsed = validateApiResponse(
-      "Geography",
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse,
-      response.data
-    );
-    return resolveCountyIdentity(parsed.data, fips);
-  } catch (error) {
-    if (error instanceof InvestigateContractError) {
-      throw error;
-    }
-    if (error instanceof AtlasApiError && error.status === 404) {
-      throw new InvestigateContractError(
-        "This county is not in governed geography.",
-        "unknown_county"
-      );
-    }
-    if (error instanceof AtlasApiError && error.status === 400) {
-      throw new InvestigateContractError(
-        "The geography service rejected this county identifier.",
-        "rejected"
-      );
-    }
-    throw error;
+  return Math.min(50 * attempt, MAX_RETRY_AFTER_MS);
+}
+
+async function delay(ms: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) {
+    throw new DOMException("Aborted", "AbortError");
   }
+  if (ms <= 0) {
+    return;
+  }
+  const { promise, reject, resolve } = Promise.withResolvers<boolean>();
+  const timer = setTimeout(() => {
+    signal.removeEventListener("abort", onAbort);
+    resolve(true);
+  }, ms);
+  const onAbort = () => {
+    clearTimeout(timer);
+    reject(new DOMException("Aborted", "AbortError"));
+  };
+  signal.addEventListener("abort", onAbort, { once: true });
+  await promise;
+}
+
+export async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  worker: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = Array.from<R>({ length: items.length });
+  let nextIndex = 0;
+  const run = async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      const item = items[index];
+      if (item === undefined) {
+        continue;
+      }
+      results[index] = await worker(item);
+    }
+  };
+  const workers = Array.from(
+    { length: Math.min(Math.max(limit, 1), items.length) },
+    () => run()
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 export async function fetchInvestigateIndicators(
@@ -319,17 +340,7 @@ async function fetchMeasureObservations(input: {
       pageToken,
       timeBound: input.timeBound,
     });
-    const response = await observationsV1ObservationsGet(params, {
-      signal: input.signal,
-    });
-    if (response.status !== 200) {
-      throw new AtlasApiError(
-        "Governed observations could not be loaded.",
-        "/v1/observations",
-        response.status,
-        null
-      );
-    }
+    const response = await readObservationPage(params, input.signal);
     const parsed = validateApiResponse(
       "Observations",
       ObservationsV1ObservationsGetResponse,
@@ -350,6 +361,49 @@ async function fetchMeasureObservations(input: {
     requestedFips: input.fips,
     timeBound: input.timeBound,
   });
+}
+
+async function readObservationPage(
+  params: ObservationsV1ObservationsGetParams,
+  signal: AbortSignal
+) {
+  for (let attempt = 1; attempt <= TRANSIENT_ATTEMPT_LIMIT; attempt += 1) {
+    try {
+      const response = await observationsV1ObservationsGet(params, { signal });
+      if (response.status === 200) {
+        return response;
+      }
+      const retryable =
+        isTransientStatus(response.status) && attempt < TRANSIENT_ATTEMPT_LIMIT;
+      if (!retryable) {
+        throw new AtlasApiError(
+          "Governed observations could not be loaded.",
+          "/v1/observations",
+          response.status,
+          null
+        );
+      }
+      await delay(transientDelayMs(null, attempt), signal);
+    } catch (error) {
+      if (isAbortError(error) || signal.aborted) {
+        throw error;
+      }
+      const retryable =
+        error instanceof AtlasApiError &&
+        isTransientStatus(error.status) &&
+        attempt < TRANSIENT_ATTEMPT_LIMIT;
+      if (!retryable) {
+        throw error;
+      }
+      await delay(transientDelayMs(error.retryAfterSeconds, attempt), signal);
+    }
+  }
+  throw new AtlasApiError(
+    "Governed observations could not be loaded.",
+    "/v1/observations",
+    503,
+    null
+  );
 }
 
 function failureMessage(error: unknown): string {
@@ -375,8 +429,10 @@ export async function loadCountyEvidenceBundle(input: {
       "identity_mismatch"
     );
   }
-  const outcomes: MeasureObservationOutcome[] = await Promise.all(
-    input.measures.map(async (measure) => {
+  const outcomes: MeasureObservationOutcome[] = await mapWithConcurrency(
+    input.measures,
+    INVESTIGATE_OBSERVATION_CONCURRENCY,
+    async (measure) => {
       const timeBound = resolveExploreTimeBound(measure, input.period);
       if (!timeBound) {
         return {
@@ -407,7 +463,7 @@ export async function loadCountyEvidenceBundle(input: {
           status: "failed" as const,
         };
       }
-    })
+    }
   );
   return buildCountyEvidenceBundle({
     domainsRequestFailed: input.domainsRequestFailed,

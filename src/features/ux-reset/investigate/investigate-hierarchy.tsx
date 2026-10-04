@@ -1,12 +1,17 @@
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceObject } from "@/features/ux-reset/evidence";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
-import type {
-  CountyEvidenceBundle,
-  CountyEvidenceFamilySection,
-  CountyEvidenceObservation,
+import {
+  countyEvidenceGap,
+  investigateFamilyPublication,
+  type CountyEvidenceBundle,
+  type CountyEvidenceFamilySection,
+  type CountyEvidenceGap,
+  type CountyEvidenceObservation,
+  type FamilyPublication,
 } from "@/features/ux-reset/investigate/county-evidence";
 
 function observationAnchor(observationId: string): string {
@@ -45,32 +50,115 @@ function FamilyObservations({
   );
 }
 
+function publicationCopy(publication: FamilyPublication): string | null {
+  switch (publication) {
+    case "assigned":
+    case "empty": {
+      return null;
+    }
+    case "classification_unknown": {
+      return "Measures in this release are not classified into this family. Unclassified evidence stays under Domain not assigned.";
+    }
+    case "domains_unavailable": {
+      return "Indicator domains could not be loaded, so observations are not assigned to this family.";
+    }
+    case "not_in_release": {
+      return "This release does not publish measures for this evidence family.";
+    }
+    case "request_failed": {
+      return "Measures in this family could not be loaded. That is a request failure, not unavailable evidence.";
+    }
+    case "unsupported_period": {
+      return "The selected period is not a supported bound for this family's measures, so no observation query was sent.";
+    }
+    case "unreadable": {
+      return "Measures in this family did not produce observations because requests failed or the period is not a supported bound.";
+    }
+    default: {
+      const exhaustive: never = publication;
+      return exhaustive;
+    }
+  }
+}
+
+function gapCopy(
+  gap: CountyEvidenceGap,
+  subject: "finding" | "limitation"
+): string {
+  switch (gap) {
+    case "failed": {
+      return subject === "finding"
+        ? "County evidence could not be loaded. That is a request failure, not a statement that no finding was published."
+        : "A limitation was not read because the evidence requests failed.";
+    }
+    case "mixed": {
+      return "Some measures failed to load, and others were not queried because the period is not a supported bound.";
+    }
+    case "returned_empty": {
+      return subject === "finding"
+        ? "No observed or limited finding was returned for this county."
+        : "No material limitation was returned on the observations for this county.";
+    }
+    case "unsupported_period": {
+      return "The selected period is not a supported bound for the published measures, so no observation query was sent.";
+    }
+    default: {
+      const exhaustive: never = gap;
+      return exhaustive;
+    }
+  }
+}
+
+function gapTitle(
+  gap: CountyEvidenceGap,
+  subject: "finding" | "limitation"
+): string {
+  switch (gap) {
+    case "failed": {
+      return "Evidence did not load";
+    }
+    case "mixed": {
+      return "Evidence is incomplete";
+    }
+    case "returned_empty": {
+      return subject === "finding"
+        ? "No returned finding"
+        : "No returned limitation";
+    }
+    case "unsupported_period": {
+      return "Period is not supported";
+    }
+    default: {
+      const exhaustive: never = gap;
+      return exhaustive;
+    }
+  }
+}
+
 function FamilySection({
   countyFips,
   domainsRequestFailed,
   failedMeasureIds,
+  hasUnclassifiedMeasures,
   section,
+  unsupportedMeasureIds,
 }: {
   countyFips: string;
   domainsRequestFailed: boolean;
   failedMeasureIds: ReadonlySet<string>;
+  hasUnclassifiedMeasures: boolean;
   section: CountyEvidenceFamilySection;
+  unsupportedMeasureIds: ReadonlySet<string>;
 }) {
-  const measuresFailed =
-    section.measureIds.length > 0 &&
-    section.measureIds.every((measureId) => failedMeasureIds.has(measureId));
-  let publication:
-    | "assigned"
-    | "domains_unavailable"
-    | "not_in_release"
-    | "request_failed" = "assigned";
-  if (domainsRequestFailed) {
-    publication = "domains_unavailable";
-  } else if (section.measureIds.length === 0) {
-    publication = "not_in_release";
-  } else if (measuresFailed && section.observations.length === 0) {
-    publication = "request_failed";
-  }
+  const publication = investigateFamilyPublication({
+    domainsRequestFailed,
+    failedMeasureIds,
+    hasUnclassifiedMeasures,
+    measureIds: section.measureIds,
+    observationCount: section.observations.length,
+    unsupportedMeasureIds,
+  });
+  const copy = publicationCopy(publication);
   return (
     <section
       aria-label={section.label}
@@ -88,21 +176,10 @@ function FamilySection({
       {section.contextNote ? (
         <p className="type-body">{section.contextNote}</p>
       ) : null}
-      {publication === "domains_unavailable" ? (
-        <p className="type-body">
-          Indicator domains could not be loaded, so observations are not
-          assigned to this family.
-        </p>
-      ) : null}
-      {publication === "not_in_release" ? (
-        <p className="type-body">
-          This release does not publish measures for this evidence family.
-        </p>
-      ) : null}
-      {publication === "request_failed" ? (
-        <p className="type-body">
-          Measures in this family could not be loaded. That is a request
-          failure, not unavailable evidence.
+      {copy ? <p className="type-body">{copy}</p> : null}
+      {publication === "empty" ? (
+        <p className="type-body" data-testid="investigate-family-empty">
+          No governed observations were returned for this family.
         </p>
       ) : null}
       {publication === "assigned" ? (
@@ -114,20 +191,31 @@ function FamilySection({
 
 export function InvestigateEvidenceHierarchy({
   bundle,
+  onRetryFailures,
 }: {
   bundle: CountyEvidenceBundle;
+  onRetryFailures?: () => void;
 }) {
   const finding = bundle.leadFinding;
   const limitation = bundle.leadLimitation;
   const failedMeasureIds = new Set(
     bundle.measureFailures.map((failure) => failure.measureId)
   );
+  const unsupportedMeasureIds = new Set(bundle.unsupportedPeriodMeasureIds);
+  const gap = countyEvidenceGap(bundle);
+  const handleRetryFailures = () => {
+    onRetryFailures?.();
+  };
   const known = finding
     ? `${finding.measureLabel}: ${finding.evidence.displayValue}. ${evidenceAvailabilityLabel(finding.evidence.availability)}. Period ${finding.evidence.provenance.observationPeriod}. Source ${finding.evidence.provenance.sourceFamily}.`
-    : "No observed or limited finding was published for this county in this release.";
+    : gap
+      ? gapCopy(gap, "finding")
+      : gapCopy("returned_empty", "finding");
   const uncertain = limitation
     ? `${limitation.observation.measureLabel}: ${limitation.text}`
-    : "No material limitation was published on the observations returned for this county.";
+    : gap
+      ? gapCopy(gap, "limitation")
+      : gapCopy("returned_empty", "limitation");
 
   return (
     <div
@@ -143,7 +231,11 @@ export function InvestigateEvidenceHierarchy({
         <AtlasSectionHeader
           eyebrow="What we know"
           headingLevel="h2"
-          title={finding ? finding.measureLabel : "No published finding"}
+          title={
+            finding
+              ? finding.measureLabel
+              : gapTitle(gap ?? "returned_empty", "finding")
+          }
         />
         <Card className="ux-reset-investigate-callout">
           <p className="type-body" data-testid="investigate-finding-text">
@@ -170,7 +262,7 @@ export function InvestigateEvidenceHierarchy({
           title={
             limitation
               ? limitation.observation.measureLabel
-              : "No published limitation"
+              : gapTitle(gap ?? "returned_empty", "limitation")
           }
         />
         <Card className="ux-reset-investigate-callout">
@@ -213,6 +305,35 @@ export function InvestigateEvidenceHierarchy({
                 <li key={failure.measureId}>{failure.measureLabel}</li>
               ))}
             </ul>
+            {onRetryFailures ? (
+              <Button
+                data-testid="investigate-retry-evidence"
+                type="button"
+                variant="secondary"
+                onClick={handleRetryFailures}
+              >
+                Retry evidence that did not load
+              </Button>
+            ) : null}
+          </AtlasStatusMessage>
+        </div>
+      ) : null}
+
+      {bundle.unsupportedPeriodMeasureIds.length > 0 ? (
+        <div
+          data-county={bundle.county.fips}
+          data-testid="investigate-unsupported-period"
+        >
+          <AtlasStatusMessage tone="empty">
+            <p>
+              These measures were not queried. The selected period is not a
+              supported bound for their published grain.
+            </p>
+            <ul>
+              {bundle.unsupportedPeriodMeasureIds.map((measureId) => (
+                <li key={measureId}>{measureId}</li>
+              ))}
+            </ul>
           </AtlasStatusMessage>
         </div>
       ) : null}
@@ -222,8 +343,10 @@ export function InvestigateEvidenceHierarchy({
           countyFips={bundle.county.fips}
           domainsRequestFailed={bundle.domainsRequestFailed}
           failedMeasureIds={failedMeasureIds}
+          hasUnclassifiedMeasures={bundle.unclassifiedMeasureIds.length > 0}
           key={section.id}
           section={section}
+          unsupportedMeasureIds={unsupportedMeasureIds}
         />
       ))}
 
@@ -240,8 +363,9 @@ export function InvestigateEvidenceHierarchy({
             title="Domain not assigned"
           />
           <p className="type-body">
-            These observations did not include a governed human, vector,
-            pathogen, environmental, or population domain.
+            These observations use a domain that is not on the family allowlist,
+            including a missing domain. That is unknown classification, not an
+            unpublished family.
           </p>
           <FamilyObservations observations={bundle.unassigned} />
         </section>

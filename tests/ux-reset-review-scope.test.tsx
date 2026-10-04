@@ -191,6 +191,18 @@ describe("Reset Review scope UI", () => {
     );
   });
 
+  it("keeps the URL county as the Investigate handoff", async () => {
+    renderReview("?scope=CO&county=08013");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
+        "08013"
+      )
+    );
+    expect(
+      screen.getByTestId("review-investigate").getAttribute("href")
+    ).toContain("county=08013");
+  });
+
   it("passes only in-state counties to the map", async () => {
     renderReview("?scope=CO");
     await waitFor(() =>

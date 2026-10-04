@@ -14,7 +14,7 @@ export type CountyIntelligenceHeaderModel = {
 
 /**
  * County identity and the return path for a single-county investigation.
- * The label is shown only after governed geography has been validated.
+ * The label comes from the published county list for the accepted release.
  */
 export function CountyIntelligenceHeader({
   model,

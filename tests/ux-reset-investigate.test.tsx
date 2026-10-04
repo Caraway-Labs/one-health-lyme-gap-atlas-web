@@ -306,7 +306,7 @@ describe("County Investigate workspace", () => {
       assistantLink: false,
       county: "08001",
       finding: true,
-      heading: "Denver County",
+      heading: "Denver",
       limitation: true,
       otherCountyRequested: false,
       returnCounty: true,
@@ -362,7 +362,7 @@ describe("County Investigate workspace", () => {
       county: "08013",
       hasCurrentValue: true,
       hasStaleValue: false,
-      heading: "Boulder County",
+      heading: "Boulder",
       nextCounty: "08013",
       nextReturn: true,
     });
@@ -390,9 +390,9 @@ describe("County Investigate workspace", () => {
     await waitFor(() => {
       if (
         screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
-        "unknown"
+        "unsupported"
       ) {
-        throw new Error("Unknown recovery has not rendered.");
+        throw new Error("Unknown county recovery has not rendered.");
       }
     });
     const unknown = pageSnapshot();
@@ -413,6 +413,7 @@ describe("County Investigate workspace", () => {
       malformedRecovery: malformed.recovery,
       unknownEvidence: unknown.evidence,
       unknownHeading: unknown.heading,
+      unknownRecovery: unknown.recovery,
       unsupportedEvidence: unsupported.evidence,
       unsupportedHeading: unsupported.heading,
       unsupportedObservations: observationRequests.some((request) =>
@@ -420,30 +421,37 @@ describe("County Investigate workspace", () => {
       ),
       unsupportedRecovery: unsupported.recovery,
     }).toStrictEqual({
-      geographyCalls: 2,
+      geographyCalls: 0,
       malformedHeading: "Choose a county",
       malformedRecovery: "malformed",
       unknownEvidence: "",
       unknownHeading: "99999",
+      unknownRecovery: "unsupported",
       unsupportedEvidence: "",
-      unsupportedHeading: "Clear Creek County",
+      unsupportedHeading: "08014",
       unsupportedObservations: false,
       unsupportedRecovery: "unsupported",
     });
   });
 
-  it("does not display a mismatched geography identity", async () => {
-    controls.geographyStatus = "identity";
+  it("shows a retry when the published county list fails", async () => {
+    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
+    vi.mocked(scoresV1AtlasScoresGet).mockResolvedValueOnce({
+      data: { detail: "unavailable" },
+      headers: new Headers(),
+      status: 503,
+    } as never);
     renderInvestigate("?county=08001&scope=CO");
-    await waitFor(() =>
-      expect(screen.getByTestId("investigate-recovery").dataset.recovery).toBe(
-        "identity"
-      )
-    );
-    expect(screen.getByRole("heading", { level: 1 }).textContent).not.toContain(
-      "Boulder"
-    );
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "directory"
+      ) {
+        throw new Error("Directory recovery has not rendered.");
+      }
+    });
     expect(screen.queryByTestId("investigate-evidence")).toBeNull();
+    expect(screen.getByTestId("investigate-retry-directory")).toBeTruthy();
   });
 
   it("keeps loaded evidence when another measure fails", async () => {

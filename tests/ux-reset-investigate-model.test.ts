@@ -7,6 +7,9 @@ import {
   countyEvidenceForRequest,
   evidenceFamilyFromIndicatorDomain,
   InvestigateContractError,
+  countyEvidenceGap,
+  identityFromPublishedCounty,
+  investigateFamilyPublication,
   resolveCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import { indicatorDomainsById } from "@/features/ux-reset/investigate/load-county-evidence";
@@ -67,6 +70,7 @@ describe("evidence families", () => {
       pathogen: evidenceFamilyFromIndicatorDomain("pathogen"),
       population: evidenceFamilyFromIndicatorDomain("population"),
       unknown: evidenceFamilyFromIndicatorDomain("surveillance"),
+      climate: evidenceFamilyFromIndicatorDomain("climate"),
       vector: evidenceFamilyFromIndicatorDomain("vector"),
     }).toStrictEqual({
       environmental: "environmental_population",
@@ -75,6 +79,7 @@ describe("evidence families", () => {
       pathogen: "vector_pathogen",
       population: "environmental_population",
       unknown: null,
+      climate: null,
       vector: "vector_pathogen",
     });
   });
@@ -89,11 +94,31 @@ describe(resolveCountyIdentity, () => {
     );
   });
 
-  it("keeps the requested county name from governed geography", () => {
+  it("accepts a two-digit state FIPS parent and rejects a postal code", () => {
     const geography = investigateGeographyFixture("08001");
     expect(resolveCountyIdentity(geography!, "08001")).toStrictEqual({
       fips: "08001",
       label: "Denver County",
+      stateCode: null,
+    });
+    expect(() =>
+      resolveCountyIdentity(
+        {
+          ...geography!,
+          parent: { geography_id: "CO", geography_type: "state" },
+        },
+        "08001"
+      )
+    ).toThrow(InvestigateContractError);
+    expect(
+      identityFromPublishedCounty({
+        county: "Denver",
+        fips: "08001",
+        state: "CO",
+      })
+    ).toStrictEqual({
+      fips: "08001",
+      label: "Denver",
       stateCode: "CO",
     });
   });
@@ -262,5 +287,61 @@ describe(buildCountyEvidenceBundle, () => {
       bundle.families.find((family) => family.id === "vector_pathogen")
         ?.observations
     ).toStrictEqual([]);
+  });
+
+  it("keeps a null domain unclassified instead of calling the family unpublished", () => {
+    const nullDomains = new Map<string, string | null>([
+      ["human-cases", null],
+      ["tick-pathogen", "climate"],
+      ["canopy", null],
+    ]);
+    const bundle = buildCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      identity,
+      indicatorDomains: nullDomains,
+      measures: measures(),
+      outcomes: measures().map((measure) => ({
+        measureId: measure.measure_id,
+        observations: investigateObservationsFor({
+          fips: "08001",
+          measureId: measure.measure_id,
+          scenario: "mixed",
+        }),
+        status: "ready" as const,
+      })),
+      releaseId: INVESTIGATE_RELEASE_ID,
+    });
+    const publications = bundle.families.map((family) =>
+      investigateFamilyPublication({
+        domainsRequestFailed: false,
+        failedMeasureIds: new Set(),
+        hasUnclassifiedMeasures: bundle.unclassifiedMeasureIds.length > 0,
+        measureIds: family.measureIds,
+        observationCount: family.observations.length,
+        unsupportedMeasureIds: new Set(bundle.unsupportedPeriodMeasureIds),
+      })
+    );
+    expect({
+      gap: countyEvidenceGap({
+        ...bundle,
+        leadFinding: null,
+        measureFailures: measures().map((measure) => ({
+          measureId: measure.measure_id,
+          measureLabel: measure.label,
+          message: "failed",
+        })),
+        readyMeasureIds: [],
+      }),
+      publications,
+      unassigned: bundle.unassigned.length,
+    }).toStrictEqual({
+      gap: "failed",
+      publications: [
+        "classification_unknown",
+        "classification_unknown",
+        "classification_unknown",
+      ],
+      unassigned: 3,
+    });
   });
 });

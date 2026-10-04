@@ -6,9 +6,9 @@ import type { Geography, Measure, Observation } from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
 
 /**
- * Governed indicator `domain` tokens that map onto the three Investigate
- * families. Any other domain stays unassigned so the page does not invent a
- * family from a label or a measure id.
+ * Explicit family allowlist. Current governed metadata projects `domain` as
+ * NULL, and other reviewed values such as `climate` are not members of this
+ * list. Those measures stay unclassified. Do not infer a family from a label.
  */
 export const INVESTIGATE_DOMAIN_HUMAN = "human" as const;
 export const INVESTIGATE_DOMAIN_VECTOR = "vector" as const;
@@ -115,8 +115,10 @@ export type CountyEvidenceBundle = {
     text: string;
   } | null;
   measureFailures: readonly CountyEvidenceMeasureFailure[];
+  readyMeasureIds: readonly string[];
   releaseId: string;
   unassigned: readonly CountyEvidenceObservation[];
+  unclassifiedMeasureIds: readonly string[];
   unsupportedPeriodMeasureIds: readonly string[];
 };
 
@@ -136,7 +138,23 @@ export type MeasureObservationOutcome =
       status: "unsupported_period";
     };
 
-const STATE_POSTAL_CODE = /^[A-Z]{2}$/;
+const STATE_FIPS = /^\d{2}$/;
+
+export type FamilyPublication =
+  | "assigned"
+  | "classification_unknown"
+  | "domains_unavailable"
+  | "empty"
+  | "not_in_release"
+  | "request_failed"
+  | "unsupported_period"
+  | "unreadable";
+
+export type CountyEvidenceGap =
+  | "failed"
+  | "mixed"
+  | "returned_empty"
+  | "unsupported_period";
 
 /**
  * Empty query means the user has not chosen a county. Any other value that is
@@ -209,24 +227,120 @@ export function resolveCountyIdentity(
     );
   }
   const parent = geography.parent;
-  let stateCode: string | null = null;
-  if (parent) {
-    if (parent.geography_type !== "state") {
-      throw new InvestigateContractError(
-        "Geography parent is not a state.",
-        "identity_mismatch"
-      );
-    }
-    const parentId = parent.geography_id.trim();
-    if (STATE_POSTAL_CODE.test(parentId)) {
-      stateCode = parentId;
-    }
+  if (
+    parent &&
+    (parent.geography_type !== "state" ||
+      !STATE_FIPS.test(parent.geography_id.trim()))
+  ) {
+    throw new InvestigateContractError(
+      "Geography parent is not a two-digit state FIPS.",
+      "identity_mismatch"
+    );
   }
   return {
     fips: identity.geography_id,
     label,
-    stateCode,
+    stateCode: null,
   };
+}
+
+/**
+ * County name and state from the published score directory. That list is the
+ * delivered identity contract. `/v1/geographies/{type}/{id}` is still pending
+ * and responds 503, so it is not used to open a county.
+ */
+export function identityFromPublishedCounty(input: {
+  county: string;
+  fips: string;
+  state: string;
+}): ResolvedCountyIdentity | null {
+  if (!isCountyFips(input.fips)) {
+    return null;
+  }
+  const label = input.county.trim();
+  if (!label) {
+    return null;
+  }
+  const stateCode = input.state.trim();
+  return {
+    fips: input.fips,
+    label,
+    stateCode: stateCode || null,
+  };
+}
+
+export function investigateFamilyPublication(input: {
+  domainsRequestFailed: boolean;
+  failedMeasureIds: ReadonlySet<string>;
+  hasUnclassifiedMeasures: boolean;
+  measureIds: readonly string[];
+  observationCount: number;
+  unsupportedMeasureIds: ReadonlySet<string>;
+}): FamilyPublication {
+  if (
+    input.domainsRequestFailed &&
+    input.measureIds.length === 0 &&
+    input.observationCount === 0
+  ) {
+    return "domains_unavailable";
+  }
+  if (input.measureIds.length === 0) {
+    return input.hasUnclassifiedMeasures
+      ? "classification_unknown"
+      : "not_in_release";
+  }
+  if (input.observationCount > 0) {
+    return "assigned";
+  }
+  const failed = input.measureIds.every((measureId) =>
+    input.failedMeasureIds.has(measureId)
+  );
+  const unsupported = input.measureIds.every((measureId) =>
+    input.unsupportedMeasureIds.has(measureId)
+  );
+  const blocked = input.measureIds.every(
+    (measureId) =>
+      input.failedMeasureIds.has(measureId) ||
+      input.unsupportedMeasureIds.has(measureId)
+  );
+  if (failed) {
+    return "request_failed";
+  }
+  if (unsupported) {
+    return "unsupported_period";
+  }
+  if (blocked) {
+    return "unreadable";
+  }
+  return "empty";
+}
+
+/** Why the page has no lead finding. A failed or unsent query is not "unpublished". */
+export function countyEvidenceGap(
+  bundle: Pick<
+    CountyEvidenceBundle,
+    | "leadFinding"
+    | "measureFailures"
+    | "readyMeasureIds"
+    | "unsupportedPeriodMeasureIds"
+  >
+): CountyEvidenceGap | null {
+  if (bundle.leadFinding) {
+    return null;
+  }
+  const ready = bundle.readyMeasureIds.length;
+  const failed = bundle.measureFailures.length;
+  const unsupported = bundle.unsupportedPeriodMeasureIds.length;
+  if (ready === 0 && failed > 0 && unsupported === 0) {
+    return "failed";
+  }
+  if (ready === 0 && unsupported > 0 && failed === 0) {
+    return "unsupported_period";
+  }
+  if (ready === 0 && failed > 0 && unsupported > 0) {
+    return "mixed";
+  }
+  return "returned_empty";
 }
 
 function observationInsideTimeBound(
@@ -410,8 +524,18 @@ export function buildCountyEvidenceBundle(input: {
   for (const family of INVESTIGATE_EVIDENCE_FAMILIES) {
     byFamily.set(family.id, []);
   }
+  const unclassifiedMeasureIds: string[] = [];
+  if (!input.domainsRequestFailed) {
+    for (const measure of input.measures) {
+      const domain = input.indicatorDomains.get(measure.indicator_id) ?? null;
+      if (!evidenceFamilyFromIndicatorDomain(domain)) {
+        unclassifiedMeasureIds.push(measure.measure_id);
+      }
+    }
+  }
   const unassigned: CountyEvidenceObservation[] = [];
   const measureFailures: CountyEvidenceMeasureFailure[] = [];
+  const readyMeasureIds: string[] = [];
   const unsupportedPeriodMeasureIds: string[] = [];
 
   for (const outcome of input.outcomes) {
@@ -429,6 +553,7 @@ export function buildCountyEvidenceBundle(input: {
         break;
       }
       case "ready": {
+        readyMeasureIds.push(outcome.measureId);
         const measure = measuresById.get(outcome.measureId);
         const indicatorId = measure?.indicator_id ?? "";
         const indicatorDomain = input.domainsRequestFailed
@@ -491,8 +616,10 @@ export function buildCountyEvidenceBundle(input: {
     leadFinding: selectLeadFinding(records),
     leadLimitation: selectLeadLimitation(records),
     measureFailures,
+    readyMeasureIds,
     releaseId: input.releaseId,
     unassigned: unassigned.toSorted(compareObservations),
+    unclassifiedMeasureIds,
     unsupportedPeriodMeasureIds,
   };
 }

@@ -13,6 +13,7 @@ import {
 import {
   classifyInvestigateCountySelection,
   countyEvidenceForRequest,
+  identityFromPublishedCounty,
   InvestigateContractError,
   type CountyEvidenceBundle,
   type InvestigateCountySelection,
@@ -20,7 +21,6 @@ import {
 } from "@/features/ux-reset/investigate/county-evidence";
 import { investigateSearchParams } from "@/features/ux-reset/investigate/investigate-search-params";
 import {
-  fetchInvestigateGeography,
   fetchInvestigateIndicators,
   loadCountyEvidenceBundle,
   shouldRetryInvestigateRequest,
@@ -38,6 +38,7 @@ import {
 import { isCountyFips } from "@/lib/county-geography";
 
 export type InvestigateRecovery =
+  | "directory"
   | "identity"
   | "malformed"
   | "missing"
@@ -51,9 +52,9 @@ export type InvestigateWorkspace = {
   catalogError: string | null;
   directory: readonly ExploreCountyIdentity[];
   directoryError: string | null;
+  directoryLoading: boolean;
   evidenceError: string | null;
   evidenceLoading: boolean;
-  geographyLoading: boolean;
   identity: ResolvedCountyIdentity | null;
   metadata: AtlasMetadata | null;
   metadataError: string | null;
@@ -64,6 +65,8 @@ export type InvestigateWorkspace = {
   requestedFips: string | null;
   scope: string;
   scopeLabel: string;
+  retryDirectory: () => void;
+  retryEvidence: () => void;
   selection: InvestigateCountySelection;
   setCounty: (fips: string) => void;
   stateLabel: string | null;
@@ -191,28 +194,6 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     [metadataQuery.data]
   );
 
-  const geographyQuery = useQuery({
-    enabled: Boolean(requestedFips),
-    queryFn: async ({ signal }) => {
-      if (!requestedFips) {
-        throw new InvestigateContractError(
-          "County FIPS is not canonical.",
-          "rejected"
-        );
-      }
-      return fetchInvestigateGeography(requestedFips, signal);
-    },
-    queryKey: ["ux-reset-investigate-geography", requestedFips],
-    retry: (failureCount, error) =>
-      shouldRetryInvestigateRequest(failureCount, error, retrySetting),
-  });
-
-  const identity =
-    geographyQuery.data && geographyQuery.data.fips === requestedFips
-      ? geographyQuery.data
-      : null;
-  const geographyRecovery = recoveryFromError(geographyQuery.error);
-
   const directoryQuery = useQuery({
     enabled: Boolean(releaseId),
     queryFn: async ({ signal }) => {
@@ -224,14 +205,15 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     queryKey: ["ux-reset-investigate-directory", releaseId],
   });
   const directory = directoryQuery.data ?? [];
-  const inRelease = Boolean(
-    requestedFips && directory.some((county) => county.fips === requestedFips)
+  const publishedCounty = directory.find(
+    (county) => county.fips === requestedFips
   );
+  const identity = publishedCounty
+    ? identityFromPublishedCounty(publishedCounty)
+    : null;
+  const inRelease = Boolean(identity);
   const unsupported =
-    selection.kind === "county" &&
-    Boolean(identity) &&
-    directoryQuery.isSuccess &&
-    !inRelease;
+    selection.kind === "county" && directoryQuery.isSuccess && !inRelease;
 
   const measuresQuery = useQuery({
     enabled: Boolean(releaseId) && inRelease,
@@ -302,6 +284,13 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       shouldRetryInvestigateRequest(failureCount, error, retrySetting),
   });
 
+  const retryDirectory = useCallback(() => {
+    void directoryQuery.refetch();
+  }, [directoryQuery]);
+  const retryEvidence = useCallback(() => {
+    void evidenceQuery.refetch();
+  }, [evidenceQuery]);
+
   const setCounty = useCallback(
     (fips: string) => {
       if (!isCountyFips(fips)) {
@@ -317,10 +306,10 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     recovery = "missing";
   } else if (selection.kind === "malformed") {
     recovery = "malformed";
-  } else if (geographyRecovery) {
-    recovery = geographyRecovery;
   } else if (recoveryFromError(metadataQuery.error)) {
     recovery = recoveryFromError(metadataQuery.error);
+  } else if (selection.kind === "county" && directoryQuery.isError) {
+    recovery = "directory";
   } else if (unsupported) {
     recovery = "unsupported";
   }
@@ -337,8 +326,12 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       : null,
     directory,
     directoryError: directoryQuery.isError
-      ? "County geography for this release could not be loaded."
+      ? "The published county list for this release could not be loaded."
       : null,
+    directoryLoading:
+      selection.kind === "county" &&
+      directoryQuery.isLoading &&
+      !directoryQuery.isError,
     evidenceError: evidenceQuery.isError
       ? "County evidence did not load for the requested county."
       : null,
@@ -347,10 +340,6 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       selection.kind === "county" &&
       (evidenceQuery.isLoading ||
         (inRelease && (measuresQuery.isLoading || indicatorsQuery.isLoading))),
-    geographyLoading:
-      selection.kind === "county" &&
-      geographyQuery.isLoading &&
-      !geographyRecovery,
     identity,
     metadata: metadataQuery.data ?? null,
     metadataError: metadataQuery.isError
@@ -361,6 +350,8 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     recovery,
     releaseId,
     requestedFips,
+    retryDirectory,
+    retryEvidence,
     scope: urlState.scope,
     scopeLabel: reviewScopeLabel(urlState.scope, stateOptions),
     selection,

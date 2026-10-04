@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AtlasMapLegend } from "@/components/atlas-map-legend";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
@@ -13,6 +13,7 @@ import { ResultsTable } from "@/components/results-table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
+import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import {
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
@@ -39,10 +40,14 @@ const AtlasMap = dynamic(
   }
 );
 
+type ReviewCountyHistory = "push" | "replace";
+
 type ReviewStatePanelProps = {
   scopeCode: string;
   rankedCounties: readonly CountyScoreSummary[];
   mapCounties: readonly CountyScoreSummary[];
+  county?: string | null;
+  onCountyChange?: (fips: string, history: ReviewCountyHistory) => void;
   period?: string | null;
   releaseId: string;
 };
@@ -51,11 +56,13 @@ export function ReviewStatePanel({
   scopeCode,
   rankedCounties,
   mapCounties,
+  county = null,
+  onCountyChange,
   period = null,
   releaseId,
 }: ReviewStatePanelProps) {
   const inScopeFips = useMemo(
-    () => new Set(rankedCounties.map((county) => county.fips)),
+    () => new Set(rankedCounties.map((entry) => entry.fips)),
     [rankedCounties]
   );
   const [pickedFips, setPickedFips] = useState("");
@@ -64,8 +71,26 @@ export function ReviewStatePanel({
     if (pickedFips && inScopeFips.has(pickedFips)) {
       return pickedFips;
     }
+    if (county && inScopeFips.has(county)) {
+      return county;
+    }
     return rankedCounties[0]?.fips ?? "";
-  }, [inScopeFips, pickedFips, rankedCounties]);
+  }, [county, inScopeFips, pickedFips, rankedCounties]);
+  usePublishExploreCommittedNavigation(
+    selectedFips
+      ? {
+          county: selectedFips,
+          dataset: releaseId,
+          period,
+        }
+      : null
+  );
+  useEffect(() => {
+    if (!selectedFips || county === selectedFips) {
+      return;
+    }
+    onCountyChange?.(selectedFips, "replace");
+  }, [county, onCountyChange, selectedFips]);
 
   const geometryQuery = useQuery({
     enabled: Boolean(releaseId),
@@ -80,8 +105,9 @@ export function ReviewStatePanel({
         return;
       }
       setPickedFips(fips);
+      onCountyChange?.(fips, "push");
     },
-    [inScopeFips]
+    [inScopeFips, onCountyChange]
   );
 
   const investigateHref = useMemo(() => {

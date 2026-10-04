@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useMemo } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -18,6 +18,7 @@ import {
   releaseEvidenceContextFromMetadata,
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
+import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { CountyIntelligenceHeader } from "@/features/ux-reset/investigate/county-intelligence-header";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import {
@@ -37,6 +38,9 @@ function recoveryMessage(
   switch (recovery) {
     case "missing": {
       return "Choose a county to investigate. Atlas will not open a different county on its own.";
+    }
+    case "directory": {
+      return "The published county list could not be loaded, so this county was not opened.";
     }
     case "malformed": {
       return "This link does not identify one county. Choose a county from the current release.";
@@ -82,6 +86,9 @@ function selectedCountyLabel(input: {
 
 function InvestigateExperienceInner() {
   const workspace = useInvestigateWorkspace();
+  const handleRetryDirectory = () => {
+    workspace.retryDirectory();
+  };
   const returnHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set("scope", workspace.scope);
@@ -124,6 +131,15 @@ function InvestigateExperienceInner() {
       : releaseEvidenceLoadStateValues.loading;
   const bundle = workspace.bundle;
   const nextCounty = bundle?.county.fips ?? workspace.requestedFips ?? "";
+  usePublishExploreCommittedNavigation(
+    workspace.releaseId
+      ? {
+          county: workspace.requestedFips,
+          dataset: workspace.releaseId,
+          period: workspace.period,
+        }
+      : null
+  );
   const countyLabel = selectedCountyLabel({
     countyOptions,
     identityLabel:
@@ -204,12 +220,12 @@ function InvestigateExperienceInner() {
           {workspace.metadataError}
         </AtlasStatusMessage>
       ) : null}
-      {workspace.geographyLoading ? (
+      {workspace.directoryLoading ? (
         <AtlasStatusMessage tone="loading">
-          Loading county identity…
+          Loading the published county list…
         </AtlasStatusMessage>
       ) : null}
-      {workspace.directoryError ? (
+      {workspace.directoryError && workspace.recovery !== "directory" ? (
         <AtlasStatusMessage tone="error">
           {workspace.directoryError}
         </AtlasStatusMessage>
@@ -237,12 +253,33 @@ function InvestigateExperienceInner() {
           data-testid="investigate-recovery"
         >
           <AtlasStatusMessage tone="empty">
-            {recoveryMessage(workspace.recovery, workspace.requestedFips)}
+            <p>
+              {recoveryMessage(workspace.recovery, workspace.requestedFips)}
+            </p>
+            {workspace.recovery === "directory" ? (
+              <Button
+                data-testid="investigate-retry-directory"
+                type="button"
+                variant="secondary"
+                onClick={handleRetryDirectory}
+              >
+                Retry county list
+              </Button>
+            ) : null}
           </AtlasStatusMessage>
         </div>
       ) : null}
 
-      {bundle ? <InvestigateEvidenceHierarchy bundle={bundle} /> : null}
+      {bundle ? (
+        <InvestigateEvidenceHierarchy
+          bundle={bundle}
+          onRetryFailures={
+            bundle.measureFailures.length > 0
+              ? workspace.retryEvidence
+              : undefined
+          }
+        />
+      ) : null}
 
       <section
         aria-label="What to inspect or do next"

@@ -64,8 +64,21 @@ describe("investigate observation requests", () => {
         page_token: null,
         year: 2023,
       }),
+      investigateObservationRequestRejection({
+        end_date: "2023-01-01",
+        geography_id: ["08001"],
+        geography_type: "county",
+        measure_id: "reported-cases",
+        start_date: "2023-12-31",
+      }),
+      investigateObservationRequestRejection({
+        geography_id: ["08001", "08001"],
+        geography_type: "county",
+        measure_id: "reported-cases",
+        year: 2023,
+      }),
     ];
-    expect(rejected).toStrictEqual([400, 400, 400, 400, 400]);
+    expect(rejected).toStrictEqual([400, 400, 400, 400, 400, 400, 400]);
     expect(() =>
       buildInvestigateObservationParams({
         fips: "12",

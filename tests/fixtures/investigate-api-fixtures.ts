@@ -100,13 +100,17 @@ export const investigateIndicatorsFixture: Indicator[] = [
   },
 ];
 
-const COUNTY_LABELS: Record<string, { label: string; stateCode: string }> = {
-  "08001": { label: "Denver County", stateCode: "CO" },
-  "08013": { label: "Boulder County", stateCode: "CO" },
-  "08014": { label: "Clear Creek County", stateCode: "CO" },
-  "36001": { label: "Albany County", stateCode: "NY" },
+const COUNTY_LABELS: Record<string, { label: string; stateFips: string }> = {
+  "08001": { label: "Denver County", stateFips: "08" },
+  "08013": { label: "Boulder County", stateFips: "08" },
+  "08014": { label: "Clear Creek County", stateFips: "08" },
+  "36001": { label: "Albany County", stateFips: "36" },
 };
 
+/**
+ * Geography fixtures keep a two-digit state FIPS parent. They are not a live
+ * stand-in for `/v1/geographies`, which the API still answers with 503.
+ */
 export function investigateGeographyFixture(fips: string) {
   const known = COUNTY_LABELS[fips];
   if (!known) {
@@ -116,7 +120,7 @@ export function investigateGeographyFixture(fips: string) {
     geography: { geography_id: fips, geography_type: "county" as const },
     label: known.label,
     parent: {
-      geography_id: known.stateCode,
+      geography_id: known.stateFips,
       geography_type: "state" as const,
     },
   };
