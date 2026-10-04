@@ -1,11 +1,32 @@
 import { execSync } from "node:child_process";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const REVIEWED_HEAD_SHA = execSync("git rev-parse HEAD", {
   encoding: "utf-8",
 }).trim();
+
+const CDC_SOURCE_URL = "https://cdc.gov";
+const EVIDENCE_DOCS_HEADING = "Evidence, provenance, and uncertainty";
+
+function hostnameWithoutWww(url: string): string {
+  return new URL(url).hostname.replace(/^www\./, "");
+}
+
+async function tabUntilFocused(
+  page: Page,
+  isTargetFocused: () => Promise<boolean>,
+  maxSteps = 24
+): Promise<void> {
+  for (let step = 0; step < maxSteps; step += 1) {
+    if (await isTargetFocused()) {
+      return;
+    }
+    await page.keyboard.press("Tab");
+  }
+  throw new Error("Tab navigation did not reach the expected focus target.");
+}
 
 /**
  * Bounded browser verification for UX Reset evidence provenance on /design-system.
@@ -43,39 +64,48 @@ test("ux-reset evidence provenance keyboard, expanded axe, and doc/source links"
     name: /Open source reference/,
   });
   await expect(sourceLink).toBeVisible();
-  await expect(sourceLink).toHaveAttribute("href", "https://cdc.gov");
+  await expect(sourceLink).toHaveAttribute("href", CDC_SOURCE_URL);
+  await expect(sourceLink).toHaveAttribute("target", "_blank");
+  await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
 
-  let focusedSource = false;
-  for (let step = 0; step < 12; step += 1) {
-    await page.keyboard.press("Tab");
-    const label = await page.evaluate(
-      () => document.activeElement?.textContent?.trim() ?? ""
-    );
-    if (label.includes("Open source reference")) {
-      focusedSource = true;
-      break;
-    }
-  }
-  expect(focusedSource).toBe(true);
+  await tabUntilFocused(page, async () => sourceLink.evaluate((node) => node === document.activeElement));
+  await expect(sourceLink).toBeFocused();
 
-  await specimen.getByText("Technical reproducibility identifiers").click();
+  const sourcePopupPromise = page.waitForEvent("popup");
+  await page.keyboard.press("Enter");
+  const sourcePopup = await sourcePopupPromise;
+  await sourcePopup.waitForLoadState("domcontentloaded");
+  expect(hostnameWithoutWww(sourcePopup.url())).toBe(
+    hostnameWithoutWww(CDC_SOURCE_URL)
+  );
+
+  const technical = specimen.locator("details.ux-reset-evidence-provenance-technical");
+  const technicalSummary = technical.locator("summary", {
+    hasText: "Technical reproducibility identifiers",
+  });
+  await technicalSummary.focus();
+  await page.keyboard.press("Enter");
+  await expect(technical).toHaveAttribute("open", "");
+
   const docsLink = specimen.getByRole("link", { name: /Atlas documentation/ });
-  let focusedDocs = false;
-  for (let step = 0; step < 12; step += 1) {
-    await page.keyboard.press("Tab");
-    const href = await page.evaluate(
-      () => (document.activeElement as HTMLAnchorElement | null)?.href ?? ""
-    );
-    if (href.includes("/docs/evidence-and-uncertainty")) {
-      focusedDocs = true;
-      break;
-    }
-  }
-  expect(focusedDocs).toBe(true);
   await expect(docsLink).toHaveAttribute(
     "href",
-    /\/docs\/evidence-and-uncertainty$/
+    /\/docs\/evidence-and-uncertainty\/?$/
   );
+  await expect(docsLink).toHaveAttribute("target", "_blank");
+  await expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
+
+  await tabUntilFocused(page, async () => docsLink.evaluate((node) => node === document.activeElement));
+  await expect(docsLink).toBeFocused();
+
+  const docsPopupPromise = page.waitForEvent("popup");
+  await page.keyboard.press("Enter");
+  const docsPopup = await docsPopupPromise;
+  await docsPopup.waitForLoadState("domcontentloaded");
+  await expect(docsPopup).toHaveURL(/\/docs\/evidence-and-uncertainty\/?$/);
+  await expect(
+    docsPopup.getByRole("heading", { name: EVIDENCE_DOCS_HEADING })
+  ).toBeVisible();
 
   if (!testInfo.project.name.includes("mobile")) {
     const results = await new AxeBuilder({ page })
