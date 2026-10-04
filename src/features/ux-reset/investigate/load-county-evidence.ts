@@ -13,6 +13,7 @@ import {
   InvestigateContractError,
   type CountyEvidenceBundle,
   type MeasureObservationOutcome,
+  type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
@@ -441,6 +442,29 @@ function failureMessage(error: unknown): string {
   return "This measure could not be loaded.";
 }
 
+/** Absolute time of the latest Retry-After. Exhausted attempts must keep it. */
+function retryAtMsFromError(error: unknown): number | null {
+  if (!(error instanceof AtlasApiError) || error.retryAfterSeconds === null) {
+    return null;
+  }
+  if (error.retryAfterSeconds < 0) {
+    return null;
+  }
+  return Date.now() + error.retryAfterSeconds * MILLISECONDS_PER_SECOND;
+}
+
+async function waitForMeasureCooldown(
+  cooldowns: readonly MeasureRetryCooldown[] | null | undefined,
+  measureId: string,
+  signal: AbortSignal
+): Promise<void> {
+  const cooldown = cooldowns?.find((entry) => entry.measureId === measureId);
+  if (!cooldown) {
+    return;
+  }
+  await delay(cooldown.retryAtMs - Date.now(), signal);
+}
+
 export type PreservedCountyMeasures = {
   fips: string;
   outcomes: readonly MeasureObservationOutcome[];
@@ -473,6 +497,7 @@ function preservedOutcomesForRequest(input: {
 }
 
 export async function loadCountyEvidenceBundle(input: {
+  cooldowns?: readonly MeasureRetryCooldown[] | null;
   domainsRequestFailed: boolean;
   fips: string;
   identity: ResolvedCountyIdentity;
@@ -512,6 +537,11 @@ export async function loadCountyEvidenceBundle(input: {
         };
       }
       try {
+        await waitForMeasureCooldown(
+          input.cooldowns,
+          measure.measure_id,
+          input.signal
+        );
         const observations = await fetchMeasureObservations({
           fips: input.fips,
           measureId: measure.measure_id,
@@ -531,6 +561,7 @@ export async function loadCountyEvidenceBundle(input: {
         return {
           measureId: measure.measure_id,
           message: failureMessage(error),
+          retryAtMs: retryAtMsFromError(error),
           status: "failed" as const,
         };
       }

@@ -15,9 +15,11 @@ import {
   countyEvidenceForRequest,
   identityFromPublishedCounty,
   InvestigateContractError,
+  retryCooldownsFromBundle,
   reusableMeasureOutcomes,
   type CountyEvidenceBundle,
   type InvestigateCountySelection,
+  type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import { investigateSearchParams } from "@/features/ux-reset/investigate/investigate-search-params";
@@ -65,6 +67,7 @@ export type InvestigateWorkspace = {
   period: string | null;
   recovery: InvestigateRecovery | null;
   releaseId: string | null;
+  requestedDataset: string | null;
   requestedFips: string | null;
   scope: string;
   scopeLabel: string;
@@ -95,6 +98,22 @@ function preservedMeasuresForCachedBundle(input: {
     period: input.period,
     releaseId: bundle.releaseId,
   };
+}
+
+function cooldownsForCachedBundle(input: {
+  bundle: CountyEvidenceBundle | undefined;
+  fips: string;
+  releaseId: string;
+}): readonly MeasureRetryCooldown[] {
+  const { bundle } = input;
+  if (
+    !bundle ||
+    bundle.county.fips !== input.fips ||
+    bundle.releaseId !== input.releaseId
+  ) {
+    return [];
+  }
+  return retryCooldownsFromBundle(bundle);
 }
 
 function metadataErrorMessage(
@@ -289,13 +308,19 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       // Production staleTime can render this query's cached bundle without
       // running queryFn. Read that cache here so a later retry keeps successes
       // for this county, release, and period only.
+      const cached = client.getQueryData<CountyEvidenceBundle>(queryKey);
       const preserve = preservedMeasuresForCachedBundle({
-        bundle: client.getQueryData<CountyEvidenceBundle>(queryKey),
+        bundle: cached,
         fips: requestedFips,
         period: urlState.period,
         releaseId,
       });
       return loadCountyEvidenceBundle({
+        cooldowns: cooldownsForCachedBundle({
+          bundle: cached,
+          fips: requestedFips,
+          releaseId,
+        }),
         domainsRequestFailed: indicatorsQuery.isError,
         fips: requestedFips,
         identity,
@@ -398,6 +423,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     period: urlState.period,
     recovery,
     releaseId,
+    requestedDataset: urlState.dataset,
     requestedFips,
     retryDirectory,
     retryEvidence,

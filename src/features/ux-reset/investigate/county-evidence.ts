@@ -89,6 +89,8 @@ export type CountyEvidenceMeasureFailure = {
   measureId: string;
   measureLabel: string;
   message: string;
+  /** Epoch ms when a server Retry-After allows the next read. Null when none. */
+  retryAtMs: number | null;
 };
 
 export type CountyEvidenceFamilySection = {
@@ -131,6 +133,7 @@ export type MeasureObservationOutcome =
   | {
       measureId: string;
       message: string;
+      retryAtMs: number | null;
       status: "failed";
     }
   | {
@@ -495,6 +498,27 @@ function measureLabel(measures: readonly Measure[], measureId: string): string {
  * Ready and unsent outcomes that can be kept while failed measures are retried.
  * Failed measures are omitted so the next load requests only those.
  */
+export type MeasureRetryCooldown = {
+  measureId: string;
+  retryAtMs: number;
+};
+
+/** Deadlines for failed measures. A later retry of the same bundle must wait. */
+export function retryCooldownsFromBundle(
+  bundle: CountyEvidenceBundle
+): MeasureRetryCooldown[] {
+  const cooldowns: MeasureRetryCooldown[] = [];
+  for (const failure of bundle.measureFailures) {
+    if (failure.retryAtMs !== null) {
+      cooldowns.push({
+        measureId: failure.measureId,
+        retryAtMs: failure.retryAtMs,
+      });
+    }
+  }
+  return cooldowns;
+}
+
 export function reusableMeasureOutcomes(
   bundle: CountyEvidenceBundle
 ): MeasureObservationOutcome[] {
@@ -582,6 +606,7 @@ export function buildCountyEvidenceBundle(input: {
           measureId: outcome.measureId,
           measureLabel: measureLabel(input.measures, outcome.measureId),
           message: outcome.message,
+          retryAtMs: outcome.retryAtMs,
         });
         break;
       }

@@ -269,6 +269,7 @@ describe(buildCountyEvidenceBundle, () => {
         {
           measureId: INVESTIGATE_TICK_MEASURE_ID,
           message: "This measure could not be loaded.",
+          retryAtMs: null,
           status: "failed",
         },
         {
@@ -329,6 +330,7 @@ describe(buildCountyEvidenceBundle, () => {
           measureId: measure.measure_id,
           measureLabel: measure.label,
           message: "failed",
+          retryAtMs: null,
         })),
         readyMeasureIds: [],
       }),

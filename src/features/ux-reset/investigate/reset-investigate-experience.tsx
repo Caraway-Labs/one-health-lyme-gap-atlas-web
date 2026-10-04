@@ -95,8 +95,9 @@ function InvestigateExperienceInner() {
     if (workspace.requestedFips) {
       params.set("county", workspace.requestedFips);
     }
-    if (workspace.releaseId) {
-      params.set("dataset", workspace.releaseId);
+    const dataset = workspace.releaseId ?? workspace.requestedDataset;
+    if (dataset) {
+      params.set("dataset", dataset);
     }
     if (workspace.period) {
       params.set("period", workspace.period);
@@ -109,6 +110,7 @@ function InvestigateExperienceInner() {
   }, [
     workspace.period,
     workspace.releaseId,
+    workspace.requestedDataset,
     workspace.requestedFips,
     workspace.scope,
   ]);

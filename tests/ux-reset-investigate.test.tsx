@@ -31,7 +31,9 @@ const controls: {
   delayFips: string | null;
   failMeasureId: string | null;
   geographyStatus: "identity" | "ok";
+  holdMetadata: boolean;
   metadataReleaseId: string | null;
+  metadataStatus: number;
   rateLimitRemaining: number;
   retryAfterSeconds: number;
   scenario: InvestigateScenario;
@@ -39,12 +41,15 @@ const controls: {
   delayFips: null,
   failMeasureId: null,
   geographyStatus: "ok",
+  holdMetadata: false,
   metadataReleaseId: null,
+  metadataStatus: 200,
   rateLimitRemaining: 0,
   retryAfterSeconds: 0,
   scenario: "mixed",
 };
 
+let metadataGate = Promise.withResolvers<boolean>();
 let releaseDelayed = () => {};
 let delayedObservations: Promise<void> = Promise.resolve();
 let delayedCompletions = 0;
@@ -140,19 +145,27 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     }),
     metadataV1AtlasMetadataGet: vi.fn<
       typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
-    >(
-      async () =>
-        ({
-          data: {
-            ...investigateMetadataFixture,
-            release_id:
-              controls.metadataReleaseId ??
-              investigateMetadataFixture.release_id,
-          },
+    >(async () => {
+      if (controls.holdMetadata) {
+        await metadataGate.promise;
+      }
+      if (controls.metadataStatus !== 200) {
+        return {
+          data: { detail: "metadata unavailable" },
           headers: new Headers(),
-          status: 200,
-        }) as never
-    ),
+          status: controls.metadataStatus,
+        } as never;
+      }
+      return {
+        data: {
+          ...investigateMetadataFixture,
+          release_id:
+            controls.metadataReleaseId ?? investigateMetadataFixture.release_id,
+        },
+        headers: new Headers(),
+        status: 200,
+      } as never;
+    }),
     observationsV1ObservationsGet: vi.fn<
       typeof import("@/generated/atlas").observationsV1ObservationsGet
     >(async (params) => {
@@ -222,6 +235,13 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     ),
   };
 });
+
+function returnHrefs() {
+  return {
+    header: screen.getByTestId("investigate-return").getAttribute("href"),
+    next: screen.getByTestId("investigate-next-return").getAttribute("href"),
+  };
+}
 
 function setSearch(search: string) {
   navigationSearchParams = new URLSearchParams(
@@ -325,9 +345,13 @@ describe("County Investigate workspace", () => {
     controls.delayFips = null;
     controls.failMeasureId = null;
     controls.geographyStatus = "ok";
+    controls.holdMetadata = false;
     controls.metadataReleaseId = null;
+    controls.metadataStatus = 200;
     controls.rateLimitRemaining = 0;
     controls.retryAfterSeconds = 0;
+    metadataGate.resolve(true);
+    metadataGate = Promise.withResolvers<boolean>();
     controls.scenario = "mixed";
     delayedCompletions = 0;
     delayedObservations = Promise.resolve();
@@ -613,6 +637,117 @@ describe("County Investigate workspace", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("waits out Retry-After after automatic attempts are exhausted", async () => {
+    controls.failMeasureId = INVESTIGATE_TICK_MEASURE_ID;
+    controls.scenario = "mixed";
+    renderInvestigate("?county=08001&scope=CO");
+    await waitForRetryableCases();
+    const ticksBefore = tickRequestCount();
+    controls.rateLimitRemaining = 3;
+    controls.retryAfterSeconds = 60;
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("investigate-retry-evidence"));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const atFirst = tickRequestCount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(120_000);
+        await vi.advanceTimersToNextTimerAsync();
+      });
+      const afterExhausted = tickRequestCount();
+      const settled = screen.getByTestId("investigate-retry-evidence");
+      if (settled.hasAttribute("disabled")) {
+        throw new Error("Retry stayed busy after automatic attempts finished.");
+      }
+      await act(async () => {
+        fireEvent.click(settled);
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      const duringCooldown = screen.getByTestId("investigate-retry-evidence");
+      const manualAt121 = tickRequestCount();
+      const retrying = duringCooldown.dataset.retrying;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(59_000);
+      });
+      expect({
+        afterExhausted,
+        atFirst,
+        manualAt121,
+        manualAtDeadline: tickRequestCount(),
+        retrying,
+      }).toStrictEqual({
+        afterExhausted: ticksBefore + 3,
+        atFirst: ticksBefore + 1,
+        manualAt121: ticksBefore + 3,
+        manualAtDeadline: ticksBefore + 4,
+        retrying: "true",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the requested dataset on return links until the release resolves", async () => {
+    const requested =
+      "/app/review?scope=CO&county=08013&dataset=beta-2026&period=2023-01-01";
+    controls.holdMetadata = true;
+    renderInvestigate(
+      "?county=08013&scope=CO&dataset=beta-2026&period=2023-01-01"
+    );
+    await waitFor(() => {
+      const href =
+        screen.getByTestId("investigate-return").getAttribute("href") ?? "";
+      if (!href.includes("dataset=beta-2026")) {
+        throw new Error("The pending return link dropped the dataset.");
+      }
+    });
+    const pending = returnHrefs();
+    metadataGate.resolve(true);
+    cleanup();
+
+    controls.holdMetadata = false;
+    controls.metadataStatus = 503;
+    renderInvestigate(
+      "?county=08013&scope=CO&dataset=beta-2026&period=2023-01-01"
+    );
+    await waitFor(() => {
+      const href =
+        screen.getByTestId("investigate-return").getAttribute("href") ?? "";
+      if (
+        !href.includes("dataset=beta-2026") ||
+        document.querySelectorAll('[data-atlas-status="error"]').length === 0
+      ) {
+        throw new Error("Metadata failure has not kept the dataset.");
+      }
+    });
+    const unavailable = returnHrefs();
+    cleanup();
+
+    controls.metadataStatus = 200;
+    renderInvestigate(
+      "?county=08013&scope=CO&dataset=beta-2026&period=2023-01-01"
+    );
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "release_mismatch"
+      ) {
+        throw new Error("Release mismatch has not rendered.");
+      }
+    });
+    expect({
+      mismatch: returnHrefs(),
+      pending,
+      unavailable,
+    }).toStrictEqual({
+      mismatch: { header: requested, next: requested },
+      pending: { header: requested, next: requested },
+      unavailable: { header: requested, next: requested },
+    });
   });
 
   it("uses an explicit recovery state for malformed, unknown, and unsupported counties", async () => {

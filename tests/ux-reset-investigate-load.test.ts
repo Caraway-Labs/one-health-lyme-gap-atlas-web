@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   identityFromPublishedCounty,
+  retryCooldownsFromBundle,
   reusableMeasureOutcomes,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
@@ -208,6 +209,78 @@ describe("county evidence loading", () => {
       ready: ["measure-0", "measure-1"],
       unchangedCaseCalls: caseCalls,
     });
+  });
+
+  it("keeps Retry-After after automatic attempts are exhausted", async () => {
+    vi.useFakeTimers();
+    calls.length = 0;
+    transientRemaining.clear();
+    transientRemaining.set("measure-0", 99);
+    retryAfterSeconds = 60;
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    const signal = new AbortController();
+    try {
+      const firstLoad = loadCountyEvidenceBundle({
+        domainsRequestFailed: false,
+        fips: "08001",
+        identity: identity!,
+        indicators: [],
+        measures: measures(1),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: signal.signal,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      const attempt1 = calls.length;
+      await vi.advanceTimersByTimeAsync(60_000);
+      const attempt2 = calls.length;
+      await vi.advanceTimersByTimeAsync(60_000);
+      const first = await firstLoad;
+      const attempt3 = calls.length;
+      const retryAtMs = first.measureFailures[0]?.retryAtMs ?? 0;
+      const cooldownHeld = retryAtMs > Date.now();
+      const manual = loadCountyEvidenceBundle({
+        cooldowns: retryCooldownsFromBundle(first),
+        domainsRequestFailed: false,
+        fips: "08001",
+        identity: identity!,
+        indicators: [],
+        measures: measures(1),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: signal.signal,
+      });
+      await vi.advanceTimersByTimeAsync(1000);
+      const manualAt121 = calls.length;
+      await vi.advanceTimersByTimeAsync(59_000);
+      const manualAtDeadline = calls.length;
+      signal.abort();
+      await manual.catch(() => false);
+      expect({
+        attempt1,
+        attempt2,
+        attempt3,
+        cooldownHeld,
+        manualAt121,
+        manualAtDeadline,
+      }).toStrictEqual({
+        attempt1: 1,
+        attempt2: 2,
+        attempt3: 3,
+        cooldownHeld: true,
+        manualAt121: 3,
+        manualAtDeadline: 4,
+      });
+    } finally {
+      signal.abort();
+      retryAfterSeconds = 0;
+      transientRemaining.clear();
+      vi.useRealTimers();
+    }
   });
 
   it("does not reuse evidence from a different county or period", async () => {
