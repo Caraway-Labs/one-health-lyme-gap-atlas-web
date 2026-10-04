@@ -35,6 +35,7 @@ import {
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
+import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { ExploreMapPanel } from "@/features/ux-reset/explore/explore-map-panel";
 import {
   authoritativeExploreComparePair,
@@ -130,11 +131,12 @@ function ResetExploreExperienceInner() {
     urlState.compare,
     urlState.selected
   );
+  const handoffCounty = focusedFips || urlState.county || null;
   const handoffParams = useMemo(
     () =>
       exploreHandoffSearchParams({
         compare: effectiveComparePair,
-        county: focusedFips || urlState.county,
+        county: handoffCounty,
         dataset: committed?.releaseId ?? null,
         map_scope: urlState.map_scope,
         metric: committed?.measureId ?? null,
@@ -142,7 +144,16 @@ function ResetExploreExperienceInner() {
         scope: urlState.scope,
         selected: effectiveComparePair,
       }),
-    [committed, effectiveComparePair, focusedFips, urlState]
+    [committed, effectiveComparePair, handoffCounty, urlState]
+  );
+  usePublishExploreCommittedNavigation(
+    committed
+      ? {
+          county: handoffCounty,
+          dataset: committed.releaseId,
+          period: committed.handoffPeriod,
+        }
+      : null
   );
   const investigateHref = uxResetShellHandoffHref(
     RESET_INVESTIGATE_PATH,
@@ -163,11 +174,11 @@ function ResetExploreExperienceInner() {
   } else if (pairIsFull) {
     compareActionLabel = "Replace in compare";
   }
-  const releaseLoadState = metadataError
-    ? releaseEvidenceLoadStateValues.error
-    : metadataLoading
-      ? releaseEvidenceLoadStateValues.loading
-      : releaseEvidenceLoadStateValues.ready;
+  const releaseLoadState = metadata
+    ? releaseEvidenceLoadStateValues.ready
+    : metadataError
+      ? releaseEvidenceLoadStateValues.error
+      : releaseEvidenceLoadStateValues.loading;
 
   return (
     <div data-page="explore" data-testid="explore-workspace">

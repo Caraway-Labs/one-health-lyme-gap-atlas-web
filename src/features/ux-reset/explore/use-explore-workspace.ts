@@ -24,6 +24,7 @@ import {
   shouldRetryExploreObservation,
 } from "@/features/ux-reset/explore/load-explore-resources";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
+import type { AtlasMetadata } from "@/generated/models";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -87,6 +88,8 @@ export function useExploreWorkspace() {
   const [committed, setCommitted] = useState<ExploreCommittedSelection | null>(
     null
   );
+  const [committedMetadata, setCommittedMetadata] =
+    useState<AtlasMetadata | null>(null);
 
   const metadataQuery = useQuery({
     queryFn: async ({ signal }) => {
@@ -215,21 +218,6 @@ export function useExploreWorkspace() {
       ),
   });
 
-  const geometryQuery = useQuery({
-    enabled: Boolean(releaseId),
-    queryFn: async ({ signal }) => {
-      if (!releaseId) {
-        throw new Error("Display geometry requires a release.");
-      }
-      return fetchCountyDisplayGeometry(releaseId, { signal });
-    },
-    queryKey: countyDisplayGeometryQueryKey(
-      "ux-reset-explore",
-      releaseId ?? undefined
-    ),
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-
   const nextCommitted = commitExploreSelection({
     current: committed,
     incoming: observationsQuery.data ?? null,
@@ -245,6 +233,36 @@ export function useExploreWorkspace() {
   if (nextCommitted !== committed) {
     setCommitted(nextCommitted);
   }
+
+  const metadataMatchesCommitted =
+    nextCommitted && metadataQuery.data?.release_id === nextCommitted.releaseId
+      ? metadataQuery.data
+      : null;
+  if (
+    metadataMatchesCommitted &&
+    committedMetadata !== metadataMatchesCommitted
+  ) {
+    setCommittedMetadata(metadataMatchesCommitted);
+  }
+  const visibleMetadata = nextCommitted
+    ? metadataMatchesCommitted || committedMetadata
+    : (metadataQuery.data ?? null);
+
+  const geometryReleaseId = nextCommitted?.releaseId ?? releaseId;
+  const geometryQuery = useQuery({
+    enabled: Boolean(geometryReleaseId),
+    queryFn: async ({ signal }) => {
+      if (!geometryReleaseId) {
+        throw new Error("Display geometry requires a release.");
+      }
+      return fetchCountyDisplayGeometry(geometryReleaseId, { signal });
+    },
+    queryKey: countyDisplayGeometryQueryKey(
+      "ux-reset-explore",
+      geometryReleaseId ?? undefined
+    ),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
 
   useEffect(() => {
     if (!requestedMeasureId) {
@@ -336,8 +354,8 @@ export function useExploreWorkspace() {
     directoryLoading: directoryQuery.isPending && Boolean(releaseId),
     geometry,
     geometryError: geometryQuery.isError,
-    geometryLoading: geometryQuery.isPending && Boolean(releaseId),
-    geometryReleaseId: releaseId,
+    geometryLoading: geometryQuery.isPending && !geometry,
+    geometryReleaseId,
     mapScope,
     measures,
     measuresErrorMessage:
@@ -347,11 +365,11 @@ export function useExploreWorkspace() {
           ? "Governed measures are temporarily unavailable."
           : null,
     measuresLoading: measuresQuery.isPending && Boolean(releaseId),
-    metadata: metadataQuery.data,
+    metadata: visibleMetadata,
     metadataError: metadataQuery.isError
       ? metadataErrorMessage(metadataQuery.error, urlState.dataset)
       : null,
-    metadataLoading: metadataQuery.isPending,
+    metadataLoading: metadataQuery.isPending && !visibleMetadata,
     observationsError: observationsQuery.isError,
     observationsLoading:
       observationsQuery.isFetching && !observationsQuery.isSuccess,

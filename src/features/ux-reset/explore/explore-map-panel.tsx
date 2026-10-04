@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import type { AtlasMapCounty } from "@/components/atlas-map";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
@@ -75,6 +75,55 @@ function paintCounties(
   return painted;
 }
 
+function ExploreMapFrame({
+  children,
+  measureId,
+}: {
+  children: ReactNode;
+  measureId: string;
+}) {
+  return (
+    <div
+      className="map-wrap"
+      data-measure-id={measureId}
+      data-testid="explore-map-region"
+    >
+      {children}
+    </div>
+  );
+}
+
+function ExploreMapUnavailable({
+  measureId,
+  onRetry,
+}: {
+  measureId: string;
+  onRetry: () => void;
+}) {
+  return (
+    <ExploreMapFrame measureId={measureId}>
+      <div data-testid="explore-map-fallback">
+        <AtlasStatusMessage
+          action={
+            <Button type="button" variant="secondary" onClick={onRetry}>
+              Retry map
+            </Button>
+          }
+          className="map-loading"
+          title="Map unavailable"
+          titleAs="p"
+          tone="error"
+        >
+          <p>
+            County values, availability, and the Investigate and Compare actions
+            remain available without the map.
+          </p>
+        </AtlasStatusMessage>
+      </div>
+    </ExploreMapFrame>
+  );
+}
+
 type ExploreMapPanelProps = {
   committed: ExploreCommittedSelection | null;
   geometry: CountyDisplayGeometryFeatureCollection | null;
@@ -118,80 +167,51 @@ export function ExploreMapPanel({
     geometryReleaseId === committed.releaseId
   );
   const showMap = geometryMatchesSelection && !geometryError && !renderFailed;
+  const retryMap = () => {
+    setRenderFailed(false);
+    setAttempt((value) => value + 1);
+    onRetryGeometry();
+  };
 
   if (geometryError || renderFailed) {
     return (
-      <div
-        className="map-wrap"
-        data-measure-id={committed?.measureId ?? ""}
-        data-testid="explore-map-region"
-      >
-        <div data-testid="explore-map-fallback">
-          <AtlasStatusMessage
-            action={
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setRenderFailed(false);
-                  setAttempt((value) => value + 1);
-                  onRetryGeometry();
-                }}
-              >
-                Retry map
-              </Button>
-            }
-            className="map-loading"
-            title="Map unavailable"
-            titleAs="p"
-            tone="error"
-          >
-            <p>
-              County values, availability, and the Investigate and Compare
-              actions remain available without the map.
-            </p>
-          </AtlasStatusMessage>
-        </div>
-      </div>
+      <ExploreMapUnavailable
+        measureId={committed?.measureId ?? ""}
+        onRetry={retryMap}
+      />
     );
   }
 
   if (!showMap) {
+    if (geometryLoading || !committed) {
+      return (
+        <ExploreMapFrame measureId={committed?.measureId ?? ""}>
+          <AtlasStatusMessage className="map-loading" tone="loading">
+            {committed ? "Loading display geometry…" : "Loading map…"}
+          </AtlasStatusMessage>
+        </ExploreMapFrame>
+      );
+    }
     return (
-      <div
-        className="map-wrap"
-        data-measure-id={committed?.measureId ?? ""}
-        data-testid="explore-map-region"
-      >
-        <AtlasStatusMessage className="map-loading" tone="loading">
-          {geometryLoading || committed
-            ? "Loading display geometry…"
-            : "Loading map…"}
-        </AtlasStatusMessage>
-      </div>
+      <ExploreMapUnavailable
+        measureId={committed.measureId}
+        onRetry={retryMap}
+      />
     );
   }
 
   if (!geometry || !committed) {
     return (
-      <div
-        className="map-wrap"
-        data-measure-id={committed?.measureId ?? ""}
-        data-testid="explore-map-region"
-      >
+      <ExploreMapFrame measureId={committed?.measureId ?? ""}>
         <AtlasStatusMessage className="map-loading" tone="loading">
           Loading display geometry…
         </AtlasStatusMessage>
-      </div>
+      </ExploreMapFrame>
     );
   }
 
   return (
-    <div
-      className="map-wrap"
-      data-measure-id={committed.measureId}
-      data-testid="explore-map-region"
-    >
+    <ExploreMapFrame measureId={committed.measureId}>
       <AtlasMap
         key={attempt}
         ariaLabel={`Map of ${committed.measureLabel}. Colors show governed measure values. Use the county table for keyboard selection.`}
@@ -208,6 +228,6 @@ export function ExploreMapPanel({
         onError={() => setRenderFailed(true)}
         onSelect={(fips) => onSelectCounty(fips)}
       />
-    </div>
+    </ExploreMapFrame>
   );
 }

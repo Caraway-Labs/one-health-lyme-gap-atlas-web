@@ -6,12 +6,15 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import { ResetExploreExperience } from "@/features/ux-reset/explore/reset-explore-experience";
+import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
+import { fetchCountyDisplayGeometry } from "@/lib/county-geography";
 
 import {
   EXPLORE_CASES_MEASURE_ID,
@@ -44,10 +47,12 @@ let releaseDelayedObservations: (() => void) | null = null;
 let delayedObservations: Promise<boolean> = Promise.resolve(true);
 
 let geometryShouldFail = false;
+let navigationSearchParams = new URLSearchParams();
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => "/app/explore",
+  useSearchParams: () => navigationSearchParams as ReadonlyURLSearchParams,
 }));
 
 vi.mock(import("@/components/atlas-map"), () => ({
@@ -271,6 +276,60 @@ async function chooseMeasure(name: string) {
   fireEvent.click(option);
 }
 
+function navigationParams(
+  name: "Compare" | "Investigate" | "page-compare" | "page-investigate"
+) {
+  const element =
+    name === "page-investigate"
+      ? screen.getByTestId("explore-investigate")
+      : name === "page-compare"
+        ? screen.getByTestId("explore-compare")
+        : screen.getByRole("link", { name: new RegExp(`^${name}$`) });
+  return new URL(element.getAttribute("href") ?? "", "http://localhost")
+    .searchParams;
+}
+
+function expectSharedNavigation(expected: {
+  county: string;
+  dataset: string;
+  period: string;
+}) {
+  for (const name of [
+    "page-investigate",
+    "page-compare",
+    "Investigate",
+    "Compare",
+  ] as const) {
+    const params = navigationParams(name);
+    expect(params.get("county")).toBe(expected.county);
+    expect(params.get("dataset")).toBe(expected.dataset);
+    expect(params.get("period")).toBe(expected.period);
+  }
+}
+
+function expectCommittedAlphaSurface() {
+  expect(screen.getByTestId("mock-atlas-map")).toBeTruthy();
+  expect(screen.getByText("Governed county release")).toBeTruthy();
+  expect(screen.queryByText(/October 4/)).toBeNull();
+  expect(screen.queryByText("Loading display geometry…")).toBeNull();
+  expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+    "18 mm"
+  );
+  expectSharedNavigation({
+    county: "08001",
+    dataset: "alpha-2026",
+    period: "2025-01-01",
+  });
+}
+
+function expectGeometryStayedOnAlpha() {
+  const geometryReleases = vi
+    .mocked(fetchCountyDisplayGeometry)
+    .mock.calls.map((call) => call[0]);
+  expect(geometryReleases).toContain("alpha-2026");
+  expect(geometryReleases).not.toContain("alpha-2026-10-04");
+}
+
 function expectDisplayedMeasure(input: {
   measureId: string;
   periodIncludes: string;
@@ -292,6 +351,7 @@ describe("Explore workspace", () => {
     observationControls.releaseId = "alpha-2026";
     catalogControls.releaseVersion = "alpha-2026";
     metadataControls.releaseId = "alpha-2026";
+    navigationSearchParams = new URLSearchParams();
     const delayed = Promise.withResolvers<boolean>();
     releaseDelayedObservations = () => {
       delayed.resolve(true);
@@ -736,5 +796,229 @@ describe("Explore workspace", () => {
         "08001"
       )
     );
+  });
+
+  it("pins page and shell links to the committed release, period, and county", async () => {
+    const initial = "?scope=CO&county=08001&period=2025-01-01";
+    function HistoryHarness() {
+      const [search, setSearch] = useState(initial);
+      const past = useRef<string[]>([]);
+      const future = useRef<string[]>([]);
+      const show = (next: string) => {
+        navigationSearchParams = new URLSearchParams(next.slice(1));
+        setSearch(next);
+      };
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              past.current.push(search);
+              future.current = [];
+              observationControls.failDate = "2025-01-02";
+              show("?scope=CO&county=08001&period=2025-01-02");
+            }}
+          >
+            Open January 2
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const previous = past.current.pop();
+              if (!previous) {
+                return;
+              }
+              future.current.push(search);
+              show(previous);
+            }}
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const next = future.current.pop();
+              if (!next) {
+                return;
+              }
+              past.current.push(search);
+              show(next);
+            }}
+          >
+            Forward
+          </button>
+          <NuqsTestingAdapter hasMemory searchParams={search}>
+            <ResetProfessionalShell>
+              <ResetExploreExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </>
+      );
+    }
+    navigationSearchParams = new URLSearchParams(initial.slice(1));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <HistoryHarness />
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("explore-investigate");
+    expect(navigationSearchParams.get("dataset")).toBeNull();
+    expectSharedNavigation({
+      county: "08001",
+      dataset: "alpha-2026",
+      period: "2025-01-01",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open January 2" }));
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("explore-request-status").textContent
+      ).toContain("could not be loaded")
+    );
+    expect(navigationSearchParams.get("period")).toBe("2025-01-02");
+    expectSharedNavigation({
+      county: "08001",
+      dataset: "alpha-2026",
+      period: "2025-01-01",
+    });
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() =>
+      expect(screen.queryByTestId("explore-request-status")).toBeNull()
+    );
+    expectSharedNavigation({
+      county: "08001",
+      dataset: "alpha-2026",
+      period: "2025-01-01",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Forward" }));
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("explore-request-status").textContent
+      ).toContain("could not be loaded")
+    );
+    expect(navigationSearchParams.get("period")).toBe("2025-01-02");
+    expectSharedNavigation({
+      county: "08001",
+      dataset: "alpha-2026",
+      period: "2025-01-01",
+    });
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+  });
+
+  it("keeps page and shell links on the committed day while the next day is loading", async () => {
+    const initial = "?scope=CO&county=08001&period=2025-01-01";
+    function PendingDay() {
+      const [search, setSearch] = useState(initial);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              observationControls.delayDate = "2025-01-02";
+              navigationSearchParams = new URLSearchParams(
+                "scope=CO&county=08001&period=2025-01-02"
+              );
+              setSearch("?scope=CO&county=08001&period=2025-01-02");
+            }}
+          >
+            Open January 2
+          </button>
+          <NuqsTestingAdapter hasMemory searchParams={search}>
+            <ResetProfessionalShell>
+              <ResetExploreExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </>
+      );
+    }
+    navigationSearchParams = new URLSearchParams(initial.slice(1));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <PendingDay />
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("explore-investigate");
+    fireEvent.click(screen.getByRole("button", { name: "Open January 2" }));
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("explore-request-status").textContent
+      ).toContain("Loading")
+    );
+    expect(screen.getByTestId("explore-request-status").textContent).toContain(
+      "2025-01-02"
+    );
+    expect(navigationSearchParams.get("period")).toBe("2025-01-02");
+    expectSharedNavigation({
+      county: "08001",
+      dataset: "alpha-2026",
+      period: "2025-01-01",
+    });
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+  });
+
+  it("keeps the committed release snapshot, map, and links when a later release is rejected", async () => {
+    const initial = "?scope=CO&county=08001&period=2025-01-01";
+    function RejectOctober() {
+      const [search, setSearch] = useState(initial);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              metadataControls.releaseId = "alpha-2026-10-04";
+              navigationSearchParams = new URLSearchParams(
+                "scope=CO&county=08001&period=2025-01-01&dataset=alpha-2026-10-04"
+              );
+              setSearch(
+                "?scope=CO&county=08001&period=2025-01-01&dataset=alpha-2026-10-04"
+              );
+            }}
+          >
+            Request rejected release
+          </button>
+          <NuqsTestingAdapter hasMemory searchParams={search}>
+            <ResetProfessionalShell>
+              <ResetExploreExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </>
+      );
+    }
+    navigationSearchParams = new URLSearchParams(initial.slice(1));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <RejectOctober />
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("mock-atlas-map");
+    expectCommittedAlphaSurface();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Request rejected release" })
+    );
+    await expect(
+      screen.findByText("Catalog release does not match the requested release.")
+    ).resolves.toBeTruthy();
+    expectCommittedAlphaSurface();
+    expect(navigationSearchParams.get("dataset")).toBe("alpha-2026-10-04");
+    expectGeometryStayedOnAlpha();
   });
 });

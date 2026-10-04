@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/sidebar";
 import { uxResetShellHandoffHref } from "@/features/ux-reset";
 import {
+  ExploreCommittedNavigationProvider,
+  searchParamsWithCommittedExploreContext,
+  useExploreCommittedNavigation,
+} from "@/features/ux-reset/explore-committed-navigation";
+import {
   LEGACY_ATLAS_PATH,
   RESET_ACCESS_NAV,
   RESET_WORKSPACE_NAV,
@@ -35,9 +40,11 @@ import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 
 export function ResetProfessionalShell({ children }: { children: ReactNode }) {
   return (
-    <SidebarProvider defaultOpen storageKey="ux-reset-pro-sidebar">
-      <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
-    </SidebarProvider>
+    <ExploreCommittedNavigationProvider>
+      <SidebarProvider defaultOpen storageKey="ux-reset-pro-sidebar">
+        <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
+      </SidebarProvider>
+    </ExploreCommittedNavigationProvider>
   );
 }
 
@@ -55,15 +62,21 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     () => setMobileOpen(false),
     [setMobileOpen]
   );
+  const committedExploreNavigation = useExploreCommittedNavigation();
+  const shellSearchParams = searchParamsWithCommittedExploreContext(
+    pathname,
+    searchParams,
+    committedExploreNavigation
+  );
 
   const shellHref = useCallback(
     (route: ResetRoute) =>
       uxResetShellHandoffHref(
         route.externalHref ?? route.href,
         pathname,
-        searchParams
+        shellSearchParams
       ),
-    [pathname, searchParams]
+    [pathname, shellSearchParams]
   );
 
   useEffect(() => {
