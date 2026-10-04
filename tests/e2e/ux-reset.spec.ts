@@ -1,19 +1,51 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-async function expectHistoryPath(
+function isBenignHistoryNavigationError(error: unknown): boolean {
+  const message = String(error);
+  return (
+    message.includes("Execution context was destroyed") ||
+    message.includes("net::ERR_ABORTED") ||
+    message.includes("frame was detached")
+  );
+}
+
+/** Next.js App Router history steps often abort Playwright navigation waits. */
+async function expectHistoryNavigation(
   page: Page,
-  pathname: string,
-  direction: "back" | "forward"
+  direction: "back" | "forward",
+  matches: (url: URL) => boolean
 ) {
-  await Promise.all([
-    page.waitForURL((url) => url.pathname === pathname, {
-      waitUntil: "domcontentloaded",
-    }),
-    direction === "back"
-      ? page.goBack({ waitUntil: "domcontentloaded" })
-      : page.goForward({ waitUntil: "domcontentloaded" }),
-  ]);
+  const triggerHistoryStep = async () => {
+    try {
+      await page.goBack({ waitUntil: "commit", timeout: 5_000 });
+    } catch (error) {
+      if (!isBenignHistoryNavigationError(error)) {
+        throw error;
+      }
+    }
+  };
+
+  const triggerForwardStep = async () => {
+    try {
+      await page.goForward({ waitUntil: "commit", timeout: 5_000 });
+    } catch (error) {
+      if (!isBenignHistoryNavigationError(error)) {
+        throw error;
+      }
+    }
+  };
+
+  if (direction === "back") {
+    await triggerHistoryStep();
+  } else {
+    await triggerForwardStep();
+  }
+
+  await expect
+    .poll(() => matches(new URL(page.url())), { timeout: 15_000 })
+    .toBe(true);
+  await page.waitForLoadState("domcontentloaded");
 }
 
 test("preserves reset deep links through sign-in when auth is configured", async ({
@@ -164,13 +196,25 @@ test("bounded context survives rendered navigation, reload, and browser history"
   expect(url.pathname).toBe("/app/action");
   expect(url.searchParams.get("county")).toBe("08001");
 
-  await expectHistoryPath(page, "/app/investigate", "back");
+  await expectHistoryNavigation(
+    page,
+    "back",
+    (target) => target.pathname === "/app/investigate"
+  );
   expectInvestigateContext(new URL(page.url()));
 
-  await expectHistoryPath(page, "/app/compare", "back");
+  await expectHistoryNavigation(
+    page,
+    "back",
+    (target) => target.pathname === "/app/compare"
+  );
   expectCompareSelection(new URL(page.url()));
 
-  await expectHistoryPath(page, "/app/investigate", "forward");
+  await expectHistoryNavigation(
+    page,
+    "forward",
+    (target) => target.pathname === "/app/investigate"
+  );
   expectInvestigateContext(new URL(page.url()));
   await page
     .getByRole("navigation", { name: "Professional workspace" })
