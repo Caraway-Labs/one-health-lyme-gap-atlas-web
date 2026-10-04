@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ReadonlyURLSearchParams } from "next/navigation";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import ResetExplorePage from "@/app/app/explore/page";
 import ResetWorkspaceOverviewPage from "@/app/app/page";
@@ -12,16 +13,38 @@ import {
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
 let pathname: string = RESET_APP_PATH;
+const searchParams = new URLSearchParams();
+
+function stubDesktopMatchMedia() {
+  vi.stubGlobal(
+    "matchMedia",
+    (query: string): MediaQueryList =>
+      ({
+        addEventListener: () => {},
+        dispatchEvent: () => true,
+        matches: false,
+        media: query,
+        onchange: null,
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList
+  );
+}
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => pathname,
+  useSearchParams: () => searchParams as ReadonlyURLSearchParams,
 }));
 
 describe("UX Reset professional workspace", () => {
+  beforeEach(() => {
+    stubDesktopMatchMedia();
+  });
+
   afterEach(() => {
     cleanup();
     pathname = RESET_APP_PATH;
+    vi.unstubAllGlobals();
   });
 
   it("exposes all primary destinations in the route contract", () => {
@@ -94,7 +117,9 @@ describe("UX Reset professional workspace", () => {
     );
     expect(document.querySelector(".ux-reset-pro-app")).toBeTruthy();
     expect(screen.getByText("Professional workspace")).toBeTruthy();
-    expect(screen.queryByRole("link", { name: "Geographic Explorer" })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Geographic Explorer" })
+    ).toBeNull();
     expect(
       screen.getAllByRole("link", { name: "Open legacy Atlas" }).length
     ).toBeGreaterThan(0);

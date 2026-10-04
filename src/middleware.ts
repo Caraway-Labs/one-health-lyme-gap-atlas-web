@@ -1,7 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { shouldRedirectUnauthenticatedAppRoute } from "@/lib/auth/app-route-guard";
+import {
+  isSupabaseAuthConfigured,
+  shouldRedirectUnauthenticatedAppRoute,
+} from "@/lib/auth/app-route-guard";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 
 export async function middleware(request: NextRequest) {
@@ -9,7 +12,7 @@ export async function middleware(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  const supabaseConfigured = Boolean(url && publishableKey);
+  const supabaseConfigured = isSupabaseAuthConfigured(url, publishableKey);
 
   let userPresent = false;
 
@@ -40,6 +43,7 @@ export async function middleware(request: NextRequest) {
   if (
     shouldRedirectUnauthenticatedAppRoute({
       atlasE2E: process.env.ATLAS_E2E === "1",
+      nodeEnv: process.env.NODE_ENV ?? "production",
       pathname,
       supabaseConfigured,
       userPresent,

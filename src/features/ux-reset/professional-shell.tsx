@@ -2,7 +2,7 @@
 
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
@@ -24,12 +24,14 @@ import {
 import {
   LEGACY_ATLAS_PATH,
   RESET_ACCESS_NAV,
-  RESET_APP_PATH,
   RESET_WORKSPACE_NAV,
   RETURN_TO_LEGACY_ATLAS_LABEL,
   isResetRouteActive,
-  resetNavigationHref,
+  resetRouteById,
+  type ResetRoute,
 } from "@/features/ux-reset/paths";
+import { resetShellNavigationHref } from "@/features/ux-reset/shared-navigation-query";
+import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 
 export function ResetProfessionalShell({ children }: { children: ReactNode }) {
   return (
@@ -41,13 +43,23 @@ export function ResetProfessionalShell({ children }: { children: ReactNode }) {
 
 function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentSearch = searchParams.toString();
   const { mobileOpen, open, setMobileOpen } = useSidebar();
+  const isMobileViewport = useMobileViewport();
+  const mobileDrawerClosed = isMobileViewport && !mobileOpen;
   const sidebarRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const closeMobileNavigation = useCallback(
     () => setMobileOpen(false),
     [setMobileOpen]
+  );
+
+  const shellHref = useCallback(
+    (route: ResetRoute) =>
+      resetShellNavigationHref(route, currentSearch ? `?${currentSearch}` : ""),
+    [currentSearch]
   );
 
   useEffect(() => {
@@ -104,13 +116,18 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       <Sidebar
         id="ux-reset-pro-navigation"
         ref={sidebarRef}
+        aria-hidden={mobileDrawerClosed || undefined}
         aria-label="Professional workspace"
         aria-modal={mobileOpen || undefined}
+        className={
+          mobileDrawerClosed ? "ux-reset-sidebar-mobile-closed" : undefined
+        }
+        inert={mobileDrawerClosed || undefined}
         role={mobileOpen ? "dialog" : undefined}
       >
         <SidebarHeader>
           <Link
-            href={RESET_APP_PATH}
+            href={shellHref(resetRouteById("overview"))}
             aria-label="Atlas professional workspace"
             onClick={closeMobileNavigation}
           >
@@ -150,8 +167,10 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
                       <SidebarMenuButton
                         active={current}
                         aria-current={current ? "page" : undefined}
-                        href={resetNavigationHref(item)}
+                        aria-label={item.label}
+                        href={shellHref(item)}
                         onClick={closeMobileNavigation}
+                        tooltip={item.label}
                       >
                         <Icon aria-hidden="true" />
                         <span className="sidebar-item-label">{item.label}</span>
@@ -172,8 +191,10 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
                       <SidebarMenuButton
                         active={current}
                         aria-current={current ? "page" : undefined}
-                        href={resetNavigationHref(item)}
+                        aria-label={item.label}
+                        href={shellHref(item)}
                         onClick={closeMobileNavigation}
+                        tooltip={item.label}
                       >
                         <Icon aria-hidden="true" />
                         <span className="sidebar-item-label">{item.label}</span>
@@ -188,8 +209,10 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
+                    aria-label={RETURN_TO_LEGACY_ATLAS_LABEL}
                     href={LEGACY_ATLAS_PATH}
                     onClick={closeMobileNavigation}
+                    tooltip={RETURN_TO_LEGACY_ATLAS_LABEL}
                   >
                     <span className="sidebar-item-label">
                       {RETURN_TO_LEGACY_ATLAS_LABEL}
