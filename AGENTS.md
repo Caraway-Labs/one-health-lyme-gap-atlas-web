@@ -19,14 +19,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - MapLibre remains the geo rendering layer. Do not wrap or replace map rendering with shadcn.
 - Conversational AI / assistant UI is a separate track (`src/features/assistant`, evidence chat). Do not invent a second chat framework in this migration.
 - Follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). Run `npm run check:design-system` before completion. The `/design-system` gallery is unlinked internal reference, not a product surface.
-
-## UX Reset constitution (coding agents)
-
-For **UX Reset Phase 1** work (authenticated professional workspace under `/app/*` and related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation) unless an owner-approved issue or ADR explicitly changes them.
-
-- Run `npm run check:ux-reset` with other quality gates when touching Reset UI or this guidance.
-- Use [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives first; do not invent a parallel Reset design system.
-- Parent epic context: [GitHub #394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394).
 - Native HTML is correct when it is the better semantic choice. Documented exceptions:
 
 | Pattern | Location | Why native / domain CSS remains |
@@ -42,6 +34,18 @@ For **UX Reset Phase 1** work (authenticated professional workspace under `/app/
 | Assistant demo | `src/features/assistant` | Separate conversational product track |
 
 - Editorial dark-hero CTAs may use `.hero-cta-primary` and `.cta-on-dark` on top of Button/`buttonVariants`. Do not reintroduce generic `.button` or `.card` classes.
+
+<!-- BEGIN:ux-reset-constitution-agent-rules-407 -->
+
+## UX Reset constitution (coding agents)
+
+For **UX Reset Phase 1** work (authenticated professional workspace under `/app/*` and related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation) unless an owner-approved issue or ADR explicitly changes them.
+
+- Run `npm run check:ux-reset` with other quality gates when touching Reset UI or this guidance.
+- Use [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives first; do not invent a parallel Reset design system.
+- Parent epic context: [GitHub #394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394).
+
+<!-- END:ux-reset-constitution-agent-rules-407 -->
 
 ## Atlas web instructions
 
