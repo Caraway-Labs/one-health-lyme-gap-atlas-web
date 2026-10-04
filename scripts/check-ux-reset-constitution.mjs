@@ -59,6 +59,93 @@ const REQUIRED_AGENTS_SNIPPETS = [
   "BEGIN:ux-reset-constitution-agent-rules-407",
 ];
 
+const MISSING_IS_NOT_ZERO_HEADING = "### Missing is not zero";
+
+const API_METADATA_AUTHORITY_LINE =
+  "**API metadata is authoritative**; do not infer availability in the browser.";
+
+/**
+ * @param {string} constitution Full constitution markdown.
+ * @param {string} heading Subsection heading to extract (for example `### Missing is not zero`).
+ * @returns {string | null} Body text until the next heading, or null when the heading is absent.
+ */
+function subsectionBodyAfterHeading(constitution, heading) {
+  const start = constitution.indexOf(heading);
+  if (start === -1) {
+    return null;
+  }
+  const afterHeading = constitution.slice(start + heading.length);
+  const nextHeading = afterHeading.search(/\n#{2,3} /);
+  if (nextHeading === -1) {
+    return afterHeading;
+  }
+  return afterHeading.slice(0, nextHeading);
+}
+
+/**
+ * Bounded rule checks — reject heading-only or contradicted rules while markers remain.
+ * @param {string} constitution Full constitution markdown.
+ * @returns {string[]} Rule violation messages; empty when all bounded rules pass.
+ */
+function validateConstitutionRules(constitution) {
+  const issues = [];
+
+  const missingBody = subsectionBodyAfterHeading(
+    constitution,
+    MISSING_IS_NOT_ZERO_HEADING
+  );
+  if (missingBody === null) {
+    issues.push(
+      'constitution: rule "missing-is-not-zero-body": section heading not found'
+    );
+  } else if (missingBody.trim().length < 40) {
+    issues.push(
+      'constitution: rule "missing-is-not-zero-body": section body removed or empty'
+    );
+  } else if (!missingBody.includes("not converted to zero")) {
+    issues.push(
+      'constitution: rule "missing-is-not-zero-body": must state missing records are not converted to zero'
+    );
+  } else if (!missingBody.includes("Observed or published zero")) {
+    issues.push(
+      'constitution: rule "missing-is-not-zero-body": must distinguish observed or published zero'
+    );
+  }
+
+  if (!constitution.includes(API_METADATA_AUTHORITY_LINE)) {
+    issues.push(
+      'constitution: rule "api-metadata-authoritative": must require authoritative API metadata without optional browser inference'
+    );
+  }
+
+  const evidenceBlockStart = constitution.indexOf(
+    "## Evidence states: Available, Limited, Unavailable"
+  );
+  const evidenceBlockEnd = constitution.indexOf("## Semantic color");
+  if (evidenceBlockStart !== -1 && evidenceBlockEnd !== -1) {
+    const evidenceBlock = constitution.slice(
+      evidenceBlockStart,
+      evidenceBlockEnd
+    );
+    if (/\boptional\b/i.test(evidenceBlock)) {
+      issues.push(
+        'constitution: rule "api-metadata-authoritative": optional wording is not allowed in evidence semantics'
+      );
+    }
+    if (/API metadata is optional/i.test(evidenceBlock)) {
+      issues.push(
+        'constitution: rule "api-metadata-authoritative": API metadata must not be described as optional'
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * @param {string} constitution Full constitution markdown.
+ * @returns {string[]} Validation issues; empty when the text satisfies the guard.
+ */
 export function validateConstitutionText(constitution) {
   const issues = [];
 
@@ -85,6 +172,8 @@ export function validateConstitutionText(constitution) {
       );
     }
   }
+
+  issues.push(...validateConstitutionRules(constitution));
 
   return issues;
 }

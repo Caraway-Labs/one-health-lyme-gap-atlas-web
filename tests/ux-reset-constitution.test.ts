@@ -80,6 +80,31 @@ describe("UX Reset constitution guard", () => {
     expect(issues.some((issue) => issue.includes("AGENTS.md"))).toBeTruthy();
   });
 
+  it("fails when Missing-is-not-zero body is stripped but the heading remains", () => {
+    const mutated = readFileSync(
+      path.join(FIXTURES, "missing-is-not-zero-body-stripped.md"),
+      "utf-8"
+    );
+    const issues = validateConstitutionText(mutated);
+    expect(
+      issues.some((issue) => issue.includes('rule "missing-is-not-zero-body"'))
+    ).toBeTruthy();
+  });
+
+  it("fails when API metadata authority is weakened while the phrase survives", () => {
+    const mutated = readFileSync(
+      path.join(FIXTURES, "api-metadata-marked-optional.md"),
+      "utf-8"
+    );
+    expect(mutated).toContain("API metadata is authoritative");
+    const issues = validateConstitutionText(mutated);
+    expect(
+      issues.some((issue) =>
+        issue.includes('rule "api-metadata-authoritative"')
+      )
+    ).toBeTruthy();
+  });
+
   it("fails for a headings-only constitution without substantive rules", () => {
     const headingsOnly = readFileSync(
       path.join(FIXTURES, "headings-only.md"),
