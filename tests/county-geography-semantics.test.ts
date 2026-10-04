@@ -108,6 +108,13 @@ describe("county display versus analysis geography semantics", () => {
     expect(
       countyDisplayGeometryQueryKey("explorer", "alpha-2026")
     ).toStrictEqual(["county-display-geometry", "explorer", "alpha-2026"]);
+    expect(
+      countyDisplayGeometryQueryKey("ux-reset-explore", "alpha-2026")
+    ).toStrictEqual([
+      "county-display-geometry",
+      "ux-reset-explore",
+      "alpha-2026",
+    ]);
   });
 
   it("joins environmental context to counties by FIPS without geometry", () => {

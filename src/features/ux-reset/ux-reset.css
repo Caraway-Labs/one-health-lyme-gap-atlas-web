@@ -110,6 +110,89 @@
   gap: var(--space-3);
 }
 
+.ux-reset-explore-header {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-explore-toolbar {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-explore-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-explore-results {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-explore-layout {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-explore-selection {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  padding: var(--space-3);
+}
+
+.ux-reset-explore-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ux-reset-explore-compare-pair {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-explore-compare-pair li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Editorial link color in the professional main area overrides button text. */
+.ux-reset-pro-main a.ux-reset-explore-action {
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.ux-reset-pro-main a.ux-reset-explore-action[data-variant="primary"] {
+  color: var(--primary-foreground);
+}
+
+.ux-reset-pro-main a.ux-reset-explore-action[data-variant="secondary"] {
+  color: var(--secondary-foreground);
+}
+
+@media (min-width: 960px) {
+  .ux-reset-explore-toolbar,
+  .ux-reset-explore-layout {
+    grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.9fr);
+  }
+}
+
 .ux-reset-review-state-grid-scroll {
   overflow-x: auto;
   padding-bottom: var(--space-2);
