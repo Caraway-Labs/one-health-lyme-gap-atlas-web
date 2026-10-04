@@ -3,7 +3,7 @@
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -73,9 +73,24 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   }, [isMobileViewport, mobileOpen, setMobileOpen]);
 
   useEffect(() => {
+    if (mobileOpen) {
+      return;
+    }
+    previousFocusRef.current?.focus();
+    previousFocusRef.current = null;
+  }, [mobileOpen]);
+
+  useLayoutEffect(() => {
+    if (!(mobileOpen && isMobileViewport)) {
+      return;
+    }
+    sidebarRef.current
+      ?.querySelector<HTMLElement>(".app-mobile-nav-close")
+      ?.focus({ preventScroll: true });
+  }, [isMobileViewport, mobileOpen]);
+
+  useEffect(() => {
     if (!mobileDrawerActive) {
-      previousFocusRef.current?.focus();
-      previousFocusRef.current = null;
       return;
     }
 
@@ -87,7 +102,6 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     const focusableElements = () => [
       ...sidebar.querySelectorAll<HTMLElement>(focusableSelector),
     ];
-    sidebar.querySelector<HTMLElement>(".app-mobile-nav-close")?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
