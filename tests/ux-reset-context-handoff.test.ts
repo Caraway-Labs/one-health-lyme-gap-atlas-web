@@ -16,6 +16,13 @@ import {
 } from "@/features/ux-reset/context-params";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
 
+import {
+  FIXTURE_HANDOFF_PAIRS,
+  FIXTURE_MALFORMED_HANDOFF_CASES,
+  fixtureRichSourceQuery,
+  fixtureSourceKeysExpectedDropped,
+} from "./fixtures/ux-reset-handoff-contract.fixture";
+
 function querySnapshot(params: URLSearchParams) {
   return Object.fromEntries(params.entries());
 }
@@ -212,6 +219,43 @@ describe("UX Reset cross-page context contract", () => {
         source
       ).params.toString()
     ).toBe("");
+  });
+
+  describe("table-driven handoff contract matrix (fixture policy)", () => {
+    it.each(FIXTURE_HANDOFF_PAIRS)(
+      "$source → $destination retains canonical shared context per fixture policy",
+      ({ destination, retained, source }) => {
+        const sourceParams = fixtureRichSourceQuery(source);
+        const { dropped, params } = uxResetContextHandoffSearchParams(
+          UX_RESET_ROUTE_PATHS[source],
+          UX_RESET_ROUTE_PATHS[destination],
+          sourceParams
+        );
+        expect(querySnapshot(params)).toStrictEqual(retained);
+        for (const key of fixtureSourceKeysExpectedDropped(
+          sourceParams,
+          retained
+        )) {
+          expect(dropped).toContain(key);
+        }
+      }
+    );
+
+    it.each(FIXTURE_MALFORMED_HANDOFF_CASES)(
+      "malformed: $label ($source → $destination)",
+      ({ destination, mustDrop, query, retained, source }) => {
+        const sourceParams = new URLSearchParams(query);
+        const { dropped, params } = uxResetContextHandoffSearchParams(
+          UX_RESET_ROUTE_PATHS[source],
+          UX_RESET_ROUTE_PATHS[destination],
+          sourceParams
+        );
+        expect(querySnapshot(params)).toStrictEqual(retained);
+        for (const key of mustDrop) {
+          expect(dropped).toContain(key);
+        }
+      }
+    );
   });
 
   it("round-trips parsed shared context through search params", () => {
