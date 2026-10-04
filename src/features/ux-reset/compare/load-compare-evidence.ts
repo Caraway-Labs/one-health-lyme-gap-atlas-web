@@ -32,6 +32,131 @@ import { isCountyFips } from "@/lib/county-geography";
 
 const MAX_COLLECTION_PAGES = 20;
 const COMPARE_OBSERVATION_CONCURRENCY = 5;
+const TRANSIENT_ATTEMPT_LIMIT = 3;
+const MILLISECONDS_PER_SECOND = 1000;
+const UNSCHEDULED_RETRY_BACKOFF_MS = 50;
+
+type CompareCooldownScope = {
+  leftFips: string;
+  measureId: string;
+  period: string | null;
+  releaseId: string;
+  rightFips: string;
+};
+
+/**
+ * Deadlines received from Retry-After. Kept outside the evidence query so an
+ * abort during the wait does not leave the previous alignment as the only record.
+ */
+const observationRetryDeadlines = new Map<string, number>();
+
+function observationCooldownKey(scope: CompareCooldownScope): string {
+  return [
+    scope.releaseId,
+    scope.leftFips,
+    scope.rightFips,
+    scope.period ?? "",
+    scope.measureId,
+  ].join("\u0000");
+}
+
+function rememberObservationCooldown(
+  scope: CompareCooldownScope,
+  retryAfterSeconds: number | null
+): void {
+  if (retryAfterSeconds === null || retryAfterSeconds < 0) {
+    return;
+  }
+  const retryAtMs = Date.now() + retryAfterSeconds * MILLISECONDS_PER_SECOND;
+  const key = observationCooldownKey(scope);
+  const existing = observationRetryDeadlines.get(key);
+  if (existing === undefined || retryAtMs > existing) {
+    observationRetryDeadlines.set(key, retryAtMs);
+  }
+}
+
+function rememberedCooldownMs(scope: CompareCooldownScope): number | null {
+  return observationRetryDeadlines.get(observationCooldownKey(scope)) ?? null;
+}
+
+function forgetObservationCooldown(scope: CompareCooldownScope): void {
+  observationRetryDeadlines.delete(observationCooldownKey(scope));
+}
+
+/** Drops pair-scoped deadlines. Tests use this so later cases are not blocked. */
+export function clearCompareObservationRetryDeadlines(): void {
+  observationRetryDeadlines.clear();
+}
+
+function isTransientStatus(status: number): boolean {
+  return status === 429 || (status >= 500 && status < 600);
+}
+
+/**
+ * Server Retry-After is waited in full. Shortening it spends the retry budget
+ * before the API allows another read. A missing header uses a short backoff.
+ */
+function transientDelayMs(
+  retryAfterSeconds: number | null,
+  attempt: number
+): number {
+  if (retryAfterSeconds !== null && retryAfterSeconds >= 0) {
+    return retryAfterSeconds * MILLISECONDS_PER_SECOND;
+  }
+  return UNSCHEDULED_RETRY_BACKOFF_MS * attempt;
+}
+
+function retryAfterSecondsFromHeaders(
+  headers: Headers | undefined
+): number | null {
+  const value = headers?.get("Retry-After") ?? null;
+  if (!value) {
+    return null;
+  }
+  const asInteger = Number.parseInt(value, 10);
+  if (String(asInteger) === value.trim() && asInteger >= 0) {
+    return asInteger;
+  }
+  const asDate = Date.parse(value);
+  if (Number.isNaN(asDate)) {
+    return null;
+  }
+  return Math.max(
+    0,
+    Math.ceil((asDate - Date.now()) / MILLISECONDS_PER_SECOND)
+  );
+}
+
+async function delay(ms: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
+  if (ms <= 0) {
+    return;
+  }
+  const { promise, reject, resolve } = Promise.withResolvers<boolean>();
+  const timer = setTimeout(() => {
+    signal.removeEventListener("abort", onAbort);
+    resolve(true);
+  }, ms);
+  const onAbort = () => {
+    clearTimeout(timer);
+    reject(new DOMException("Aborted", "AbortError"));
+  };
+  signal.addEventListener("abort", onAbort, { once: true });
+  await promise;
+}
+
+/** Absolute time of the latest Retry-After. Exhausted attempts must keep it. */
+function retryAtMsFromError(error: unknown): number | null {
+  if (!(error instanceof AtlasApiError) || error.retryAfterSeconds === null) {
+    return null;
+  }
+  if (error.retryAfterSeconds < 0) {
+    return null;
+  }
+  return Date.now() + error.retryAfterSeconds * MILLISECONDS_PER_SECOND;
+}
 
 export type CompareContractCode =
   | "identity_mismatch"
@@ -215,9 +340,61 @@ function acceptPairObservations(input: {
   return accepted;
 }
 
+async function readCompareObservationPage(
+  params: ObservationsV1ObservationsGetParams,
+  scope: CompareCooldownScope,
+  signal: AbortSignal
+) {
+  for (let attempt = 1; attempt <= TRANSIENT_ATTEMPT_LIMIT; attempt += 1) {
+    try {
+      const response = await observationsV1ObservationsGet(params, { signal });
+      if (response.status === 200) {
+        forgetObservationCooldown(scope);
+        return response;
+      }
+      const retryAfter = retryAfterSecondsFromHeaders(response.headers);
+      rememberObservationCooldown(scope, retryAfter);
+      const retryable =
+        isTransientStatus(response.status) && attempt < TRANSIENT_ATTEMPT_LIMIT;
+      if (!retryable) {
+        throw new AtlasApiError(
+          "Governed observations could not be loaded.",
+          "/v1/observations",
+          response.status,
+          null,
+          retryAfter
+        );
+      }
+      await delay(transientDelayMs(retryAfter, attempt), signal);
+    } catch (error) {
+      if (isAbortError(error) || signal.aborted) {
+        throw error;
+      }
+      if (error instanceof AtlasApiError) {
+        rememberObservationCooldown(scope, error.retryAfterSeconds);
+      }
+      const retryable =
+        error instanceof AtlasApiError &&
+        isTransientStatus(error.status) &&
+        attempt < TRANSIENT_ATTEMPT_LIMIT;
+      if (!retryable) {
+        throw error;
+      }
+      await delay(transientDelayMs(error.retryAfterSeconds, attempt), signal);
+    }
+  }
+  throw new AtlasApiError(
+    "Governed observations could not be loaded.",
+    "/v1/observations",
+    503,
+    null
+  );
+}
+
 async function fetchCompareObservations(input: {
   measureId: string;
   pair: readonly [string, string];
+  period: string | null;
   releaseId: string;
   signal: AbortSignal;
   timeBound: ExploreTimeBound;
@@ -225,6 +402,13 @@ async function fetchCompareObservations(input: {
   const collected: Observation[] = [];
   const seenTokens = new Set<string>();
   let pageToken: string | null = null;
+  const scope: CompareCooldownScope = {
+    leftFips: input.pair[0],
+    measureId: input.measureId,
+    period: input.period,
+    releaseId: input.releaseId,
+    rightFips: input.pair[1],
+  };
   for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
     const params = buildCompareObservationParams({
       measureId: input.measureId,
@@ -232,17 +416,11 @@ async function fetchCompareObservations(input: {
       pair: input.pair,
       timeBound: input.timeBound,
     });
-    const response = await observationsV1ObservationsGet(params, {
-      signal: input.signal,
-    });
-    if (response.status !== 200) {
-      throw new AtlasApiError(
-        "Governed observations could not be loaded.",
-        "/v1/observations",
-        response.status,
-        null
-      );
-    }
+    const response = await readCompareObservationPage(
+      params,
+      scope,
+      input.signal
+    );
     const parsed = validateApiResponse(
       "Observations",
       ObservationsV1ObservationsGetResponse,
@@ -265,6 +443,111 @@ async function fetchCompareObservations(input: {
   });
 }
 
+export type CompareRetryCooldown = {
+  measureId: string;
+  retryAtMs: number;
+};
+
+/** Ready rows kept while failed measures are requested again. */
+export type PreservedCompareMeasures = {
+  leftFips: string;
+  outcomes: readonly CompareMeasureOutcome[];
+  period: string | null;
+  releaseId: string;
+  rightFips: string;
+};
+
+function reusableCompareOutcomes(
+  outcomes: readonly CompareMeasureOutcome[]
+): CompareMeasureOutcome[] {
+  return outcomes.filter(
+    (outcome) =>
+      outcome.status === "ready" || outcome.status === "unsupported_period"
+  );
+}
+
+function preservedForRequest(input: {
+  leftFips: string;
+  measures: readonly Measure[];
+  period: string | null;
+  preserve: PreservedCompareMeasures | null;
+  releaseId: string;
+  rightFips: string;
+}): CompareMeasureOutcome[] {
+  const preserve = input.preserve;
+  if (
+    !preserve ||
+    preserve.leftFips !== input.leftFips ||
+    preserve.rightFips !== input.rightFips ||
+    preserve.releaseId !== input.releaseId ||
+    preserve.period !== input.period
+  ) {
+    return [];
+  }
+  const measureIds = new Set(
+    input.measures.map((measure) => measure.measure_id)
+  );
+  return reusableCompareOutcomes(preserve.outcomes).filter((outcome) =>
+    measureIds.has(outcome.measureId)
+  );
+}
+
+async function waitForMeasureCooldown(input: {
+  cooldowns: readonly CompareRetryCooldown[] | null | undefined;
+  scope: CompareCooldownScope;
+  signal: AbortSignal;
+}): Promise<void> {
+  const fromAlignment = input.cooldowns?.find(
+    (entry) => entry.measureId === input.scope.measureId
+  )?.retryAtMs;
+  const retryAtMs = Math.max(
+    fromAlignment ?? 0,
+    rememberedCooldownMs(input.scope) ?? 0
+  );
+  await delay(retryAtMs - Date.now(), input.signal);
+}
+
+export function compareRetryCooldowns(
+  alignment: CompareAlignment | undefined
+): CompareRetryCooldown[] {
+  const cooldowns: CompareRetryCooldown[] = [];
+  for (const outcome of alignment?.outcomes ?? []) {
+    if (outcome.status === "failed" && outcome.retryAtMs !== null) {
+      cooldowns.push({
+        measureId: outcome.measureId,
+        retryAtMs: outcome.retryAtMs,
+      });
+    }
+  }
+  return cooldowns;
+}
+
+export function preservedCompareMeasures(input: {
+  alignment: CompareAlignment | undefined;
+  leftFips: string;
+  period: string | null;
+  releaseId: string;
+  rightFips: string;
+}): PreservedCompareMeasures | null {
+  const alignment = input.alignment;
+  if (
+    !alignment ||
+    alignment.leftFips !== input.leftFips ||
+    alignment.rightFips !== input.rightFips ||
+    alignment.releaseId !== input.releaseId ||
+    (alignment.period ?? null) !== input.period
+  ) {
+    return null;
+  }
+  return {
+    leftFips: input.leftFips,
+    outcomes: reusableCompareOutcomes(alignment.outcomes),
+    period: input.period,
+    releaseId: input.releaseId,
+    rightFips: input.rightFips,
+  };
+}
+
 function failureMessage(error: unknown): string {
   if (
     error instanceof CompareContractError ||
@@ -276,10 +559,12 @@ function failureMessage(error: unknown): string {
 }
 
 export async function loadCompareEvidence(input: {
+  cooldowns?: readonly CompareRetryCooldown[] | null;
   leftFips: string;
   leftLabel: string;
   measures: readonly Measure[];
   period: string | null;
+  preserve?: PreservedCompareMeasures | null;
   releaseId: string;
   rightFips: string;
   rightLabel: string;
@@ -293,8 +578,20 @@ export async function loadCompareEvidence(input: {
       "rejected"
     );
   }
-  const outcomes: CompareMeasureOutcome[] = await mapWithConcurrency(
-    input.measures,
+  const preserved = preservedForRequest({
+    leftFips: input.leftFips,
+    measures: input.measures,
+    period: input.period,
+    preserve: input.preserve ?? null,
+    releaseId: input.releaseId,
+    rightFips: input.rightFips,
+  });
+  const preservedIds = new Set(preserved.map((outcome) => outcome.measureId));
+  const measuresToFetch = input.measures.filter(
+    (measure) => !preservedIds.has(measure.measure_id)
+  );
+  const fetched: CompareMeasureOutcome[] = await mapWithConcurrency(
+    measuresToFetch,
     COMPARE_OBSERVATION_CONCURRENCY,
     async (measure) => {
       const timeBound = resolveExploreTimeBound(measure, input.period);
@@ -304,10 +601,23 @@ export async function loadCompareEvidence(input: {
           status: "unsupported_period" as const,
         };
       }
+      const scope: CompareCooldownScope = {
+        leftFips: pair[0],
+        measureId: measure.measure_id,
+        period: input.period,
+        releaseId: input.releaseId,
+        rightFips: pair[1],
+      };
       try {
+        await waitForMeasureCooldown({
+          cooldowns: input.cooldowns,
+          scope,
+          signal: input.signal,
+        });
         const observations = await fetchCompareObservations({
           measureId: measure.measure_id,
           pair,
+          period: input.period,
           releaseId: input.releaseId,
           signal: input.signal,
           timeBound,
@@ -324,17 +634,23 @@ export async function loadCompareEvidence(input: {
         return {
           measureId: measure.measure_id,
           message: failureMessage(error),
+          retryAtMs: retryAtMsFromError(error),
           status: "failed" as const,
         };
       }
     }
   );
-  return alignCompareEvidence({
-    leftFips: input.leftFips,
-    leftLabel: input.leftLabel,
-    measures: input.measures,
-    outcomes,
-    rightFips: input.rightFips,
-    rightLabel: input.rightLabel,
-  });
+  const outcomes = [...preserved, ...fetched];
+  return {
+    ...alignCompareEvidence({
+      leftFips: input.leftFips,
+      leftLabel: input.leftLabel,
+      measures: input.measures,
+      outcomes,
+      rightFips: input.rightFips,
+      rightLabel: input.rightLabel,
+    }),
+    period: input.period,
+    releaseId: input.releaseId,
+  };
 }

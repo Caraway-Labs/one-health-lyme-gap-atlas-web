@@ -6,8 +6,11 @@ import {
   type CompareRelation,
 } from "@/features/ux-reset/compare/compare-alignment";
 import {
+  clearCompareObservationRetryDeadlines,
   compareObservationRequestRejection,
+  compareRetryCooldowns,
   loadCompareEvidence,
+  preservedCompareMeasures,
 } from "@/features/ux-reset/compare/load-compare-evidence";
 import type { Measure } from "@/generated/models";
 import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
@@ -72,7 +75,9 @@ function observationsForRequest(url: URL) {
 
 describe("compare evidence loading through the generated client", () => {
   afterEach(() => {
+    clearCompareObservationRetryDeadlines();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
     requests.length = 0;
   });
 
@@ -311,6 +316,181 @@ describe("compare evidence loading through the generated client", () => {
     expect(alignment.rows[0]?.left).toMatchObject({
       kind: "empty",
       reason: "failed",
+    });
+  });
+
+  it("retries a 503 and uses the later successful observation", async () => {
+    let failures = 1;
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requests.push(url.searchParams.get("measure_id") ?? "");
+      if (failures > 0) {
+        failures -= 1;
+        return jsonResponse({ detail: "unavailable" }, 503);
+      }
+      return jsonResponse(
+        ObservationsV1ObservationsGetResponse.parse({
+          data: observationsForRequest(url),
+          links: { self: "/v1/observations" },
+          meta: {},
+        })
+      );
+    });
+    const alignment = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: compareMeasuresFixture.filter(
+        (measure) => measure.measure_id === COMPARE_CASES_MEASURE_ID
+      ),
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    expect({
+      relation: alignment.rows[0]?.relation.kind,
+      requests: [...requests],
+    }).toStrictEqual({
+      relation: "different",
+      requests: [COMPARE_CASES_MEASURE_ID, COMPARE_CASES_MEASURE_ID],
+    });
+  });
+
+  it("waits the full Retry-After before the next observation attempt", async () => {
+    vi.useFakeTimers();
+    let failures = 1;
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requests.push(url.searchParams.get("measure_id") ?? "");
+      if (failures > 0) {
+        failures -= 1;
+        return Response.json(
+          { detail: "slow" },
+          {
+            headers: {
+              "content-type": "application/json",
+              "retry-after": "60",
+            },
+            status: 429,
+          }
+        );
+      }
+      return jsonResponse(
+        ObservationsV1ObservationsGetResponse.parse({
+          data: observationsForRequest(url),
+          links: { self: "/v1/observations" },
+          meta: {},
+        })
+      );
+    });
+    const pending = loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: compareMeasuresFixture.filter(
+        (measure) => measure.measure_id === COMPARE_CASES_MEASURE_ID
+      ),
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    const atStart = requests.length;
+    await vi.advanceTimersByTimeAsync(59_000);
+    const beforeRetry = requests.length;
+    await vi.advanceTimersByTimeAsync(1000);
+    const alignment = await pending;
+    expect({
+      atStart,
+      beforeRetry,
+      relation: alignment.rows[0]?.relation.kind,
+      requests: requests.length,
+    }).toStrictEqual({
+      atStart: 1,
+      beforeRetry: 1,
+      relation: "different",
+      requests: 2,
+    });
+  });
+
+  it("retries a failed measure without requesting one that already loaded", async () => {
+    const failures = new Map<string, number>([[COMPARE_TICK_MEASURE_ID, 99]]);
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const measureId = url.searchParams.get("measure_id") ?? "";
+      requests.push(measureId);
+      const remaining = failures.get(measureId) ?? 0;
+      if (remaining > 0) {
+        failures.set(measureId, remaining - 1);
+        return jsonResponse({ detail: "unavailable" }, 503);
+      }
+      return jsonResponse(
+        ObservationsV1ObservationsGetResponse.parse({
+          data: compareObservationsFor({
+            fips: url.searchParams.getAll("geography_id"),
+            measureId,
+          }),
+          links: { self: "/v1/observations" },
+          meta: {},
+        })
+      );
+    });
+    const measures = compareMeasuresFixture.filter((measure) =>
+      [COMPARE_CASES_MEASURE_ID, COMPARE_TICK_MEASURE_ID].includes(
+        measure.measure_id
+      )
+    );
+    const first = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const caseCalls = requests.filter(
+      (measureId) => measureId === COMPARE_CASES_MEASURE_ID
+    ).length;
+    failures.set(COMPARE_TICK_MEASURE_ID, 0);
+    const second = await loadCompareEvidence({
+      cooldowns: compareRetryCooldowns(first),
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      preserve: preservedCompareMeasures({
+        alignment: first,
+        leftFips: COMPARE_LEFT_FIPS,
+        period: null,
+        releaseId: COMPARE_RELEASE_ID,
+        rightFips: COMPARE_RIGHT_FIPS,
+      }),
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const outcomeStatus = (alignment: typeof first, measureId: string) =>
+      alignment.outcomes.find((outcome) => outcome.measureId === measureId)
+        ?.status ?? "";
+    expect({
+      caseCallsAfter: requests.filter(
+        (measureId) => measureId === COMPARE_CASES_MEASURE_ID
+      ).length,
+      firstTick: outcomeStatus(first, COMPARE_TICK_MEASURE_ID),
+      secondCases: outcomeStatus(second, COMPARE_CASES_MEASURE_ID),
+      secondTick: outcomeStatus(second, COMPARE_TICK_MEASURE_ID),
+      unchangedCaseCalls: caseCalls,
+    }).toStrictEqual({
+      caseCallsAfter: caseCalls,
+      firstTick: "failed",
+      secondCases: "ready",
+      secondTick: "ready",
+      unchangedCaseCalls: caseCalls,
     });
   });
 });

@@ -8,8 +8,9 @@ import { ValueState } from "@/generated/models";
 /**
  * Comparability for Reset V1 uses governed fields already on the observation
  * and its catalog measure. A numeric difference is withheld unless measure
- * identity, unit, period, release, methodology, denominator, strata, and
- * geography type all match and both values are published numbers.
+ * identity, unit, period, release, method identity, methodology version,
+ * denominator, strata, and geography type all match and both values are
+ * published numbers.
  * API comparability metadata beyond these fields stays with issue 419.
  */
 export const compareWithholdReasonValues = {
@@ -73,6 +74,10 @@ export type CompareAlignedRow = {
 export type CompareAlignment = {
   leftFips: string;
   rightFips: string;
+  outcomes: readonly CompareMeasureOutcome[];
+  /** Period used to load this alignment. Absent on alignments built only for row tests. */
+  period?: string | null;
+  releaseId?: string;
   rows: readonly CompareAlignedRow[];
 };
 
@@ -85,6 +90,8 @@ export type CompareMeasureOutcome =
   | {
       measureId: string;
       message: string;
+      /** Epoch ms from Retry-After. Null when the failure did not name a wait. */
+      retryAtMs: number | null;
       status: "failed";
     }
   | {
@@ -99,6 +106,11 @@ const UNSUPPORTED_PERIOD_MESSAGE =
 
 function canonicalText(value: string | null | undefined): string {
   return value?.trim() ?? "";
+}
+
+function methodIdentityLabel(value: string | null | undefined): string {
+  const text = canonicalText(value);
+  return text.length > 0 ? text : "none";
 }
 
 function canonicalStrata(strata: Observation["strata"]): string {
@@ -283,6 +295,14 @@ function relationForPair(
     details.push(`Units differ (${left.unit} and ${right.unit}).`);
   }
   if (
+    canonicalText(left.methodology_id) !== canonicalText(right.methodology_id)
+  ) {
+    reasons.push(compareWithholdReasonValues.methodologyMismatch);
+    details.push(
+      `Governed method identities differ (${methodIdentityLabel(left.methodology_id)} and ${methodIdentityLabel(right.methodology_id)}).`
+    );
+  }
+  if (
     canonicalText(left.methodology_version) !==
     canonicalText(right.methodology_version)
   ) {
@@ -405,6 +425,7 @@ export function alignCompareEvidence(input: {
           measureId: measure.measure_id,
           message:
             "An observation did not match this measure and the two counties.",
+          retryAtMs: null,
           status: "failed",
         }
       : outcome;
@@ -440,6 +461,7 @@ export function alignCompareEvidence(input: {
   }
   return {
     leftFips: input.leftFips,
+    outcomes: input.outcomes,
     rightFips: input.rightFips,
     rows,
   };

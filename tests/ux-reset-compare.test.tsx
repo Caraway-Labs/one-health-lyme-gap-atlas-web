@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
 import { ResetCompareExperience } from "@/features/ux-reset/compare/reset-compare-experience";
+import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
 import {
   COMPARE_CANOPY_MEASURE_ID,
@@ -27,6 +28,9 @@ import {
 import { investigateMetadataFixture } from "./fixtures/investigate-api-fixtures";
 
 const observationRequests: string[] = [];
+const catalogRequests: string[] = [];
+const observationFailureBudgets = new Map<string, number>();
+let catalogFailuresRemaining = 0;
 let navigationSearchParams = new URLSearchParams();
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
@@ -42,6 +46,15 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     measuresV1MeasuresGet: vi.fn<
       typeof import("@/generated/atlas").measuresV1MeasuresGet
     >(async (params) => {
+      catalogRequests.push(params?.geography_type ?? "");
+      if (catalogFailuresRemaining > 0) {
+        catalogFailuresRemaining -= 1;
+        return {
+          data: { detail: "unavailable" },
+          headers: new Headers(),
+          status: 503,
+        } as never;
+      }
       if (params?.page_token === null || params?.geography_type === "county") {
         return {
           data: { detail: "invalid catalog request" },
@@ -78,6 +91,16 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
       typeof import("@/generated/atlas").observationsV1ObservationsGet
     >(async (params) => {
       observationRequests.push(JSON.stringify(params));
+      const failuresLeft =
+        observationFailureBudgets.get(params.measure_id) ?? 0;
+      if (failuresLeft > 0) {
+        observationFailureBudgets.set(params.measure_id, failuresLeft - 1);
+        return {
+          data: { detail: "unavailable" },
+          headers: new Headers(),
+          status: 503,
+        } as never;
+      }
       if (compareObservationRequestRejection(params) !== null) {
         return {
           data: { detail: "invalid observation request" },
@@ -117,10 +140,10 @@ function setSearch(search: string) {
   );
 }
 
-function renderCompare(search: string) {
+function renderCompare(search: string, retry: boolean | number = false) {
   setSearch(search);
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry, retryDelay: 0 } },
   });
   const view = render(
     <QueryClientProvider client={client}>
@@ -171,7 +194,11 @@ function cell(measureId: string, fips: string) {
 describe("two-county aligned comparison", () => {
   afterEach(() => {
     cleanup();
+    catalogFailuresRemaining = 0;
+    catalogRequests.length = 0;
+    observationFailureBudgets.clear();
     observationRequests.length = 0;
+    vi.unstubAllGlobals();
   });
 
   it("asks for two counties on a direct link with none", async () => {
@@ -396,5 +423,139 @@ describe("two-county aligned comparison", () => {
     );
     expect(screen.queryByTestId("compare-alignment")).toBeNull();
     expect(observationRequests).toStrictEqual([]);
+  });
+
+  it("pins the resolved release on sidebar and in-page links when the URL omits dataset", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      (query: string): MediaQueryList =>
+        ({
+          addEventListener: () => {},
+          dispatchEvent: () => true,
+          matches: false,
+          media: query,
+          onchange: null,
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList
+    );
+    setSearch("compare=08001,08013&scope=CO");
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, retryDelay: 0 } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter
+          hasMemory
+          searchParams="?compare=08001,08013&scope=CO"
+        >
+          <ResetProfessionalShell>
+            <ResetCompareExperience />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
+    );
+    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    const navigation = screen.getByRole("navigation", {
+      name: "Professional workspace",
+    });
+    const sidebarHref =
+      navigation
+        .querySelector('a[href^="/app/action"]')
+        ?.getAttribute("href") ?? "";
+    const pageHref =
+      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect({
+      pageDataset: pageHref.includes("dataset=alpha-2026"),
+      pagePair: pageHref.includes("compare=08001%2C08013"),
+      sidebarDataset: sidebarHref.includes("dataset=alpha-2026"),
+      sidebarPair: sidebarHref.includes("compare=08001%2C08013"),
+    }).toStrictEqual({
+      pageDataset: true,
+      pagePair: true,
+      sidebarDataset: true,
+      sidebarPair: true,
+    });
+  });
+
+  it("surfaces an exhausted measure catalog and recovers the same pair", async () => {
+    catalogFailuresRemaining = 99;
+    renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=2024-06-01",
+      1
+    );
+    await waitForPair("08001,08013");
+    const alert = await screen.findByRole("alert");
+    const actionHref =
+      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect({
+      alignment: screen.queryByTestId("compare-alignment"),
+      catalogCalls: catalogRequests.length,
+      keepsContext: actionHref.includes("compare=08001%2C08013"),
+      keepsPeriod: actionHref.includes("period=2024-06-01"),
+      message: (alert.textContent ?? "").includes(
+        "Governed measures could not be loaded."
+      ),
+    }).toStrictEqual({
+      alignment: null,
+      catalogCalls: 2,
+      keepsContext: true,
+      keepsPeriod: true,
+      message: true,
+    });
+    catalogFailuresRemaining = 0;
+    fireEvent.click(screen.getByTestId("compare-retry-catalog"));
+    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    const recoveredHref =
+      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect({
+      pair: pairFips(),
+      period: recoveredHref.includes("period=2024-06-01"),
+      recovery: screen.getByTestId("compare-workspace").dataset.recovery,
+      samePair: recoveredHref.includes("compare=08001%2C08013"),
+    }).toStrictEqual({
+      pair: "08001,08013",
+      period: true,
+      recovery: "ready",
+      samePair: true,
+    });
+  });
+
+  it("retries failed measures without dropping rows that already loaded", async () => {
+    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    await screen.findByTestId("compare-retry-evidence");
+    const requestsFor = (measureId: string) =>
+      observationRequests.filter((request) => request.includes(measureId))
+        .length;
+    const casesBefore = requestsFor(COMPARE_CASES_MEASURE_ID);
+    expect({
+      cases: cell(COMPARE_CASES_MEASURE_ID, "08001").dataset.observation,
+      casesBefore,
+      tick: cell(COMPARE_TICK_MEASURE_ID, "08001").dataset.observation,
+    }).toStrictEqual({
+      cases: "present",
+      casesBefore: 1,
+      tick: "failed",
+    });
+    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 0);
+    fireEvent.click(screen.getByTestId("compare-retry-evidence"));
+    await waitFor(() => {
+      if (
+        cell(COMPARE_TICK_MEASURE_ID, "08001").dataset.observation !== "present"
+      ) {
+        throw new Error("Waiting for the failed measure to load.");
+      }
+    });
+    expect({
+      boulder: cell(COMPARE_TICK_MEASURE_ID, "08013").dataset.observation,
+      cases: cell(COMPARE_CASES_MEASURE_ID, "08001").dataset.observation,
+      casesAfter: requestsFor(COMPARE_CASES_MEASURE_ID),
+      denver: cell(COMPARE_TICK_MEASURE_ID, "08001").dataset.observation,
+    }).toStrictEqual({
+      boulder: "missing",
+      cases: "present",
+      casesAfter: casesBefore,
+      denver: "present",
+    });
   });
 });

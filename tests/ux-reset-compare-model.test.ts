@@ -215,6 +215,40 @@ describe("compare pair contract", () => {
     );
     expect(reviewHref.get("compare")).toBe("08001,08013");
   });
+
+  it("puts the resolved release on Compare shell links when the URL omits dataset", () => {
+    const omitted = searchParamsWithCommittedExploreContext(
+      "/app/compare",
+      new URLSearchParams("compare=08001,08013&scope=CO"),
+      {
+        county: null,
+        compare: ["08001", "08013"],
+        dataset: "alpha-2026",
+        period: null,
+      }
+    );
+    const requested = searchParamsWithCommittedExploreContext(
+      "/app/compare",
+      new URLSearchParams("compare=08001,08013&scope=CO&dataset=alpha-2026"),
+      {
+        county: null,
+        compare: ["08001", "08013"],
+        dataset: null,
+        period: null,
+      }
+    );
+    expect({
+      omittedDataset: omitted.get("dataset"),
+      omittedPair: omitted.get("compare"),
+      requestedDataset: requested.get("dataset"),
+      requestedPair: requested.get("compare"),
+    }).toStrictEqual({
+      omittedDataset: "alpha-2026",
+      omittedPair: "08001,08013",
+      requestedDataset: "alpha-2026",
+      requestedPair: "08001,08013",
+    });
+  });
 });
 
 describe("aligned evidence", () => {
@@ -240,6 +274,65 @@ describe("aligned evidence", () => {
     expect(relation.reasons).toContain(compareWithholdReasonValues.missingSide);
     expect(relation.explanation).toContain("not zero");
     expect(relation.explanation).not.toContain("differ by");
+  });
+
+  it("withholds a numeric difference when governed method identities differ", () => {
+    const alignment = alignCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver",
+      measures: compareMeasuresFixture.filter(
+        (measure) => measure.measure_id === COMPARE_CASES_MEASURE_ID
+      ),
+      outcomes: [
+        ready(COMPARE_CASES_MEASURE_ID, [
+          {
+            ...compareObservation({
+              fips: COMPARE_LEFT_FIPS,
+              measureId: COMPARE_CASES_MEASURE_ID,
+              unit: "cases",
+              value: 12,
+            }),
+            methodology_id: "case-definition-2017",
+            methodology_version: "1.0.0",
+          },
+          {
+            ...compareObservation({
+              fips: COMPARE_RIGHT_FIPS,
+              measureId: COMPARE_CASES_MEASURE_ID,
+              unit: "cases",
+              value: 0,
+              valueState: ValueState.ZERO,
+            }),
+            methodology_id: "case-definition-2022",
+            methodology_version: "1.0.0",
+          },
+        ]),
+      ],
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder",
+    });
+    const row = alignment.rows[0];
+    if (!row) {
+      throw new Error("Expected the cases row.");
+    }
+    const relation = withheldRelation(row.relation);
+    expect({
+      keepsLeft: observationRecord(row.left).observation.value,
+      keepsRight: observationRecord(row.right).observation.value,
+      kind: relation.kind,
+      namesBothMethods:
+        relation.explanation.includes("case-definition-2017") &&
+        relation.explanation.includes("case-definition-2022"),
+      reason: relation.reasons.includes(
+        compareWithholdReasonValues.methodologyMismatch
+      ),
+    }).toStrictEqual({
+      keepsLeft: 12,
+      keepsRight: 0,
+      kind: "withheld",
+      namesBothMethods: true,
+      reason: true,
+    });
   });
 
   it("withholds a period mismatch", () => {

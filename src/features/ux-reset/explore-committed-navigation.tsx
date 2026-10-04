@@ -117,7 +117,9 @@ const COMMITTED_SHELL_PATHS = new Set<string>([
 
 /**
  * Shell links on Explore, Investigate, and Review use the committed release,
- * period, and county. Compare shell links use the visible county pair.
+ * period, and county. Compare shell links use the visible county pair and the
+ * resolved release once that release is on screen. A requested dataset stays
+ * in the URL until then.
  * The requested URL can still name an in-flight selection.
  */
 export function searchParamsWithCommittedExploreContext(
@@ -149,6 +151,9 @@ export function searchParamsWithCommittedExploreContext(
     } else {
       params.delete("county");
     }
+  }
+  if (path === RESET_COMPARE_PATH && committed.dataset) {
+    params.set("dataset", committed.dataset);
   }
   if (comparePair !== undefined) {
     if (comparePair.length === 0) {

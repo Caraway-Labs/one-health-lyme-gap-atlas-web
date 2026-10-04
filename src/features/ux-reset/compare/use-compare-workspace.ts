@@ -18,8 +18,10 @@ import {
 import { compareSearchParams } from "@/features/ux-reset/compare/compare-search-params";
 import {
   compareEvidenceQueryKey,
+  compareRetryCooldowns,
   CompareContractError,
   loadCompareEvidence,
+  preservedCompareMeasures,
   shouldRetryCompareRequest,
 } from "@/features/ux-reset/compare/load-compare-evidence";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
@@ -68,6 +70,8 @@ export type CompareCountyOption = {
 export type CompareWorkspace = {
   actionHref: string;
   alignment: CompareAlignment | null;
+  catalogError: string | null;
+  catalogRetrying: boolean;
   clearPair: () => void;
   dataset: string | null;
   directoryError: string | null;
@@ -75,6 +79,7 @@ export type CompareWorkspace = {
   entry: ResolvedCompareEntry;
   evidenceError: string | null;
   evidenceLoading: boolean;
+  evidenceRetrying: boolean;
   investigateHref: (fips: string) => string;
   metadata: AtlasMetadata | null;
   metadataError: string | null;
@@ -86,6 +91,8 @@ export type CompareWorkspace = {
   recoveryState: CompareRecoveryState;
   releaseId: string | null;
   removeMember: (fips: string) => void;
+  retryCatalog: () => void;
+  retryEvidence: () => void;
   scopeLabel: string;
   setSlot: (slot: 0 | 1, fips: string) => void;
   slotMessage: string | null;
@@ -263,6 +270,8 @@ export function useCompareWorkspace(): CompareWorkspace {
       return fetchExploreMeasures(signal, releaseId);
     },
     queryKey: ["ux-reset-compare-measures", releaseId],
+    retry: (failureCount, error) =>
+      shouldRetryCompareRequest(failureCount, error, retrySetting),
   });
   const measures = measuresQuery.data ?? [];
   const measureIds = measures.map((measure) => measure.measure_id);
@@ -281,18 +290,28 @@ export function useCompareWorkspace(): CompareWorkspace {
     enabled: Boolean(
       releaseId && pairReady && measuresQuery.isSuccess && leftFips && rightFips
     ),
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ client, queryKey, signal }) => {
       if (!(releaseId && leftFips && rightFips)) {
         throw new CompareContractError(
           "Aligned evidence requires two counties and a release.",
           "rejected"
         );
       }
+      const cached = client.getQueryData<CompareAlignment>(queryKey);
+      const preserve = preservedCompareMeasures({
+        alignment: cached,
+        leftFips,
+        period: urlState.period,
+        releaseId,
+        rightFips,
+      });
       return loadCompareEvidence({
+        cooldowns: preserve ? compareRetryCooldowns(cached) : null,
         leftFips,
         leftLabel,
         measures,
         period: urlState.period,
+        preserve,
         releaseId,
         rightFips,
         rightLabel,
@@ -311,6 +330,21 @@ export function useCompareWorkspace(): CompareWorkspace {
     retry: (failureCount, error) =>
       shouldRetryCompareRequest(failureCount, error, retrySetting),
   });
+  const retryGateRef = useRef(false);
+  const retryEvidence = async () => {
+    if (retryGateRef.current || evidenceQuery.isFetching) {
+      return;
+    }
+    retryGateRef.current = true;
+    try {
+      await evidenceQuery.refetch({ cancelRefetch: false });
+    } finally {
+      retryGateRef.current = false;
+    }
+  };
+  const retryCatalog = () => {
+    void measuresQuery.refetch();
+  };
 
   const currentPair = pairKey.length > 0 ? pairKey.split(",") : [];
   const setSlot = (slot: 0 | 1, fips: string) => {
@@ -389,6 +423,11 @@ export function useCompareWorkspace(): CompareWorkspace {
       evidenceQuery.data.rightFips === rightFips
         ? evidenceQuery.data
         : null,
+    catalogError:
+      recoveryState === "ready" && measuresQuery.isError
+        ? "Governed measures could not be loaded."
+        : null,
+    catalogRetrying: measuresQuery.isFetching && measuresQuery.isError,
     clearPair,
     dataset,
     directoryError: directoryQuery.isError
@@ -405,6 +444,10 @@ export function useCompareWorkspace(): CompareWorkspace {
       (evidenceQuery.isLoading ||
         measuresQuery.isLoading ||
         directoryQuery.isLoading),
+    evidenceRetrying:
+      recoveryState === "ready" &&
+      evidenceQuery.isFetching &&
+      Boolean(evidenceQuery.data),
     investigateHref,
     metadata: metadataQuery.data ?? null,
     metadataError: metadataQuery.isError
@@ -421,6 +464,8 @@ export function useCompareWorkspace(): CompareWorkspace {
     recoveryState,
     releaseId,
     removeMember,
+    retryCatalog,
+    retryEvidence,
     scopeLabel: reviewScopeLabel(urlState.scope, stateOptions),
     setSlot,
     slotMessage,

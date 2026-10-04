@@ -164,6 +164,10 @@ function CompareExperienceInner() {
       workspace.alignment ? summaryCounts(workspace.alignment.rows) : null,
     [workspace.alignment]
   );
+  const failedMeasures =
+    workspace.alignment?.outcomes.some(
+      (outcome) => outcome.status === "failed"
+    ) ?? false;
 
   return (
     <div
@@ -298,6 +302,29 @@ function CompareExperienceInner() {
           {workspace.directoryError}
         </AtlasStatusMessage>
       ) : null}
+      {workspace.catalogError ? (
+        <AtlasStatusMessage
+          action={
+            <Button
+              aria-busy={workspace.catalogRetrying}
+              data-testid="compare-retry-catalog"
+              disabled={workspace.catalogRetrying}
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                workspace.retryCatalog();
+              }}
+            >
+              {workspace.catalogRetrying
+                ? "Retrying measure catalog…"
+                : "Retry measure catalog"}
+            </Button>
+          }
+          tone="error"
+        >
+          {workspace.catalogError}
+        </AtlasStatusMessage>
+      ) : null}
       {workspace.evidenceLoading ? (
         <AtlasStatusMessage tone="loading">
           Loading aligned evidence…
@@ -306,6 +333,30 @@ function CompareExperienceInner() {
       {workspace.evidenceError ? (
         <AtlasStatusMessage tone="error">
           {workspace.evidenceError}
+        </AtlasStatusMessage>
+      ) : null}
+      {failedMeasures ? (
+        <AtlasStatusMessage
+          action={
+            <Button
+              aria-busy={workspace.evidenceRetrying}
+              data-testid="compare-retry-evidence"
+              disabled={workspace.evidenceRetrying}
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void workspace.retryEvidence();
+              }}
+            >
+              {workspace.evidenceRetrying
+                ? "Retrying evidence…"
+                : "Retry evidence that did not load"}
+            </Button>
+          }
+          tone="error"
+        >
+          Some measures could not be loaded. Evidence that loaded stays in this
+          comparison.
         </AtlasStatusMessage>
       ) : null}
 
