@@ -21,11 +21,7 @@ function datasetVintageFromObservation(
   observation: Observation
 ): string | null {
   const sourceVintage = observation.source_vintage?.trim();
-  if (sourceVintage) {
-    return sourceVintage;
-  }
-  const semanticVersion = observation.semantic_version?.trim();
-  return semanticVersion || null;
+  return sourceVintage || null;
 }
 
 export function evidenceObjectFromObservation({

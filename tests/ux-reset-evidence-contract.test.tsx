@@ -148,7 +148,7 @@ describe("ux reset evidence contract", () => {
       observation: noaaDailyPrecipitationWithoutVintage,
     });
     expect(model.provenance.observationPeriod).toBe("January 1, 2025 (daily)");
-    expect(model.provenance.datasetVintage).toBe("2025.1");
+    expect(model.provenance.datasetVintage).toBeNull();
   });
 
   it("builds annual CDC observation evidence from period metadata", () => {

@@ -47,7 +47,7 @@ Use `formatGovernedEvidenceValue`:
 - Decimal strings keep full precision and append units when missing from the string.
 - `SUPPRESSED` → display **Suppressed**, not a numeric substitute.
 
-**Observation period vs dataset vintage:** `observationPeriod` comes from `period_start`, `period_end`, and `temporal_grain` (only full calendar-year intervals collapse to a single year). `datasetVintage` comes from `source_vintage` (fallback `semantic_version`) and is shown separately in the strip and inspect panel.
+**Observation period vs dataset vintage:** `observationPeriod` comes from `period_start`, `period_end`, and `temporal_grain` (only full calendar-year intervals collapse to a single year). `datasetVintage` comes from governed `source_vintage` only; when absent, the strip omits the row and inspect does not invent a vintage. `semantic_version` is the API semantic-contract version, not dataset vintage—do not map it to dataset vintage.
 
 **Limitations:** the strip may show the first limitation as a short caveat; **Inspect provenance** lists every governed limitation.
 
