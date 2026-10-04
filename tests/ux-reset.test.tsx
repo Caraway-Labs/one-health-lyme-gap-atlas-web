@@ -86,12 +86,12 @@ describe("UX Reset professional workspace", () => {
     });
     expect(
       navigation
-        .querySelector('a[href="/app/explore"]')
+        .querySelector('a[href^="/app/explore"]')
         ?.getAttribute("aria-current")
     ).toBe("page");
     expect(
       navigation
-        .querySelector('a[href="/app/review"]')
+        .querySelector('a[href^="/app/review"]')
         ?.getAttribute("aria-current")
     ).toBeNull();
     expect(

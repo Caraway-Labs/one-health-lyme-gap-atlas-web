@@ -1,22 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const MOBILE_NAV_MEDIA = "(max-width: 800px)";
 
+function getMobileSnapshot(): boolean {
+  return window.matchMedia(MOBILE_NAV_MEDIA).matches;
+}
+
+function getServerMobileSnapshot(): boolean {
+  return false;
+}
+
+function subscribeMobileViewport(onStoreChange: () => void): () => void {
+  const media = window.matchMedia(MOBILE_NAV_MEDIA);
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
 export function useMobileViewport(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") {
-      return;
-    }
-    const media = window.matchMedia(MOBILE_NAV_MEDIA);
-    const update = () => setIsMobile(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-
-  return isMobile;
+  return useSyncExternalStore(
+    subscribeMobileViewport,
+    getMobileSnapshot,
+    getServerMobileSnapshot
+  );
 }

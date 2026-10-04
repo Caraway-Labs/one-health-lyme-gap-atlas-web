@@ -3,8 +3,8 @@
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -72,22 +72,63 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     }
   }, [isMobileViewport, mobileOpen, setMobileOpen]);
 
+  useLayoutEffect(() => {
+    if (!(mobileOpen && isMobileViewport)) {
+      return;
+    }
+
+    sidebarRef.current
+      ?.querySelector<HTMLElement>(".app-mobile-nav-close")
+      ?.focus({ preventScroll: true });
+  }, [isMobileViewport, mobileOpen]);
+
   useEffect(() => {
-    if (!mobileDrawerActive) {
-      previousFocusRef.current?.focus();
+    if (!mobileOpen) {
+      previousFocusRef.current?.focus({ preventScroll: true });
       previousFocusRef.current = null;
+      return;
+    }
+    if (!isMobileViewport) {
       return;
     }
 
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
 
+    const closeButton = sidebar.querySelector<HTMLElement>(
+      ".app-mobile-nav-close"
+    );
+    if (!closeButton) return;
+
+    const workspaceNav = sidebar.querySelector<HTMLElement>(
+      'nav[aria-label="Professional workspace"]'
+    );
+
+    const focusCloseNavigationIfNeeded = () => {
+      const active = document.activeElement;
+      if (active === closeButton) {
+        return;
+      }
+      if (active instanceof HTMLElement && workspaceNav?.contains(active)) {
+        return;
+      }
+      closeButton.focus({ preventScroll: true });
+    };
+
+    focusCloseNavigationIfNeeded();
+    let followUpFrame = 0;
+    const initialFrame = window.requestAnimationFrame(() => {
+      focusCloseNavigationIfNeeded();
+      followUpFrame = window.requestAnimationFrame(
+        focusCloseNavigationIfNeeded
+      );
+    });
+
     const focusableSelector =
       'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
     const focusableElements = () => [
       ...sidebar.querySelectorAll<HTMLElement>(focusableSelector),
     ];
-    sidebar.querySelector<HTMLElement>(".app-mobile-nav-close")?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -111,14 +152,16 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeMobileNavigation, mobileDrawerActive]);
+    return () => {
+      window.cancelAnimationFrame(initialFrame);
+      window.cancelAnimationFrame(followUpFrame);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeMobileNavigation, isMobileViewport, mobileOpen]);
 
-  const openMobileNavigation = () => {
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+  const openMobileNavigation = (event: MouseEvent<HTMLButtonElement>) => {
+    previousFocusRef.current = event.currentTarget;
+    event.currentTarget.blur();
   };
 
   return (

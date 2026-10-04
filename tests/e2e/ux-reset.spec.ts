@@ -1,5 +1,52 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+function isBenignHistoryNavigationError(error: unknown): boolean {
+  const message = String(error);
+  return (
+    message.includes("Execution context was destroyed") ||
+    message.includes("net::ERR_ABORTED") ||
+    message.includes("frame was detached")
+  );
+}
+
+/** Next.js App Router history steps often abort Playwright navigation waits. */
+async function expectHistoryNavigation(
+  page: Page,
+  direction: "back" | "forward",
+  matches: (url: URL) => boolean
+) {
+  const triggerHistoryStep = async () => {
+    try {
+      await page.goBack({ waitUntil: "commit", timeout: 5_000 });
+    } catch (error) {
+      if (!isBenignHistoryNavigationError(error)) {
+        throw error;
+      }
+    }
+  };
+
+  const triggerForwardStep = async () => {
+    try {
+      await page.goForward({ waitUntil: "commit", timeout: 5_000 });
+    } catch (error) {
+      if (!isBenignHistoryNavigationError(error)) {
+        throw error;
+      }
+    }
+  };
+
+  if (direction === "back") {
+    await triggerHistoryStep();
+  } else {
+    await triggerForwardStep();
+  }
+
+  await expect
+    .poll(() => matches(new URL(page.url())), { timeout: 15_000 })
+    .toBe(true);
+  await page.waitForLoadState("domcontentloaded");
+}
 
 test("preserves reset deep links through sign-in when auth is configured", async ({
   page,
@@ -149,22 +196,25 @@ test("bounded context survives rendered navigation, reload, and browser history"
   expect(url.pathname).toBe("/app/action");
   expect(url.searchParams.get("county")).toBe("08001");
 
-  await page.goBack({ waitUntil: "commit" });
-  await expect
-    .poll(() => new URL(page.url()).pathname)
-    .toBe("/app/investigate");
+  await expectHistoryNavigation(
+    page,
+    "back",
+    (target) => target.pathname === "/app/investigate"
+  );
   expectInvestigateContext(new URL(page.url()));
 
-  await page.goBack({ waitUntil: "commit" });
-  await expect.poll(() => new URL(page.url()).pathname).toBe("/app/compare");
+  await expectHistoryNavigation(
+    page,
+    "back",
+    (target) => target.pathname === "/app/compare"
+  );
   expectCompareSelection(new URL(page.url()));
 
-  await Promise.all([
-    page.waitForURL((url) => url.pathname === "/app/investigate", {
-      waitUntil: "commit",
-    }),
-    page.goForward({ waitUntil: "commit" }),
-  ]);
+  await expectHistoryNavigation(
+    page,
+    "forward",
+    (target) => target.pathname === "/app/investigate"
+  );
   expectInvestigateContext(new URL(page.url()));
   await page
     .getByRole("navigation", { name: "Professional workspace" })
@@ -182,7 +232,7 @@ test("bounded context survives rendered navigation, reload, and browser history"
   url = new URL(page.url());
   expect(url.pathname).toBe("/app/investigate");
   expect(url.searchParams.get("county")).toBeNull();
-  expect(url.searchParams.get("scope")).toBeNull();
+  expect(url.searchParams.get("scope")).toBe("ALL");
   expect(url.searchParams.get("period")).toBeNull();
   expect(url.searchParams.get("dataset")).toBe("alpha");
 });

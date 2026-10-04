@@ -1,6 +1,7 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { AtlasDashboard } from "@/components/atlas-dashboard";
 import { AtlasMap } from "@/components/atlas-map";
 import type { CountyScoreSummary } from "@/generated/models";
 import { estimatedFitZoom } from "@/lib/atlas-map-camera";
@@ -367,6 +368,121 @@ describe("AtlasMap county camera", () => {
       pitch: 0,
       zoom: 8,
     });
+  });
+
+  it("does not frame the camera from highlight selectedState alone", () => {
+    stubPrefersReducedMotion(false);
+    const view = render(
+      <AtlasMap
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="06037"
+        selectedState="CA"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const map = loadMap();
+    expect(map?.fitBounds).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("fits county bounds when cross-state selection changes highlight state", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = renderMap("08001", onSelect);
+    const map = loadMap();
+    expect(map?.fitBounds).not.toHaveBeenCalled();
+    view.rerender(
+      <AtlasMap
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="06037"
+        selectedState="CA"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenCalledExactlyOnceWith(
+      [-118.7, 33.7, -118.3, 34],
+      { duration: 450, maxZoom: 8, padding: 48 }
+    );
+  });
+
+  it("frames the map to cameraFrameState on Review state scope load", () => {
+    stubPrefersReducedMotion(false);
+    const view = render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const map = loadMap();
+    expect(map?.fitBounds).toHaveBeenCalledExactlyOnceWith(
+      [-105, 39, -104, 40],
+      { duration: 450, maxZoom: 8, padding: 48 }
+    );
+    view.unmount();
+  });
+
+  it("reframes the map when cameraFrameState changes across review scopes", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="CA"
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="06037"
+        selectedState="CA"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(
+      [-118.7, 33.7, -118.3, 34],
+      { duration: 450, maxZoom: 8, padding: 48 }
+    );
+  });
+
+  it("AtlasDashboard keeps national overview when only highlight state is set", () => {
+    stubPrefersReducedMotion(false);
+    const view = render(
+      <AtlasDashboard
+        copied={false}
+        counties={[adams, losAngeles]}
+        datasetVersion="alpha-2026"
+        geometry={geometry}
+        highlightState="CA"
+        onCopy={vi.fn<() => void>()}
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+        onToggleTable={vi.fn<() => void>()}
+        scores={[adams, losAngeles]}
+        selectedFips="06037"
+        selectedState="CA"
+        settings={{
+          ecological_share: 65,
+          low_incidence_breakpoint: 10,
+          missing_human_weakness: 75,
+        }}
+        showTable={false}
+      />
+    );
+    const map = loadMap();
+    expect(map?.fitBounds).not.toHaveBeenCalled();
+    view.unmount();
   });
 
   it("does not treat camera movement as a county selection", () => {

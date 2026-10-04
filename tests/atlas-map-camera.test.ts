@@ -6,6 +6,7 @@ import {
   estimatedFitZoom,
   fitCountyBounds,
   mapCameraDuration,
+  stateScopeBoundsFromGeometry,
   type CountyBounds,
   type FitCountyMap,
 } from "../src/lib/atlas-map-camera";
@@ -183,6 +184,62 @@ describe("substantial county visibility", () => {
         currentZoom: estimatedFitZoom(SMALL_COUNTY),
       })
     ).toBeFalsy();
+  });
+});
+
+describe("state scope bounds", () => {
+  it("unions county bounds for the active state", () => {
+    const geometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-105, 39],
+                [-104, 39],
+                [-104, 40],
+                [-105, 40],
+                [-105, 39],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-118.7, 33.7],
+                [-118.3, 33.7],
+                [-118.3, 34],
+                [-118.7, 34],
+                [-118.7, 33.7],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "06037" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    };
+
+    expect(
+      stateScopeBoundsFromGeometry(
+        geometry,
+        [
+          { fips: "08001", state: "CO" },
+          { fips: "06037", state: "CA" },
+        ],
+        "CO"
+      )
+    ).toStrictEqual([-105, 39, -104, 40]);
   });
 });
 

@@ -124,6 +124,49 @@ function countyOverlapRatio(
   return (overlapLng * overlapLat) / (countyLngSpan * countyLatSpan);
 }
 
+export function unionCountyBounds(
+  boundsList: readonly CountyBounds[]
+): CountyBounds | null {
+  if (boundsList.length === 0) {
+    return null;
+  }
+  let west = Number.POSITIVE_INFINITY;
+  let south = Number.POSITIVE_INFINITY;
+  let east = Number.NEGATIVE_INFINITY;
+  let north = Number.NEGATIVE_INFINITY;
+  for (const bounds of boundsList) {
+    west = Math.min(west, bounds[0]);
+    south = Math.min(south, bounds[1]);
+    east = Math.max(east, bounds[2]);
+    north = Math.max(north, bounds[3]);
+  }
+  return [west, south, east, north];
+}
+
+export function stateScopeBoundsFromGeometry(
+  geometry: GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips?: string }>,
+  scores: readonly { fips: string; state: string }[],
+  stateCode: string
+): CountyBounds | null {
+  const fipsInState = new Set(
+    scores
+      .filter((county) => county.state === stateCode)
+      .map((county) => county.fips)
+  );
+  const boundsList: CountyBounds[] = [];
+  for (const feature of geometry.features) {
+    const fips = feature.properties?.fips;
+    if (typeof fips !== "string" || !fipsInState.has(fips)) {
+      continue;
+    }
+    const bounds = countyFeatureBounds(feature);
+    if (bounds) {
+      boundsList.push(bounds);
+    }
+  }
+  return unionCountyBounds(boundsList);
+}
+
 export function countyFeatureBounds(
   feature: GeoJSON.Feature<GeoJSON.Geometry | null> | undefined | null
 ): CountyBounds | null {
