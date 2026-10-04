@@ -9,15 +9,21 @@ import {
   type ReactNode,
 } from "react";
 
+import { serializeCompareFipsList } from "@/features/ux-reset/context-params";
 import {
+  RESET_COMPARE_PATH,
   RESET_EXPLORE_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
 
-/** Release, period, and county that belong to the displayed Explore selection. */
+/**
+ * Release, period, and county that belong to the displayed selection.
+ * `compare` is set by Compare so shell links follow the visible pair.
+ */
 export type ExploreCommittedNavigation = {
   county: string | null;
+  compare?: readonly string[];
   dataset: string | null;
   period: string | null;
 };
@@ -71,11 +77,31 @@ export function usePublishExploreCommittedNavigation(
   const county = next?.county ?? null;
   const dataset = next?.dataset ?? null;
   const period = next?.period ?? null;
+  const compareProvided = Boolean(next && Object.hasOwn(next, "compare"));
+  const compareKey = compareProvided
+    ? serializeCompareFipsList(next?.compare ?? [])
+    : null;
   useLayoutEffect(() => {
-    setNavigation(
-      county || dataset || period ? { county, dataset, period } : null
+    const compare =
+      compareKey === null
+        ? undefined
+        : compareKey.length > 0
+          ? compareKey.split(",")
+          : [];
+    const shouldPublish = Boolean(
+      county || dataset || period || compareProvided
     );
-  }, [county, dataset, period, setNavigation]);
+    setNavigation(
+      shouldPublish
+        ? {
+            county,
+            compare,
+            dataset,
+            period,
+          }
+        : null
+    );
+  }, [compareKey, compareProvided, county, dataset, period, setNavigation]);
   useLayoutEffect(() => () => setNavigation(null), [setNavigation]);
 }
 
@@ -91,31 +117,50 @@ const COMMITTED_SHELL_PATHS = new Set<string>([
 
 /**
  * Shell links on Explore, Investigate, and Review use the committed release,
- * period, and county. The requested URL can still name an in-flight selection.
+ * period, and county. Compare shell links use the visible county pair and the
+ * resolved release once that release is on screen. A requested dataset stays
+ * in the URL until then.
+ * The requested URL can still name an in-flight selection.
  */
 export function searchParamsWithCommittedExploreContext(
   pathname: string,
   searchParams: SearchParamSource,
   committed: ExploreCommittedNavigation | null
 ): Pick<URLSearchParams, "get" | "getAll" | "has"> {
-  if (!COMMITTED_SHELL_PATHS.has(normalizePath(pathname)) || !committed) {
+  const path = normalizePath(pathname);
+  const onCommittedShell = COMMITTED_SHELL_PATHS.has(path);
+  const comparePair =
+    path === RESET_COMPARE_PATH ? committed?.compare : undefined;
+  if (!(onCommittedShell || comparePair !== undefined) || !committed) {
     return searchParams;
   }
   const params = new URLSearchParams(searchParams.toString());
-  if (committed.dataset) {
+  if (onCommittedShell) {
+    if (committed.dataset) {
+      params.set("dataset", committed.dataset);
+    } else {
+      params.delete("dataset");
+    }
+    if (committed.period) {
+      params.set("period", committed.period);
+    } else {
+      params.delete("period");
+    }
+    if (committed.county) {
+      params.set("county", committed.county);
+    } else {
+      params.delete("county");
+    }
+  }
+  if (path === RESET_COMPARE_PATH && committed.dataset) {
     params.set("dataset", committed.dataset);
-  } else {
-    params.delete("dataset");
   }
-  if (committed.period) {
-    params.set("period", committed.period);
-  } else {
-    params.delete("period");
-  }
-  if (committed.county) {
-    params.set("county", committed.county);
-  } else {
-    params.delete("county");
+  if (comparePair !== undefined) {
+    if (comparePair.length === 0) {
+      params.delete("compare");
+    } else {
+      params.set("compare", serializeCompareFipsList(comparePair));
+    }
   }
   return params;
 }
