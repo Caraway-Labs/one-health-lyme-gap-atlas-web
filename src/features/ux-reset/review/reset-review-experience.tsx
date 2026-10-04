@@ -126,6 +126,7 @@ function ResetReviewExperienceInner() {
           ) : (
             <ReviewStatePanel
               mapCounties={presentationQuery.presentation.mapCounties}
+              period={urlState.period}
               rankedCounties={presentationQuery.presentation.stateCounties}
               releaseId={presentationQuery.metadata!.release_id}
               scopeCode={scope}

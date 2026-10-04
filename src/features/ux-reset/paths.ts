@@ -102,7 +102,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
   },
   {
     description:
-      "Investigate a county with map, evidence, and scoring assumptions together.",
+      "Read one county's evidence, uncertainty, context, and what to inspect next.",
     href: RESET_INVESTIGATE_PATH,
     icon: Microscope,
     id: "investigate",
@@ -110,7 +110,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Placeholder for the professional Investigate destination in the UX Reset workspace.",
+      "Single-county workspace for governed evidence, limitations, and the return path to Review.",
     pageTitle: "Investigate | One Health Lyme Gap Atlas",
   },
   {

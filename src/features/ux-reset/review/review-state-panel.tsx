@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 
 import { AtlasMapLegend } from "@/components/atlas-map-legend";
@@ -11,6 +12,11 @@ import { RankedCounties } from "@/components/ranked-counties";
 import { ResultsTable } from "@/components/results-table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
+import {
+  RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
+} from "@/features/ux-reset/routes";
 import type { CountyScoreSummary } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
@@ -37,6 +43,7 @@ type ReviewStatePanelProps = {
   scopeCode: string;
   rankedCounties: readonly CountyScoreSummary[];
   mapCounties: readonly CountyScoreSummary[];
+  period?: string | null;
   releaseId: string;
 };
 
@@ -44,6 +51,7 @@ export function ReviewStatePanel({
   scopeCode,
   rankedCounties,
   mapCounties,
+  period = null,
   releaseId,
 }: ReviewStatePanelProps) {
   const inScopeFips = useMemo(
@@ -76,6 +84,23 @@ export function ReviewStatePanel({
     [inScopeFips]
   );
 
+  const investigateHref = useMemo(() => {
+    if (!selectedFips) {
+      return null;
+    }
+    const params = new URLSearchParams();
+    params.set("scope", scopeCode);
+    params.set("county", selectedFips);
+    params.set("dataset", releaseId);
+    if (period) {
+      params.set("period", period);
+    }
+    return uxResetShellHandoffHref(
+      RESET_INVESTIGATE_PATH,
+      RESET_REVIEW_PATH,
+      params
+    );
+  }, [period, releaseId, scopeCode, selectedFips]);
   const mapScores = useMemo(() => [...mapCounties], [mapCounties]);
   const geometryError = Boolean(geometryQuery.isError);
   const geometryReady = Boolean(geometryQuery.data);
@@ -141,6 +166,17 @@ export function ReviewStatePanel({
           caption={`Map framed for ${scopeCode} counties in this release.`}
         />
       </Card>
+      {investigateHref ? (
+        <p className="type-body">
+          <Link
+            data-county={selectedFips}
+            data-testid="review-investigate"
+            href={investigateHref}
+          >
+            Investigate this county
+          </Link>
+        </p>
+      ) : null}
       <RankedCounties
         counties={[...rankedCounties]}
         selectedFips={selectedFips}
