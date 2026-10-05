@@ -29,6 +29,7 @@ export const ASK_ATLAS_SURFACES = [
   "explore",
   "investigate",
   "compare",
+  "action",
 ] as const;
 
 export type AskAtlasSurface = (typeof ASK_ATLAS_SURFACES)[number];
