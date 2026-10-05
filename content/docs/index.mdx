@@ -14,10 +14,12 @@ Start with the orientation guides:
 - [What is Atlas Lyme?](/docs/what-is-atlas) — the product category, purpose, and boundaries.
 - [Who is Atlas for?](/docs/who-is-atlas-for) — the people and questions the platform is designed to support.
 - [The Atlas decision-support workflow](/docs/atlas-workflow) — how Atlas moves from One Health evidence to an investigation question.
+- [Professional workspace](/docs/professional-workspace) — the signed-in Review, Explore, Investigate, Compare, and Settings routes, and which destinations are still reserved.
 - [Current capabilities](/docs/current-capabilities) — what is available now, planned, experimental, or not supported.
 - [Investigation workflows](/docs/investigation-workflows) — practical question-to-next-step guides for reviewing a signal.
 - [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) — how to interpret outputs and distinguish missing evidence from low observed signal.
 - [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) — what AI means in Atlas and the status of current, planned, and experimental capabilities.
+- [API, MCP, and access](/docs/api-mcp-and-access) — the public REST contract, and the current status of MCP and API keys.
 - [FAQ and troubleshooting](/docs/faq-and-troubleshooting) — answers for interpretation, loading, filters, data availability, and HelpDocs navigation.
 
 ## Who Atlas is for
@@ -41,10 +43,19 @@ The current release is an early public prototype and situational-awareness found
 
 ## A quick start
 
+Public Explorer:
+
 1. Open the [Atlas Explorer](/) and choose a state or county.
 2. Review the county list, map, and evidence panels together. The table and text summaries provide the same key findings without requiring a map.
 3. Inspect the evidence behind a signal, including its source, release or time period, methodology, and limitations.
 4. Share the URL when you want another person to review the same supported geography and filter state.
+
+Signed-in workspace:
+
+1. Open [Review](/app/review) and choose the United States or one state.
+2. Use the map and the county list together, then open Investigate for one county.
+3. Use Explore to scan a measure, or Compare for two counties. Read [the professional workspace](/docs/professional-workspace) for which routes are released.
+4. Open **Docs** from the workspace navigation when you need this reference. It opens in a new tab and leaves the review address in the original tab.
 
 ## Read the evidence carefully
 
@@ -60,14 +71,8 @@ For a defensible follow-up question, record the source, source vintage, geograph
 
 ## Help and trustworthy use
 
-Use the **Docs** link in the Atlas utility bar to open this help center in a new tab while keeping your analytical state in the original tab. The public [Privacy page](/privacy) and [AI Ethics page](/ai-ethics) remain the approved in-application sources for those topics; this guide does not create separate policy commitments.
+Use **Docs** in the public Atlas utility bar, or **Docs** in the professional workspace navigation. Both open this help center in a new tab and leave the analytical page in the original tab. The public [Privacy page](/privacy) and [AI Ethics page](/ai-ethics) remain the approved in-application sources for those topics; this guide does not create separate policy commitments. Workspace pages do not add a separate contextual-help layer.
 
 ## Developer and agent access
 
-The public REST API is documented by its owning service. Start with the machine-readable [OpenAPI schema](https://api.carawaylabs.com/openapi.json) rather than copying endpoint definitions into this page. API examples must preserve provenance, missingness, versioning, pagination, and error semantics.
-
-MCP/agent integration guidance will be published here when the owning service has a released, supported MCP contract. Until then, the Atlas web prototype does not promise a public MCP connection or tool surface.
-
-## What comes next
-
-More task-focused guides, data concepts, methods, troubleshooting, release notes, and developer references will be added as those capabilities become stable enough to document.
+The public REST API is documented by its owning service. Start with [API, MCP, and access](/docs/api-mcp-and-access) and the machine-readable [OpenAPI schema](https://api.carawaylabs.com/openapi.json). Public reads do not use an API key. MCP connection guidance stays unpublished until the API service releases a contract. Settings does not generate API keys in this release.

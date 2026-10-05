@@ -1,0 +1,81 @@
+---
+title: API, MCP, and access
+description: Use the public Atlas REST API, and see the current status of MCP and API keys.
+---
+
+Atlas publishes one public HTTP contract. Human guides on this site explain how to use it. They do not copy a second schema. Machine-readable definitions stay on the API service.
+
+## What is available
+
+| Surface | Status | Where it lives |
+| --- | --- | --- |
+| Public REST API, version 1 | Available now | Anonymous read-only JSON at `https://api.carawaylabs.com` |
+| OpenAPI schema | Available now | [OpenAPI schema](https://api.carawaylabs.com/openapi.json) |
+| Interactive reference | Available now | [Swagger reference](https://api.carawaylabs.com/docs) for approved public GET requests |
+| Read-only reference | Available now | [ReDoc reference](https://api.carawaylabs.com/redoc) |
+| MCP connection | Not available | No released MCP server, tool list, or connection URL |
+| User API keys in Settings | Not available | The public API does not use a key, and Settings does not create one |
+
+The OpenAPI application version and the `/v1` contract are different identifiers. Use the response fields below when you need to cite a result.
+
+## Public reads do not use an API key
+
+The canonical public API serves current-release metadata and county observations without an API key and without a signed-in session. A request is an HTTPS GET. Collections return `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json` with `code`, HTTP `status`, `detail`, and `request_id`.
+
+These routes do not select historical releases, aggregate arbitrary geographies, or return geometry. Account profile, privacy, feedback, and literature-chat routes belong to the signed-in product. They are not part of this anonymous public contract, and this page does not document them as public examples.
+
+Settings can save a default jurisdiction for a signed-in reviewer. That preference is not an API credential. See [the professional workspace](/docs/professional-workspace).
+
+## Examples from the public contract
+
+These requests use measure and county identifiers published for the current production release. County FIPS codes are five characters, with any leading zero preserved. `case_count_floor_2023` is a privacy-protected case floor in `cases`, not a complete incidence count and not a diagnosis.
+
+```sh
+curl -fsS 'https://api.carawaylabs.com/v1/indicators?page_size=10'
+curl -fsS 'https://api.carawaylabs.com/v1/measures?indicator_id=human_disease_burden&page_size=10'
+curl -fsS 'https://api.carawaylabs.com/v1/measures/case_count_floor_2023'
+curl -fsS 'https://api.carawaylabs.com/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&year=2023'
+```
+
+Compare two counties by repeating `geography_id`. Use `year` or a complete `start_date` and `end_date` pair. The published county observations for this release are the annual 2023 period.
+
+```sh
+curl -fsS 'https://api.carawaylabs.com/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=08003&year=2023&page_size=1'
+```
+
+If `meta.next_page_token` is present, send it back as `page_token` with every other query parameter unchanged. Stop when the token is null. Tokens are opaque and bound to that query and release. A changed or rejected token means you start again at the first page. A page token is not a citation.
+
+Follow `source_id` and `methodology_id` on an observation when you need publisher, vintage, and method limitations:
+
+```sh
+curl -fsS 'https://api.carawaylabs.com/v1/sources/human'
+curl -fsS 'https://api.carawaylabs.com/v1/methodologies/human_confirmed_probable_case_floor_v1'
+```
+
+Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD`. `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` are gaps. Do not replace them with zero. The same rule is explained for reviewers in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+
+## Limits and errors
+
+The observation query needs one measure, `geography_type=county`, one or more five-digit county FIPS codes, and either `year` or both dates. The service rejects unsupported filters, strata, sorting, and aggregation instead of ignoring them. Problem `code` values include `RESOURCE_NOT_FOUND`, `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, and `UNSUPPORTED_STRATIFICATION`. Keep `request_id` if you need support.
+
+Anonymous public reads are limited to 60 requests per rolling minute and five simultaneous requests per connecting address. A `429` response includes `Retry-After` of one to 60 seconds. Wait for that interval before you retry. Successful current-release reads can be cached briefly. Stable detail responses may include an `ETag`; send `If-None-Match` to receive `304` when the representation is unchanged. The [OpenAPI schema](https://api.carawaylabs.com/openapi.json) is the authority for parameters, status codes, and schema fields.
+
+## Reproduce a result
+
+Save the request URL, measure id, county FIPS codes, period, `release_id`, `semantic_version`, methodology id and version, source id, lineage source id, dataset id, source vintage, and limitations. These routes read the current release. The same URL can change after a later release. A saved response, or a checksum of that response, is the record of what you retrieved.
+
+A practical attribution names Atlas, the public API V1, the measure id, county FIPS, period, release id, semantic version, retrieval date, and the upstream publisher and dataset from the source resource you received. Replace every example identifier with the values in your response.
+
+## MCP
+
+An MCP client needs a released server URL, a tool and resource list, and a compatibility statement from the API service. That contract is not published. This guide does not include a client configuration, a copy-paste MCP URL, or a claim that a particular assistant product can connect.
+
+REST remains the supported programmatic access for current-release indicators, measures, observations, sources, and methodologies.
+
+## API keys
+
+Do not send an API key, bearer token, or Settings secret on the public read routes. They are not authenticated that way.
+
+The professional workspace Settings page does not generate, show, copy, revoke, or regenerate a user API key. Planned key-management controls, including any future one-time secret display, are outside this release. Do not store a guessed credential in the browser or in a docs example.
+
+Signed-in product features use the account session inside Atlas. That session is not a public API key and is not a substitute for the anonymous `/v1` reads above.
