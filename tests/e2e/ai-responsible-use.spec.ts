@@ -27,13 +27,21 @@ test("opens AI / Responsible Use from the professional footer and keeps the shel
     page.getByRole("heading", { level: 1, name: "AI / Responsible Use" })
   ).toBeVisible();
   await expect(page.getByRole("banner")).toBeVisible();
-  const workspaceNav = page.getByRole("navigation", {
-    name: "Professional workspace",
-  });
   if (testInfo.project.name.includes("mobile")) {
-    await expect(workspaceNav).toBeHidden();
+    const sidebar = page.locator("#ux-reset-pro-navigation");
+    const closedNavigation = page.getByRole("navigation", {
+      includeHidden: true,
+      name: "Professional workspace",
+    });
+    await expect(sidebar).toHaveCount(1);
+    await expect(closedNavigation).toHaveCount(1);
+    await expect(sidebar).toHaveAttribute("aria-hidden", "true");
+    await expect(sidebar).toHaveAttribute("inert", "");
+    await expect(closedNavigation).toBeHidden();
   } else {
-    await expect(workspaceNav).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeVisible();
   }
 
   await page.reload();
