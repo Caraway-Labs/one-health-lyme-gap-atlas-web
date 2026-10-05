@@ -108,6 +108,19 @@ function jurisdictionSelectValue(
   return jurisdiction.stateCode;
 }
 
+function jurisdictionLabel(
+  jurisdiction: ProfileDraftInput["jurisdiction"],
+  stateOptions: readonly AtlasStateOption[]
+): string | null {
+  if (jurisdiction === "unset") {
+    return null;
+  }
+  if (jurisdiction === "national") {
+    return "United States";
+  }
+  return reviewScopeLabel(jurisdiction.stateCode, stateOptions);
+}
+
 function jurisdictionFromSelectValue(
   value: string
 ): ProfileDraftInput["jurisdiction"] {
@@ -308,7 +321,9 @@ export function SettingsProfileForm() {
                 data-testid="settings-jurisdiction-select"
                 id="default-jurisdiction"
               >
-                <SelectValue placeholder="Choose United States or a state" />
+                <SelectValue placeholder="Choose United States or a state">
+                  {jurisdictionLabel(currentDraft.jurisdiction, selectOptions)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">United States</SelectItem>

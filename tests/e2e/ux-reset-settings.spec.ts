@@ -152,7 +152,11 @@ test.describe("Settings profile and default jurisdiction", () => {
     ).toBeVisible();
     await expect(page.getByTestId("settings-organization")).toHaveValue("");
     await expect(page.getByTestId("settings-job-title")).toHaveValue("");
-    await expect(page.getByRole("link", { name: "Review" })).toBeVisible();
+    const reviewLink = page.getByRole("link", { name: "Review" });
+    if (!(await reviewLink.isVisible())) {
+      await page.getByRole("button", { name: "Open navigation" }).click();
+    }
+    await expect(reviewLink).toBeVisible();
   });
 
   test("saves a state default, starts a new Review there, and still opens other states", async ({
@@ -239,7 +243,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     api.failNextSaves(1);
     await chooseJurisdiction(page, "Colorado (CO)");
     await page.getByTestId("settings-save-profile").click();
-    await expect(page.getByRole("alert")).toContainText(
+    await expect(page.getByTestId("settings-save-notice")).toContainText(
       "saved default is unchanged"
     );
     await expect(
