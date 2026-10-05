@@ -179,4 +179,70 @@ describe("Settings profile form", () => {
       (screen.getByTestId("settings-organization") as HTMLInputElement).value
     ).toBe("CDPHE");
   });
+
+  it("shows an unsupported saved state as incomplete for Review too", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: "Dept",
+            role: null,
+            state_code: "MA",
+          },
+        },
+        status: 200,
+      })
+    );
+    renderSettings();
+    const readout = await screen.findByTestId("settings-default-jurisdiction");
+    await waitFor(() => {
+      const node = readout.querySelector<HTMLElement>(
+        "[data-default-jurisdiction]"
+      );
+      expect({
+        attribute: node?.dataset.defaultJurisdiction,
+        completion: node?.dataset.jurisdictionCompletion,
+        source: node?.dataset.reviewStartSource,
+        start: node?.dataset.reviewStartScope,
+      }).toStrictEqual({
+        attribute: "unrecognized",
+        completion: "incomplete",
+        source: "national-fallback",
+        start: "ALL",
+      });
+    });
+  });
+
+  it("does not confirm a saved state while the state list is unavailable", async () => {
+    vi.mocked(metadataV1AtlasMetadataGet).mockRejectedValue(
+      new AtlasApiError("down", "/v1/atlas/metadata", 503, null)
+    );
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: null,
+            role: null,
+            state_code: "CO",
+          },
+        },
+        status: 200,
+      })
+    );
+    renderSettings();
+    const readout = await screen.findByTestId("settings-default-jurisdiction");
+    await waitFor(() => {
+      const node = readout.querySelector<HTMLElement>(
+        "[data-default-jurisdiction]"
+      );
+      expect(node?.dataset.defaultJurisdiction).toBe("unverified");
+    });
+    const settled = readout.querySelector<HTMLElement>(
+      "[data-default-jurisdiction]"
+    );
+    expect(settled?.dataset.jurisdictionCompletion).toBe("unavailable");
+    expect(settled?.dataset.reviewStartSource).toBe("national-fallback");
+  });
 });

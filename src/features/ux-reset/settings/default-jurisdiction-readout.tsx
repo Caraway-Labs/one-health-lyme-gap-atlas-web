@@ -8,53 +8,43 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import {
-  reviewStartForSelection,
-  type DefaultJurisdiction,
+  assessSavedProfile,
+  type ProfileAssessment,
 } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 import { useSavedProfile } from "@/features/ux-reset/profile/use-saved-profile";
 import { useSettingsStateOptions } from "@/features/ux-reset/settings/use-settings-state-options";
 import { reviewScopeLabel } from "@/lib/atlas-state-geography";
 
-function jurisdictionAttribute(selection: DefaultJurisdiction): string {
-  switch (selection.kind) {
-    case "national": {
-      return "ALL";
-    }
-    case "state": {
-      return selection.stateCode;
-    }
-    case "unrecognized": {
-      return "unrecognized";
-    }
-    case "unselected": {
-      return "unselected";
-    }
-    default: {
-      const exhaustive: never = selection;
-      return exhaustive;
-    }
-  }
-}
-
 function confirmedCopy(
-  selection: DefaultJurisdiction,
+  assessment: ProfileAssessment,
   stateOptions: readonly { code: string; name: string }[]
 ): string {
-  switch (selection.kind) {
-    case "national": {
-      return "United States";
+  switch (assessment.summary) {
+    case "confirmed": {
+      return assessment.selection.kind === "state"
+        ? reviewScopeLabel(assessment.selection.stateCode, stateOptions)
+        : "United States";
     }
-    case "state": {
-      return reviewScopeLabel(selection.stateCode, stateOptions);
+    case "unsupported": {
+      const code =
+        assessment.selection.kind === "unrecognized" ||
+        assessment.selection.kind === "state"
+          ? assessment.selection.stateCode
+          : "that code";
+      return `Saved state code ${code} is not a current Atlas state. Choose United States or a listed state and save.`;
     }
-    case "unrecognized": {
-      return `Saved state code ${selection.stateCode} is not a current Atlas state. Choose United States or a listed state and save.`;
+    case "loading": {
+      return "Checking whether the saved state is in the current Atlas list.";
     }
-    case "unselected": {
+    case "metadata-unavailable": {
+      return "The state list is unavailable, so this saved state cannot be confirmed. New Review sessions start with the United States until the list loads.";
+    }
+    case "unselected":
+    case "fallback": {
       return "No saved default. New Review sessions start with the United States until you save one.";
     }
     default: {
-      const exhaustive: never = selection;
+      const exhaustive: never = assessment.summary;
       return exhaustive;
     }
   }
@@ -64,30 +54,31 @@ export function DefaultJurisdictionReadout() {
   const profileQuery = useSavedProfile();
   const metadataQuery = useSettingsStateOptions();
   const stateOptions = metadataQuery.stateOptions;
-  const selection = profileQuery.data?.selection;
+  const profile = profileQuery.data;
 
   let body: string;
   let dataAttribute: string;
   let completion = "unavailable";
   let reviewStartScope = "";
   let reviewStartSource = "";
-  if (profileQuery.isPending) {
+  if (profileQuery.sessionRejected) {
+    body =
+      "Your session expired. Sign in again before relying on this setting.";
+    dataAttribute = "error";
+  } else if (profileQuery.isPending) {
     body = "Loading profile…";
     dataAttribute = "pending";
-  } else if (profileQuery.isError || !selection || !profileQuery.data) {
+  } else if (profileQuery.isError || !profile) {
     body =
       "Unable to load your default jurisdiction. Try again later before relying on this setting.";
     dataAttribute = "error";
   } else {
-    const start = reviewStartForSelection(
-      selection,
-      metadataQuery.isSuccess ? stateOptions : null
-    );
-    body = confirmedCopy(selection, stateOptions);
-    dataAttribute = jurisdictionAttribute(selection);
-    completion = profileQuery.data.completion.status;
-    reviewStartScope = start.scope;
-    reviewStartSource = start.source;
+    const assessment = assessSavedProfile(profile, metadataQuery.stateList);
+    body = confirmedCopy(assessment, stateOptions);
+    dataAttribute = assessment.dataAttribute;
+    completion = assessment.completion;
+    reviewStartScope = assessment.reviewStart.scope;
+    reviewStartSource = assessment.reviewStart.source;
   }
 
   return (

@@ -27,6 +27,7 @@ async function installSettingsApi(page: Page) {
   let stored: StoredProfile = null;
   let failSaves = 0;
   let holdPut = false;
+  let commitBeforeHold = false;
   let releasePut: (() => void) | undefined;
   const writes: unknown[] = [];
 
@@ -69,6 +70,9 @@ async function installSettingsApi(page: Page) {
       });
       return;
     }
+    if (commitBeforeHold) {
+      stored = body as Exclude<StoredProfile, null>;
+    }
     if (holdPut) {
       const held = Promise.withResolvers<boolean>();
       releasePut = () => {
@@ -101,6 +105,10 @@ async function installSettingsApi(page: Page) {
       failSaves = count;
     },
     holdNextPut() {
+      holdPut = true;
+    },
+    commitThenHoldNextPut() {
+      commitBeforeHold = true;
       holdPut = true;
     },
     releaseHeldPut() {
@@ -280,6 +288,23 @@ test.describe("Settings profile and default jurisdiction", () => {
     await page.reload();
     await expect(
       page.locator("[data-default-jurisdiction='unselected']")
+    ).toBeVisible();
+    await expect(page.getByTestId("settings-save-notice")).toHaveCount(0);
+    api.releaseHeldPut();
+  });
+
+  test("keeps a committed save that loses its response across refresh", async ({
+    page,
+  }) => {
+    const api = await installSettingsApi(page);
+    api.commitThenHoldNextPut();
+    await page.goto("/app/settings");
+    await chooseJurisdiction(page, "Colorado (CO)");
+    await page.getByTestId("settings-save-profile").click();
+    await expect.poll(() => api.writes.length).toBe(1);
+    await page.reload();
+    await expect(
+      page.locator("[data-default-jurisdiction='CO']")
     ).toBeVisible();
     await expect(page.getByTestId("settings-save-notice")).toHaveCount(0);
     api.releaseHeldPut();

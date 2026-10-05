@@ -1,8 +1,6 @@
 import { parseUxResetSharedContext } from "@/features/ux-reset/context-params";
-import {
-  type AtlasStateOption,
-  isAtlasStateCode,
-} from "@/lib/atlas-state-geography";
+import { reviewStartForSelection } from "@/features/ux-reset/profile/default-jurisdiction-contract";
+import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 
 export type ReviewScope = "ALL" | string;
 
@@ -34,10 +32,13 @@ export function resolveStartingReviewScope(
     return parsedScope;
   }
   const trimmed = profileStateCode?.trim().toUpperCase() ?? "";
-  if (trimmed && isAtlasStateCode(trimmed, stateOptions)) {
-    return trimmed;
-  }
-  return "ALL";
+  const selection = trimmed
+    ? { kind: "state" as const, stateCode: trimmed }
+    : { kind: "unselected" as const };
+  return reviewStartForSelection(selection, {
+    options: stateOptions,
+    status: "ready",
+  }).scope;
 }
 
 export function reviewScopeMatchesPresentation(

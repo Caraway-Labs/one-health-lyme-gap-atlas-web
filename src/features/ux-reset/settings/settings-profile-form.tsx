@@ -19,10 +19,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  assessSavedProfile,
   buildProfileWrite,
+  type ProfileAssessment,
   type ProfileDraftInput,
   type SavedProfile,
 } from "@/features/ux-reset/profile/default-jurisdiction-contract";
+import {
+  profileIdentityKey,
+  type ProfileSessionIdentity,
+} from "@/features/ux-reset/profile/profile-session";
 import { writeSavedProfile } from "@/features/ux-reset/profile/saved-profile-client";
 import {
   savedProfileQueryKey,
@@ -63,25 +69,32 @@ const PROFILE_ROLES: {
 
 type SaveNotice = { text: string; tone: "error" | "success" };
 
-function formValuesFromSavedProfile(profile: SavedProfile): ProfileDraftInput {
-  switch (profile.selection.kind) {
-    case "national": {
-      return draftFromSelection(profile, "national");
-    }
-    case "state": {
-      return draftFromSelection(profile, {
-        stateCode: profile.selection.stateCode,
-      });
-    }
-    case "unselected":
-    case "unrecognized": {
-      return draftFromSelection(profile, "unset");
-    }
-    default: {
-      const exhaustive: never = profile.selection;
-      return exhaustive;
-    }
+function formValuesFromAssessment(
+  profile: SavedProfile,
+  assessment: ProfileAssessment
+): ProfileDraftInput {
+  if (
+    assessment.summary === "confirmed" &&
+    assessment.selection.kind === "state"
+  ) {
+    return draftFromSelection(profile, {
+      stateCode: assessment.selection.stateCode,
+    });
   }
+  if (assessment.selection.kind === "national") {
+    return draftFromSelection(profile, "national");
+  }
+  return draftFromSelection(profile, "unset");
+}
+
+function formValuesFromSavedProfile(
+  profile: SavedProfile,
+  stateOptions: readonly AtlasStateOption[]
+): ProfileDraftInput {
+  return formValuesFromAssessment(
+    profile,
+    assessSavedProfile(profile, { options: stateOptions, status: "ready" })
+  );
 }
 
 function draftFromSelection(
@@ -140,29 +153,6 @@ function roleLabel(role: UserProfileWriteRole | null): string {
   return match ? match.label : "Prefer not to say";
 }
 
-function optionsForSave(
-  stateOptions: readonly AtlasStateOption[],
-  draft: ProfileDraftInput,
-  confirmed: SavedProfile
-): readonly AtlasStateOption[] {
-  if (stateOptions.length > 0) {
-    return stateOptions;
-  }
-  if (
-    confirmed.selection.kind === "state" &&
-    typeof draft.jurisdiction === "object" &&
-    draft.jurisdiction.stateCode === confirmed.selection.stateCode
-  ) {
-    return [
-      {
-        code: confirmed.selection.stateCode,
-        name: confirmed.selection.stateCode,
-      },
-    ];
-  }
-  return stateOptions;
-}
-
 function successCopy(
   profile: SavedProfile,
   stateOptions: readonly AtlasStateOption[]
@@ -191,34 +181,65 @@ export function SettingsProfileForm() {
   const metadataQuery = useSettingsStateOptions();
   const queryClient = useQueryClient();
   const profile = profileQuery.data;
+  const identity = profileQuery.identity;
+  const identityKey = identity ? profileIdentityKey(identity) : null;
   const [draft, setDraft] = useState<ProfileDraftInput | null>(null);
   const [dirty, setDirty] = useState(false);
   const [synced, setSynced] = useState<SavedProfile | null>(null);
+  const [boundKey, setBoundKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<SaveNotice | null>(null);
   const [jurisdictionInvalid, setJurisdictionInvalid] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const requestIdRef = useRef(0);
+  const [draftIdentityKey, setDraftIdentityKey] = useState<string | null>(null);
 
-  if (profile && !dirty && profile !== synced) {
-    setSynced(profile);
-    setDraft(formValuesFromSavedProfile(profile));
+  if (identityKey && identityKey !== boundKey) {
+    setBoundKey(identityKey);
+    setDraft(null);
+    setDirty(false);
+    setSynced(null);
+    setNotice(null);
+    setSaving(false);
+    setSessionExpired(false);
+    setDraftIdentityKey(null);
+    return null;
   }
 
-  if (!profile || !draft) {
+  if (profileQuery.sessionRejected || sessionExpired) {
+    if (draft || dirty) {
+      setDraft(null);
+      setDirty(false);
+      setSynced(null);
+    }
+    return (
+      <p data-testid="settings-session-expired" role="alert">
+        Your session expired. Sign in again before changing this profile.
+      </p>
+    );
+  }
+
+  const stateList = metadataQuery.stateList;
+  const waitingForStateList =
+    stateList.status === "loading" && profile?.selection.kind === "state";
+  const assessment =
+    profile && !waitingForStateList
+      ? assessSavedProfile(profile, stateList)
+      : null;
+  if (assessment && profile && identityKey && !dirty && profile !== synced) {
+    setSynced(profile);
+    setDraft(formValuesFromAssessment(profile, assessment));
+    setDraftIdentityKey(identityKey);
+  }
+
+  if (!profile || !draft || !identity || waitingForStateList) {
     return null;
   }
 
   const confirmed = profile;
   const currentDraft = draft;
   const stateOptions = metadataQuery.stateOptions;
-  const selectOptions = [...stateOptions];
-  const selectedJurisdiction = currentDraft.jurisdiction;
-  if (typeof selectedJurisdiction === "object") {
-    const selectedCode = selectedJurisdiction.stateCode;
-    if (!selectOptions.some((option) => option.code === selectedCode)) {
-      selectOptions.push({ code: selectedCode, name: selectedCode });
-    }
-  }
+  const selectOptions = stateOptions;
 
   function updateDraft(next: ProfileDraftInput) {
     setDirty(true);
@@ -231,27 +252,39 @@ export function SettingsProfileForm() {
     event.preventDefault();
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
-    const built = buildProfileWrite(
-      currentDraft,
-      optionsForSave(stateOptions, currentDraft, confirmed)
-    );
+    if (!identity || draftIdentityKey !== identityKey) {
+      setNotice({
+        text: "This profile changed sessions. Nothing was saved.",
+        tone: "error",
+      });
+      return;
+    }
+    const built = buildProfileWrite(currentDraft, stateOptions);
     if (!built.ok) {
       setJurisdictionInvalid(currentDraft.jurisdiction === "unset");
       setNotice({ text: built.message, tone: "error" });
       return;
     }
-    void saveDraft(built.body, requestId);
+    void saveDraft(built.body, requestId, identity, confirmed);
   };
 
   const saveDraft = async (
     body: Parameters<typeof writeSavedProfile>[0],
-    requestId: number
+    requestId: number,
+    saveIdentity: ProfileSessionIdentity,
+    lastConfirmed: SavedProfile
   ) => {
     setSaving(true);
     setNotice(null);
-    await queryClient.cancelQueries({ queryKey: savedProfileQueryKey });
-    const outcome = await writeSavedProfile(body);
+    await queryClient.cancelQueries({
+      queryKey: savedProfileQueryKey(saveIdentity),
+    });
+    const outcome = await writeSavedProfile(body, saveIdentity, lastConfirmed);
     if (requestId !== requestIdRef.current) {
+      return;
+    }
+    if (draftIdentityKey !== profileIdentityKey(saveIdentity)) {
+      setSaving(false);
       return;
     }
     setSaving(false);
@@ -259,19 +292,42 @@ export function SettingsProfileForm() {
       case "confirmed": {
         setDirty(false);
         setSynced(outcome.profile);
-        setDraft(formValuesFromSavedProfile(outcome.profile));
-        queryClient.setQueryData(savedProfileQueryKey, outcome.profile);
+        setDraft(formValuesFromSavedProfile(outcome.profile, stateOptions));
+        queryClient.setQueryData(
+          savedProfileQueryKey(saveIdentity),
+          outcome.profile
+        );
         setNotice({
           text: successCopy(outcome.profile, selectOptions),
           tone: "success",
         });
         break;
       }
+      case "diverged": {
+        setSynced(outcome.profile);
+        queryClient.setQueryData(
+          savedProfileQueryKey(saveIdentity),
+          outcome.profile
+        );
+        setNotice({ text: outcome.message, tone: "error" });
+        break;
+      }
       case "superseded": {
         break;
       }
+      case "unauthorized": {
+        setDraft(null);
+        setDirty(false);
+        setSynced(null);
+        setSessionExpired(true);
+        queryClient.removeQueries({
+          queryKey: savedProfileQueryKey(saveIdentity),
+        });
+        break;
+      }
       case "rejected":
-      case "unconfirmed": {
+      case "unconfirmed":
+      case "uncertain": {
         setNotice({ text: outcome.message, tone: "error" });
         break;
       }
@@ -298,7 +354,8 @@ export function SettingsProfileForm() {
           {metadataQuery.isError ? (
             <p className="type-small" role="status">
               The state list is temporarily unavailable. You can still save
-              United States, or keep the current saved state.
+              United States. A state default can be saved again after the list
+              returns.
             </p>
           ) : null}
           <label

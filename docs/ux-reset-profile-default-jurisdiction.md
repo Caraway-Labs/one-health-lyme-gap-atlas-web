@@ -25,13 +25,19 @@ Route authority stays in `src/features/ux-reset/routes.ts` (`RESET_SETTINGS_PATH
 | `profile: null` | Unselected. No saved default. | Incomplete | United States as a fallback, not a saved national default |
 | Profile object, `state_code` null or omitted | Explicit national default | Complete | United States, confirmed |
 | Profile object, `state_code` is a two-letter code in the current metadata state list | That state | Complete | That state |
-| Profile object, `state_code` present but not a governed state code | Unrecognized | Incomplete | United States fallback |
+| Profile object, `state_code` present but the state list is still loading | Unverified | Unavailable | Not applied yet |
+| Profile object, `state_code` present but the state list failed to load | Unverified | Unavailable | United States fallback |
+| Profile object, `state_code` present but not in the loaded state list, including an empty list | Unrecognized | Incomplete | United States fallback |
+
+`assessSavedProfile` is the only mapping for Settings display, completion, and fresh Review start. A postal code is not complete until the loaded state list contains it. Loading and an unavailable list are not the same as a code confirmed to be outside coverage.
 
 Completion follows only that jurisdiction mapping. Role, organization, and job title are optional and never mark completion, block the workspace, or stand in for a default. A legacy account save that stores a profile with `state_code: null` ("No state selected") is the same persisted shape as an explicit national default.
 
-Writes always send the full `UserProfileWrite` body (`role`, `state_code`, `organization`, `job_title`). Explicit national sends `state_code: null`. A save is confirmed only when HTTP 200 returns a profile object whose mapped selection and optional fields echo the write. `profile: null`, a mismatched echo, a non-200, or a superseded response is unconfirmed: the editor keeps the draft and must not describe the default as saved.
+The profile cache key includes the authenticated user id. Sign-out, expiry, and account changes drop the previous cache and the open draft. A read or write checks the session again before its result is kept. A 401 clears the editor.
 
-In-flight reads that overlap a write are discarded. The cache keeps the last confirmed profile until a read that started after the write settles. `UserProfile` has no version field, so a later read that the server answers with an older body cannot be detected from the payload alone.
+Writes for one account run one at a time. A newer save supersedes an older in-flight save, and the older response cannot mark itself saved. Reads that start before a write finishes, or while one is in flight, are discarded, including after remount, focus, or reconnect.
+
+A save is confirmed only when HTTP 200 returns a profile object whose mapped selection and optional fields echo the write. A lost response, non-200, or unreadable body does not say the saved default is unchanged. The draft and the last confirmed profile stay put, then a read reconciles: a matching profile confirms the save, the previous profile shows that the default is unchanged, and a failed read stays unconfirmed. `UserProfile` has no version field, so a later read that the server answers with an older body cannot be detected from the payload alone.
 
 ## Boundaries
 

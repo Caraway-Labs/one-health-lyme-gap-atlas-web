@@ -2,10 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import type { StateListStatus } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
-import { atlasStateOptionsFromMetadata } from "@/lib/atlas-state-geography";
+import {
+  type AtlasStateOption,
+  atlasStateOptionsFromMetadata,
+} from "@/lib/atlas-state-geography";
 
 export const settingsMetadataQueryKey = ["ux-reset-settings-metadata"] as const;
 
@@ -20,10 +24,30 @@ export function useSettingsStateOptions() {
     queryKey: settingsMetadataQueryKey,
     retry: false,
   });
+  const stateOptions = query.data
+    ? atlasStateOptionsFromMetadata(query.data.states)
+    : [];
   return {
     ...query,
-    stateOptions: query.data
-      ? atlasStateOptionsFromMetadata(query.data.states)
-      : [],
+    stateList: stateListFromMetadataQuery({
+      isError: query.isError,
+      isSuccess: query.isSuccess,
+      stateOptions,
+    }),
+    stateOptions,
   };
+}
+
+export function stateListFromMetadataQuery(query: {
+  isError: boolean;
+  isSuccess: boolean;
+  stateOptions: readonly AtlasStateOption[];
+}): StateListStatus {
+  if (query.isError) {
+    return { status: "unavailable" };
+  }
+  if (!query.isSuccess) {
+    return { status: "loading" };
+  }
+  return { options: query.stateOptions, status: "ready" };
 }

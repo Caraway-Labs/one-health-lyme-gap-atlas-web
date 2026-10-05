@@ -16,12 +16,16 @@ vi.mock(import("@/generated/atlas"), () => ({
   saveProfileV1MeProfilePut: saveProfile,
 }));
 
+import { savedProfileFromUserProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 import {
   readSavedProfile,
   resetSavedProfileCoordinationForTests,
   writeSavedProfile,
 } from "@/features/ux-reset/profile/saved-profile-client";
-import { useSavedProfile } from "@/features/ux-reset/profile/use-saved-profile";
+import {
+  useSavedProfile,
+  savedProfileQueryKey,
+} from "@/features/ux-reset/profile/use-saved-profile";
 
 const emptyOptional = {
   job_title: null,
@@ -109,8 +113,8 @@ describe("saved profile client", () => {
       state_code: "CO",
     });
     expect(written).toMatchObject({
-      message: expect.stringContaining("saved default is unchanged"),
-      status: "unconfirmed",
+      message: expect.not.stringContaining("saved default is unchanged"),
+      status: "diverged",
     });
   });
 
@@ -122,7 +126,10 @@ describe("saved profile client", () => {
       ...emptyOptional,
       state_code: null,
     });
-    expect(written.status).toBe("unconfirmed");
+    expect(written).toMatchObject({
+      message: expect.not.stringContaining("saved default is unchanged"),
+      status: "diverged",
+    });
   });
 
   it("announces a failed save without a confirmed profile", async () => {
@@ -135,9 +142,12 @@ describe("saved profile client", () => {
     });
     expect(written).toMatchObject({
       message: expect.stringMatching(
-        /saved default is unchanged.*Reference: req-9\./
+        /could not confirm that save.*Reference: req-9\./
       ),
-      status: "unconfirmed",
+      status: "uncertain",
+    });
+    expect(written).toMatchObject({
+      message: expect.not.stringContaining("saved default is unchanged"),
     });
   });
 
@@ -153,7 +163,7 @@ describe("saved profile client", () => {
     );
   });
 
-  it("ignores an older write that finishes after a newer one", async () => {
+  it("serializes an older write behind a newer one across the queue", async () => {
     const firstGate = Promise.withResolvers<boolean>();
     saveProfile.mockImplementation(
       asResponse(async (body: { state_code?: string | null }) => {
@@ -163,14 +173,82 @@ describe("saved profile client", () => {
         return profileResponse(body.state_code ?? null);
       })
     );
-    const first = writeSavedProfile({ ...emptyOptional, state_code: "CO" });
-    const second = writeSavedProfile({ ...emptyOptional, state_code: "NY" });
+    const identity = { kind: "unconfigured" as const };
+    const first = writeSavedProfile(
+      { ...emptyOptional, state_code: "CO" },
+      identity
+    );
+    await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledOnce());
+    const second = writeSavedProfile(
+      { ...emptyOptional, state_code: "NY" },
+      identity
+    );
+    await Promise.resolve();
+    expect(saveProfile).toHaveBeenCalledOnce();
+    firstGate.resolve(true);
+    await expect(first).resolves.toStrictEqual({ status: "superseded" });
     await expect(second).resolves.toMatchObject({
       profile: { selection: { kind: "state", stateCode: "NY" } },
       status: "confirmed",
     });
-    firstGate.resolve(true);
-    await expect(first).resolves.toStrictEqual({ status: "superseded" });
+    expect(saveProfile).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ state_code: "NY" })
+    );
+  });
+
+  it("rejects a read that starts while a write is still in flight", async () => {
+    const writeGate = Promise.withResolvers<boolean>();
+    saveProfile.mockImplementation(
+      asResponse(async () => {
+        await writeGate.promise;
+        return profileResponse("NY");
+      })
+    );
+    const writing = writeSavedProfile({
+      ...emptyOptional,
+      state_code: "NY",
+    });
+    await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledOnce());
+    getProfile.mockResolvedValue(asResponse(profileResponse("CO")));
+    const read = readSavedProfile();
+    writeGate.resolve(true);
+    await expect(writing).resolves.toMatchObject({
+      profile: { selection: { stateCode: "NY" } },
+      status: "confirmed",
+    });
+    await expect(read).rejects.toMatchObject({ code: "superseded" });
+  });
+
+  it("confirms a lost save response when the following read echoes it", async () => {
+    saveProfile.mockRejectedValue(
+      new AtlasApiError("lost", "/v1/me/profile", 503, "req-lost")
+    );
+    getProfile.mockResolvedValue(asResponse(profileResponse("CO")));
+    const written = await writeSavedProfile({
+      ...emptyOptional,
+      state_code: "CO",
+    });
+    expect(written).toMatchObject({
+      profile: { selection: { stateCode: "CO" } },
+      status: "confirmed",
+    });
+  });
+
+  it("calls the default unchanged only when a later read still shows it", async () => {
+    saveProfile.mockRejectedValue(
+      new AtlasApiError("lost", "/v1/me/profile", 503, "req-same")
+    );
+    getProfile.mockResolvedValue(asResponse(profileResponse(null)));
+    const written = await writeSavedProfile(
+      { ...emptyOptional, state_code: "CO" },
+      undefined,
+      savedProfileFromUserProfile({ ...emptyOptional, state_code: null })
+    );
+    expect(written).toMatchObject({
+      message: expect.stringContaining("saved default is unchanged"),
+      status: "unconfirmed",
+    });
   });
 
   it("drops a read that started before a confirmed write", async () => {
@@ -214,7 +292,10 @@ describe("saved profile client", () => {
     });
     expect(written.status).toBe("confirmed");
     if (written.status === "confirmed") {
-      client.setQueryData(["ux-reset-saved-profile"], written.profile);
+      client.setQueryData(
+        savedProfileQueryKey({ kind: "unconfigured" }),
+        written.profile
+      );
     }
     readGate.resolve(true);
     await waitFor(() => expect(hook.result.current.isSuccess).toBeTruthy());

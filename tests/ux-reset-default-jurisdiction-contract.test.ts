@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  assessSavedProfile,
   buildProfileWrite,
   completionForSelection,
   mapDefaultJurisdiction,
@@ -14,16 +15,17 @@ const stateOptions = [
   { code: "CO", name: "Colorado" },
   { code: "NY", name: "New York" },
 ];
+const readyStates = { options: stateOptions, status: "ready" as const };
 
 describe("default jurisdiction contract", () => {
   it("maps a null profile to an unselected incomplete default", () => {
     const selection = mapDefaultJurisdiction(null);
     expect(selection).toStrictEqual({ kind: "unselected" });
-    expect(completionForSelection(selection)).toStrictEqual({
+    expect(completionForSelection(selection, readyStates)).toStrictEqual({
       reason: "unselected",
       status: "incomplete",
     });
-    expect(reviewStartForSelection(selection, stateOptions)).toStrictEqual({
+    expect(reviewStartForSelection(selection, readyStates)).toStrictEqual({
       scope: "ALL",
       source: "national-fallback",
     });
@@ -38,12 +40,12 @@ describe("default jurisdiction contract", () => {
     });
     expect(saved.selection).toStrictEqual({ kind: "national" });
     expect(saved.completion.status).toBe("complete");
-    expect(
-      reviewStartForSelection(saved.selection, stateOptions)
-    ).toStrictEqual({
-      scope: "ALL",
-      source: "confirmed-default",
-    });
+    expect(reviewStartForSelection(saved.selection, readyStates)).toStrictEqual(
+      {
+        scope: "ALL",
+        source: "confirmed-default",
+      }
+    );
   });
 
   it("maps an omitted state_code on a saved profile to explicit national", () => {
@@ -54,26 +56,66 @@ describe("default jurisdiction contract", () => {
 
   it("maps a governed state code without treating optional text as completion", () => {
     const saved = savedProfileFromUserProfile({ state_code: "co" });
-    expect(saved.selection).toStrictEqual({ kind: "state", stateCode: "CO" });
-    expect(saved.completion).toStrictEqual({
-      jurisdiction: { kind: "state", stateCode: "CO" },
-      status: "complete",
+    const assessed = assessSavedProfile(saved, readyStates);
+    expect(assessed.selection).toStrictEqual({
+      kind: "state",
+      stateCode: "CO",
+    });
+    expect(assessed.completion).toBe("complete");
+    expect(assessed.reviewStart).toStrictEqual({
+      scope: "CO",
+      source: "confirmed-default",
     });
     expect(saved.organization).toBeNull();
     expect(saved.jobTitle).toBeNull();
   });
 
+  it("uses one governed result for an unsupported saved state", () => {
+    const saved = savedProfileFromUserProfile({ state_code: "MA" });
+    const assessed = assessSavedProfile(saved, readyStates);
+    expect(assessed).toMatchObject({
+      completion: "incomplete",
+      dataAttribute: "unrecognized",
+      reviewStart: { scope: "ALL", source: "national-fallback" },
+      summary: "unsupported",
+    });
+    expect(resolveStartingReviewScope(false, "ALL", "MA", stateOptions)).toBe(
+      "ALL"
+    );
+  });
+
+  it("keeps loading and empty metadata distinct from confirmed coverage", () => {
+    const saved = savedProfileFromUserProfile({ state_code: "CO" });
+    const loading = assessSavedProfile(saved, { status: "loading" });
+    const empty = assessSavedProfile(saved, { options: [], status: "ready" });
+    const unavailable = assessSavedProfile(saved, { status: "unavailable" });
+    expect(loading.completion).toBe("unavailable");
+    expect(loading.summary).toBe("loading");
+    expect(loading.reviewStart.source).toBe("pending");
+    expect({
+      empty: empty.summary,
+      emptyStart: empty.reviewStart.source,
+      unavailable: unavailable.summary,
+      unavailableStart: unavailable.reviewStart.source,
+    }).toStrictEqual({
+      empty: "unsupported",
+      emptyStart: "national-fallback",
+      unavailable: "metadata-unavailable",
+      unavailableStart: "national-fallback",
+    });
+  });
+
   it("does not treat an unrecognized code as national", () => {
     const selection = mapDefaultJurisdiction({ state_code: "12" });
     expect(selection).toStrictEqual({ kind: "unrecognized", stateCode: "12" });
-    expect(reviewStartForSelection(selection, stateOptions).source).toBe(
+    expect(reviewStartForSelection(selection, readyStates).source).toBe(
       "national-fallback"
     );
   });
 
   it("keeps an explicit Review scope ahead of the saved default", () => {
     const saved = savedProfileFromUserProfile({ state_code: "CO" });
-    const start = reviewStartForSelection(saved.selection, stateOptions);
+    const start = reviewStartForSelection(saved.selection, readyStates);
     expect(
       resolveStartingReviewScope(true, "NY", start.scope, stateOptions)
     ).toBe("NY");
