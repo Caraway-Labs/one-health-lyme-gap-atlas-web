@@ -123,6 +123,68 @@ describe("Atlas Amplitude boundary", () => {
     });
   });
 
+  it("does not initialize a pending SDK import after consent is withdrawn", async () => {
+    const deferred = Promise.withResolvers<typeof amplitude>();
+    const sdk = {
+      init: vi.fn<
+        (apiKey: string, options: Record<string, unknown>) => unknown
+      >(() => {
+        sessionStorage.setItem("AMP_session", "recreated");
+        localStorage.setItem("amplitude_unsent", "recreated");
+      }),
+      reset: vi.fn<() => unknown>(),
+      setOptOut: vi.fn<(optOut: boolean) => unknown>((optOut) => {
+        if (!optOut) sessionStorage.setItem("AMP_session", "opted-in");
+      }),
+      track:
+        vi.fn<
+          (eventType: string, properties: Record<string, unknown>) => unknown
+        >(),
+    };
+    const analytics = createAtlasAnalytics(() => deferred.promise);
+    const started = analytics.start("synthetic-development-key");
+
+    sessionStorage.setItem("AMP_session", "vendor-value");
+    localStorage.setItem("amplitude_unsent", "vendor-value");
+    analytics.stop();
+    analytics.track({
+      eventType: "atlas_route_viewed",
+      properties: { route_id: "account", methodology_version: "v1" },
+    });
+    deferred.resolve(sdk);
+    await started;
+
+    expect(sdk.init).not.toHaveBeenCalled();
+    expect(sdk.setOptOut).not.toHaveBeenCalledWith(false);
+    expect(sdk.track).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem("AMP_session")).toBeNull();
+    expect(localStorage.getItem("amplitude_unsent")).toBeNull();
+  });
+
+  it("initializes a fresh start after a withdrawn in-flight import", async () => {
+    const deferred = Promise.withResolvers<typeof amplitude>();
+    let loads = 0;
+    const analytics = createAtlasAnalytics(async () => {
+      loads += 1;
+      if (loads === 1) return deferred.promise;
+      return amplitude;
+    });
+
+    const withdrawnStart = analytics.start("synthetic-development-key");
+    analytics.stop();
+    deferred.resolve(amplitude);
+    await withdrawnStart;
+    await analytics.start("synthetic-development-key");
+    analytics.track({
+      eventType: "atlas_route_viewed",
+      properties: { route_id: "account", methodology_version: "v1" },
+    });
+
+    expect(amplitude.init).toHaveBeenCalledOnce();
+    expect(amplitude.setOptOut).toHaveBeenCalledWith(false);
+    expect(amplitude.track).toHaveBeenCalledOnce();
+  });
+
   it("opts out and clears only vendor storage when consent is withdrawn", async () => {
     const analytics = createAtlasAnalytics(async () => amplitude);
     await analytics.start("synthetic-development-key");

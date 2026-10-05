@@ -269,17 +269,25 @@ export function getAmplitudeBrowserInitOptions(): Record<string, unknown> {
 
 export function createAtlasAnalytics(loadAmplitude: AmplitudeLoader) {
   let amplitude: AmplitudeModule | undefined;
+  // stop() advances this so an import that resolves later cannot init or opt in.
+  let startGeneration = 0;
 
   return {
     async start(apiKey: string | undefined): Promise<boolean> {
       if (!apiKey || amplitude) return Boolean(amplitude);
 
-      amplitude = await loadAmplitude();
+      const generation = startGeneration;
+      const loaded = await loadAmplitude();
+      if (generation !== startGeneration) return false;
+      if (amplitude) return true;
+
+      amplitude = loaded;
       amplitude.init(apiKey, getAmplitudeBrowserInitOptions());
       amplitude.setOptOut(false);
       return true;
     },
     stop(): void {
+      startGeneration += 1;
       if (amplitude) {
         amplitude.setOptOut(true);
         amplitude.reset();
