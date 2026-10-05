@@ -566,7 +566,7 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await expect(select).toBeVisible();
   });
 
-  test("offers the sidecar on Investigate, Compare, and the Action placeholder", async ({
+  test("offers the sidecar on Investigate and Compare and omits the Action placeholder", async ({
     page,
   }) => {
     await installExploreMocks(page);
@@ -581,11 +581,7 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await page.goto("/app/action");
     await expect(page.getByRole("heading", { name: "Action" })).toBeVisible();
-    await openSidecar(page);
-    await expect(page.getByTestId("ask-atlas-no-context")).toBeVisible();
-    await expect(
-      page.getByTestId("ask-atlas-inherited-context")
-    ).toHaveAttribute("data-context-state", "none");
+    await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
   });
 
   test("keeps the composer inside the panel at short, resized, and keyboard viewports", async ({

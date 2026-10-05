@@ -140,21 +140,15 @@ describe("Ask Atlas reset sidecar", () => {
     vi.unstubAllGlobals();
   });
 
-  it("offers Ask Atlas on the Action placeholder without inventing context", () => {
+  it("keeps the Action placeholder free of a second assistant", () => {
     pathname = "/app/action";
     render(
       <AskAtlasChromeProvider>
         <ChromeProbe />
       </AskAtlasChromeProvider>
     );
-    fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
-    expect(screen.getByTestId("ask-atlas-no-context").textContent).toContain(
-      "No validated page context"
-    );
-    expect(screen.queryByText("1999-01-01")).toBeNull();
-    expect(
-      screen.getByTestId("desktop-slot").querySelector("#ux-reset-ask-atlas")
-    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Ask Atlas" })).toBeNull();
+    expect(screen.queryByTestId("ask-atlas-panel")).toBeNull();
   });
 
   it("keeps settings free of a second assistant", () => {
@@ -262,7 +256,7 @@ describe("Ask Atlas reset sidecar", () => {
     chatRequest.mockReturnValueOnce(second.promise);
     const { rerender } = render(chromeTree());
     await askFromOpenSidecar("Old question from Explore");
-    pathname = "/app/settings";
+    pathname = "/app/action";
     rerender(chromeTree());
     pathname = "/app/investigate";
     rerender(chromeTree());
@@ -300,7 +294,7 @@ describe("Ask Atlas reset sidecar", () => {
     chatRequest.mockReturnValueOnce(second.promise);
     const { rerender } = render(chromeTree());
     await askFromOpenSidecar("Old question from Explore");
-    pathname = "/app/settings";
+    pathname = "/app/action";
     rerender(chromeTree());
     pathname = "/app/investigate";
     rerender(chromeTree());
@@ -392,4 +386,49 @@ describe("Ask Atlas reset sidecar", () => {
       )
     );
   });
+
+  it("leaves focus inside another overlay when a docked answer completes", async () => {
+    const pending = Promise.withResolvers<unknown>();
+    chatRequest.mockReturnValueOnce(pending.promise);
+    render(<OverlayTree />);
+    await askFromOpenSidecar("Question while another overlay is open");
+    const overlayControl = screen.getByRole("button", {
+      name: "Dismiss notes",
+    });
+    overlayControl.focus();
+    pending.resolve(
+      chatResult(
+        "Answer does not take the overlay.",
+        "request-overlay",
+        "conversation-overlay"
+      )
+    );
+    await screen.findByText("Answer does not take the overlay.");
+    await waitFor(() => expect(document.activeElement).toBe(overlayControl));
+  });
+
+  it("leaves focus inside another overlay when a docked answer fails", async () => {
+    const pending = Promise.withResolvers<unknown>();
+    chatRequest.mockReturnValueOnce(pending.promise);
+    render(<OverlayTree />);
+    await askFromOpenSidecar("Question while another overlay is open");
+    const overlayControl = screen.getByRole("button", {
+      name: "Dismiss notes",
+    });
+    overlayControl.focus();
+    pending.reject(new Error("Failed to fetch"));
+    await screen.findByRole("button", { name: "Retry" });
+    await waitFor(() => expect(document.activeElement).toBe(overlayControl));
+  });
 });
+
+function OverlayTree() {
+  return (
+    <AskAtlasChromeProvider>
+      <ChromeProbe />
+      <div aria-label="Release notes" role="dialog">
+        <button type="button">Dismiss notes</button>
+      </div>
+    </AskAtlasChromeProvider>
+  );
+}
