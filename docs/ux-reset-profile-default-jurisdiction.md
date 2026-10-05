@@ -33,11 +33,15 @@ Route authority stays in `src/features/ux-reset/routes.ts` (`RESET_SETTINGS_PATH
 
 Completion follows only that jurisdiction mapping. Role, organization, and job title are optional and never mark completion, block the workspace, or stand in for a default. A legacy account save that stores a profile with `state_code: null` ("No state selected") is the same persisted shape as an explicit national default.
 
-The profile cache key includes the authenticated user id. Sign-out, expiry, and account changes drop the previous cache and the open draft. A read or write checks the session again before its result is kept. A 401 clears the editor.
+The profile cache key includes the authenticated user id. Sign-out, expiry, and account changes drop the previous cache and the open draft. A read or write checks the session again before its result is kept. A write sends the access token from that same session snapshot, so a later session lookup cannot attach a different account's bearer to the body. A 401 clears the editor only when it still belongs to the current session. A stale account's 401 does not.
 
-Writes for one account run one at a time. A newer save supersedes an older in-flight save, and the older response cannot mark itself saved. Reads that start before a write finishes, or while one is in flight, are discarded, including after remount, focus, or reconnect.
+Writes for one account run one at a time, and overlap tracking is per account. One account's save does not discard another account's read. A newer save supersedes an older in-flight save for that same account, and the older response cannot mark itself saved. A read that overlaps that account's write is discarded. The discard checks generation, overlap, and abort again after the session lookup returns. If the cache for that account is still empty, the read is retried after that account's write settles.
 
-A save is confirmed only when HTTP 200 returns a profile object whose mapped selection and optional fields echo the write. A lost response, non-200, or unreadable body does not say the saved default is unchanged. The draft and the last confirmed profile stay put, then a read reconciles: a matching profile confirms the save, the previous profile shows that the default is unchanged, and a failed read stays unconfirmed. `UserProfile` has no version field, so a later read that the server answers with an older body cannot be detected from the payload alone.
+A pristine Settings draft follows the governed assessment. When the state list recovers, an untouched draft is filled from that assessment again. Edits the user has already made stay in the form.
+
+A save is confirmed only when HTTP 200 returns a profile object whose mapped selection and optional fields echo the write, or a later read already shows that same profile. A completed HTTP 200 that echoes the previous profile can say the saved default is unchanged, because that response is the server's finished result.
+
+A lost response, non-200, or unreadable body stays unresolved. A follow-up read that still shows the previous profile cannot prove the attempt will not commit: `UserProfile` has no version or idempotency key, a missing row is null, and PUT upserts. The editor keeps the draft and the last confirmed profile and says the save could not be confirmed. It does not say the saved default is unchanged. The next Save is an explicit retry that sends the desired value again. A dropped request can still commit after that retry; this contract does not treat the earlier attempt as settled.
 
 ## Boundaries
 

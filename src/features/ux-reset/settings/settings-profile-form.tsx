@@ -27,6 +27,7 @@ import {
 } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 import {
   profileIdentityKey,
+  profileSessionGeneration,
   type ProfileSessionIdentity,
 } from "@/features/ux-reset/profile/profile-session";
 import { writeSavedProfile } from "@/features/ux-reset/profile/saved-profile-client";
@@ -68,6 +69,23 @@ const PROFILE_ROLES: {
 ];
 
 type SaveNotice = { text: string; tone: "error" | "success" };
+
+function governedAssessmentKey(assessment: ProfileAssessment): string {
+  switch (assessment.selection.kind) {
+    case "national":
+    case "unselected": {
+      return `${assessment.summary}:${assessment.selection.kind}`;
+    }
+    case "state":
+    case "unrecognized": {
+      return `${assessment.summary}:${assessment.selection.kind}:${assessment.selection.stateCode}`;
+    }
+    default: {
+      const exhaustive: never = assessment.selection;
+      return exhaustive;
+    }
+  }
+}
 
 function formValuesFromAssessment(
   profile: SavedProfile,
@@ -186,6 +204,9 @@ export function SettingsProfileForm() {
   const [draft, setDraft] = useState<ProfileDraftInput | null>(null);
   const [dirty, setDirty] = useState(false);
   const [synced, setSynced] = useState<SavedProfile | null>(null);
+  const [syncedAssessmentKey, setSyncedAssessmentKey] = useState<string | null>(
+    null
+  );
   const [boundKey, setBoundKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<SaveNotice | null>(null);
@@ -199,6 +220,7 @@ export function SettingsProfileForm() {
     setDraft(null);
     setDirty(false);
     setSynced(null);
+    setSyncedAssessmentKey(null);
     setNotice(null);
     setSaving(false);
     setSessionExpired(false);
@@ -226,8 +248,17 @@ export function SettingsProfileForm() {
     profile && !waitingForStateList
       ? assessSavedProfile(profile, stateList)
       : null;
-  if (assessment && profile && identityKey && !dirty && profile !== synced) {
+  const assessmentKey = assessment ? governedAssessmentKey(assessment) : null;
+  if (
+    assessment &&
+    profile &&
+    identityKey &&
+    assessmentKey &&
+    !dirty &&
+    (profile !== synced || assessmentKey !== syncedAssessmentKey)
+  ) {
     setSynced(profile);
+    setSyncedAssessmentKey(assessmentKey);
     setDraft(formValuesFromAssessment(profile, assessment));
     setDraftIdentityKey(identityKey);
   }
@@ -274,17 +305,17 @@ export function SettingsProfileForm() {
     saveIdentity: ProfileSessionIdentity,
     lastConfirmed: SavedProfile
   ) => {
+    const generationAtSave = profileSessionGeneration();
     setSaving(true);
     setNotice(null);
     await queryClient.cancelQueries({
       queryKey: savedProfileQueryKey(saveIdentity),
     });
     const outcome = await writeSavedProfile(body, saveIdentity, lastConfirmed);
-    if (requestId !== requestIdRef.current) {
+    if (generationAtSave !== profileSessionGeneration()) {
       return;
     }
-    if (draftIdentityKey !== profileIdentityKey(saveIdentity)) {
-      setSaving(false);
+    if (requestId !== requestIdRef.current) {
       return;
     }
     setSaving(false);

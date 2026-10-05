@@ -37,6 +37,7 @@ vi.mock(import("@/generated/atlas"), () => ({
 
 import { resetSavedProfileCoordinationForTests } from "@/features/ux-reset/profile/saved-profile-client";
 import { ResetSettingsExperience } from "@/features/ux-reset/settings/reset-settings-experience";
+import { settingsMetadataQueryKey } from "@/features/ux-reset/settings/use-settings-state-options";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 
@@ -51,7 +52,7 @@ function renderSettings() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return render(<ResetSettingsExperience />, { wrapper });
+  return { client, ...render(<ResetSettingsExperience />, { wrapper }) };
 }
 
 describe("Settings profile form", () => {
@@ -135,7 +136,7 @@ describe("Settings profile form", () => {
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain(
-      "saved default is unchanged. Reference: req-4."
+      "could not confirm that save. Your edits are still here. The last confirmed default stays in place until Atlas can check it. Reference: req-4."
     );
     expect((organization as HTMLInputElement).value).toBe("CDPHE");
     expect(
@@ -244,5 +245,115 @@ describe("Settings profile form", () => {
     );
     expect(settled?.dataset.jurisdictionCompletion).toBe("unavailable");
     expect(settled?.dataset.reviewStartSource).toBe("national-fallback");
+  });
+
+  it("resyncs a pristine state draft after the state list recovers", async () => {
+    vi.mocked(metadataV1AtlasMetadataGet).mockRejectedValueOnce(
+      new AtlasApiError("down", "/v1/atlas/metadata", 503, null)
+    );
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: "CDPHE",
+            role: null,
+            state_code: "CO",
+          },
+        },
+        status: 200,
+      })
+    );
+    const { client } = renderSettings();
+    expect(
+      ((await screen.findByTestId("settings-organization")) as HTMLInputElement)
+        .value
+    ).toBe("CDPHE");
+    expect(
+      screen.getByTestId("settings-jurisdiction-select").textContent
+    ).toContain("Choose United States or a state");
+    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+      asResponse({ data: reviewScopeMetadataFixture, status: 200 })
+    );
+    await client.refetchQueries({ queryKey: settingsMetadataQueryKey });
+    await waitFor(() =>
+      expect({
+        jurisdiction: screen.getByTestId("settings-jurisdiction-select")
+          .textContent,
+        readout: screen
+          .getByTestId("settings-default-jurisdiction")
+          .querySelector("[data-default-jurisdiction='CO']"),
+      }).toStrictEqual({
+        jurisdiction: expect.stringContaining("Colorado (CO)"),
+        readout: expect.any(Element),
+      })
+    );
+    fireEvent.change(screen.getByTestId("settings-organization"), {
+      target: { value: "Edited" },
+    });
+    saveProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: "Edited",
+            role: null,
+            state_code: "CO",
+          },
+        },
+        status: 200,
+      })
+    );
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await waitFor(() =>
+      expect({
+        alert: screen.queryByRole("alert"),
+        called: (
+          saveProfile.mock.calls.at(-1) as [Record<string, unknown>] | undefined
+        )?.[0],
+      }).toStrictEqual({
+        alert: null,
+        called: expect.objectContaining({
+          organization: "Edited",
+          state_code: "CO",
+        }),
+      })
+    );
+  });
+
+  it("keeps a dirty organization edit when the state list recovers", async () => {
+    vi.mocked(metadataV1AtlasMetadataGet).mockRejectedValueOnce(
+      new AtlasApiError("down", "/v1/atlas/metadata", 503, null)
+    );
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: "CDPHE",
+            role: null,
+            state_code: "CO",
+          },
+        },
+        status: 200,
+      })
+    );
+    const { client } = renderSettings();
+    const organization = await screen.findByTestId("settings-organization");
+    fireEvent.change(organization, { target: { value: "Edited" } });
+    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+      asResponse({ data: reviewScopeMetadataFixture, status: 200 })
+    );
+    await client.refetchQueries({ queryKey: settingsMetadataQueryKey });
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("settings-default-jurisdiction")
+          .querySelector("[data-default-jurisdiction='CO']")
+      ).toBeTruthy()
+    );
+    expect(
+      (screen.getByTestId("settings-organization") as HTMLInputElement).value
+    ).toBe("Edited");
   });
 });

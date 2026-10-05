@@ -34,16 +34,50 @@ export function sameProfileIdentity(
   return profileIdentityKey(left) === profileIdentityKey(right);
 }
 
-export async function readProfileSessionIdentity(): Promise<ProfileSessionIdentity> {
+export type BoundProfileSession = {
+  accessToken: string | null;
+  identity: ProfileSessionIdentity;
+};
+
+let observedIdentityKey = "";
+let sessionGeneration = 0;
+
+function noteProfileSessionIdentity(identity: ProfileSessionIdentity): void {
+  const key = profileIdentityKey(identity);
+  if (key === observedIdentityKey) {
+    return;
+  }
+  observedIdentityKey = key;
+  sessionGeneration += 1;
+}
+
+export function profileSessionGeneration(): number {
+  return sessionGeneration;
+}
+
+export function resetProfileSessionGenerationForTests(): void {
+  observedIdentityKey = "";
+  sessionGeneration = 0;
+}
+
+export async function readBoundProfileSession(): Promise<BoundProfileSession> {
   try {
     const { data, error } = await createClient().auth.getSession();
     if (error || !data.session?.user.id) {
-      return { kind: "signed-out" };
+      return { accessToken: null, identity: { kind: "signed-out" } };
     }
-    return { kind: "user", userId: data.session.user.id };
+    return {
+      accessToken: data.session.access_token || null,
+      identity: { kind: "user", userId: data.session.user.id },
+    };
   } catch {
-    return { kind: "unconfigured" };
+    return { accessToken: null, identity: { kind: "unconfigured" } };
   }
+}
+
+export async function readProfileSessionIdentity(): Promise<ProfileSessionIdentity> {
+  const bound = await readBoundProfileSession();
+  return bound.identity;
 }
 
 function identityFromSession(
@@ -78,8 +112,10 @@ export function useProfileSessionIdentity(): ProfileSessionIdentity | null {
     const { data } = client.auth.onAuthStateChange(
       (_event: string, session: { user: { id: string } } | null) => {
         listenerFired = true;
+        const next = identityFromSession(session);
+        noteProfileSessionIdentity(next);
         if (!cancelled) {
-          setIdentity(identityFromSession(session));
+          setIdentity(next);
         }
       }
     );
@@ -88,11 +124,11 @@ export function useProfileSessionIdentity(): ProfileSessionIdentity | null {
       if (cancelled || listenerFired) {
         return;
       }
-      if (error) {
-        setIdentity({ kind: "signed-out" });
-        return;
-      }
-      setIdentity(identityFromSession(sessionData.session));
+      const next = error
+        ? { kind: "signed-out" as const }
+        : identityFromSession(sessionData.session);
+      noteProfileSessionIdentity(next);
+      setIdentity(next);
     };
     void loadSession();
     return () => {

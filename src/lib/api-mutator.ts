@@ -45,8 +45,10 @@ export async function apiMutator<T>(
   options: RequestInit
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  if (shouldAttachBearer(url)) {
+  if (shouldAttachBearer(url) && !headers.has("Authorization")) {
     try {
+      // Reuse a bearer the caller already bound to one session snapshot.
+      // A second lookup here can attach a different account's token.
       const { createClient } = await import("@/lib/supabase/client");
       const { data } = await createClient().auth.getSession();
       if (data.session?.access_token) {

@@ -255,6 +255,9 @@ test.describe("Settings profile and default jurisdiction", () => {
     await chooseJurisdiction(page, "Colorado (CO)");
     await page.getByTestId("settings-save-profile").click();
     await expect(page.getByTestId("settings-save-notice")).toContainText(
+      "could not confirm that save"
+    );
+    await expect(page.getByTestId("settings-save-notice")).not.toContainText(
       "saved default is unchanged"
     );
     await expect(

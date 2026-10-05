@@ -4,6 +4,7 @@ import {
   CancelledError,
   useQuery,
   useQueryClient,
+  type QueryClient,
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -16,8 +17,10 @@ import {
   type ProfileSessionIdentity,
 } from "@/features/ux-reset/profile/profile-session";
 import {
+  accountHasPendingWrite,
   readSavedProfile,
   SavedProfileClientError,
+  waitForAccountWrites,
 } from "@/features/ux-reset/profile/saved-profile-client";
 
 const savedProfileKeyRoot = "ux-reset-saved-profile";
@@ -28,6 +31,47 @@ export function savedProfileQueryKey(identity: ProfileSessionIdentity) {
 
 export function savedProfileQueryRoot(): readonly [string] {
   return [savedProfileKeyRoot];
+}
+
+function isSupersededRead(error: unknown): boolean {
+  return (
+    error instanceof SavedProfileClientError && error.code === "superseded"
+  );
+}
+
+async function readOrResumeSavedProfile(
+  signal: AbortSignal,
+  identity: ProfileSessionIdentity,
+  queryClient: QueryClient
+): Promise<SavedProfile> {
+  const accountKey = profileIdentityKey(identity);
+  try {
+    return await readSavedProfile(signal, identity);
+  } catch (error) {
+    if (!isSupersededRead(error) || signal.aborted) {
+      if (isSupersededRead(error)) {
+        throw new CancelledError({ revert: true });
+      }
+      throw error;
+    }
+    if (queryClient.getQueryData(savedProfileQueryKey(identity))) {
+      throw new CancelledError({ revert: true });
+    }
+    if (accountHasPendingWrite(accountKey)) {
+      await waitForAccountWrites(accountKey);
+    }
+    if (signal.aborted) {
+      throw new CancelledError({ revert: true });
+    }
+    try {
+      return await readSavedProfile(signal, identity);
+    } catch (retryError) {
+      if (isSupersededRead(retryError)) {
+        throw new CancelledError({ revert: true });
+      }
+      throw retryError;
+    }
+  }
 }
 
 export function useSavedProfile(): UseQueryResult<SavedProfile> & {
@@ -65,17 +109,7 @@ export function useSavedProfile(): UseQueryResult<SavedProfile> & {
       if (!identity || identity.kind === "signed-out") {
         throw new CancelledError({ revert: true });
       }
-      try {
-        return await readSavedProfile(signal, identity);
-      } catch (error) {
-        if (
-          error instanceof SavedProfileClientError &&
-          error.code === "superseded"
-        ) {
-          throw new CancelledError({ revert: true });
-        }
-        throw error;
-      }
+      return await readOrResumeSavedProfile(signal, identity, queryClient);
     },
     queryKey: savedProfileQueryKey(identity ?? { kind: "signed-out" }),
     retry: false,

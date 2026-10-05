@@ -17,7 +17,9 @@ import {
 } from "./default-jurisdiction-contract";
 import {
   profileIdentityKey,
+  readBoundProfileSession,
   readProfileSessionIdentity,
+  resetProfileSessionGenerationForTests,
   sameProfileIdentity,
   type ProfileSessionIdentity,
 } from "./profile-session";
@@ -49,22 +51,44 @@ const UNCERTAIN_SAVE_MESSAGE =
 const DIVERGED_SAVE_MESSAGE =
   "The profile service stored a different profile from this edit. Your edits are still here.";
 
-let activeWrites = 0;
-let writeGeneration = 0;
+type AccountWriteCoordination = {
+  activeWrites: number;
+  generation: number;
+};
+
+const accountCoordination = new Map<string, AccountWriteCoordination>();
 let writeSerial = 0;
 const latestWriteSerial = new Map<string, number>();
 const writeTails = new Map<string, Promise<void>>();
 
+function coordinationFor(accountKey: string): AccountWriteCoordination {
+  const existing = accountCoordination.get(accountKey);
+  if (existing) {
+    return existing;
+  }
+  const created = { activeWrites: 0, generation: 0 };
+  accountCoordination.set(accountKey, created);
+  return created;
+}
+
 export function resetSavedProfileCoordinationForTests(): void {
-  activeWrites = 0;
-  writeGeneration = 0;
+  accountCoordination.clear();
   writeSerial = 0;
   latestWriteSerial.clear();
   writeTails.clear();
+  resetProfileSessionGenerationForTests();
 }
 
-export function profileWriteEpoch(): number {
-  return writeGeneration;
+export function profileWriteEpoch(accountKey: string): number {
+  return accountCoordination.get(accountKey)?.generation ?? 0;
+}
+
+export function accountHasPendingWrite(accountKey: string): boolean {
+  return (accountCoordination.get(accountKey)?.activeWrites ?? 0) > 0;
+}
+
+export function waitForAccountWrites(accountKey: string): Promise<void> {
+  return writeTails.get(accountKey) ?? Promise.resolve();
 }
 
 function savedProfileClientErrorMessage(
@@ -126,13 +150,27 @@ async function identityMatches(
 }
 
 function readOverlapsWrite(
+  accountKey: string,
+  generationAtStart: number,
+  startedDuringWrite: boolean
+): boolean {
+  const state = accountCoordination.get(accountKey);
+  const activeWrites = state?.activeWrites ?? 0;
+  const generation = state?.generation ?? 0;
+  return (
+    startedDuringWrite || activeWrites > 0 || generation !== generationAtStart
+  );
+}
+
+function readIsStale(
+  signal: AbortSignal | undefined,
+  accountKey: string,
   generationAtStart: number,
   startedDuringWrite: boolean
 ): boolean {
   return (
-    startedDuringWrite ||
-    activeWrites > 0 ||
-    writeGeneration !== generationAtStart
+    Boolean(signal?.aborted) ||
+    readOverlapsWrite(accountKey, generationAtStart, startedDuringWrite)
   );
 }
 
@@ -142,16 +180,23 @@ export async function readSavedProfile(
 ): Promise<SavedProfile> {
   const identityAtStart =
     expectedIdentity ?? (await readProfileSessionIdentity());
-  const generationAtStart = writeGeneration;
-  const startedDuringWrite = activeWrites > 0;
+  const accountKey = profileIdentityKey(identityAtStart);
+  const generationAtStart =
+    accountCoordination.get(accountKey)?.generation ?? 0;
+  const startedDuringWrite = accountHasPendingWrite(accountKey);
   try {
     const result = await getProfileV1MeProfileGet(
       signal ? { signal } : undefined
     );
     if (
-      signal?.aborted ||
-      readOverlapsWrite(generationAtStart, startedDuringWrite) ||
-      !(await identityMatches(identityAtStart))
+      readIsStale(signal, accountKey, generationAtStart, startedDuringWrite)
+    ) {
+      throw new SavedProfileClientError("superseded");
+    }
+    const identityStillMatches = await identityMatches(identityAtStart);
+    if (
+      readIsStale(signal, accountKey, generationAtStart, startedDuringWrite) ||
+      !identityStillMatches
     ) {
       throw new SavedProfileClientError("superseded");
     }
@@ -171,8 +216,7 @@ export async function readSavedProfile(
       throw new SavedProfileClientError("unauthorized");
     }
     if (
-      signal?.aborted ||
-      readOverlapsWrite(generationAtStart, startedDuringWrite)
+      readIsStale(signal, accountKey, generationAtStart, startedDuringWrite)
     ) {
       throw new SavedProfileClientError("superseded");
     }
@@ -183,7 +227,6 @@ export async function readSavedProfile(
 async function reconcileUncertainWrite(
   body: UserProfileWrite,
   identity: ProfileSessionIdentity,
-  lastConfirmed: SavedProfile | null,
   error?: unknown
 ): Promise<ProfileWriteOutcome> {
   try {
@@ -191,22 +234,21 @@ async function reconcileUncertainWrite(
     if (profileEchoMatchesWrite(body, saved)) {
       return { profile: saved, status: "confirmed" };
     }
-    if (lastConfirmed && savedProfilesMatch(saved, lastConfirmed)) {
-      return {
-        message: `${UNCHANGED_SAVE_MESSAGE}${referenceSuffix(error)}`,
-        status: "unconfirmed",
-      };
-    }
+    // A read of the previous profile cannot prove this attempt will not
+    // commit later. The API has no version or idempotency key.
     return {
-      message: `${DIVERGED_SAVE_MESSAGE}${referenceSuffix(error)}`,
-      profile: saved,
-      status: "diverged",
+      message: `${UNCERTAIN_SAVE_MESSAGE}${referenceSuffix(error)}`,
+      status: "uncertain",
     };
   } catch (reconcileError) {
     if (
       reconcileError instanceof SavedProfileClientError &&
       reconcileError.code === "unauthorized"
     ) {
+      const current = await readBoundProfileSession();
+      if (!sameProfileIdentity(identity, current.identity)) {
+        return { status: "superseded" };
+      }
       return { status: "unauthorized" };
     }
     return {
@@ -226,20 +268,29 @@ async function performProfileWrite(
   if (latestWriteSerial.get(accountKey) !== serial) {
     return { status: "superseded" };
   }
-  if (!(await identityMatches(identity))) {
+  const bound = await readBoundProfileSession();
+  if (!sameProfileIdentity(identity, bound.identity)) {
     return { status: "superseded" };
+  }
+  if (bound.identity.kind === "user" && !bound.accessToken) {
+    return { status: "unauthorized" };
   }
   if (latestWriteSerial.get(accountKey) !== serial) {
     return { status: "superseded" };
   }
 
-  activeWrites += 1;
-  writeGeneration += 1;
+  const coordination = coordinationFor(accountKey);
+  coordination.activeWrites += 1;
+  coordination.generation += 1;
   let uncertainError: unknown;
   let parsedEcho: SavedProfile | null = null;
   let echoChecked = false;
   try {
-    const result = await saveProfileV1MeProfilePut(body);
+    const result = bound.accessToken
+      ? await saveProfileV1MeProfilePut(body, {
+          headers: { Authorization: `Bearer ${bound.accessToken}` },
+        })
+      : await saveProfileV1MeProfilePut(body);
     if (
       latestWriteSerial.get(accountKey) !== serial ||
       !(await identityMatches(identity))
@@ -264,6 +315,10 @@ async function performProfileWrite(
     }
   } catch (error) {
     if (error instanceof AtlasApiError && error.status === 401) {
+      const current = await readBoundProfileSession();
+      if (!sameProfileIdentity(identity, current.identity)) {
+        return { status: "superseded" };
+      }
       return { status: "unauthorized" };
     }
     if (
@@ -274,7 +329,7 @@ async function performProfileWrite(
     }
     uncertainError = error;
   } finally {
-    activeWrites -= 1;
+    coordination.activeWrites -= 1;
   }
 
   if (latestWriteSerial.get(accountKey) !== serial) {
@@ -294,12 +349,7 @@ async function performProfileWrite(
     };
   }
   if (uncertainError !== undefined || !echoChecked) {
-    return reconcileUncertainWrite(
-      body,
-      identity,
-      lastConfirmed,
-      uncertainError
-    );
+    return reconcileUncertainWrite(body, identity, uncertainError);
   }
   return {
     message: UNCERTAIN_SAVE_MESSAGE,

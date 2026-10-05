@@ -235,7 +235,20 @@ describe("saved profile client", () => {
     });
   });
 
-  it("calls the default unchanged only when a later read still shows it", async () => {
+  it("says unchanged only when a completed save echoes the previous profile", async () => {
+    saveProfile.mockResolvedValue(asResponse(profileResponse(null)));
+    const written = await writeSavedProfile(
+      { ...emptyOptional, state_code: "CO" },
+      undefined,
+      savedProfileFromUserProfile({ ...emptyOptional, state_code: null })
+    );
+    expect(written).toMatchObject({
+      message: expect.stringContaining("saved default is unchanged"),
+      status: "unconfirmed",
+    });
+  });
+
+  it("keeps a lost save uncertain when the follow-up read is still the previous profile", async () => {
     saveProfile.mockRejectedValue(
       new AtlasApiError("lost", "/v1/me/profile", 503, "req-same")
     );
@@ -246,9 +259,83 @@ describe("saved profile client", () => {
       savedProfileFromUserProfile({ ...emptyOptional, state_code: null })
     );
     expect(written).toMatchObject({
-      message: expect.stringContaining("saved default is unchanged"),
-      status: "unconfirmed",
+      message: expect.not.stringContaining("saved default is unchanged"),
+      status: "uncertain",
     });
+  });
+
+  it("keeps a dropped save uncertain when a later save is followed by the original commit", async () => {
+    let stored: {
+      job_title: null;
+      organization: string | null;
+      role: null;
+      state_code: string | null;
+    } = {
+      ...emptyOptional,
+      organization: "Original",
+      state_code: null,
+    };
+    let commitDroppedSave: (() => void) | undefined;
+    saveProfile.mockImplementation(
+      asResponse(
+        async (body: {
+          organization?: string | null;
+          state_code?: string | null;
+        }) => {
+          if (body.organization === "First") {
+            commitDroppedSave = () => {
+              stored = {
+                ...emptyOptional,
+                organization: "First",
+                state_code: body.state_code ?? null,
+              };
+            };
+            throw new TypeError("connection dropped");
+          }
+          stored = {
+            ...emptyOptional,
+            organization: body.organization ?? null,
+            state_code: body.state_code ?? null,
+          };
+          return { data: { profile: stored }, status: 200 };
+        }
+      )
+    );
+    getProfile.mockImplementation(
+      asResponse(async () => ({ data: { profile: stored }, status: 200 }))
+    );
+    const first = await writeSavedProfile(
+      { ...emptyOptional, organization: "First", state_code: "NY" },
+      undefined,
+      savedProfileFromUserProfile({
+        ...emptyOptional,
+        organization: "Original",
+        state_code: null,
+      })
+    );
+    expect(first).toMatchObject({
+      message: expect.not.stringContaining("saved default is unchanged"),
+      status: "uncertain",
+    });
+    const second = await writeSavedProfile({
+      ...emptyOptional,
+      organization: "Second",
+      state_code: "CO",
+    });
+    expect(second).toMatchObject({
+      profile: { organization: "Second" },
+      status: "confirmed",
+    });
+    expect(saveProfile).toHaveBeenLastCalledWith(
+      expect.objectContaining({ organization: "Second", state_code: "CO" })
+    );
+    if (!commitDroppedSave) {
+      throw new Error("The dropped save never reached the server.");
+    }
+    commitDroppedSave();
+    const current = await readSavedProfile();
+    expect(current.organization).toBe("First");
+    expect(first).toMatchObject({ status: "uncertain" });
   });
 
   it("drops a read that started before a confirmed write", async () => {
@@ -312,5 +399,44 @@ describe("saved profile client", () => {
       kind: "state",
       stateCode: "CO",
     });
+  });
+
+  it("resumes an empty read after the same account's write settles", async () => {
+    const writeGate = Promise.withResolvers<boolean>();
+    saveProfile.mockImplementation(
+      asResponse(async () => {
+        await writeGate.promise;
+        return profileResponse("NY");
+      })
+    );
+    const writing = writeSavedProfile({
+      ...emptyOptional,
+      state_code: "NY",
+    });
+    await vi.waitFor(() => expect(saveProfile).toHaveBeenCalledOnce());
+    let reads = 0;
+    getProfile.mockImplementation(
+      asResponse(async () => {
+        reads += 1;
+        return profileResponse(reads === 1 ? "CO" : "NY");
+      })
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const hook = renderHook(() => useSavedProfile(), { wrapper });
+    await vi.waitFor(() => expect(reads).toBe(1));
+    writeGate.resolve(true);
+    await expect(writing).resolves.toMatchObject({ status: "confirmed" });
+    await waitFor(() =>
+      expect(hook.result.current.data?.selection).toStrictEqual({
+        kind: "state",
+        stateCode: "NY",
+      })
+    );
+    expect(reads).toBeGreaterThan(1);
   });
 });

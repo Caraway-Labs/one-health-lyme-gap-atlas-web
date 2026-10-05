@@ -13,14 +13,22 @@ import { AtlasApiError } from "@/lib/api-mutator";
 
 import { reviewScopeMetadataFixture } from "./fixtures/review-scope-api-fixtures";
 
-type Session = { user: { id: string } } | null;
+type Session = { access_token: string; user: { id: string } } | null;
 
 const auth = vi.hoisted(() => {
   const listeners = new Set<(event: string, session: Session) => void>();
   return {
     listeners,
+    pausedLookups: 0,
+    pendingPauses: [] as {
+      promise: Promise<boolean>;
+      resolve: (value: boolean) => void;
+    }[],
     push: vi.fn<(href: string) => void>(),
-    session: { user: { id: "user-a" } } as Session,
+    session: {
+      access_token: "token-user-a",
+      user: { id: "user-a" },
+    } as Session,
     signOut:
       vi.fn<
         (options?: {
@@ -41,10 +49,17 @@ vi.mock(
 vi.mock(import("@/lib/supabase/client"), () => ({
   createClient: () => ({
     auth: {
-      getSession: async () => ({
-        data: { session: auth.session },
-        error: null,
-      }),
+      getSession: async () => {
+        const pause = auth.pendingPauses.shift();
+        if (pause) {
+          auth.pausedLookups += 1;
+          await pause.promise;
+        }
+        return {
+          data: { session: auth.session },
+          error: null,
+        };
+      },
       onAuthStateChange: (
         // Supabase reports auth changes through a subscription callback.
         // eslint-disable-next-line promise/prefer-await-to-callbacks -- auth subscription has no async equivalent
@@ -77,7 +92,12 @@ vi.mock(import("@/generated/atlas"), () => ({
   saveProfileV1MeProfilePut: vi.fn<() => Promise<never>>(),
 }));
 
-import { resetSavedProfileCoordinationForTests } from "@/features/ux-reset/profile/saved-profile-client";
+import type { SavedProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";
+import {
+  resetSavedProfileCoordinationForTests,
+  writeSavedProfile,
+} from "@/features/ux-reset/profile/saved-profile-client";
+import { savedProfileQueryKey } from "@/features/ux-reset/profile/use-saved-profile";
 import { ResetSettingsExperience } from "@/features/ux-reset/settings/reset-settings-experience";
 import {
   getProfileV1MeProfileGet,
@@ -106,8 +126,16 @@ function profileFor(userId: string) {
   };
 }
 
+function pauseNextSessionLookup() {
+  const gate = Promise.withResolvers<boolean>();
+  auth.pendingPauses.push(gate);
+  return gate;
+}
+
 function switchSession(userId: string | null) {
-  auth.session = userId ? { user: { id: userId } } : null;
+  auth.session = userId
+    ? { access_token: `token-${userId}`, user: { id: userId } }
+    : null;
   for (const listener of auth.listeners) {
     listener(userId ? "SIGNED_IN" : "SIGNED_OUT", auth.session);
   }
@@ -128,8 +156,10 @@ function renderSettings(
 describe("saved profile account isolation", () => {
   beforeEach(() => {
     resetSavedProfileCoordinationForTests();
-    auth.session = { user: { id: "user-a" } };
+    auth.session = { access_token: "token-user-a", user: { id: "user-a" } };
     auth.listeners.clear();
+    auth.pausedLookups = 0;
+    auth.pendingPauses.length = 0;
     auth.push.mockReset();
     auth.signOut.mockReset();
     vi.mocked(getProfileV1MeProfileGet).mockReset();
@@ -224,7 +254,10 @@ describe("saved profile account isolation", () => {
           job_title: "Director",
           organization: "Other",
           state_code: "NY",
-        })
+        }),
+        {
+          headers: { Authorization: "Bearer token-user-b" },
+        }
       )
     );
   });
@@ -299,11 +332,165 @@ describe("saved profile account isolation", () => {
       expect(saveProfileV1MeProfilePut).toHaveBeenCalledTimes(2)
     );
     expect(saveProfileV1MeProfilePut).toHaveBeenLastCalledWith(
-      expect.objectContaining({ organization: "Newer", state_code: "CO" })
+      expect.objectContaining({ organization: "Newer", state_code: "CO" }),
+      {
+        headers: { Authorization: "Bearer token-user-a" },
+      }
     );
     expect(
       (await screen.findByDisplayValue("Newer")) as HTMLInputElement
     ).toBeTruthy();
+  });
+
+  it("keeps a confirmed save when a refetch identity check finishes later", async () => {
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue(
+      asResponse({
+        data: {
+          profile: { ...profileFor("user-a"), organization: "Original" },
+        },
+        status: 200,
+      })
+    );
+    const { client } = renderSettings();
+    expect(
+      ((await screen.findByTestId("settings-organization")) as HTMLInputElement)
+        .value
+    ).toBe("Original");
+    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+      asResponse(async (body: { organization?: string | null }) => ({
+        data: {
+          profile: {
+            ...profileFor("user-a"),
+            organization: body.organization ?? null,
+          },
+        },
+        status: 200,
+      }))
+    );
+    const preflight = pauseNextSessionLookup();
+    fireEvent.change(screen.getByTestId("settings-organization"), {
+      target: { value: "Newer" },
+    });
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await vi.waitFor(() => expect(auth.pausedLookups).toBe(1));
+    expect(saveProfileV1MeProfilePut).not.toHaveBeenCalled();
+    const readIdentity = pauseNextSessionLookup();
+    const refetch = client.refetchQueries({
+      queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
+    });
+    await vi.waitFor(() => expect(auth.pausedLookups).toBe(2));
+    preflight.resolve(true);
+    expect({
+      notice: (await screen.findByTestId("settings-save-notice")).textContent,
+      organization: (
+        screen.getByTestId("settings-organization") as HTMLInputElement
+      ).value,
+    }).toStrictEqual({
+      notice: expect.stringContaining("Saved."),
+      organization: "Newer",
+    });
+    readIdentity.resolve(true);
+    try {
+      await refetch;
+    } catch {
+      // A superseded refetch can reject. The confirmation must still stand.
+    }
+    const cached = client.getQueryData<SavedProfile>(
+      savedProfileQueryKey({ kind: "user", userId: "user-a" })
+    );
+    expect({
+      cache: cached?.organization,
+      notice: screen.getByTestId("settings-save-notice").textContent,
+      organization: (
+        screen.getByTestId("settings-organization") as HTMLInputElement
+      ).value,
+    }).toStrictEqual({
+      cache: "Newer",
+      notice: expect.stringContaining("Saved."),
+      organization: "Newer",
+    });
+  });
+
+  it("does not expire account B when account A's save returns 401", async () => {
+    const gate = Promise.withResolvers<boolean>();
+    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+      asResponse(async () => {
+        await gate.promise;
+        throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
+      })
+    );
+    renderSettings();
+    const organization = await screen.findByTestId("settings-organization");
+    fireEvent.change(organization, { target: { value: "SECRET" } });
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await vi.waitFor(() =>
+      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
+    );
+    switchSession("user-b");
+    expect(
+      ((await screen.findByDisplayValue("Other")) as HTMLInputElement).value
+    ).toBe("Other");
+    gate.resolve(true);
+    await waitFor(() =>
+      expect(screen.queryByTestId("settings-session-expired")).toBeNull()
+    );
+    expect(
+      (screen.getByTestId("settings-organization") as HTMLInputElement).value
+    ).toBe("Other");
+  });
+
+  it("returns superseded when A's 401 arrives after the session is B", async () => {
+    const gate = Promise.withResolvers<boolean>();
+    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+      asResponse(async () => {
+        await gate.promise;
+        throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
+      })
+    );
+    const writing = writeSavedProfile(
+      {
+        job_title: null,
+        organization: "SECRET",
+        role: null,
+        state_code: "CO",
+      },
+      { kind: "user", userId: "user-a" }
+    );
+    await vi.waitFor(() =>
+      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
+    );
+    switchSession("user-b");
+    gate.resolve(true);
+    await expect(writing).resolves.toStrictEqual({ status: "superseded" });
+  });
+
+  it("loads account B while account A's save is still in flight", async () => {
+    const gate = Promise.withResolvers<boolean>();
+    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+      asResponse(async () => {
+        await gate.promise;
+        return { data: { profile: profileFor("user-a") }, status: 200 };
+      })
+    );
+    renderSettings();
+    const organization = await screen.findByTestId("settings-organization");
+    fireEvent.change(organization, { target: { value: "SECRET" } });
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await vi.waitFor(() =>
+      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
+    );
+    switchSession("user-b");
+    expect(
+      ((await screen.findByDisplayValue("Other")) as HTMLInputElement).value
+    ).toBe("Other");
+    expect(screen.queryByTestId("settings-session-expired")).toBeNull();
+    expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce();
+    gate.resolve(true);
+    await waitFor(() =>
+      expect(
+        (screen.getByTestId("settings-organization") as HTMLInputElement).value
+      ).toBe("Other")
+    );
   });
 
   it("clears the editor when an expired session returns 401", async () => {
