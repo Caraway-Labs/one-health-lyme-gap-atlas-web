@@ -368,3 +368,164 @@
 .ux-reset-pro-main a.ux-reset-compare-action[data-variant="secondary"] {
   color: var(--secondary-foreground);
 }
+
+.ux-reset-workspace-body {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.ux-reset-workspace-body > .ux-reset-pro-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ux-reset-ask-atlas-panel,
+.ux-reset-ask-atlas-modal {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.ux-reset-ask-atlas-panel {
+  position: sticky;
+  top: 0;
+  flex: 0 0 22rem;
+  width: 22rem;
+  height: calc(100dvh - 4.5rem);
+  border-left: 1px solid var(--border);
+}
+
+.ux-reset-ask-atlas-modal {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+}
+
+.ux-reset-ask-atlas-toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0.35rem var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.ux-reset-ask-atlas-kicker {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+  font-weight: 700;
+}
+
+.ux-reset-ask-atlas-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ux-reset-ask-atlas-body .evidence-chat {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ux-reset-ask-atlas-body .evidence-chat-drawer {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.ux-reset-ask-atlas-body .evidence-chat-drawer .chat-panel {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: auto minmax(0, 2.4rem) minmax(1.75rem, 1fr) auto;
+}
+
+.ux-reset-ask-atlas-body .chat-panel-header,
+.ux-reset-ask-atlas-body .chat-form,
+.ux-reset-ask-atlas-body .chat-attribution {
+  padding-block: 0.35rem;
+}
+
+.ux-reset-ask-atlas-body .medical-notice {
+  max-height: 2.4rem;
+  overflow: auto;
+}
+
+.ux-reset-ask-atlas-body .chat-form textarea {
+  height: 2rem;
+  min-height: 0;
+  field-sizing: fixed;
+}
+
+.ux-reset-ask-atlas-inherited {
+  display: grid;
+  flex: 0 1 auto;
+  gap: var(--space-2);
+  max-height: min(22%, 5.75rem);
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.ux-reset-ask-atlas-inherited-title,
+.ux-reset-ask-atlas-inherited p,
+.ux-reset-ask-atlas-disabled p,
+.ux-reset-ask-atlas-disabled h2 {
+  margin: 0;
+}
+
+.ux-reset-ask-atlas-inherited-title {
+  font-size: var(--type-small-size);
+  font-weight: 700;
+}
+
+.ux-reset-ask-atlas-inherited-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.ux-reset-ask-atlas-inherited-list div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.ux-reset-ask-atlas-inherited-list dt {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.ux-reset-ask-atlas-inherited-list dd {
+  margin: 0;
+}
+
+.ux-reset-ask-atlas-disabled {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.ux-reset-ask-atlas-panel .chat-panel h2,
+.ux-reset-ask-atlas-modal .chat-panel h2 {
+  margin: 0.2rem 0 0;
+  color: var(--foreground);
+  font-family: var(--font-display);
+  font-size: var(--type-body-size);
+  font-weight: 500;
+}

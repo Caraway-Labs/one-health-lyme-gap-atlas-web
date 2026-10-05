@@ -2807,7 +2807,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
 .evidence-chat-workspace > .chat-panel {
   min-height: 0;
 }
-.chat-panel > header {
+.chat-panel-header {
   display: flex;
   padding: 0.85rem 1rem;
   align-items: start;

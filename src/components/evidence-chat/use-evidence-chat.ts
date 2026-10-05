@@ -1,7 +1,13 @@
 "use client";
 
 import type { FormEvent, RefObject } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import type { KnowledgeChatResponse } from "@/generated/models";
@@ -55,6 +61,7 @@ export interface EvidenceChatConversationModel {
   mobileHistoryToggleRef: RefObject<HTMLButtonElement | null>;
   mode: AssistantChatLayoutMode;
   pending: boolean;
+  requestsEnabled: boolean;
   retryQuestion: string;
   selectConversation: (id: string) => void;
   setMessage: (value: string) => void;
@@ -68,11 +75,16 @@ export interface EvidenceChatConversationModel {
 export function useEvidenceChat({
   mode = "workspace",
   initialConversationId,
+  requestsEnabled = true,
 }: {
   mode?: AssistantChatLayoutMode;
   initialConversationId?: string;
+  requestsEnabled?: boolean;
 }): EvidenceChatConversationModel {
   const syncWorkspaceUrl = mode === "workspace";
+  const requestSerial = useRef(0);
+  const ownerAlive = useRef(true);
+  const requestAbort = useRef<Set<AbortController>>(new Set());
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [activeId, setActiveId] = useState(
@@ -126,8 +138,23 @@ export function useEvidenceChat({
     [conversations, syncWorkspaceUrl]
   );
 
+  useLayoutEffect(() => {
+    ownerAlive.current = true;
+    const controllers = requestAbort.current;
+    return () => {
+      ownerAlive.current = false;
+      requestSerial.current += 1;
+      for (const controller of controllers) {
+        controller.abort();
+      }
+      controllers.clear();
+    };
+  }, []);
+
   const startNewChat = useCallback(
     (focusComposer = true) => {
+      requestSerial.current += 1;
+      setPending(false);
       setActiveId("__new__");
       setMissingConversationId(null);
       setFailure(null);
@@ -192,7 +219,7 @@ export function useEvidenceChat({
   useEffect(() => {
     if (pending || !focusQuestionOnSettle.current) return;
     focusQuestionOnSettle.current = false;
-    inputRef.current?.focus();
+    focusChatSettlementTarget(inputRef.current);
   }, [pending]);
 
   useEffect(() => {
@@ -202,11 +229,7 @@ export function useEvidenceChat({
     const retryButton = failureRegionRef.current?.querySelector<HTMLElement>(
       "button[type='button']"
     );
-    if (retryButton) {
-      retryButton.focus();
-      return;
-    }
-    failureRegionRef.current?.focus();
+    focusChatSettlementTarget(retryButton ?? failureRegionRef.current);
   }, [failure]);
 
   const active = resolveActiveConversation(activeId, conversations, hydrated);
@@ -291,25 +314,39 @@ export function useEvidenceChat({
     setMissingConversationId(null);
   }
 
+  function requestStillCurrent(serial: number): boolean {
+    return ownerAlive.current && serial === requestSerial.current;
+  }
+
   async function ask(question: string) {
-    if (!question || pending) {
+    if (!question || pending || !requestsEnabled) {
       return;
     }
+    const serial = requestSerial.current + 1;
+    requestSerial.current = serial;
     const replaceOperationalTurn = shouldReplaceOperationalTurn(
       active,
       question
     );
+    const controller = new AbortController();
+    requestAbort.current.add(controller);
     setPending(true);
     setFailure(null);
     try {
-      const result = await knowledgeGraphChatV1KnowledgeGraphChatPost({
-        message: question,
-        history: conversationHistory(
-          replaceOperationalTurn && active
-            ? { ...active, turns: active.turns.slice(0, -2) }
-            : active
-        ),
-      });
+      const result = await knowledgeGraphChatV1KnowledgeGraphChatPost(
+        {
+          message: question,
+          history: conversationHistory(
+            replaceOperationalTurn && active
+              ? { ...active, turns: active.turns.slice(0, -2) }
+              : active
+          ),
+        },
+        { signal: controller.signal }
+      );
+      if (!requestStillCurrent(serial) || controller.signal.aborted) {
+        return;
+      }
       const response = validateApiResponse(
         "Evidence chat response",
         KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
@@ -319,6 +356,13 @@ export function useEvidenceChat({
       saveResponse(question, safeResponse, replaceOperationalTurn);
       rememberOutcome(question, safeResponse);
     } catch (error) {
+      if (
+        !requestStillCurrent(serial) ||
+        controller.signal.aborted ||
+        isAbortError(error)
+      ) {
+        return;
+      }
       const parsed =
         error instanceof AtlasApiError
           ? KnowledgeGraphChatV1KnowledgeGraphChatPostResponse.safeParse(
@@ -335,8 +379,11 @@ export function useEvidenceChat({
         setFailure(nextFailure);
       }
     } finally {
-      focusQuestionOnSettle.current = true;
-      setPending(false);
+      requestAbort.current.delete(controller);
+      if (requestStillCurrent(serial)) {
+        focusQuestionOnSettle.current = true;
+        setPending(false);
+      }
     }
   }
 
@@ -391,6 +438,7 @@ export function useEvidenceChat({
     mobileHistoryToggleRef,
     mode,
     pending,
+    requestsEnabled,
     retryQuestion,
     selectConversation,
     setMessage,
@@ -400,4 +448,28 @@ export function useEvidenceChat({
     submit,
     workspaceHandoffConversationId,
   };
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+/** Move focus only while the user is still in this chat. A docked page keeps its control. */
+function focusChatSettlementTarget(target: HTMLElement | null | undefined) {
+  if (!target?.isConnected) {
+    return;
+  }
+  const active = document.activeElement;
+  const interactionRoot =
+    target.closest<HTMLElement>("#ux-reset-ask-atlas") ??
+    target.closest<HTMLElement>(".evidence-chat") ??
+    target.closest<HTMLElement>(".chat-panel");
+  const interactionLeftChat =
+    active instanceof HTMLElement &&
+    active !== document.body &&
+    !interactionRoot?.contains(active);
+  if (interactionLeftChat) {
+    return;
+  }
+  target.focus();
 }

@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -29,6 +30,7 @@ import { EvidenceChat } from "../src/components/evidence-chat";
 import { AtlasApiError } from "../src/lib/api-mutator";
 import {
   CHAT_STORAGE_KEY,
+  loadConversations,
   saveConversations,
 } from "../src/lib/knowledge-chat-storage";
 
@@ -374,10 +376,13 @@ describe(EvidenceChat, () => {
       removedFailure: null,
       turns: 2,
     });
-    expect(chatRequest).toHaveBeenLastCalledWith({
-      message: "What does the evidence say?",
-      history: [],
-    });
+    expect(chatRequest).toHaveBeenLastCalledWith(
+      {
+        message: "What does the evidence say?",
+        history: [],
+      },
+      { signal: expect.any(AbortSignal) }
+    );
     await waitFor(() =>
       expect(document.activeElement).toBe(
         screen.getByLabelText("Your question")
@@ -432,19 +437,22 @@ describe(EvidenceChat, () => {
       savedConversations: 1,
       turns: 4,
     });
-    expect(chatRequest).toHaveBeenLastCalledWith({
-      message: "What does reviewed evidence say about Ixodes in Maine?",
-      history: [
-        {
-          role: "user",
-          content: "What does the evidence say?",
-        },
-        {
-          role: "assistant",
-          content: "No passages matched this question.",
-        },
-      ],
-    });
+    expect(chatRequest).toHaveBeenLastCalledWith(
+      {
+        message: "What does reviewed evidence say about Ixodes in Maine?",
+        history: [
+          {
+            role: "user",
+            content: "What does the evidence say?",
+          },
+          {
+            role: "assistant",
+            content: "No passages matched this question.",
+          },
+        ],
+      },
+      { signal: expect.any(AbortSignal) }
+    );
   });
 
   it("does not render supplied citations for corpus gaps or refusals", async () => {
@@ -493,6 +501,68 @@ describe(EvidenceChat, () => {
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: "Clear all" })).toBeNull()
     );
+  });
+
+  it("drops a late answer after history is cleared while that request is pending", async () => {
+    const held = Promise.withResolvers<unknown>();
+    chatRequest.mockResolvedValueOnce({ data: response() });
+    chatRequest.mockReturnValueOnce(held.promise);
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence: Limited evidence");
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A question still in flight" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByText("Searching reviewed evidence…");
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Clear all",
+      })
+    );
+    await act(async () => {
+      held.resolve({
+        data: response(
+          "answered",
+          "limited",
+          "Late answer must stay gone.",
+          "request-late"
+        ),
+      });
+      await held.promise;
+    });
+    expect(loadConversations()).toHaveLength(0);
+    expect(screen.queryByText("Late answer must stay gone.")).toBeNull();
+    expect(screen.queryByText("A question still in flight")).toBeNull();
+    expect(screen.queryByText("Evidence: Limited evidence")).toBeNull();
+  });
+
+  it("drops a late failure after history is cleared while that request is pending", async () => {
+    const held = Promise.withResolvers<unknown>();
+    chatRequest.mockResolvedValueOnce({ data: response() });
+    chatRequest.mockReturnValueOnce(held.promise);
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence: Limited evidence");
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A question still in flight" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByText("Searching reviewed evidence…");
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Clear all",
+      })
+    );
+    await act(async () => {
+      held.reject(new Error("Failed to fetch"));
+      await held.promise.catch(() => {});
+    });
+    expect(loadConversations()).toHaveLength(0);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("Evidence: Limited evidence")).toBeNull();
   });
 
   it("hides the empty-state hero when a browser failure is shown", async () => {
@@ -748,6 +818,49 @@ describe(EvidenceChat, () => {
     await submit();
     const retry = await screen.findByRole("button", { name: "Retry" });
     await waitFor(() => expect(document.activeElement).toBe(retry));
+  });
+
+  it("discards an in-flight answer after New chat so a later answer is not overwritten", async () => {
+    const { promise: firstRequest, resolve: resolveFirst } =
+      Promise.withResolvers<unknown>();
+    chatRequest.mockReturnValueOnce(firstRequest);
+    chatRequest.mockImplementationOnce(async () => ({
+      data: response(
+        "answered",
+        "limited",
+        "Second answer stays.",
+        "request-2"
+      ),
+    }));
+    render(<EvidenceChat />);
+    await submit();
+    await expect(
+      screen.findByText("Searching reviewed evidence…")
+    ).resolves.toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A later question" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await expect(
+      screen.findByText("Second answer stays.")
+    ).resolves.toBeTruthy();
+    resolveFirst({
+      data: response(
+        "answered",
+        "limited",
+        "First answer must not appear.",
+        "request-1"
+      ),
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("First answer must not appear.")).toBeNull();
+    });
+    expect(
+      within(
+        screen.getByRole("region", { name: "Conversation transcript" })
+      ).getByText("Second answer stays.")
+    ).toBeTruthy();
   });
 
   it("describes near-limit character counts without a second live region", async () => {
