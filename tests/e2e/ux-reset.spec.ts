@@ -48,6 +48,17 @@ async function expectHistoryNavigation(
   await page.waitForLoadState("domcontentloaded");
 }
 
+/** Client-side workspace links update the URL after the click returns. */
+async function clickWorkspaceLink(page: Page, name: string, pathname: string) {
+  await page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name, exact: true })
+    .click();
+  await expect
+    .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+    .toBe(pathname);
+}
+
 test("preserves reset deep links through sign-in when auth is configured", async ({
   page,
 }) => {
@@ -108,10 +119,7 @@ test("professional workspace shell supports navigation, focus, and responsive la
   }
 
   if (!testInfo.project.name.includes("mobile")) {
-    await page
-      .getByRole("navigation", { name: "Professional workspace" })
-      .getByRole("link", { name: "Explore" })
-      .click();
+    await clickWorkspaceLink(page, "Explore", "/app/explore");
     const exploreUrl = new URL(page.url());
     expect(exploreUrl.pathname).toBe("/app/explore");
     expect(exploreUrl.searchParams.get("county")).toBe("08001");
@@ -123,10 +131,7 @@ test("professional workspace shell supports navigation, focus, and responsive la
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
-  await page
-    .getByRole("navigation", { name: "Professional workspace" })
-    .getByRole("link", { name: "Settings" })
-    .click();
+  await clickWorkspaceLink(page, "Settings", "/app/settings");
   await expect(
     page.getByRole("heading", { level: 1, name: "Settings" })
   ).toBeVisible();
@@ -168,25 +173,16 @@ test("bounded context survives rendered navigation, reload, and browser history"
   await page.goto(
     "/app/review?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
   );
-  await page
-    .getByRole("navigation", { name: "Professional workspace" })
-    .getByRole("link", { name: "Compare" })
-    .click();
+  await clickWorkspaceLink(page, "Compare", "/app/compare");
 
   let url = new URL(page.url());
   expectCompareSelection(url);
   expect(url.searchParams.get("sort")).toBeNull();
 
-  await page
-    .getByRole("navigation", { name: "Professional workspace" })
-    .getByRole("link", { name: "Investigate" })
-    .click();
+  await clickWorkspaceLink(page, "Investigate", "/app/investigate");
   expectInvestigateContext(new URL(page.url()));
 
-  await page
-    .getByRole("navigation", { name: "Professional workspace" })
-    .getByRole("link", { name: "Action" })
-    .click();
+  await clickWorkspaceLink(page, "Action", "/app/action");
   url = new URL(page.url());
   expect(url.pathname).toBe("/app/action");
   expect(url.searchParams.get("county")).toBe("08001");
@@ -216,19 +212,13 @@ test("bounded context survives rendered navigation, reload, and browser history"
     (target) => target.pathname === "/app/investigate"
   );
   expectInvestigateContext(new URL(page.url()));
-  await page
-    .getByRole("navigation", { name: "Professional workspace" })
-    .getByRole("link", { name: "Action" })
-    .click();
+  await clickWorkspaceLink(page, "Action", "/app/action");
   expect(new URL(page.url()).pathname).toBe("/app/action");
 
   await page.goto(
     "/app/review?scope=state&county=bad&period=2024&dataset=alpha"
   );
-  await page
-    .getByRole("navigation", { name: "Professional workspace" })
-    .getByRole("link", { name: "Investigate" })
-    .click();
+  await clickWorkspaceLink(page, "Investigate", "/app/investigate");
   url = new URL(page.url());
   expect(url.pathname).toBe("/app/investigate");
   expect(url.searchParams.get("county")).toBeNull();
