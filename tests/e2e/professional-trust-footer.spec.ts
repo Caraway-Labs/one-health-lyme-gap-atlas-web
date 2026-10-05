@@ -25,6 +25,25 @@ async function keyboardFocus(page: Page, control: Locator) {
   throw new Error("footer control was not reached by keyboard");
 }
 
+async function visibleFocusCue(control: Locator) {
+  return control.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      focusVisible: element.matches(":focus-visible"),
+      outlineColor: style.outlineColor,
+      outlineStyle: style.outlineStyle,
+      outlineWidth: style.outlineWidth,
+    };
+  });
+}
+
+const LINK_FOCUS_CUE = {
+  focusVisible: true,
+  outlineColor: FOCUS_WHITE,
+  outlineStyle: "solid",
+  outlineWidth: "2px",
+} as const;
+
 test("opens public Privacy and privacy settings from the professional footer", async ({
   page,
 }, testInfo) => {
@@ -36,23 +55,23 @@ test("opens public Privacy and privacy settings from the professional footer", a
 
   await keyboardFocus(page, privacy);
   await expect(privacy).toBeFocused();
-  const linkCue = await privacy.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return {
-      focusVisible: element.matches(":focus-visible"),
-      outlineColor: style.outlineColor,
-      outlineStyle: style.outlineStyle,
-      outlineWidth: style.outlineWidth,
-    };
-  });
-  expect(linkCue).toEqual({
-    focusVisible: true,
-    outlineColor: FOCUS_WHITE,
-    outlineStyle: "solid",
-    outlineWidth: "2px",
-  });
+  expect(await visibleFocusCue(privacy)).toEqual(LINK_FOCUS_CUE);
   await footer.screenshot({
     path: testInfo.outputPath("footer-privacy-link-focus.png"),
+  });
+
+  const responsibleUse = footer.getByRole("link", {
+    name: "AI / Responsible Use",
+  });
+  await expect(responsibleUse).toHaveAttribute(
+    "href",
+    "/app/ai-responsible-use"
+  );
+  await page.keyboard.press("Tab");
+  await expect(responsibleUse).toBeFocused();
+  expect(await visibleFocusCue(responsibleUse)).toEqual(LINK_FOCUS_CUE);
+  await footer.screenshot({
+    path: testInfo.outputPath("footer-ai-responsible-use-focus.png"),
   });
 
   const settings = footer.getByRole("button", { name: "Privacy settings" });

@@ -66,6 +66,7 @@ describe("Atlas navigation contract", () => {
       status: "hidden",
     });
     expect(getRouteShell("/app/review")).toBe("none");
+    expect(getRouteShell("/app/ai-responsible-use")).toBe("none");
   });
 
   it("matches exact and nested routes without query sensitivity", () => {

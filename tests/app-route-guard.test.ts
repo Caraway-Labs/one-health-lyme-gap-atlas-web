@@ -11,6 +11,7 @@ describe("professional app route guard", () => {
   it("recognizes the /app namespace", () => {
     expect(isProfessionalAppPath("/app")).toBeTruthy();
     expect(isProfessionalAppPath("/app/explore")).toBeTruthy();
+    expect(isProfessionalAppPath("/app/ai-responsible-use")).toBeTruthy();
     expect(isProfessionalAppPath("/application")).toBeFalsy();
   });
 
@@ -31,6 +32,15 @@ describe("professional app route guard", () => {
         nodeEnv: "production",
         pathname: "/app/review",
         supabaseConfigured: true,
+        userPresent: false,
+      })
+    ).toBeTruthy();
+    expect(
+      shouldRedirectUnauthenticatedAppRoute({
+        atlasE2E: false,
+        nodeEnv: "development",
+        pathname: "/app/ai-responsible-use",
+        supabaseConfigured: false,
         userPresent: false,
       })
     ).toBeTruthy();

@@ -18,6 +18,13 @@ export const RESET_ASSISTANT_PATH = `${UX_RESET_APP_PREFIX}/assistant` as const;
 export const RESET_FEED_PATH = `${UX_RESET_APP_PREFIX}/feed` as const;
 export const RESET_SETTINGS_PATH = `${UX_RESET_APP_PREFIX}/settings` as const;
 
+/**
+ * Authenticated trust page. It is not a workspace destination, so it stays
+ * out of cross-page context handoff (issues 403, 406, 433).
+ */
+export const RESET_AI_RESPONSIBLE_USE_PATH =
+  `${UX_RESET_APP_PREFIX}/ai-responsible-use` as const;
+
 export const UX_RESET_DESTINATION_IDS = [
   "review",
   "explore",

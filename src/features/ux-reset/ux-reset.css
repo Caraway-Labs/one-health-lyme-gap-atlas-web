@@ -37,6 +37,7 @@
 
 .ux-reset-pro-main h1,
 .ux-reset-pro-main h2,
+.ux-reset-pro-main h3,
 .ux-reset-pro-main p {
   margin-block: 0;
 }
@@ -74,6 +75,32 @@
   padding: 0;
   gap: var(--space-2);
   list-style: none;
+}
+
+.ux-reset-trust-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-maturity-legend,
+.ux-reset-capability-list,
+.ux-reset-doc-links,
+.ux-reset-work-kinds {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-work-kinds > div,
+.ux-reset-maturity-legend > li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ux-reset-capability-maturity {
+  width: fit-content;
 }
 
 @media (min-width: 900px) {
