@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -138,6 +139,16 @@ function switchSession(userId: string | null) {
     : null;
   for (const listener of auth.listeners) {
     listener(userId ? "SIGNED_IN" : "SIGNED_OUT", auth.session);
+  }
+}
+
+function refreshAccessToken(accessToken: string) {
+  if (!auth.session) {
+    throw new Error("No session to refresh.");
+  }
+  auth.session = { ...auth.session, access_token: accessToken };
+  for (const listener of auth.listeners) {
+    listener("TOKEN_REFRESHED", auth.session);
   }
 }
 
@@ -374,11 +385,14 @@ describe("saved profile account isolation", () => {
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
     await vi.waitFor(() => expect(auth.pausedLookups).toBe(1));
     expect(saveProfileV1MeProfilePut).not.toHaveBeenCalled();
-    const readIdentity = pauseNextSessionLookup();
+    const readSnapshot = pauseNextSessionLookup();
     const refetch = client.refetchQueries({
       queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
     });
     await vi.waitFor(() => expect(auth.pausedLookups).toBe(2));
+    const readIdentity = pauseNextSessionLookup();
+    readSnapshot.resolve(true);
+    await vi.waitFor(() => expect(auth.pausedLookups).toBe(3));
     preflight.resolve(true);
     expect({
       notice: (await screen.findByTestId("settings-save-notice")).textContent,
@@ -490,6 +504,110 @@ describe("saved profile account isolation", () => {
       expect(
         (screen.getByTestId("settings-organization") as HTMLInputElement).value
       ).toBe("Other")
+    );
+  });
+
+  it("discards a read when A to B to A auth notes land before React commits", async () => {
+    const { client } = renderSettings();
+    expect(
+      ((await screen.findByTestId("settings-organization")) as HTMLInputElement)
+        .value
+    ).toBe("CDPHE");
+    const gate = Promise.withResolvers<boolean>();
+    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+      asResponse(async () => {
+        await gate.promise;
+        return {
+          data: {
+            profile: {
+              job_title: "Borrowed",
+              organization: "From-B",
+              role: null,
+              state_code: "NY",
+            },
+          },
+          status: 200,
+        };
+      })
+    );
+    const refetch = client.refetchQueries({
+      queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
+    });
+    await vi.waitFor(() =>
+      expect(getProfileV1MeProfileGet).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          headers: { Authorization: "Bearer token-user-a" },
+        })
+      )
+    );
+    act(() => {
+      switchSession("user-b");
+      switchSession("user-a");
+    });
+    await act(async () => {
+      gate.resolve(true);
+      try {
+        await refetch;
+      } catch {
+        // A cross-generation read is discarded.
+      }
+    });
+    expect({
+      jobTitle: (screen.getByTestId("settings-job-title") as HTMLInputElement)
+        .value,
+      organization: (
+        screen.getByTestId("settings-organization") as HTMLInputElement
+      ).value,
+    }).toStrictEqual({ jobTitle: "Epi", organization: "CDPHE" });
+  });
+
+  it("does not block a refreshed token when the previous GET returns 401", async () => {
+    const { client } = renderSettings();
+    expect(
+      ((await screen.findByTestId("settings-organization")) as HTMLInputElement)
+        .value
+    ).toBe("CDPHE");
+    const gate = Promise.withResolvers<boolean>();
+    vi.mocked(getProfileV1MeProfileGet).mockImplementationOnce(
+      asResponse(async () => {
+        await gate.promise;
+        throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
+      })
+    );
+    const refetch = client.refetchQueries({
+      queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
+    });
+    await vi.waitFor(() =>
+      expect(getProfileV1MeProfileGet).toHaveBeenCalledTimes(2)
+    );
+    refreshAccessToken("token-user-a-refreshed");
+    await act(async () => {
+      gate.resolve(true);
+      try {
+        await refetch;
+      } catch {
+        // The stale token's 401 is discarded.
+      }
+    });
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue(
+      asResponse({
+        data: {
+          profile: { ...profileFor("user-a"), organization: "Refreshed" },
+        },
+        status: 200,
+      })
+    );
+    await client.refetchQueries({
+      queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
+    });
+    await waitFor(() =>
+      expect({
+        expired: screen.queryByTestId("settings-session-expired"),
+        organization: (
+          screen.getByTestId("settings-organization") as HTMLInputElement
+        ).value,
+      }).toStrictEqual({ expired: null, organization: "Refreshed" })
     );
   });
 

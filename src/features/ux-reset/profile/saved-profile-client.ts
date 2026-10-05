@@ -17,6 +17,7 @@ import {
 } from "./default-jurisdiction-contract";
 import {
   profileIdentityKey,
+  profileSessionGeneration,
   readBoundProfileSession,
   readProfileSessionIdentity,
   resetProfileSessionGenerationForTests,
@@ -46,7 +47,7 @@ export type ProfileWriteOutcome =
 
 const UNCHANGED_SAVE_MESSAGE =
   "We could not confirm that save. Your edits are still here, and the saved default is unchanged.";
-const UNCERTAIN_SAVE_MESSAGE =
+export const UNCERTAIN_SAVE_MESSAGE =
   "We could not confirm that save. Your edits are still here. The last confirmed default stays in place until Atlas can check it.";
 const DIVERGED_SAVE_MESSAGE =
   "The profile service stored a different profile from this edit. Your edits are still here.";
@@ -174,30 +175,45 @@ function readIsStale(
   );
 }
 
+function authGenerationMoved(authGenerationAtStart: number): boolean {
+  return profileSessionGeneration() !== authGenerationAtStart;
+}
+
 export async function readSavedProfile(
   signal?: AbortSignal,
   expectedIdentity?: ProfileSessionIdentity
 ): Promise<SavedProfile> {
-  const identityAtStart =
-    expectedIdentity ?? (await readProfileSessionIdentity());
+  const bound = await readBoundProfileSession();
+  if (
+    expectedIdentity &&
+    !sameProfileIdentity(expectedIdentity, bound.identity)
+  ) {
+    throw new SavedProfileClientError("superseded");
+  }
+  if (bound.identity.kind === "user" && !bound.accessToken) {
+    throw new SavedProfileClientError("unauthorized");
+  }
+  const identityAtStart = expectedIdentity ?? bound.identity;
+  const authGenerationAtStart = profileSessionGeneration();
   const accountKey = profileIdentityKey(identityAtStart);
   const generationAtStart =
     accountCoordination.get(accountKey)?.generation ?? 0;
   const startedDuringWrite = accountHasPendingWrite(accountKey);
+  const publishIsStale = () =>
+    authGenerationMoved(authGenerationAtStart) ||
+    readIsStale(signal, accountKey, generationAtStart, startedDuringWrite);
   try {
-    const result = await getProfileV1MeProfileGet(
-      signal ? { signal } : undefined
-    );
-    if (
-      readIsStale(signal, accountKey, generationAtStart, startedDuringWrite)
-    ) {
+    const result = bound.accessToken
+      ? await getProfileV1MeProfileGet({
+          ...(signal ? { signal } : {}),
+          headers: { Authorization: `Bearer ${bound.accessToken}` },
+        })
+      : await getProfileV1MeProfileGet(signal ? { signal } : undefined);
+    if (publishIsStale()) {
       throw new SavedProfileClientError("superseded");
     }
     const identityStillMatches = await identityMatches(identityAtStart);
-    if (
-      readIsStale(signal, accountKey, generationAtStart, startedDuringWrite) ||
-      !identityStillMatches
-    ) {
+    if (publishIsStale() || !identityStillMatches) {
       throw new SavedProfileClientError("superseded");
     }
     if (result.status !== 200) {
@@ -213,11 +229,16 @@ export async function readSavedProfile(
       throw error;
     }
     if (error instanceof AtlasApiError && error.status === 401) {
+      if (authGenerationMoved(authGenerationAtStart)) {
+        throw new SavedProfileClientError("superseded");
+      }
+      const identityStillMatches = await identityMatches(identityAtStart);
+      if (authGenerationMoved(authGenerationAtStart) || !identityStillMatches) {
+        throw new SavedProfileClientError("superseded");
+      }
       throw new SavedProfileClientError("unauthorized");
     }
-    if (
-      readIsStale(signal, accountKey, generationAtStart, startedDuringWrite)
-    ) {
+    if (publishIsStale()) {
       throw new SavedProfileClientError("superseded");
     }
     throw new SavedProfileClientError("read");

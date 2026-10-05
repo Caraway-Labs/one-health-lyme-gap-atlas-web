@@ -181,6 +181,81 @@ describe("Settings profile form", () => {
     ).toBe("CDPHE");
   });
 
+  it("keeps an unresolved save when a later retry sends a different body", async () => {
+    let stored: {
+      job_title: string | null;
+      organization: string | null;
+      role: null;
+      state_code: string | null;
+    } = {
+      job_title: null,
+      organization: null,
+      role: null,
+      state_code: null,
+    };
+    getProfile.mockImplementation(
+      asResponse(async () => ({ data: { profile: stored }, status: 200 }))
+    );
+    saveProfile.mockImplementation(
+      asResponse(async (body: { organization?: string | null }) => {
+        if (body.organization === "First") {
+          throw new AtlasApiError("dropped", "/v1/me/profile", 503, "req-lost");
+        }
+        return {
+          data: {
+            profile: {
+              job_title: null,
+              organization: body.organization ?? null,
+              role: null,
+              state_code: null,
+            },
+          },
+          status: 200,
+        };
+      })
+    );
+    const { client } = renderSettings();
+    const organization = await screen.findByTestId("settings-organization");
+    fireEvent.change(organization, { target: { value: "First" } });
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "could not confirm that save"
+    );
+    fireEvent.change(screen.getByTestId("settings-organization"), {
+      target: { value: "Second" },
+    });
+    expect(screen.getByRole("alert").textContent).toContain(
+      "could not confirm that save"
+    );
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await waitFor(() =>
+      expect({
+        calls: saveProfile.mock.calls.length,
+        notice: screen.getByTestId("settings-save-notice").textContent,
+        organization: (
+          screen.getByTestId("settings-organization") as HTMLInputElement
+        ).value,
+      }).toStrictEqual({
+        calls: 2,
+        notice: expect.stringContaining("could not confirm that save"),
+        organization: "Second",
+      })
+    );
+    stored = { ...stored, organization: "First" };
+    await client.refetchQueries();
+    await waitFor(() =>
+      expect({
+        notice: screen.getByTestId("settings-save-notice").textContent,
+        organization: (
+          screen.getByTestId("settings-organization") as HTMLInputElement
+        ).value,
+      }).toStrictEqual({
+        notice: expect.stringContaining("could not confirm that save"),
+        organization: "Second",
+      })
+    );
+  });
+
   it("shows an unsupported saved state as incomplete for Review too", async () => {
     getProfile.mockResolvedValue(
       asResponse({

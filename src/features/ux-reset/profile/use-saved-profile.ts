@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SavedProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 import {
   profileIdentityKey,
+  profileSessionGeneration,
   sameProfileIdentity,
   useProfileSessionIdentity,
   type ProfileSessionIdentity,
@@ -109,7 +110,19 @@ export function useSavedProfile(): UseQueryResult<SavedProfile> & {
       if (!identity || identity.kind === "signed-out") {
         throw new CancelledError({ revert: true });
       }
-      return await readOrResumeSavedProfile(signal, identity, queryClient);
+      const authGenerationAtStart = profileSessionGeneration();
+      try {
+        return await readOrResumeSavedProfile(signal, identity, queryClient);
+      } catch (error) {
+        if (
+          error instanceof SavedProfileClientError &&
+          error.code === "unauthorized" &&
+          profileSessionGeneration() !== authGenerationAtStart
+        ) {
+          throw new CancelledError({ revert: true });
+        }
+        throw error;
+      }
     },
     queryKey: savedProfileQueryKey(identity ?? { kind: "signed-out" }),
     retry: false,

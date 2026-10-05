@@ -21,6 +21,9 @@ import {
 import {
   assessSavedProfile,
   buildProfileWrite,
+  profileEchoMatchesWrite,
+  savedProfileFromUserProfile,
+  savedProfilesMatch,
   type ProfileAssessment,
   type ProfileDraftInput,
   type SavedProfile,
@@ -30,12 +33,16 @@ import {
   profileSessionGeneration,
   type ProfileSessionIdentity,
 } from "@/features/ux-reset/profile/profile-session";
-import { writeSavedProfile } from "@/features/ux-reset/profile/saved-profile-client";
+import {
+  UNCERTAIN_SAVE_MESSAGE,
+  writeSavedProfile,
+} from "@/features/ux-reset/profile/saved-profile-client";
 import {
   savedProfileQueryKey,
   useSavedProfile,
 } from "@/features/ux-reset/profile/use-saved-profile";
 import { useSettingsStateOptions } from "@/features/ux-reset/settings/use-settings-state-options";
+import type { UserProfileWrite } from "@/generated/models/userProfileWrite";
 import type { UserProfileWriteRole } from "@/generated/models/userProfileWriteRole";
 import {
   userProfileWriteJobTitleOneMax,
@@ -69,6 +76,50 @@ const PROFILE_ROLES: {
 ];
 
 type SaveNotice = { text: string; tone: "error" | "success" };
+
+type UnresolvedSave = { body: UserProfileWrite; message: string };
+
+function sameProfileWrite(
+  left: UserProfileWrite,
+  right: UserProfileWrite
+): boolean {
+  return profileEchoMatchesWrite(
+    left,
+    savedProfileFromUserProfile({
+      job_title: right.job_title ?? null,
+      organization: right.organization ?? null,
+      role: right.role ?? null,
+      state_code: right.state_code ?? null,
+    })
+  );
+}
+
+function writeFromSaved(profile: SavedProfile): UserProfileWrite {
+  switch (profile.selection.kind) {
+    case "national":
+    case "unselected": {
+      return {
+        job_title: profile.jobTitle,
+        organization: profile.organization,
+        role: profile.role,
+        state_code: null,
+      };
+    }
+    case "state":
+    case "unrecognized": {
+      return {
+        job_title: profile.jobTitle,
+        organization: profile.organization,
+        role: profile.role,
+        state_code: profile.selection.stateCode,
+      };
+    }
+    default: {
+      const exhaustive: never = profile.selection;
+      return exhaustive;
+    }
+  }
+}
 
 function governedAssessmentKey(assessment: ProfileAssessment): string {
   switch (assessment.selection.kind) {
@@ -212,6 +263,12 @@ export function SettingsProfileForm() {
   const [notice, setNotice] = useState<SaveNotice | null>(null);
   const [jurisdictionInvalid, setJurisdictionInvalid] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [unresolvedSave, setUnresolvedSave] = useState<UnresolvedSave | null>(
+    null
+  );
+  const [announcedProfile, setAnnouncedProfile] = useState<SavedProfile | null>(
+    null
+  );
   const requestIdRef = useRef(0);
   const [draftIdentityKey, setDraftIdentityKey] = useState<string | null>(null);
 
@@ -224,7 +281,26 @@ export function SettingsProfileForm() {
     setNotice(null);
     setSaving(false);
     setSessionExpired(false);
+    setUnresolvedSave(null);
+    setAnnouncedProfile(null);
     setDraftIdentityKey(null);
+    return null;
+  }
+
+  if (
+    announcedProfile &&
+    profile &&
+    !savedProfilesMatch(announcedProfile, profile)
+  ) {
+    setAnnouncedProfile(null);
+    setDirty(true);
+    if (!unresolvedSave) {
+      setUnresolvedSave({
+        body: writeFromSaved(announcedProfile),
+        message: UNCERTAIN_SAVE_MESSAGE,
+      });
+    }
+    setNotice({ text: UNCERTAIN_SAVE_MESSAGE, tone: "error" });
     return null;
   }
 
@@ -274,7 +350,9 @@ export function SettingsProfileForm() {
 
   function updateDraft(next: ProfileDraftInput) {
     setDirty(true);
-    setNotice(null);
+    if (!unresolvedSave) {
+      setNotice(null);
+    }
     setJurisdictionInvalid(false);
     setDraft(next);
   }
@@ -307,7 +385,9 @@ export function SettingsProfileForm() {
   ) => {
     const generationAtSave = profileSessionGeneration();
     setSaving(true);
-    setNotice(null);
+    if (!unresolvedSave) {
+      setNotice(null);
+    }
     await queryClient.cancelQueries({
       queryKey: savedProfileQueryKey(saveIdentity),
     });
@@ -319,8 +399,19 @@ export function SettingsProfileForm() {
       return;
     }
     setSaving(false);
+    const retrySettlesUnresolved =
+      unresolvedSave === null || sameProfileWrite(unresolvedSave.body, body);
     switch (outcome.status) {
       case "confirmed": {
+        if (!retrySettlesUnresolved) {
+          setNotice({
+            text: unresolvedSave?.message ?? UNCERTAIN_SAVE_MESSAGE,
+            tone: "error",
+          });
+          break;
+        }
+        setUnresolvedSave(null);
+        setAnnouncedProfile(outcome.profile);
         setDirty(false);
         setSynced(outcome.profile);
         setDraft(formValuesFromSavedProfile(outcome.profile, stateOptions));
@@ -335,6 +426,14 @@ export function SettingsProfileForm() {
         break;
       }
       case "diverged": {
+        if (!retrySettlesUnresolved) {
+          setNotice({
+            text: unresolvedSave?.message ?? UNCERTAIN_SAVE_MESSAGE,
+            tone: "error",
+          });
+          break;
+        }
+        setUnresolvedSave(null);
         setSynced(outcome.profile);
         queryClient.setQueryData(
           savedProfileQueryKey(saveIdentity),
@@ -350,16 +449,39 @@ export function SettingsProfileForm() {
         setDraft(null);
         setDirty(false);
         setSynced(null);
+        setUnresolvedSave(null);
+        setAnnouncedProfile(null);
         setSessionExpired(true);
         queryClient.removeQueries({
           queryKey: savedProfileQueryKey(saveIdentity),
         });
         break;
       }
-      case "rejected":
-      case "unconfirmed":
-      case "uncertain": {
+      case "rejected": {
         setNotice({ text: outcome.message, tone: "error" });
+        break;
+      }
+      case "unconfirmed": {
+        if (!retrySettlesUnresolved) {
+          setNotice({
+            text: unresolvedSave?.message ?? UNCERTAIN_SAVE_MESSAGE,
+            tone: "error",
+          });
+          break;
+        }
+        setUnresolvedSave(null);
+        setNotice({ text: outcome.message, tone: "error" });
+        break;
+      }
+      case "uncertain": {
+        const retained = unresolvedSave ?? {
+          body,
+          message: outcome.message,
+        };
+        if (!unresolvedSave) {
+          setUnresolvedSave(retained);
+        }
+        setNotice({ text: retained.message, tone: "error" });
         break;
       }
       default: {
