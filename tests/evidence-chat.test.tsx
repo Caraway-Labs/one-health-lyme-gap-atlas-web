@@ -374,10 +374,13 @@ describe(EvidenceChat, () => {
       removedFailure: null,
       turns: 2,
     });
-    expect(chatRequest).toHaveBeenLastCalledWith({
-      message: "What does the evidence say?",
-      history: [],
-    });
+    expect(chatRequest).toHaveBeenLastCalledWith(
+      {
+        message: "What does the evidence say?",
+        history: [],
+      },
+      { signal: expect.any(AbortSignal) }
+    );
     await waitFor(() =>
       expect(document.activeElement).toBe(
         screen.getByLabelText("Your question")
@@ -432,19 +435,22 @@ describe(EvidenceChat, () => {
       savedConversations: 1,
       turns: 4,
     });
-    expect(chatRequest).toHaveBeenLastCalledWith({
-      message: "What does reviewed evidence say about Ixodes in Maine?",
-      history: [
-        {
-          role: "user",
-          content: "What does the evidence say?",
-        },
-        {
-          role: "assistant",
-          content: "No passages matched this question.",
-        },
-      ],
-    });
+    expect(chatRequest).toHaveBeenLastCalledWith(
+      {
+        message: "What does reviewed evidence say about Ixodes in Maine?",
+        history: [
+          {
+            role: "user",
+            content: "What does the evidence say?",
+          },
+          {
+            role: "assistant",
+            content: "No passages matched this question.",
+          },
+        ],
+      },
+      { signal: expect.any(AbortSignal) }
+    );
   });
 
   it("does not render supplied citations for corpus gaps or refusals", async () => {
