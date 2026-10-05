@@ -123,29 +123,32 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     );
     if (!closeButton) return;
 
-    const workspaceNav = sidebar.querySelector<HTMLElement>(
-      'nav[aria-label="Professional workspace"]'
-    );
-
+    // Chromium often moves focus to the body when the open trigger becomes
+    // inert. That can happen after the first animation frames, and it does
+    // not always emit focusin, so reclaim until focus is inside the drawer.
     const focusCloseNavigationIfNeeded = () => {
       const active = document.activeElement;
-      if (active === closeButton) {
-        return;
-      }
-      if (active instanceof HTMLElement && workspaceNav?.contains(active)) {
+      if (active instanceof Node && sidebar.contains(active)) {
         return;
       }
       closeButton.focus({ preventScroll: true });
     };
 
     focusCloseNavigationIfNeeded();
-    let followUpFrame = 0;
-    const initialFrame = window.requestAnimationFrame(() => {
+    let frame = 0;
+    const reclaimFocus = () => {
       focusCloseNavigationIfNeeded();
-      followUpFrame = window.requestAnimationFrame(
-        focusCloseNavigationIfNeeded
-      );
-    });
+      frame = window.requestAnimationFrame(reclaimFocus);
+    };
+    frame = window.requestAnimationFrame(reclaimFocus);
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (target instanceof Node && sidebar.contains(target)) {
+        return;
+      }
+      focusCloseNavigationIfNeeded();
+    };
 
     const focusableSelector =
       'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -174,10 +177,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       }
     };
 
+    document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.cancelAnimationFrame(initialFrame);
-      window.cancelAnimationFrame(followUpFrame);
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [closeMobileNavigation, isMobileViewport, mobileOpen]);
