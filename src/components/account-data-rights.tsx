@@ -29,12 +29,12 @@ const confirmationCopy: Record<
 > = {
   export: {
     title: "Export my data?",
-    body: "Atlas will prepare a JSON file of your account profile. Saved workspaces, unlinked Amplitude sessions, and browser-only chat history are omitted. Feedback export includes only this account's category, route, received time, message, and whether a contact email existed, not other people's reports. Completion is targeted within 30 days. Public Atlas datasets are unaffected. The download is available for a limited time after completion. If Atlas cannot complete the request, this page will show a support status and a request reference.",
+    body: "Atlas will prepare a JSON file of your account profile. Saved views, saved investigations, and an artifact library are not stored, so they are not in the export. Unlinked Amplitude sessions and browser-only chat history are omitted. Feedback export includes only this account's category, route, received time, message, and whether a contact email existed, not other people's reports. Completion is targeted within 30 days. Public Atlas datasets are unaffected. The download is available for a limited time after completion. If Atlas cannot complete the request, this page will show a support status and a request reference.",
     confirm: "Export my data",
   },
   deletion: {
     title: "Remove all data?",
-    body: "This permanently deletes your Atlas account and profile. It cannot be undone. Feedback contact fields and account linkage for this account are removed; submitted feedback text is retained. Saved workspaces are not launched. Unlinked Amplitude sessions expire after 90 days and cannot be looked up by account. Browser chat history stays on this device until you clear it. Public Atlas datasets and methodology are unaffected. Completion is targeted within 30 days. If Atlas cannot complete the request, this page will show a support status and a request reference.",
+    body: "This permanently deletes your Atlas account and profile. It cannot be undone. Feedback contact fields and account linkage for this account are removed; submitted feedback text is retained. Saved views, saved investigations, and an artifact library are not stored. Unlinked Amplitude sessions expire after 90 days and cannot be looked up by account. Browser chat history stays on this device until you clear it. Public Atlas datasets and methodology are unaffected. Completion is targeted within 30 days. If Atlas cannot complete the request, this page will show a support status and a request reference.",
     confirm: "Remove all data",
   },
 };

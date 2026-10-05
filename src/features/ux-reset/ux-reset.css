@@ -373,6 +373,32 @@
   display: flex;
   align-items: flex-start;
   min-width: 0;
+  flex: 1;
+}
+
+.ux-reset-pro-app .ux-reset-trust-footer {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: auto;
+  padding: var(--space-4) var(--space-5);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.ux-reset-trust-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ux-reset-trust-footer a:focus-visible,
+.ux-reset-trust-footer button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .ux-reset-workspace-body > .ux-reset-pro-main {

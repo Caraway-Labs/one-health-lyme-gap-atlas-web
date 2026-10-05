@@ -145,6 +145,24 @@ describe("UX Reset professional workspace", () => {
     expect(docsLink.textContent).toContain("Docs");
   });
 
+  it("links Privacy to the public page from the workspace footer", () => {
+    pathname = RESET_APP_PATH;
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+
+    const footer = screen.getByRole("contentinfo");
+    const privacy = screen.getByRole("link", { name: "Privacy" });
+    expect(footer.contains(privacy)).toBeTruthy();
+    expect(privacy.getAttribute("href")).toBe("/privacy");
+    expect(privacy.getAttribute("target")).toBeNull();
+    expect(footer.querySelector("button")?.textContent).toContain(
+      "Privacy settings"
+    );
+  });
+
   it("renders outside the legacy analytical shell", () => {
     pathname = RESET_APP_PATH;
     render(

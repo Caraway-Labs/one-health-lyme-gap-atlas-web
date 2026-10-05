@@ -40,6 +40,7 @@ import {
   resetRouteById,
   type ResetRoute,
 } from "@/features/ux-reset/paths";
+import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 
 export function ResetProfessionalShell({ children }: { children: ReactNode }) {
@@ -344,6 +345,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           <main className="app-content ux-reset-pro-main">{children}</main>
           {askAtlas.desktopPanel}
         </div>
+        <ProfessionalTrustFooter />
       </SidebarInset>
       {askAtlas.compactModal}
     </div>

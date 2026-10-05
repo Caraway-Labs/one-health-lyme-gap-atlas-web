@@ -88,7 +88,7 @@ describe("account data rights", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Export my data?" });
     expect(dialog.textContent).toMatch(
-      /Saved workspaces[\s\S]*unlinked Amplitude sessions[\s\S]*Feedback export includes only this account[\s\S]*30 days[\s\S]*Public Atlas datasets are unaffected[\s\S]*support status and a request reference/
+      /Saved views, saved investigations, and an artifact library are not stored[\s\S]*Unlinked Amplitude sessions[\s\S]*Feedback export includes only this account[\s\S]*30 days[\s\S]*Public Atlas datasets are unaffected[\s\S]*support status and a request reference/
     );
   });
 

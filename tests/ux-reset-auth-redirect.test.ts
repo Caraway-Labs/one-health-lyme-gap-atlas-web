@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { shouldRedirectUnauthenticatedAppRoute } from "@/lib/auth/app-route-guard";
+import {
+  isProfessionalAppPath,
+  shouldRedirectUnauthenticatedAppRoute,
+} from "@/lib/auth/app-route-guard";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 
 const { exchangeCodeForSession } = vi.hoisted(() => ({
@@ -39,6 +42,20 @@ describe("UX Reset auth redirect contract", () => {
         userPresent: false,
       })
     ).toBeTruthy();
+  });
+
+  it("keeps the public privacy page outside the professional auth gate", () => {
+    expect(isProfessionalAppPath("/privacy")).toBeFalsy();
+    expect(isProfessionalAppPath("/app/privacy")).toBeTruthy();
+    expect(
+      shouldRedirectUnauthenticatedAppRoute({
+        atlasE2E: false,
+        nodeEnv: "production",
+        pathname: "/privacy",
+        supabaseConfigured: true,
+        userPresent: false,
+      })
+    ).toBeFalsy();
   });
 
   it("returns expired-session recovery to sign-in and successful exchange to the reset route", async () => {
