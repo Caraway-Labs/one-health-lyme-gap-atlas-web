@@ -706,7 +706,12 @@ test.describe("Ask Atlas contextual sidecar", () => {
     const popup = page.waitForEvent("popup");
     await source.click();
     const sourcePage = await popup;
-    await expect(sourcePage).toHaveURL(/pubmed\.ncbi\.nlm\.nih\.gov/);
+    // PubMed commit can outlast the 5s expect timeout. Wait for the navigation
+    // itself, then assert the same URL without also waiting for the full load.
+    await sourcePage.waitForURL(/pubmed\.ncbi\.nlm\.nih\.gov/, {
+      waitUntil: "commit",
+    });
+    expect(sourcePage.url()).toMatch(/pubmed\.ncbi\.nlm\.nih\.gov/);
     await sourcePage.close();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.locator(".app-inset")).toHaveAttribute("inert", "");
