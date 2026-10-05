@@ -9,8 +9,15 @@ import {
   serializeAskAtlasInheritedContext,
   type AskAtlasInheritedContext,
 } from "@/features/ux-reset/ask-atlas/inherited-context";
+import type { CompareAlignment } from "@/features/ux-reset/compare/compare-alignment";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import type { ExploreCommittedSelection } from "@/features/ux-reset/explore/explore-model";
+import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  GeographyType,
+  ValueState,
+  type Observation,
+} from "@/generated/models";
 
 function evidence(sourceId: string, sourceFamily: string): EvidenceObjectModel {
   return {
@@ -159,7 +166,6 @@ describe("Ask Atlas inherited context allowlist", () => {
       inheritedContextFromInvestigate({
         bundle: null,
         identity: null,
-        period: "2023-01-01",
         releaseId: "alpha-2026",
         releaseMismatch: true,
         requestedFips: "08001",
@@ -168,7 +174,6 @@ describe("Ask Atlas inherited context allowlist", () => {
     const releaseOnly = inheritedContextFromInvestigate({
       bundle: null,
       identity: null,
-      period: "2023-01-01",
       releaseId: "alpha-2026",
       releaseMismatch: false,
       requestedFips: null,
@@ -177,6 +182,80 @@ describe("Ask Atlas inherited context allowlist", () => {
     expect(field(releaseOnly, "geography")).toStrictEqual({ state: "absent" });
     expect(field(releaseOnly, "period")).toStrictEqual({ state: "absent" });
     expect(field(releaseOnly, "source")).toStrictEqual({ state: "absent" });
+  });
+
+  it("inherits one accepted Investigate period and omits conflicting requests", () => {
+    const accepted = inheritedContextFromInvestigate({
+      bundle: investigateBundle([
+        ["2023-01-01", "2023-12-31"],
+        ["2023-01-01", "2023-12-31"],
+      ]),
+      identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      releaseId: "alpha-2026",
+      releaseMismatch: false,
+      requestedFips: "08001",
+    });
+    expect(field(accepted, "period")).toStrictEqual({
+      id: "2023-01-01",
+      label: "2023",
+      state: "validated",
+    });
+    const mismatchedRelease = inheritedContextFromInvestigate({
+      bundle: investigateBundle([["2023-01-01", "2023-12-31"]]),
+      identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      releaseId: "alpha-2026",
+      releaseMismatch: true,
+      requestedFips: "08001",
+    });
+    expect(field(mismatchedRelease, "period")).toStrictEqual({
+      state: "absent",
+    });
+  });
+
+  it("omits Investigate period when accepted observations disagree, fail, or are unsupported", () => {
+    const mixed = inheritedContextFromInvestigate({
+      bundle: investigateBundle([
+        ["2023-01-01", "2023-12-31"],
+        ["2022-01-01", "2022-12-31"],
+      ]),
+      identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      releaseId: "alpha-2026",
+      releaseMismatch: false,
+      requestedFips: "08001",
+    });
+    const unsupported = inheritedContextFromInvestigate({
+      bundle: investigateBundle([]),
+      identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      releaseId: "alpha-2026",
+      releaseMismatch: false,
+      requestedFips: "08001",
+    });
+    expect(field(mixed, "period")).toStrictEqual({ state: "absent" });
+    expect(field(unsupported, "period")).toStrictEqual({ state: "absent" });
+    expect(field(unsupported, "release")).toMatchObject({
+      id: "alpha-2026",
+      state: "validated",
+    });
+  });
+
+  it("keeps a partial Investigate response when the loaded observations share a period", () => {
+    const partial = inheritedContextFromInvestigate({
+      bundle: investigateBundle([["2023-01-01", "2023-12-31"]], {
+        failedMeasureId: "tick-pathogen",
+      }),
+      identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      releaseId: "alpha-2026",
+      releaseMismatch: false,
+      requestedFips: "08001",
+    });
+    expect(field(partial, "period")).toStrictEqual({
+      id: "2023-01-01",
+      label: "2023",
+      state: "validated",
+    });
+    expect(field(partial, "measure")).toMatchObject({
+      state: "validated",
+    });
   });
 
   it("publishes Review release without inventing a measure, period, or source", () => {
@@ -210,12 +289,12 @@ describe("Ask Atlas inherited context allowlist", () => {
 
   it("publishes a resolved Compare pair and withholds an unresolved county label", () => {
     const ready = inheritedContextFromCompare({
+      alignment: compareAlignment([["2023-01-01", "2023-12-31"]]),
       alignmentReady: true,
       counties: [
         { fips: "08001", label: "Adams, Colorado (08001)" },
         { fips: "08013", label: "Boulder, Colorado (08013)" },
       ],
-      period: "2023-01-01",
       releaseId: "alpha-2026",
     });
     expect(field(ready, "geography")).toMatchObject({
@@ -223,17 +302,181 @@ describe("Ask Atlas inherited context allowlist", () => {
       state: "validated",
     });
     expect(field(ready, "measure")).toStrictEqual({ state: "absent" });
+    expect(field(ready, "period")).toStrictEqual({
+      id: "2023-01-01",
+      label: "2023",
+      state: "validated",
+    });
     expect(field(ready, "source")).toStrictEqual({ state: "absent" });
     const unresolved = inheritedContextFromCompare({
+      alignment: compareAlignment([["2023-01-01", "2023-12-31"]]),
       alignmentReady: true,
       counties: [
         { fips: "08001", label: "County 08001" },
         { fips: "08013", label: "Boulder, Colorado (08013)" },
       ],
-      period: null,
       releaseId: "alpha-2026",
     });
     expect(field(unresolved, "geography")).toStrictEqual({ state: "absent" });
-    expect(field(unresolved, "period")).toStrictEqual({ state: "absent" });
+  });
+
+  it("does not inherit a requested Compare period from mixed, failed, or unsupported rows", () => {
+    const requestedPeriod = "1999-01-01";
+    const mixed = inheritedContextFromCompare({
+      alignment: compareAlignment(
+        [
+          ["2023-01-01", "2023-12-31"],
+          ["2022-01-01", "2022-12-31"],
+        ],
+        requestedPeriod
+      ),
+      alignmentReady: true,
+      counties: resolvedPair,
+      releaseId: "alpha-2026",
+    });
+    const failed = inheritedContextFromCompare({
+      alignment: compareAlignment([], requestedPeriod, "failed"),
+      alignmentReady: true,
+      counties: resolvedPair,
+      releaseId: "alpha-2026",
+    });
+    const unsupported = inheritedContextFromCompare({
+      alignment: compareAlignment([], requestedPeriod, "unsupported_period"),
+      alignmentReady: true,
+      counties: resolvedPair,
+      releaseId: "alpha-2026",
+    });
+    expect(field(mixed, "period")).toStrictEqual({ state: "absent" });
+    expect(field(failed, "period")).toStrictEqual({ state: "absent" });
+    expect(field(unsupported, "period")).toStrictEqual({ state: "absent" });
+    expect(JSON.stringify(mixed)).not.toContain(requestedPeriod);
+    expect(field(unsupported, "release")).toMatchObject({ state: "validated" });
   });
 });
+
+const resolvedPair = [
+  { fips: "08001", label: "Adams, Colorado (08001)" },
+  { fips: "08013", label: "Boulder, Colorado (08013)" },
+] as const;
+
+function periodObservation(
+  periodStart: string,
+  periodEnd: string
+): Observation {
+  return {
+    atlas_acquired_at: null,
+    atlas_processed_at: null,
+    dataset_id: "fixture",
+    denominator: null,
+    evidence: {
+      provenance_ref: "prov/period",
+      resource_id: "reported-cases",
+      resource_type: "dataset",
+    },
+    geography: { geography_id: "08001", geography_type: GeographyType.county },
+    limitations: [],
+    lineage_source_id: null,
+    measure_id: "reported-cases",
+    methodology: null,
+    methodology_id: "method-1",
+    methodology_version: "1.0.0",
+    observation_id: `${periodStart}-${periodEnd}`,
+    period_end: periodEnd,
+    period_start: periodStart,
+    provenance_ref: "prov/period",
+    release_id: "alpha-2026",
+    release_methodology_version: null,
+    semantic_version: "1.0.0",
+    source_id: "cdc-cases",
+    source_label: "CDC surveillance",
+    source_published_at: null,
+    source_url: null,
+    source_vintage: "2026.1",
+    temporal_grain: "YEAR",
+    unit: "cases",
+    value: 4,
+    value_state: ValueState.OBSERVED,
+  };
+}
+
+function investigateBundle(
+  periods: readonly (readonly [string, string])[],
+  options: { failedMeasureId?: string } = {}
+): CountyEvidenceBundle {
+  const observations = periods.map(([periodStart, periodEnd]) => ({
+    evidence: evidence("cdc-cases", "CDC surveillance"),
+    familyId: null,
+    indicatorDomain: "human",
+    indicatorId: "human-cases",
+    measureId: "reported-cases",
+    measureLabel: "Reported Lyme cases",
+    observation: periodObservation(periodStart, periodEnd),
+  }));
+  return {
+    county: {
+      fips: "08001",
+      label: "Denver County, Colorado (08001)",
+      stateCode: "CO",
+    },
+    domainsRequestFailed: false,
+    families: [],
+    leadFinding: observations[0] ?? null,
+    leadLimitation: null,
+    measureFailures: options.failedMeasureId
+      ? [
+          {
+            measureId: options.failedMeasureId,
+            measureLabel: "Tick pathogen detections",
+            message: "observations unavailable",
+            retryAtMs: null,
+          },
+        ]
+      : [],
+    readyMeasureIds: observations.length > 0 ? ["reported-cases"] : [],
+    releaseId: "alpha-2026",
+    unassigned: observations,
+    unclassifiedMeasureIds: [],
+    unsupportedPeriodMeasureIds: periods.length === 0 ? ["reported-cases"] : [],
+  };
+}
+
+function compareAlignment(
+  periods: readonly (readonly [string, string])[],
+  requestedPeriod: string | null = "1999-01-01",
+  emptyReason: "failed" | "unsupported_period" | null = null
+): CompareAlignment {
+  const records = periods.map(([periodStart, periodEnd]) => ({
+    evidence: evidence("cdc-cases", "CDC surveillance"),
+    fips: "08001",
+    observation: periodObservation(periodStart, periodEnd),
+  }));
+  const left =
+    emptyReason === null
+      ? { kind: "observations" as const, records }
+      : {
+          kind: "empty" as const,
+          message: "No accepted observations",
+          reason: emptyReason,
+        };
+  return {
+    leftFips: "08001",
+    outcomes: [],
+    period: requestedPeriod,
+    releaseId: "alpha-2026",
+    rightFips: "08013",
+    rows: [
+      {
+        definition: null,
+        left,
+        measureId: "reported-cases",
+        measureLabel: "Reported Lyme cases",
+        relation: { kind: "similar" },
+        right: {
+          kind: "empty",
+          message: "Missing",
+          reason: "missing",
+        },
+      },
+    ],
+  };
+}

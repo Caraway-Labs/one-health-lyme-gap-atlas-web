@@ -152,6 +152,7 @@ function CompareExperienceInner() {
   );
   usePublishAskAtlasInheritedContext(
     inheritedContextFromCompare({
+      alignment: workspace.alignment,
       alignmentReady: Boolean(workspace.alignment && workspace.releaseId),
       counties:
         leftOption && rightOption
@@ -160,7 +161,6 @@ function CompareExperienceInner() {
               { fips: rightOption.fips, label: rightOption.label },
             ]
           : [],
-      period: workspace.alignment?.period ?? null,
       releaseId: workspace.alignment ? workspace.releaseId : null,
     })
   );

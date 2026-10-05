@@ -40,6 +40,9 @@ export function InheritedContextNotice({
       data-ask-atlas-surface={context?.surface ?? "none"}
       data-context-state={state}
       data-testid="ask-atlas-inherited-context"
+      // tabIndex keeps a height-capped context list reachable from the keyboard.
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable inherited context
+      tabIndex={0}
     >
       <h2 className="ux-reset-ask-atlas-inherited-title">
         Inherited from this page

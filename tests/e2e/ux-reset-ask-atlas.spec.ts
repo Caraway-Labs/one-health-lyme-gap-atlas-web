@@ -1,14 +1,22 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-import { EXPLORE_CASES_MEASURE_ID } from "../fixtures/explore-api-fixtures";
+import { compareObservation } from "../fixtures/compare-api-fixtures";
 import {
+  EXPLORE_CASES_MEASURE_ID,
   exploreGeometryFixture,
   exploreMeasuresEnvelope,
   exploreMetadataFixture,
   exploreObservationsEnvelope,
   exploreScoresFixture,
 } from "../fixtures/explore-api-fixtures";
+import {
+  investigateIndicatorsFixture,
+  investigateMeasuresFixture,
+  investigateMetadataFixture,
+  investigateObservationsFor,
+  investigateScoresFixture,
+} from "../fixtures/investigate-api-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
 
@@ -126,6 +134,157 @@ function inheritedField(page: Page, field: string) {
   return page.locator(`[data-field="${field}"]`);
 }
 
+type LayoutBox = {
+  bottom: number;
+  height: number;
+  left: number;
+  right: number;
+  top: number;
+};
+
+async function readSidecarLayout(page: Page) {
+  return page.evaluate(() => {
+    function box(element: Element | null): LayoutBox | null {
+      if (!element) {
+        return null;
+      }
+      const rect = element.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        height: rect.height,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+      };
+    }
+    const ask = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent?.trim() === "Ask"
+    );
+    return {
+      ask: box(ask ?? null),
+      composer: box(document.querySelector("#ux-reset-ask-atlas textarea")),
+      panel: box(document.querySelector('[data-testid="ask-atlas-panel"]')),
+      transcript: box(
+        document.querySelector("#ux-reset-ask-atlas .chat-transcript")
+      ),
+      viewport: { height: window.innerHeight, width: window.innerWidth },
+    };
+  });
+}
+
+function expectInsidePanel(
+  target: LayoutBox | null,
+  panel: LayoutBox | null,
+  viewport: { height: number; width: number },
+  minimumHeight: number
+) {
+  expect(target).not.toBeNull();
+  expect(panel).not.toBeNull();
+  if (!(target && panel)) {
+    return;
+  }
+  const visibleBottom = Math.min(panel.bottom, viewport.height) + 1;
+  expect(target.height).toBeGreaterThanOrEqual(minimumHeight);
+  expect(target.top).toBeGreaterThanOrEqual(panel.top - 1);
+  expect(
+    target.bottom,
+    `bottom ${target.bottom} panel ${panel.bottom} viewport ${viewport.width}x${viewport.height}`
+  ).toBeLessThanOrEqual(visibleBottom);
+  expect(target.left).toBeGreaterThanOrEqual(-1);
+  expect(target.right).toBeLessThanOrEqual(viewport.width + 1);
+}
+
+async function expectComposerVisibleInPanel(page: Page) {
+  const layout = await readSidecarLayout(page);
+  expectInsidePanel(layout.composer, layout.panel, layout.viewport, 24);
+  expectInsidePanel(layout.ask, layout.panel, layout.viewport, 16);
+  expectInsidePanel(layout.transcript, layout.panel, layout.viewport, 24);
+}
+
+async function installInvestigateMocks(page: Page) {
+  await page.route("**/v1/me/profile", async (route) => {
+    await fulfillJson(route, { profile: { state_code: "CO" } });
+  });
+  await page.route("**/v1/atlas/metadata**", async (route) => {
+    await fulfillJson(route, investigateMetadataFixture);
+  });
+  await page.route("**/v1/atlas/scores**", async (route) => {
+    await fulfillJson(route, investigateScoresFixture);
+  });
+  await page.route("**/v1/indicators**", async (route) => {
+    await fulfillJson(route, {
+      data: investigateIndicatorsFixture,
+      links: { self: "/v1/indicators" },
+      meta: {},
+    });
+  });
+  await page.route("**/v1/measures**", async (route) => {
+    const url = new URL(route.request().url());
+    const geography = url.searchParams.get("geography_type");
+    await fulfillJson(route, {
+      data: investigateMeasuresFixture.filter(
+        (measure) => measure.geography_semantics === geography
+      ),
+      links: { self: "/v1/measures" },
+      meta: {},
+    });
+  });
+  await page.route("**/v1/geographies/**", async (route) => {
+    await fulfillJson(route, { code: "CANONICAL_DATA_UNAVAILABLE" }, 503);
+  });
+  await page.route("**/v1/observations**", async (route) => {
+    const url = new URL(route.request().url());
+    await fulfillJson(route, {
+      data: investigateObservationsFor({
+        fips: url.searchParams.get("geography_id") ?? "",
+        measureId: url.searchParams.get("measure_id") ?? "",
+        scenario: "mixed",
+      }),
+      links: { self: "/v1/observations" },
+      meta: {},
+    });
+  });
+}
+
+async function installUniformCompareMocks(page: Page) {
+  await page.route("**/v1/me/profile", async (route) => {
+    await fulfillJson(route, { profile: { state_code: "CO" } });
+  });
+  await page.route("**/v1/atlas/metadata**", async (route) => {
+    await fulfillJson(route, investigateMetadataFixture);
+  });
+  await page.route("**/v1/atlas/scores**", async (route) => {
+    await fulfillJson(route, investigateScoresFixture);
+  });
+  await page.route("**/v1/measures**", async (route) => {
+    const url = new URL(route.request().url());
+    const geography = url.searchParams.get("geography_type");
+    await fulfillJson(route, {
+      data: investigateMeasuresFixture.filter(
+        (measure) => measure.geography_semantics === geography
+      ),
+      links: { self: "/v1/measures" },
+      meta: {},
+    });
+  });
+  await page.route("**/v1/observations**", async (route) => {
+    const url = new URL(route.request().url());
+    const measureId = url.searchParams.get("measure_id") ?? "";
+    await fulfillJson(route, {
+      data: url.searchParams.getAll("geography_id").map((fips) =>
+        compareObservation({
+          fips,
+          measureId,
+          unit: "cases",
+          value: 12,
+        })
+      ),
+      links: { self: "/v1/observations" },
+      meta: {},
+    });
+  });
+}
+
 test.describe("Ask Atlas contextual sidecar", () => {
   test("asks from Explore through the chat adapter without changing the page", async ({
     page,
@@ -174,6 +333,7 @@ test.describe("Ask Atlas contextual sidecar", () => {
     );
     const layout =
       (page.viewportSize()?.width ?? 1280) <= 800 ? "compact" : "desktop";
+    await expectComposerVisibleInPanel(page);
     await page.screenshot({
       path: `/opt/cursor/artifacts/ask-atlas-${layout}.png`,
     });
@@ -406,7 +566,7 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await expect(select).toBeVisible();
   });
 
-  test("offers the sidecar on Investigate and Compare and omits the Action placeholder", async ({
+  test("offers the sidecar on Investigate, Compare, and the Action placeholder", async ({
     page,
   }) => {
     await installExploreMocks(page);
@@ -421,6 +581,164 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await page.goto("/app/action");
     await expect(page.getByRole("heading", { name: "Action" })).toBeVisible();
-    await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
+    await openSidecar(page);
+    await expect(page.getByTestId("ask-atlas-no-context")).toBeVisible();
+    await expect(
+      page.getByTestId("ask-atlas-inherited-context")
+    ).toHaveAttribute("data-context-state", "none");
+  });
+
+  test("keeps the composer inside the panel at short, resized, and keyboard viewports", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop",
+      "Viewport matrix starts from the desktop project."
+    );
+    await installExploreMocks(page);
+    await page.setViewportSize({ height: 720, width: 1280 });
+    await page.goto(EXPLORE_URL);
+    await openSidecar(page);
+    const viewports = [
+      { height: 720, width: 1280 },
+      { height: 800, width: 390 },
+      { height: 480, width: 1280 },
+      { height: 360, width: 390 },
+      { height: 720, width: 1280 },
+    ];
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await expect(page.getByTestId("ask-atlas-panel")).toBeVisible();
+      await expectComposerVisibleInPanel(page);
+    }
+  });
+
+  test("inherits the accepted observation period instead of an unvalidated request", async ({
+    page,
+  }) => {
+    const chatBodies: Record<string, unknown>[] = [];
+    await installInvestigateMocks(page);
+    await page.route("**/v1/knowledge-graph/chat", async (route) => {
+      chatBodies.push(
+        route.request().postDataJSON() as Record<string, unknown>
+      );
+      await fulfillJson(
+        route,
+        chatResponse("Reviewed studies differ.", "request-period")
+      );
+    });
+    await page.goto("/app/investigate?county=08001&scope=CO&period=1999-01-01");
+    await expect(page.getByTestId("investigate-finding-text")).toContainText(
+      "Period 2023"
+    );
+    await expect(
+      page.getByTestId("investigate-finding-text")
+    ).not.toContainText("1999");
+    await openSidecar(page);
+    await expect(inheritedField(page, "period")).toHaveAttribute(
+      "data-field-state",
+      "validated"
+    );
+    await expect(inheritedField(page, "period")).toHaveAttribute(
+      "data-field-id",
+      "2023-01-01"
+    );
+    await expect(inheritedField(page, "period")).toContainText("2023");
+    await expect(inheritedField(page, "period")).not.toContainText("1999");
+    await page.getByLabel("Your question").fill(QUESTION);
+    await page.getByRole("button", { name: "Ask", exact: true }).click();
+    await expect(page.getByText("Source paper")).toBeVisible();
+    expect(Object.keys(chatBodies[0] ?? {}).toSorted()).toEqual([
+      "history",
+      "message",
+    ]);
+
+    await installUniformCompareMocks(page);
+    await page.goto(
+      "/app/compare?compare=08001,08013&scope=CO&period=1999-01-01"
+    );
+    await expect(page.getByText("Observation period").first()).toBeVisible();
+    await expect(page.getByTestId("compare-alignment")).toContainText("2023");
+    await expect(page.getByTestId("compare-alignment")).not.toContainText(
+      "1999"
+    );
+    await openSidecar(page);
+    await expect(inheritedField(page, "period")).toHaveAttribute(
+      "data-field-id",
+      "2023-01-01"
+    );
+    await expect(inheritedField(page, "period")).not.toContainText("1999");
+  });
+
+  test("recovers from back, forward, sidecar links, and leaving for sign-in", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop",
+      "Compact history recovery is set explicitly."
+    );
+    await installExploreMocks(page);
+    await installReviewMocks(page);
+    await page.setViewportSize({ height: 800, width: 390 });
+    await page.goto("/app/settings");
+    await page.goto(EXPLORE_URL);
+    await openSidecar(page);
+    await expect(page.locator(".app-inset")).toHaveAttribute("inert", "");
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/settings/);
+    await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
+    await expect(page.locator(".app-inset")).not.toHaveAttribute("inert");
+    await page.goForward();
+    await expect(page).toHaveURL(/\/app\/explore/);
+    await expectRecoveredSidecar(page);
+
+    await openSidecar(page);
+    await page.route("**/v1/knowledge-graph/chat", async (route) => {
+      await fulfillJson(
+        route,
+        chatResponse("Reviewed studies describe exposure.", "request-link")
+      );
+    });
+    await page.getByLabel("Your question").fill(QUESTION);
+    await page.getByRole("button", { name: "Ask", exact: true }).click();
+    const source = page.getByRole("link", { name: "Source paper" });
+    await expect(source).toBeVisible();
+    const popup = page.waitForEvent("popup");
+    await source.click();
+    const sourcePage = await popup;
+    await expect(sourcePage).toHaveURL(/pubmed\.ncbi\.nlm\.nih\.gov/);
+    await sourcePage.close();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.locator(".app-inset")).toHaveAttribute("inert", "");
+
+    await page.goto("/auth/sign-in");
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Atlas" })
+    ).toBeVisible();
+    await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
+    await expect(page.locator("[inert]")).toHaveCount(0);
+
+    await page.goto(EXPLORE_URL);
+    await openSidecar(page);
+    await page.goto("/account");
+    await expect(
+      page.getByRole("heading", { name: "Your account" })
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+    await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
+    await expect(page.locator("[inert]")).toHaveCount(0);
   });
 });
+
+async function expectRecoveredSidecar(page: Page) {
+  const panel = page.locator("#ux-reset-ask-atlas");
+  const inset = page.locator(".app-inset");
+  if ((await panel.count()) === 0) {
+    await expect(inset).not.toHaveAttribute("inert");
+    return;
+  }
+  await expect(panel).toBeVisible();
+  await page.getByTestId("ask-atlas-close").click();
+  await expect(panel).toHaveCount(0);
+  await expect(inset).not.toHaveAttribute("inert");
+}

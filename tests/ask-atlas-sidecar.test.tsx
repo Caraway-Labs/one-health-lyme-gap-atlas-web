@@ -140,8 +140,25 @@ describe("Ask Atlas reset sidecar", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps Action and other non-analytical routes free of a second assistant", () => {
+  it("offers Ask Atlas on the Action placeholder without inventing context", () => {
     pathname = "/app/action";
+    render(
+      <AskAtlasChromeProvider>
+        <ChromeProbe />
+      </AskAtlasChromeProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+    expect(screen.getByTestId("ask-atlas-no-context").textContent).toContain(
+      "No validated page context"
+    );
+    expect(screen.queryByText("1999-01-01")).toBeNull();
+    expect(
+      screen.getByTestId("desktop-slot").querySelector("#ux-reset-ask-atlas")
+    ).toBeTruthy();
+  });
+
+  it("keeps settings free of a second assistant", () => {
+    pathname = "/app/settings";
     render(
       <AskAtlasChromeProvider>
         <ChromeProbe />
@@ -245,7 +262,7 @@ describe("Ask Atlas reset sidecar", () => {
     chatRequest.mockReturnValueOnce(second.promise);
     const { rerender } = render(chromeTree());
     await askFromOpenSidecar("Old question from Explore");
-    pathname = "/app/action";
+    pathname = "/app/settings";
     rerender(chromeTree());
     pathname = "/app/investigate";
     rerender(chromeTree());
@@ -283,7 +300,7 @@ describe("Ask Atlas reset sidecar", () => {
     chatRequest.mockReturnValueOnce(second.promise);
     const { rerender } = render(chromeTree());
     await askFromOpenSidecar("Old question from Explore");
-    pathname = "/app/action";
+    pathname = "/app/settings";
     rerender(chromeTree());
     pathname = "/app/investigate";
     rerender(chromeTree());

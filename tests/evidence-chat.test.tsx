@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -29,6 +30,7 @@ import { EvidenceChat } from "../src/components/evidence-chat";
 import { AtlasApiError } from "../src/lib/api-mutator";
 import {
   CHAT_STORAGE_KEY,
+  loadConversations,
   saveConversations,
 } from "../src/lib/knowledge-chat-storage";
 
@@ -499,6 +501,68 @@ describe(EvidenceChat, () => {
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: "Clear all" })).toBeNull()
     );
+  });
+
+  it("drops a late answer after history is cleared while that request is pending", async () => {
+    const held = Promise.withResolvers<unknown>();
+    chatRequest.mockResolvedValueOnce({ data: response() });
+    chatRequest.mockReturnValueOnce(held.promise);
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence: Limited evidence");
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A question still in flight" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByText("Searching reviewed evidence…");
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Clear all",
+      })
+    );
+    await act(async () => {
+      held.resolve({
+        data: response(
+          "answered",
+          "limited",
+          "Late answer must stay gone.",
+          "request-late"
+        ),
+      });
+      await held.promise;
+    });
+    expect(loadConversations()).toHaveLength(0);
+    expect(screen.queryByText("Late answer must stay gone.")).toBeNull();
+    expect(screen.queryByText("A question still in flight")).toBeNull();
+    expect(screen.queryByText("Evidence: Limited evidence")).toBeNull();
+  });
+
+  it("drops a late failure after history is cleared while that request is pending", async () => {
+    const held = Promise.withResolvers<unknown>();
+    chatRequest.mockResolvedValueOnce({ data: response() });
+    chatRequest.mockReturnValueOnce(held.promise);
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence: Limited evidence");
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A question still in flight" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByText("Searching reviewed evidence…");
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Clear all",
+      })
+    );
+    await act(async () => {
+      held.reject(new Error("Failed to fetch"));
+      await held.promise.catch(() => {});
+    });
+    expect(loadConversations()).toHaveLength(0);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("Evidence: Limited evidence")).toBeNull();
   });
 
   it("hides the empty-state hero when a browser failure is shown", async () => {

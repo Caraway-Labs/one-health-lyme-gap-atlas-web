@@ -410,7 +410,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: 0.35rem var(--space-3);
   border-bottom: 1px solid var(--border);
 }
 
@@ -426,17 +426,58 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .ux-reset-ask-atlas-body .evidence-chat {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
-  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ux-reset-ask-atlas-body .evidence-chat-drawer {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.ux-reset-ask-atlas-body .evidence-chat-drawer .chat-panel {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: auto minmax(0, 2.4rem) minmax(1.75rem, 1fr) auto;
+}
+
+.ux-reset-ask-atlas-body .chat-panel-header,
+.ux-reset-ask-atlas-body .chat-form,
+.ux-reset-ask-atlas-body .chat-attribution {
+  padding-block: 0.35rem;
+}
+
+.ux-reset-ask-atlas-body .medical-notice {
+  max-height: 2.4rem;
+  overflow: auto;
+}
+
+.ux-reset-ask-atlas-body .chat-form textarea {
+  height: 2rem;
+  min-height: 0;
+  field-sizing: fixed;
 }
 
 .ux-reset-ask-atlas-inherited {
   display: grid;
-  flex: none;
+  flex: 0 1 auto;
   gap: var(--space-2);
+  max-height: min(22%, 5.75rem);
+  min-height: 0;
+  overflow: auto;
   padding: var(--space-3);
   border-bottom: 1px solid var(--border);
   background: var(--muted);

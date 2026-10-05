@@ -1,6 +1,9 @@
+import type { CompareAlignment } from "@/features/ux-reset/compare/compare-alignment";
+import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import type { ExploreCommittedSelection } from "@/features/ux-reset/explore/explore-model";
 import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import type { Observation } from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
 
 /**
@@ -26,6 +29,7 @@ export const ASK_ATLAS_SURFACES = [
   "explore",
   "investigate",
   "compare",
+  "action",
 ] as const;
 
 export type AskAtlasSurface = (typeof ASK_ATLAS_SURFACES)[number];
@@ -83,6 +87,85 @@ function sourceFieldFromEvidence(
     return absentInheritedField();
   }
   return validatedInheritedField(sourceId, sourceLabel);
+}
+
+/**
+ * One inherited period exists only when every accepted observation shares a
+ * period identity. A requested URL period is not an observation identity.
+ */
+function inheritedPeriodField(
+  observations: readonly Pick<
+    Observation,
+    "period_end" | "period_start" | "temporal_grain"
+  >[]
+): AskAtlasInheritedField {
+  const identities = new Map<
+    string,
+    { periodEnd: string; periodStart: string; temporalGrain: string }
+  >();
+  for (const observation of observations) {
+    const periodStart = observation.period_start.trim();
+    const periodEnd = observation.period_end.trim();
+    if (!(periodStart && periodEnd)) {
+      continue;
+    }
+    const key = `${periodStart}|${periodEnd}`;
+    if (!identities.has(key)) {
+      identities.set(key, {
+        periodEnd,
+        periodStart,
+        temporalGrain: observation.temporal_grain,
+      });
+    }
+  }
+  if (identities.size !== 1) {
+    return absentInheritedField();
+  }
+  const identity = [...identities.values()][0];
+  if (!identity) {
+    return absentInheritedField();
+  }
+  const label = formatObservationPeriod(
+    identity.periodStart,
+    identity.periodEnd,
+    identity.temporalGrain
+  );
+  if (label === "Unavailable") {
+    return absentInheritedField();
+  }
+  return validatedInheritedField(identity.periodStart, label);
+}
+
+function investigateAcceptedObservations(
+  bundle: CountyEvidenceBundle
+): Observation[] {
+  const observations: Observation[] = [];
+  for (const family of bundle.families) {
+    for (const record of family.observations) {
+      observations.push(record.observation);
+    }
+  }
+  for (const record of bundle.unassigned) {
+    observations.push(record.observation);
+  }
+  return observations;
+}
+
+function compareAcceptedObservations(
+  alignment: CompareAlignment
+): Observation[] {
+  const observations: Observation[] = [];
+  for (const row of alignment.rows) {
+    for (const cell of [row.left, row.right]) {
+      if (cell.kind !== "observations") {
+        continue;
+      }
+      for (const record of cell.records) {
+        observations.push(record.observation);
+      }
+    }
+  }
+  return observations;
 }
 
 function emptyFields(): Record<
@@ -221,7 +304,6 @@ export function inheritedContextFromExplore(input: {
 export function inheritedContextFromInvestigate(input: {
   bundle: CountyEvidenceBundle | null;
   identity: { fips: string; label: string } | null;
-  period: string | null;
   releaseId: string | null;
   releaseMismatch: boolean;
   requestedFips: string | null;
@@ -232,6 +314,7 @@ export function inheritedContextFromInvestigate(input: {
   const releaseReady = Boolean(input.releaseId) && !input.releaseMismatch;
   const bundleReady = Boolean(
     geographyReady &&
+    !input.releaseMismatch &&
     input.bundle &&
     input.bundle.county.fips === input.identity?.fips &&
     input.bundle.releaseId === input.releaseId
@@ -246,10 +329,11 @@ export function inheritedContextFromInvestigate(input: {
       measure: lead
         ? validatedInheritedField(lead.measureId, lead.measureLabel)
         : absentInheritedField(),
-      period:
-        bundleReady && input.period
-          ? validatedInheritedField(input.period, input.period)
-          : absentInheritedField(),
+      period: inheritedPeriodField(
+        bundleReady && input.bundle
+          ? investigateAcceptedObservations(input.bundle)
+          : []
+      ),
       release:
         releaseReady && input.releaseId
           ? validatedInheritedField(input.releaseId, input.releaseId)
@@ -309,9 +393,9 @@ export function inheritedContextFromReview(input: {
 }
 
 export function inheritedContextFromCompare(input: {
+  alignment: CompareAlignment | null;
   alignmentReady: boolean;
   counties: readonly { fips: string; label: string }[];
-  period: string | null;
   releaseId: string | null;
 }): AskAtlasInheritedContext | null {
   if (!(input.alignmentReady && input.releaseId)) {
@@ -336,9 +420,11 @@ export function inheritedContextFromCompare(input: {
             )
           : absentInheritedField(),
       measure: absentInheritedField(),
-      period: input.period
-        ? validatedInheritedField(input.period, input.period)
-        : absentInheritedField(),
+      period: inheritedPeriodField(
+        input.alignmentReady && input.alignment
+          ? compareAcceptedObservations(input.alignment)
+          : []
+      ),
       release: validatedInheritedField(input.releaseId, input.releaseId),
       source: absentInheritedField(),
     },

@@ -23,11 +23,13 @@ export function EvidenceChatConversationContent({
   headingLevel = 1,
   model,
   showCountyNotice = true,
+  showStarterPrompts = true,
   showWorkspaceHandoff = true,
 }: {
   headingLevel?: 1 | 2;
   model: EvidenceChatConversationModel;
   showCountyNotice?: boolean;
+  showStarterPrompts?: boolean;
   showWorkspaceHandoff?: boolean;
 }) {
   const pathname = usePathname();
@@ -101,7 +103,13 @@ export function EvidenceChatConversationContent({
         <ChatHistoryEmptyHint />
       )}
       {showCountyNotice ? <AssistantCountyContextNotice /> : null}
-      <p className="medical-notice">{publicCopy.medical_notice}</p>
+      <p
+        className="medical-notice"
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- height-capped notice can scroll in the sidecar
+        tabIndex={0}
+      >
+        {publicCopy.medical_notice}
+      </p>
       {/* tabIndex satisfies axe scrollable-region-focusable for overflow transcript */}
       <div
         className="chat-transcript"
@@ -206,7 +214,7 @@ export function EvidenceChatConversationContent({
         <AssistantStarterPrompts
           mode={mode}
           onSelect={editQuestion}
-          visible={showEmptyState}
+          visible={showEmptyState && showStarterPrompts}
         />
         <form className="chat-form" onSubmit={submit}>
           <label htmlFor={`chat-message-${mode}`}>Your question</label>

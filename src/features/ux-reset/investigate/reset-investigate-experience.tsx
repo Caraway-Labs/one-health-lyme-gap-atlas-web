@@ -148,7 +148,6 @@ function InvestigateExperienceInner() {
     inheritedContextFromInvestigate({
       bundle,
       identity: workspace.identity,
-      period: workspace.period,
       releaseId: workspace.releaseId,
       releaseMismatch: workspace.recovery === "release_mismatch",
       requestedFips: workspace.requestedFips,

@@ -63,13 +63,13 @@ export function useAskAtlasChrome(): AskAtlasChrome {
 function askAtlasSurfaceFromPath(pathname: string): AskAtlasSurface | null {
   const destination = uxResetDestinationFromPath(pathname);
   switch (destination) {
+    case "action":
     case "compare":
     case "explore":
     case "investigate":
     case "review": {
       return destination;
     }
-    case "action":
     case "assistant":
     case "feed":
     case "settings":
@@ -268,12 +268,15 @@ function AskAtlasPanel({
       <div className="ux-reset-ask-atlas-body">
         <InheritedContextNotice context={context} />
         {requestsEnabled ? (
-          <EvidenceChatConversationContent
-            headingLevel={2}
-            model={model}
-            showCountyNotice={false}
-            showWorkspaceHandoff={false}
-          />
+          <div className="evidence-chat evidence-chat-drawer">
+            <EvidenceChatConversationContent
+              headingLevel={2}
+              model={model}
+              showCountyNotice={false}
+              showStarterPrompts={false}
+              showWorkspaceHandoff={false}
+            />
+          </div>
         ) : (
           <div
             className="ux-reset-ask-atlas-disabled"
@@ -284,7 +287,7 @@ function AskAtlasPanel({
             <h2 id={ASK_ATLAS_DISABLED_HEADING_ID}>Ask Atlas</h2>
             <p>
               Ask Atlas is unavailable in this workspace. Review, Explore,
-              Investigate, and Compare stay usable without it.
+              Investigate, Compare, and Action stay usable without it.
             </p>
             <p>
               This is a service availability state, not a finding that evidence
