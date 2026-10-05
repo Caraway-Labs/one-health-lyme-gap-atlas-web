@@ -109,6 +109,16 @@ jobs:
             playwright-report/
           if-no-files-found: warn
 
+      - name: Upload Playwright failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-traces
+          path: |
+            test-results/playwright/**/trace.zip
+            test-results/playwright/**/error-context.md
+          if-no-files-found: warn
+
       - name: Publish unit test results (PR check)
         if: always()
         uses: dorny/test-reporter@v1
