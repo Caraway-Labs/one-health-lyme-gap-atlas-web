@@ -18,6 +18,7 @@ import {
   downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet,
 } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { safeReturnPath } from "@/lib/auth/return-path";
 import { createClient } from "@/lib/supabase/client";
 
 type PrivacyAction = "export" | "deletion";
@@ -50,7 +51,11 @@ function downloadJson(payload: unknown) {
   URL.revokeObjectURL(url);
 }
 
-export function AccountDataRights() {
+export function AccountDataRights({
+  returnPath = "/account",
+}: {
+  returnPath?: string;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState<PrivacyAction | null>(null);
   const [busy, setBusy] = useState(false);
@@ -96,7 +101,9 @@ export function AccountDataRights() {
       router.push("/");
     } catch (error) {
       if (error instanceof AtlasApiError && error.status === 401) {
-        router.push("/auth/sign-in?next=%2Faccount");
+        router.push(
+          `/auth/sign-in?next=${encodeURIComponent(safeReturnPath(returnPath))}`
+        );
         return;
       }
       const reference =

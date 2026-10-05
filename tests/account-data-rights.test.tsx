@@ -173,4 +173,20 @@ describe("account data rights", () => {
     });
     expect(signOut).not.toHaveBeenCalled();
   });
+
+  it("returns a Settings privacy failure to Settings", async () => {
+    createPrivacyRequest.mockRejectedValueOnce(
+      new AtlasApiError("stale", "/v1/me/privacy-requests", 401, null)
+    );
+
+    render(<AccountDataRights returnPath="/app/settings" />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
+    );
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Fapp%2Fsettings");
+    });
+  });
 });

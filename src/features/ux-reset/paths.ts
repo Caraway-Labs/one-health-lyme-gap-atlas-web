@@ -162,7 +162,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Feed | One Health Lyme Gap Atlas",
   },
   {
-    description: "Workspace preferences and account connections.",
+    description:
+      "Default jurisdiction, optional profile details, and account controls.",
     href: RESET_SETTINGS_PATH,
     icon: Settings,
     id: "settings",
@@ -170,7 +171,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "access",
     pageDescription:
-      "Placeholder for workspace Settings in the UX Reset professional shell.",
+      "Save a national or state default for future Review sessions, plus optional profile details and account controls.",
     pageTitle: "Settings | One Health Lyme Gap Atlas",
   },
   {
