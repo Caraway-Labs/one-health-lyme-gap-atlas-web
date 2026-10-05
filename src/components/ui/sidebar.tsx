@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   createContext,
   forwardRef,
@@ -178,19 +179,24 @@ export function SidebarMenuButton({
   active,
   children,
   className,
+  href,
   tooltip,
   ...props
 }: ComponentProps<"a"> & { active?: boolean; tooltip?: string }) {
-  const link = (
-    <a
-      data-active={active || undefined}
-      data-slot="sidebar-menu-button"
-      className={cn(className)}
-      {...props}
-    >
-      {children}
-    </a>
-  );
+  const shared = {
+    "data-active": active || undefined,
+    "data-slot": "sidebar-menu-button",
+    className: cn(className),
+    ...props,
+  };
+  const link =
+    typeof href === "string" ? (
+      <Link href={href} {...shared}>
+        {children}
+      </Link>
+    ) : (
+      <a {...shared}>{children}</a>
+    );
   if (!tooltip) return link;
   return (
     <Tooltip>

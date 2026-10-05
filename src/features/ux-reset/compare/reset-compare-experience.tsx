@@ -22,6 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import type {
   CompareAlignedRow,
   CompareCell,
@@ -147,6 +149,20 @@ function CompareExperienceInner() {
   );
   const rightOption = workspace.options.find(
     (option) => option.fips === rightFips
+  );
+  usePublishAskAtlasInheritedContext(
+    inheritedContextFromCompare({
+      alignmentReady: Boolean(workspace.alignment && workspace.releaseId),
+      counties:
+        leftOption && rightOption
+          ? [
+              { fips: leftOption.fips, label: leftOption.label },
+              { fips: rightOption.fips, label: rightOption.label },
+            ]
+          : [],
+      period: workspace.alignment?.period ?? null,
+      releaseId: workspace.alignment ? workspace.releaseId : null,
+    })
   );
   usePublishExploreCommittedNavigation({
     county: null,

@@ -23,6 +23,10 @@ import {
 } from "@/components/ui/sidebar";
 import { uxResetShellHandoffHref } from "@/features/ux-reset";
 import {
+  AskAtlasChromeProvider,
+  useAskAtlasChrome,
+} from "@/features/ux-reset/ask-atlas/ask-atlas-chrome";
+import {
   ExploreCommittedNavigationProvider,
   searchParamsWithCommittedExploreContext,
   useExploreCommittedNavigation,
@@ -42,7 +46,9 @@ export function ResetProfessionalShell({ children }: { children: ReactNode }) {
   return (
     <ExploreCommittedNavigationProvider>
       <SidebarProvider defaultOpen storageKey="ux-reset-pro-sidebar">
-        <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
+        <AskAtlasChromeProvider>
+          <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
+        </AskAtlasChromeProvider>
       </SidebarProvider>
     </ExploreCommittedNavigationProvider>
   );
@@ -53,8 +59,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const { mobileOpen, open, setMobileOpen } = useSidebar();
   const isMobileViewport = useMobileViewport();
+  const askAtlas = useAskAtlasChrome();
   const mobileDrawerActive = isMobileViewport && mobileOpen;
   const mobileDrawerClosed = isMobileViewport && !mobileOpen;
+  const pageInert = mobileDrawerActive || askAtlas.pageInert;
+  const sidebarInert = mobileDrawerClosed || askAtlas.pageInert;
   const sidebarRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -182,13 +191,13 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       <Sidebar
         id="ux-reset-pro-navigation"
         ref={sidebarRef}
-        aria-hidden={mobileDrawerClosed || undefined}
+        aria-hidden={sidebarInert || undefined}
         aria-label="Professional workspace"
         aria-modal={mobileDrawerActive || undefined}
         className={
           mobileDrawerClosed ? "ux-reset-sidebar-mobile-closed" : undefined
         }
-        inert={mobileDrawerClosed || undefined}
+        inert={sidebarInert || undefined}
         role={mobileDrawerActive ? "dialog" : undefined}
       >
         <SidebarHeader>
@@ -299,9 +308,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         />
       ) : null}
       <SidebarInset
-        aria-hidden={mobileDrawerActive || undefined}
+        aria-hidden={pageInert || undefined}
         className="app-inset"
-        inert={mobileDrawerActive || undefined}
+        inert={pageInert || undefined}
       >
         <header className="app-header">
           <SidebarTrigger
@@ -319,12 +328,17 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           </SidebarTrigger>
           <span className="app-header-label">Professional workspace</span>
           <Badge variant="outline">UX Reset</Badge>
+          {askAtlas.launcher}
           <Link className="ux-reset-legacy-link" href={LEGACY_ATLAS_PATH}>
             {RETURN_TO_LEGACY_ATLAS_LABEL}
           </Link>
         </header>
-        <main className="app-content ux-reset-pro-main">{children}</main>
+        <div className="ux-reset-workspace-body">
+          <main className="app-content ux-reset-pro-main">{children}</main>
+          {askAtlas.desktopPanel}
+        </div>
       </SidebarInset>
+      {askAtlas.compactModal}
     </div>
   );
 }

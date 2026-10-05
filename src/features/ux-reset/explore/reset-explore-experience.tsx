@@ -23,6 +23,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { inheritedContextFromExplore } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import {
   parseCompareFipsList,
@@ -95,6 +97,12 @@ function ResetExploreExperienceInner() {
     urlState,
   } = workspace;
 
+  usePublishAskAtlasInheritedContext(
+    inheritedContextFromExplore({
+      committed,
+      selectedFips: urlState.county,
+    })
+  );
   const requestedScopeLabel = reviewScopeLabel(mapScope, stateOptions);
   const committedScopeLabel = committed
     ? reviewScopeLabel(committed.mapScope, stateOptions)

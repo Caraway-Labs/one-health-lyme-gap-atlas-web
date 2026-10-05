@@ -12,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { inheritedContextFromInvestigate } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import {
   ReleaseEvidenceStateStrip,
@@ -141,6 +143,16 @@ function InvestigateExperienceInner() {
           period: workspace.period,
         }
       : null
+  );
+  usePublishAskAtlasInheritedContext(
+    inheritedContextFromInvestigate({
+      bundle,
+      identity: workspace.identity,
+      period: workspace.period,
+      releaseId: workspace.releaseId,
+      releaseMismatch: workspace.recovery === "release_mismatch",
+      requestedFips: workspace.requestedFips,
+    })
   );
   const countyLabel = selectedCountyLabel({
     countyOptions,

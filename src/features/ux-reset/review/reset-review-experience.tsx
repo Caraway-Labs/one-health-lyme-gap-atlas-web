@@ -4,6 +4,8 @@ import { useQueryStates } from "nuqs";
 import { Suspense, useCallback, useMemo } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { inheritedContextFromReview } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
@@ -61,6 +63,22 @@ function ResetReviewExperienceInner() {
     stateOptions,
   });
 
+  const presentationReady = Boolean(
+    presentationQuery.presentation &&
+    presentationQuery.requestScope === scope &&
+    presentationQuery.metadata
+  );
+  usePublishAskAtlasInheritedContext(
+    inheritedContextFromReview({
+      rankedCounties:
+        presentationReady && scope !== "ALL"
+          ? (presentationQuery.presentation?.stateCounties ?? [])
+          : [],
+      releaseId: presentationQuery.metadata?.release_id ?? null,
+      releaseReady: presentationReady,
+      requestedCounty: urlState.county,
+    })
+  );
   const scopeLabel = reviewScopeLabel(scope, stateOptions);
   const renderedScope = presentationQuery.requestScope ?? scope;
   const metadataLoading =

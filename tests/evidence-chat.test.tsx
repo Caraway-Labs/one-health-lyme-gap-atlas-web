@@ -750,6 +750,49 @@ describe(EvidenceChat, () => {
     await waitFor(() => expect(document.activeElement).toBe(retry));
   });
 
+  it("discards an in-flight answer after New chat so a later answer is not overwritten", async () => {
+    const { promise: firstRequest, resolve: resolveFirst } =
+      Promise.withResolvers<unknown>();
+    chatRequest.mockReturnValueOnce(firstRequest);
+    chatRequest.mockImplementationOnce(async () => ({
+      data: response(
+        "answered",
+        "limited",
+        "Second answer stays.",
+        "request-2"
+      ),
+    }));
+    render(<EvidenceChat />);
+    await submit();
+    await expect(
+      screen.findByText("Searching reviewed evidence…")
+    ).resolves.toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A later question" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await expect(
+      screen.findByText("Second answer stays.")
+    ).resolves.toBeTruthy();
+    resolveFirst({
+      data: response(
+        "answered",
+        "limited",
+        "First answer must not appear.",
+        "request-1"
+      ),
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("First answer must not appear.")).toBeNull();
+    });
+    expect(
+      within(
+        screen.getByRole("region", { name: "Conversation transcript" })
+      ).getByText("Second answer stays.")
+    ).toBeTruthy();
+  });
+
   it("describes near-limit character counts without a second live region", async () => {
     render(<EvidenceChat />);
     const question = screen.getByLabelText("Your question");

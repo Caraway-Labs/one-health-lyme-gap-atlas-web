@@ -55,6 +55,7 @@ export interface EvidenceChatConversationModel {
   mobileHistoryToggleRef: RefObject<HTMLButtonElement | null>;
   mode: AssistantChatLayoutMode;
   pending: boolean;
+  requestsEnabled: boolean;
   retryQuestion: string;
   selectConversation: (id: string) => void;
   setMessage: (value: string) => void;
@@ -68,11 +69,14 @@ export interface EvidenceChatConversationModel {
 export function useEvidenceChat({
   mode = "workspace",
   initialConversationId,
+  requestsEnabled = true,
 }: {
   mode?: AssistantChatLayoutMode;
   initialConversationId?: string;
+  requestsEnabled?: boolean;
 }): EvidenceChatConversationModel {
   const syncWorkspaceUrl = mode === "workspace";
+  const requestSerial = useRef(0);
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [activeId, setActiveId] = useState(
@@ -128,6 +132,8 @@ export function useEvidenceChat({
 
   const startNewChat = useCallback(
     (focusComposer = true) => {
+      requestSerial.current += 1;
+      setPending(false);
       setActiveId("__new__");
       setMissingConversationId(null);
       setFailure(null);
@@ -292,9 +298,11 @@ export function useEvidenceChat({
   }
 
   async function ask(question: string) {
-    if (!question || pending) {
+    if (!question || pending || !requestsEnabled) {
       return;
     }
+    const serial = requestSerial.current + 1;
+    requestSerial.current = serial;
     const replaceOperationalTurn = shouldReplaceOperationalTurn(
       active,
       question
@@ -310,6 +318,9 @@ export function useEvidenceChat({
             : active
         ),
       });
+      if (serial !== requestSerial.current) {
+        return;
+      }
       const response = validateApiResponse(
         "Evidence chat response",
         KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
@@ -319,6 +330,9 @@ export function useEvidenceChat({
       saveResponse(question, safeResponse, replaceOperationalTurn);
       rememberOutcome(question, safeResponse);
     } catch (error) {
+      if (serial !== requestSerial.current) {
+        return;
+      }
       const parsed =
         error instanceof AtlasApiError
           ? KnowledgeGraphChatV1KnowledgeGraphChatPostResponse.safeParse(
@@ -335,8 +349,10 @@ export function useEvidenceChat({
         setFailure(nextFailure);
       }
     } finally {
-      focusQuestionOnSettle.current = true;
-      setPending(false);
+      if (serial === requestSerial.current) {
+        focusQuestionOnSettle.current = true;
+        setPending(false);
+      }
     }
   }
 
@@ -391,6 +407,7 @@ export function useEvidenceChat({
     mobileHistoryToggleRef,
     mode,
     pending,
+    requestsEnabled,
     retryQuestion,
     selectConversation,
     setMessage,

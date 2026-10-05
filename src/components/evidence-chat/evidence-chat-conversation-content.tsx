@@ -20,9 +20,15 @@ import { AssistantStarterPrompts } from "./assistant-starter-prompts";
 import type { EvidenceChatConversationModel } from "./use-evidence-chat";
 
 export function EvidenceChatConversationContent({
+  headingLevel = 1,
   model,
+  showCountyNotice = true,
+  showWorkspaceHandoff = true,
 }: {
+  headingLevel?: 1 | 2;
   model: EvidenceChatConversationModel;
+  showCountyNotice?: boolean;
+  showWorkspaceHandoff?: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -54,6 +60,11 @@ export function EvidenceChatConversationContent({
   const assistantHeadingId = atlasAssistantWorkspaceHeadingId(mode);
   const charCountId = `chat-char-count-${mode}`;
   const ChatPanel = mode === "workspace" ? "section" : "div";
+  // Drawer chrome sits inside the reset sidecar landmark, so it cannot use
+  // header/footer. Those elements become nested banner and contentinfo landmarks.
+  const PanelHeader = mode === "workspace" ? "header" : "div";
+  const PanelFooter = mode === "workspace" ? "footer" : "div";
+  const Heading = headingLevel === 2 ? "h2" : "h1";
 
   return (
     <ChatPanel
@@ -62,10 +73,10 @@ export function EvidenceChatConversationContent({
         ? { "aria-labelledby": assistantHeadingId }
         : {})}
     >
-      <header>
+      <PanelHeader className="chat-panel-header">
         <div>
           <span className="kicker">Reviewed literature</span>
-          <h1 id={assistantHeadingId}>Atlas Assistant</h1>
+          <Heading id={assistantHeadingId}>Atlas Assistant</Heading>
         </div>
         <div className="chat-panel-header-actions">
           {mode === "workspace" && (
@@ -85,11 +96,11 @@ export function EvidenceChatConversationContent({
             New chat
           </Button>
         </div>
-      </header>
+      </PanelHeader>
       {mode === "workspace" && !hasSavedConversations && (
         <ChatHistoryEmptyHint />
       )}
-      <AssistantCountyContextNotice />
+      {showCountyNotice ? <AssistantCountyContextNotice /> : null}
       <p className="medical-notice">{publicCopy.medical_notice}</p>
       {/* tabIndex satisfies axe scrollable-region-focusable for overflow transcript */}
       <div
@@ -233,9 +244,10 @@ export function EvidenceChatConversationContent({
             </Button>
           </div>
         </form>
-        <footer className="chat-attribution">
+        <PanelFooter className="chat-attribution">
           Data supplied by the NCBI. NCBI does not endorse this product.{" "}
           {mode === "drawer" &&
+            showWorkspaceHandoff &&
             (workspaceHandoffConversationId ? (
               <Link
                 href={assistantWorkspaceHref(pathname, searchParams, {
@@ -253,7 +265,7 @@ export function EvidenceChatConversationContent({
                 . Unsent text in this drawer is not carried over.
               </span>
             ))}
-        </footer>
+        </PanelFooter>
       </div>
     </ChatPanel>
   );
