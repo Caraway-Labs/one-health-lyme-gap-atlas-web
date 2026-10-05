@@ -449,7 +449,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     );
     if (!testInfo.project.name.includes("mobile")) {
       const results = await new AxeBuilder({ page })
-        .include('[data-testid="review-county-preview"]')
+        .exclude(".maplibregl-canvas")
         .analyze();
       expect(results.violations).toEqual([]);
     }
