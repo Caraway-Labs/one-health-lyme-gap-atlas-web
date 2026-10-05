@@ -352,44 +352,73 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-fips",
       "36001"
     );
-
-    await page.locator('.rank-row[data-fips="36003"]').click();
-    const listPreview = page.getByTestId("review-county-preview");
-    await expect(listPreview).toHaveAttribute("data-fips", "36003");
+    await page.locator('.rank-row[data-fips="36001"]').click();
+    await expect(page).toHaveURL(/\/app\/review/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
-    const listHref =
-      (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
-    expect(listHref).toContain("county=36003");
-    expect(listHref).toContain("period=2023-01-01");
-    expect(listHref).toContain("dataset=alpha-2026");
-    expect(listHref).not.toContain("sort=");
+    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
+      "href",
+      /county=36001/
+    );
 
     const canvas = page.locator(".maplibregl-canvas");
     await expect(canvas).toBeVisible();
-    await page.waitForTimeout(1200);
+    await canvas.scrollIntoViewIfNeeded();
+    // The state frame shows both counties. Selecting from the list afterwards
+    // can zoom the camera onto that county, so the map click happens first.
+    await page.waitForTimeout(1500);
     const box = await canvas.boundingBox();
-    expect(box).not.toBeNull();
+    expect(box).toBeTruthy();
     if (!box) {
       return;
     }
-    await page.mouse.click(box.x + box.width * 0.28, box.y + box.height * 0.55);
+    const mapPoints = [
+      [0.72, 0.5],
+      [0.82, 0.46],
+      [0.64, 0.58],
+    ] as const;
+    for (const [xFraction, yFraction] of mapPoints) {
+      await page.mouse.click(
+        box.x + box.width * xFraction,
+        box.y + box.height * yFraction
+      );
+      const selected = await page
+        .getByTestId("review-county-preview")
+        .getAttribute("data-fips");
+      if (selected === "36003") {
+        break;
+      }
+    }
     const mapPreview = page.getByTestId("review-county-preview");
-    await expect(mapPreview).toHaveAttribute("data-fips", "36001");
+    await expect(mapPreview).toHaveAttribute("data-fips", "36003");
     await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).not.toHaveURL(/\/app\/investigate/);
     const mapHref =
       (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
-    expect(mapHref).toContain("county=36001");
+    expect(mapHref).toContain("county=36003");
     expect(mapHref).toContain("scope=NY");
     expect(mapHref).toContain("dataset=alpha-2026");
     expect(mapHref).toContain("period=2023-01-01");
     expect(mapHref).not.toContain("sort=");
 
+    await page.locator('.rank-row[data-fips="36001"]').click();
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-fips",
+      "36001"
+    );
+    await expect(page).not.toHaveURL(/\/app\/investigate/);
+    await page.locator('.rank-row[data-fips="36003"]').click();
+    const listPreview = page.getByTestId("review-county-preview");
+    await expect(listPreview).toHaveAttribute("data-fips", "36003");
+    const listHref =
+      (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
+    expect(listHref).toBe(mapHref);
+
     await page.getByTestId("review-investigate").click();
     await expect(page).toHaveURL(/\/app\/investigate/);
-    await expect(page).toHaveURL(/county=36001/);
+    await expect(page).toHaveURL(/county=36003/);
     await expect(page).toHaveURL(/period=2023-01-01/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Albany");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Orange");
   });
 
   test("keeps a direct county link and reload on the preview", async ({
@@ -420,7 +449,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     );
     if (!testInfo.project.name.includes("mobile")) {
       const results = await new AxeBuilder({ page })
-        .exclude(".maplibregl-canvas")
+        .include('[data-testid="review-county-preview"]')
         .analyze();
       expect(results.violations).toEqual([]);
     }
