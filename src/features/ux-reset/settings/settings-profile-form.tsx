@@ -392,10 +392,11 @@ export function SettingsProfileForm() {
       queryKey: savedProfileQueryKey(saveIdentity),
     });
     const outcome = await writeSavedProfile(body, saveIdentity, lastConfirmed);
-    if (generationAtSave !== profileSessionGeneration()) {
+    if (requestId !== requestIdRef.current) {
       return;
     }
-    if (requestId !== requestIdRef.current) {
+    if (generationAtSave !== profileSessionGeneration()) {
+      setSaving(false);
       return;
     }
     setSaving(false);

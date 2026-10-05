@@ -611,6 +611,130 @@ describe("saved profile account isolation", () => {
     );
   });
 
+  it("recovers from a token refresh during a successful save and allows another save", async () => {
+    const gate = Promise.withResolvers<boolean>();
+    vi.mocked(saveProfileV1MeProfilePut).mockImplementationOnce(
+      asResponse(async () => {
+        await gate.promise;
+        return {
+          data: {
+            profile: { ...profileFor("user-a"), organization: "Server-Echo" },
+          },
+          status: 200,
+        };
+      })
+    );
+    renderSettings();
+    const organization = await screen.findByTestId("settings-organization");
+    fireEvent.change(organization, { target: { value: "SECRET" } });
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await vi.waitFor(() =>
+      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
+    );
+    expect(screen.getByTestId("settings-save-profile").textContent).toBe(
+      "Saving profile…"
+    );
+    refreshAccessToken("token-user-a-refreshed");
+    gate.resolve(true);
+    await waitFor(() =>
+      expect({
+        expired: screen.queryByTestId("settings-session-expired"),
+        label: screen.getByTestId("settings-save-profile").textContent,
+        notice:
+          screen.queryByTestId("settings-save-notice")?.textContent ?? null,
+        organization: (
+          screen.getByTestId("settings-organization") as HTMLInputElement
+        ).value,
+      }).toStrictEqual({
+        expired: null,
+        label: "Save profile",
+        notice: null,
+        organization: "SECRET",
+      })
+    );
+    vi.mocked(saveProfileV1MeProfilePut).mockResolvedValueOnce(
+      asResponse({
+        data: {
+          profile: { ...profileFor("user-a"), organization: "SECRET" },
+        },
+        status: 200,
+      })
+    );
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await waitFor(() =>
+      expect(saveProfileV1MeProfilePut).toHaveBeenLastCalledWith(
+        expect.objectContaining({ organization: "SECRET", state_code: "CO" }),
+        { headers: { Authorization: "Bearer token-user-a-refreshed" } }
+      )
+    );
+    expect({
+      notice: screen.getByTestId("settings-save-notice").textContent,
+      organization: (
+        screen.getByTestId("settings-organization") as HTMLInputElement
+      ).value,
+    }).toStrictEqual({
+      notice: expect.stringContaining("Saved."),
+      organization: "SECRET",
+    });
+  });
+
+  it("recovers from a token refresh during a 401 save and allows another save", async () => {
+    const gate = Promise.withResolvers<boolean>();
+    vi.mocked(saveProfileV1MeProfilePut).mockImplementationOnce(
+      asResponse(async () => {
+        await gate.promise;
+        throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
+      })
+    );
+    renderSettings();
+    const organization = await screen.findByTestId("settings-organization");
+    fireEvent.change(organization, { target: { value: "SECRET" } });
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await vi.waitFor(() =>
+      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
+    );
+    expect(screen.getByTestId("settings-save-profile").textContent).toBe(
+      "Saving profile…"
+    );
+    refreshAccessToken("token-user-a-refreshed");
+    gate.resolve(true);
+    await waitFor(() =>
+      expect({
+        expired: screen.queryByTestId("settings-session-expired"),
+        label: screen.getByTestId("settings-save-profile").textContent,
+        organization: (
+          screen.getByTestId("settings-organization") as HTMLInputElement
+        ).value,
+      }).toStrictEqual({
+        expired: null,
+        label: "Save profile",
+        organization: "SECRET",
+      })
+    );
+    vi.mocked(saveProfileV1MeProfilePut).mockResolvedValueOnce(
+      asResponse({
+        data: {
+          profile: { ...profileFor("user-a"), organization: "SECRET" },
+        },
+        status: 200,
+      })
+    );
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await waitFor(() =>
+      expect({
+        calls: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+        notice: screen.getByTestId("settings-save-notice").textContent,
+        organization: (
+          screen.getByTestId("settings-organization") as HTMLInputElement
+        ).value,
+      }).toStrictEqual({
+        calls: 2,
+        notice: expect.stringContaining("Saved."),
+        organization: "SECRET",
+      })
+    );
+  });
+
   it("clears the editor when an expired session returns 401", async () => {
     const { client } = renderSettings();
     await screen.findByDisplayValue("CDPHE");
