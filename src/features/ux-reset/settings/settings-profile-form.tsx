@@ -135,6 +135,11 @@ function roleFromSelectValue(value: string): UserProfileWriteRole | null {
   return match ? match.value : null;
 }
 
+function roleLabel(role: UserProfileWriteRole | null): string {
+  const match = PROFILE_ROLES.find((option) => option.value === role);
+  return match ? match.label : "Prefer not to say";
+}
+
 function optionsForSave(
   stateOptions: readonly AtlasStateOption[],
   draft: ProfileDraftInput,
@@ -359,7 +364,7 @@ export function SettingsProfileForm() {
                 className="h-11 w-full"
                 id="settings-role"
               >
-                <SelectValue />
+                <SelectValue>{roleLabel(currentDraft.role)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ROLE_UNSET}>Prefer not to say</SelectItem>

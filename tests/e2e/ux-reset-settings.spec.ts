@@ -152,6 +152,9 @@ test.describe("Settings profile and default jurisdiction", () => {
     ).toBeVisible();
     await expect(page.getByTestId("settings-organization")).toHaveValue("");
     await expect(page.getByTestId("settings-job-title")).toHaveValue("");
+    await expect(page.locator("#settings-role")).toContainText(
+      "Prefer not to say"
+    );
     const reviewLink = page.getByRole("link", { name: "Review" });
     if (!(await reviewLink.isVisible())) {
       await page.getByRole("button", { name: "Open navigation" }).click();
