@@ -178,39 +178,66 @@ export interface FollowUpPlan {
   actions: { owner: string; task: string }[];
 }
 
-const FOLLOW_UP_LEVELS: Record<string, Omit<FollowUpPlan, "actions">> = {
+/**
+ * Suggested follow-up wording for the six review-priority colors.
+ * Color order and scoring stay as released. These phrases are review cues,
+ * not a diagnosis, individual risk, transmission, or outbreak status.
+ */
+export const SUGGESTED_FOLLOW_UP_BY_COLOR = {
+  "#a9d2db": "Continue routine review",
+  "#55a8a3": "Monitor the pattern",
+  "#87b982": "Verify with local information",
+  "#efc64a": "Conduct targeted follow-up",
+  "#f49a32": "Coordinate a local assessment",
+  "#e9602b": "Prioritize targeted follow-up",
+} as const;
+
+export type ReviewPriorityColor = keyof typeof SUGGESTED_FOLLOW_UP_BY_COLOR;
+
+const DEFAULT_REVIEW_PRIORITY_COLOR: ReviewPriorityColor = "#55a8a3";
+
+export function suggestedFollowUpForColor(color: string): string {
+  const normalized = color.toLowerCase();
+  if (isReviewPriorityColor(normalized)) {
+    return SUGGESTED_FOLLOW_UP_BY_COLOR[normalized];
+  }
+  return SUGGESTED_FOLLOW_UP_BY_COLOR[DEFAULT_REVIEW_PRIORITY_COLOR];
+}
+
+function isReviewPriorityColor(color: string): color is ReviewPriorityColor {
+  return Object.hasOwn(SUGGESTED_FOLLOW_UP_BY_COLOR, color);
+}
+
+const FOLLOW_UP_LEVELS: Record<
+  ReviewPriorityColor,
+  Omit<FollowUpPlan, "actions" | "level">
+> = {
   "#55a8a3": {
-    level: "Verify county records",
     summary:
       "Confirm that the published case and tick records accurately reflect what local and state programs have available.",
     timeframe: "Complete within 90 days",
   },
   "#87b982": {
-    level: "Review local conditions",
     summary:
       "Compare the county with nearby counties and decide whether reporting, provider outreach, or tick monitoring needs attention.",
     timeframe: "Complete within 60–90 days",
   },
   "#a9d2db": {
-    level: "Maintain annual awareness",
     summary:
       "Keep a documented baseline and repeat the dashboard review when new surveillance data are released.",
     timeframe: "Review annually",
   },
   "#e9602b": {
-    level: "Prioritize prompt review",
     summary:
       "Start a structured review with named owners, deadlines, and measures of progress across human and tick surveillance.",
     timeframe: "Contact partners within 2 weeks",
   },
   "#efc64a": {
-    level: "Conduct targeted follow-up",
     summary:
       "Ask local surveillance, clinical, laboratory, and vector partners to examine the specific signals that raised the county's ranking.",
     timeframe: "Begin within 60 days",
   },
   "#f49a32": {
-    level: "Coordinate a local assessment",
     summary:
       "Convene county and state partners, document the surveillance gaps, and assign a short-term field or outreach plan.",
     timeframe: "Begin within 30 days",
@@ -218,8 +245,14 @@ const FOLLOW_UP_LEVELS: Record<string, Omit<FollowUpPlan, "actions">> = {
 };
 
 export function followUpPlanFor(county: CountyDetail): FollowUpPlan {
-  const level =
-    FOLLOW_UP_LEVELS[county.color.toLowerCase()] ?? FOLLOW_UP_LEVELS["#55a8a3"];
+  const color = county.color.toLowerCase();
+  const level = isReviewPriorityColor(color)
+    ? FOLLOW_UP_LEVELS[color]
+    : FOLLOW_UP_LEVELS[DEFAULT_REVIEW_PRIORITY_COLOR];
+  const plan = {
+    ...level,
+    level: suggestedFollowUpForColor(county.color),
+  };
   const actions: FollowUpPlan["actions"] = [];
 
   actions.push(
@@ -253,5 +286,5 @@ export function followUpPlanFor(county: CountyDetail): FollowUpPlan {
     });
   }
 
-  return { ...level, actions };
+  return { ...plan, actions };
 }

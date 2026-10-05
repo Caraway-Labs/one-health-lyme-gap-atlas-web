@@ -45,6 +45,8 @@ export function RankedCounties({
               {...analyticsControlAttributes("ranked_county_select")}
               type="button"
               className={`rank-row ${county.fips === selectedFips ? "active" : ""}`}
+              data-fips={county.fips}
+              data-list-index={index}
               onClick={() => onSelect(county.fips, "ranked_list")}
             >
               <span className="rank-number">{index + 1}</span>

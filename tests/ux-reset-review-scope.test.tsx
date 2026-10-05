@@ -63,6 +63,13 @@ vi.mock(import("@/components/atlas-map"), () => ({
         >
           Select NY county on map
         </button>
+        <button
+          data-testid="mock-map-select-boulder"
+          type="button"
+          onClick={() => onSelect("08013", "map")}
+        >
+          Select Boulder on map
+        </button>
       </div>
     );
   },
@@ -383,6 +390,147 @@ describe("Reset Review scope UI", () => {
     expect(document.querySelector(".rank-row.active")?.textContent).toContain(
       "Albany"
     );
+  });
+
+  it("previews a map selection without leaving Review", async () => {
+    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
+    vi.mocked(scoresV1AtlasScoresGet).mockResolvedValue({
+      data: reviewScopeScoresFixture,
+      status: 200,
+    } as never);
+    renderReview("?scope=CO&county=08001&period=2023-01-01");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-county-preview").dataset.fips).toBe(
+        "08001"
+      )
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-map-select-boulder")).toBeTruthy()
+    );
+    fireEvent.click(screen.getByTestId("mock-map-select-boulder"));
+    await waitFor(() =>
+      expect(screen.getByTestId("review-county-preview").dataset.fips).toBe(
+        "08013"
+      )
+    );
+    const preview = screen.getByTestId("review-county-preview");
+    const href = screen.getByTestId("review-investigate").getAttribute("href");
+    expect({
+      caveat: preview.dataset.caveat ?? "",
+      dossier:
+        screen.queryByText("Copy county summary") ??
+        screen.queryByText("Official program examples"),
+      heading: screen.getByRole("heading", { name: "Boulder, Colorado" })
+        .textContent,
+      href,
+      label: screen.getByTestId("review-investigate").textContent,
+      panel: Boolean(screen.getByTestId("review-state-panel")),
+      target: preview.dataset.target,
+      why: preview.dataset.why,
+    }).toStrictEqual({
+      caveat: expect.any(String),
+      dossier: null,
+      heading: "Boulder, Colorado",
+      href: expect.stringMatching(
+        /\/app\/investigate\?.*county=08013.*period=2023-01-01.*scope=CO|scope=CO.*county=08013.*period=2023-01-01/
+      ),
+      label: expect.stringContaining("Open Investigate"),
+      panel: true,
+      target: href,
+      why: expect.stringContaining("available for review"),
+    });
+  });
+
+  it("updates preview identity, why, caveat, and target together", () => {
+    const counties = [
+      reviewScopeScoresFixture.counties[0],
+      reviewScopeScoresFixture.counties[2],
+    ];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const panel = (county: string) => (
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          county={county}
+          mapCounties={counties}
+          period="2023-01-01"
+          rankedCounties={counties}
+          releaseId="alpha-2026"
+          scopeCode="CO"
+        />
+      </QueryClientProvider>
+    );
+    const view = render(panel("08001"));
+    const readPreview = () => {
+      const preview = screen.getByTestId("review-county-preview");
+      return {
+        caveat: preview.dataset.caveat,
+        fips: preview.dataset.fips,
+        target: preview.dataset.target,
+        why: preview.dataset.why,
+      };
+    };
+    const denver = readPreview();
+    view.rerender(panel("36001"));
+    const albany = readPreview();
+    expect({
+      albany,
+      availability: screen.getByTestId("review-preview-availability")
+        .textContent,
+      caveatChanged: albany.caveat !== denver.caveat,
+      denverFips: denver.fips,
+      denverTarget: denver.target ?? "",
+      whyChanged: albany.why !== denver.why,
+      zeroCases: /0 cases/.test(
+        screen.getByTestId("review-county-preview").textContent ?? ""
+      ),
+    }).toStrictEqual({
+      albany: {
+        caveat: expect.stringContaining("not treated as zero"),
+        fips: "36001",
+        target: expect.stringContaining("county=36001"),
+        why: expect.stringContaining("unavailable"),
+      },
+      availability: "Unavailable",
+      caveatChanged: true,
+      denverFips: "08001",
+      denverTarget: expect.stringContaining("county=08001"),
+      whyChanged: true,
+      zeroCases: false,
+    });
+    expect(albany.target).not.toContain("county=08001");
+  });
+
+  it("states when Review-only controls are dropped from Investigate", async () => {
+    renderReview(
+      "?scope=CO&county=08013&sort=score&page=2&compare=08001,08013&dataset=alpha-2026"
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("review-county-preview").dataset.fips).toBe(
+        "08013"
+      )
+    );
+    const href =
+      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+    const url = new URL(href, "http://localhost");
+    expect({
+      compare: url.searchParams.get("compare"),
+      county: url.searchParams.get("county"),
+      dataset: url.searchParams.get("dataset"),
+      dropped: screen.getByTestId("review-preview-dropped").textContent,
+      page: url.searchParams.get("page"),
+      sort: url.searchParams.get("sort"),
+    }).toStrictEqual({
+      compare: null,
+      county: "08013",
+      dataset: "alpha-2026",
+      dropped: expect.stringMatching(
+        /Compare is not part of Investigate[\s\S]*Review list page stays on Review[\s\S]*Review sort stays on Review/
+      ),
+      page: null,
+      sort: null,
+    });
   });
 
   it("preserves scope=ALL across explore handoff URLs", () => {

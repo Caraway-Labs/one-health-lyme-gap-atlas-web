@@ -2,8 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { AtlasMapLegend } from "@/components/atlas-map-legend";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
@@ -12,12 +19,16 @@ import { RankedCounties } from "@/components/ranked-counties";
 import { ResultsTable } from "@/components/results-table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import {
-  RESET_INVESTIGATE_PATH,
-  RESET_REVIEW_PATH,
-} from "@/features/ux-reset/routes";
+  buildReviewInvestigateHandoff,
+  reviewPreviewForSelection,
+} from "@/features/ux-reset/review/review-county-preview";
+import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
+import {
+  markReviewReturnFocus,
+  reviewReturnFocusMatches,
+} from "@/features/ux-reset/review/review-return-focus";
 import type { CountyScoreSummary } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
@@ -105,24 +116,54 @@ export function ReviewStatePanel({
     },
     [inScopeFips, onCountyChange]
   );
-
-  const investigateHref = useMemo(() => {
-    if (!selectedFips) {
-      return null;
+  const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const openRef = useRef<HTMLAnchorElement>(null);
+  const preview = reviewPreviewForSelection({
+    counties: rankedCounties,
+    response: null,
+    selectedFips,
+  });
+  const handoff = useMemo(
+    () =>
+      selectedFips
+        ? buildReviewInvestigateHandoff({
+            period,
+            releaseId,
+            scopeCode,
+            searchParams: new URLSearchParams(searchKey),
+            selectedFips,
+          })
+        : null,
+    [period, releaseId, scopeCode, searchKey, selectedFips]
+  );
+  useLayoutEffect(() => {
+    if (!/^\d{5}$/.test(selectedFips)) {
+      return;
     }
-    const params = new URLSearchParams();
-    params.set("scope", scopeCode);
-    params.set("county", selectedFips);
-    params.set("dataset", releaseId);
-    if (period) {
-      params.set("period", period);
-    }
-    return uxResetShellHandoffHref(
-      RESET_INVESTIGATE_PATH,
-      RESET_REVIEW_PATH,
-      params
+    const root = layoutRef.current;
+    const row = root?.querySelector<HTMLButtonElement>(
+      `.rank-row.active[data-fips="${selectedFips}"]`
     );
-  }, [period, releaseId, scopeCode, selectedFips]);
+    if (row) {
+      const list = row.closest(".rank-list");
+      if (list instanceof HTMLElement) {
+        const rowBox = row.getBoundingClientRect();
+        const listBox = list.getBoundingClientRect();
+        const visible =
+          rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
+        if (!visible) {
+          row.scrollIntoView({ block: "nearest" });
+        }
+      }
+    }
+    if (!reviewReturnFocusMatches(selectedFips)) {
+      return;
+    }
+    const focusTarget = row ?? openRef.current;
+    focusTarget?.focus({ preventScroll: true });
+  }, [selectedFips]);
   const mapScores = useMemo(() => [...mapCounties], [mapCounties]);
   const geometryError = Boolean(geometryQuery.isError);
   const geometryReady = Boolean(geometryQuery.data);
@@ -130,6 +171,7 @@ export function ReviewStatePanel({
 
   return (
     <div
+      ref={layoutRef}
       className="ux-reset-review-state-layout"
       data-testid="review-state-panel"
     >
@@ -188,16 +230,14 @@ export function ReviewStatePanel({
           caption={`Map framed for ${scopeCode} counties in this release.`}
         />
       </Card>
-      {investigateHref ? (
-        <p className="type-body">
-          <Link
-            data-county={selectedFips}
-            data-testid="review-investigate"
-            href={investigateHref}
-          >
-            Investigate this county
-          </Link>
-        </p>
+      {preview && handoff ? (
+        <ReviewCountyPreviewPanel
+          droppedNotes={handoff.droppedNotes}
+          href={handoff.href}
+          openRef={openRef}
+          preview={preview}
+          onOpen={markReviewReturnFocus}
+        />
       ) : null}
       <RankedCounties
         counties={[...rankedCounties]}
