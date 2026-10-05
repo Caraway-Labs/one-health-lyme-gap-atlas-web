@@ -27,9 +27,14 @@ test("opens AI / Responsible Use from the professional footer and keeps the shel
     page.getByRole("heading", { level: 1, name: "AI / Responsible Use" })
   ).toBeVisible();
   await expect(page.getByRole("banner")).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Professional workspace" })
-  ).toBeVisible();
+  const workspaceNav = page.getByRole("navigation", {
+    name: "Professional workspace",
+  });
+  if (testInfo.project.name.includes("mobile")) {
+    await expect(workspaceNav).toBeHidden();
+  } else {
+    await expect(workspaceNav).toBeVisible();
+  }
 
   await page.reload();
   await expect(page).toHaveURL(/\/app\/ai-responsible-use$/);
