@@ -8,7 +8,7 @@ Last reviewed: 2026-09-11
 
 ## Scope and boundaries
 
-Authenticated Atlas users can start **Export my data** and **Remove all data** from account settings. Unconnected processors are recorded as `omissions[]` rather than silently skipped. Execution follows [ADR 0016](adr/0016-authenticated-data-rights-execution.md).
+Authenticated Atlas users can start **Export my data** and **Remove all data** from Account and from professional Settings. Unconnected processors are recorded as `omissions[]` rather than silently skipped. Execution follows [ADR 0016](adr/0016-authenticated-data-rights-execution.md).
 
 No export or deletion request may alter a public Atlas dataset, methodology, release, score, evidence record, or public-health provenance. A request affects only the requester’s user data and approved processors listed below.
 

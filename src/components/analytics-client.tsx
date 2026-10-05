@@ -75,5 +75,15 @@ export function AnalyticsClient() {
 }
 
 export function notifyAnalyticsPreferenceChanged(): void {
+  // Stop here, not only in AnalyticsClient. The professional /app shell does
+  // not mount that listener, and a grant made on legacy Atlas keeps the
+  // module-global SDK alive after the listener unmounts.
+  const mayStart = analyticsMayStart({
+    consent: readAnalyticsPreference(window.localStorage),
+    doNotTrack: honorsDoNotTrack(window.navigator),
+  });
+  if (!mayStart) {
+    atlasAnalytics.stop();
+  }
   window.dispatchEvent(new Event(PREFERENCE_CHANGED_EVENT));
 }

@@ -41,7 +41,8 @@ export default function PrivacyPage() {
             <h3>Public exploration stays public</h3>
             <p>
               You can browse, filter, compare, and download public Atlas results
-              without an account.
+              without an account. The professional workspace requires sign-in.
+              This Privacy page stays public either way.
             </p>
           </article>
           <article>
@@ -70,7 +71,11 @@ export default function PrivacyPage() {
                 sends allowlisted product events to Amplitude using a
                 session-only browser SDK. Events expire after 90 days. Atlas
                 does not send chat content, prompts, health information, email
-                addresses, or account identifiers to Amplitude.
+                addresses, or account identifiers to Amplitude. Those events
+                come from pages that use the analytical shell, including the
+                public Atlas, Account, and sign-in. The signed-in professional
+                workspace does not start that analytics SDK. A choice saved in
+                Privacy settings still applies when you return to those pages.
               </dd>
             </div>
             <div>
@@ -83,25 +88,33 @@ export default function PrivacyPage() {
               </dd>
             </div>
             <div>
-              <dt>Evidence chat</dt>
+              <dt>Assistant and Ask Atlas</dt>
               <dd>
-                If you use the optional evidence-chat feature, your question is
-                sent to the Atlas API to answer it. Up to five conversations are
-                stored in your browser for up to 30 days; you can clear that
-                local history from the chat workspace.
+                When reviewed-literature chat is enabled, a question from the
+                public Atlas Assistant or from Ask Atlas in the professional
+                workspace is sent to the Atlas API to answer it. Up to five
+                conversations are stored in this browser for up to 30 days. You
+                can clear that local history from the Atlas Assistant workspace.
+                Ask Atlas uses that same browser store and does not keep a
+                separate saved-chat library. When literature chat is not
+                enabled, Ask Atlas does not send a question. This page does not
+                state how long the API keeps a question.
               </dd>
             </div>
             <div>
               <dt>Accounts and feedback</dt>
               <dd>
-                Optional accounts let you save a profile after you sign in.
-                In-product feedback is available from the Atlas header, the
-                geographic explorer, and this privacy page footer. Optional
-                contact email is only for follow-up on that report. Account
-                deletion removes feedback contact fields and account linkage
-                while retaining the submitted message text. Saved workspaces are
-                not launched. Account data never changes Atlas evidence, scores,
-                or access.
+                Sign-in is required for the professional workspace. You can save
+                an optional profile after you sign in, from Account or from
+                professional Settings. Profile details do not change Atlas
+                evidence or scores, and they do not change who can read public
+                Atlas results. In-product feedback is available from the Atlas
+                header, the geographic explorer, and this privacy page footer.
+                Optional contact email is only for follow-up on that report.
+                Account deletion removes feedback contact fields and account
+                linkage while retaining the submitted message text. The
+                professional workspace does not store saved views, saved
+                investigations, or an artifact library.
               </dd>
             </div>
           </dl>
@@ -138,13 +151,14 @@ export default function PrivacyPage() {
           <h2>Your data controls</h2>
           <p>
             Signed-in users can start <strong>Export my data</strong> and{" "}
-            <strong>Remove all data</strong> from account settings. Those
-            controls cover the account profile connected to your sign-in.
-            Account deletion also removes feedback contact fields and account
-            linkage for that account while retaining submitted feedback text.
-            They do not include browser-only chat history, unlinked Amplitude
-            sessions, or saved workspaces (not launched). Completion is targeted
-            within 30 days. Public Atlas datasets and methodology are
+            <strong>Remove all data</strong> from Account and from professional
+            Settings. Those controls cover the account profile connected to your
+            sign-in. Account deletion also removes feedback contact fields and
+            account linkage for that account while retaining submitted feedback
+            text. They do not include browser-only chat history or unlinked
+            Amplitude sessions. The professional workspace does not store saved
+            views, saved investigations, or an artifact library. Completion is
+            targeted within 30 days. Public Atlas datasets and methodology are
             unaffected. Deletion is irreversible.
           </p>
         </div>

@@ -429,8 +429,16 @@ test("publishes an accessible, clear privacy summary", async ({ page }) => {
   await expect(page.getByText("Remove all data")).toBeVisible();
   await expect(
     page.getByText(
-      /Signed-in users can start Export my data and Remove all data from account settings/
+      /Signed-in users can start Export my data and Remove all data from Account and from professional Settings/
     )
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      /pages that use the analytical shell, including the public Atlas, Account, and sign-in/
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText(/professional workspace does not start that analytics SDK/)
   ).toBeVisible();
   await expect
     .poll(() =>
