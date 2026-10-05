@@ -141,6 +141,28 @@ async function installExploreApiMocks(
   });
 }
 
+/**
+ * Keyboard activation of a Next.js link. Commit the destination URL before
+ * asserting it: `toHaveURL` only waits for the 5s expect timeout, which is
+ * shorter than a cold dev-server navigation.
+ */
+async function activateAndExpectDestination(
+  page: Page,
+  linkTestId: string,
+  url: RegExp,
+  destinationTestId: string
+) {
+  const link = page.getByTestId(linkTestId);
+  await link.focus();
+  await expect(link).toBeFocused();
+  await Promise.all([
+    page.waitForURL(url, { waitUntil: "commit" }),
+    page.keyboard.press("Enter"),
+  ]);
+  await expect(page.getByTestId(destinationTestId)).toBeVisible();
+  await expect(page).toHaveURL(url);
+}
+
 async function expectMeasureAgreement(
   page: Page,
   expected: { measureId: string; period: string; unit: string; value: string }
@@ -281,21 +303,23 @@ test.describe("Explore spatial workspace", () => {
     await expect(adams).toBeFocused();
     await page.keyboard.press("Enter");
 
-    const investigate = page.getByTestId("explore-investigate");
-    await investigate.focus();
-    await expect(investigate).toBeFocused();
-    await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await activateAndExpectDestination(
+      page,
+      "explore-investigate",
+      /\/app\/investigate/,
+      "investigate-workspace"
+    );
     await expect(page).toHaveURL(/county=08001/);
     expect(new URL(page.url()).searchParams.get("metric")).toBeNull();
 
     await page.goBack();
     await expect(page.getByTestId("explore-map-fallback")).toBeVisible();
-    const compare = page.getByTestId("explore-compare");
-    await compare.focus();
-    await expect(compare).toBeFocused();
-    await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/app\/compare/);
+    await activateAndExpectDestination(
+      page,
+      "explore-compare",
+      /\/app\/compare/,
+      "compare-workspace"
+    );
   });
 
   test("keeps the same actions available when WebGL cannot start", async ({
