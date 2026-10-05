@@ -29,7 +29,7 @@ No. Atlas does not guarantee outbreak prediction, causation, individual risk, di
 
 ### What does “AI-enabled” mean today?
 
-It describes the product direction: organizing, comparing, synthesizing, or explaining governed evidence with clear sources and limits. The current public score is deterministic, and the assistant route is a feature-gated local demo rather than a live model-backed service. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) and the approved [AI Ethics commitments](/ai-ethics).
+It describes the product direction: organizing, comparing, synthesizing, or explaining governed evidence with clear sources and limits. The current public score is deterministic. When literature chat is enabled, `/assistant` calls the model-backed literature service on the Atlas API and returns cited evidence. That route is not a local demo. When the feature is off, the assistant reports that the service is unavailable. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) and the approved [AI Ethics commitments](/ai-ethics).
 
 ## Using Atlas
 
@@ -73,7 +73,7 @@ Use [Review](/app/review) for a national or state picture, [Explore](/app/explor
 
 ### Can I create an API key in Settings?
 
-No. Public API reads do not use an API key, and Settings does not generate one. Use [API, MCP, and access](/docs/api-mcp-and-access) and the [OpenAPI schema](https://api.carawaylabs.com/openapi.json). MCP connection steps are not published.
+No. Public API reads do not use an API key, and Settings does not generate one. Use [API, MCP, and access](/docs/api-mcp-and-access) and the [OpenAPI schema](https://api.carawaylabs.com/openapi.json). A development MCP server exposes `server_status` and `atlas_smoke_test` only. REST remains the way to read Atlas data.
 
 ### Why did my default jurisdiction not change the Review page I already had open?
 

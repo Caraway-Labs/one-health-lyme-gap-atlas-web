@@ -13,7 +13,8 @@ Atlas publishes one public HTTP contract. Human guides on this site explain how 
 | OpenAPI schema | Available now | [OpenAPI schema](https://api.carawaylabs.com/openapi.json) |
 | Interactive reference | Available now | [Swagger reference](https://api.carawaylabs.com/docs) for approved public GET requests |
 | Read-only reference | Available now | [ReDoc reference](https://api.carawaylabs.com/redoc) |
-| MCP connection | Not available | No released MCP server, tool list, or connection URL |
+| Development MCP smoke tools | Experimental/demo | `server_status` and `atlas_smoke_test` only, owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). A development endpoint and 2026-09-26 acceptance test are recorded there. This page does not re-check that the host is up. |
+| Atlas-data MCP | Not supported | Production MCP does not serve indicators, measures, observations, sources, or methodologies. Use the public REST API for Atlas data. |
 | User API keys in Settings | Not available | The public API does not use a key, and Settings does not create one |
 
 The OpenAPI application version and the `/v1` contract are different identifiers. Use the response fields below when you need to cite a result.
@@ -22,7 +23,7 @@ The OpenAPI application version and the `/v1` contract are different identifiers
 
 The canonical public API serves current-release metadata and county observations without an API key and without a signed-in session. A request is an HTTPS GET. Collections return `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json` with `code`, HTTP `status`, `detail`, and `request_id`.
 
-These routes do not select historical releases, aggregate arbitrary geographies, or return geometry. Account profile, privacy, feedback, and literature-chat routes belong to the signed-in product. They are not part of this anonymous public contract, and this page does not document them as public examples.
+These routes do not select historical releases, aggregate arbitrary geographies, or return geometry. Account profile and privacy requests are separate account operations. Feedback submission accepts an optional account and still accepts a report when no account is present. Literature chat does not depend on an account session; `/assistant` and the legacy assistant drawer stay public and appear when that feature is enabled. The professional workspace at `/app` requires sign-in. Those operations sit outside this canonical public GET-read contract, so this page does not copy them as public examples.
 
 Settings can save a default jurisdiction for a signed-in reviewer. That preference is not an API credential. See [the professional workspace](/docs/professional-workspace).
 
@@ -52,7 +53,7 @@ curl -fsS 'https://api.carawaylabs.com/v1/sources/human'
 curl -fsS 'https://api.carawaylabs.com/v1/methodologies/human_confirmed_probable_case_floor_v1'
 ```
 
-Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD`. `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` are gaps. Do not replace them with zero. The same rule is explained for reviewers in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD`. `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` are gaps. `SUPPRESSED` is a privacy-protected observation: the value was withheld, and the workspace shows **Suppressed** rather than a number. Do not replace a gap or a suppressed observation with zero. A published `ZERO` stays a real zero. The same rule is explained for reviewers in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
 
 ## Limits and errors
 
@@ -68,9 +69,11 @@ A practical attribution names Atlas, the public API V1, the measure id, county F
 
 ## MCP
 
-An MCP client needs a released server URL, a tool and resource list, and a compatibility statement from the API service. That contract is not published. This guide does not include a client configuration, a copy-paste MCP URL, or a claim that a particular assistant product can connect.
+The MCP server is owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). Its development deployment registers `server_status` and `atlas_smoke_test` in [`server.py`](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/src/atlas_lyme_mcp/server.py). Those tools report server status and a smoke message. They do not read Atlas data, connect to a database, or write.
 
-REST remains the supported programmatic access for current-release indicators, measures, observations, sources, and methodologies.
+The [development deployment record](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/docs/operations/digitalocean-mcp.md) documents a development Streamable HTTP endpoint and a 2026-09-26 Cursor and official-SDK acceptance test of both tools. This guide does not re-verify that the development host is reachable, and it does not publish a production client configuration.
+
+REST remains the supported interface for current-release indicators, measures, observations, sources, and methodologies. Production MCP, including any tool that returns those Atlas resources, is not part of this contract.
 
 ## API keys
 

@@ -237,9 +237,16 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   await expect(
     docsPage.getByRole("heading", { name: "API, MCP, and access", exact: true })
   ).toBeVisible();
-  await expect(
-    docsPage.getByRole("link", { name: "OpenAPI schema" }).first()
-  ).toHaveAttribute("href", "https://api.carawaylabs.com/openapi.json");
+  const openApiLink = docsPage
+    .getByRole("link", { name: "OpenAPI schema" })
+    .first();
+  await expect(openApiLink).toHaveAttribute(
+    "href",
+    "https://api.carawaylabs.com/openapi.json"
+  );
+  await openApiLink.click();
+  await expect(docsPage).toHaveURL("https://api.carawaylabs.com/openapi.json");
+  await expect(docsPage.locator("body")).toContainText('"openapi"');
 
   await page.bringToFront();
   await expect(page).toHaveURL(/\/app\/review\?/);
