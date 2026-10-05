@@ -2,6 +2,8 @@
 
 import { resetRouteById } from "@/features/ux-reset/paths";
 import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
+import { SettingsAccountControls } from "@/features/ux-reset/settings/settings-account-controls";
+import { SettingsProfileForm } from "@/features/ux-reset/settings/settings-profile-form";
 
 export function ResetSettingsExperience() {
   const route = resetRouteById("settings");
@@ -14,6 +16,8 @@ export function ResetSettingsExperience() {
         <p className="type-body">{route.description}</p>
       </header>
       <DefaultJurisdictionReadout />
+      <SettingsProfileForm />
+      <SettingsAccountControls />
     </>
   );
 }

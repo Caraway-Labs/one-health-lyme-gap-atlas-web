@@ -1,38 +1,26 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-
-import { getProfileV1MeProfileGet } from "@/generated/atlas";
-import { AtlasApiError } from "@/lib/api-mutator";
+import { useSavedProfile } from "@/features/ux-reset/profile/use-saved-profile";
 
 export type ProfileDefaultJurisdiction = {
   stateCode: string | null;
 };
 
 /**
- * Read-only profile jurisdiction for Review starting scope and Settings display.
+ * Review starting scope reads the shared saved-profile adapter.
  * Scope switching on Review must never call the profile save path.
+ * Null means there is no confirmed state default (unselected, national, or unrecognized).
  */
 export function useProfileDefaultJurisdiction() {
-  return useQuery({
-    queryFn: async () => {
-      const result = await getProfileV1MeProfileGet();
-      if (result.status !== 200) {
-        throw new AtlasApiError(
-          "Your profile is temporarily unavailable.",
-          "/v1/me/profile",
-          result.status,
-          null
-        );
-      }
-      const code =
-        result.data.profile?.state_code?.trim().toUpperCase() ?? null;
-      return {
-        stateCode: code && code.length === 2 ? code : null,
-      } satisfies ProfileDefaultJurisdiction;
-    },
-    queryKey: ["ux-reset-profile-default-jurisdiction"],
-    retry: false,
-    staleTime: 60_000,
-  });
+  const query = useSavedProfile();
+  const stateCode =
+    query.data?.selection.kind === "state"
+      ? query.data.selection.stateCode
+      : null;
+  return {
+    ...query,
+    data: query.data
+      ? ({ stateCode } satisfies ProfileDefaultJurisdiction)
+      : undefined,
+  };
 }
