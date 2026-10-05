@@ -29,7 +29,7 @@ No. Atlas does not guarantee outbreak prediction, causation, individual risk, di
 
 ### What does “AI-enabled” mean today?
 
-It describes the product direction: organizing, comparing, synthesizing, or explaining governed evidence with clear sources and limits. The current public score is deterministic, and the assistant route is a feature-gated local demo rather than a live model-backed service. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) and the approved [AI Ethics commitments](/ai-ethics).
+It describes the product direction: organizing, comparing, synthesizing, or explaining governed evidence with clear sources and limits. The current public score is deterministic. When literature chat is enabled, `/assistant` calls the model-backed literature service on the Atlas API and returns cited evidence. That route is not a local demo. When the feature is off, the assistant reports that the service is unavailable. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) and the approved [AI Ethics commitments](/ai-ethics).
 
 ## Using Atlas
 
@@ -65,7 +65,19 @@ Use the supported URL handoff or export, and record the active release, methodol
 
 ### How do I find the right documentation page?
 
-Open the [Atlas documentation home](/docs), use the sidebar or search, and choose the page that matches your question: [current capabilities](/docs/current-capabilities), [investigation workflows](/docs/investigation-workflows), or [evidence guidance](/docs/evidence-and-uncertainty). The Docs link in the Atlas utility bar opens HelpDocs in a new tab so your analytical state stays in the original tab.
+Open the [Atlas documentation home](/docs), use the sidebar or search, and choose the page that matches your question: [current capabilities](/docs/current-capabilities), [the professional workspace](/docs/professional-workspace), [investigation workflows](/docs/investigation-workflows), or [evidence guidance](/docs/evidence-and-uncertainty). **Docs** in the public utility bar and **Docs** in the professional workspace both open this site in a new tab. The analytical page, including its URL, stays in the original tab. A heading link can be reloaded in the documentation tab without changing that workspace tab.
+
+### I am in the professional workspace. Which page should I use?
+
+Use [Review](/app/review) for a national or state picture, [Explore](/app/explore) to scan a measure, [Investigate](/app/investigate) for one county, and [Compare](/app/compare) for two counties. Action, the Assistant page, and Feed are reserved routes. Settings saves a default jurisdiction and optional profile details. The public Explorer workflows on this page still apply to [/](/) and the [Geographic Explorer](/geographic_explorer).
+
+### Can I create an API key in Settings?
+
+No. Public API reads do not use an API key, and Settings does not generate one. Use [API, MCP, and access](/docs/api-mcp-and-access) and the [OpenAPI schema](https://api.carawaylabs.com/openapi.json). A development MCP server exposes `server_status` and `atlas_smoke_test` only. REST remains the way to read Atlas data.
+
+### Why did my default jurisdiction not change the Review page I already had open?
+
+A saved United States or state default applies the next time Review opens without `scope` in the address. An open Review address that already names a scope stays as it is. You can still browse other states and counties. Optional role, organization, and job title can stay empty.
 
 ### Where are privacy and AI policy commitments documented?
 

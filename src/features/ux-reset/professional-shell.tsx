@@ -261,14 +261,21 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
                 {RESET_ACCESS_NAV.map((item) => {
                   const Icon = item.icon;
                   const current = isResetRouteActive(item, pathname);
+                  const opensDocsTab = Boolean(item.externalHref);
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
                         active={current}
                         aria-current={current ? "page" : undefined}
-                        aria-label={item.label}
+                        aria-label={
+                          opensDocsTab
+                            ? `${item.label}, opens in a new tab`
+                            : item.label
+                        }
                         href={shellHref(item)}
                         onClick={closeMobileNavigation}
+                        rel={opensDocsTab ? "noopener noreferrer" : undefined}
+                        target={opensDocsTab ? "_blank" : undefined}
                         tooltip={item.label}
                       >
                         <Icon aria-hidden="true" />

@@ -13,6 +13,7 @@ import {
   isResetRouteActive,
 } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
+import { DOCS_PATH } from "@/features/ux-reset/routes";
 
 let pathname: string = RESET_APP_PATH;
 const searchParams = new URLSearchParams();
@@ -46,6 +47,13 @@ describe("UX Reset professional workspace", () => {
   afterEach(() => {
     cleanup();
     pathname = RESET_APP_PATH;
+    const searchParamKeys: string[] = [];
+    for (const key of searchParams.keys()) {
+      searchParamKeys.push(key);
+    }
+    for (const key of searchParamKeys) {
+      searchParams.delete(key);
+    }
     vi.unstubAllGlobals();
   });
 
@@ -115,6 +123,26 @@ describe("UX Reset professional workspace", () => {
         RESET_REVIEW_PATH
       )
     ).toBeTruthy();
+  });
+
+  it("opens Docs in a new tab and leaves analytical context on the workspace page", () => {
+    pathname = RESET_REVIEW_PATH;
+    searchParams.set("scope", "NY");
+    searchParams.set("county", "36061");
+    searchParams.set("sort", "score");
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+
+    const docsLink = screen.getByRole("link", {
+      name: "Docs, opens in a new tab",
+    });
+    expect(docsLink.getAttribute("href")).toBe(DOCS_PATH);
+    expect(docsLink.getAttribute("target")).toBe("_blank");
+    expect(docsLink.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(docsLink.textContent).toContain("Docs");
   });
 
   it("renders outside the legacy analytical shell", () => {

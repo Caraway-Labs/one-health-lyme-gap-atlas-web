@@ -9,6 +9,10 @@ const docsPages = [
     path: "/docs/atlas-workflow",
     heading: "The Atlas decision-support workflow",
   },
+  {
+    path: "/docs/professional-workspace",
+    heading: "Professional workspace",
+  },
   { path: "/docs/current-capabilities", heading: "Current capabilities" },
   {
     path: "/docs/investigation-workflows",
@@ -25,6 +29,10 @@ const docsPages = [
   {
     path: "/docs/ai-enabled-decision-intelligence",
     heading: "AI-enabled decision intelligence",
+  },
+  {
+    path: "/docs/api-mcp-and-access",
+    heading: "API, MCP, and access",
   },
   {
     path: "/docs/faq-and-troubleshooting",
@@ -111,7 +119,7 @@ test("keeps canonical product language and safety boundaries in the rendered gui
     )
   ).toBeVisible();
   await expect(
-    page.getByText("Early access, feature-gated", { exact: true })
+    page.getByText("Early access, feature-gated", { exact: true }).first()
   ).toBeVisible();
   await expect(
     page.getByText("Planned", { exact: true }).first()
@@ -151,6 +159,104 @@ test("opens HelpDocs search and finds the evidence guide", async ({
       name: /Atlas documentation Evidence, provenance, and uncertainty/,
     })
   ).toBeVisible({ timeout: 15_000 });
+});
+
+test("workspace Docs keeps the analytical URL while search and a heading link survive reload", async ({
+  page,
+}, testInfo) => {
+  const reviewPath = "/app/review?scope=NY&county=36061&sort=score";
+  await page.goto(reviewPath);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Review" })
+  ).toBeVisible();
+
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+    const closeNavigation = page.getByRole("button", {
+      name: "Close navigation",
+    });
+    await expect(closeNavigation).toBeFocused();
+    const docsLink = page.getByRole("link", {
+      name: "Docs, opens in a new tab",
+    });
+    for (let step = 0; step < 20; step += 1) {
+      if (await docsLink.evaluate((node) => node === document.activeElement)) {
+        break;
+      }
+      await page.keyboard.press("Tab");
+    }
+    await expect(docsLink).toBeFocused();
+  }
+
+  const docsLink = page.getByRole("link", { name: "Docs, opens in a new tab" });
+  await expect(docsLink).toHaveAttribute("href", "/docs");
+  await expect(docsLink).toHaveAttribute("target", "_blank");
+  await expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
+  await docsLink.focus();
+
+  const popupPromise = page.waitForEvent("popup");
+  await page.keyboard.press("Enter");
+  const docsPage = await popupPromise;
+  await docsPage.waitForLoadState("domcontentloaded");
+  await expect(docsPage).toHaveURL(/\/docs\/?$/);
+  await expect(
+    docsPage.getByRole("heading", { name: "Start with Atlas" })
+  ).toBeVisible();
+
+  const fullSearch = docsPage.locator("[data-search-full]:visible");
+  if ((await fullSearch.count()) > 0) {
+    await fullSearch.click();
+  } else {
+    await docsPage.locator("#nd-subnav [data-search]").click();
+  }
+  const dialog = docsPage.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByPlaceholder("Search").fill("default jurisdiction");
+  await dialog.getByRole("button", { name: /Professional workspace/ }).click();
+  await expect(docsPage).toHaveURL(/\/docs\/professional-workspace\/?$/);
+
+  const heading = docsPage.getByRole("heading", {
+    name: "Open Docs from the workspace",
+    exact: true,
+  });
+  await expect(heading).toBeVisible();
+  const headingLink = heading.locator("a");
+  if ((await headingLink.count()) > 0) {
+    await headingLink.click();
+  } else {
+    await docsPage.goto(
+      "/docs/professional-workspace#open-docs-from-the-workspace"
+    );
+  }
+  await expect(docsPage).toHaveURL(/#open-docs-from-the-workspace$/);
+  await docsPage.reload();
+  await expect(heading).toBeVisible();
+  await expect(docsPage).toHaveURL(/#open-docs-from-the-workspace$/);
+
+  await docsPage.goto("/docs/api-mcp-and-access");
+  await expect(
+    docsPage.getByRole("heading", { name: "API, MCP, and access", exact: true })
+  ).toBeVisible();
+  const openApiLink = docsPage
+    .getByRole("link", { name: "OpenAPI schema" })
+    .first();
+  await expect(openApiLink).toHaveAttribute(
+    "href",
+    "https://api.carawaylabs.com/openapi.json"
+  );
+  await openApiLink.click();
+  await expect(docsPage).toHaveURL("https://api.carawaylabs.com/openapi.json");
+  await expect(docsPage.locator("body")).toContainText('"openapi"');
+
+  await page.bringToFront();
+  await expect(page).toHaveURL(/\/app\/review\?/);
+  const workspaceUrl = new URL(page.url());
+  expect(workspaceUrl.searchParams.get("scope")).toBe("NY");
+  expect(workspaceUrl.searchParams.get("county")).toBe("36061");
+  expect(workspaceUrl.searchParams.get("sort")).toBe("score");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Review" })
+  ).toBeVisible();
 });
 
 test("opens the configured docs destination from the analytical sidebar", async ({
