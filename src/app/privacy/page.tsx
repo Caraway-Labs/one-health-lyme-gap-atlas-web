@@ -72,10 +72,10 @@ export default function PrivacyPage() {
                 session-only browser SDK. Events expire after 90 days. Atlas
                 does not send chat content, prompts, health information, email
                 addresses, or account identifiers to Amplitude. Those events
-                come from the public analytical Atlas. The signed-in
-                professional workspace does not start that analytics SDK. A
-                choice saved in Privacy settings still applies when you return
-                to the public analytical Atlas.
+                come from pages that use the analytical shell, including the
+                public Atlas, Account, and sign-in. The signed-in professional
+                workspace does not start that analytics SDK. A choice saved in
+                Privacy settings still applies when you return to those pages.
               </dd>
             </div>
             <div>

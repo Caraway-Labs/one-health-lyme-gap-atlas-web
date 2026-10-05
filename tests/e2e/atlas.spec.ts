@@ -433,6 +433,11 @@ test("publishes an accessible, clear privacy summary", async ({ page }) => {
     )
   ).toBeVisible();
   await expect(
+    page.getByText(
+      /pages that use the analytical shell, including the public Atlas, Account, and sign-in/
+    )
+  ).toBeVisible();
+  await expect(
     page.getByText(/professional workspace does not start that analytics SDK/)
   ).toBeVisible();
   await expect

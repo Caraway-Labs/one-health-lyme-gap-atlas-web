@@ -176,17 +176,21 @@ test("stops analytics after grant on legacy Atlas, Back, and footer withdrawal",
     .getByRole("button", { name: "Keep optional analytics off" })
     .click();
 
-  await expect.poll(() => vendorStorage(page)).toEqual({
-    local: null,
-    preference: expect.stringContaining('"decision":"denied"'),
-    session: null,
-  });
+  await expect
+    .poll(() => vendorStorage(page))
+    .toEqual({
+      local: null,
+      preference: expect.stringContaining('"decision":"denied"'),
+      session: null,
+    });
   await page.goto("/");
-  await expect.poll(() => vendorStorage(page)).toEqual({
-    local: null,
-    preference: expect.stringContaining('"decision":"denied"'),
-    session: null,
-  });
+  await expect
+    .poll(() => vendorStorage(page))
+    .toEqual({
+      local: null,
+      preference: expect.stringContaining('"decision":"denied"'),
+      session: null,
+    });
   await page.screenshot({
     path: "/opt/cursor/artifacts/footer-withdraw-after-back.png",
   });
