@@ -27,7 +27,7 @@ async function keyboardFocus(page: Page, control: Locator) {
 
 test("opens public Privacy and privacy settings from the professional footer", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto("/app");
   const footer = page.getByRole("contentinfo");
   const privacy = footer.getByRole("link", { name: "Privacy" });
@@ -52,7 +52,7 @@ test("opens public Privacy and privacy settings from the professional footer", a
     outlineWidth: "2px",
   });
   await footer.screenshot({
-    path: "/opt/cursor/artifacts/footer-privacy-link-focus.png",
+    path: testInfo.outputPath("footer-privacy-link-focus.png"),
   });
 
   const settings = footer.getByRole("button", { name: "Privacy settings" });
@@ -82,7 +82,7 @@ test("opens public Privacy and privacy settings from the professional footer", a
       outlineWidth: "2px",
     });
   await footer.screenshot({
-    path: "/opt/cursor/artifacts/footer-privacy-settings-focus.png",
+    path: testInfo.outputPath("footer-privacy-settings-focus.png"),
   });
 
   await privacy.click();
@@ -108,13 +108,13 @@ test("opens public Privacy and privacy settings from the professional footer", a
     )
     .toContain('"decision":"denied"');
   await page.screenshot({
-    path: "/opt/cursor/artifacts/footer-privacy-settings-dialog.png",
+    path: testInfo.outputPath("footer-privacy-settings-dialog.png"),
   });
 });
 
 test("stops analytics after grant on legacy Atlas, Back, and footer withdrawal", async ({
   page,
-}) => {
+}, testInfo) => {
   const amplitudeCalls: string[] = [];
   await page.route(/amplitude/i, async (route) => {
     amplitudeCalls.push(route.request().url());
@@ -192,6 +192,6 @@ test("stops analytics after grant on legacy Atlas, Back, and footer withdrawal",
       session: null,
     });
   await page.screenshot({
-    path: "/opt/cursor/artifacts/footer-withdraw-after-back.png",
+    path: testInfo.outputPath("footer-withdraw-after-back.png"),
   });
 });
