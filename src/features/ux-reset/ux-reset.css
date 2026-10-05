@@ -397,8 +397,11 @@
 
 .ux-reset-trust-footer a:focus-visible,
 .ux-reset-trust-footer button:focus-visible {
-  outline: 2px solid var(--ring);
+  /* --ring on --navy is 2.75:1. White on navy is 14.5:1 (WCAG 2.2 non-text). */
+  border-color: transparent;
+  outline: 2px solid var(--white);
   outline-offset: 2px;
+  box-shadow: none;
 }
 
 .ux-reset-workspace-body > .ux-reset-pro-main {
