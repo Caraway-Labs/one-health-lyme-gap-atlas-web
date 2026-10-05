@@ -147,12 +147,12 @@ describe("Atlas Amplitude boundary", () => {
     sessionStorage.setItem("AMP_session", "vendor-value");
     localStorage.setItem("amplitude_unsent", "vendor-value");
     analytics.stop();
+    deferred.resolve(sdk);
+    await started;
     analytics.track({
       eventType: "atlas_route_viewed",
       properties: { route_id: "account", methodology_version: "v1" },
     });
-    deferred.resolve(sdk);
-    await started;
 
     expect(sdk.init).not.toHaveBeenCalled();
     expect(sdk.setOptOut).not.toHaveBeenCalledWith(false);
