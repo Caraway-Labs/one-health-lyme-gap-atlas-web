@@ -119,7 +119,7 @@ test("keeps canonical product language and safety boundaries in the rendered gui
     )
   ).toBeVisible();
   await expect(
-    page.getByText("Early access, feature-gated", { exact: true })
+    page.getByText("Early access, feature-gated", { exact: true }).first()
   ).toBeVisible();
   await expect(
     page.getByText("Planned", { exact: true }).first()
@@ -203,10 +203,12 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
     docsPage.getByRole("heading", { name: "Start with Atlas" })
   ).toBeVisible();
 
-  const visibleSearch = testInfo.project.name.includes("mobile")
-    ? docsPage.locator("[data-search]:visible")
-    : docsPage.locator("[data-search-full]:visible");
-  await visibleSearch.click();
+  const fullSearch = docsPage.locator("[data-search-full]:visible");
+  if ((await fullSearch.count()) > 0) {
+    await fullSearch.click();
+  } else {
+    await docsPage.locator("#nd-subnav [data-search]").click();
+  }
   const dialog = docsPage.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await dialog.getByPlaceholder("Search").fill("default jurisdiction");
