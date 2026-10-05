@@ -67,8 +67,12 @@ describe("professional trust footer", () => {
     render(<ProfessionalTrustFooter />);
 
     const privacy = screen.getByRole("link", { name: "Privacy" });
+    const responsibleUse = screen.getByRole("link", {
+      name: "AI / Responsible Use",
+    });
     expect(privacy.getAttribute("href")).toBe("/privacy");
     expect(privacy.getAttribute("target")).toBeNull();
+    expect(responsibleUse.getAttribute("href")).toBe("/app/ai-responsible-use");
 
     fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
     const dialog = screen.getByRole("dialog", { name: "Privacy settings" });

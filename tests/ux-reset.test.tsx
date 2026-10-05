@@ -163,6 +163,24 @@ describe("UX Reset professional workspace", () => {
     );
   });
 
+  it("links AI / Responsible Use from the workspace footer", () => {
+    pathname = RESET_APP_PATH;
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+
+    const responsibleUse = screen.getByRole("link", {
+      name: "AI / Responsible Use",
+    });
+    expect(
+      screen.getByRole("contentinfo").contains(responsibleUse)
+    ).toBeTruthy();
+    expect(responsibleUse.getAttribute("href")).toBe("/app/ai-responsible-use");
+    expect(responsibleUse.getAttribute("target")).toBeNull();
+  });
+
   it("renders outside the legacy analytical shell", () => {
     pathname = RESET_APP_PATH;
     render(
