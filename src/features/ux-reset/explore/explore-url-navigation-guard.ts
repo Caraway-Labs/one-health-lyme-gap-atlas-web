@@ -116,9 +116,12 @@ function onDocumentClick(event: MouseEvent): void {
 }
 
 function onPopState(): void {
-  if (window.location.pathname !== RESET_EXPLORE_PATH) {
-    blockQueuedNuqsWrites = true;
+  // The listener outlives Explore. Back/Forward between other routes must not
+  // keep the module-global block set after Explore has unmounted.
+  if (!exploreMounted || window.location.pathname === RESET_EXPLORE_PATH) {
+    return;
   }
+  blockQueuedNuqsWrites = true;
 }
 
 export function installExploreUrlNavigationGuard(): void {

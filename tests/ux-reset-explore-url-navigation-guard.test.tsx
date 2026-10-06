@@ -85,6 +85,27 @@ describe("Explore URL navigation guard", () => {
     });
   });
 
+  it("does not block nuqs writes after Back or Forward leaves Explore", async () => {
+    const view = renderHook(() => useExploreUrlNavigationGuard());
+    await Promise.resolve();
+    originalReplaceState(null, "", "/app/explore?county=08001");
+    originalPushState(null, "", "/app/investigate?county=08001");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    nuqsReplace("/app/investigate?county=08001&metric=precipitation-mm");
+    const whileMounted = locationHref();
+
+    view.unmount();
+    await Promise.resolve();
+    originalReplaceState(null, "", "/app/review?scope=CO");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    nuqsReplace("/app/review?scope=CO&county=08001");
+
+    expect({ afterLeave: locationHref(), whileMounted }).toStrictEqual({
+      afterLeave: "/app/review?scope=CO&county=08001",
+      whileMounted: "/app/investigate?county=08001",
+    });
+  });
+
   it("allows the next page to write after Explore unmounts", async () => {
     const view = renderHook(() => useExploreUrlNavigationGuard());
     await Promise.resolve();
