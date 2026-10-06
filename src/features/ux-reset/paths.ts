@@ -146,7 +146,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Placeholder for the professional Assistant destination in the UX Reset workspace.",
+      "Research workspace for reviewed-literature questions, using the same browser-local conversation as the Ask Atlas side panel.",
     pageTitle: "Assistant | One Health Lyme Gap Atlas",
   },
   {

@@ -25,12 +25,15 @@ export function EvidenceChatConversationContent({
   showCountyNotice = true,
   showStarterPrompts = true,
   showWorkspaceHandoff = true,
+  workspaceHandoffHref,
 }: {
   headingLevel?: 1 | 2;
   model: EvidenceChatConversationModel;
   showCountyNotice?: boolean;
   showStarterPrompts?: boolean;
   showWorkspaceHandoff?: boolean;
+  /** When set, drawer handoff uses this href instead of the legacy `/assistant` link. */
+  workspaceHandoffHref?: (conversationId?: string) => string;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -60,6 +63,14 @@ export function EvidenceChatConversationContent({
   } = model;
 
   const assistantHeadingId = atlasAssistantWorkspaceHeadingId(mode);
+  const handoffHref = (conversationId?: string) =>
+    workspaceHandoffHref
+      ? workspaceHandoffHref(conversationId)
+      : assistantWorkspaceHref(
+          pathname,
+          searchParams,
+          conversationId ? { conversation: conversationId } : undefined
+        );
   const charCountId = `chat-char-count-${mode}`;
   const ChatPanel = mode === "workspace" ? "section" : "div";
   // Drawer chrome sits inside the reset sidecar landmark, so it cannot use
@@ -257,20 +268,14 @@ export function EvidenceChatConversationContent({
           {mode === "drawer" &&
             showWorkspaceHandoff &&
             (workspaceHandoffConversationId ? (
-              <Link
-                href={assistantWorkspaceHref(pathname, searchParams, {
-                  conversation: workspaceHandoffConversationId,
-                })}
-              >
+              <Link href={handoffHref(workspaceHandoffConversationId)}>
                 Open full workspace
               </Link>
             ) : (
               <span className="chat-attribution-handoff-hint">
                 Open full workspace after your first saved answer, or{" "}
-                <Link href={assistantWorkspaceHref(pathname, searchParams)}>
-                  start in the workspace
-                </Link>
-                . Unsent text in this drawer is not carried over.
+                <Link href={handoffHref()}>start in the workspace</Link>. Unsent
+                text in this drawer is not carried over.
               </span>
             ))}
         </PanelFooter>

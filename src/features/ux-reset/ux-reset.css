@@ -621,3 +621,63 @@
   font-size: var(--type-body-size);
   font-weight: 500;
 }
+
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .app-inset {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-workspace-body {
+  min-height: 0;
+  flex: 1;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-pro-main {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: var(--space-3);
+}
+
+.ux-reset-ask-atlas-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--space-3);
+}
+
+.ux-reset-ask-atlas-workspace .ux-reset-page-header {
+  flex: none;
+}
+
+.ux-reset-ask-atlas-workspace .evidence-chat-workspace {
+  flex: 1;
+  min-height: 0;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel h2 {
+  margin: 0.2rem 0 0;
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  font-weight: 500;
+}
+
+.ux-reset-ask-atlas-workspace .chat-empty p {
+  margin-block: 0.35rem 0;
+}
+
+.ux-reset-ask-atlas-workspace .chat-turn p {
+  margin-block: 0.4rem 0;
+}

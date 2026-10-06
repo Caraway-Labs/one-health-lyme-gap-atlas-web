@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -21,11 +21,13 @@ import {
   AskAtlasInheritedContextProvider,
   useAskAtlasInheritedContext,
 } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { AskAtlasUnavailableNotice } from "@/features/ux-reset/ask-atlas/ask-atlas-unavailable";
 import type {
   AskAtlasInheritedContext,
   AskAtlasSurface,
 } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { InheritedContextNotice } from "@/features/ux-reset/ask-atlas/inherited-context-notice";
+import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { uxResetDestinationFromPath } from "@/features/ux-reset/routes";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import {
@@ -105,9 +107,16 @@ function AskAtlasChromeSwitch({ children }: { children: ReactNode }) {
 }
 
 function AskAtlasSurfaceChrome({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const requestsEnabled = isAtlasAssistantLiteratureEnabled();
   const model = useEvidenceChat({ mode: "drawer", requestsEnabled });
   const context = useAskAtlasInheritedContext();
+  const workspaceHandoffHref = useCallback(
+    (conversationId?: string) =>
+      resetAskAtlasWorkspaceHref(pathname, searchParams, conversationId),
+    [pathname, searchParams]
+  );
   const compact = useMobileViewport();
   const [open, setOpen] = useState(false);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -189,6 +198,7 @@ function AskAtlasSurfaceChrome({ children }: { children: ReactNode }) {
         panelRef={panelRef}
         requestsEnabled={requestsEnabled}
         onClose={closePanel}
+        workspaceHandoffHref={workspaceHandoffHref}
       />
     ) : null;
     return {
@@ -211,7 +221,16 @@ function AskAtlasSurfaceChrome({ children }: { children: ReactNode }) {
       ),
       pageInert: open && compact,
     };
-  }, [closePanel, compact, context, model, open, openPanel, requestsEnabled]);
+  }, [
+    closePanel,
+    compact,
+    context,
+    model,
+    open,
+    openPanel,
+    requestsEnabled,
+    workspaceHandoffHref,
+  ]);
 
   return (
     <AskAtlasChromeContext.Provider value={chrome}>
@@ -227,6 +246,7 @@ function AskAtlasPanel({
   onClose,
   panelRef,
   requestsEnabled,
+  workspaceHandoffHref,
 }: {
   compact: boolean;
   context: AskAtlasInheritedContext | null;
@@ -234,6 +254,7 @@ function AskAtlasPanel({
   onClose: () => void;
   panelRef: RefObject<HTMLDivElement | null>;
   requestsEnabled: boolean;
+  workspaceHandoffHref: (conversationId?: string) => string;
 }) {
   const headingId = requestsEnabled
     ? atlasAssistantWorkspaceHeadingId("drawer")
@@ -274,26 +295,14 @@ function AskAtlasPanel({
               model={model}
               showCountyNotice={false}
               showStarterPrompts={false}
-              showWorkspaceHandoff={false}
+              showWorkspaceHandoff
+              workspaceHandoffHref={workspaceHandoffHref}
             />
           </div>
         ) : (
-          <div
-            className="ux-reset-ask-atlas-disabled"
-            data-assistant-state="backend_disabled"
-            data-testid="ask-atlas-disabled"
-            role="status"
-          >
-            <h2 id={ASK_ATLAS_DISABLED_HEADING_ID}>Ask Atlas</h2>
-            <p>
-              Ask Atlas is unavailable in this workspace. Review, Explore,
-              Investigate, Compare, and Action stay usable without it.
-            </p>
-            <p>
-              This is a service availability state, not a finding that evidence
-              is absent.
-            </p>
-          </div>
+          <AskAtlasUnavailableNotice
+            headingId={ASK_ATLAS_DISABLED_HEADING_ID}
+          />
         )}
       </div>
     </div>
