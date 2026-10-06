@@ -3,6 +3,7 @@
 import publicCopy from "@caraway-labs/one-health-lyme-gap-atlas-knowledge-graph/public-copy";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { EvidenceChatAnswerSources } from "@/components/evidence-chat-answer-sources";
@@ -63,6 +64,28 @@ export function EvidenceChatConversationContent({
   } = model;
 
   const assistantHeadingId = atlasAssistantWorkspaceHeadingId(mode);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const turnCount = active?.turns.length ?? 0;
+  useEffect(() => {
+    const transcript = transcriptRef.current;
+    if (!transcript) {
+      return;
+    }
+    const lastTurn = transcript.querySelector<HTMLElement>(
+      ".chat-turn:last-child"
+    );
+    if (turnCount === 0 && !pending && !failure) {
+      return;
+    }
+    if (pending || !lastTurn) {
+      transcript.scrollTop = transcript.scrollHeight;
+      return;
+    }
+    const delta =
+      lastTurn.getBoundingClientRect().top -
+      transcript.getBoundingClientRect().top;
+    transcript.scrollTop += delta;
+  }, [failure, pending, turnCount]);
   const handoffHref = (conversationId?: string) =>
     workspaceHandoffHref
       ? workspaceHandoffHref(conversationId)
@@ -126,6 +149,7 @@ export function EvidenceChatConversationContent({
         className="chat-transcript"
         aria-label="Conversation transcript"
         aria-live="polite"
+        ref={transcriptRef}
         role="region"
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard access to scrollable transcript
         tabIndex={0}

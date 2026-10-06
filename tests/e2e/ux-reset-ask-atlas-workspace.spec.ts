@@ -125,11 +125,15 @@ test("continues one sidecar request in the research workspace", async ({
   await expect(page).toHaveURL(
     /\/app\/assistant\?county=08001&dataset=alpha-2026&conversation=conversation-1/
   );
-  await expect(page.getByRole("heading", { name: "Assistant" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Atlas Assistant" })
+  ).toBeVisible();
   await expect(
     page.getByText("Reviewed studies describe exposure.")
   ).toBeVisible();
-  await expect(page.getByText("County context:")).toContainText("Adams");
+  await expect(
+    page.locator("[data-assistant-county-state='identified']")
+  ).toContainText("Adams");
   await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
   expect(requests).toHaveLength(1);
   expect(Object.keys(requests[0] ?? {}).toSorted()).toEqual([
@@ -197,7 +201,9 @@ test("recovers an unknown conversation, a cleared history, and a failed request"
 
   await page.getByLabel("Your question").fill("Question during an outage");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(
+    page.getByTestId("ask-atlas-workspace").getByRole("alert")
+  ).toBeVisible();
   await expect(page.locator(".citation-list")).toHaveCount(0);
   await page.getByRole("button", { name: "Retry" }).click();
   await expect(page.getByText("Recovered after retry.")).toBeVisible();

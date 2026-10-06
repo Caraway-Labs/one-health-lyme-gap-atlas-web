@@ -657,13 +657,43 @@
   gap: var(--space-3);
 }
 
-.ux-reset-ask-atlas-workspace .ux-reset-page-header {
+.ux-reset-ask-atlas-workspace .ux-reset-page-header,
+.ux-reset-ask-atlas-mode-note {
   flex: none;
+}
+
+.ux-reset-ask-atlas-mode-note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+  line-height: 1.45;
 }
 
 .ux-reset-ask-atlas-workspace .evidence-chat-workspace {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ux-reset-ask-atlas-workspace .chat-transcript {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel-header,
+.ux-reset-ask-atlas-workspace .chat-history-empty-hint,
+.ux-reset-ask-atlas-workspace .chat-county-context,
+.ux-reset-ask-atlas-workspace .medical-notice,
+.ux-reset-ask-atlas-workspace .chat-composer-dock {
+  flex: none;
 }
 
 .ux-reset-ask-atlas-workspace .chat-panel h2 {

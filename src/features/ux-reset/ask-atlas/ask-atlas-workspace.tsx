@@ -20,20 +20,26 @@ export function AskAtlasWorkspace({
       className="ux-reset-ask-atlas-workspace"
       data-testid="ask-atlas-workspace"
     >
-      <header className="ux-reset-page-header">
-        <p className="eyebrow">Ask Atlas</p>
-        <h1>Assistant</h1>
-        <p className="type-body">
-          Ask a research question grounded in reviewed literature. Saved chats
-          stay in this browser. Structured and Both modes are not available.
-        </p>
-      </header>
       {requestsEnabled ? (
-        <AskAtlasWorkspaceChat initialConversationId={initialConversationId} />
+        <>
+          <p className="ux-reset-ask-atlas-mode-note">
+            Saved chats stay in this browser. Structured and Both modes are not
+            available.
+          </p>
+          <AskAtlasWorkspaceChat
+            initialConversationId={initialConversationId}
+          />
+        </>
       ) : (
-        <AskAtlasUnavailableNotice
-          headingId={ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID}
-        />
+        <>
+          <header className="ux-reset-page-header">
+            <p className="eyebrow">Ask Atlas</p>
+            <h1>Assistant</h1>
+          </header>
+          <AskAtlasUnavailableNotice
+            headingId={ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID}
+          />
+        </>
       )}
     </div>
   );
@@ -49,5 +55,5 @@ function AskAtlasWorkspaceChat({
     mode: "workspace",
     requestsEnabled: true,
   });
-  return <EvidenceChatWorkspaceShell headingLevel={2} model={model} />;
+  return <EvidenceChatWorkspaceShell model={model} />;
 }
