@@ -2,11 +2,17 @@ import {
   uxResetContextHandoffSearchParams,
   uxResetShellHandoffHref,
 } from "@/features/ux-reset/context-handoff";
+import { evidenceTypeFromGovernedMetadata } from "@/features/ux-reset/evidence/evidence-type";
 import {
   evidenceAvailabilityValues,
   type EvidenceAvailability,
+  type EvidenceObjectModel,
+  type EvidenceReasonCode,
 } from "@/features/ux-reset/evidence/types";
-import { availabilityFromGovernedValueState } from "@/features/ux-reset/evidence/value-state-contract";
+import {
+  availabilityFromGovernedValueState,
+  evidenceAvailabilityLabel,
+} from "@/features/ux-reset/evidence/value-state-contract";
 import {
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
@@ -40,6 +46,11 @@ export type ReviewCountyPreviewModel = {
   countyName: string;
   fips: string;
   followUp: string;
+  /**
+   * Visible evidence-state qualification for limited and unavailable inputs.
+   * Null when the score row does not show a limitation.
+   */
+  qualification: EvidenceObjectModel | null;
   stateCode: string;
   stateName: string;
   why: string;
@@ -107,15 +118,54 @@ function reviewCountyPreviewCaveat(county: CountyScoreSummary): string {
   return "Published inputs in this release can be reviewed for this county.";
 }
 
+const SCORE_SUMMARY_METADATA_LIMIT =
+  "Source family, observation period, evidence type, and provenance for this status are not included in the county score summary.";
+
 function reviewCountyPreviewWhy(county: CountyScoreSummary): string {
-  const priority = plainPriority(county.priority);
+  return plainPriority(county.priority);
+}
+
+function reviewPreviewReasonCode(
+  county: CountyScoreSummary,
+  availability: EvidenceAvailability
+): EvidenceReasonCode {
   if (hasSuppressedStatus(county)) {
-    return `${priority}. A published input is suppressed or privacy-protected in this release.`;
+    return ValueState.SUPPRESSED;
   }
-  if (isAbsentStatus(county.human_status)) {
-    return `${priority}. A county-level published Lyme case count is unavailable in this release.`;
+  if (availability === evidenceAvailabilityValues.unavailable) {
+    return ValueState.UNAVAILABLE;
   }
-  return `${priority}. Published county inputs in this release are available for review.`;
+  return "MATERIAL_LIMITATION";
+}
+
+/**
+ * Limited and unavailable score rows need a visible qualification. The score
+ * summary has no observation provenance, so missing metadata stays Unavailable
+ * and the caveat states the limitation without calling inputs available or
+ * treating a missing record as biological absence.
+ */
+function reviewCountyPreviewQualification(
+  county: CountyScoreSummary
+): EvidenceObjectModel | null {
+  const availability = reviewCountyPreviewAvailability(county);
+  if (availability === evidenceAvailabilityValues.available) {
+    return null;
+  }
+  const caveat = reviewCountyPreviewCaveat(county);
+  return {
+    availability,
+    claimLabel: "Evidence state",
+    displayValue: evidenceAvailabilityLabel(availability),
+    provenance: {
+      evidenceType: evidenceTypeFromGovernedMetadata(null),
+      inspectSummary: `${caveat} ${SCORE_SUMMARY_METADATA_LIMIT}`,
+      limitations: [caveat, SCORE_SUMMARY_METADATA_LIMIT],
+      materialCaveat: caveat,
+      observationPeriod: "Unavailable",
+      sourceFamily: "Unavailable",
+    },
+    reasonCode: reviewPreviewReasonCode(county, availability),
+  };
 }
 
 export function buildReviewCountyPreview(
@@ -127,6 +177,7 @@ export function buildReviewCountyPreview(
     countyName: county.county,
     fips: county.fips,
     followUp: suggestedFollowUpForColor(county.color),
+    qualification: reviewCountyPreviewQualification(county),
     stateCode: county.state,
     stateName: county.state_name,
     why: reviewCountyPreviewWhy(county),

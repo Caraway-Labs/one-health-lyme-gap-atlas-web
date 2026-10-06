@@ -44,3 +44,14 @@ export function reviewReturnFocusMatches(selectedFips: string): boolean {
   }
   return fromHistory || stored === selectedFips;
 }
+
+/** Drop the session fallback once Review has restored focus for this return. */
+export function consumeReviewReturnFocus(selectedFips: string): void {
+  try {
+    if (sessionStorage.getItem(REVIEW_RETURN_FOCUS_KEY) === selectedFips) {
+      sessionStorage.removeItem(REVIEW_RETURN_FOCUS_KEY);
+    }
+  } catch {
+    // Storage can be blocked. The history entry remains the return signal.
+  }
+}

@@ -408,7 +408,7 @@ describe("Reset Review scope UI", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    render(
+    const panel = (
       <QueryClientProvider client={client}>
         <ReviewStatePanel
           county={selected.fips}
@@ -420,6 +420,7 @@ describe("Reset Review scope UI", () => {
         />
       </QueryClientProvider>
     );
+    const view = render(panel);
     await waitFor(() => {
       const focused = document.activeElement;
       expect({
@@ -431,6 +432,57 @@ describe("Reset Review scope UI", () => {
         fips: selected.fips,
         tableToggle: "Hide full county list",
       });
+    });
+    expect(sessionStorage.getItem("ux-reset-review-return-focus")).toBeNull();
+    history.replaceState(null, "");
+    view.rerender(panel);
+    expect(
+      screen.getByRole("button", { name: "Hide full county list" }).textContent
+    ).toBe("Hide full county list");
+  });
+
+  it("does not reuse return focus on a fresh Review URL for the same county", async () => {
+    const base = reviewScopeScoresFixture.counties[0];
+    const counties = Array.from({ length: 41 }, (_, index) => ({
+      ...base,
+      county: `County ${index + 1}`,
+      fips: String(8001 + index).padStart(5, "0"),
+      score: { ...base.score, score: 100 - index },
+    }));
+    const selected = counties[40];
+    markReviewReturnFocus(selected.fips);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const panel = (
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          county={selected.fips}
+          mapCounties={counties}
+          period="2023-01-01"
+          rankedCounties={counties}
+          releaseId="alpha-2026"
+          scopeCode="CO"
+        />
+      </QueryClientProvider>
+    );
+    const view = render(panel);
+    await waitFor(() =>
+      expect(sessionStorage.getItem("ux-reset-review-return-focus")).toBeNull()
+    );
+    view.unmount();
+    history.replaceState(null, "");
+    render(panel);
+    expect({
+      focusedFips:
+        document.activeElement instanceof HTMLElement
+          ? (document.activeElement.dataset.fips ?? null)
+          : null,
+      tableToggle: screen.getByRole("button", { name: "View full county list" })
+        .textContent,
+    }).toStrictEqual({
+      focusedFips: null,
+      tableToggle: "View full county list",
     });
   });
 
@@ -479,8 +531,12 @@ describe("Reset Review scope UI", () => {
       label: expect.stringContaining("Open Investigate"),
       panel: true,
       target: href,
-      why: expect.stringContaining("available for review"),
+      why: "Lower review priority",
     });
+    expect(
+      screen.getByTestId("review-preview-qualification").textContent
+    ).toContain("Some scored inputs are unavailable");
+    expect(screen.getByText("Inspect provenance")).toBeTruthy();
   });
 
   it("updates preview identity, why, caveat, and target together", () => {
@@ -516,45 +572,55 @@ describe("Reset Review scope UI", () => {
     const denver = readPreview();
     view.rerender(panel("36001"));
     const albany = readPreview();
+    const qualification = screen.getByTestId("review-preview-qualification");
     const previewText =
       screen.getByTestId("review-county-preview").textContent ?? "";
     expect({
       albany,
-      availabilityClaim: screen.queryByTestId("review-preview-availability"),
       caveatChanged: albany.caveat !== denver.caveat,
-      caveatClaim: screen.queryByTestId("review-preview-caveat"),
       denverFips: denver.fips,
       denverTarget: denver.target ?? "",
-      provenance: /Source family|Inspect provenance|Evidence type/.test(
-        previewText
+      inspectable: Boolean(
+        qualification
+          .querySelector("summary")
+          ?.textContent?.includes("Inspect provenance")
       ),
-      whyChanged: albany.why !== denver.why,
+      qualificationText: qualification.textContent,
+      whyClaimsAvailable: /available for review/i.test(previewText),
       zeroCases: /0 cases/.test(previewText),
     }).toStrictEqual({
       albany: {
         caveat: expect.stringContaining("not treated as zero"),
         fips: "36001",
         target: expect.stringContaining("county=36001"),
-        why: expect.stringContaining("unavailable"),
+        why: "Lower review priority",
       },
-      availabilityClaim: null,
       caveatChanged: true,
-      caveatClaim: null,
       denverFips: "08001",
       denverTarget: expect.stringContaining("county=08001"),
-      provenance: false,
-      whyChanged: true,
+      inspectable: true,
+      qualificationText: expect.stringContaining("Unavailable"),
+      whyClaimsAvailable: false,
       zeroCases: false,
     });
     expect(albany.target).not.toContain("county=08001");
   });
 
-  it("withholds the availability claim until county provenance exists", () => {
-    const county = reviewScopeScoresFixture.counties[0];
+  it("shows a visible evidence qualification for limited and unavailable counties", () => {
+    const limited = {
+      ...reviewScopeScoresFixture.counties[0],
+      evidence_completeness: 40,
+    };
+    const suppressed = {
+      ...limited,
+      evidence_completeness: 100,
+      fips: "08005",
+      human_status: "SUPPRESSED",
+    };
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    render(
+    const panel = (county: typeof limited) => (
       <QueryClientProvider client={client}>
         <ReviewStatePanel
           county={county.fips}
@@ -566,20 +632,26 @@ describe("Reset Review scope UI", () => {
         />
       </QueryClientProvider>
     );
-    const preview = screen.getByTestId("review-county-preview");
-    const text = preview.textContent ?? "";
+    const view = render(panel(limited));
+    const limitedNote = screen.getByRole("note").textContent;
+    const limitedText =
+      screen.getByTestId("review-preview-qualification").textContent ?? "";
+    const limitedWhy = screen.getByTestId("review-preview-why").textContent;
+    view.rerender(panel(suppressed));
+    const suppressedNode = screen.getByTestId("review-preview-qualification");
     expect({
-      availability: screen.queryByTestId("review-preview-availability"),
-      caveat: screen.queryByTestId("review-preview-caveat"),
-      identity: screen.getByTestId("review-preview-identity").textContent,
-      open: screen.getByTestId("review-investigate").textContent,
-      provenance: /Source family|Inspect provenance|Evidence type/.test(text),
+      limitedNote,
+      limitedText,
+      limitedWhy,
+      suppressedLabel: suppressedNode.textContent,
+      suppressedReason: screen.getByText("Suppressed or privacy-protected")
+        .textContent,
     }).toStrictEqual({
-      availability: null,
-      caveat: null,
-      identity: expect.stringContaining(county.fips),
-      open: "Open Investigate",
-      provenance: false,
+      limitedNote: "Some scored inputs are unavailable in this release.",
+      limitedText: expect.stringContaining("Limited"),
+      limitedWhy: "Lower review priority",
+      suppressedLabel: expect.stringContaining("Limited"),
+      suppressedReason: "Suppressed or privacy-protected",
     });
   });
 

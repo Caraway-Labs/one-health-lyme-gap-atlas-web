@@ -6,6 +6,8 @@ import type { Ref } from "react";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
+import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +52,14 @@ export function ReviewCountyPreviewPanel({
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}
       </p>
+      {preview.qualification ? (
+        <div data-testid="review-preview-qualification">
+          <EvidenceStateStrip model={preview.qualification} showReason />
+          <EvidenceProvenanceInspect
+            provenance={preview.qualification.provenance}
+          />
+        </div>
+      ) : null}
       <p className="type-body" data-testid="review-preview-follow-up">
         <span className="eyebrow">Suggested follow-up</span> {preview.followUp}
       </p>

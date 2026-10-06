@@ -72,7 +72,7 @@ describe("Review county preview", () => {
         "Published inputs in this release can be reviewed for this county.",
       fips: "36001",
       followUp: "Continue routine review",
-      why: "Lower review priority. Published county inputs in this release are available for review.",
+      why: "Lower review priority",
     });
 
     const unavailable = buildReviewCountyPreview(
@@ -135,8 +135,50 @@ describe("Review county preview", () => {
       availability: "limited",
       caveat: expect.stringContaining("Suppressed or privacy-protected"),
       genericCaveat: false,
-      why: "Lower review priority. A published input is suppressed or privacy-protected in this release.",
+      why: "Lower review priority",
       zeroCases: false,
+    });
+  });
+
+  it("does not call incomplete inputs available in the preview rationale", () => {
+    const missingTick = buildReviewCountyPreview(
+      county({
+        burgdorferi_status: "Present",
+        evidence_completeness: 100,
+        fips: "36001",
+        human_status: "published_count_floor",
+        tick_status: "No records",
+      })
+    );
+    const incomplete = buildReviewCountyPreview(
+      county({
+        burgdorferi_status: "Present",
+        evidence_completeness: 40,
+        fips: "36005",
+        human_status: "published_count_floor",
+        tick_status: "Established",
+      })
+    );
+    expect({
+      incompleteCaveat: incomplete.caveat,
+      incompleteQualified: incomplete.qualification?.availability,
+      incompleteWhy: incomplete.why,
+      missingTickAbsence: /ticks are absent/.test(missingTick.why),
+      missingTickAvailable: /available/i.test(missingTick.why),
+      missingTickCaveat: missingTick.caveat,
+      missingTickQualified: missingTick.qualification?.availability,
+      missingTickWhy: missingTick.why,
+    }).toStrictEqual({
+      incompleteCaveat: "Some scored inputs are unavailable in this release.",
+      incompleteQualified: "limited",
+      incompleteWhy: "Lower review priority",
+      missingTickAbsence: false,
+      missingTickAvailable: false,
+      missingTickCaveat: expect.stringContaining(
+        "does not establish that ticks are absent"
+      ),
+      missingTickQualified: "limited",
+      missingTickWhy: "Lower review priority",
     });
   });
 
@@ -162,7 +204,7 @@ describe("Review county preview", () => {
       availability: "limited",
       caveat: expect.stringContaining("Suppressed or privacy-protected"),
       missingOnly: false,
-      why: "Lower review priority. A published input is suppressed or privacy-protected in this release.",
+      why: "Lower review priority",
       zeroCases: false,
     });
   });

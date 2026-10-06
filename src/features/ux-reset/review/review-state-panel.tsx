@@ -29,6 +29,7 @@ import {
 } from "@/features/ux-reset/review/review-county-preview";
 import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
+  consumeReviewReturnFocus,
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
@@ -80,6 +81,9 @@ export function ReviewStatePanel({
     [rankedCounties]
   );
   const [showTableOverride, setShowTableOverride] = useState<boolean | null>(
+    null
+  );
+  const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
   );
   // The URL county is the selection, including after Back or Forward.
@@ -146,8 +150,19 @@ export function ReviewStatePanel({
   const selectedRank = rankedCounties.findIndex(
     (county) => county.fips === selectedFips
   );
-  const focusReturnedCounty =
+  const returnFocusMatches =
     /^\d{5}$/.test(selectedFips) && reviewReturnFocusMatches(selectedFips);
+  if (returnFocusMatches && latchedReturnFips !== selectedFips) {
+    setLatchedReturnFips(selectedFips);
+  } else if (
+    !returnFocusMatches &&
+    latchedReturnFips !== null &&
+    latchedReturnFips !== selectedFips
+  ) {
+    setLatchedReturnFips(null);
+  }
+  const focusReturnedCounty =
+    returnFocusMatches || latchedReturnFips === selectedFips;
   const showTable =
     showTableOverride ??
     (focusReturnedCounty && selectedRank >= RANKED_COUNTY_SHORTLIST_LENGTH);
@@ -176,26 +191,27 @@ export function ReviewStatePanel({
     }
     if (row) {
       row.focus({ preventScroll: true });
-      return;
-    }
-    const tableControl = root?.querySelector<HTMLButtonElement>(
-      `.full-table button[data-fips="${selectedFips}"]`
-    );
-    if (tableControl) {
-      const scroller = tableControl.closest(".table-scroll");
-      if (scroller instanceof HTMLElement) {
-        const rowBox = tableControl.getBoundingClientRect();
-        const listBox = scroller.getBoundingClientRect();
-        const visible =
-          rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
-        if (!visible) {
-          tableControl.scrollIntoView({ block: "nearest" });
+    } else {
+      const tableControl = root?.querySelector<HTMLButtonElement>(
+        `.full-table button[data-fips="${selectedFips}"]`
+      );
+      if (tableControl) {
+        const scroller = tableControl.closest(".table-scroll");
+        if (scroller instanceof HTMLElement) {
+          const rowBox = tableControl.getBoundingClientRect();
+          const listBox = scroller.getBoundingClientRect();
+          const visible =
+            rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
+          if (!visible) {
+            tableControl.scrollIntoView({ block: "nearest" });
+          }
         }
+        tableControl.focus({ preventScroll: true });
+      } else {
+        openRef.current?.focus({ preventScroll: true });
       }
-      tableControl.focus({ preventScroll: true });
-      return;
     }
-    openRef.current?.focus({ preventScroll: true });
+    consumeReviewReturnFocus(selectedFips);
   }, [focusReturnedCounty, selectedFips]);
   const mapScores = useMemo(() => [...mapCounties], [mapCounties]);
   const geometryError = Boolean(geometryQuery.isError);

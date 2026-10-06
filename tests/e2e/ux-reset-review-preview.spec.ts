@@ -251,8 +251,15 @@ test.describe("Review county preview and Investigate handoff", () => {
       followUp: "Prioritize targeted follow-up",
     });
     expect(previewState.why).toContain("Highest review priority");
-    expect(previewState.why).toContain("unavailable");
+    expect(previewState.why).not.toMatch(/available for review/i);
     expect(previewState.caveat).toContain("not treated as zero");
+    await expect(
+      page.getByTestId("review-preview-qualification")
+    ).toContainText("Unavailable");
+    await expect(
+      page.getByTestId("review-preview-qualification")
+    ).toContainText("not treated as zero");
+    await expect(page.getByText("Inspect provenance")).toBeVisible();
     expect(`${previewState.why} ${previewState.caveat}`).not.toMatch(/0 cases/);
     expect(previewState.target).toContain("county=36024");
     expect(previewState.target).toContain("scope=NY");
