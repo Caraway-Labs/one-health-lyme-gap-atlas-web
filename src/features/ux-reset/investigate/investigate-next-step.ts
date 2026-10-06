@@ -6,6 +6,7 @@ import type {
   CountyEvidenceBundle,
   CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
+import { isCountyFips } from "@/lib/county-geography";
 
 export const investigateContinueDestinations = {
   compare: "compare",
@@ -25,6 +26,46 @@ export function investigateContinueDestination(input: {
   const pair = parseCompareFipsList(input.compare.join(","));
   if (pair.length === UX_RESET_COMPARE_COUNTY_LIMIT) {
     return investigateContinueDestinations.compare;
+  }
+  return null;
+}
+
+export const investigateCompareOfferKinds = {
+  return: "return",
+  start: "start",
+} as const;
+
+export type InvestigateCompareOfferKind =
+  (typeof investigateCompareOfferKinds)[keyof typeof investigateCompareOfferKinds];
+
+export type InvestigateCompareOffer = {
+  kind: InvestigateCompareOfferKind;
+  label: "Compare" | "Return to Compare";
+};
+
+/**
+ * Start Compare only for a county that has already resolved to a published
+ * identity or evidence bundle. Return when a two-county pair is already in
+ * the link, including when the county on screen did not resolve.
+ * A neighbor is not chosen.
+ */
+export function investigateCompareOffer(input: {
+  compare: readonly string[];
+  resolvedCounty: string | null;
+}): InvestigateCompareOffer | null {
+  const existing = parseCompareFipsList(input.compare.join(","));
+  if (existing.length === UX_RESET_COMPARE_COUNTY_LIMIT) {
+    return {
+      kind: investigateCompareOfferKinds.return,
+      label: "Return to Compare",
+    };
+  }
+  const county =
+    input.resolvedCounty && isCountyFips(input.resolvedCounty)
+      ? input.resolvedCounty
+      : null;
+  if (county) {
+    return { kind: investigateCompareOfferKinds.start, label: "Compare" };
   }
   return null;
 }

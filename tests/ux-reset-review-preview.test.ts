@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildReviewCompareHandoff,
   buildReviewCountyPreview,
   buildReviewInvestigateHandoff,
   reviewPreviewForSelection,
@@ -306,6 +307,58 @@ describe("Review county preview", () => {
       period: "2023-01-01",
       scope: "NY",
       sort: null,
+    });
+  });
+
+  it("opens Compare with one selected county and an explicit Review return", () => {
+    const href = buildReviewCompareHandoff({
+      period: "2023-01-01",
+      releaseId: "alpha-2026",
+      scopeCode: "NY",
+      searchParams: new URLSearchParams(
+        "scope=NY&county=36001&dataset=alpha-2026&period=2023-01-01&sort=score&page=2"
+      ),
+      selectedFips: "36001",
+    });
+    const url = new URL(href, "http://localhost");
+    expect({
+      compare: url.searchParams.get("compare"),
+      county: url.searchParams.get("county"),
+      page: url.searchParams.get("page"),
+      path: url.pathname,
+      period: url.searchParams.get("period"),
+      returnTo: url.searchParams.get("return"),
+      sort: url.searchParams.get("sort"),
+    }).toStrictEqual({
+      compare: "36001",
+      county: "36001",
+      page: null,
+      path: "/app/compare",
+      period: "2023-01-01",
+      returnTo: "review",
+      sort: null,
+    });
+  });
+
+  it("keeps an existing compare pair instead of adding the preview county", () => {
+    const href = buildReviewCompareHandoff({
+      period: null,
+      releaseId: "alpha-2026",
+      scopeCode: "CO",
+      searchParams: new URLSearchParams(
+        "scope=CO&county=08001&compare=08001,08013&dataset=alpha-2026"
+      ),
+      selectedFips: "36001",
+    });
+    const url = new URL(href, "http://localhost");
+    expect({
+      compare: url.searchParams.get("compare"),
+      county: url.searchParams.get("county"),
+      returnTo: url.searchParams.get("return"),
+    }).toStrictEqual({
+      compare: "08001,08013",
+      county: "36001",
+      returnTo: "review",
     });
   });
 

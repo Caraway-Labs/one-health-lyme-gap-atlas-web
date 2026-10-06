@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromInvestigate } from "@/features/ux-reset/ask-atlas/inherited-context";
+import { buildCompareEntryHref } from "@/features/ux-reset/compare/compare-entry";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import { sharedContextToSearchParams } from "@/features/ux-reset/context-params";
 import {
@@ -29,7 +30,6 @@ import {
   type InvestigateRecovery,
 } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import {
-  RESET_COMPARE_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
@@ -115,11 +115,15 @@ function InvestigateExperienceInner() {
     RESET_INVESTIGATE_PATH,
     handoffParams
   );
-  const compareHref = uxResetShellHandoffHref(
-    RESET_COMPARE_PATH,
-    RESET_INVESTIGATE_PATH,
-    handoffParams
-  );
+  const compareHref = buildCompareEntryHref({
+    county: workspace.requestedFips,
+    dataset: workspace.releaseId ?? workspace.requestedDataset,
+    period: workspace.period,
+    returnTo: "investigate",
+    scope: workspace.scope,
+    sourcePath: RESET_INVESTIGATE_PATH,
+    sourceSearchParams: handoffParams,
+  });
   const countyOptions = useMemo(
     () =>
       workspace.directory.toSorted(
@@ -139,6 +143,8 @@ function InvestigateExperienceInner() {
       : releaseEvidenceLoadStateValues.loading;
   const bundle = workspace.bundle;
   const nextCounty = bundle?.county.fips ?? workspace.requestedFips ?? "";
+  const resolvedCounty =
+    bundle?.county.fips ?? workspace.identity?.fips ?? null;
   usePublishExploreCommittedNavigation(
     workspace.releaseId
       ? {
@@ -305,6 +311,7 @@ function InvestigateExperienceInner() {
         compareHref={compareHref}
         countyFips={nextCounty}
         requestedPeriod={workspace.period}
+        resolvedCounty={resolvedCounty}
       />
     </div>
   );

@@ -1072,6 +1072,7 @@ describe("County Investigate workspace", () => {
       hrefCompare: href.includes("/app/compare"),
       hrefCounty: href.includes("county=08001"),
       hrefPair: href.includes("compare=08001%2C08013"),
+      hrefReturn: href.includes("return=investigate"),
       note: screen.queryByTestId("investigate-continue-note"),
       paths: screen.getAllByTestId("investigate-continue").length,
     }).toStrictEqual({
@@ -1080,8 +1081,89 @@ describe("County Investigate workspace", () => {
       hrefCompare: true,
       hrefCounty: true,
       hrefPair: true,
+      hrefReturn: true,
       note: null,
       paths: 1,
+    });
+  });
+
+  it("opens Compare for one county and does not choose a neighbor", async () => {
+    renderInvestigate(
+      "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await waitForCounty("08001");
+    const link = await screen.findByTestId("investigate-compare");
+    const href = link.getAttribute("href") ?? "";
+    const url = new URL(href, "http://localhost");
+    expect({
+      compare: url.searchParams.get("compare"),
+      county: url.searchParams.get("county"),
+      label: link.textContent,
+      path: url.pathname,
+      period: url.searchParams.get("period"),
+      returnTo: url.searchParams.get("return"),
+      scope: url.searchParams.get("scope"),
+    }).toStrictEqual({
+      compare: "08001",
+      county: "08001",
+      label: "Compare",
+      path: "/app/compare",
+      period: "2023-01-01",
+      returnTo: "investigate",
+      scope: "CO",
+    });
+    expect(screen.queryByTestId("investigate-continue")).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Continue to Action" })
+    ).toBeNull();
+  });
+
+  it("does not start Compare for an unpublished county and still returns for a pair", async () => {
+    renderInvestigate("?county=99999&scope=CO");
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "unsupported"
+      ) {
+        throw new Error("Unknown county recovery has not rendered.");
+      }
+    });
+    const unknownStart = screen.queryByTestId("investigate-compare");
+    cleanup();
+    renderInvestigate("?county=08014&scope=CO");
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "unsupported"
+      ) {
+        throw new Error("Unsupported recovery has not rendered.");
+      }
+    });
+    const unsupportedStart = screen.queryByTestId("investigate-compare");
+    cleanup();
+    renderInvestigate("?county=99999&scope=CO&compare=08001,08013");
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "unsupported"
+      ) {
+        throw new Error("Paired unknown county recovery has not rendered.");
+      }
+    });
+    const link = screen.getByTestId("investigate-continue");
+    const href = link.getAttribute("href") ?? "";
+    expect({
+      pairCompare: href.includes("compare=08001%2C08013"),
+      pairOffer: link.dataset.offer,
+      pairStart: screen.queryByTestId("investigate-compare"),
+      unknownStart,
+      unsupportedStart,
+    }).toStrictEqual({
+      pairCompare: true,
+      pairOffer: "return",
+      pairStart: null,
+      unknownStart: null,
+      unsupportedStart: null,
     });
   });
 

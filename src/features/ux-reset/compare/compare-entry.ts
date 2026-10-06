@@ -1,11 +1,134 @@
+import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import {
   mergeCompareQueryValues,
   parseCompareFipsList,
+  parseUxResetSharedContext,
   serializeCompareFipsList,
+  sharedContextToSearchParams,
   UX_RESET_COMPARE_COUNTY_LIMIT,
+  type UxResetSharedContext,
 } from "@/features/ux-reset/context-params";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
+import {
+  RESET_COMPARE_PATH,
+  RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
+} from "@/features/ux-reset/routes";
 import { isCountyFips } from "@/lib/county-geography";
+
+/**
+ * Explicit Compare return targets. The value lives on the Compare URL.
+ * Review and Investigate do not read it back.
+ */
+export const compareReturnTargets = {
+  investigate: "investigate",
+  review: "review",
+} as const;
+
+export type CompareReturnTarget =
+  (typeof compareReturnTargets)[keyof typeof compareReturnTargets];
+
+type CompareEntrySearchParams = Pick<URLSearchParams, "get" | "getAll" | "has">;
+
+export function parseCompareReturnTarget(
+  value: string | null | undefined
+): CompareReturnTarget | null {
+  if (
+    value === compareReturnTargets.review ||
+    value === compareReturnTargets.investigate
+  ) {
+    return value;
+  }
+  return null;
+}
+
+export function compareReturnLabel(target: CompareReturnTarget): string {
+  switch (target) {
+    case "review": {
+      return "Return to Review";
+    }
+    case "investigate": {
+      return "Return to Investigate";
+    }
+    default: {
+      const exhaustive: never = target;
+      return exhaustive;
+    }
+  }
+}
+
+export function compareReturnPath(target: CompareReturnTarget): string {
+  switch (target) {
+    case "review": {
+      return RESET_REVIEW_PATH;
+    }
+    case "investigate": {
+      return RESET_INVESTIGATE_PATH;
+    }
+    default: {
+      const exhaustive: never = target;
+      return exhaustive;
+    }
+  }
+}
+
+/**
+ * Pair carried into Compare.
+ * A validated two-county list is kept, so a later county is not added.
+ * One saved county is replaced by the county selected now, and remains only
+ * when nothing valid is selected. An empty list becomes that county alone.
+ * A second county is never chosen here.
+ */
+export function compareEntryPair(input: {
+  compare: readonly string[];
+  county: string | null;
+}): string[] {
+  const existing = parseCompareFipsList(input.compare.join(","));
+  if (existing.length >= UX_RESET_COMPARE_COUNTY_LIMIT) {
+    return existing;
+  }
+  if (input.county && isCountyFips(input.county)) {
+    return parseCompareFipsList(input.county);
+  }
+  return existing;
+}
+
+/**
+ * Canonical Compare entry URL. The pair uses the shared compare serializer.
+ * `return` is appended only when the caller names Review or Investigate.
+ */
+export function buildCompareEntryHref(input: {
+  county: string | null;
+  dataset: string | null;
+  period: string | null;
+  returnTo: CompareReturnTarget | null;
+  scope: string;
+  sourcePath: string;
+  sourceSearchParams: CompareEntrySearchParams;
+}): string {
+  const parsed = parseUxResetSharedContext(input.sourceSearchParams);
+  const county = input.county ?? parsed.county;
+  const context: UxResetSharedContext = {
+    compare: compareEntryPair({ compare: parsed.compare, county }),
+    county,
+    dataset: input.dataset ?? parsed.dataset,
+    period: input.period ?? parsed.period,
+    scope: input.scope.length > 0 ? input.scope : parsed.scope,
+  };
+  const href = uxResetShellHandoffHref(
+    RESET_COMPARE_PATH,
+    input.sourcePath,
+    sharedContextToSearchParams(context)
+  );
+  if (!input.returnTo) {
+    return href;
+  }
+  const [path, query = ""] = href.split("?");
+  const next = new URLSearchParams(query);
+  next.set("return", input.returnTo);
+  const serialized = next.toString();
+  return serialized ? `${path}?${serialized}` : path;
+}
 
 /**
  * What the shared compare parser kept, plus the raw-token issues it dropped.

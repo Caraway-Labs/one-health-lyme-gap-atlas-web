@@ -1,3 +1,4 @@
+import { buildCompareEntryHref } from "@/features/ux-reset/compare/compare-entry";
 import {
   uxResetContextHandoffSearchParams,
   uxResetShellHandoffHref,
@@ -253,4 +254,35 @@ export function buildReviewInvestigateHandoff(input: {
       source
     ),
   };
+}
+
+/**
+ * Open Compare for the county on screen. An existing compare list is kept.
+ * Otherwise that county is the only member, and Compare asks for the second.
+ */
+export function buildReviewCompareHandoff(input: {
+  period: string | null;
+  releaseId: string;
+  scopeCode: string;
+  searchParams: Pick<URLSearchParams, "get" | "getAll" | "has" | "toString">;
+  selectedFips: string;
+}): string {
+  const source = new URLSearchParams(input.searchParams.toString());
+  source.set("scope", input.scopeCode);
+  source.set("county", input.selectedFips);
+  source.set("dataset", input.releaseId);
+  if (input.period) {
+    source.set("period", input.period);
+  } else {
+    source.delete("period");
+  }
+  return buildCompareEntryHref({
+    county: input.selectedFips,
+    dataset: input.releaseId,
+    period: input.period,
+    returnTo: "review",
+    scope: input.scopeCode,
+    sourcePath: RESET_REVIEW_PATH,
+    sourceSearchParams: source,
+  });
 }

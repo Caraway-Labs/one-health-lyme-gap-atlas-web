@@ -29,6 +29,7 @@ import type {
   CompareCell,
   CompareRelation,
 } from "@/features/ux-reset/compare/compare-alignment";
+import { compareReturnLabel } from "@/features/ux-reset/compare/compare-entry";
 import {
   compareOptionDisabled,
   useCompareWorkspace,
@@ -195,6 +196,7 @@ function CompareExperienceInner() {
       data-query-pair={pair.join(",")}
       data-catalog-cooling={workspace.catalogCoolingDown ? "true" : "false"}
       data-recovery={workspace.recoveryState}
+      data-return={workspace.returnTarget ?? ""}
       data-stale-url={workspace.entry.staleUrlIgnored ? "true" : "false"}
       data-testid="compare-workspace"
     >
@@ -206,6 +208,20 @@ function CompareExperienceInner() {
           unit, period, and availability. This page does not rank counties.
         </p>
         <p className="type-small">Review scope {workspace.scopeLabel}.</p>
+        {workspace.returnHref && workspace.returnTarget ? (
+          <Link
+            className={cn(
+              buttonVariants({ variant: "secondary" }),
+              "ux-reset-compare-action"
+            )}
+            data-return={workspace.returnTarget}
+            data-testid="compare-return"
+            data-variant="secondary"
+            href={workspace.returnHref}
+          >
+            {compareReturnLabel(workspace.returnTarget)}
+          </Link>
+        ) : null}
       </header>
 
       <ReleaseEvidenceStateStrip

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  investigateCompareOffer,
   investigateContinueDestination,
   investigateCountyReportExportOffer,
 } from "@/features/ux-reset/investigate/investigate-next-step";
@@ -24,6 +25,49 @@ describe("Investigate continue destination", () => {
     expect(
       investigateContinueDestination({ compare: ["08001", "08013"] })
     ).toBe("compare");
+  });
+
+  it("offers Compare for a resolved county without choosing a second", () => {
+    expect({
+      duplicateName: investigateCompareOffer({
+        compare: [],
+        resolvedCounty: "27163",
+      }),
+      empty: investigateCompareOffer({ compare: [], resolvedCounty: null }),
+      invalid: investigateCompareOffer({
+        compare: [],
+        resolvedCounty: "nope",
+      }),
+      otherPair: investigateCompareOffer({
+        compare: ["08001"],
+        resolvedCounty: "36001",
+      }),
+      pair: investigateCompareOffer({
+        compare: ["08001", "08013"],
+        resolvedCounty: "08001",
+      }),
+      pairWithoutCounty: investigateCompareOffer({
+        compare: ["08001", "08013"],
+        resolvedCounty: null,
+      }),
+      sameName: investigateCompareOffer({
+        compare: [],
+        resolvedCounty: "44009",
+      }),
+      singletonUnresolved: investigateCompareOffer({
+        compare: ["08001"],
+        resolvedCounty: null,
+      }),
+    }).toStrictEqual({
+      duplicateName: { kind: "start", label: "Compare" },
+      empty: null,
+      invalid: null,
+      otherPair: { kind: "start", label: "Compare" },
+      pair: { kind: "return", label: "Return to Compare" },
+      pairWithoutCounty: { kind: "return", label: "Return to Compare" },
+      sameName: { kind: "start", label: "Compare" },
+      singletonUnresolved: null,
+    });
   });
 });
 

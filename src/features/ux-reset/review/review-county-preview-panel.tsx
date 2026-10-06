@@ -12,6 +12,7 @@ import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review
 import { cn } from "@/lib/utils";
 
 type ReviewCountyPreviewPanelProps = {
+  compareHref: string;
   droppedNotes: readonly string[];
   href: string;
   onOpen: (fips: string) => void;
@@ -20,6 +21,7 @@ type ReviewCountyPreviewPanelProps = {
 };
 
 export function ReviewCountyPreviewPanel({
+  compareHref,
   droppedNotes,
   href,
   onOpen,
@@ -74,19 +76,36 @@ export function ReviewCountyPreviewPanel({
           ))}
         </ul>
       ) : null}
-      <Link
-        ref={openRef}
-        className={cn(buttonVariants(), "ux-reset-review-open")}
-        data-county={preview.fips}
-        data-testid="review-investigate"
-        data-variant="primary"
-        href={href}
-        onClick={() => {
-          onOpen(preview.fips);
-        }}
-      >
-        Open Investigate
-      </Link>
+      <div className="ux-reset-review-preview-actions">
+        <Link
+          ref={openRef}
+          className={cn(buttonVariants(), "ux-reset-review-open")}
+          data-county={preview.fips}
+          data-testid="review-investigate"
+          data-variant="primary"
+          href={href}
+          onClick={() => {
+            onOpen(preview.fips);
+          }}
+        >
+          Open Investigate
+        </Link>
+        <Link
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-review-open"
+          )}
+          data-county={preview.fips}
+          data-testid="review-compare"
+          data-variant="secondary"
+          href={compareHref}
+          onClick={() => {
+            onOpen(preview.fips);
+          }}
+        >
+          Compare
+        </Link>
+      </div>
     </Card>
   );
 }
