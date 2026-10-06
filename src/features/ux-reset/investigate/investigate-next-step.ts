@@ -8,7 +8,6 @@ import type {
 } from "@/features/ux-reset/investigate/county-evidence";
 
 export const investigateContinueDestinations = {
-  action: "action",
   compare: "compare",
 } as const;
 
@@ -16,20 +15,16 @@ export type InvestigateContinueDestination =
   (typeof investigateContinueDestinations)[keyof typeof investigateContinueDestinations];
 
 /**
- * One cross-page path. A complete two-county compare set is the return path.
- * Otherwise a loaded county can continue to Action. Neither link is a
- * recommended workflow.
+ * Return to Compare when the URL already has a validated two-county pair.
+ * Action still renders a placeholder, so this page does not offer that path.
+ * Return to Review stays in the county header.
  */
 export function investigateContinueDestination(input: {
   compare: readonly string[];
-  evidenceReady: boolean;
 }): InvestigateContinueDestination | null {
   const pair = parseCompareFipsList(input.compare.join(","));
   if (pair.length === UX_RESET_COMPARE_COUNTY_LIMIT) {
     return investigateContinueDestinations.compare;
-  }
-  if (input.evidenceReady) {
-    return investigateContinueDestinations.action;
   }
   return null;
 }
@@ -88,15 +83,32 @@ export function investigatePdfContext(
   };
 }
 
-export function investigateExportIdentity(
+export type InvestigatePdfExportOffer = {
+  /**
+   * The county report contract returns a PDF blob. It does not carry the
+   * requested period, observation period, source family, or caveat on this
+   * page, so export stays unavailable until that comparison is possible.
+   */
+  reason: string;
+  state: "unavailable";
+};
+
+function visibleList(values: readonly string[]): string {
+  return values.length > 0 ? values.join("; ") : "none";
+}
+
+/**
+ * Offer export only when the report is provably the same evidence context.
+ * `GET /v1/counties/{fips}/report.pdf` accepts county, release, template, and
+ * score settings, and the response schema is an opaque PDF. That cannot prove
+ * a match, including for a non-default period or an observation caveat.
+ */
+export function investigateCountyReportExportOffer(
   context: InvestigatePdfContext
-): string {
-  return JSON.stringify([
-    context.countyFips,
-    context.releaseId,
-    context.requestedPeriod,
-    context.periods,
-    context.sources,
-    context.caveats,
-  ]);
+): InvestigatePdfExportOffer {
+  const requested = context.requestedPeriod ?? "none";
+  return {
+    reason: `The county report does not include requested period ${requested}, observation period ${visibleList(context.periods)}, source ${visibleList(context.sources)}, or caveat ${visibleList(context.caveats)}. Export is not offered for this evidence.`,
+    state: "unavailable",
+  };
 }

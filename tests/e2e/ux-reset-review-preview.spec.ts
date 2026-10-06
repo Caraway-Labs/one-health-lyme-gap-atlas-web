@@ -269,7 +269,8 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(previewState.target).toContain("period=2023-01-01");
     expect(previewState.target).not.toContain("sort=");
     expect(previewState.target).not.toContain("page=");
-    expect(previewState.target).not.toContain("compare=");
+    expect(previewState.target).toContain("compare=08001");
+    expect(previewState.target).toContain("08013");
     await expect(page.getByTestId("review-preview-dropped")).toContainText(
       "Review sort stays on Review"
     );
@@ -286,7 +287,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page).toHaveURL(/period=2023-01-01/);
     await expect(page).not.toHaveURL(/sort=/);
     await expect(page).not.toHaveURL(/page=/);
-    await expect(page).not.toHaveURL(/compare=/);
+    await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
     await expect(page.getByTestId("investigate-header")).toHaveAttribute(
       "data-county",
       "36024"

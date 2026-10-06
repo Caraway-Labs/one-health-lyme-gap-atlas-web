@@ -682,7 +682,7 @@ describe("Reset Review scope UI", () => {
     });
   });
 
-  it("states when Review-only controls are dropped from Investigate", async () => {
+  it("keeps compare and states when Review-only controls stay on Review", async () => {
     renderReview(
       "?scope=CO&county=08013&sort=score&page=2&compare=08001,08013&dataset=alpha-2026"
     );
@@ -702,12 +702,11 @@ describe("Reset Review scope UI", () => {
       page: url.searchParams.get("page"),
       sort: url.searchParams.get("sort"),
     }).toStrictEqual({
-      compare: null,
+      compare: "08001,08013",
       county: "08013",
       dataset: "alpha-2026",
-      dropped: expect.stringMatching(
-        /Compare is not part of Investigate[\s\S]*Review list page stays on Review[\s\S]*Review sort stays on Review/
-      ),
+      dropped:
+        "The Review list page stays on Review. Browser Back returns to it.Review sort stays on Review and is not copied to Investigate.",
       page: null,
       sort: null,
     });

@@ -274,7 +274,7 @@ describe("Review county preview", () => {
     expect(preview?.fips).toBe("36001");
   });
 
-  it("drops Review-only controls and compare with an explicit note", () => {
+  it("keeps compare and states which Review-only controls stay on Review", () => {
     const handoff = buildReviewInvestigateHandoff({
       period: "2023-01-01",
       releaseId: "alpha-2026",
@@ -295,11 +295,10 @@ describe("Review county preview", () => {
       scope: url.searchParams.get("scope"),
       sort: url.searchParams.get("sort"),
     }).toStrictEqual({
-      compare: null,
+      compare: "08001,08013",
       county: "36103",
       dataset: "alpha-2026",
       notes: [
-        "Compare is not part of Investigate. This opens the selected county only.",
         "The Review list page stays on Review. Browser Back returns to it.",
         "Review sort stays on Review and is not copied to Investigate.",
       ],

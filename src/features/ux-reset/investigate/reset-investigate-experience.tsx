@@ -29,7 +29,6 @@ import {
   type InvestigateRecovery,
 } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import {
-  RESET_ACTION_PATH,
   RESET_COMPARE_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
@@ -118,11 +117,6 @@ function InvestigateExperienceInner() {
   );
   const compareHref = uxResetShellHandoffHref(
     RESET_COMPARE_PATH,
-    RESET_INVESTIGATE_PATH,
-    handoffParams
-  );
-  const actionHref = uxResetShellHandoffHref(
-    RESET_ACTION_PATH,
     RESET_INVESTIGATE_PATH,
     handoffParams
   );
@@ -306,7 +300,6 @@ function InvestigateExperienceInner() {
       ) : null}
 
       <InvestigateNextSteps
-        actionHref={actionHref}
         bundle={bundle}
         compare={workspace.compare}
         compareHref={compareHref}

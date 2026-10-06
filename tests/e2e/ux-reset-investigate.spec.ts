@@ -317,15 +317,16 @@ test.describe("County Investigate evidence hierarchy", () => {
       "data-county",
       "08013"
     );
-    await expect(page.getByTestId("investigate-continue")).toHaveAttribute(
-      "data-destination",
-      "action"
-    );
-    await expect(page.getByTestId("investigate-continue")).toHaveAttribute(
-      "href",
-      /\/app\/action/
-    );
-    await expect(page.getByTestId("investigate-continue")).toHaveAttribute(
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-county", "08013");
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-export-state", "unavailable");
+    await expect(page.getByTestId("investigate-return")).toHaveAttribute(
       "href",
       /county=08013/
     );
@@ -452,7 +453,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     );
   });
 
-  test("keeps export context and the Action handoff after reload", async ({
+  test("keeps the unavailable PDF explanation after reload", async ({
     page,
   }) => {
     await installInvestigateMocks(
@@ -469,26 +470,36 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(context).toHaveAttribute("data-release", "alpha-2026");
     await expect(context).toHaveAttribute("data-period", "2023-01-01");
     await expect(context).toHaveAttribute("data-observation-periods", "2023");
-    await expect(context).toContainText(INVESTIGATE_TICK_LIMITATION);
-    await expect(context).toContainText("CDC surveillance");
+    await expect(context).toHaveAttribute("data-export-state", "unavailable");
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      "2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      "Tick survey"
+    );
+    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
+      0
+    );
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-return")).toHaveAttribute(
+      "href",
+      /\/app\/review/
+    );
     await expect(page.getByTestId("investigate-evidence")).toContainText(
       INVESTIGATE_TICK_LIMITATION
     );
-    await expect(page.getByTestId("investigate-evidence")).toContainText(
-      "CDC surveillance"
-    );
-    const action = page.getByTestId("investigate-continue");
-    await expect(action).toHaveAttribute("data-destination", "action");
-    await expect(action).toHaveAttribute("href", /period=2023-01-01/);
-    await expect(page.getByTestId("investigate-continue-note")).toBeVisible();
 
     await page.reload();
     await expect(
       page.getByTestId("investigate-export-context")
     ).toHaveAttribute("data-period", "2023-01-01");
-    await expect(page.getByTestId("investigate-continue")).toHaveAttribute(
-      "href",
-      /county=08001/
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
     );
 
     const results = await new AxeBuilder({ page })
@@ -513,7 +524,9 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(compare).toHaveAttribute("data-destination", "compare");
     await expect(compare).toHaveAttribute("href", /\/app\/compare/);
     await expect(compare).toHaveAttribute("href", /08013/);
-    await expect(page.getByTestId("investigate-continue-note")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
     await compare.click();
     await expect(page).toHaveURL(/\/app\/compare/);
     await expect(page).toHaveURL(/county=08001/);
@@ -521,7 +534,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Compare");
   });
 
-  test("opens Action from a loaded county without choosing a workflow", async ({
+  test("does not advertise Action for a limited county without a pair", async ({
     page,
   }) => {
     await installInvestigateMocks(
@@ -533,24 +546,26 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.goto(
       "/app/investigate?county=08001&scope=CO&dataset=alpha-2026"
     );
-    await expect(page.getByTestId("investigate-export-context")).toContainText(
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
       INVESTIGATE_CASES_LIMITATION
     );
     await expect(page.getByTestId("investigate-limitation-text")).toContainText(
       INVESTIGATE_CASES_LIMITATION
     );
-    const action = page.getByTestId("investigate-continue");
-    await expect(action).toHaveAttribute("data-destination", "action");
-    await expect(action).toHaveAttribute("href", /dataset=alpha-2026/);
-    await action.click();
-    await expect(page).toHaveURL(/\/app\/action/);
-    await expect(page).toHaveURL(/county=08001/);
-    await expect(page).toHaveURL(/dataset=alpha-2026/);
-    await expect(page).not.toHaveURL(/plan=/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Action");
+    await expect(page.getByTestId("investigate-continue")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-return")).toHaveAttribute(
+      "href",
+      /\/app\/review/
+    );
+    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
+      0
+    );
   });
 
-  test("shows export failure without a download and exports the county on screen", async ({
+  test("does not request a report while the visible period and caveat are unmatched", async ({
     page,
   }) => {
     await installInvestigateMocks(
@@ -560,76 +575,102 @@ test.describe("County Investigate evidence hierarchy", () => {
       []
     );
     const pdfUrls: string[] = [];
-    let releasePdf = () => {};
-    const pdfGate = new Promise<void>((resolve) => {
-      releasePdf = resolve;
-    });
-    let firstPdfSettled = false;
     await page.route("**/v1/counties/**/report.pdf**", async (route) => {
       pdfUrls.push(route.request().url());
-      await pdfGate;
-      firstPdfSettled = true;
-      try {
-        await route.fulfill({
-          body: "{}",
-          contentType: "application/json",
-          status: 503,
-        });
-      } catch {
-        // The county change aborted this response before a file could be saved.
-      }
+      await route.fulfill({
+        body: "%PDF-1.7 boulder",
+        contentType: "application/pdf",
+      });
     });
-    await page.goto("/app/investigate?county=08001&scope=CO");
-    await page.getByTestId("investigate-export").click();
-    await expect(page.getByTestId("investigate-export")).toBeDisabled();
-    await expect.poll(() => pdfUrls.length).toBe(1);
-    expect(pdfUrls[0]).toContain("/v1/counties/08001/report.pdf");
-    expect(pdfUrls[0]).toContain("dataset_version=alpha-2026");
+    await page.goto(
+      "/app/investigate?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      "2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
+      0
+    );
+    await expect(
+      page.getByTestId("investigate-next-steps").getByRole("alert")
+    ).toHaveCount(0);
 
     await page.getByTestId("investigate-county-select").click();
     await page.getByRole("option", { name: "Boulder, Colorado" }).click();
     await expect(
       page.getByTestId("investigate-export-context")
     ).toHaveAttribute("data-county", "08013");
-    releasePdf();
-    await expect.poll(() => firstPdfSettled).toBe(true);
-    await expect(page.getByTestId("investigate-next-steps")).toHaveAttribute(
-      "data-county",
-      "08013"
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-export-state", "unavailable");
+    expect(pdfUrls).toEqual([]);
+  });
+
+  test("returns from Compare to the same pair after reload and history", async ({
+    page,
+  }) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    await page.goto(
+      "/app/compare?compare=08001,08013&county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01&metric=score"
+    );
+    const boulder = page.getByTestId("compare-investigate-08013");
+    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
+      "href",
+      /compare=08001(?:%2C|,)08013/
     );
     await expect(
-      page.getByTestId("investigate-next-steps").getByRole("alert")
-    ).toHaveCount(0);
-    await expect(page.getByTestId("investigate-export-state")).toHaveAttribute(
-      "data-export-state",
-      "idle"
+      page.getByTestId("compare-investigate-08001")
+    ).not.toHaveAttribute("href", /metric=/);
+    await expect(boulder).toHaveAttribute("href", /county=08013/);
+    await expect(boulder).toHaveAttribute("href", /period=2023-01-01/);
+    await expect(boulder).toHaveAttribute("href", /scope=CO/);
+    await expect(boulder).toHaveAttribute("href", /dataset=alpha-2026/);
+    await boulder.click();
+    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(page).not.toHaveURL(/metric=/);
+    await page.reload();
+    const returnCompare = page.getByTestId("investigate-continue");
+    await expect(returnCompare).toHaveAttribute("data-destination", "compare");
+    await expect(page).toHaveURL(/county=08013/);
+    await returnCompare.click();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001,08013"
     );
-    await expect(page.getByTestId("investigate-export")).toBeEnabled();
-
-    await page.unroute("**/v1/counties/**/report.pdf**");
-    await page.route("**/v1/counties/**/report.pdf**", async (route) => {
-      pdfUrls.push(route.request().url());
-      const url = new URL(route.request().url());
-      if (url.pathname.includes("/08001/")) {
-        await route.fulfill({ status: 500, body: "{}" });
-        return;
-      }
-      await route.fulfill({
-        body: "%PDF-1.7 boulder",
-        contentType: "application/pdf",
-        headers: {
-          "Content-Disposition": 'attachment; filename="boulder.pdf"',
-        },
-      });
-    });
-    await page.getByTestId("investigate-export").click();
-    await expect.poll(() => pdfUrls.length).toBe(2);
-    expect(pdfUrls[1]).toContain("/v1/counties/08013/report.pdf");
-    expect(pdfUrls[1]).toContain("dataset_version=alpha-2026");
-    await expect(page.getByTestId("investigate-export-state")).toHaveAttribute(
-      "data-export-state",
-      "idle"
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).toHaveURL(/scope=CO/);
+    await page.reload();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001,08013"
     );
-    await expect(page.getByTestId("investigate-export")).toBeEnabled();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).toHaveURL(/scope=CO/);
+    await page.goForward();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001,08013"
+    );
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/scope=CO/);
   });
 });

@@ -1,5 +1,3 @@
-import { setTimeout as delay } from "node:timers/promises";
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -448,17 +446,17 @@ describe("County Investigate workspace", () => {
     });
     const snapshot = pageSnapshot();
     expect({
+      action: snapshot.continueHref.includes("/app/action"),
+      continueHref: snapshot.continueHref,
       county: snapshot.county,
       hasCurrentValue: snapshot.evidence.includes("40 cases"),
       hasStaleValue: snapshot.evidence.includes("12 cases"),
       heading: snapshot.heading,
-      continueCounty: snapshot.continueHref.includes("county=08013"),
-      continuePath: snapshot.continueHref.includes("/app/action"),
       nextCounty: snapshot.nextCounty,
     }).toStrictEqual({
+      action: false,
+      continueHref: "",
       county: "08013",
-      continueCounty: true,
-      continuePath: true,
       hasCurrentValue: true,
       hasStaleValue: false,
       heading: "Boulder",
@@ -954,32 +952,35 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-finding-text").textContent
       ).toContain("7 cases")
     );
-    const exportText =
-      screen.getByTestId("investigate-export-context").textContent ?? "";
+    const unavailable =
+      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
     expect({
-      destination: screen.getByTestId("investigate-continue").dataset
-        .destination,
+      action: screen.queryByRole("link", { name: "Continue to Action" }),
+      continuePath: screen.queryByTestId("investigate-continue"),
       emptyFamily: screen.getByTestId("investigate-family-vector_pathogen")
         .textContent,
-      exportCases: exportText.includes(INVESTIGATE_CASES_LIMITATION),
-      exportTicks: exportText.includes(INVESTIGATE_TICK_LIMITATION),
+      exportButton: screen.queryByTestId("investigate-export"),
       limitation: screen.getByTestId("investigate-limitation-text").textContent,
       returnCounty: (
         screen.getByTestId("investigate-return").getAttribute("href") ?? ""
       ).includes("county=08001"),
+      unavailableCases: unavailable.includes(INVESTIGATE_CASES_LIMITATION),
+      unavailableTicks: unavailable.includes(INVESTIGATE_TICK_LIMITATION),
     }).toStrictEqual({
-      destination: "action",
+      action: null,
+      continuePath: null,
       emptyFamily: expect.stringContaining(
         "No governed observations were returned"
       ),
-      exportCases: true,
-      exportTicks: false,
+      exportButton: null,
       limitation: expect.stringContaining(INVESTIGATE_CASES_LIMITATION),
       returnCounty: true,
+      unavailableCases: true,
+      unavailableTicks: false,
     });
   });
 
-  it("continues to Action for available and limited evidence and keeps that context on reload", async () => {
+  it("withholds Action and the county PDF for available and limited evidence", async () => {
     const search =
       "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01";
     const view = renderInvestigate(search);
@@ -994,59 +995,59 @@ describe("County Investigate workspace", () => {
       }
     });
     const context = screen.getByTestId("investigate-export-context");
-    const continueLink = screen.getByTestId("investigate-continue");
-    const href = continueLink.getAttribute("href") ?? "";
+    const unavailable =
+      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
     const evidenceText =
       screen.getByTestId("investigate-evidence").textContent ?? "";
     expect({
+      action: screen.queryByRole("link", { name: "Continue to Action" }),
       caveats: context.dataset.caveats,
-      continueCount: screen.getAllByTestId("investigate-continue").length,
+      continuePath: screen.queryByTestId("investigate-continue"),
       county: context.dataset.county,
-      destination: continueLink.dataset.destination,
       evidenceCases: evidenceText.includes("CDC surveillance"),
       evidenceCover: evidenceText.includes("National land cover"),
       evidenceTicks: evidenceText.includes(INVESTIGATE_TICK_LIMITATION),
-      hrefAction: href.includes("/app/action"),
-      hrefCounty: href.includes("county=08001"),
-      hrefDataset: href.includes("dataset=alpha-2026"),
-      hrefPeriod: href.includes("period=2023-01-01"),
-      hrefPlan: href.includes("plan="),
-      note: screen.getByTestId("investigate-continue-note").textContent,
+      exportButton: screen.queryByRole("button", { name: "Export PDF" }),
+      exportState: context.dataset.exportState,
       observationPeriods: context.dataset.observationPeriods,
       period: context.dataset.period,
+      reasonPeriod: unavailable.includes("2023-01-01"),
+      reasonSource: unavailable.includes("Tick survey"),
       release: context.dataset.release,
+      returnReview: (
+        screen.getByTestId("investigate-return").getAttribute("href") ?? ""
+      ).includes("/app/review"),
       sources: context.dataset.sources,
     }).toStrictEqual({
+      action: null,
       caveats: INVESTIGATE_TICK_LIMITATION,
-      continueCount: 1,
+      continuePath: null,
       county: "08001",
-      destination: "action",
       evidenceCases: true,
       evidenceCover: true,
       evidenceTicks: true,
-      hrefAction: true,
-      hrefCounty: true,
-      hrefDataset: true,
-      hrefPeriod: true,
-      hrefPlan: false,
-      note: "Opens the Action page for this county. No follow-up is selected here.",
+      exportButton: null,
+      exportState: "unavailable",
       observationPeriods: "2023",
       period: "2023-01-01",
+      reasonPeriod: true,
+      reasonSource: true,
       release: INVESTIGATE_RELEASE_ID,
+      returnReview: true,
       sources: "CDC surveillance\nTick survey\nNational land cover",
     });
 
     view.unmount();
     renderInvestigate(search);
     await waitFor(() => {
-      const reloaded = screen.getByTestId("investigate-continue");
-      const reloadedHref = reloaded.getAttribute("href") ?? "";
       if (
-        !reloadedHref.includes("period=2023-01-01") ||
         screen.getByTestId("investigate-export-context").dataset.period !==
-          "2023-01-01"
+          "2023-01-01" ||
+        !screen
+          .getByTestId("investigate-pdf-unavailable")
+          .textContent?.includes(INVESTIGATE_TICK_LIMITATION)
       ) {
-        throw new Error("Reloaded export context dropped the period.");
+        throw new Error("Reloaded page dropped the unavailable PDF context.");
       }
     });
   });
@@ -1057,9 +1058,10 @@ describe("County Investigate workspace", () => {
     await waitFor(() => {
       if (
         screen.getByTestId("investigate-export-context").dataset.county !==
-        "08001"
+          "08001" ||
+        screen.queryByRole("link", { name: "Continue to Action" })
       ) {
-        throw new Error("Compare handoff export context has not rendered.");
+        throw new Error("Compare return path has not rendered.");
       }
     });
     const link = screen.getByTestId("investigate-continue");
@@ -1094,127 +1096,41 @@ describe("County Investigate workspace", () => {
       }
     });
     expect(screen.queryByTestId("investigate-continue")).toBeNull();
-    expect(screen.queryByTestId("investigate-export")).toBeNull();
+    expect(screen.queryByTestId("investigate-export-context")).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Continue to Action" })
+    ).toBeNull();
   });
 
-  it("does not download a stale report when the county changes or the export fails", async () => {
-    const NativeURL = globalThis.URL;
-    const deferred = Promise.withResolvers<Response>();
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockReturnValue(deferred.promise);
-    const createObjectURL = vi.fn<() => string>(() => "blob:report");
-    const revoke = vi.fn<(url: string) => void>();
-    class ExportURL extends NativeURL {
-      static override createObjectURL = createObjectURL;
-      static override revokeObjectURL = revoke;
-    }
-    vi.stubGlobal("URL", ExportURL);
-    const click = vi
-      .spyOn(HTMLAnchorElement.prototype, "click")
-      .mockImplementation(() => {});
-    try {
-      const view = renderInvestigate("?county=08001&scope=CO");
-      await waitFor(() => {
-        if (!screen.queryByTestId("investigate-export")) {
-          throw new Error("Export has not rendered.");
-        }
-      });
-      const button = screen.getByTestId("investigate-export");
-      fireEvent.click(button);
-      fireEvent.click(button);
-      await waitFor(() => {
-        const firstUrl = String(fetchMock.mock.calls[0]?.[0] ?? "");
-        if (
-          fetchMock.mock.calls.length !== 1 ||
-          !firstUrl.includes("/v1/counties/08001/report.pdf") ||
-          !firstUrl.includes("dataset_version=alpha-2026") ||
-          !(button instanceof HTMLButtonElement) ||
-          !button.disabled
-        ) {
-          throw new Error("The Denver export request has not started.");
-        }
-      });
-
-      await view.rerenderSearch("?county=08013&scope=CO");
-      await waitFor(() => {
-        if (
-          screen.getByTestId("investigate-export-context").dataset.county !==
-          "08013"
-        ) {
-          throw new Error("Export context has not followed Boulder.");
-        }
-      });
-      deferred.resolve(
-        new Response(new Blob(["%PDF-"], { type: "application/pdf" }), {
-          headers: {
-            "Content-Disposition": 'attachment; filename="denver.pdf"',
-          },
-          status: 200,
-        })
-      );
-      await act(async () => {
-        await deferred.promise;
-        await delay(20);
-      });
-      expect({
-        alert: screen.queryByRole("alert"),
-        clicks: click.mock.calls.length,
-        objectUrls: createObjectURL.mock.calls.length,
-      }).toStrictEqual({
-        alert: null,
-        clicks: 0,
-        objectUrls: 0,
-      });
-
-      fetchMock.mockReset();
-      fetchMock.mockResolvedValue(
-        new Response("{}", {
-          status: 503,
-        })
-      );
-      fireEvent.click(screen.getByTestId("investigate-export"));
-      const alert = await screen.findByRole("alert");
-      expect({
-        clicks: click.mock.calls.length,
-        disabled: screen
-          .getByTestId("investigate-export")
-          .hasAttribute("disabled"),
-        message: alert.textContent,
-      }).toStrictEqual({
-        clicks: 0,
-        disabled: false,
-        message: expect.stringContaining("Please try again"),
-      });
-
-      fetchMock.mockResolvedValue(
-        new Response(new Blob(["%PDF-"], { type: "application/pdf" }), {
-          headers: {
-            "Content-Disposition": 'attachment; filename="boulder.pdf"',
-          },
-          status: 200,
-        })
-      );
-      fireEvent.click(screen.getByTestId("investigate-export"));
-      await waitFor(() => expect(click).toHaveBeenCalledOnce());
-      const successUrl = String(fetchMock.mock.calls.at(-1)?.[0]);
-      expect({
-        alert: screen.queryByRole("alert"),
-        dataset: successUrl.includes("dataset_version=alpha-2026"),
-        defaults: successUrl.includes("ecological_share=65"),
-        path: successUrl.includes("/v1/counties/08013/report.pdf"),
-        staleCounty: successUrl.includes("/08001/"),
-      }).toStrictEqual({
-        alert: null,
-        dataset: true,
-        defaults: true,
-        path: true,
-        staleCounty: false,
-      });
-    } finally {
-      click.mockRestore();
-      fetchMock.mockRestore();
-      vi.unstubAllGlobals();
-    }
+  it("does not request a county report for the visible period and caveat", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    renderInvestigate(
+      "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await waitFor(() => {
+      const reason = screen.queryByTestId(
+        "investigate-pdf-unavailable"
+      )?.textContent;
+      if (
+        !reason?.includes("2023-01-01") ||
+        !reason.includes(INVESTIGATE_TICK_LIMITATION)
+      ) {
+        throw new Error("Unavailable PDF explanation has not rendered.");
+      }
+    });
+    const reportCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes("/report.pdf")
+    );
+    expect({
+      exportButton: screen.queryByRole("button", { name: "Export PDF" }),
+      reportCalls: reportCalls.length,
+      state: screen.getByTestId("investigate-export-context").dataset
+        .exportState,
+    }).toStrictEqual({
+      exportButton: null,
+      reportCalls: 0,
+      state: "unavailable",
+    });
+    fetchMock.mockRestore();
   });
 });

@@ -29,13 +29,10 @@ const ABSENT_COUNTY_STATUSES = new Set([
 ]);
 
 /**
- * Review-only keys and compare are not Investigate filters. When the Review
- * URL has them, the preview says they were dropped instead of reinterpreting
- * them as county evidence.
+ * Review-only list controls stay on Review. A validated compare pair is a
+ * shared key Investigate accepts, so it is not described as dropped.
  */
 const REVIEW_INVESTIGATE_DROP_NOTES: Record<string, string> = {
-  compare:
-    "Compare is not part of Investigate. This opens the selected county only.",
   page: "The Review list page stays on Review. Browser Back returns to it.",
   sort: "Review sort stays on Review and is not copied to Investigate.",
 };
