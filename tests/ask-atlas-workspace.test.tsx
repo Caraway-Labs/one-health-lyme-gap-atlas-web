@@ -351,6 +351,244 @@ describe("Ask Atlas research workspace", () => {
     });
   });
 
+  async function saveTwoChatsThenHoldFollowUp() {
+    const held = Promise.withResolvers<unknown>();
+    chatRequest
+      .mockResolvedValueOnce(
+        chatResult("First saved answer.", "request-a", "conversation-a")
+      )
+      .mockResolvedValueOnce(
+        chatResult("Second saved answer.", "request-b", "conversation-b")
+      )
+      .mockReturnValueOnce(held.promise);
+    render(<AskAtlasWorkspace />);
+    await ask("First question");
+    await screen.findByText("First saved answer.");
+    fireEvent.click(screen.getAllByRole("button", { name: "New chat" })[0]);
+    await ask("Second question");
+    await screen.findByText("Second saved answer.");
+    await ask("Pending question still in flight");
+    return held;
+  }
+
+  function chatSurface() {
+    return {
+      alerts: screen
+        .queryAllByRole("alert")
+        .map((item) => item.textContent ?? ""),
+      composer: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
+        .value,
+      ids: storedConversations().map((item) => item.id),
+      transcript: document.querySelector(".chat-transcript")?.textContent ?? "",
+      url: window.location.search,
+    };
+  }
+
+  async function settleHeld(
+    held: PromiseWithResolvers<unknown>,
+    outcome: "error" | "success",
+    answer = "Late answer must stay out."
+  ) {
+    if (outcome === "success") {
+      held.resolve(chatResult(answer, "request-late", "conversation-late"));
+      await held.promise;
+      return;
+    }
+    held.reject(new Error("Failed to fetch"));
+    await held.promise.catch(() => {});
+  }
+
+  it("keeps the selected chat when a history click outruns a late success", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
+    await waitFor(() => {
+      expect(window.location.search).toContain("conversation-a");
+    });
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "Draft that must stay" },
+    });
+    await settleHeld(held, "success");
+    await waitFor(() => {
+      expect(chatSurface()).toStrictEqual({
+        alerts: [],
+        composer: "Draft that must stay",
+        ids: ["conversation-b", "conversation-a"],
+        transcript: expect.stringContaining("First saved answer."),
+        url: expect.stringContaining("conversation-a"),
+      });
+    });
+    expect(chatSurface().transcript).not.toContain(
+      "Late answer must stay out."
+    );
+  });
+
+  it("keeps the selected chat when a history click outruns a late error", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
+    await waitFor(() => {
+      expect(window.location.search).toContain("conversation-a");
+    });
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "Draft that must stay" },
+    });
+    await settleHeld(held, "error");
+    await waitFor(() => {
+      expect(chatSurface()).toStrictEqual({
+        alerts: [],
+        composer: "Draft that must stay",
+        ids: ["conversation-b", "conversation-a"],
+        transcript: expect.stringContaining("First saved answer."),
+        url: expect.stringContaining("conversation-a"),
+      });
+    });
+  });
+
+  it("keeps the popped conversation when a late success arrives", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    window.history.pushState(
+      {},
+      "",
+      "/app/assistant?conversation=conversation-a"
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await waitFor(() => {
+      expect(window.location.search).toContain("conversation-a");
+    });
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "Draft that must stay" },
+    });
+    await settleHeld(held, "success");
+    await waitFor(() => {
+      expect(chatSurface()).toStrictEqual({
+        alerts: [],
+        composer: "Draft that must stay",
+        ids: ["conversation-b", "conversation-a"],
+        transcript: expect.stringContaining("First saved answer."),
+        url: expect.stringContaining("conversation-a"),
+      });
+    });
+    expect(chatSurface().transcript).not.toContain(
+      "Late answer must stay out."
+    );
+  });
+
+  it("keeps the popped conversation when a late error arrives", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    window.history.pushState(
+      {},
+      "",
+      "/app/assistant?conversation=conversation-a"
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await waitFor(() => {
+      expect(window.location.search).toContain("conversation-a");
+    });
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "Draft that must stay" },
+    });
+    await settleHeld(held, "error");
+    await waitFor(() => {
+      expect(chatSurface()).toStrictEqual({
+        alerts: [],
+        composer: "Draft that must stay",
+        ids: ["conversation-b", "conversation-a"],
+        transcript: expect.stringContaining("First saved answer."),
+        url: expect.stringContaining("conversation-a"),
+      });
+    });
+  });
+
+  it("does not restore a deleted pending chat when its response arrives late", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete Second question" })
+    );
+    await waitFor(() => {
+      expect(window.location.search).toContain("conversation-a");
+    });
+    await settleHeld(held, "success", "Deleted chat must stay gone.");
+    await waitFor(() => {
+      expect(chatSurface()).toStrictEqual({
+        alerts: [],
+        composer: "Pending question still in flight",
+        ids: ["conversation-a"],
+        transcript: expect.stringContaining("First saved answer."),
+        url: expect.stringContaining("conversation-a"),
+      });
+    });
+    expect(chatSurface().transcript).not.toContain(
+      "Deleted chat must stay gone."
+    );
+  });
+
+  it("does not leak a late error after the pending chat is deleted", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete Second question" })
+    );
+    await waitFor(() => {
+      expect(window.location.search).toContain("conversation-a");
+    });
+    await settleHeld(held, "error");
+    await waitFor(() => {
+      expect(chatSurface()).toStrictEqual({
+        alerts: [],
+        composer: "Pending question still in flight",
+        ids: ["conversation-a"],
+        transcript: expect.stringContaining("First saved answer."),
+        url: expect.stringContaining("conversation-a"),
+      });
+    });
+  });
+
+  it("keeps a late success on the open chat after another saved chat is deleted", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete First question" })
+    );
+    await waitFor(() => {
+      expect(storedConversations().map((item) => item.id)).toStrictEqual([
+        "conversation-b",
+      ]);
+    });
+    await settleHeld(held, "success", "Follow-up answer stays.");
+    await waitFor(() => {
+      expect(chatSurface()).toStrictEqual({
+        alerts: [],
+        composer: "",
+        ids: ["conversation-b"],
+        transcript: expect.stringContaining("Follow-up answer stays."),
+        url: expect.stringContaining("conversation-b"),
+      });
+    });
+    expect(chatSurface().transcript).toContain("Second saved answer.");
+  });
+
+  it("keeps a late error on the open chat after another saved chat is deleted", async () => {
+    const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete First question" })
+    );
+    await waitFor(() => {
+      expect(storedConversations().map((item) => item.id)).toStrictEqual([
+        "conversation-b",
+      ]);
+    });
+    await settleHeld(held, "error");
+    await waitFor(() => {
+      expect(chatSurface().ids).toStrictEqual(["conversation-b"]);
+    });
+    expect({
+      alert: screen.getByRole("alert").dataset.assistantState ?? null,
+      transcript: chatSurface().transcript.includes("Second saved answer."),
+      url: window.location.search.includes("conversation-b"),
+    }).toStrictEqual({
+      alert: "network_failure",
+      transcript: true,
+      url: true,
+    });
+  });
+
   it("drops a late answer after a newer question is already saved", async () => {
     const first = Promise.withResolvers<unknown>();
     const second = Promise.withResolvers<unknown>();

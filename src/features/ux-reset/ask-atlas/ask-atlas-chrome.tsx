@@ -28,6 +28,10 @@ import type {
 } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { InheritedContextNotice } from "@/features/ux-reset/ask-atlas/inherited-context-notice";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
+import {
+  searchParamsWithCommittedExploreContext,
+  useExploreCommittedNavigation,
+} from "@/features/ux-reset/explore-committed-navigation";
 import { uxResetDestinationFromPath } from "@/features/ux-reset/routes";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import {
@@ -109,13 +113,19 @@ function AskAtlasChromeSwitch({ children }: { children: ReactNode }) {
 function AskAtlasSurfaceChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const committedExploreNavigation = useExploreCommittedNavigation();
+  const handoffParams = searchParamsWithCommittedExploreContext(
+    pathname,
+    searchParams,
+    committedExploreNavigation
+  );
   const requestsEnabled = isAtlasAssistantLiteratureEnabled();
   const model = useEvidenceChat({ mode: "drawer", requestsEnabled });
   const context = useAskAtlasInheritedContext();
   const workspaceHandoffHref = useCallback(
     (conversationId?: string) =>
-      resetAskAtlasWorkspaceHref(pathname, searchParams, conversationId),
-    [pathname, searchParams]
+      resetAskAtlasWorkspaceHref(pathname, handoffParams, conversationId),
+    [handoffParams, pathname]
   );
   const compact = useMobileViewport();
   const [open, setOpen] = useState(false);

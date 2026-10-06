@@ -11,10 +11,12 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AskAtlasWorkspace } from "@/features/ux-reset/ask-atlas/ask-atlas-workspace";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import { ResetExploreExperience } from "@/features/ux-reset/explore/reset-explore-experience";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { fetchCountyDisplayGeometry } from "@/lib/county-geography";
+import { CHAT_STORAGE_KEY } from "@/lib/knowledge-chat-storage";
 
 import {
   EXPLORE_CASES_MEASURE_ID,
@@ -40,11 +42,18 @@ const catalogControls = {
 };
 
 const metadataControls = {
+  delayDataset: null as string | null,
   releaseId: "alpha-2026",
 };
 
+const { chatRequest } = vi.hoisted(() => ({
+  chatRequest: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+}));
+
 let releaseDelayedObservations: (() => void) | null = null;
 let delayedObservations: Promise<boolean> = Promise.resolve(true);
+let releaseDelayedMetadata: (() => void) | null = null;
+let delayedMetadata: Promise<boolean> = Promise.resolve(true);
 
 let geometryShouldFail = false;
 let navigationSearchParams = new URLSearchParams();
@@ -95,19 +104,25 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
+    knowledgeGraphChatV1KnowledgeGraphChatPost: chatRequest as never,
     metadataV1AtlasMetadataGet: vi.fn<
       typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
-    >(
-      async () =>
-        ({
-          data: {
-            ...exploreMetadataFixture,
-            release_id: metadataControls.releaseId,
-          },
-          headers: new Headers(),
-          status: 200,
-        }) as never
-    ),
+    >(async (params) => {
+      if (
+        metadataControls.delayDataset &&
+        params?.dataset_version === metadataControls.delayDataset
+      ) {
+        await delayedMetadata;
+      }
+      return {
+        data: {
+          ...exploreMetadataFixture,
+          release_id: metadataControls.releaseId,
+        },
+        headers: new Headers(),
+        status: 200,
+      } as never;
+    }),
     measuresV1MeasuresGet: vi.fn<
       typeof import("@/generated/atlas").measuresV1MeasuresGet
     >(async (params) => {
@@ -341,6 +356,94 @@ function expectDisplayedMeasure(input: {
   expectRowAndMapMeasure(input.measureId);
 }
 
+const SIDECAR_QUESTION = "How do reviewed studies describe tick exposure?";
+const SIDECAR_ANSWER = "Reviewed studies describe exposure.";
+
+function sidecarChatResult() {
+  return {
+    data: {
+      answer: SIDECAR_ANSWER,
+      assistant_policy_version: "policy-v1",
+      citations: [
+        {
+          citation_id: "c1",
+          claim_ids: ["claim-1"],
+          passage_ids: ["passage-1"],
+          pmid: "12345",
+          pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+          title: "Source paper",
+        },
+      ],
+      claims: [
+        { citation_ids: ["c1"], claim_id: "claim-1", text: SIDECAR_ANSWER },
+      ],
+      configuration_version: "config-v1",
+      conversation_id: "conversation-1",
+      conversation_token: "browser-secret",
+      evidence_state: "limited",
+      request_id: "request-1",
+      source_used: "literature_evidence",
+      status: "answered",
+    },
+  };
+}
+
+function assistantLink(name: "Assistant" | "Open full workspace"): URL {
+  return new URL(
+    screen.getByRole("link", { name }).getAttribute("href") ?? "",
+    "http://localhost"
+  );
+}
+
+function handoffSnapshot(url: URL) {
+  return {
+    conversation: url.searchParams.get("conversation"),
+    county: url.searchParams.get("county"),
+    dataset: url.searchParams.get("dataset"),
+    keys: [...url.searchParams.keys()].toSorted(),
+    question: url.href.includes(SIDECAR_QUESTION),
+  };
+}
+
+async function askSidecar() {
+  fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+  fireEvent.change(screen.getByLabelText("Your question"), {
+    target: { value: SIDECAR_QUESTION },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /^Ask$/ }));
+  await screen.findByText(SIDECAR_ANSWER);
+}
+
+function storedConversationId(): string | undefined {
+  const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}") as {
+    conversations?: { id: string }[];
+  };
+  return stored.conversations?.[0]?.id;
+}
+
+async function followWorkspaceLink() {
+  const href =
+    screen
+      .getByRole("link", { name: "Open full workspace" })
+      .getAttribute("href") ?? "";
+  const conversationId = new URL(href, "http://localhost").searchParams.get(
+    "conversation"
+  );
+  cleanup();
+  navigationSearchParams = new URL(href, "http://localhost").searchParams;
+  window.history.replaceState({}, "", href);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <AskAtlasWorkspace initialConversationId={conversationId ?? undefined} />
+    </QueryClientProvider>
+  );
+  await screen.findByText(SIDECAR_ANSWER);
+  return conversationId;
+}
+
 describe("Explore workspace", () => {
   beforeEach(() => {
     geometryShouldFail = false;
@@ -350,8 +453,16 @@ describe("Explore workspace", () => {
     observationControls.failMeasureId = null;
     observationControls.releaseId = "alpha-2026";
     catalogControls.releaseVersion = "alpha-2026";
+    metadataControls.delayDataset = null;
     metadataControls.releaseId = "alpha-2026";
     navigationSearchParams = new URLSearchParams();
+    localStorage.clear();
+    chatRequest.mockReset();
+    const delayedMeta = Promise.withResolvers<boolean>();
+    releaseDelayedMetadata = () => {
+      delayedMeta.resolve(true);
+    };
+    delayedMetadata = delayedMeta.promise;
     const delayed = Promise.withResolvers<boolean>();
     releaseDelayedObservations = () => {
       delayed.resolve(true);
@@ -361,7 +472,9 @@ describe("Explore workspace", () => {
   });
 
   afterEach(() => {
+    releaseDelayedMetadata?.();
     cleanup();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
@@ -1020,5 +1133,223 @@ describe("Explore workspace", () => {
     expectCommittedAlphaSurface();
     expect(navigationSearchParams.get("dataset")).toBe("alpha-2026-10-04");
     expectGeometryStayedOnAlpha();
+  });
+
+  it("keeps the sidecar workspace link on the committed release when a later release is rejected", async () => {
+    const initial = "?scope=CO&county=08001&period=2025-01-01";
+    function RejectOctober() {
+      const [search, setSearch] = useState(initial);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              metadataControls.releaseId = "alpha-2026-10-04";
+              navigationSearchParams = new URLSearchParams(
+                "scope=CO&county=08001&period=2025-01-01&dataset=alpha-2026-10-04"
+              );
+              setSearch(
+                "?scope=CO&county=08001&period=2025-01-01&dataset=alpha-2026-10-04"
+              );
+            }}
+          >
+            Request rejected release
+          </button>
+          <NuqsTestingAdapter hasMemory searchParams={search}>
+            <ResetProfessionalShell>
+              <ResetExploreExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </>
+      );
+    }
+    vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
+    chatRequest.mockResolvedValue(sidecarChatResult());
+    navigationSearchParams = new URLSearchParams(initial.slice(1));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <RejectOctober />
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("mock-atlas-map");
+    await askSidecar();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Request rejected release" })
+    );
+    await screen.findByText(
+      "Catalog release does not match the requested release."
+    );
+    const shell = assistantLink("Assistant");
+    const sidecar = assistantLink("Open full workspace");
+    expect({
+      requestedDataset: navigationSearchParams.get("dataset"),
+      shell: handoffSnapshot(shell),
+      sidecar: handoffSnapshot(sidecar),
+    }).toStrictEqual({
+      requestedDataset: "alpha-2026-10-04",
+      shell: {
+        conversation: null,
+        county: "08001",
+        dataset: "alpha-2026",
+        keys: ["county", "dataset"],
+        question: false,
+      },
+      sidecar: {
+        conversation: "conversation-1",
+        county: "08001",
+        dataset: "alpha-2026",
+        keys: ["conversation", "county", "dataset"],
+        question: false,
+      },
+    });
+    const conversationId = await followWorkspaceLink();
+    expect({
+      calls: chatRequest.mock.calls.length,
+      conversationId,
+      storedId: storedConversationId(),
+    }).toStrictEqual({
+      calls: 1,
+      conversationId: "conversation-1",
+      storedId: "conversation-1",
+    });
+  });
+
+  it("keeps the sidecar workspace link on the resolved release when Explore is unpinned", async () => {
+    vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
+    chatRequest.mockResolvedValue(sidecarChatResult());
+    navigationSearchParams = new URLSearchParams(
+      "scope=CO&county=08001&period=2025-01-01"
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter
+          hasMemory
+          searchParams="?scope=CO&county=08001&period=2025-01-01"
+        >
+          <ResetProfessionalShell>
+            <ResetExploreExperience />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("mock-atlas-map");
+    expect(navigationSearchParams.has("dataset")).toBeFalsy();
+    await askSidecar();
+    const shell = assistantLink("Assistant");
+    const sidecar = assistantLink("Open full workspace");
+    expect({
+      shell: handoffSnapshot(shell),
+      sidecar: handoffSnapshot(sidecar),
+    }).toStrictEqual({
+      shell: {
+        conversation: null,
+        county: "08001",
+        dataset: "alpha-2026",
+        keys: ["county", "dataset"],
+        question: false,
+      },
+      sidecar: {
+        conversation: "conversation-1",
+        county: "08001",
+        dataset: "alpha-2026",
+        keys: ["conversation", "county", "dataset"],
+        question: false,
+      },
+    });
+    const conversationId = await followWorkspaceLink();
+    expect({
+      calls: chatRequest.mock.calls.length,
+      conversationId,
+      storedId: storedConversationId(),
+    }).toStrictEqual({
+      calls: 1,
+      conversationId: "conversation-1",
+      storedId: "conversation-1",
+    });
+  });
+
+  it("keeps the sidecar workspace link on the committed release while a later release is pending", async () => {
+    const initial = "?scope=CO&county=08001&period=2025-01-01";
+    function RequestPendingRelease() {
+      const [search, setSearch] = useState(initial);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              metadataControls.delayDataset = "beta-pending";
+              metadataControls.releaseId = "beta-pending";
+              navigationSearchParams = new URLSearchParams(
+                "scope=CO&county=08001&period=2025-01-01&dataset=beta-pending"
+              );
+              setSearch(
+                "?scope=CO&county=08001&period=2025-01-01&dataset=beta-pending"
+              );
+            }}
+          >
+            Request pending release
+          </button>
+          <NuqsTestingAdapter hasMemory searchParams={search}>
+            <ResetProfessionalShell>
+              <ResetExploreExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </>
+      );
+    }
+    vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
+    chatRequest.mockResolvedValue(sidecarChatResult());
+    navigationSearchParams = new URLSearchParams(initial.slice(1));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <RequestPendingRelease />
+      </QueryClientProvider>
+    );
+    await screen.findByTestId("mock-atlas-map");
+    await askSidecar();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Request pending release" })
+    );
+    await waitFor(() => {
+      expect(navigationSearchParams.get("dataset")).toBe("beta-pending");
+    });
+    expect(
+      screen.queryByText(
+        "Catalog release does not match the requested release."
+      )
+    ).toBeNull();
+    expect(screen.getByTestId("evidence-display-value").textContent).toContain(
+      "18 mm"
+    );
+    const shell = assistantLink("Assistant");
+    const sidecar = assistantLink("Open full workspace");
+    expect({
+      shell: handoffSnapshot(shell),
+      sidecar: handoffSnapshot(sidecar),
+    }).toStrictEqual({
+      shell: {
+        conversation: null,
+        county: "08001",
+        dataset: "alpha-2026",
+        keys: ["county", "dataset"],
+        question: false,
+      },
+      sidecar: {
+        conversation: "conversation-1",
+        county: "08001",
+        dataset: "alpha-2026",
+        keys: ["conversation", "county", "dataset"],
+        question: false,
+      },
+    });
   });
 });
