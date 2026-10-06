@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useMemo } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -15,6 +14,7 @@ import {
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromInvestigate } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
+import { sharedContextToSearchParams } from "@/features/ux-reset/context-params";
 import {
   ReleaseEvidenceStateStrip,
   releaseEvidenceContextFromMetadata,
@@ -23,15 +23,17 @@ import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/typ
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { CountyIntelligenceHeader } from "@/features/ux-reset/investigate/county-intelligence-header";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
+import { InvestigateNextSteps } from "@/features/ux-reset/investigate/investigate-next-steps";
 import {
   useInvestigateWorkspace,
   type InvestigateRecovery,
 } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import {
+  RESET_ACTION_PATH,
+  RESET_COMPARE_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
-import { cn } from "@/lib/utils";
 
 function recoveryMessage(
   recovery: InvestigateRecovery,
@@ -91,31 +93,39 @@ function InvestigateExperienceInner() {
   const handleRetryDirectory = () => {
     workspace.retryDirectory();
   };
-  const returnHref = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set("scope", workspace.scope);
-    if (workspace.requestedFips) {
-      params.set("county", workspace.requestedFips);
-    }
+  const compareKey = workspace.compare.join(",");
+  const handoffParams = useMemo(() => {
     const dataset = workspace.releaseId ?? workspace.requestedDataset;
-    if (dataset) {
-      params.set("dataset", dataset);
-    }
-    if (workspace.period) {
-      params.set("period", workspace.period);
-    }
-    return uxResetShellHandoffHref(
-      RESET_REVIEW_PATH,
-      RESET_INVESTIGATE_PATH,
-      params
-    );
+    return sharedContextToSearchParams({
+      compare: compareKey.length > 0 ? compareKey.split(",") : [],
+      county: workspace.requestedFips,
+      dataset,
+      period: workspace.period,
+      scope: workspace.scope,
+    });
   }, [
+    compareKey,
     workspace.period,
     workspace.releaseId,
     workspace.requestedDataset,
     workspace.requestedFips,
     workspace.scope,
   ]);
+  const returnHref = uxResetShellHandoffHref(
+    RESET_REVIEW_PATH,
+    RESET_INVESTIGATE_PATH,
+    handoffParams
+  );
+  const compareHref = uxResetShellHandoffHref(
+    RESET_COMPARE_PATH,
+    RESET_INVESTIGATE_PATH,
+    handoffParams
+  );
+  const actionHref = uxResetShellHandoffHref(
+    RESET_ACTION_PATH,
+    RESET_INVESTIGATE_PATH,
+    handoffParams
+  );
   const countyOptions = useMemo(
     () =>
       workspace.directory.toSorted(
@@ -295,47 +305,14 @@ function InvestigateExperienceInner() {
         />
       ) : null}
 
-      <section
-        aria-label="What to inspect or do next"
-        className="ux-reset-investigate-next"
-        data-county={nextCounty}
-        data-testid="investigate-next-steps"
-      >
-        <h2>What to inspect or do next</h2>
-        <p className="type-body">
-          Ask Atlas is optional. This county can be read without it.
-        </p>
-        <Link
-          className={cn(
-            buttonVariants({ variant: "secondary" }),
-            "ux-reset-investigate-action"
-          )}
-          data-county={nextCounty}
-          data-testid="investigate-next-return"
-          data-variant="secondary"
-          href={returnHref}
-        >
-          Return to {workspace.scopeLabel} review
-        </Link>
-        {bundle?.leadFinding ? (
-          <a
-            data-county={bundle.county.fips}
-            data-testid="investigate-next-finding"
-            href={`#investigate-observation-${bundle.leadFinding.observation.observation_id}`}
-          >
-            Inspect the finding for {bundle.county.label}
-          </a>
-        ) : null}
-        {bundle?.leadLimitation ? (
-          <a
-            data-county={bundle.county.fips}
-            data-testid="investigate-next-limitation"
-            href={`#investigate-observation-${bundle.leadLimitation.observation.observation.observation_id}`}
-          >
-            Inspect the limitation for {bundle.county.label}
-          </a>
-        ) : null}
-      </section>
+      <InvestigateNextSteps
+        actionHref={actionHref}
+        bundle={bundle}
+        compare={workspace.compare}
+        compareHref={compareHref}
+        countyFips={nextCounty}
+        requestedPeriod={workspace.period}
+      />
     </div>
   );
 }

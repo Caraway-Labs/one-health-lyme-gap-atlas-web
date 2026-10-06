@@ -88,6 +88,17 @@ Browser Back and Forward restore the originating Review history entry. That entr
 
 Practical limit: the pixel scroll offset inside the county list is not stored in the URL. Return reveals the selected row. The Investigate return link and shell links rebuild Review from shared context only, so they restore scope, county, dataset, and period, and they do not restore `sort` or `page`. Those Review-only keys are not added to the global handoff to make return work. If Review had `compare`, `sort`, or `page`, the preview states that Investigate does not carry them.
 
+## Investigate next step and export (#417)
+
+Investigate keeps **Return to Review** in the county header. The next-step section offers **one** other path:
+
+- **Return to Compare** when the URL has a validated two-county `compare` set.
+- **Continue to Action** when that set is absent and a county evidence bundle is on screen.
+
+Action is a handoff for the visible county. The page does not choose Surveillance Planning or an Evidence Brief.
+
+**Export PDF** uses the existing county report endpoint (`downloadPdfReport`) for the visible county and release, with the contract's default score parameters. The control lists the same observation periods, source families, and caveats as the evidence on the page. The report endpoint does not accept period, source, or caveat fields, so those values are not sent as a second mapping. A failed response, an empty file, or a response that arrives after the county, release, period, sources, or caveats change does not start a download.
+
 ## Tests
 
 - `tests/ux-reset-context-handoff.test.ts` — canonical serialization, nuqs parity, source export restrictions, calendar dates, two-county compare cap.

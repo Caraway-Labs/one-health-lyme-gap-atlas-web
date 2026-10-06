@@ -8,6 +8,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PdfExportButton } from "@/components/pdf-export-button";
+import { downloadPdfReport } from "@/lib/pdf-export";
 
 const settings = {
   ecological_share: 65,
@@ -80,5 +81,41 @@ describe("PDF export", () => {
       "Please try again"
     );
     expect(button).toHaveProperty("disabled", false);
+  });
+
+  it("does not save a file when the caller drops the response or the file is empty", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Blob(["%PDF-"], { type: "application/pdf" }), {
+        status: 200,
+      })
+    );
+    const createObjectURL = vi.fn<() => string>(() => "blob:stale");
+    vi.stubGlobal("URL", {
+      createObjectURL,
+      revokeObjectURL: vi.fn<(url: string) => void>(),
+    });
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    await downloadPdfReport(
+      { identifier: "08001", level: "county" },
+      settings,
+      "alpha-2026",
+      { shouldCommit: () => false }
+    );
+    expect(click).not.toHaveBeenCalled();
+    expect(createObjectURL).not.toHaveBeenCalled();
+
+    fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
+    await expect(
+      downloadPdfReport(
+        { identifier: "08001", level: "county" },
+        settings,
+        "alpha-2026"
+      )
+    ).rejects.toThrow(/empty file/);
+    expect(click).not.toHaveBeenCalled();
+    expect(createObjectURL).not.toHaveBeenCalled();
   });
 });

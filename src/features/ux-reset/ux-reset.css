@@ -331,6 +331,11 @@
   background: var(--card);
 }
 
+.ux-reset-investigate-export {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .ux-reset-pro-main a.ux-reset-investigate-action {
   width: fit-content;
   text-decoration: none;
