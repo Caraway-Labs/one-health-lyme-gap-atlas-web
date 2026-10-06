@@ -79,22 +79,58 @@ describe("canonical Compare entry", () => {
     expect({
       full: compareEntryPair({ compare: ["08001", "08013"], county: "36001" }),
       kept: url.searchParams.get("compare"),
-      partial: compareEntryPair({ compare: ["08001"], county: "36001" }),
+      replacedSingleton: compareEntryPair({
+        compare: ["08001"],
+        county: "36001",
+      }),
       returnTo: url.searchParams.get("return"),
       selected: url.searchParams.get("county"),
     }).toStrictEqual({
       full: ["08001", "08013"],
       kept: "08001,08013",
-      partial: ["08001"],
+      replacedSingleton: ["36001"],
       returnTo: "investigate",
       selected: "36001",
+    });
+  });
+
+  it("replaces a stale singleton with the county selected on the next entry", () => {
+    const first = new URL(
+      entryHref({
+        county: "08001",
+        returnTo: "investigate",
+        sourcePath: RESET_INVESTIGATE_PATH,
+      }),
+      "http://localhost"
+    );
+    const second = new URL(
+      entryHref({
+        compare: "08001",
+        county: "08013",
+        returnTo: "investigate",
+        sourcePath: RESET_INVESTIGATE_PATH,
+      }),
+      "http://localhost"
+    );
+    expect({
+      fallback: compareEntryPair({ compare: ["08001"], county: null }),
+      firstCompare: first.searchParams.get("compare"),
+      firstCounty: first.searchParams.get("county"),
+      secondCompare: second.searchParams.get("compare"),
+      secondCounty: second.searchParams.get("county"),
+    }).toStrictEqual({
+      fallback: ["08001"],
+      firstCompare: "08001",
+      firstCounty: "08001",
+      secondCompare: "08013",
+      secondCounty: "08013",
     });
   });
 
   it("drops invalid and repeated identifiers through the shared parser", () => {
     expect(
       compareEntryPair({ compare: ["08001", "08001", "nope"], county: "36001" })
-    ).toStrictEqual(mergeCompareQueryValues(["08001,08001,nope"]));
+    ).toStrictEqual(["36001"]);
     expect(
       compareEntryPair({ compare: ["not-a-fips"], county: "08001" })
     ).toStrictEqual(["08001"]);

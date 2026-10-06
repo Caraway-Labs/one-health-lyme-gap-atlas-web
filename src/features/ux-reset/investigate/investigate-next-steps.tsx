@@ -33,16 +33,18 @@ export function InvestigateNextSteps({
   compareHref,
   countyFips,
   requestedPeriod,
+  resolvedCounty,
 }: {
   bundle: CountyEvidenceBundle | null;
   compare: readonly string[];
   compareHref: string;
   countyFips: string;
   requestedPeriod: string | null;
+  resolvedCounty: string | null;
 }) {
   const offer = investigateCompareOffer({
     compare,
-    county: countyFips || null,
+    resolvedCounty,
   });
   const pdfContext = bundle
     ? investigatePdfContext(bundle, requestedPeriod)

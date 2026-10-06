@@ -1,4 +1,3 @@
-import { compareEntryPair } from "@/features/ux-reset/compare/compare-entry";
 import {
   parseCompareFipsList,
   UX_RESET_COMPARE_COUNTY_LIMIT,
@@ -45,14 +44,16 @@ export type InvestigateCompareOffer = {
 };
 
 /**
- * Open Compare for the county on screen, or return when a two-county pair
- * is already in the link. A neighbor is not chosen.
+ * Start Compare only for a county that has already resolved to a published
+ * identity or evidence bundle. Return when a two-county pair is already in
+ * the link, including when the county on screen did not resolve.
+ * A neighbor is not chosen.
  */
 export function investigateCompareOffer(input: {
   compare: readonly string[];
-  county: string | null;
+  resolvedCounty: string | null;
 }): InvestigateCompareOffer | null {
-  const existing = compareEntryPair({ compare: input.compare, county: null });
+  const existing = parseCompareFipsList(input.compare.join(","));
   if (existing.length === UX_RESET_COMPARE_COUNTY_LIMIT) {
     return {
       kind: investigateCompareOfferKinds.return,
@@ -60,8 +61,10 @@ export function investigateCompareOffer(input: {
     };
   }
   const county =
-    input.county && isCountyFips(input.county) ? input.county : null;
-  if (county || existing.length === 1) {
+    input.resolvedCounty && isCountyFips(input.resolvedCounty)
+      ? input.resolvedCounty
+      : null;
+  if (county) {
     return { kind: investigateCompareOfferKinds.start, label: "Compare" };
   }
   return null;

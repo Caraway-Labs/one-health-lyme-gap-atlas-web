@@ -143,6 +143,8 @@ function InvestigateExperienceInner() {
       : releaseEvidenceLoadStateValues.loading;
   const bundle = workspace.bundle;
   const nextCounty = bundle?.county.fips ?? workspace.requestedFips ?? "";
+  const resolvedCounty =
+    bundle?.county.fips ?? workspace.identity?.fips ?? null;
   usePublishExploreCommittedNavigation(
     workspace.releaseId
       ? {
@@ -309,6 +311,7 @@ function InvestigateExperienceInner() {
         compareHref={compareHref}
         countyFips={nextCounty}
         requestedPeriod={workspace.period}
+        resolvedCounty={resolvedCounty}
       />
     </div>
   );

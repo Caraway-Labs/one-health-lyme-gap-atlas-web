@@ -419,6 +419,7 @@ test.describe("County Investigate evidence hierarchy", () => {
       "unsupported"
     );
     await expect(page.getByTestId("investigate-evidence")).toHaveCount(0);
+    await expect(page.getByTestId("investigate-compare")).toHaveCount(0);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("99999");
 
     await page.goto("/app/investigate?county=08014&scope=CO");
@@ -428,6 +429,20 @@ test.describe("County Investigate evidence hierarchy", () => {
       "unsupported"
     );
     await expect(page.getByTestId("investigate-evidence")).toHaveCount(0);
+    await expect(page.getByTestId("investigate-compare")).toHaveCount(0);
+
+    await page.goto(
+      "/app/investigate?county=99999&scope=CO&compare=08001,08013"
+    );
+    await expect(page.getByTestId("investigate-recovery")).toHaveAttribute(
+      "data-recovery",
+      "unsupported"
+    );
+    await expect(page.getByTestId("investigate-compare")).toHaveCount(0);
+    await expect(page.getByTestId("investigate-continue")).toHaveAttribute(
+      "href",
+      /compare=08001(?:%2C|,)08013/
+    );
     expect(
       observationUrls(requestedUrls).some((url) => url.includes("08014"))
     ).toBe(false);

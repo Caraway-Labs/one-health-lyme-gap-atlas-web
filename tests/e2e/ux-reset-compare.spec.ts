@@ -93,6 +93,92 @@ async function installCompareMocks(page: Page, requested: string[]) {
   });
 }
 
+const REVIEW_OVERFLOW_FIPS = "08041";
+
+function overflowReviewScores() {
+  const template = compareScoresFixture.counties[0];
+  if (!template) {
+    throw new Error("Compare scores fixture is empty.");
+  }
+  return {
+    ...compareScoresFixture,
+    counties: Array.from({ length: 41 }, (_, index) => ({
+      ...template,
+      county: `County ${String(index + 1).padStart(2, "0")}`,
+      fips: String(8001 + index).padStart(5, "0"),
+      in_contiguous_tick_scope: true,
+      score: { ...template.score, score: 100 - index },
+      state: "CO",
+      state_name: "Colorado",
+    })),
+  };
+}
+
+async function installOverflowReviewScores(page: Page) {
+  await page.route("**/v1/atlas/scores**", async (route) => {
+    await route.fulfill({ json: overflowReviewScores() });
+  });
+}
+
+async function openOverflowCountyCompare(page: Page, fips: string) {
+  await page.goto("/app/review?scope=CO&dataset=alpha-2026");
+  await page.getByRole("button", { name: "View full county list" }).click();
+  await page.locator(`.full-table button[data-fips="${fips}"]`).click();
+  await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+    "data-fips",
+    fips
+  );
+  await page.getByTestId("review-compare").click();
+  await expect(page).toHaveURL(/\/app\/compare/);
+  await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+    "data-fips",
+    fips
+  );
+  await page.reload();
+  await expect(page.getByTestId("compare-return")).toBeVisible();
+}
+
+async function expectOverflowCountyRestored(page: Page, fips: string) {
+  const row = page.locator(`.full-table button[data-fips="${fips}"]`);
+  await expect(row).toBeVisible();
+  await expect(row).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Hide full county list" })
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        sessionStorage.getItem("ux-reset-review-return-focus")
+      )
+    )
+    .toBeNull();
+  await expect
+    .poll(() =>
+      row.evaluate((element) => {
+        const scroller = element.closest(".table-scroll");
+        if (!(scroller instanceof HTMLElement)) {
+          return false;
+        }
+        const rowBox = element.getBoundingClientRect();
+        const listBox = scroller.getBoundingClientRect();
+        return (
+          rowBox.top >= listBox.top - 1 && rowBox.bottom <= listBox.bottom + 1
+        );
+      })
+    )
+    .toBe(true);
+}
+
+async function expectConsumedReviewReturn(page: Page, fips: string) {
+  await page.goto(`/app/review?scope=CO&dataset=alpha-2026&county=${fips}`);
+  await expect(
+    page.getByRole("button", { name: "View full county list" })
+  ).toBeVisible();
+  await expect(
+    page.locator(`.full-table button[data-fips="${fips}"]`)
+  ).toHaveCount(0);
+}
+
 test.describe("two-county Compare", () => {
   test("recovers empty, partial, invalid, and duplicate links", async ({
     page,
@@ -410,6 +496,28 @@ test.describe("two-county Compare", () => {
         .analyze();
       expect(results.violations).toEqual([]);
     }
+  });
+
+  test("restores a shortlist-overflow Review row after Compare reload", async ({
+    page,
+  }) => {
+    await installCompareMocks(page, []);
+    await installOverflowReviewScores(page);
+    const fips = REVIEW_OVERFLOW_FIPS;
+
+    await openOverflowCountyCompare(page, fips);
+    await page.getByTestId("compare-return").click();
+    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(new RegExp(`county=${fips}`));
+    await expectOverflowCountyRestored(page, fips);
+    await expectConsumedReviewReturn(page, fips);
+
+    await openOverflowCountyCompare(page, fips);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(new RegExp(`county=${fips}`));
+    await expectOverflowCountyRestored(page, fips);
+    await expectConsumedReviewReturn(page, fips);
   });
 
   test("keeps a direct Compare link usable without a return target", async ({

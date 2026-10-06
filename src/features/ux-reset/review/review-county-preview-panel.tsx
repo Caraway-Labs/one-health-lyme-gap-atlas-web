@@ -99,6 +99,9 @@ export function ReviewCountyPreviewPanel({
           data-testid="review-compare"
           data-variant="secondary"
           href={compareHref}
+          onClick={() => {
+            onOpen(preview.fips);
+          }}
         >
           Compare
         </Link>

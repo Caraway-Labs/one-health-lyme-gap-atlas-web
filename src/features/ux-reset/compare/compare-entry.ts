@@ -74,21 +74,23 @@ export function compareReturnPath(target: CompareReturnTarget): string {
 
 /**
  * Pair carried into Compare.
- * A validated compare list is kept. When that list is empty, the selected
- * county is the only member. A second county is never chosen here.
+ * A validated two-county list is kept, so a later county is not added.
+ * One saved county is replaced by the county selected now, and remains only
+ * when nothing valid is selected. An empty list becomes that county alone.
+ * A second county is never chosen here.
  */
 export function compareEntryPair(input: {
   compare: readonly string[];
   county: string | null;
 }): string[] {
   const existing = parseCompareFipsList(input.compare.join(","));
-  if (existing.length > 0) {
+  if (existing.length >= UX_RESET_COMPARE_COUNTY_LIMIT) {
     return existing;
   }
   if (input.county && isCountyFips(input.county)) {
     return parseCompareFipsList(input.county);
   }
-  return [];
+  return existing;
 }
 
 /**

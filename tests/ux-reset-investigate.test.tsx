@@ -1118,6 +1118,55 @@ describe("County Investigate workspace", () => {
     ).toBeNull();
   });
 
+  it("does not start Compare for an unpublished county and still returns for a pair", async () => {
+    renderInvestigate("?county=99999&scope=CO");
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "unsupported"
+      ) {
+        throw new Error("Unknown county recovery has not rendered.");
+      }
+    });
+    const unknownStart = screen.queryByTestId("investigate-compare");
+    cleanup();
+    renderInvestigate("?county=08014&scope=CO");
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "unsupported"
+      ) {
+        throw new Error("Unsupported recovery has not rendered.");
+      }
+    });
+    const unsupportedStart = screen.queryByTestId("investigate-compare");
+    cleanup();
+    renderInvestigate("?county=99999&scope=CO&compare=08001,08013");
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "unsupported"
+      ) {
+        throw new Error("Paired unknown county recovery has not rendered.");
+      }
+    });
+    const link = screen.getByTestId("investigate-continue");
+    const href = link.getAttribute("href") ?? "";
+    expect({
+      pairCompare: href.includes("compare=08001%2C08013"),
+      pairOffer: link.dataset.offer,
+      pairStart: screen.queryByTestId("investigate-compare"),
+      unknownStart,
+      unsupportedStart,
+    }).toStrictEqual({
+      pairCompare: true,
+      pairOffer: "return",
+      pairStart: null,
+      unknownStart: null,
+      unsupportedStart: null,
+    });
+  });
+
   it("hides Action, Compare, and export until a county bundle or compare pair exists", async () => {
     renderInvestigate("?scope=CO");
     await waitFor(() => {
