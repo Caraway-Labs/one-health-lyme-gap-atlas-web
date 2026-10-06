@@ -162,7 +162,7 @@ test("bounded context survives rendered navigation, reload, and browser history"
     expect(target.searchParams.get("county")).toBe("08001");
     expect(target.searchParams.get("dataset")).toBe("alpha-2026-08-06");
     expect(target.searchParams.get("period")).toBe("2023-01-01");
-    expect(target.searchParams.get("compare")).toBeNull();
+    expect(target.searchParams.get("compare")).toBe("08001,08003");
   };
 
   const expectCompareSelection = (target: URL) => {
