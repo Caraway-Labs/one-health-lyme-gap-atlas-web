@@ -1,17 +1,30 @@
-const ASSISTANT_PATH = "/assistant";
+import { RESET_ASSISTANT_PATH } from "@/features/ux-reset/routes";
+
+const LEGACY_ASSISTANT_PATH = "/assistant";
+
+/** Legacy `/assistant` and the reset research workspace share one local conversation id. */
+const ASSISTANT_WORKSPACE_PATHS = new Set<string>([
+  LEGACY_ASSISTANT_PATH,
+  RESET_ASSISTANT_PATH,
+]);
+
+function assistantWorkspacePath(href: string): string | null {
+  try {
+    const url = new URL(href);
+    return ASSISTANT_WORKSPACE_PATHS.has(url.pathname) ? url.pathname : null;
+  } catch {
+    return null;
+  }
+}
 
 export function readAssistantConversationId(
   href = typeof window === "undefined" ? "" : window.location.href
 ): string | null {
-  if (!href) {
+  if (!assistantWorkspacePath(href)) {
     return null;
   }
   try {
-    const url = new URL(href);
-    if (url.pathname !== ASSISTANT_PATH) {
-      return null;
-    }
-    return url.searchParams.get("conversation");
+    return new URL(href).searchParams.get("conversation");
   } catch {
     return null;
   }
@@ -19,9 +32,9 @@ export function readAssistantConversationId(
 
 export function assistantConversationHref(conversationId?: string): string {
   if (!conversationId) {
-    return ASSISTANT_PATH;
+    return LEGACY_ASSISTANT_PATH;
   }
-  return `${ASSISTANT_PATH}?conversation=${encodeURIComponent(conversationId)}`;
+  return `${LEGACY_ASSISTANT_PATH}?conversation=${encodeURIComponent(conversationId)}`;
 }
 
 /**
@@ -33,7 +46,7 @@ export function synchronizeAssistantConversationUrl(
   href = window.location.href
 ): void {
   const url = new URL(href);
-  if (url.pathname !== ASSISTANT_PATH) {
+  if (!ASSISTANT_WORKSPACE_PATHS.has(url.pathname)) {
     return;
   }
   const current = url.searchParams.get("conversation");

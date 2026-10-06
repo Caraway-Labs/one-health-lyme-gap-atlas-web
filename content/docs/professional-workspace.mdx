@@ -29,7 +29,7 @@ Sign-in is required for `/app` routes. After you sign in, Atlas returns you to t
 | Investigate | [/app/investigate](/app/investigate) | Available now | Read one county's evidence, limitations, and the path back to Review. |
 | Compare | [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures. Availability stays visible. The page does not rank a winner. |
 | Action | [/app/action](/app/action) | Reserved | The route is present. Surveillance-planning and evidence-brief workflows are not released. |
-| Assistant | [/app/assistant](/app/assistant) | Reserved | The route is a placeholder. Ask Atlas in the workspace is the side panel described below, not this page. |
+| Assistant | [/app/assistant](/app/assistant) | Experimental | Full research workspace for reviewed-literature questions when that service is enabled. It uses the same browser-local conversation as the Ask Atlas side panel. Structured and Both modes are not available. |
 | Feed | [/app/feed](/app/feed) | Reserved | The route is present. There is no item list, alert, or saved-article library. |
 | Settings | [/app/settings](/app/settings) | Available now | Save a default jurisdiction and optional profile details, then use account sign-out, export, and removal. |
 | Docs | [/docs](/docs) | Available now | Open this reference in a new tab from the workspace navigation. |
@@ -113,7 +113,11 @@ When reviewed-literature chat is enabled for that deployment, the panel asks the
 
 When literature chat is not enabled, the panel says Ask Atlas is unavailable and that the workspace pages stay usable. That message is a service state. It does not mean the county's evidence is absent.
 
-Ask Atlas does not change filters, maps, or the address, and it does not run a workflow for you. It has no Structured mode and no Both mode. The separate legacy workspace at [/assistant](/assistant) remains the full literature workspace when that route is enabled. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence).
+Ask Atlas does not change filters, maps, or the address, and it does not run a workflow for you. It has no Structured mode and no Both mode.
+
+After a saved answer, **Open full workspace** opens [/app/assistant](/app/assistant) on that same local conversation. The link does not send the question again. Unsent text in the panel is not carried over. A direct link to a conversation that is not saved in this browser says so and lets you start a new chat. History stays in this browser for up to 30 days. It is not a saved research library on Atlas servers.
+
+The separate legacy workspace at [/assistant](/assistant) remains available when that route is enabled. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence).
 
 ## Evidence labels
 

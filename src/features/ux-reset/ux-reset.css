@@ -621,3 +621,104 @@
   font-size: var(--type-body-size);
   font-weight: 500;
 }
+
+/* Fill the viewport and dock the composer while the chrome fits.
+   The flexible chain shrinks so the transcript scrolls internally.
+   When the header, notices, composer, and trust footer are taller than the
+   viewport, that overflow stays visible and this shell scrolls. */
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow-x: clip;
+  overflow-y: auto;
+}
+
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .app-inset {
+  height: auto;
+  max-height: none;
+  min-height: 100%;
+  overflow: visible;
+}
+
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-workspace-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-pro-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: visible;
+  padding-bottom: var(--space-3);
+}
+
+.ux-reset-ask-atlas-workspace {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--space-3);
+}
+
+.ux-reset-ask-atlas-workspace .ux-reset-page-header,
+.ux-reset-ask-atlas-mode-note {
+  flex: none;
+}
+
+.ux-reset-ask-atlas-mode-note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+  line-height: 1.45;
+}
+
+.ux-reset-ask-atlas-workspace .evidence-chat-workspace {
+  flex: 1 1 auto;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  overflow: visible;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.ux-reset-ask-atlas-workspace .chat-transcript {
+  flex: 1 1 0%;
+  /* Floor keeps a readable strip; it must not include the message height. */
+  min-height: 4.5rem;
+  overflow-y: auto;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel-header,
+.ux-reset-ask-atlas-workspace .chat-history-empty-hint,
+.ux-reset-ask-atlas-workspace .chat-county-context,
+.ux-reset-ask-atlas-workspace .medical-notice,
+.ux-reset-ask-atlas-workspace .chat-composer-dock {
+  flex: none;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel h2 {
+  margin: 0.2rem 0 0;
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  font-weight: 500;
+}
+
+.ux-reset-ask-atlas-workspace .chat-empty p {
+  margin-block: 0.35rem 0;
+}
+
+.ux-reset-ask-atlas-workspace .chat-turn p {
+  margin-block: 0.4rem 0;
+}

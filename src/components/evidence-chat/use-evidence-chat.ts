@@ -90,6 +90,7 @@ export function useEvidenceChat({
   const [activeId, setActiveId] = useState(
     initialConversationId ?? "__latest__"
   );
+  const activeIdRef = useRef(activeId);
   const [missingConversationId, setMissingConversationId] = useState<
     string | null
   >(null);
@@ -139,6 +140,10 @@ export function useEvidenceChat({
   );
 
   useLayoutEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
+  useLayoutEffect(() => {
     ownerAlive.current = true;
     const controllers = requestAbort.current;
     return () => {
@@ -153,8 +158,9 @@ export function useEvidenceChat({
 
   const startNewChat = useCallback(
     (focusComposer = true) => {
-      requestSerial.current += 1;
+      abandonOwnedRequest(requestSerial, requestAbort);
       setPending(false);
+      activeIdRef.current = "__new__";
       setActiveId("__new__");
       setMissingConversationId(null);
       setFailure(null);
@@ -197,7 +203,16 @@ export function useEvidenceChat({
     }
     function onPopState() {
       const requestedId = readAssistantConversationId();
-      applyConversationSelection(requestedId, loadConversations());
+      const loaded = loadConversations();
+      const selection = resolveConversationSelection(requestedId, loaded);
+      if (selection.activeId !== activeIdRef.current) {
+        abandonOwnedRequest(requestSerial, requestAbort);
+        setPending(false);
+        setFailure(null);
+        setRetryQuestion("");
+      }
+      activeIdRef.current = selection.activeId;
+      applyConversationSelection(requestedId, loaded);
     }
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -278,7 +293,16 @@ export function useEvidenceChat({
     response: KnowledgeChatResponse,
     replaceOperationalTurn: boolean
   ) {
-    const conversation = active ?? createConversation(response, question);
+    const stored = loadConversations();
+    const ownedId = active?.id;
+    const owned = ownedId
+      ? stored.find((item) => item.id === ownedId)
+      : undefined;
+    if (ownedId && !owned) {
+      return;
+    }
+    const conversation =
+      owned ?? active ?? createConversation(response, question);
     const now = new Date().toISOString();
     const priorTurns = replaceOperationalTurn
       ? conversation.turns.slice(0, -2)
@@ -306,10 +330,18 @@ export function useEvidenceChat({
     };
     const next = [
       updated,
-      ...conversations.filter((item) => item.id !== updated.id),
+      ...stored.filter((item) => item.id !== updated.id),
     ].slice(0, 5);
     saveConversations(next);
     setConversations(next);
+    const selectionStillOwnsRequest =
+      !ownedId ||
+      activeIdRef.current === ownedId ||
+      activeIdRef.current === "__latest__";
+    if (!selectionStillOwnsRequest) {
+      return;
+    }
+    activeIdRef.current = updated.id;
     setActiveId(updated.id);
     setMissingConversationId(null);
   }
@@ -395,10 +427,17 @@ export function useEvidenceChat({
   function deleteOne(id: string) {
     const next = removeConversation(id);
     setConversations(next);
-    if (activeId === id) {
-      setActiveId(next[0]?.id ?? "__new__");
-      setMissingConversationId(null);
+    if (activeIdRef.current !== id) {
+      return;
     }
+    abandonOwnedRequest(requestSerial, requestAbort);
+    setPending(false);
+    const nextId = next[0]?.id ?? "__new__";
+    activeIdRef.current = nextId;
+    setActiveId(nextId);
+    setMissingConversationId(null);
+    setFailure(null);
+    setRetryQuestion("");
   }
 
   function clearAllConversations() {
@@ -409,6 +448,11 @@ export function useEvidenceChat({
   }
 
   function selectConversation(id: string) {
+    if (id !== activeIdRef.current) {
+      abandonOwnedRequest(requestSerial, requestAbort);
+      setPending(false);
+    }
+    activeIdRef.current = id;
     setActiveId(id);
     setMissingConversationId(null);
     setFailure(null);
@@ -452,6 +496,18 @@ export function useEvidenceChat({
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
+}
+
+/** Drop a response that no longer belongs to the selected conversation. */
+function abandonOwnedRequest(
+  requestSerial: { current: number },
+  requestAbort: { current: Set<AbortController> }
+): void {
+  requestSerial.current += 1;
+  for (const controller of requestAbort.current) {
+    controller.abort();
+  }
+  requestAbort.current.clear();
 }
 
 /** Move focus only while the user is still in this chat. A docked page keeps its control. */

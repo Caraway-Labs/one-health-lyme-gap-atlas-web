@@ -18,8 +18,10 @@ export function EvidenceChatDrawerShell({
 }
 
 export function EvidenceChatWorkspaceShell({
+  headingLevel = 1,
   model,
 }: {
+  headingLevel?: 1 | 2;
   model: EvidenceChatConversationModel;
 }) {
   const { conversations, hasSavedConversations, active } = model;
@@ -54,7 +56,10 @@ export function EvidenceChatWorkspaceShell({
           }}
         />
       )}
-      <EvidenceChatConversationContent model={model} />
+      <EvidenceChatConversationContent
+        headingLevel={headingLevel}
+        model={model}
+      />
     </div>
   );
 }

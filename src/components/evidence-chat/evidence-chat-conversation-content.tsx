@@ -3,6 +3,7 @@
 import publicCopy from "@caraway-labs/one-health-lyme-gap-atlas-knowledge-graph/public-copy";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { EvidenceChatAnswerSources } from "@/components/evidence-chat-answer-sources";
@@ -25,12 +26,15 @@ export function EvidenceChatConversationContent({
   showCountyNotice = true,
   showStarterPrompts = true,
   showWorkspaceHandoff = true,
+  workspaceHandoffHref,
 }: {
   headingLevel?: 1 | 2;
   model: EvidenceChatConversationModel;
   showCountyNotice?: boolean;
   showStarterPrompts?: boolean;
   showWorkspaceHandoff?: boolean;
+  /** When set, drawer handoff uses this href instead of the legacy `/assistant` link. */
+  workspaceHandoffHref?: (conversationId?: string) => string;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -60,6 +64,39 @@ export function EvidenceChatConversationContent({
   } = model;
 
   const assistantHeadingId = atlasAssistantWorkspaceHeadingId(mode);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const turnCount = active?.turns.length ?? 0;
+  const activeConversationId = active?.id ?? "";
+  useEffect(() => {
+    const transcript = transcriptRef.current;
+    if (!transcript) {
+      return;
+    }
+    const lastTurn = transcript.querySelector<HTMLElement>(
+      ".chat-turn:last-child"
+    );
+    if (turnCount === 0 && !pending && !failure) {
+      return;
+    }
+    if (pending || !lastTurn) {
+      transcript.scrollTop = transcript.scrollHeight;
+      return;
+    }
+    const delta =
+      lastTurn.getBoundingClientRect().top -
+      transcript.getBoundingClientRect().top;
+    transcript.scrollTop += delta;
+    // Reading the id keeps this effect tied to the visible conversation.
+    transcript.dataset.scrolledConversation = activeConversationId;
+  }, [activeConversationId, failure, pending, turnCount]);
+  const handoffHref = (conversationId?: string) =>
+    workspaceHandoffHref
+      ? workspaceHandoffHref(conversationId)
+      : assistantWorkspaceHref(
+          pathname,
+          searchParams,
+          conversationId ? { conversation: conversationId } : undefined
+        );
   const charCountId = `chat-char-count-${mode}`;
   const ChatPanel = mode === "workspace" ? "section" : "div";
   // Drawer chrome sits inside the reset sidecar landmark, so it cannot use
@@ -115,6 +152,7 @@ export function EvidenceChatConversationContent({
         className="chat-transcript"
         aria-label="Conversation transcript"
         aria-live="polite"
+        ref={transcriptRef}
         role="region"
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard access to scrollable transcript
         tabIndex={0}
@@ -257,20 +295,14 @@ export function EvidenceChatConversationContent({
           {mode === "drawer" &&
             showWorkspaceHandoff &&
             (workspaceHandoffConversationId ? (
-              <Link
-                href={assistantWorkspaceHref(pathname, searchParams, {
-                  conversation: workspaceHandoffConversationId,
-                })}
-              >
+              <Link href={handoffHref(workspaceHandoffConversationId)}>
                 Open full workspace
               </Link>
             ) : (
               <span className="chat-attribution-handoff-hint">
                 Open full workspace after your first saved answer, or{" "}
-                <Link href={assistantWorkspaceHref(pathname, searchParams)}>
-                  start in the workspace
-                </Link>
-                . Unsent text in this drawer is not carried over.
+                <Link href={handoffHref()}>start in the workspace</Link>. Unsent
+                text in this drawer is not carried over.
               </span>
             ))}
         </PanelFooter>

@@ -23,14 +23,24 @@ describe("assistant conversation URL helpers", () => {
     );
   });
 
-  it("reads conversation ids only from the assistant route", () => {
+  it("reads conversation ids only from an assistant workspace route", () => {
     expect(
       readAssistantConversationId(
         "https://atlas.example/assistant?conversation=abc"
       )
     ).toBe("abc");
     expect(
+      readAssistantConversationId(
+        "https://atlas.example/app/assistant?conversation=abc"
+      )
+    ).toBe("abc");
+    expect(
       readAssistantConversationId("https://atlas.example/?conversation=abc")
+    ).toBeNull();
+    expect(
+      readAssistantConversationId(
+        "https://atlas.example/app/review?conversation=abc"
+      )
     ).toBeNull();
   });
 
@@ -89,6 +99,16 @@ describe("assistant conversation URL helpers", () => {
       window.history.state,
       "",
       `${origin}/assistant?conversation=conversation-2`
+    );
+    replaceState.mockClear();
+    synchronizeAssistantConversationUrl(
+      "conversation-2",
+      `${origin}/app/assistant?county=08001&conversation=conversation-1`
+    );
+    expect(replaceState).toHaveBeenCalledWith(
+      window.history.state,
+      "",
+      `${origin}/app/assistant?county=08001&conversation=conversation-2`
     );
   });
 });
