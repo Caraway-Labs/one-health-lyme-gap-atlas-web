@@ -66,6 +66,7 @@ export function EvidenceChatConversationContent({
   const assistantHeadingId = atlasAssistantWorkspaceHeadingId(mode);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const turnCount = active?.turns.length ?? 0;
+  const activeConversationId = active?.id ?? "";
   useEffect(() => {
     const transcript = transcriptRef.current;
     if (!transcript) {
@@ -85,7 +86,9 @@ export function EvidenceChatConversationContent({
       lastTurn.getBoundingClientRect().top -
       transcript.getBoundingClientRect().top;
     transcript.scrollTop += delta;
-  }, [failure, pending, turnCount]);
+    // Reading the id keeps this effect tied to the visible conversation.
+    transcript.dataset.scrolledConversation = activeConversationId;
+  }, [activeConversationId, failure, pending, turnCount]);
   const handoffHref = (conversationId?: string) =>
     workspaceHandoffHref
       ? workspaceHandoffHref(conversationId)

@@ -1,5 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Route,
+} from "@playwright/test";
 
 import {
   exploreGeometryFixture,
@@ -265,6 +271,211 @@ test("keeps a county missing from the release out of the literature request", as
   });
   await expect(page.getByRole("button", { name: /Structured/ })).toHaveCount(0);
   await expect(page.getByRole("tab", { name: /Both/ })).toHaveCount(0);
+});
+
+const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
+const DESKTOP_WINDOW = { height: 720, width: 1280 };
+const SAVED_COUNTY_CHAT_URL = "/app/assistant?county=08001&dataset=alpha-2026";
+
+async function seedSavedCountyChat(page: Page) {
+  await page.addInitScript(
+    ([key, value]) => {
+      localStorage.setItem(key, value);
+    },
+    [
+      CHAT_STORAGE_KEY,
+      JSON.stringify({
+        conversations: [
+          {
+            createdAt: "2026-08-01T00:00:00.000Z",
+            expiresAt: "2030-01-01T00:00:00.000Z",
+            id: "conversation-county",
+            title: "Saved county question",
+            turns: [
+              {
+                createdAt: "2026-08-01T00:00:00.000Z",
+                id: "turn-user",
+                role: "user",
+                text: "What is reviewed for this county?",
+              },
+              {
+                createdAt: "2026-08-01T00:00:00.000Z",
+                id: "turn-assistant",
+                role: "assistant",
+                text: `${"Reviewed evidence varies by region and stays attributable to the governed release. ".repeat(40)}County answer stays in the transcript.`,
+              },
+            ],
+            updatedAt: "2026-08-01T00:00:00.000Z",
+          },
+        ],
+        version: 1,
+      }),
+    ] as const
+  );
+}
+
+async function installChatAnswer(page: Page) {
+  await page.route("**/v1/knowledge-graph/chat", async (route) => {
+    await fulfillJson(
+      route,
+      chatResponse(
+        "Composer answer reached the service.",
+        "request-composer",
+        "conversation-composer"
+      )
+    );
+  });
+}
+
+async function expectControlReachable(control: Locator) {
+  await control.scrollIntoViewIfNeeded();
+  await expect(control).toBeInViewport();
+  const hit = await control.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const target = document.elementFromPoint(
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2
+    );
+    const hitName =
+      target instanceof Element
+        ? `${target.tagName.toLowerCase()}.${target.className}`
+        : String(target);
+    return {
+      fullyVisible:
+        rect.height > 0 &&
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= window.innerHeight + 1 &&
+        rect.right <= window.innerWidth + 1,
+      hitName,
+      receivesPointer:
+        target === element ||
+        (target instanceof Node && element.contains(target)),
+    };
+  });
+  expect(hit.fullyVisible, JSON.stringify(hit)).toBe(true);
+  expect(hit.receivesPointer, JSON.stringify(hit)).toBe(true);
+}
+
+async function expectComposerUsable(page: Page) {
+  const question = page.getByLabel("Your question");
+  const ask = page.getByRole("button", { name: "Ask", exact: true });
+  await expectControlReachable(question);
+  await question.click();
+  await question.fill("Is the composer usable here?");
+  await expect(question).toHaveValue("Is the composer usable here?");
+  await expect(ask).toBeEnabled();
+  await expectControlReachable(ask);
+  await ask.click();
+  await expect(
+    page.getByText("Composer answer reached the service.")
+  ).toBeVisible();
+}
+
+test("keeps a saved county chat usable at a short landscape height", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 360, width: 740 });
+  await installExploreMocks(page);
+  await installChatAnswer(page);
+  await seedSavedCountyChat(page);
+  await page.goto(SAVED_COUNTY_CHAT_URL);
+  await expect(
+    page.getByText("County answer stays in the transcript.")
+  ).toBeVisible();
+  await expect(
+    page.locator("[data-assistant-county-state='identified']")
+  ).toContainText("Adams");
+  await expectComposerUsable(page);
+});
+
+test("keeps an empty chat usable at a short landscape height", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 360, width: 740 });
+  await installExploreMocks(page);
+  await installChatAnswer(page);
+  await page.goto("/app/assistant");
+  await expect(page.getByText("Start with a research question")).toBeVisible();
+  await expectComposerUsable(page);
+});
+
+test("keeps a saved county chat usable at 200% desktop zoom", async ({
+  page,
+}) => {
+  await page.setViewportSize({
+    height: DESKTOP_WINDOW.height / 2,
+    width: DESKTOP_WINDOW.width / 2,
+  });
+  await installExploreMocks(page);
+  await installChatAnswer(page);
+  await seedSavedCountyChat(page);
+  await page.goto(SAVED_COUNTY_CHAT_URL);
+  await expect(
+    page.getByText("County answer stays in the transcript.")
+  ).toBeVisible();
+  const rootFont = await page.evaluate(
+    () => getComputedStyle(document.documentElement).fontSize
+  );
+  expect(rootFont).toBe("16px");
+  await expect(
+    page.locator("[data-assistant-county-state='identified']")
+  ).toContainText("Adams");
+  await expectComposerUsable(page);
+});
+
+test("keeps an empty chat usable at 200% desktop zoom", async ({ page }) => {
+  await page.setViewportSize({
+    height: DESKTOP_WINDOW.height / 2,
+    width: DESKTOP_WINDOW.width / 2,
+  });
+  await installExploreMocks(page);
+  await installChatAnswer(page);
+  await page.goto("/app/assistant");
+  await expect(page.getByText("Start with a research question")).toBeVisible();
+  const rootFont = await page.evaluate(
+    () => getComputedStyle(document.documentElement).fontSize
+  );
+  expect(rootFont).toBe("16px");
+  await expectComposerUsable(page);
+});
+
+test("docks the composer when the research workspace has room", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 900, width: 1280 });
+  await installExploreMocks(page);
+  await seedSavedCountyChat(page);
+  await page.goto(SAVED_COUNTY_CHAT_URL);
+  await expect(
+    page.getByText("County answer stays in the transcript.")
+  ).toBeVisible();
+  await expect(
+    page.locator("[data-assistant-county-state='identified']")
+  ).toContainText("Adams");
+  const layout = await page.evaluate(() => {
+    const shell = document.querySelector(".ux-reset-pro-app");
+    const dock = document.querySelector(".chat-composer-dock");
+    const transcript = document.querySelector(".chat-transcript");
+    if (!shell || !dock || !transcript) {
+      return null;
+    }
+    const dockBox = dock.getBoundingClientRect();
+    const transcriptBox = transcript.getBoundingClientRect();
+    return {
+      composerInView:
+        dockBox.top >= 0 && dockBox.bottom <= window.innerHeight + 1,
+      shellFits: shell.scrollHeight <= shell.clientHeight + 1,
+      transcriptAboveComposer: transcriptBox.bottom <= dockBox.top + 8,
+      transcriptScrolls: transcript.scrollHeight > transcript.clientHeight,
+    };
+  });
+  expect(layout).toEqual({
+    composerInView: true,
+    shellFits: true,
+    transcriptAboveComposer: true,
+    transcriptScrolls: true,
+  });
 });
 
 test("ignores a late answer after a newer question is saved", async ({

@@ -812,6 +812,72 @@ describe(EvidenceChat, () => {
     expect(screen.getByText("Second question")).toBeTruthy();
   });
 
+  it("re-scrolls when a same-length conversation becomes active", async () => {
+    const future = "2030-01-01T00:00:00.000Z";
+    saveConversations([
+      {
+        createdAt: "2026-01-02T00:00:00.000Z",
+        expiresAt: future,
+        id: "second-conversation",
+        title: "Second saved question",
+        turns: [
+          {
+            createdAt: "2026-01-02T00:00:00.000Z",
+            id: "turn-user-2",
+            role: "user",
+            text: "Second question",
+          },
+          {
+            createdAt: "2026-01-02T00:00:00.000Z",
+            id: "turn-assistant-2",
+            role: "assistant",
+            text: "Second answer",
+          },
+        ],
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+      {
+        createdAt: "2026-01-01T00:00:00.000Z",
+        expiresAt: future,
+        id: "first-conversation",
+        title: "First saved question",
+        turns: [
+          {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            id: "turn-user-1",
+            role: "user",
+            text: "First question",
+          },
+          {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            id: "turn-assistant-1",
+            role: "assistant",
+            text: "First answer",
+          },
+        ],
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+    render(<EvidenceChat initialConversationId="first-conversation" />);
+    await screen.findByText("First question");
+    const scrolledConversation = () => {
+      const transcript = document.querySelector(".chat-transcript");
+      return transcript instanceof HTMLElement
+        ? transcript.dataset.scrolledConversation
+        : undefined;
+    };
+    expect(scrolledConversation()).toBe("first-conversation");
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Second saved question/ })
+    );
+    await waitFor(() => {
+      expect(scrolledConversation()).toBe("second-conversation");
+    });
+    expect(document.querySelector(".chat-transcript")?.textContent).toContain(
+      "Second answer"
+    );
+  });
+
   it("moves focus to retry after a browser failure", async () => {
     chatRequest.mockRejectedValueOnce(new Error("Failed to fetch"));
     render(<EvidenceChat />);

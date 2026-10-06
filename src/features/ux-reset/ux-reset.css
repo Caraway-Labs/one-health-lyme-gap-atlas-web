@@ -622,36 +622,43 @@
   font-weight: 500;
 }
 
+/* Fill the viewport and dock the composer while the chrome fits.
+   The flexible chain shrinks so the transcript scrolls internally.
+   When the header, notices, composer, and trust footer are taller than the
+   viewport, that overflow stays visible and this shell scrolls. */
 .ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) {
   height: 100dvh;
   max-height: 100dvh;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: auto;
 }
 
 .ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .app-inset {
-  height: 100dvh;
-  max-height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
+  height: auto;
+  max-height: none;
+  min-height: 100%;
+  overflow: visible;
 }
 
 .ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-workspace-body {
+  flex: 1 1 auto;
   min-height: 0;
-  flex: 1;
   align-items: stretch;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-pro-main {
   display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding-bottom: var(--space-3);
 }
 
 .ux-reset-ask-atlas-workspace {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
   gap: var(--space-3);
@@ -670,22 +677,26 @@
 }
 
 .ux-reset-ask-atlas-workspace .evidence-chat-workspace {
-  flex: 1;
+  flex: 1 1 auto;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ux-reset-ask-atlas-workspace .chat-panel {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   height: auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ux-reset-ask-atlas-workspace .chat-transcript {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0%;
+  /* Floor keeps a readable strip; it must not include the message height. */
+  min-height: 4.5rem;
+  overflow-y: auto;
 }
 
 .ux-reset-ask-atlas-workspace .chat-panel-header,

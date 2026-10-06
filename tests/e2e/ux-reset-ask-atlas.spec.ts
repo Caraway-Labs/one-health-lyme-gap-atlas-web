@@ -412,6 +412,8 @@ test.describe("Ask Atlas contextual sidecar", () => {
   test("drops a late answer after New chat", async ({ page }) => {
     const { promise: firstHeld, resolve: resolveFirst } =
       Promise.withResolvers<void>();
+    const { promise: firstSettled, resolve: settleFirst } =
+      Promise.withResolvers<void>();
     let calls = 0;
     await installExploreMocks(page);
     await page.route("**/v1/knowledge-graph/chat", async (route) => {
@@ -419,13 +421,20 @@ test.describe("Ask Atlas contextual sidecar", () => {
       const call = calls;
       if (call === 1) {
         await firstHeld;
+        try {
+          await fulfillJson(
+            route,
+            chatResponse("First answer must not appear.", `request-${call}`)
+          );
+        } catch {
+          // New chat aborts the fetch, so this response never reaches the page.
+        }
+        settleFirst();
+        return;
       }
       await fulfillJson(
         route,
-        chatResponse(
-          call === 1 ? "First answer must not appear." : "Second answer stays.",
-          `request-${call}`
-        )
+        chatResponse("Second answer stays.", `request-${call}`)
       );
     });
     await page.goto(EXPLORE_URL);
@@ -437,13 +446,8 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await page.getByLabel("Your question").fill("A later question");
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Second answer stays.")).toBeVisible();
-    const lateResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes("/v1/knowledge-graph/chat") &&
-        (response.request().postData() ?? "").includes("First question")
-    );
     resolveFirst();
-    await lateResponse;
+    await firstSettled;
     await expect(page.getByText("First answer must not appear.")).toHaveCount(
       0
     );
