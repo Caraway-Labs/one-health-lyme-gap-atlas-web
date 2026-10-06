@@ -16,7 +16,9 @@ import { ResetInvestigateExperience } from "@/features/ux-reset/investigate/rese
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
+  INVESTIGATE_CASES_LIMITATION,
   INVESTIGATE_CASES_MEASURE_ID,
+  INVESTIGATE_RELEASE_ID,
   INVESTIGATE_TICK_LIMITATION,
   INVESTIGATE_TICK_MEASURE_ID,
   investigateGeographyFixture,
@@ -242,7 +244,6 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
 function returnHrefs() {
   return {
     header: screen.getByTestId("investigate-return").getAttribute("href"),
-    next: screen.getByTestId("investigate-next-return").getAttribute("href"),
   };
 }
 
@@ -333,10 +334,9 @@ function pageSnapshot() {
     heading: screen.getByRole("heading", { level: 1 }).textContent,
     limitation:
       screen.queryByTestId("investigate-limitation-text")?.textContent ?? "",
+    continueHref:
+      screen.queryByTestId("investigate-continue")?.getAttribute("href") ?? "",
     nextCounty: screen.getByTestId("investigate-next-steps").dataset.county,
-    nextReturn:
-      screen.queryByTestId("investigate-next-return")?.getAttribute("href") ??
-      "",
     recovery: screen.queryByTestId("investigate-recovery")?.dataset.recovery,
     returnHref: returnLink?.getAttribute("href") ?? "",
   };
@@ -446,19 +446,21 @@ describe("County Investigate workspace", () => {
     });
     const snapshot = pageSnapshot();
     expect({
+      action: snapshot.continueHref.includes("/app/action"),
+      continueHref: snapshot.continueHref,
       county: snapshot.county,
       hasCurrentValue: snapshot.evidence.includes("40 cases"),
       hasStaleValue: snapshot.evidence.includes("12 cases"),
       heading: snapshot.heading,
       nextCounty: snapshot.nextCounty,
-      nextReturn: snapshot.nextReturn.includes("county=08013"),
     }).toStrictEqual({
+      action: false,
+      continueHref: "",
       county: "08013",
       hasCurrentValue: true,
       hasStaleValue: false,
       heading: "Boulder",
       nextCounty: "08013",
-      nextReturn: true,
     });
   });
 
@@ -829,9 +831,9 @@ describe("County Investigate workspace", () => {
       pending,
       unavailable,
     }).toStrictEqual({
-      mismatch: { header: requested, next: requested },
-      pending: { header: requested, next: requested },
-      unavailable: { header: requested, next: requested },
+      mismatch: { header: requested },
+      pending: { header: requested },
+      unavailable: { header: requested },
     });
   });
 
@@ -950,14 +952,185 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-finding-text").textContent
       ).toContain("7 cases")
     );
+    const unavailable =
+      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
+    expect({
+      action: screen.queryByRole("link", { name: "Continue to Action" }),
+      continuePath: screen.queryByTestId("investigate-continue"),
+      emptyFamily: screen.getByTestId("investigate-family-vector_pathogen")
+        .textContent,
+      exportButton: screen.queryByTestId("investigate-export"),
+      limitation: screen.getByTestId("investigate-limitation-text").textContent,
+      returnCounty: (
+        screen.getByTestId("investigate-return").getAttribute("href") ?? ""
+      ).includes("county=08001"),
+      unavailableCases: unavailable.includes(INVESTIGATE_CASES_LIMITATION),
+      unavailableTicks: unavailable.includes(INVESTIGATE_TICK_LIMITATION),
+    }).toStrictEqual({
+      action: null,
+      continuePath: null,
+      emptyFamily: expect.stringContaining(
+        "No governed observations were returned"
+      ),
+      exportButton: null,
+      limitation: expect.stringContaining(INVESTIGATE_CASES_LIMITATION),
+      returnCounty: true,
+      unavailableCases: true,
+      unavailableTicks: false,
+    });
+  });
+
+  it("withholds Action and the county PDF for available and limited evidence", async () => {
+    const search =
+      "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01";
+    const view = renderInvestigate(search);
+    await waitForCounty("08001");
+    await waitFor(() => {
+      if (
+        !screen
+          .queryByTestId("investigate-finding-text")
+          ?.textContent?.includes("12 cases")
+      ) {
+        throw new Error("Finding has not loaded.");
+      }
+    });
+    const context = screen.getByTestId("investigate-export-context");
+    const unavailable =
+      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
+    const evidenceText =
+      screen.getByTestId("investigate-evidence").textContent ?? "";
+    expect({
+      action: screen.queryByRole("link", { name: "Continue to Action" }),
+      caveats: context.dataset.caveats,
+      continuePath: screen.queryByTestId("investigate-continue"),
+      county: context.dataset.county,
+      evidenceCases: evidenceText.includes("CDC surveillance"),
+      evidenceCover: evidenceText.includes("National land cover"),
+      evidenceTicks: evidenceText.includes(INVESTIGATE_TICK_LIMITATION),
+      exportButton: screen.queryByRole("button", { name: "Export PDF" }),
+      exportState: context.dataset.exportState,
+      observationPeriods: context.dataset.observationPeriods,
+      period: context.dataset.period,
+      reasonPeriod: unavailable.includes("2023-01-01"),
+      reasonSource: unavailable.includes("Tick survey"),
+      release: context.dataset.release,
+      returnReview: (
+        screen.getByTestId("investigate-return").getAttribute("href") ?? ""
+      ).includes("/app/review"),
+      sources: context.dataset.sources,
+    }).toStrictEqual({
+      action: null,
+      caveats: INVESTIGATE_TICK_LIMITATION,
+      continuePath: null,
+      county: "08001",
+      evidenceCases: true,
+      evidenceCover: true,
+      evidenceTicks: true,
+      exportButton: null,
+      exportState: "unavailable",
+      observationPeriods: "2023",
+      period: "2023-01-01",
+      reasonPeriod: true,
+      reasonSource: true,
+      release: INVESTIGATE_RELEASE_ID,
+      returnReview: true,
+      sources: "CDC surveillance\nTick survey\nNational land cover",
+    });
+
+    view.unmount();
+    renderInvestigate(search);
+    await waitFor(() => {
+      if (
+        screen.getByTestId("investigate-export-context").dataset.period !==
+          "2023-01-01" ||
+        !screen
+          .getByTestId("investigate-pdf-unavailable")
+          .textContent?.includes(INVESTIGATE_TICK_LIMITATION)
+      ) {
+        throw new Error("Reloaded page dropped the unavailable PDF context.");
+      }
+    });
+  });
+
+  it("returns to Compare only when a two-county set is already in the link", async () => {
+    renderInvestigate("?county=08001&scope=CO&compare=08001,08013");
+    await waitForCounty("08001");
+    await waitFor(() => {
+      if (
+        screen.getByTestId("investigate-export-context").dataset.county !==
+          "08001" ||
+        screen.queryByRole("link", { name: "Continue to Action" })
+      ) {
+        throw new Error("Compare return path has not rendered.");
+      }
+    });
+    const link = screen.getByTestId("investigate-continue");
+    const href = link.getAttribute("href") ?? "";
+    expect({
+      county: screen.getByTestId("investigate-export-context").dataset.county,
+      destination: link.dataset.destination,
+      hrefCompare: href.includes("/app/compare"),
+      hrefCounty: href.includes("county=08001"),
+      hrefPair: href.includes("compare=08001%2C08013"),
+      note: screen.queryByTestId("investigate-continue-note"),
+      paths: screen.getAllByTestId("investigate-continue").length,
+    }).toStrictEqual({
+      county: "08001",
+      destination: "compare",
+      hrefCompare: true,
+      hrefCounty: true,
+      hrefPair: true,
+      note: null,
+      paths: 1,
+    });
+  });
+
+  it("hides Action, Compare, and export until a county bundle or compare pair exists", async () => {
+    renderInvestigate("?scope=CO");
+    await waitFor(() => {
+      if (
+        screen.queryByTestId("investigate-recovery")?.dataset.recovery !==
+        "missing"
+      ) {
+        throw new Error("Missing-county recovery has not rendered.");
+      }
+    });
+    expect(screen.queryByTestId("investigate-continue")).toBeNull();
+    expect(screen.queryByTestId("investigate-export-context")).toBeNull();
     expect(
-      screen.getByTestId("investigate-limitation-text").textContent
-    ).toContain("Case reports do not include every clinical encounter.");
-    expect(
-      screen.getByTestId("investigate-family-vector_pathogen").textContent
-    ).toContain("No governed observations were returned");
-    expect(
-      screen.getByTestId("investigate-return").getAttribute("href")
-    ).toContain("county=08001");
+      screen.queryByRole("link", { name: "Continue to Action" })
+    ).toBeNull();
+  });
+
+  it("does not request a county report for the visible period and caveat", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    renderInvestigate(
+      "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await waitFor(() => {
+      const reason = screen.queryByTestId(
+        "investigate-pdf-unavailable"
+      )?.textContent;
+      if (
+        !reason?.includes("2023-01-01") ||
+        !reason.includes(INVESTIGATE_TICK_LIMITATION)
+      ) {
+        throw new Error("Unavailable PDF explanation has not rendered.");
+      }
+    });
+    const reportCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes("/report.pdf")
+    );
+    expect({
+      exportButton: screen.queryByRole("button", { name: "Export PDF" }),
+      reportCalls: reportCalls.length,
+      state: screen.getByTestId("investigate-export-context").dataset
+        .exportState,
+    }).toStrictEqual({
+      exportButton: null,
+      reportCalls: 0,
+      state: "unavailable",
+    });
+    fetchMock.mockRestore();
   });
 });

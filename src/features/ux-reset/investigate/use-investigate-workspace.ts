@@ -54,6 +54,7 @@ export type InvestigateRecovery =
 export type InvestigateWorkspace = {
   bundle: CountyEvidenceBundle | null;
   catalogError: string | null;
+  compare: readonly string[];
   directory: readonly ExploreCountyIdentity[];
   directoryError: string | null;
   directoryLoading: boolean;
@@ -395,6 +396,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     catalogError: measuresQuery.isError
       ? "Governed measures could not be loaded."
       : null,
+    compare: urlState.compare,
     directory,
     directoryError: directoryQuery.isError
       ? "The published county list for this release could not be loaded."

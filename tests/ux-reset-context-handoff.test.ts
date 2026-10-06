@@ -138,7 +138,7 @@ describe("UX Reset cross-page context contract", () => {
     expect(dropped).toContain("selected");
   });
 
-  it("drops compare when returning from Compare to Investigate", () => {
+  it("keeps a validated compare pair when opening Investigate", () => {
     const source = new URLSearchParams(
       "scope=CO&county=08001&compare=08001,08003&dataset=alpha&metric=score"
     );
@@ -147,8 +147,9 @@ describe("UX Reset cross-page context contract", () => {
       UX_RESET_ROUTE_PATHS.investigate,
       source
     );
-    expect(params.has("compare")).toBeFalsy();
-    expect(dropped).toContain("compare");
+    expect(params.get("compare")).toBe("08001,08003");
+    expect(params.get("county")).toBe("08001");
+    expect(dropped).not.toContain("compare");
     expect(dropped).toContain("metric");
   });
 

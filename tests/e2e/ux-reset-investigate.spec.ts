@@ -317,7 +317,16 @@ test.describe("County Investigate evidence hierarchy", () => {
       "data-county",
       "08013"
     );
-    await expect(page.getByTestId("investigate-next-return")).toHaveAttribute(
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-county", "08013");
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-export-state", "unavailable");
+    await expect(page.getByTestId("investigate-return")).toHaveAttribute(
       "href",
       /county=08013/
     );
@@ -442,5 +451,226 @@ test.describe("County Investigate evidence hierarchy", () => {
       "data-county",
       "08001"
     );
+  });
+
+  test("keeps the unavailable PDF explanation after reload", async ({
+    page,
+  }) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    await page.goto(
+      "/app/investigate?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    const context = page.getByTestId("investigate-export-context");
+    await expect(context).toHaveAttribute("data-county", "08001");
+    await expect(context).toHaveAttribute("data-release", "alpha-2026");
+    await expect(context).toHaveAttribute("data-period", "2023-01-01");
+    await expect(context).toHaveAttribute("data-observation-periods", "2023");
+    await expect(context).toHaveAttribute("data-export-state", "unavailable");
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      "2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      "Tick survey"
+    );
+    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
+      0
+    );
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-return")).toHaveAttribute(
+      "href",
+      /\/app\/review/
+    );
+    await expect(page.getByTestId("investigate-evidence")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+
+    await page.reload();
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-period", "2023-01-01");
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+
+    const results = await new AxeBuilder({ page })
+      .include('[data-testid="investigate-workspace"]')
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test("returns to Compare when the link already names two counties", async ({
+    page,
+  }) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    await page.goto(
+      "/app/investigate?county=08001&scope=CO&compare=08001,08013&dataset=alpha-2026"
+    );
+    const compare = page.getByTestId("investigate-continue");
+    await expect(compare).toHaveAttribute("data-destination", "compare");
+    await expect(compare).toHaveAttribute("href", /\/app\/compare/);
+    await expect(compare).toHaveAttribute("href", /08013/);
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
+    await compare.click();
+    await expect(page).toHaveURL(/\/app\/compare/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).toHaveURL(/08013/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Compare");
+  });
+
+  test("does not advertise Action for a limited county without a pair", async ({
+    page,
+  }) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "sparse" },
+      Promise.resolve(),
+      []
+    );
+    await page.goto(
+      "/app/investigate?county=08001&scope=CO&dataset=alpha-2026"
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      INVESTIGATE_CASES_LIMITATION
+    );
+    await expect(page.getByTestId("investigate-limitation-text")).toContainText(
+      INVESTIGATE_CASES_LIMITATION
+    );
+    await expect(page.getByTestId("investigate-continue")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Continue to Action" })
+    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-return")).toHaveAttribute(
+      "href",
+      /\/app\/review/
+    );
+    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
+      0
+    );
+  });
+
+  test("does not request a report while the visible period and caveat are unmatched", async ({
+    page,
+  }) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    const pdfUrls: string[] = [];
+    await page.route("**/v1/counties/**/report.pdf**", async (route) => {
+      pdfUrls.push(route.request().url());
+      await route.fulfill({
+        body: "%PDF-1.7 boulder",
+        contentType: "application/pdf",
+      });
+    });
+    await page.goto(
+      "/app/investigate?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      "2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
+      0
+    );
+    await expect(
+      page.getByTestId("investigate-next-steps").getByRole("alert")
+    ).toHaveCount(0);
+
+    await page.getByTestId("investigate-county-select").click();
+    await page.getByRole("option", { name: "Boulder, Colorado" }).click();
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-county", "08013");
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-export-state", "unavailable");
+    expect(pdfUrls).toEqual([]);
+  });
+
+  test("returns from Compare to the same pair after reload and history", async ({
+    page,
+  }) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    await page.goto(
+      "/app/compare?compare=08001,08013&county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01&metric=score"
+    );
+    const boulder = page.getByTestId("compare-investigate-08013");
+    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
+      "href",
+      /compare=08001(?:%2C|,)08013/
+    );
+    await expect(
+      page.getByTestId("compare-investigate-08001")
+    ).not.toHaveAttribute("href", /metric=/);
+    await expect(boulder).toHaveAttribute("href", /county=08013/);
+    await expect(boulder).toHaveAttribute("href", /period=2023-01-01/);
+    await expect(boulder).toHaveAttribute("href", /scope=CO/);
+    await expect(boulder).toHaveAttribute("href", /dataset=alpha-2026/);
+    await boulder.click();
+    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(page).not.toHaveURL(/metric=/);
+    await page.reload();
+    const returnCompare = page.getByTestId("investigate-continue");
+    await expect(returnCompare).toHaveAttribute("data-destination", "compare");
+    await expect(page).toHaveURL(/county=08013/);
+    await returnCompare.click();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001,08013"
+    );
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).toHaveURL(/scope=CO/);
+    await page.reload();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001,08013"
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).toHaveURL(/scope=CO/);
+    await page.goForward();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001,08013"
+    );
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/scope=CO/);
   });
 });

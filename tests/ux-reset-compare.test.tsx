@@ -329,13 +329,29 @@ describe("two-county aligned comparison", () => {
     expect(investigate).toContain("county=08001");
   });
 
-  it("drops the compare list when handing one county to Investigate", async () => {
-    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
-    const investigate = screen
-      .getByTestId("compare-investigate-08001")
-      .getAttribute("href");
-    expect(investigate).not.toContain("compare=");
+  it("keeps the compare pair when handing one county to Investigate", async () => {
+    renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=2023-01-01&metric=score"
+    );
+    await screen.findByTestId("compare-investigate-08001");
+    const investigate =
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
+    expect({
+      compare: investigate.includes("compare=08001%2C08013"),
+      county: investigate.includes("county=08001"),
+      dataset: investigate.includes("dataset=alpha-2026"),
+      metric: investigate.includes("metric="),
+      period: investigate.includes("period=2023-01-01"),
+      scope: investigate.includes("scope=CO"),
+    }).toStrictEqual({
+      compare: true,
+      county: true,
+      dataset: true,
+      metric: false,
+      period: true,
+      scope: true,
+    });
   });
 
   it("explains invalid and duplicate FIPS without inventing a second county", async () => {

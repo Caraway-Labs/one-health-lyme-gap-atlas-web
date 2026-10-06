@@ -63,18 +63,17 @@ Explore `selected` maps into `compare` **only** when the destination accepts `co
 
 | Source \\ Dest | Review | Explore | Investigate | Compare | Action | Assistant | Feed | Settings |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Review** | scope, county, dataset, period | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
-| **Explore** | scope, county, dataset, period | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare¹, dataset, period | scope, county, compare¹, dataset, period | county, dataset | — | — |
-| **Investigate** | scope, county, dataset, period | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
-| **Compare** | scope, county, dataset, period | scope, county, dataset, period | scope, county, dataset, period² | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
-| **Action** | scope, county, dataset, period | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Review** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Explore** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare¹, dataset, period | scope, county, compare¹, dataset, period | scope, county, compare¹, dataset, period | county, dataset | — | — |
+| **Investigate** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Compare** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Action** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
 | **Assistant** | county, dataset | county, dataset | county, dataset | county, dataset | county, dataset | county, dataset | — | — |
-| **Feed** | —³ | — | — | — | — | — | — | — |
-| **Settings** | —³ | — | — | — | — | — | — | — |
+| **Feed** | —² | — | — | — | — | — | — | — |
+| **Settings** | —² | — | — | — | — | — | — | — |
 
 ¹ `compare` is synthesized from Explore `selected` when needed.  
-² `compare` is **not** copied onto Investigate (dropped explicitly).  
-³ Feed and Settings **export no shared context** even if the URL contains query params.
+² Feed and Settings **export no shared context** even if the URL contains query params.
 
 **Docs** (`/docs`) and legacy analytical routes (`/`, `/geographic_explorer`, `/investigate`) use their own contracts (`analytical-navigation-handoff`, `assistant-context-handoff`).
 
@@ -86,7 +85,15 @@ The preview why line is the review-priority rationale only. It does not say that
 
 Browser Back and Forward restore the originating Review history entry. That entry keeps shared context (`scope`, `county`, `dataset`, `period`) and Review-local `sort` and `page` when those keys were already on the entry. The selected county row is scrolled into view. When the user left through Open Investigate, keyboard focus returns to that county's rank-row control. When the county is outside the first 40, return opens the complete county list and focuses that county's table control. The session fallback for that return is cleared after focus is restored, so a later fresh Review URL for the same county does not reuse it.
 
-Practical limit: the pixel scroll offset inside the county list is not stored in the URL. Return reveals the selected row. The Investigate return link and shell links rebuild Review from shared context only, so they restore scope, county, dataset, and period, and they do not restore `sort` or `page`. Those Review-only keys are not added to the global handoff to make return work. If Review had `compare`, `sort`, or `page`, the preview states that Investigate does not carry them.
+Practical limit: the pixel scroll offset inside the county list is not stored in the URL. Return reveals the selected row. The Investigate return link and shell links rebuild Review from shared context only, so they restore scope, county, dataset, and period, and they do not restore `sort` or `page`. Those Review-only keys are not added to the global handoff to make return work. If Review had `sort` or `page`, the preview states that those keys stay on Review. A validated `compare` pair is copied onto Investigate with the selected county.
+
+## Investigate next step and export (#417)
+
+Investigate keeps **Return to Review** in the county header. The next-step section offers **Return to Compare** when the URL has a validated two-county `compare` set. That pair arrives through the normal handoff, including from the Compare workspace links.
+
+**Continue to Action** is not offered. `/app/action` still renders the placeholder page, so a loaded county without a pair has no second cross-page control. The page does not choose Surveillance Planning or an Evidence Brief.
+
+**PDF unavailable.** `GET /v1/counties/{fips}/report.pdf` returns an opaque PDF for the county, release, template, and score settings. It does not carry the requested period, observation period, source family, or observation caveat shown on this page. Investigate does not offer export, and it does not send a second mapping, until a report contract can be compared with that visible context. `downloadPdfReport` still discards an empty file and a response that arrives after the caller drops it. Those guards stay for callers whose contract can be checked.
 
 ## Tests
 
