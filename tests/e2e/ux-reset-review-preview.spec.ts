@@ -246,7 +246,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       why: element.getAttribute("data-why"),
     }));
     expect(previewState).toMatchObject({
-      availability: "unavailable",
+      availability: "limited",
       fips: "36024",
       followUp: "Prioritize targeted follow-up",
     });
@@ -254,8 +254,10 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(previewState.why).not.toMatch(/available for review/i);
     expect(previewState.caveat).toContain("not treated as zero");
     await expect(
-      page.getByTestId("review-preview-qualification")
-    ).toContainText("Unavailable");
+      page
+        .getByTestId("review-preview-qualification")
+        .locator(".ux-reset-evidence-availability")
+    ).toHaveText("Limited");
     await expect(
       page.getByTestId("review-preview-qualification")
     ).toContainText("not treated as zero");

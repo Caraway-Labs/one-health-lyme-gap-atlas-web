@@ -585,7 +585,9 @@ describe("Reset Review scope UI", () => {
           .querySelector("summary")
           ?.textContent?.includes("Inspect provenance")
       ),
-      qualificationText: qualification.textContent,
+      evidenceState: qualification.querySelector(
+        ".ux-reset-evidence-availability"
+      )?.textContent,
       whyClaimsAvailable: /available for review/i.test(previewText),
       zeroCases: /0 cases/.test(previewText),
     }).toStrictEqual({
@@ -599,7 +601,7 @@ describe("Reset Review scope UI", () => {
       denverFips: "08001",
       denverTarget: expect.stringContaining("county=08001"),
       inspectable: true,
-      qualificationText: expect.stringContaining("Unavailable"),
+      evidenceState: "Limited",
       whyClaimsAvailable: false,
       zeroCases: false,
     });
@@ -617,10 +619,19 @@ describe("Reset Review scope UI", () => {
       fips: "08005",
       human_status: "SUPPRESSED",
     };
+    const partial = {
+      ...reviewScopeScoresFixture.counties[2],
+      evidence_completeness: 30,
+    };
+    const empty = {
+      ...partial,
+      evidence_completeness: 0,
+      fips: "36003",
+    };
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const panel = (county: typeof limited) => (
+    const panel = (county: typeof limited | typeof partial | typeof empty) => (
       <QueryClientProvider client={client}>
         <ReviewStatePanel
           county={county.fips}
@@ -638,18 +649,34 @@ describe("Reset Review scope UI", () => {
       screen.getByTestId("review-preview-qualification").textContent ?? "";
     const limitedWhy = screen.getByTestId("review-preview-why").textContent;
     view.rerender(panel(suppressed));
-    const suppressedNode = screen.getByTestId("review-preview-qualification");
+    const suppressedLabel = screen.getByTestId(
+      "review-preview-qualification"
+    ).textContent;
+    const suppressedReason = screen.getByText(
+      "Suppressed or privacy-protected"
+    ).textContent;
+    const evidenceBadge = () =>
+      screen
+        .getByTestId("review-preview-qualification")
+        .querySelector(".ux-reset-evidence-availability")?.textContent;
+    view.rerender(panel(partial));
+    const partialBadge = evidenceBadge();
+    view.rerender(panel(empty));
+    const emptyBadge = evidenceBadge();
     expect({
+      emptyBadge,
       limitedNote,
       limitedText,
       limitedWhy,
-      suppressedLabel: suppressedNode.textContent,
-      suppressedReason: screen.getByText("Suppressed or privacy-protected")
-        .textContent,
+      partialBadge,
+      suppressedLabel,
+      suppressedReason,
     }).toStrictEqual({
+      emptyBadge: "Unavailable",
       limitedNote: "Some scored inputs are unavailable in this release.",
       limitedText: expect.stringContaining("Limited"),
       limitedWhy: "Lower review priority",
+      partialBadge: "Limited",
       suppressedLabel: expect.stringContaining("Limited"),
       suppressedReason: "Suppressed or privacy-protected",
     });

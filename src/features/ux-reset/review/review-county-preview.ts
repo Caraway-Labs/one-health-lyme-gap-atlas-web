@@ -85,7 +85,9 @@ export function reviewCountyPreviewAvailability(
   const absentCount = statuses.filter((status) =>
     isAbsentStatus(status)
   ).length;
-  if (absentCount === statuses.length) {
+  // Completeness above zero means other scored inputs still carry governed
+  // signal. Unavailable is a row with no governed inputs.
+  if (absentCount === statuses.length && county.evidence_completeness <= 0) {
     return evidenceAvailabilityValues.unavailable;
   }
   if (hasSuppressedStatus(county)) {

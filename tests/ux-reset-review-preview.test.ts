@@ -75,7 +75,7 @@ describe("Review county preview", () => {
       why: "Lower review priority",
     });
 
-    const unavailable = buildReviewCountyPreview(
+    const partial = buildReviewCountyPreview(
       county({
         burgdorferi_status: "No records",
         color: "#e9602b",
@@ -87,18 +87,36 @@ describe("Review county preview", () => {
         tick_status: "No records",
       })
     );
+    const unavailable = buildReviewCountyPreview(
+      county({
+        burgdorferi_status: "No records",
+        evidence_completeness: 0,
+        fips: "36091",
+        human_status: "missing",
+        tick_status: "No records",
+      })
+    );
     expect({
-      availability: unavailable.availability,
-      caveat: unavailable.caveat,
-      followUp: unavailable.followUp,
-      why: unavailable.why,
-      zeroCases: /0 cases/.test(`${unavailable.why} ${unavailable.caveat}`),
+      availability: partial.availability,
+      caveat: partial.caveat,
+      followUp: partial.followUp,
+      qualified: partial.qualification?.availability,
+      why: partial.why,
+      zeroCases: /0 cases/.test(`${partial.why} ${partial.caveat}`),
     }).toStrictEqual({
-      availability: "unavailable",
+      availability: "limited",
       caveat: expect.stringContaining("not treated as zero"),
       followUp: "Prioritize targeted follow-up",
+      qualified: "limited",
       why: expect.stringContaining("Highest review priority"),
       zeroCases: false,
+    });
+    expect({
+      availability: unavailable.availability,
+      qualified: unavailable.qualification?.availability,
+    }).toStrictEqual({
+      availability: "unavailable",
+      qualified: "unavailable",
     });
   });
 
