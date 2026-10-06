@@ -126,7 +126,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Compare | One Health Lyme Gap Atlas",
   },
   {
-    description: "Turn findings into follow-up actions and outreach steps.",
+    description:
+      "Carry one county's Investigate evidence into follow-up that exists today.",
     href: RESET_ACTION_PATH,
     icon: Zap,
     id: "action",
@@ -134,7 +135,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Placeholder for the professional Action destination in the UX Reset workspace.",
+      "Bounded follow-up for one county's validated Investigate evidence. No intervention is started from this page.",
     pageTitle: "Action | One Health Lyme Gap Atlas",
   },
   {

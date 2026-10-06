@@ -3,16 +3,17 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceObject } from "@/features/ux-reset/evidence";
-import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import {
-  countyEvidenceGap,
   investigateFamilyPublication,
   type CountyEvidenceBundle,
   type CountyEvidenceFamilySection,
-  type CountyEvidenceGap,
   type CountyEvidenceObservation,
   type FamilyPublication,
 } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  investigateFindingSummary,
+  investigateLimitationSummary,
+} from "@/features/ux-reset/investigate/investigate-visible-summary";
 
 function observationAnchor(observationId: string): string {
   return `investigate-observation-${observationId}`;
@@ -76,60 +77,6 @@ function publicationCopy(publication: FamilyPublication): string | null {
     }
     default: {
       const exhaustive: never = publication;
-      return exhaustive;
-    }
-  }
-}
-
-function gapCopy(
-  gap: CountyEvidenceGap,
-  subject: "finding" | "limitation"
-): string {
-  switch (gap) {
-    case "failed": {
-      return subject === "finding"
-        ? "County evidence could not be loaded. That is a request failure, not a statement that no finding was published."
-        : "A limitation was not read because the evidence requests failed.";
-    }
-    case "mixed": {
-      return "Some measures failed to load, and others were not queried because the period is not a supported bound.";
-    }
-    case "returned_empty": {
-      return subject === "finding"
-        ? "No observed or limited finding was returned for this county."
-        : "No material limitation was returned on the observations for this county.";
-    }
-    case "unsupported_period": {
-      return "The selected period is not a supported bound for the published measures, so no observation query was sent.";
-    }
-    default: {
-      const exhaustive: never = gap;
-      return exhaustive;
-    }
-  }
-}
-
-function gapTitle(
-  gap: CountyEvidenceGap,
-  subject: "finding" | "limitation"
-): string {
-  switch (gap) {
-    case "failed": {
-      return "Evidence did not load";
-    }
-    case "mixed": {
-      return "Evidence is incomplete";
-    }
-    case "returned_empty": {
-      return subject === "finding"
-        ? "No returned finding"
-        : "No returned limitation";
-    }
-    case "unsupported_period": {
-      return "Period is not supported";
-    }
-    default: {
-      const exhaustive: never = gap;
       return exhaustive;
     }
   }
@@ -200,24 +147,15 @@ export function InvestigateEvidenceHierarchy({
 }) {
   const finding = bundle.leadFinding;
   const limitation = bundle.leadLimitation;
+  const findingSummary = investigateFindingSummary(bundle);
+  const limitationSummary = investigateLimitationSummary(bundle);
   const failedMeasureIds = new Set(
     bundle.measureFailures.map((failure) => failure.measureId)
   );
   const unsupportedMeasureIds = new Set(bundle.unsupportedPeriodMeasureIds);
-  const gap = countyEvidenceGap(bundle);
   const handleRetryFailures = () => {
     onRetryFailures?.();
   };
-  const known = finding
-    ? `${finding.measureLabel}: ${finding.evidence.displayValue}. ${evidenceAvailabilityLabel(finding.evidence.availability)}. Period ${finding.evidence.provenance.observationPeriod}. Source ${finding.evidence.provenance.sourceFamily}.`
-    : gap
-      ? gapCopy(gap, "finding")
-      : gapCopy("returned_empty", "finding");
-  const uncertain = limitation
-    ? `${limitation.observation.measureLabel}: ${limitation.text}`
-    : gap
-      ? gapCopy(gap, "limitation")
-      : gapCopy("returned_empty", "limitation");
 
   return (
     <div
@@ -233,15 +171,11 @@ export function InvestigateEvidenceHierarchy({
         <AtlasSectionHeader
           eyebrow="What we know"
           headingLevel="h2"
-          title={
-            finding
-              ? finding.measureLabel
-              : gapTitle(gap ?? "returned_empty", "finding")
-          }
+          title={findingSummary.title}
         />
         <Card className="ux-reset-investigate-callout">
           <p className="type-body" data-testid="investigate-finding-text">
-            {known}
+            {findingSummary.text}
           </p>
           {finding ? (
             <a
@@ -261,15 +195,11 @@ export function InvestigateEvidenceHierarchy({
         <AtlasSectionHeader
           eyebrow="What is uncertain"
           headingLevel="h2"
-          title={
-            limitation
-              ? limitation.observation.measureLabel
-              : gapTitle(gap ?? "returned_empty", "limitation")
-          }
+          title={limitationSummary.title}
         />
         <Card className="ux-reset-investigate-callout">
           <p className="type-body" data-testid="investigate-limitation-text">
-            {uncertain}
+            {limitationSummary.text}
           </p>
           {limitation ? (
             <a

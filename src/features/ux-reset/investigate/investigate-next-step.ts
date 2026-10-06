@@ -17,7 +17,7 @@ export type InvestigateContinueDestination =
 
 /**
  * Return to Compare when the URL already has a validated two-county pair.
- * Action still renders a placeholder, so this page does not offer that path.
+ * Continue to Action is a separate offer once a county evidence bundle exists.
  * Return to Review stays in the county header.
  */
 export function investigateContinueDestination(input: {
@@ -42,6 +42,23 @@ export type InvestigateCompareOffer = {
   kind: InvestigateCompareOfferKind;
   label: "Compare" | "Return to Compare";
 };
+
+export type InvestigateActionOffer = {
+  label: "Continue to Action";
+};
+
+/**
+ * Offer Action only after this county's evidence bundle has loaded.
+ * A published identity alone is not the evidence context Action repeats.
+ */
+export function investigateActionOffer(input: {
+  bundle: Pick<CountyEvidenceBundle, "county" | "releaseId"> | null;
+}): InvestigateActionOffer | null {
+  if (!input.bundle?.county.fips || !input.bundle.releaseId) {
+    return null;
+  }
+  return { label: "Continue to Action" };
+}
 
 /**
  * Start Compare only for a county that has already resolved to a published

@@ -954,8 +954,11 @@ describe("County Investigate workspace", () => {
     );
     const unavailable =
       screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
+    const action = screen.getByRole("link", { name: "Continue to Action" });
+    const actionHref = action.getAttribute("href") ?? "";
     expect({
-      action: screen.queryByRole("link", { name: "Continue to Action" }),
+      actionCounty: actionHref.includes("county=08001"),
+      actionPath: actionHref.includes("/app/action"),
       continuePath: screen.queryByTestId("investigate-continue"),
       emptyFamily: screen.getByTestId("investigate-family-vector_pathogen")
         .textContent,
@@ -967,7 +970,8 @@ describe("County Investigate workspace", () => {
       unavailableCases: unavailable.includes(INVESTIGATE_CASES_LIMITATION),
       unavailableTicks: unavailable.includes(INVESTIGATE_TICK_LIMITATION),
     }).toStrictEqual({
-      action: null,
+      actionCounty: true,
+      actionPath: true,
       continuePath: null,
       emptyFamily: expect.stringContaining(
         "No governed observations were returned"
@@ -980,7 +984,7 @@ describe("County Investigate workspace", () => {
     });
   });
 
-  it("withholds Action and the county PDF for available and limited evidence", async () => {
+  it("offers Action and withholds the county PDF for available and limited evidence", async () => {
     const search =
       "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01";
     const view = renderInvestigate(search);
@@ -999,8 +1003,13 @@ describe("County Investigate workspace", () => {
       screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
     const evidenceText =
       screen.getByTestId("investigate-evidence").textContent ?? "";
+    const action = screen.getByRole("link", { name: "Continue to Action" });
+    const actionHref = action.getAttribute("href") ?? "";
     expect({
-      action: screen.queryByRole("link", { name: "Continue to Action" }),
+      actionCounty: actionHref.includes("county=08001"),
+      actionPath: actionHref.includes("/app/action"),
+      actionPeriod: actionHref.includes("period=2023-01-01"),
+      actionRelease: actionHref.includes("dataset=alpha-2026"),
       caveats: context.dataset.caveats,
       continuePath: screen.queryByTestId("investigate-continue"),
       county: context.dataset.county,
@@ -1019,7 +1028,10 @@ describe("County Investigate workspace", () => {
       ).includes("/app/review"),
       sources: context.dataset.sources,
     }).toStrictEqual({
-      action: null,
+      actionCounty: true,
+      actionPath: true,
+      actionPeriod: true,
+      actionRelease: true,
       caveats: INVESTIGATE_TICK_LIMITATION,
       continuePath: null,
       county: "08001",
@@ -1059,14 +1071,19 @@ describe("County Investigate workspace", () => {
       if (
         screen.getByTestId("investigate-export-context").dataset.county !==
           "08001" ||
-        screen.queryByRole("link", { name: "Continue to Action" })
+        !screen.queryByRole("link", { name: "Continue to Action" })
       ) {
         throw new Error("Compare return path has not rendered.");
       }
     });
     const link = screen.getByTestId("investigate-continue");
     const href = link.getAttribute("href") ?? "";
+    const actionHref =
+      screen.getByTestId("investigate-action").getAttribute("href") ?? "";
     expect({
+      actionCounty: actionHref.includes("county=08001"),
+      actionPair: actionHref.includes("compare=08001%2C08013"),
+      actionPath: actionHref.includes("/app/action"),
       county: screen.getByTestId("investigate-export-context").dataset.county,
       destination: link.dataset.destination,
       hrefCompare: href.includes("/app/compare"),
@@ -1076,6 +1093,9 @@ describe("County Investigate workspace", () => {
       note: screen.queryByTestId("investigate-continue-note"),
       paths: screen.getAllByTestId("investigate-continue").length,
     }).toStrictEqual({
+      actionCounty: true,
+      actionPair: true,
+      actionPath: true,
       county: "08001",
       destination: "compare",
       hrefCompare: true,
@@ -1093,6 +1113,7 @@ describe("County Investigate workspace", () => {
     );
     await waitForCounty("08001");
     const link = await screen.findByTestId("investigate-compare");
+    const action = await screen.findByTestId("investigate-action");
     const href = link.getAttribute("href") ?? "";
     const url = new URL(href, "http://localhost");
     expect({
@@ -1113,9 +1134,16 @@ describe("County Investigate workspace", () => {
       scope: "CO",
     });
     expect(screen.queryByTestId("investigate-continue")).toBeNull();
-    expect(
-      screen.queryByRole("link", { name: "Continue to Action" })
-    ).toBeNull();
+    const actionHref = action.getAttribute("href") ?? "";
+    expect({
+      county: actionHref.includes("county=08001"),
+      path: actionHref.includes("/app/action"),
+      period: actionHref.includes("period=2023-01-01"),
+    }).toStrictEqual({
+      county: true,
+      path: true,
+      period: true,
+    });
   });
 
   it("does not start Compare for an unpublished county and still returns for a pair", async () => {

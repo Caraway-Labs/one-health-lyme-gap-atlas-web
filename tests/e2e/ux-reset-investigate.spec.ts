@@ -317,9 +317,14 @@ test.describe("County Investigate evidence hierarchy", () => {
       "data-county",
       "08013"
     );
-    await expect(
-      page.getByRole("link", { name: "Continue to Action" })
-    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /\/app\/action/
+    );
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /county=08013/
+    );
     await expect(
       page.getByTestId("investigate-export-context")
     ).toHaveAttribute("data-county", "08013");
@@ -498,9 +503,14 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
       0
     );
-    await expect(
-      page.getByRole("link", { name: "Continue to Action" })
-    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /\/app\/action/
+    );
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /period=2023-01-01/
+    );
     await expect(page.getByTestId("investigate-return")).toHaveAttribute(
       "href",
       /\/app\/review/
@@ -539,9 +549,14 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(compare).toHaveAttribute("data-destination", "compare");
     await expect(compare).toHaveAttribute("href", /\/app\/compare/);
     await expect(compare).toHaveAttribute("href", /08013/);
-    await expect(
-      page.getByRole("link", { name: "Continue to Action" })
-    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /\/app\/action/
+    );
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /08013/
+    );
     await compare.click();
     await expect(page).toHaveURL(/\/app\/compare/);
     await expect(page).toHaveURL(/county=08001/);
@@ -549,7 +564,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Compare");
   });
 
-  test("does not advertise Action for a limited county without a pair", async ({
+  test("offers Action for a limited county without choosing a neighbor", async ({
     page,
   }) => {
     await installInvestigateMocks(
@@ -572,9 +587,18 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(compareEntry).toHaveAttribute("href", /compare=08001(?!\d)/);
     await expect(compareEntry).toHaveAttribute("href", /return=investigate/);
     await expect(compareEntry).not.toHaveAttribute("href", /08013/);
-    await expect(
-      page.getByRole("link", { name: "Continue to Action" })
-    ).toHaveCount(0);
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /\/app\/action/
+    );
+    await expect(page.getByTestId("investigate-action")).toHaveAttribute(
+      "href",
+      /county=08001/
+    );
+    await expect(page.getByTestId("investigate-action")).not.toHaveAttribute(
+      "href",
+      /08013/
+    );
     await expect(page.getByTestId("investigate-return")).toHaveAttribute(
       "href",
       /\/app\/review/
