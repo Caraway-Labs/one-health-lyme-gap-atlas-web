@@ -8,6 +8,9 @@ import {
 } from "@/lib/atlas-analytics";
 import { plainPriority } from "@/lib/atlas-ui";
 
+/** Counties rendered as rank rows. The complete table holds the rest. */
+export const RANKED_COUNTY_SHORTLIST_LENGTH = 40;
+
 export function RankedCounties({
   counties,
   selectedFips,
@@ -39,33 +42,40 @@ export function RankedCounties({
         role="list"
         aria-label="Counties suggested for review"
       >
-        {counties.slice(0, 40).map((county, index) => (
-          <div role="listitem" key={county.fips}>
-            <button
-              {...analyticsControlAttributes("ranked_county_select")}
-              type="button"
-              className={`rank-row ${county.fips === selectedFips ? "active" : ""}`}
-              onClick={() => onSelect(county.fips, "ranked_list")}
-            >
-              <span className="rank-number">{index + 1}</span>
-              <span className="rank-name">
-                <strong>
-                  {county.county}, {county.state}
-                </strong>
-                <small>
-                  FIPS {county.fips} · {plainPriority(county.priority)}
-                </small>
-              </span>
-              <span className="rank-score" style={{ background: county.color }}>
-                {county.score.score}
-              </span>
-            </button>
-          </div>
-        ))}
+        {counties
+          .slice(0, RANKED_COUNTY_SHORTLIST_LENGTH)
+          .map((county, index) => (
+            <div role="listitem" key={county.fips}>
+              <button
+                {...analyticsControlAttributes("ranked_county_select")}
+                type="button"
+                className={`rank-row ${county.fips === selectedFips ? "active" : ""}`}
+                data-fips={county.fips}
+                data-list-index={index}
+                onClick={() => onSelect(county.fips, "ranked_list")}
+              >
+                <span className="rank-number">{index + 1}</span>
+                <span className="rank-name">
+                  <strong>
+                    {county.county}, {county.state}
+                  </strong>
+                  <small>
+                    FIPS {county.fips} · {plainPriority(county.priority)}
+                  </small>
+                </span>
+                <span
+                  className="rank-score"
+                  style={{ background: county.color }}
+                >
+                  {county.score.score}
+                </span>
+              </button>
+            </div>
+          ))}
       </div>
       <p className="list-note">
-        Showing the first 40 filtered counties. The accessible table and CSV
-        include the complete result.
+        Showing the first {RANKED_COUNTY_SHORTLIST_LENGTH} filtered counties.
+        The accessible table and CSV include the complete result.
       </p>
       <Button
         {...analyticsControlAttributes("results_table_toggle")}

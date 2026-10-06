@@ -78,6 +78,16 @@ Explore `selected` maps into `compare` **only** when the destination accepts `co
 
 **Docs** (`/docs`) and legacy analytical routes (`/`, `/geographic_explorer`, `/investigate`) use their own contracts (`analytical-navigation-handoff`, `assistant-context-handoff`).
 
+## Review county preview and return (#412)
+
+Selecting a county on Review updates shared `county` and shows a preview on Review: county identity, why it is in the review set, suggested follow-up, and **Open Investigate**. Selection does not open Investigate. The open control uses `uxResetShellHandoffHref` with the current Review search params, so the destination receives only the shared keys Investigate accepts.
+
+The preview why line is the review-priority rationale only. It does not say that county inputs are available, and it does not treat a missing tick or pathogen record as biological absence. When the score row is limited or unavailable, the preview shows that evidence state through the shared evidence strip and an Inspect provenance control. A `SUPPRESSED` status is Limited under the shared contract, including when evidence completeness is 100. A row whose human, tick, and pathogen statuses are all absent is Unavailable only when evidence completeness is zero. Completeness above zero means other scored inputs still provide governed signal, so that aggregate state is Limited. A county score summary does not include source family, observation period, evidence type, or provenance for that status, so those fields stay Unavailable and the caveat states the metadata limitation. The page release strip remains release-level. Governed observation rows stay on Investigate.
+
+Browser Back and Forward restore the originating Review history entry. That entry keeps shared context (`scope`, `county`, `dataset`, `period`) and Review-local `sort` and `page` when those keys were already on the entry. The selected county row is scrolled into view. When the user left through Open Investigate, keyboard focus returns to that county's rank-row control. When the county is outside the first 40, return opens the complete county list and focuses that county's table control. The session fallback for that return is cleared after focus is restored, so a later fresh Review URL for the same county does not reuse it.
+
+Practical limit: the pixel scroll offset inside the county list is not stored in the URL. Return reveals the selected row. The Investigate return link and shell links rebuild Review from shared context only, so they restore scope, county, dataset, and period, and they do not restore `sort` or `page`. Those Review-only keys are not added to the global handoff to make return work. If Review had `compare`, `sort`, or `page`, the preview states that Investigate does not carry them.
+
 ## Tests
 
 - `tests/ux-reset-context-handoff.test.ts` — canonical serialization, nuqs parity, source export restrictions, calendar dates, two-county compare cap.

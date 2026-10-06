@@ -137,6 +137,27 @@
   gap: var(--space-3);
 }
 
+.ux-reset-review-preview {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  padding: var(--space-3) var(--space-4);
+}
+
+.ux-reset-review-preview .eyebrow {
+  display: block;
+}
+
+.ux-reset-pro-main a.ux-reset-review-open {
+  width: fit-content;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.ux-reset-pro-main a.ux-reset-review-open[data-variant="primary"] {
+  color: var(--primary-foreground);
+}
+
 .ux-reset-explore-header {
   display: grid;
   gap: var(--space-2);

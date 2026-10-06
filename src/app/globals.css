@@ -1407,7 +1407,7 @@ a {
   box-shadow: inset 3px 0 0 var(--teal);
 }
 .rank-number {
-  color: #92a2a7;
+  color: var(--muted-foreground);
   font-family: var(--font-display);
   font-size: 0.78rem;
 }

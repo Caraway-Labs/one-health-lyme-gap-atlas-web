@@ -158,9 +158,26 @@ describe("atlas UI rules", () => {
       "#e9602b",
     ];
     const plans = colors.map((color) => followUpPlanFor({ ...detail, color }));
-    expect(new Set(plans.map((plan) => plan.level)).size).toBe(6);
-    expect(plans.at(-1)?.timeframe).toContain("2 weeks");
-    expect(plans.every((plan) => plan.actions.length >= 3)).toBeTruthy();
+    expect(plans.map((plan) => plan.level)).toStrictEqual([
+      "Continue routine review",
+      "Monitor the pattern",
+      "Verify with local information",
+      "Conduct targeted follow-up",
+      "Coordinate a local assessment",
+      "Prioritize targeted follow-up",
+    ]);
+    expect({
+      actions: plans.every((plan) => plan.actions.length >= 3),
+      neutralWording: plans.every(
+        (plan) =>
+          !/diagnos|outbreak|individual risk|transmission/i.test(plan.level)
+      ),
+      timeframe: plans.at(-1)?.timeframe ?? "",
+    }).toStrictEqual({
+      actions: true,
+      neutralWording: true,
+      timeframe: expect.stringContaining("2 weeks"),
+    });
   });
 
   it("keeps district highlights inside the selected state", () => {

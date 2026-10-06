@@ -153,11 +153,12 @@ async function activateAndExpectDestination(
   destinationTestId: string
 ) {
   const link = page.getByTestId(linkTestId);
+  await link.scrollIntoViewIfNeeded();
   await link.focus();
   await expect(link).toBeFocused();
   await Promise.all([
     page.waitForURL(url, { waitUntil: "commit" }),
-    page.keyboard.press("Enter"),
+    link.press("Enter"),
   ]);
   await expect(page.getByTestId(destinationTestId)).toBeVisible();
   await expect(page).toHaveURL(url);
@@ -303,6 +304,7 @@ test.describe("Explore spatial workspace", () => {
     await expect(adams).toBeFocused();
     await page.keyboard.press("Enter");
 
+    // Activate while the initialization replace may still be queued.
     await activateAndExpectDestination(
       page,
       "explore-investigate",

@@ -2,22 +2,37 @@
 
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { AtlasMapLegend } from "@/components/atlas-map-legend";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { RankedCounties } from "@/components/ranked-counties";
+import {
+  RANKED_COUNTY_SHORTLIST_LENGTH,
+  RankedCounties,
+} from "@/components/ranked-counties";
 import { ResultsTable } from "@/components/results-table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import {
-  RESET_INVESTIGATE_PATH,
-  RESET_REVIEW_PATH,
-} from "@/features/ux-reset/routes";
+  buildReviewInvestigateHandoff,
+  reviewPreviewForSelection,
+} from "@/features/ux-reset/review/review-county-preview";
+import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
+import {
+  consumeReviewReturnFocus,
+  markReviewReturnFocus,
+  reviewReturnFocusMatches,
+} from "@/features/ux-reset/review/review-return-focus";
 import type { CountyScoreSummary } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
@@ -65,7 +80,12 @@ export function ReviewStatePanel({
     () => new Set(rankedCounties.map((entry) => entry.fips)),
     [rankedCounties]
   );
-  const [showTable, setShowTable] = useState(false);
+  const [showTableOverride, setShowTableOverride] = useState<boolean | null>(
+    null
+  );
+  const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
+    null
+  );
   // The URL county is the selection, including after Back or Forward.
   const selectedFips = useMemo(() => {
     if (county && inScopeFips.has(county)) {
@@ -105,24 +125,94 @@ export function ReviewStatePanel({
     },
     [inScopeFips, onCountyChange]
   );
-
-  const investigateHref = useMemo(() => {
-    if (!selectedFips) {
-      return null;
+  const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const openRef = useRef<HTMLAnchorElement>(null);
+  const preview = reviewPreviewForSelection({
+    counties: rankedCounties,
+    response: null,
+    selectedFips,
+  });
+  const handoff = useMemo(
+    () =>
+      selectedFips
+        ? buildReviewInvestigateHandoff({
+            period,
+            releaseId,
+            scopeCode,
+            searchParams: new URLSearchParams(searchKey),
+            selectedFips,
+          })
+        : null,
+    [period, releaseId, scopeCode, searchKey, selectedFips]
+  );
+  const selectedRank = rankedCounties.findIndex(
+    (county) => county.fips === selectedFips
+  );
+  const returnFocusMatches =
+    /^\d{5}$/.test(selectedFips) && reviewReturnFocusMatches(selectedFips);
+  if (returnFocusMatches && latchedReturnFips !== selectedFips) {
+    setLatchedReturnFips(selectedFips);
+  } else if (
+    !returnFocusMatches &&
+    latchedReturnFips !== null &&
+    latchedReturnFips !== selectedFips
+  ) {
+    setLatchedReturnFips(null);
+  }
+  const focusReturnedCounty =
+    returnFocusMatches || latchedReturnFips === selectedFips;
+  const showTable =
+    showTableOverride ??
+    (focusReturnedCounty && selectedRank >= RANKED_COUNTY_SHORTLIST_LENGTH);
+  useLayoutEffect(() => {
+    if (!/^\d{5}$/.test(selectedFips)) {
+      return;
     }
-    const params = new URLSearchParams();
-    params.set("scope", scopeCode);
-    params.set("county", selectedFips);
-    params.set("dataset", releaseId);
-    if (period) {
-      params.set("period", period);
-    }
-    return uxResetShellHandoffHref(
-      RESET_INVESTIGATE_PATH,
-      RESET_REVIEW_PATH,
-      params
+    const root = layoutRef.current;
+    const row = root?.querySelector<HTMLButtonElement>(
+      `.rank-row.active[data-fips="${selectedFips}"]`
     );
-  }, [period, releaseId, scopeCode, selectedFips]);
+    if (row) {
+      const list = row.closest(".rank-list");
+      if (list instanceof HTMLElement) {
+        const rowBox = row.getBoundingClientRect();
+        const listBox = list.getBoundingClientRect();
+        const visible =
+          rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
+        if (!visible) {
+          row.scrollIntoView({ block: "nearest" });
+        }
+      }
+    }
+    if (!focusReturnedCounty) {
+      return;
+    }
+    if (row) {
+      row.focus({ preventScroll: true });
+    } else {
+      const tableControl = root?.querySelector<HTMLButtonElement>(
+        `.full-table button[data-fips="${selectedFips}"]`
+      );
+      if (tableControl) {
+        const scroller = tableControl.closest(".table-scroll");
+        if (scroller instanceof HTMLElement) {
+          const rowBox = tableControl.getBoundingClientRect();
+          const listBox = scroller.getBoundingClientRect();
+          const visible =
+            rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
+          if (!visible) {
+            tableControl.scrollIntoView({ block: "nearest" });
+          }
+        }
+        tableControl.focus({ preventScroll: true });
+      } else {
+        openRef.current?.focus({ preventScroll: true });
+      }
+    }
+    consumeReviewReturnFocus(selectedFips);
+  }, [focusReturnedCounty, selectedFips]);
   const mapScores = useMemo(() => [...mapCounties], [mapCounties]);
   const geometryError = Boolean(geometryQuery.isError);
   const geometryReady = Boolean(geometryQuery.data);
@@ -130,6 +220,7 @@ export function ReviewStatePanel({
 
   return (
     <div
+      ref={layoutRef}
       className="ux-reset-review-state-layout"
       data-testid="review-state-panel"
     >
@@ -188,23 +279,23 @@ export function ReviewStatePanel({
           caption={`Map framed for ${scopeCode} counties in this release.`}
         />
       </Card>
-      {investigateHref ? (
-        <p className="type-body">
-          <Link
-            data-county={selectedFips}
-            data-testid="review-investigate"
-            href={investigateHref}
-          >
-            Investigate this county
-          </Link>
-        </p>
+      {preview && handoff ? (
+        <ReviewCountyPreviewPanel
+          droppedNotes={handoff.droppedNotes}
+          href={handoff.href}
+          openRef={openRef}
+          preview={preview}
+          onOpen={markReviewReturnFocus}
+        />
       ) : null}
       <RankedCounties
         counties={[...rankedCounties]}
         selectedFips={selectedFips}
         showTable={showTable}
         onSelect={selectCounty}
-        onToggleTable={() => setShowTable((value) => !value)}
+        onToggleTable={() =>
+          setShowTableOverride((current) => !(current ?? showTable))
+        }
       />
       {showTable ? (
         <ResultsTable
