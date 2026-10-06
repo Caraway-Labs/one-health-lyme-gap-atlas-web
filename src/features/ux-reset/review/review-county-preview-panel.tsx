@@ -4,10 +4,8 @@ import Link from "next/link";
 import type { Ref } from "react";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
 import { cn } from "@/lib/utils";
 
@@ -51,14 +49,6 @@ export function ReviewCountyPreviewPanel({
       </p>
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}
-      </p>
-      <p className="type-body" data-testid="review-preview-availability">
-        <Badge variant="outline">
-          {evidenceAvailabilityLabel(preview.availability)}
-        </Badge>
-      </p>
-      <p className="type-small" data-testid="review-preview-caveat" role="note">
-        {preview.caveat}
       </p>
       <p className="type-body" data-testid="review-preview-follow-up">
         <span className="eyebrow">Suggested follow-up</span> {preview.followUp}

@@ -516,17 +516,20 @@ describe("Reset Review scope UI", () => {
     const denver = readPreview();
     view.rerender(panel("36001"));
     const albany = readPreview();
+    const previewText =
+      screen.getByTestId("review-county-preview").textContent ?? "";
     expect({
       albany,
-      availability: screen.getByTestId("review-preview-availability")
-        .textContent,
+      availabilityClaim: screen.queryByTestId("review-preview-availability"),
       caveatChanged: albany.caveat !== denver.caveat,
+      caveatClaim: screen.queryByTestId("review-preview-caveat"),
       denverFips: denver.fips,
       denverTarget: denver.target ?? "",
-      whyChanged: albany.why !== denver.why,
-      zeroCases: /0 cases/.test(
-        screen.getByTestId("review-county-preview").textContent ?? ""
+      provenance: /Source family|Inspect provenance|Evidence type/.test(
+        previewText
       ),
+      whyChanged: albany.why !== denver.why,
+      zeroCases: /0 cases/.test(previewText),
     }).toStrictEqual({
       albany: {
         caveat: expect.stringContaining("not treated as zero"),
@@ -534,14 +537,50 @@ describe("Reset Review scope UI", () => {
         target: expect.stringContaining("county=36001"),
         why: expect.stringContaining("unavailable"),
       },
-      availability: "Unavailable",
+      availabilityClaim: null,
       caveatChanged: true,
+      caveatClaim: null,
       denverFips: "08001",
       denverTarget: expect.stringContaining("county=08001"),
+      provenance: false,
       whyChanged: true,
       zeroCases: false,
     });
     expect(albany.target).not.toContain("county=08001");
+  });
+
+  it("withholds the availability claim until county provenance exists", () => {
+    const county = reviewScopeScoresFixture.counties[0];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          county={county.fips}
+          mapCounties={[county]}
+          period="2023-01-01"
+          rankedCounties={[county]}
+          releaseId="alpha-2026"
+          scopeCode="CO"
+        />
+      </QueryClientProvider>
+    );
+    const preview = screen.getByTestId("review-county-preview");
+    const text = preview.textContent ?? "";
+    expect({
+      availability: screen.queryByTestId("review-preview-availability"),
+      caveat: screen.queryByTestId("review-preview-caveat"),
+      identity: screen.getByTestId("review-preview-identity").textContent,
+      open: screen.getByTestId("review-investigate").textContent,
+      provenance: /Source family|Inspect provenance|Evidence type/.test(text),
+    }).toStrictEqual({
+      availability: null,
+      caveat: null,
+      identity: expect.stringContaining(county.fips),
+      open: "Open Investigate",
+      provenance: false,
+    });
   });
 
   it("states when Review-only controls are dropped from Investigate", async () => {
