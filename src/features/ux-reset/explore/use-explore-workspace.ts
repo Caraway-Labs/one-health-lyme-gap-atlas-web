@@ -17,6 +17,7 @@ import {
   type ExploreTimeBound,
 } from "@/features/ux-reset/explore/explore-model";
 import { exploreSearchParams } from "@/features/ux-reset/explore/explore-search-params";
+import { useExploreUrlNavigationGuard } from "@/features/ux-reset/explore/explore-url-navigation-guard";
 import {
   fetchExploreCountyDirectory,
   fetchExploreMeasures,
@@ -80,14 +81,11 @@ function requestStatus(input: {
 }
 
 export function useExploreWorkspace() {
+  useExploreUrlNavigationGuard();
   const [urlState, setUrlState] = useQueryStates(exploreSearchParams, {
     history: "push",
     scroll: false,
     shallow: true,
-    // Mobile Chromium exposes GestureEvent, so nuqs otherwise waits ~960ms
-    // before writing the URL. That delayed history update can replace a
-    // cross-route link navigation the user already started.
-    throttleMs: 0,
   });
   const [committed, setCommitted] = useState<ExploreCommittedSelection | null>(
     null

@@ -298,15 +298,13 @@ test.describe("Explore spatial workspace", () => {
       value: "18 mm",
     });
     await expect(page.locator(".maplibregl-canvas")).toHaveCount(0);
-    await expect
-      .poll(() => new URL(page.url()).searchParams.get("metric"))
-      .toBe(EXPLORE_PRECIPITATION_MEASURE_ID);
 
     const adams = page.getByRole("button", { name: "Adams, Colorado 08001" });
     await adams.focus();
     await expect(adams).toBeFocused();
     await page.keyboard.press("Enter");
 
+    // Activate while the initialization replace may still be queued.
     await activateAndExpectDestination(
       page,
       "explore-investigate",
