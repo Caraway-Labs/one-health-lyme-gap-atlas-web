@@ -6,11 +6,12 @@ import {
   evidenceAvailabilityValues,
   type EvidenceAvailability,
 } from "@/features/ux-reset/evidence/types";
+import { availabilityFromGovernedValueState } from "@/features/ux-reset/evidence/value-state-contract";
 import {
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
-import type { CountyScoreSummary } from "@/generated/models";
+import { ValueState, type CountyScoreSummary } from "@/generated/models";
 import { plainPriority, suggestedFollowUpForColor } from "@/lib/atlas-ui";
 
 const ABSENT_COUNTY_STATUSES = new Set([
@@ -49,20 +50,37 @@ export type ReviewPreviewResponse = {
   requestedFips: string;
 };
 
+function countyStatuses(county: CountyScoreSummary): string[] {
+  return [county.burgdorferi_status, county.human_status, county.tick_status];
+}
+
 function isAbsentStatus(status: string): boolean {
   return ABSENT_COUNTY_STATUSES.has(status.trim().toLowerCase());
+}
+
+/** Score rows carry the governed `SUPPRESSED` code as a status string. */
+function isSuppressedStatus(status: string): boolean {
+  return status.trim().toLowerCase() === ValueState.SUPPRESSED.toLowerCase();
+}
+
+function hasSuppressedStatus(county: CountyScoreSummary): boolean {
+  return countyStatuses(county).some((status) => isSuppressedStatus(status));
 }
 
 export function reviewCountyPreviewAvailability(
   county: CountyScoreSummary
 ): EvidenceAvailability {
-  const absentCount = [
-    county.burgdorferi_status,
-    county.human_status,
-    county.tick_status,
-  ].filter((status) => isAbsentStatus(status)).length;
-  if (absentCount === 3) {
+  const statuses = countyStatuses(county);
+  const absentCount = statuses.filter((status) =>
+    isAbsentStatus(status)
+  ).length;
+  if (absentCount === statuses.length) {
     return evidenceAvailabilityValues.unavailable;
+  }
+  if (hasSuppressedStatus(county)) {
+    return availabilityFromGovernedValueState({
+      valueState: ValueState.SUPPRESSED,
+    });
   }
   if (absentCount > 0 || county.evidence_completeness < 100) {
     return evidenceAvailabilityValues.limited;
@@ -73,6 +91,9 @@ export function reviewCountyPreviewAvailability(
 function reviewCountyPreviewCaveat(county: CountyScoreSummary): string {
   if (isAbsentStatus(county.human_status)) {
     return "A county-level published Lyme case count is unavailable. Missing data is not treated as zero cases.";
+  }
+  if (hasSuppressedStatus(county)) {
+    return "Suppressed or privacy-protected. Suppression limits this preview and is not treated as zero cases.";
   }
   if (isAbsentStatus(county.tick_status)) {
     return "The published tick table has no county record. No record does not establish that ticks are absent.";
@@ -90,6 +111,9 @@ function reviewCountyPreviewWhy(county: CountyScoreSummary): string {
   const priority = plainPriority(county.priority);
   if (isAbsentStatus(county.human_status)) {
     return `${priority}. A county-level published Lyme case count is unavailable in this release.`;
+  }
+  if (hasSuppressedStatus(county)) {
+    return `${priority}. A published input is suppressed or privacy-protected in this release.`;
   }
   return `${priority}. Published county inputs in this release are available for review.`;
 }

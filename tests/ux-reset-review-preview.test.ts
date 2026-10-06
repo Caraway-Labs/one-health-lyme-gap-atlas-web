@@ -102,6 +102,44 @@ describe("Review county preview", () => {
     });
   });
 
+  it("maps a suppressed score status to Limited", () => {
+    const suppressed = buildReviewCountyPreview(
+      county({
+        burgdorferi_status: "Present",
+        evidence_completeness: 100,
+        fips: "36001",
+        human_status: "SUPPRESSED",
+        tick_status: "Established",
+      })
+    );
+    const allSuppressed = buildReviewCountyPreview(
+      county({
+        burgdorferi_status: "suppressed",
+        evidence_completeness: 100,
+        fips: "36003",
+        human_status: "suppressed",
+        tick_status: "suppressed",
+      })
+    );
+    expect({
+      allAvailability: allSuppressed.availability,
+      availability: suppressed.availability,
+      caveat: suppressed.caveat,
+      genericCaveat: suppressed.caveat.includes(
+        "can be reviewed for this county"
+      ),
+      why: suppressed.why,
+      zeroCases: /0 cases/.test(`${suppressed.why} ${suppressed.caveat}`),
+    }).toStrictEqual({
+      allAvailability: "limited",
+      availability: "limited",
+      caveat: expect.stringContaining("Suppressed or privacy-protected"),
+      genericCaveat: false,
+      why: "Lower review priority. A published input is suppressed or privacy-protected in this release.",
+      zeroCases: false,
+    });
+  });
+
   it("ignores an earlier preview response for a different county", () => {
     const albany = county({ county: "Albany", fips: "36001" });
     const suffolk = county({

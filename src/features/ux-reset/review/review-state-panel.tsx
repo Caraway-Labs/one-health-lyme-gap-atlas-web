@@ -15,7 +15,10 @@ import {
 import { AtlasMapLegend } from "@/components/atlas-map-legend";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { RankedCounties } from "@/components/ranked-counties";
+import {
+  RANKED_COUNTY_SHORTLIST_LENGTH,
+  RankedCounties,
+} from "@/components/ranked-counties";
 import { ResultsTable } from "@/components/results-table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -76,7 +79,9 @@ export function ReviewStatePanel({
     () => new Set(rankedCounties.map((entry) => entry.fips)),
     [rankedCounties]
   );
-  const [showTable, setShowTable] = useState(false);
+  const [showTableOverride, setShowTableOverride] = useState<boolean | null>(
+    null
+  );
   // The URL county is the selection, including after Back or Forward.
   const selectedFips = useMemo(() => {
     if (county && inScopeFips.has(county)) {
@@ -138,6 +143,14 @@ export function ReviewStatePanel({
         : null,
     [period, releaseId, scopeCode, searchKey, selectedFips]
   );
+  const selectedRank = rankedCounties.findIndex(
+    (county) => county.fips === selectedFips
+  );
+  const focusReturnedCounty =
+    /^\d{5}$/.test(selectedFips) && reviewReturnFocusMatches(selectedFips);
+  const showTable =
+    showTableOverride ??
+    (focusReturnedCounty && selectedRank >= RANKED_COUNTY_SHORTLIST_LENGTH);
   useLayoutEffect(() => {
     if (!/^\d{5}$/.test(selectedFips)) {
       return;
@@ -158,12 +171,32 @@ export function ReviewStatePanel({
         }
       }
     }
-    if (!reviewReturnFocusMatches(selectedFips)) {
+    if (!focusReturnedCounty) {
       return;
     }
-    const focusTarget = row ?? openRef.current;
-    focusTarget?.focus({ preventScroll: true });
-  }, [selectedFips]);
+    if (row) {
+      row.focus({ preventScroll: true });
+      return;
+    }
+    const tableControl = root?.querySelector<HTMLButtonElement>(
+      `.full-table button[data-fips="${selectedFips}"]`
+    );
+    if (tableControl) {
+      const scroller = tableControl.closest(".table-scroll");
+      if (scroller instanceof HTMLElement) {
+        const rowBox = tableControl.getBoundingClientRect();
+        const listBox = scroller.getBoundingClientRect();
+        const visible =
+          rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
+        if (!visible) {
+          tableControl.scrollIntoView({ block: "nearest" });
+        }
+      }
+      tableControl.focus({ preventScroll: true });
+      return;
+    }
+    openRef.current?.focus({ preventScroll: true });
+  }, [focusReturnedCounty, selectedFips]);
   const mapScores = useMemo(() => [...mapCounties], [mapCounties]);
   const geometryError = Boolean(geometryQuery.isError);
   const geometryReady = Boolean(geometryQuery.data);
@@ -244,7 +277,9 @@ export function ReviewStatePanel({
         selectedFips={selectedFips}
         showTable={showTable}
         onSelect={selectCounty}
-        onToggleTable={() => setShowTable((value) => !value)}
+        onToggleTable={() =>
+          setShowTableOverride((current) => !(current ?? showTable))
+        }
       />
       {showTable ? (
         <ResultsTable

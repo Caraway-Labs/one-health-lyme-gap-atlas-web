@@ -46,6 +46,7 @@ export function ResultsTable({
                     {...analyticsControlAttributes(
                       "results_table_county_select"
                     )}
+                    data-fips={county.fips}
                     variant="link"
                     size="sm"
                     onClick={() => onSelect(county.fips)}

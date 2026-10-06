@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetDestinationHref } from "@/features/ux-reset";
 import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
+import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
 import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
@@ -142,6 +143,8 @@ describe("Reset Review scope UI", () => {
 
   afterEach(() => {
     cleanup();
+    sessionStorage.clear();
+    history.replaceState(null, "");
     vi.unstubAllGlobals();
   });
 
@@ -390,6 +393,45 @@ describe("Reset Review scope UI", () => {
     expect(document.querySelector(".rank-row.active")?.textContent).toContain(
       "Albany"
     );
+  });
+
+  it("returns focus to the complete list when the county is outside the shortlist", async () => {
+    const base = reviewScopeScoresFixture.counties[0];
+    const counties = Array.from({ length: 41 }, (_, index) => ({
+      ...base,
+      county: `County ${index + 1}`,
+      fips: String(8001 + index).padStart(5, "0"),
+      score: { ...base.score, score: 100 - index },
+    }));
+    const selected = counties[40];
+    markReviewReturnFocus(selected.fips);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          county={selected.fips}
+          mapCounties={counties}
+          period="2023-01-01"
+          rankedCounties={counties}
+          releaseId="alpha-2026"
+          scopeCode="CO"
+        />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      const focused = document.activeElement;
+      expect({
+        fips: focused instanceof HTMLElement ? focused.dataset.fips : null,
+        tableToggle: screen.getByRole("button", {
+          name: "Hide full county list",
+        }).textContent,
+      }).toStrictEqual({
+        fips: selected.fips,
+        tableToggle: "Hide full county list",
+      });
+    });
   });
 
   it("previews a map selection without leaving Review", async () => {
