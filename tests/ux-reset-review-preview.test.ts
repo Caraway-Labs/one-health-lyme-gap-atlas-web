@@ -140,6 +140,33 @@ describe("Review county preview", () => {
     });
   });
 
+  it("identifies suppression when a human count is also absent", () => {
+    const preview = buildReviewCountyPreview(
+      county({
+        burgdorferi_status: "SUPPRESSED",
+        evidence_completeness: 100,
+        fips: "36001",
+        human_status: "missing",
+        tick_status: "Established",
+      })
+    );
+    expect({
+      availability: preview.availability,
+      caveat: preview.caveat,
+      missingOnly: preview.caveat.includes(
+        "published Lyme case count is unavailable"
+      ),
+      why: preview.why,
+      zeroCases: /0 cases/.test(`${preview.why} ${preview.caveat}`),
+    }).toStrictEqual({
+      availability: "limited",
+      caveat: expect.stringContaining("Suppressed or privacy-protected"),
+      missingOnly: false,
+      why: "Lower review priority. A published input is suppressed or privacy-protected in this release.",
+      zeroCases: false,
+    });
+  });
+
   it("ignores an earlier preview response for a different county", () => {
     const albany = county({ county: "Albany", fips: "36001" });
     const suffolk = county({

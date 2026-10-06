@@ -153,11 +153,12 @@ async function activateAndExpectDestination(
   destinationTestId: string
 ) {
   const link = page.getByTestId(linkTestId);
+  await link.scrollIntoViewIfNeeded();
   await link.focus();
   await expect(link).toBeFocused();
   await Promise.all([
     page.waitForURL(url, { waitUntil: "commit" }),
-    page.keyboard.press("Enter"),
+    link.press("Enter"),
   ]);
   await expect(page.getByTestId(destinationTestId)).toBeVisible();
   await expect(page).toHaveURL(url);
@@ -297,6 +298,9 @@ test.describe("Explore spatial workspace", () => {
       value: "18 mm",
     });
     await expect(page.locator(".maplibregl-canvas")).toHaveCount(0);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("metric"))
+      .toBe(EXPLORE_PRECIPITATION_MEASURE_ID);
 
     const adams = page.getByRole("button", { name: "Adams, Colorado 08001" });
     await adams.focus();

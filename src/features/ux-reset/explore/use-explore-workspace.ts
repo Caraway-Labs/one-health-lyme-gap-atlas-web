@@ -84,6 +84,10 @@ export function useExploreWorkspace() {
     history: "push",
     scroll: false,
     shallow: true,
+    // Mobile Chromium exposes GestureEvent, so nuqs otherwise waits ~960ms
+    // before writing the URL. That delayed history update can replace a
+    // cross-route link navigation the user already started.
+    throttleMs: 0,
   });
   const [committed, setCommitted] = useState<ExploreCommittedSelection | null>(
     null
@@ -381,7 +385,9 @@ export function useExploreWorkspace() {
       void geometryQuery.refetch();
     },
     setCounty: (county: string) => {
-      void setUrlState({ county });
+      void setUrlState((current) =>
+        current.county === county ? {} : { county }
+      );
     },
     setComparePair: (pair: string[]) => {
       void setUrlState({ compare: pair, selected: pair });

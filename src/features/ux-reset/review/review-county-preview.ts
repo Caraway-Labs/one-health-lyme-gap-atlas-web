@@ -89,11 +89,11 @@ export function reviewCountyPreviewAvailability(
 }
 
 function reviewCountyPreviewCaveat(county: CountyScoreSummary): string {
-  if (isAbsentStatus(county.human_status)) {
-    return "A county-level published Lyme case count is unavailable. Missing data is not treated as zero cases.";
-  }
   if (hasSuppressedStatus(county)) {
     return "Suppressed or privacy-protected. Suppression limits this preview and is not treated as zero cases.";
+  }
+  if (isAbsentStatus(county.human_status)) {
+    return "A county-level published Lyme case count is unavailable. Missing data is not treated as zero cases.";
   }
   if (isAbsentStatus(county.tick_status)) {
     return "The published tick table has no county record. No record does not establish that ticks are absent.";
@@ -109,11 +109,11 @@ function reviewCountyPreviewCaveat(county: CountyScoreSummary): string {
 
 function reviewCountyPreviewWhy(county: CountyScoreSummary): string {
   const priority = plainPriority(county.priority);
-  if (isAbsentStatus(county.human_status)) {
-    return `${priority}. A county-level published Lyme case count is unavailable in this release.`;
-  }
   if (hasSuppressedStatus(county)) {
     return `${priority}. A published input is suppressed or privacy-protected in this release.`;
+  }
+  if (isAbsentStatus(county.human_status)) {
+    return `${priority}. A county-level published Lyme case count is unavailable in this release.`;
   }
   return `${priority}. Published county inputs in this release are available for review.`;
 }
