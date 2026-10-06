@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import {
+  buildReviewCompareHandoff,
   buildReviewInvestigateHandoff,
   reviewPreviewForSelection,
 } from "@/features/ux-reset/review/review-county-preview";
@@ -134,19 +135,22 @@ export function ReviewStatePanel({
     response: null,
     selectedFips,
   });
-  const handoff = useMemo(
-    () =>
-      selectedFips
-        ? buildReviewInvestigateHandoff({
-            period,
-            releaseId,
-            scopeCode,
-            searchParams: new URLSearchParams(searchKey),
-            selectedFips,
-          })
-        : null,
-    [period, releaseId, scopeCode, searchKey, selectedFips]
-  );
+  const handoff = useMemo(() => {
+    if (!selectedFips) {
+      return null;
+    }
+    const source = {
+      period,
+      releaseId,
+      scopeCode,
+      searchParams: new URLSearchParams(searchKey),
+      selectedFips,
+    };
+    return {
+      compareHref: buildReviewCompareHandoff(source),
+      ...buildReviewInvestigateHandoff(source),
+    };
+  }, [period, releaseId, scopeCode, searchKey, selectedFips]);
   const selectedRank = rankedCounties.findIndex(
     (county) => county.fips === selectedFips
   );
@@ -281,6 +285,7 @@ export function ReviewStatePanel({
       </Card>
       {preview && handoff ? (
         <ReviewCountyPreviewPanel
+          compareHref={handoff.compareHref}
           droppedNotes={handoff.droppedNotes}
           href={handoff.href}
           openRef={openRef}

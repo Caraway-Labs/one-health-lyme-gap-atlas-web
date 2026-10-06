@@ -49,7 +49,7 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 | Review      | `sort`, `page`                                    |
 | Explore     | `view`, `metric`, `page`, `selected`, `map_scope` |
 | Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q`   |
-| Compare     | `metric`                                          |
+| Compare     | `metric`, `return`                                |
 | Action      | `plan`, `role`                                    |
 | Assistant   | `conversation`                                    |
 | Feed        | `tab`                                             |
@@ -86,6 +86,14 @@ The preview why line is the review-priority rationale only. It does not say that
 Browser Back and Forward restore the originating Review history entry. That entry keeps shared context (`scope`, `county`, `dataset`, `period`) and Review-local `sort` and `page` when those keys were already on the entry. The selected county row is scrolled into view. When the user left through Open Investigate, keyboard focus returns to that county's rank-row control. When the county is outside the first 40, return opens the complete county list and focuses that county's table control. The session fallback for that return is cleared after focus is restored, so a later fresh Review URL for the same county does not reuse it.
 
 Practical limit: the pixel scroll offset inside the county list is not stored in the URL. Return reveals the selected row. The Investigate return link and shell links rebuild Review from shared context only, so they restore scope, county, dataset, and period, and they do not restore `sort` or `page`. Those Review-only keys are not added to the global handoff to make return work. If Review had `sort` or `page`, the preview states that those keys stay on Review. A validated `compare` pair is copied onto Investigate with the selected county.
+
+## Compare entry and return (#420)
+
+Review and Investigate open Compare through `buildCompareEntryHref` in `compare-entry.ts`. That helper is the Compare entry URL. The pair is still the shared `compare` serializer.
+
+An existing validated `compare` list is kept. When that list is empty, the selected county is written as the only member. Compare does not choose a second county. The Compare page asks for the missing county. Clearing or editing the pair on Compare changes `compare` on the Compare URL. It does not rewrite the Review or Investigate history entry the user left.
+
+`return` is page-local to Compare. Entry links set it to `review` or `investigate`. Any other value is ignored. A direct Compare link without `return` stays usable and does not show a return control. The return link is a normal handoff of the visible pair: Review does not receive `compare`, and Investigate receives the pair currently on screen. Compare edits do not change the originating `county`.
 
 ## Investigate next step and export (#417)
 

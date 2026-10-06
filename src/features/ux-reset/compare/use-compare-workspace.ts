@@ -17,9 +17,11 @@ import {
   classifyCompareEntry,
   compareCountyOptionLabel,
   compareRecoveryMessages,
+  compareReturnPath,
   removeCompareMember,
   replaceCompareSlot,
   resolveVisibleCompareEntry,
+  type CompareReturnTarget,
   type ResolvedCompareEntry,
 } from "@/features/ux-reset/compare/compare-entry";
 import { compareSearchParams } from "@/features/ux-reset/compare/compare-search-params";
@@ -99,6 +101,8 @@ export type CompareWorkspace = {
   recoveryState: CompareRecoveryState;
   releaseId: string | null;
   removeMember: (fips: string) => void;
+  returnHref: string | null;
+  returnTarget: CompareReturnTarget | null;
   retryCatalog: () => void;
   retryEvidence: () => void;
   scopeLabel: string;
@@ -412,6 +416,14 @@ export function useCompareWorkspace(): CompareWorkspace {
       contextFor(currentPair[0] ?? urlState.county, currentPair)
     )
   );
+  const returnTarget = urlState.return;
+  const returnHref = returnTarget
+    ? uxResetShellHandoffHref(
+        compareReturnPath(returnTarget),
+        RESET_COMPARE_PATH,
+        sharedContextToSearchParams(contextFor(urlState.county, currentPair))
+      )
+    : null;
   const optionRows = new Map<string, ExploreCountyIdentity | null>();
   for (const county of directory) {
     optionRows.set(county.fips, county);
@@ -494,6 +506,8 @@ export function useCompareWorkspace(): CompareWorkspace {
     recoveryState,
     releaseId,
     removeMember,
+    returnHref,
+    returnTarget,
     retryCatalog,
     retryEvidence,
     scopeLabel: reviewScopeLabel(urlState.scope, stateOptions),

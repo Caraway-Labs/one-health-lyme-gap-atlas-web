@@ -748,4 +748,100 @@ describe("two-county aligned comparison", () => {
       denver: "present",
     });
   });
+
+  it("keeps Review return on the original county when the pair changes", async () => {
+    renderCompare(
+      "?compare=08001&county=08001&scope=CO&dataset=alpha-2026&return=review"
+    );
+    await waitForPair("08001");
+    const openedHref =
+      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+    expect({
+      county: openedHref.includes("county=08001"),
+      label: screen.getByTestId("compare-return").textContent,
+      pair: openedHref.includes("compare="),
+      path: openedHref.includes("/app/review"),
+      returnParam: openedHref.includes("return="),
+    }).toStrictEqual({
+      county: true,
+      label: "Return to Review",
+      pair: false,
+      path: true,
+      returnParam: false,
+    });
+
+    await pickCounty("Second county", /Boulder, Colorado/);
+    await waitForPair("08001,08013");
+    const edited =
+      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+    const actionHref =
+      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect({
+      actionPair: actionHref.includes("08013"),
+      county: edited.includes("county=08001"),
+      editedPair: edited.includes("08013"),
+      returnTarget: screen.getByTestId("compare-workspace").dataset.return,
+    }).toStrictEqual({
+      actionPair: true,
+      county: true,
+      editedPair: false,
+      returnTarget: "review",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear counties" }));
+    await waitForPair("");
+    const cleared =
+      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+    expect({
+      county: cleared.includes("county=08001"),
+      fips: screen.getByTestId("compare-workspace").dataset.fips,
+      pair: cleared.includes("compare="),
+    }).toStrictEqual({
+      county: true,
+      fips: "",
+      pair: false,
+    });
+  });
+
+  it("hands Investigate the visible pair without changing the entry county", async () => {
+    renderCompare(
+      "?compare=08001&county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01&return=investigate"
+    );
+    await waitForPair("08001");
+    await pickCounty("Second county", /Albany, New York/);
+    await waitForPair("08001,36001");
+    const href =
+      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+    expect({
+      county: href.includes("county=08001"),
+      pair: href.includes("compare=08001%2C36001"),
+      path: href.includes("/app/investigate"),
+      period: href.includes("period=2023-01-01"),
+      returnParam: href.includes("return="),
+    }).toStrictEqual({
+      county: true,
+      pair: true,
+      path: true,
+      period: true,
+      returnParam: false,
+    });
+  });
+
+  it("leaves a direct link usable when return is absent or invalid", async () => {
+    const direct = renderCompare("?compare=08001,08013&scope=CO");
+    await waitForPair("08001,08013");
+    expect(screen.queryByTestId("compare-return")).toBeNull();
+    expect(screen.getByTestId("compare-workspace").dataset.return).toBe("");
+    direct.unmount();
+
+    renderCompare("?compare=08001,not-a-fips&return=assistant");
+    await waitForPair("08001");
+    expect(screen.queryByTestId("compare-return")).toBeNull();
+    expect(screen.getByTestId("compare-workspace").dataset.pairIssue).toBe(
+      "invalid"
+    );
+    expect(screen.getByTestId("compare-recovery").textContent).toContain(
+      "second county"
+    );
+  });
 });

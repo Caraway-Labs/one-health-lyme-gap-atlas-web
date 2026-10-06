@@ -553,6 +553,10 @@ test.describe("County Investigate evidence hierarchy", () => {
       INVESTIGATE_CASES_LIMITATION
     );
     await expect(page.getByTestId("investigate-continue")).toHaveCount(0);
+    const compareEntry = page.getByTestId("investigate-compare");
+    await expect(compareEntry).toHaveAttribute("href", /compare=08001(?!\d)/);
+    await expect(compareEntry).toHaveAttribute("href", /return=investigate/);
+    await expect(compareEntry).not.toHaveAttribute("href", /08013/);
     await expect(
       page.getByRole("link", { name: "Continue to Action" })
     ).toHaveCount(0);
@@ -672,5 +676,63 @@ test.describe("County Investigate evidence hierarchy", () => {
     );
     await expect(page).toHaveURL(/dataset=alpha-2026/);
     await expect(page).toHaveURL(/scope=CO/);
+  });
+
+  test("opens Compare from one county and restores that Investigate entry", async ({
+    page,
+  }) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    await page.goto(
+      "/app/investigate?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    const compare = page.getByTestId("investigate-compare");
+    await expect(compare).toHaveText("Compare");
+    await expect(compare).toHaveAttribute("href", /compare=08001(?!\d)/);
+    await expect(compare).not.toHaveAttribute("href", /08013/);
+    await compare.click();
+    await expect(page).toHaveURL(/\/app\/compare/);
+    await expect(page).toHaveURL(/compare=08001(?!\d)/);
+    await expect(page).toHaveURL(/return=investigate/);
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001"
+    );
+    await expect(page.getByTestId("compare-recovery")).toContainText(
+      "second county"
+    );
+    const returnHref =
+      (await page.getByTestId("compare-return").getAttribute("href")) ?? "";
+    expect(returnHref).toContain("/app/investigate");
+    expect(returnHref).toContain("county=08001");
+    expect(returnHref).not.toContain("return=");
+
+    await page.reload();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001"
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).not.toHaveURL(/compare=/);
+    await page.goForward();
+    await expect(page.getByTestId("compare-pair")).toHaveAttribute(
+      "data-fips",
+      "08001"
+    );
+    await page.getByTestId("compare-return").click();
+    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).toHaveURL(/compare=08001(?!\d)/);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/compare/);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).not.toHaveURL(/compare=/);
   });
 });

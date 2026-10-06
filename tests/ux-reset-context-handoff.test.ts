@@ -138,6 +138,41 @@ describe("UX Reset cross-page context contract", () => {
     expect(dropped).toContain("selected");
   });
 
+  it("drops the Compare return target and does not copy the pair onto Review", () => {
+    const source = new URLSearchParams(
+      "scope=CO&county=08001&compare=08001,08013&dataset=alpha&return=review&metric=score"
+    );
+    const review = uxResetContextHandoffSearchParams(
+      UX_RESET_ROUTE_PATHS.compare,
+      UX_RESET_ROUTE_PATHS.review,
+      source
+    );
+    const investigate = uxResetContextHandoffSearchParams(
+      UX_RESET_ROUTE_PATHS.compare,
+      UX_RESET_ROUTE_PATHS.investigate,
+      source
+    );
+    expect({
+      investigateCompare: investigate.params.get("compare"),
+      investigateDropsReturn: investigate.dropped.includes("return"),
+      investigateReturn: investigate.params.has("return"),
+      reviewCompare: review.params.has("compare"),
+      reviewCounty: review.params.get("county"),
+      reviewDropsCompare: review.dropped.includes("compare"),
+      reviewDropsReturn: review.dropped.includes("return"),
+      reviewReturn: review.params.has("return"),
+    }).toStrictEqual({
+      investigateCompare: "08001,08013",
+      investigateDropsReturn: true,
+      investigateReturn: false,
+      reviewCompare: false,
+      reviewCounty: "08001",
+      reviewDropsCompare: true,
+      reviewDropsReturn: true,
+      reviewReturn: false,
+    });
+  });
+
   it("keeps a validated compare pair when opening Investigate", () => {
     const source = new URLSearchParams(
       "scope=CO&county=08001&compare=08001,08003&dataset=alpha&metric=score"

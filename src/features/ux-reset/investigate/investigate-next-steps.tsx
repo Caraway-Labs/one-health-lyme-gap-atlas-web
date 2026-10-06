@@ -5,11 +5,27 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
 import {
-  investigateContinueDestination,
+  investigateCompareOffer,
   investigatePdfContext,
+  type InvestigateCompareOfferKind,
 } from "@/features/ux-reset/investigate/investigate-next-step";
 import { InvestigatePdfExport } from "@/features/ux-reset/investigate/investigate-pdf-export";
 import { cn } from "@/lib/utils";
+
+function investigateCompareTestId(kind: InvestigateCompareOfferKind): string {
+  switch (kind) {
+    case "return": {
+      return "investigate-continue";
+    }
+    case "start": {
+      return "investigate-compare";
+    }
+    default: {
+      const exhaustive: never = kind;
+      return exhaustive;
+    }
+  }
+}
 
 export function InvestigateNextSteps({
   bundle,
@@ -24,7 +40,10 @@ export function InvestigateNextSteps({
   countyFips: string;
   requestedPeriod: string | null;
 }) {
-  const destination = investigateContinueDestination({ compare });
+  const offer = investigateCompareOffer({
+    compare,
+    county: countyFips || null,
+  });
   const pdfContext = bundle
     ? investigatePdfContext(bundle, requestedPeriod)
     : null;
@@ -40,15 +59,16 @@ export function InvestigateNextSteps({
       <p className="type-body">
         Ask Atlas is optional. This county can be read without it.
       </p>
-      {destination === "compare" ? (
+      {offer ? (
         <Link
           className={cn(buttonVariants(), "ux-reset-investigate-action")}
           data-destination="compare"
-          data-testid="investigate-continue"
+          data-offer={offer.kind}
+          data-testid={investigateCompareTestId(offer.kind)}
           data-variant="primary"
           href={compareHref}
         >
-          Return to Compare
+          {offer.label}
         </Link>
       ) : null}
       {bundle?.leadFinding ? (

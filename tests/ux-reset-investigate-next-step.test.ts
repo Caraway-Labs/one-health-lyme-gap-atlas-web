@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  investigateCompareOffer,
   investigateContinueDestination,
   investigateCountyReportExportOffer,
 } from "@/features/ux-reset/investigate/investigate-next-step";
@@ -24,6 +25,36 @@ describe("Investigate continue destination", () => {
     expect(
       investigateContinueDestination({ compare: ["08001", "08013"] })
     ).toBe("compare");
+  });
+
+  it("offers Compare for the open county without choosing a second", () => {
+    expect({
+      duplicateName: investigateCompareOffer({
+        compare: [],
+        county: "27163",
+      }),
+      empty: investigateCompareOffer({ compare: [], county: null }),
+      invalid: investigateCompareOffer({ compare: [], county: "nope" }),
+      otherPair: investigateCompareOffer({
+        compare: ["08001"],
+        county: "36001",
+      }),
+      pair: investigateCompareOffer({
+        compare: ["08001", "08013"],
+        county: "08001",
+      }),
+      sameName: investigateCompareOffer({
+        compare: [],
+        county: "44009",
+      }),
+    }).toStrictEqual({
+      duplicateName: { kind: "start", label: "Compare" },
+      empty: null,
+      invalid: null,
+      otherPair: { kind: "start", label: "Compare" },
+      pair: { kind: "return", label: "Return to Compare" },
+      sameName: { kind: "start", label: "Compare" },
+    });
   });
 });
 
