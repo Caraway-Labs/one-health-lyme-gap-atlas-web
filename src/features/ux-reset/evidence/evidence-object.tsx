@@ -50,8 +50,10 @@ export function EvidenceObject({
       </div>
       <EvidenceStateStrip model={model} showReason={showReason} />
       <EvidenceProvenanceInspect
+        availability={model.availability}
         contentSurface={contentSurface}
         provenance={model.provenance}
+        reasonCode={model.reasonCode}
       />
     </Card>
   );

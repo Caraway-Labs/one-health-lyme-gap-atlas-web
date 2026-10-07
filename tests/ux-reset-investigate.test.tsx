@@ -19,6 +19,8 @@ import {
   INVESTIGATE_CASES_LIMITATION,
   INVESTIGATE_CASES_MEASURE_ID,
   INVESTIGATE_RELEASE_ID,
+  INVESTIGATE_STATE_SOURCE_URL,
+  INVESTIGATE_STATE_STALE_LIMITATION,
   INVESTIGATE_TICK_LIMITATION,
   INVESTIGATE_TICK_MEASURE_ID,
   investigateGeographyFixture,
@@ -361,6 +363,75 @@ describe("County Investigate workspace", () => {
     delayedCompletions = 0;
     delayedObservations = Promise.resolve();
     observationRequests.length = 0;
+  });
+
+  it("discloses source, periods, freshness, method, and limitations on the county", async () => {
+    controls.scenario = "ambiguous";
+    renderInvestigate("?county=08001&scope=CO");
+    await waitForCounty("08001");
+    const human = await screen.findByTestId("investigate-family-human");
+    await waitFor(() => {
+      if (human.querySelectorAll("[data-observation-id]").length !== 2) {
+        throw new Error("Both source periods have not loaded.");
+      }
+    });
+
+    const cdc = human.querySelector("[data-observation-id='obs-cases-08001']");
+    const stateSource = human.querySelector(
+      "[data-observation-id='obs-cases-state-08001']"
+    );
+    const valueOf = (root: Element | null, testId: string) =>
+      root?.querySelector(`[data-testid='${testId}'] dd`)?.textContent ?? "";
+
+    fireEvent.click(cdc?.querySelector("summary") ?? document.body);
+    fireEvent.click(stateSource?.querySelector("summary") ?? document.body);
+
+    expect({
+      cdcFreshness: valueOf(cdc, "evidence-provenance-freshness"),
+      cdcLimitations:
+        cdc?.querySelector("[data-testid='evidence-provenance-limitations']")
+          ?.textContent ?? "",
+      cdcMethod: valueOf(cdc, "evidence-provenance-method"),
+      cdcPeriod: valueOf(cdc, "evidence-provenance-period"),
+      cdcSourceLink: Boolean(
+        cdc?.querySelector("a[href*='example.state.gov']")
+      ),
+      cdcState: valueOf(cdc, "evidence-provenance-state"),
+      loadingCopy: screen.queryByText("Loading county evidence…"),
+      stateFreshness: valueOf(stateSource, "evidence-provenance-freshness"),
+      stateLimitations:
+        stateSource?.querySelector(
+          "[data-testid='evidence-provenance-limitations']"
+        )?.textContent ?? "",
+      stateMethod: valueOf(stateSource, "evidence-provenance-method"),
+      statePeriod: valueOf(stateSource, "evidence-provenance-period"),
+      stateSourceLink:
+        stateSource?.querySelector("a")?.getAttribute("href") ?? "",
+      stateState: valueOf(stateSource, "evidence-provenance-state"),
+      urlCounty: navigationSearchParams.get("county"),
+    }).toStrictEqual({
+      cdcFreshness: "Unavailable",
+      cdcLimitations: expect.stringContaining(
+        "No governed limitations were returned."
+      ),
+      cdcMethod: "Version 1.0.0",
+      cdcPeriod: "2023",
+      cdcSourceLink: false,
+      cdcState: "Available. Observed or published.",
+      loadingCopy: null,
+      stateFreshness: expect.stringContaining("Dataset vintage 2022.2"),
+      stateLimitations: expect.stringContaining(
+        INVESTIGATE_STATE_STALE_LIMITATION
+      ),
+      stateMethod: "State annual case extract. Version 1.0.0.",
+      statePeriod: "January 1, 2023 – June 30, 2023 (YEAR)",
+      stateSourceLink: INVESTIGATE_STATE_SOURCE_URL,
+      stateState: "Limited. Coverage or methodology limits apply.",
+      urlCounty: "08001",
+    });
+    expect(valueOf(stateSource, "evidence-provenance-freshness")).not.toMatch(
+      /stale/i
+    );
   });
 
   it("shows one finding, one limitation, and a review return path from a direct link", async () => {
@@ -932,16 +1003,25 @@ describe("County Investigate workspace", () => {
       ).toContain("12 cases")
     );
     const failure = screen.getByTestId("investigate-partial-failure");
+    const vector = screen.getByTestId("investigate-family-vector_pathogen");
+    const human =
+      screen.getByTestId("investigate-family-human").textContent ?? "";
+    expect({
+      environmental: screen.getByTestId(
+        "investigate-family-environmental_population"
+      ).textContent,
+      failure: failure.textContent,
+      humanInspect: human.includes("Inspect provenance"),
+      publication: vector.dataset.publication,
+      vectorInspect: vector.textContent?.includes("Inspect provenance"),
+    }).toStrictEqual({
+      environmental: expect.stringContaining("Unavailable"),
+      failure: expect.stringContaining("not marked unavailable"),
+      humanInspect: true,
+      publication: "request_failed",
+      vectorInspect: false,
+    });
     expect(failure.textContent).toContain("Tick pathogen detections");
-    expect(failure.textContent).toContain("not marked unavailable");
-    expect(
-      screen.getByTestId("investigate-family-vector_pathogen").dataset
-        .publication
-    ).toBe("request_failed");
-    expect(
-      screen.getByTestId("investigate-family-environmental_population")
-        .textContent
-    ).toContain("Unavailable");
   });
 
   it("shows a sparse county without inventing the other families' values", async () => {
@@ -962,6 +1042,10 @@ describe("County Investigate workspace", () => {
       continuePath: screen.queryByTestId("investigate-continue"),
       emptyFamily: screen.getByTestId("investigate-family-vector_pathogen")
         .textContent,
+      emptyInspect: (
+        screen.getByTestId("investigate-family-vector_pathogen").textContent ??
+        ""
+      ).includes("Inspect provenance"),
       exportButton: screen.queryByTestId("investigate-export"),
       limitation: screen.getByTestId("investigate-limitation-text").textContent,
       returnCounty: (
@@ -976,6 +1060,7 @@ describe("County Investigate workspace", () => {
       emptyFamily: expect.stringContaining(
         "No governed observations were returned"
       ),
+      emptyInspect: false,
       exportButton: null,
       limitation: expect.stringContaining(INVESTIGATE_CASES_LIMITATION),
       returnCounty: true,

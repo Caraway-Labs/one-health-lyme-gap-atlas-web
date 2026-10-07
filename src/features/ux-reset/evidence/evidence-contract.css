@@ -53,6 +53,24 @@
   cursor: pointer;
   font-weight: 600;
   list-style-position: outside;
+  padding-block: var(--space-2);
+}
+
+.ux-reset-evidence-provenance-fields {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.ux-reset-evidence-provenance-fields dt {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+  margin: 0;
+}
+
+.ux-reset-evidence-provenance-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .ux-reset-evidence-provenance-body {

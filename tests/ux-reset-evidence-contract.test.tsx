@@ -12,6 +12,8 @@ import {
   ReleaseEvidenceStateStrip,
   availabilityFromGovernedValueState,
   evidenceAvailabilityValues,
+  evidenceInspectFreshness,
+  evidenceInspectMethod,
   evidenceObjectFromObservation,
   formatGovernedEvidenceValue,
   formatObservationPeriod,
@@ -68,6 +70,10 @@ function renderEvidenceObject(
 function availabilityBadgeText(container: HTMLElement) {
   return container.querySelector(".ux-reset-evidence-availability")
     ?.textContent;
+}
+
+function disclosureValue(testId: string): string {
+  return screen.getByTestId(testId).querySelector("dd")?.textContent ?? "";
 }
 
 describe("ux reset evidence contract", () => {
@@ -431,6 +437,119 @@ describe("ux reset evidence contract", () => {
     const sourceLink = screen.getByRole("link", {
       name: /Open source reference/,
     });
-    expect(sourceLink.getAttribute("href")).toBe("https://www.ncei.noaa.gov/");
+    expect({
+      freshness: disclosureValue("evidence-provenance-freshness"),
+      href: sourceLink.getAttribute("href"),
+      method: disclosureValue("evidence-provenance-method"),
+      state: disclosureValue("evidence-provenance-state"),
+    }).toStrictEqual({
+      freshness: expect.stringContaining("v1.0.0-scaled-202501"),
+      href: "https://www.ncei.noaa.gov/",
+      method: "Version 1.0.0",
+      state: expect.stringContaining("Limited"),
+    });
+  });
+
+  it("keeps missing optional provenance unavailable without a staleness judgment", () => {
+    const { model } = renderEvidenceObject({
+      claimLabel: "Observation without optional provenance",
+      observation: {
+        ...noaaDailyPrecipitationWithoutVintage,
+        methodology: "   ",
+        methodology_version: " ",
+        source_id: "",
+        source_label: null,
+        source_published_at: "not-a-timestamp",
+        source_url: "  ",
+      },
+    });
+    fireEvent.click(screen.getByText("Inspect provenance"));
+    const freshness = evidenceInspectFreshness(model.provenance);
+    expect({
+      freshness,
+      freshnessRow: disclosureValue("evidence-provenance-freshness"),
+      limitations: screen.getByTestId("evidence-provenance-limitations")
+        .textContent,
+      method: evidenceInspectMethod(model.provenance),
+      methodLabel: model.provenance.methodLabel,
+      methodRow: disclosureValue("evidence-provenance-method"),
+      source: disclosureValue("evidence-provenance-source"),
+      sourceLink: screen.queryByRole("link", { name: /Open source reference/ }),
+      stale: freshness.toLowerCase().includes("stale"),
+      state: disclosureValue("evidence-provenance-state"),
+    }).toStrictEqual({
+      freshness: "Unavailable",
+      freshnessRow: "Unavailable",
+      limitations: expect.stringContaining(
+        "No governed limitations were returned."
+      ),
+      method: "Unavailable",
+      methodLabel: null,
+      methodRow: "Unavailable",
+      source: "Unavailable",
+      sourceLink: null,
+      stale: false,
+      state: "Available. Observed or published.",
+    });
+  });
+
+  it("shows limited evidence and publisher limitations without rewriting freshness", () => {
+    renderEvidenceObject({
+      claimLabel: "Suppressed cell",
+      measureType: GOVERNED_MEASURE_TYPES.precipitation,
+      observation: {
+        ...suppressedNumericObservation,
+        methodology: "Privacy suppression rule",
+        source_published_at: "2020-01-15T00:00:00Z",
+      },
+    });
+    fireEvent.click(screen.getByText("Inspect provenance"));
+    const freshness = disclosureValue("evidence-provenance-freshness");
+    expect({
+      freshnessStale: freshness.toLowerCase().includes("stale"),
+      limitations: screen
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+      method: disclosureValue("evidence-provenance-method"),
+      state: disclosureValue("evidence-provenance-state"),
+      vintage: freshness.includes("v1.0.0-scaled-202501"),
+    }).toStrictEqual({
+      freshnessStale: false,
+      limitations: ["Publisher suppressed this cell for privacy."],
+      method: "Privacy suppression rule. Version 1.0.0.",
+      state: "Limited. Suppressed or privacy-protected.",
+      vintage: true,
+    });
+  });
+
+  it("keeps distinct periods for two sources of the same measure", () => {
+    const annual = evidenceObjectFromObservation({
+      claimLabel: "Reported cases",
+      measureType: GOVERNED_MEASURE_TYPES.caseCount,
+      observation: {
+        ...publishedZeroObservation,
+        period_end: "2023-12-31",
+        period_start: "2023-01-01",
+        temporal_grain: "YEAR",
+      },
+    });
+    const partial = evidenceObjectFromObservation({
+      claimLabel: "Reported cases",
+      measureType: GOVERNED_MEASURE_TYPES.caseCount,
+      observation: {
+        ...publishedZeroObservation,
+        period_end: "2023-06-30",
+        period_start: "2023-01-01",
+        source_label: "State health department",
+        temporal_grain: "YEAR",
+      },
+    });
+    expect({
+      annual: annual.provenance.observationPeriod,
+      partial: partial.provenance.observationPeriod,
+    }).toStrictEqual({
+      annual: "2023",
+      partial: "January 1, 2023 – June 30, 2023 (YEAR)",
+    });
   });
 });

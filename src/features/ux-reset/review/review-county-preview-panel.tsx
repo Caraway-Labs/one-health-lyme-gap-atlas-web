@@ -58,7 +58,9 @@ export function ReviewCountyPreviewPanel({
         <div data-testid="review-preview-qualification">
           <EvidenceStateStrip model={preview.qualification} showReason />
           <EvidenceProvenanceInspect
+            availability={preview.qualification.availability}
             provenance={preview.qualification.provenance}
+            reasonCode={preview.qualification.reasonCode}
           />
         </div>
       ) : null}
