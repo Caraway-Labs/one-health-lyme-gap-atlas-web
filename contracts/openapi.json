@@ -2528,9 +2528,7 @@
     },
     "/v1/states/{state}/review": {
       "get": {
-        "tags": [
-          "states"
-        ],
+        "tags": ["states"],
         "summary": "Review a state's county evidence",
         "description": "Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.",
         "operationId": "state_review_v1_states__state__review_get",
@@ -2862,11 +2860,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "county_fips",
-          "code",
-          "detail"
-        ],
+        "required": ["county_fips", "code", "detail"],
         "title": "DataGap"
       },
       "PublicReviewEvidenceReference": {
