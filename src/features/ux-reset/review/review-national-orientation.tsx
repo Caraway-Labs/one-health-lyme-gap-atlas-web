@@ -43,6 +43,7 @@ export function ReviewNationalOrientation({
                   style={{ gridColumn: column, gridRow: row }}
                 >
                   <Button
+                    className="h-auto min-h-14 w-full px-1 py-1 leading-tight whitespace-normal"
                     type="button"
                     variant="outline"
                     disabled={!entry}
@@ -54,7 +55,7 @@ export function ReviewNationalOrientation({
                     onClick={() => onOpenState(code)}
                   >
                     <strong>{code}</strong>
-                    <span>{entry ? entry.name : "Not in this release"}</span>
+                    {entry ? <span>{entry.name}</span> : null}
                   </Button>
                 </div>
               );
