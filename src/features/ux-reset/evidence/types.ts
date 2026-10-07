@@ -36,8 +36,17 @@ export type EvidenceProvenanceModel = {
   materialCaveat?: string | null;
   /** All governed limitations for provenance inspect. */
   limitations: string[];
-  /** One-paragraph human summary for the inspect panel. */
+  /** One-paragraph human summary retained for callers that quote provenance. */
   inspectSummary: string;
+  /** Governed method narrative from `Observation.methodology`. */
+  methodLabel?: string | null;
+  /** Governed `methodology_version`. Blank values stay unset. */
+  methodVersion?: string | null;
+  /**
+   * Formatted `source_published_at`. Null when the API omits it or the
+   * timestamp cannot be read. This is not a staleness judgment.
+   */
+  sourcePublishedAt?: string | null;
   technical?: EvidenceTechnicalProvenance | null;
   sourceUrl?: string | null;
 };
