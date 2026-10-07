@@ -33,6 +33,7 @@ import {
   reviewPictureState,
   reviewPictureSummary,
   reviewResultStateLabel,
+  reviewScopeHasContiguousMap,
 } from "@/features/ux-reset/review/review-operating-state";
 import {
   consumeReviewReturnFocus,
@@ -121,6 +122,8 @@ function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
     materialCaveat: null,
     observationPeriod: RESULT_FIELD_UNAVAILABLE,
     sourceFamily: RESULT_FIELD_UNAVAILABLE,
+    methodLabel: review.methodology_id,
+    methodVersion: review.methodology_version,
     technical: {
       configurationSha256: review.configuration_sha256,
       evaluatedAt: evaluatedAt.display,
@@ -172,8 +175,9 @@ export function ReviewOperatingPicture({
     }
   }, [county, onCountyChange, selectedFips]);
 
+  const mapSupported = reviewScopeHasContiguousMap(scopeCode);
   const geometryQuery = useQuery({
-    enabled: Boolean(releaseId),
+    enabled: mapSupported && Boolean(releaseId),
     queryFn: async () => fetchCountyDisplayGeometry(releaseId),
     queryKey: countyDisplayGeometryQueryKey("atlas-home", releaseId),
     staleTime: Infinity,
@@ -300,7 +304,9 @@ export function ReviewOperatingPicture({
         </p>
         <div data-testid="review-result-provenance">
           <EvidenceProvenanceInspect
+            availability={evidenceAvailabilityValues.limited}
             provenance={reviewResultProvenance(review)}
+            reasonCode="MATERIAL_LIMITATION"
           />
         </div>
         <p data-testid="review-backend-result">
@@ -327,7 +333,18 @@ export function ReviewOperatingPicture({
           title={`Counties in ${stateName}`}
         />
         <div className="map-wrap" data-testid="review-state-map-region">
-          {geometryReady && hasMapCounties ? (
+          {mapSupported ? null : (
+            <div data-testid="review-state-map-unsupported">
+              <AtlasStatusMessage className="map-loading" tone="empty">
+                <p>
+                  The county map covers the contiguous United States, so it does
+                  not draw {stateName}. The county list and evidence still show
+                  this review result.
+                </p>
+              </AtlasStatusMessage>
+            </div>
+          )}
+          {mapSupported && geometryReady && hasMapCounties ? (
             <AtlasMap
               ariaLabel={`Map of ${stateName}. Review suggestions are in the county list.`}
               cameraFrameState={scopeCode}
@@ -337,7 +354,7 @@ export function ReviewOperatingPicture({
               selectedState={scopeCode}
               onSelect={selectCounty}
             />
-          ) : geometryError ? (
+          ) : mapSupported && geometryError ? (
             <AtlasStatusMessage
               className="map-loading"
               data-testid="review-state-map-error"
@@ -348,7 +365,7 @@ export function ReviewOperatingPicture({
                 inspect the same review result.
               </p>
             </AtlasStatusMessage>
-          ) : !hasMapCounties && !geometryQuery.isPending ? (
+          ) : mapSupported && !hasMapCounties && !geometryQuery.isPending ? (
             <AtlasStatusMessage
               className="map-loading"
               data-testid="review-state-map-empty"
@@ -356,7 +373,7 @@ export function ReviewOperatingPicture({
             >
               <p>No county shapes were returned to draw for this result.</p>
             </AtlasStatusMessage>
-          ) : (
+          ) : mapSupported ? (
             <AtlasStatusMessage
               className="map-loading"
               data-testid="review-state-map-loading"
@@ -364,11 +381,12 @@ export function ReviewOperatingPicture({
             >
               Loading map…
             </AtlasStatusMessage>
-          )}
+          ) : null}
         </div>
         <p className="type-small">
-          The map shows place. It does not color counties by a risk score.
-          Suggestions are the review list.
+          {mapSupported
+            ? "The map shows place. It does not color counties by a risk score. Suggestions are the review list."
+            : "Suggestions stay in the review list. This map does not draw Alaska or Hawaii."}
         </p>
       </Card>
 
@@ -437,7 +455,11 @@ export function ReviewOperatingPicture({
           <h3 className="type-card">Data gaps</h3>
           <p className="type-body">These records are not review candidates.</p>
           <EvidenceStateStrip model={gapModel} showReason />
-          <EvidenceProvenanceInspect provenance={gapModel.provenance} />
+          <EvidenceProvenanceInspect
+            availability={gapModel.availability}
+            provenance={gapModel.provenance}
+            reasonCode={gapModel.reasonCode}
+          />
           <ul className="ux-reset-review-gap-list">
             {review.data_gaps.map((gap) => (
               <li

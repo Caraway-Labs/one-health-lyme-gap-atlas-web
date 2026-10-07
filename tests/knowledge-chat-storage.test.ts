@@ -12,6 +12,46 @@ import {
   saveConversations,
 } from "../src/lib/knowledge-chat-storage";
 
+function citedAnswerTurn(
+  createdAt: string,
+  answer = "A cited answer.",
+  id = "cited-answer"
+): LocalConversation["turns"][number] {
+  return {
+    createdAt,
+    id,
+    response: {
+      answer,
+      assistant_policy_version: "policy",
+      citations: [
+        {
+          citation_id: "c1",
+          claim_ids: ["claim-1"],
+          passage_ids: ["passage-1"],
+          pmid: "12345",
+          pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+          title: "Source paper",
+        },
+      ],
+      claims: [
+        {
+          citation_ids: ["c1"],
+          claim_id: "claim-1",
+          text: answer,
+        },
+      ],
+      configuration_version: "config",
+      conversation_id: "cited",
+      evidence_state: "limited",
+      request_id: id,
+      source_used: "literature_evidence",
+      status: "answered",
+    },
+    role: "assistant",
+    text: answer,
+  };
+}
+
 function conversation(
   id: string,
   updatedAt: string,
@@ -116,7 +156,7 @@ describe("knowledge chat local storage", () => {
     ).toStrictEqual(["valid"]);
   });
 
-  it("preserves old chat text while discarding incompatible response metadata", () => {
+  it("drops a malformed stored answer instead of keeping its text", () => {
     const stored = conversation(
       "bad-response",
       "2026-08-25T00:00:00.000Z",
@@ -124,20 +164,45 @@ describe("knowledge chat local storage", () => {
     );
     stored.turns = [
       {
-        createdAt: "2026-08-25T00:00:00.000Z",
-        id: "assistant",
-        role: "assistant",
-        response: { answer: "text", conversation_id: "id" } as never,
-        text: "text",
+        createdAt: stored.createdAt,
+        id: "user-partial",
+        role: "user",
+        text: "Rejected question",
       },
+      {
+        createdAt: stored.createdAt,
+        id: "assistant-partial",
+        response: { answer: "Partial only", status: "answered" } as never,
+        role: "assistant",
+        text: "Partial only",
+      },
+      {
+        createdAt: stored.createdAt,
+        id: "user-cited",
+        role: "user",
+        text: "A cited question",
+      },
+      citedAnswerTurn(stored.createdAt),
     ];
     localStorage.setItem(
       CHAT_STORAGE_KEY,
       JSON.stringify({ conversations: [stored], version: 1 })
     );
     const loaded = loadConversations(Date.parse("2026-08-26T00:00:00.000Z"));
-    expect(loaded[0].turns[0].text).toBe("text");
-    expect(loaded[0].turns[0].response).toBeUndefined();
+    expect(loaded[0]?.turns.map((turn) => turn.text)).toStrictEqual([
+      "A cited question",
+      "A cited answer.",
+    ]);
+    expect(conversationHistory(loaded[0])).toStrictEqual([
+      { content: "A cited question", role: "user" },
+      { content: "A cited answer.", role: "assistant" },
+    ]);
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+      "Partial only"
+    );
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+      "Rejected question"
+    );
   });
 
   it("removes legacy continuation tokens from browser storage", () => {
@@ -172,12 +237,7 @@ describe("knowledge chat local storage", () => {
         text: `question ${index}`,
         createdAt: stored.createdAt,
       },
-      {
-        id: `a${index}`,
-        role: "assistant" as const,
-        text: `answer ${index}`,
-        createdAt: stored.createdAt,
-      },
+      citedAnswerTurn(stored.createdAt, `answer ${index}`, `a${index}`),
     ]).flat();
     expect(conversationHistory(stored)).toHaveLength(12);
     expect(conversationHistory(stored)[0]).toStrictEqual({
@@ -242,5 +302,98 @@ describe("knowledge chat local storage", () => {
       { role: "user", content: "Where is the literature?" },
       { role: "assistant", content: "No passages matched this question." },
     ]);
+  });
+
+  it("drops an answered turn that has no citation and does not invent a source label", () => {
+    const stored = conversation(
+      "cited",
+      "2026-08-25T00:00:00.000Z",
+      "2026-09-24T00:00:00.000Z"
+    );
+    stored.turns = [
+      {
+        createdAt: stored.createdAt,
+        id: "user",
+        role: "user",
+        text: "What is reviewed?",
+      },
+      {
+        createdAt: stored.createdAt,
+        id: "missing",
+        response: {
+          answer: "An answer with no citation.",
+          assistant_policy_version: "policy",
+          configuration_version: "config",
+          conversation_id: "cited",
+          evidence_state: "limited",
+          request_id: "missing",
+          source_used: "literature_evidence",
+          status: "answered",
+        },
+        role: "assistant",
+        text: "An answer with no citation.",
+      },
+      {
+        createdAt: stored.createdAt,
+        id: "cited-user",
+        role: "user",
+        text: "A cited question",
+      },
+      {
+        createdAt: stored.createdAt,
+        id: "cited-answer",
+        response: {
+          answer: "A cited answer.",
+          assistant_policy_version: "policy",
+          citations: [
+            {
+              citation_id: "c1",
+              claim_ids: ["claim-1"],
+              passage_ids: ["passage-1"],
+              pmid: "12345",
+              pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+              title: "Source paper",
+            },
+          ],
+          claims: [
+            {
+              citation_ids: ["c1"],
+              claim_id: "claim-1",
+              text: "A cited answer.",
+            },
+          ],
+          configuration_version: "config",
+          conversation_id: "cited",
+          evidence_state: "limited",
+          request_id: "cited-answer",
+          source_used: "literature_evidence",
+          status: "answered",
+        },
+        role: "assistant",
+        text: "A cited answer.",
+      },
+    ];
+    localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({ conversations: [stored], version: 1 })
+    );
+    const loaded = loadConversations(Date.parse("2026-08-26T00:00:00.000Z"));
+    expect(loaded[0]?.turns.map((turn) => turn.text)).toStrictEqual([
+      "A cited question",
+      "A cited answer.",
+    ]);
+    expect(conversationHistory(loaded[0])).toStrictEqual([
+      { content: "A cited question", role: "user" },
+      { content: "A cited answer.", role: "assistant" },
+    ]);
+    expect(JSON.stringify(loaded[0]?.turns[1]?.response)).not.toContain(
+      "PubMed / PMC Open Access"
+    );
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+      "PubMed / PMC Open Access"
+    );
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+      "An answer with no citation."
+    );
   });
 });

@@ -345,7 +345,11 @@ describe("Review operating picture state", () => {
       const view = render(
         <>
           <EvidenceStateStrip model={qualification} />
-          <EvidenceProvenanceInspect provenance={qualification.provenance} />
+          <EvidenceProvenanceInspect
+            availability={qualification.availability}
+            provenance={qualification.provenance}
+            reasonCode={qualification.reasonCode}
+          />
         </>
       );
       const strip = view.container.querySelector(".ux-reset-evidence-strip");
@@ -353,17 +357,25 @@ describe("Review operating picture state", () => {
         strip?.querySelector(".ux-reset-evidence-caveat")?.textContent ?? "";
       const sourceFamily = strip?.querySelector("dd")?.textContent ?? "";
       const inspectItems = [
-        ...view.container.querySelectorAll(".ux-reset-evidence-limitations li"),
+        ...view.container.querySelectorAll(
+          "[data-testid='evidence-provenance-limitations'] li"
+        ),
       ].map((item) => item.textContent ?? "");
-      const summary =
-        view.container.querySelector(".ux-reset-evidence-provenance-body > p")
-          ?.textContent ?? "";
+      const inspectSource =
+        view.container
+          .querySelector("[data-testid='evidence-provenance-source'] dd")
+          ?.textContent?.trim() ?? "";
+      const referenceLine =
+        view.container.querySelector(
+          "[data-testid='evidence-provenance-references']"
+        )?.textContent ?? "";
       cleanup();
       return {
         compact,
         inspectItems,
+        inspectSource,
+        referenceLine,
         sourceFamily,
-        summaryIncludesCompact: summary.includes(compact),
       };
     };
     const reference = reviewEvidenceReference("08001");
@@ -422,32 +434,37 @@ describe("Review operating picture state", () => {
       duplicates: {
         compact: `${sharedCaveat} ${referenceCaveat}`,
         inspectItems: [sharedCaveat, referenceCaveat],
+        inspectSource: "pathogen, vector",
+        referenceLine: expect.stringContaining("version 2025"),
         sourceFamily: "pathogen, vector",
-        summaryIncludesCompact: true,
       },
       empty: {
         compact: absentCaveat,
         inspectItems: [absentCaveat],
+        inspectSource: "Unavailable",
+        referenceLine: expect.stringContaining("Unavailable"),
         sourceFamily: "Unavailable",
-        summaryIncludesCompact: true,
       },
       partialReferences: {
         compact: freshness,
         inspectItems: [freshness],
+        inspectSource: "pathogen, vector",
+        referenceLine: expect.stringContaining("version 2025"),
         sourceFamily: "pathogen, vector",
-        summaryIncludesCompact: true,
       },
       referenceOnlyCaveat: {
         compact: referenceOnly,
         inspectItems: [referenceOnly],
+        inspectSource: "pathogen",
+        referenceLine: expect.stringContaining("version 2025"),
         sourceFamily: "pathogen",
-        summaryIncludesCompact: true,
       },
       summaryOnlyFamilies: {
         compact: candidateLimitation,
         inspectItems: [candidateLimitation],
+        inspectSource: "pathogen, vector",
+        referenceLine: "",
         sourceFamily: "pathogen, vector",
-        summaryIncludesCompact: true,
       },
     });
   });
@@ -698,6 +715,75 @@ describe("Review operating picture state", () => {
       present: {
         configuration: present.configuration_sha256,
         evaluatedAt: `${formatted} UTC (${present.evaluated_at})`,
+      },
+    });
+  });
+
+  it("keeps Alaska and Hawaii on the list without the contiguous map", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const read = async (scopeCode: string, stateName: string, fips: string) => {
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={buildStateReview({
+              candidates: [
+                reviewCandidate({
+                  caveat: "Collection dates are unavailable.",
+                  countyName: "Example",
+                  fips,
+                  reasonText: `${stateName} was returned by the method.`,
+                }),
+              ],
+              resultState: "candidates_found",
+              state: scopeCode,
+            })}
+            scopeCode={scopeCode}
+            stateName={stateName}
+          />
+        </QueryClientProvider>
+      );
+      if (scopeCode === "CO") {
+        await waitFor(() => {
+          if (!screen.queryByTestId("mock-atlas-map")) {
+            throw new Error("contiguous map did not render");
+          }
+        });
+      }
+      const region = screen.getByTestId("review-state-map-region");
+      const snapshot = {
+        candidate: screen.getByTestId("review-candidate").textContent ?? "",
+        map: Boolean(region.querySelector("[data-testid='mock-atlas-map']")),
+        preview: screen.getByTestId("review-preview-why").textContent ?? "",
+        unsupported:
+          region.querySelector("[data-testid='review-state-map-unsupported']")
+            ?.textContent ?? "",
+      };
+      view.unmount();
+      return snapshot;
+    };
+    const alaska = await read("AK", "Alaska", "02020");
+    const hawaii = await read("HI", "Hawaii", "15003");
+    const colorado = await read("CO", "Colorado", "08001");
+    expect({ alaska, colorado, hawaii }).toStrictEqual({
+      alaska: {
+        candidate: expect.stringContaining("Alaska"),
+        map: false,
+        preview: "Alaska was returned by the method.",
+        unsupported: expect.stringContaining("does not draw Alaska"),
+      },
+      colorado: {
+        candidate: expect.stringContaining("Colorado"),
+        map: true,
+        preview: "Colorado was returned by the method.",
+        unsupported: "",
+      },
+      hawaii: {
+        candidate: expect.stringContaining("Hawaii"),
+        map: false,
+        preview: "Hawaii was returned by the method.",
+        unsupported: expect.stringContaining("does not draw Hawaii"),
       },
     });
   });

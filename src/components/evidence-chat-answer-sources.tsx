@@ -1,20 +1,7 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import type { KnowledgeCitation } from "@/generated/models/knowledgeCitation";
-import {
-  orderedAnswerCitations,
-  safePubMedUrl,
-} from "@/lib/evidence-chat-sources";
-
-const evidenceStrengthLabels: Partial<
-  Record<KnowledgeChatResponse["evidence_state"], string>
-> = {
-  single_study: "Single-study evidence",
-  consistent: "Consistent evidence",
-  limited: "Limited evidence",
-  mixed: "Mixed evidence",
-  conflicting: "Conflicting evidence",
-  insufficient_to_compare: "Insufficient evidence to compare",
-};
+import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
+import { safePubMedUrl } from "@/lib/evidence-chat-sources";
 
 function CitationRow({
   citation,
@@ -66,12 +53,12 @@ export function EvidenceChatAnswerSources({
 }: {
   response: KnowledgeChatResponse;
 }) {
-  if (response.status !== "answered") {
+  const decision = classifyKnowledgeChatResponse(response);
+  if (decision.kind !== "grounded") {
     return null;
   }
 
-  const citations = orderedAnswerCitations(response);
-  const strength = evidenceStrengthLabels[response.evidence_state];
+  const { citations } = decision;
   const sourceCountLabel =
     citations.length === 1
       ? "1 source for this answer"
@@ -82,20 +69,20 @@ export function EvidenceChatAnswerSources({
       className="chat-answer-sources"
       aria-label="Sources for this answer"
       data-assistant-state="answered"
+      data-evidence-state={decision.evidenceState}
+      data-source-used={decision.sourceUsed}
     >
       <div className="chat-answer-sources-heading">
         <p
           className="chat-answer-sources-count"
           id={`sources-${response.request_id}`}
         >
-          {citations.length > 0
-            ? sourceCountLabel
-            : "Reviewed literature source"}
+          {sourceCountLabel}
         </p>
       </div>
       <div className="chat-evidence-meta" aria-label="Evidence details">
-        <span>Source: Literature evidence</span>
-        {strength ? <span>Evidence: {strength}</span> : null}
+        <span>Source: {decision.sourceLabel}</span>
+        <span>Evidence: {decision.evidenceLabel}</span>
       </div>
       {citations.length > 0 ? (
         <ol

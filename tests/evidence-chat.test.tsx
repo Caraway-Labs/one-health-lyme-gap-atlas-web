@@ -50,6 +50,16 @@ function response(
     evidence_state,
     source_used: "literature_evidence",
     answer,
+    claims:
+      status === "answered"
+        ? [
+            {
+              claim_id: "claim-1",
+              text: answer,
+              citation_ids: ["c1"],
+            },
+          ]
+        : [],
     citations:
       status === "answered"
         ? [
@@ -63,6 +73,42 @@ function response(
             },
           ]
         : [],
+  };
+}
+
+function storedAnswer(id: string, text: string, createdAt: string) {
+  return {
+    createdAt,
+    id,
+    response: {
+      answer: text,
+      assistant_policy_version: "policy-v1",
+      citations: [
+        {
+          citation_id: "c1",
+          claim_ids: ["claim-1"],
+          passage_ids: ["passage-1"],
+          pmid: "12345",
+          pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+          title: "A paper",
+        },
+      ],
+      claims: [
+        {
+          citation_ids: ["c1"],
+          claim_id: "claim-1",
+          text,
+        },
+      ],
+      configuration_version: "config-v1",
+      conversation_id: id,
+      evidence_state: "limited" as const,
+      request_id: id,
+      source_used: "literature_evidence" as const,
+      status: "answered" as const,
+    },
+    role: "assistant" as const,
+    text,
   };
 }
 
@@ -708,12 +754,11 @@ describe(EvidenceChat, () => {
             role: "user",
             text: "What is reviewed for deer ticks?",
           },
-          {
-            createdAt: "2026-01-01T00:00:00.000Z",
-            id: "turn-assistant",
-            role: "assistant",
-            text: "Reviewed evidence varies by region.",
-          },
+          storedAnswer(
+            "turn-assistant",
+            "Reviewed evidence varies by region.",
+            "2026-01-01T00:00:00.000Z"
+          ),
         ],
         updatedAt: "2026-01-01T00:00:00.000Z",
       },
@@ -768,12 +813,11 @@ describe(EvidenceChat, () => {
             role: "user",
             text: "First question",
           },
-          {
-            createdAt: "2026-01-01T00:00:00.000Z",
-            id: "turn-assistant-1",
-            role: "assistant",
-            text: "First answer",
-          },
+          storedAnswer(
+            "turn-assistant-1",
+            "First answer",
+            "2026-01-01T00:00:00.000Z"
+          ),
         ],
         updatedAt: "2026-01-01T00:00:00.000Z",
       },
@@ -789,12 +833,11 @@ describe(EvidenceChat, () => {
             role: "user",
             text: "Second question",
           },
-          {
-            createdAt: "2026-01-02T00:00:00.000Z",
-            id: "turn-assistant-2",
-            role: "assistant",
-            text: "Second answer",
-          },
+          storedAnswer(
+            "turn-assistant-2",
+            "Second answer",
+            "2026-01-02T00:00:00.000Z"
+          ),
         ],
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
@@ -827,12 +870,11 @@ describe(EvidenceChat, () => {
             role: "user",
             text: "Second question",
           },
-          {
-            createdAt: "2026-01-02T00:00:00.000Z",
-            id: "turn-assistant-2",
-            role: "assistant",
-            text: "Second answer",
-          },
+          storedAnswer(
+            "turn-assistant-2",
+            "Second answer",
+            "2026-01-02T00:00:00.000Z"
+          ),
         ],
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
@@ -848,12 +890,11 @@ describe(EvidenceChat, () => {
             role: "user",
             text: "First question",
           },
-          {
-            createdAt: "2026-01-01T00:00:00.000Z",
-            id: "turn-assistant-1",
-            role: "assistant",
-            text: "First answer",
-          },
+          storedAnswer(
+            "turn-assistant-1",
+            "First answer",
+            "2026-01-01T00:00:00.000Z"
+          ),
         ],
         updatedAt: "2026-01-01T00:00:00.000Z",
       },

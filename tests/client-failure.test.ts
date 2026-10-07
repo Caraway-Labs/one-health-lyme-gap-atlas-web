@@ -10,8 +10,9 @@ describe(clientFailure, () => {
     ).toStrictEqual({
       message:
         "Evidence chat response could not be verified. Please try again later.",
+      reason: "malformed",
       retry: true,
-      state: "network_failure",
+      state: "response_unverified",
       title: "Response could not be verified.",
     });
   });

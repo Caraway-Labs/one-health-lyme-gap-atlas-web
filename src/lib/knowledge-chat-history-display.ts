@@ -1,19 +1,8 @@
-import type { KnowledgeChatResponse } from "@/generated/models";
+import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
 
 import type { LocalConversation } from "./knowledge-chat-storage";
 
 const PREVIEW_MAX_LENGTH = 72;
-
-const answeredEvidenceLabels: Partial<
-  Record<KnowledgeChatResponse["evidence_state"], string>
-> = {
-  single_study: "Single-study",
-  consistent: "Consistent",
-  limited: "Limited",
-  mixed: "Mixed",
-  conflicting: "Conflicting",
-  insufficient_to_compare: "Insufficient to compare",
-};
 
 function truncate(text: string, maxLength: number): string {
   const trimmed = text.trim();
@@ -62,10 +51,14 @@ export function conversationTurnPreview(
   const lastAssistant = conversation.turns
     .toReversed()
     .find((turn) => turn.role === "assistant" && turn.text.trim());
-  if (!lastAssistant) {
+  if (!lastAssistant?.response) {
     return null;
   }
-  return truncate(lastAssistant.text, PREVIEW_MAX_LENGTH);
+  const decision = classifyKnowledgeChatResponse(lastAssistant.response);
+  if (decision.kind === "closed") {
+    return null;
+  }
+  return truncate(lastAssistant.response.answer, PREVIEW_MAX_LENGTH);
 }
 
 export function conversationEvidenceStrengthLabel(
@@ -80,5 +73,9 @@ export function conversationEvidenceStrengthLabel(
   if (!lastAnswered?.response) {
     return null;
   }
-  return answeredEvidenceLabels[lastAnswered.response.evidence_state] ?? null;
+  const decision = classifyKnowledgeChatResponse(lastAnswered.response);
+  if (decision.kind !== "grounded") {
+    return null;
+  }
+  return decision.evidenceSummary;
 }

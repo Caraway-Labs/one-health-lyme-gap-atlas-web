@@ -1,5 +1,6 @@
 import type { StateReview } from "@/generated/models";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
+import { isContiguousUsCounty } from "@/lib/atlas-geometry";
 
 import { stateFipsPrefix } from "./review-state-fips";
 
@@ -112,6 +113,12 @@ export type ReviewMapCounty = {
  * Frame the map to the requested state. Candidate counties are not ranked,
  * and data-gap counties are not added as suggestions.
  */
+/** AtlasMap draws the contiguous United States. Alaska and Hawaii stay in the list. */
+export function reviewScopeHasContiguousMap(scopeCode: string): boolean {
+  const prefix = stateFipsPrefix(scopeCode);
+  return prefix !== null && isContiguousUsCounty(prefix);
+}
+
 export function reviewMapCounties(input: {
   candidateFips: readonly string[];
   geometryFips: readonly string[];

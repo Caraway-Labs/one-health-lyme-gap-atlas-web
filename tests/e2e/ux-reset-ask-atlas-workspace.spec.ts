@@ -278,6 +278,7 @@ const DESKTOP_WINDOW = { height: 720, width: 1280 };
 const SAVED_COUNTY_CHAT_URL = "/app/assistant?county=08001&dataset=alpha-2026";
 
 async function seedSavedCountyChat(page: Page) {
+  const answer = `${"Reviewed evidence varies by region and stays attributable to the governed release. ".repeat(40)}County answer stays in the transcript.`;
   await page.addInitScript(
     ([key, value]) => {
       localStorage.setItem(key, value);
@@ -301,8 +302,35 @@ async function seedSavedCountyChat(page: Page) {
               {
                 createdAt: "2026-08-01T00:00:00.000Z",
                 id: "turn-assistant",
+                response: {
+                  answer,
+                  assistant_policy_version: "policy-v1",
+                  citations: [
+                    {
+                      citation_id: "c1",
+                      claim_ids: ["claim-1"],
+                      passage_ids: ["passage-1"],
+                      pmid: "12345",
+                      pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+                      title: "Source paper",
+                    },
+                  ],
+                  claims: [
+                    {
+                      citation_ids: ["c1"],
+                      claim_id: "claim-1",
+                      text: answer,
+                    },
+                  ],
+                  configuration_version: "config-v1",
+                  conversation_id: "conversation-county",
+                  evidence_state: "limited",
+                  request_id: "turn-assistant",
+                  source_used: "literature_evidence",
+                  status: "answered",
+                },
                 role: "assistant",
-                text: `${"Reviewed evidence varies by region and stays attributable to the governed release. ".repeat(40)}County answer stays in the transcript.`,
+                text: answer,
               },
             ],
             updatedAt: "2026-08-01T00:00:00.000Z",

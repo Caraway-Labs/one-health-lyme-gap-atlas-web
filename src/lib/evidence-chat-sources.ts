@@ -1,5 +1,6 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import type { KnowledgeCitation } from "@/generated/models/knowledgeCitation";
+import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
 
 export function safePubMedUrl(url: string, pmid: string): string | null {
   try {
@@ -16,35 +17,13 @@ export function safePubMedUrl(url: string, pmid: string): string | null {
   }
 }
 
+/** Citations for a grounded answer, in claim order. A mismatched response yields none. */
 export function orderedAnswerCitations(
   response: KnowledgeChatResponse
 ): KnowledgeCitation[] {
-  const citations = response.citations ?? [];
-  if (citations.length === 0) {
+  const decision = classifyKnowledgeChatResponse(response);
+  if (decision.kind !== "grounded") {
     return [];
   }
-  const byId = new Map(
-    citations.map((citation) => [citation.citation_id, citation])
-  );
-  const orderedIds: string[] = [];
-  const seen = new Set<string>();
-  for (const claim of response.claims ?? []) {
-    for (const citationId of claim.citation_ids) {
-      if (seen.has(citationId) || !byId.has(citationId)) {
-        continue;
-      }
-      seen.add(citationId);
-      orderedIds.push(citationId);
-    }
-  }
-  for (const citation of citations) {
-    if (!seen.has(citation.citation_id)) {
-      orderedIds.push(citation.citation_id);
-    }
-  }
-  return orderedIds
-    .map((citationId) => byId.get(citationId))
-    .filter(
-      (citation): citation is KnowledgeCitation => citation !== undefined
-    );
+  return decision.citations;
 }

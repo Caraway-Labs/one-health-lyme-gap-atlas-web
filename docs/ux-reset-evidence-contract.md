@@ -49,7 +49,9 @@ Use `formatGovernedEvidenceValue`:
 
 **Observation period vs dataset vintage:** `observationPeriod` comes from `period_start`, `period_end`, and `temporal_grain` (only full calendar-year intervals collapse to a single year). `datasetVintage` comes from governed `source_vintage` only; when absent, the strip omits the row and inspect does not invent a vintage. `semantic_version` is the API semantic-contract version, not dataset vintage—do not map it to dataset vintage.
 
-**Limitations:** the strip may show the first limitation as a short caveat; **Inspect provenance** lists every governed limitation.
+**Limitations:** the strip may show the first limitation as a short caveat; **Inspect provenance** lists every governed limitation. An empty `limitations` array says no governed limitations were returned.
+
+**Source inspection:** the same one-action disclosure lists source, period, availability/freshness, method, evidence state, and limitations. Freshness uses `source_vintage` and `source_published_at` only. When both are absent, that row is **Unavailable** and is not a staleness judgment. Method uses `methodology` and `methodology_version`. Evidence state repeats **Available**, **Limited**, or **Unavailable** with the governed reason. Missing optional provenance stays on its own row and does not change the evidence state.
 
 **Evidence type:** use governed `Measure.measure_type` when the page has resolved catalog metadata. Do not infer from `evidence.resource_type`, resource IDs, or labels; show **Unavailable** when `measure_type` is absent.
 
@@ -60,7 +62,7 @@ Use `formatGovernedEvidenceValue`:
 | `EvidenceObject` | Claim label, governed display value, strip, and provenance inspect action. |
 | `EvidenceStateStrip` | Availability badge plus source family, observation period, dataset vintage (when present), evidence type, and optional short caveat (first limitation). |
 | `ReleaseEvidenceStateStrip` | Release-level snapshot shared across pages (from `AtlasMetadata`). Uses `loadState` for **loading** and **error** copy—those are not evidence **Unavailable** states. |
-| `EvidenceProvenanceInspect` | One-action `<details>` for human-readable provenance; technical IDs are nested and documentation-linked. |
+| `EvidenceProvenanceInspect` | One-action `<details>` for source, period, availability/freshness, method, evidence state, and limitations. Technical IDs stay nested and documentation-linked. |
 
 ## Builders
 

@@ -9,7 +9,12 @@ export {
   formatGovernedMeasureType,
   formatObservationPeriod,
 } from "./format-period";
-export { evidenceObjectFromObservation } from "./from-observation";
+export {
+  evidenceInspectFreshness,
+  evidenceInspectMethod,
+  evidenceInspectState,
+  evidenceObjectFromObservation,
+} from "./from-observation";
 export {
   releaseEvidenceAvailabilityFromMetadata,
   releaseEvidenceContextFromMetadata,

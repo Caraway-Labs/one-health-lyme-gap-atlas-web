@@ -12,6 +12,7 @@ import {
   ChatHistoryMobileToggle,
 } from "@/components/evidence-chat-history";
 import { Button } from "@/components/ui/button";
+import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import { atlasAssistantWorkspaceHeadingId } from "@/lib/assistant-entry-points";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
@@ -193,16 +194,27 @@ export function EvidenceChatConversationContent({
           {(active?.turns ?? []).map((turn, index, turns) => {
             const priorQuestion =
               turn.role === "assistant" ? (turns[index - 1]?.text ?? "") : "";
+            const decision = turn.response
+              ? classifyKnowledgeChatResponse(turn.response)
+              : null;
+            const visibleAnswer =
+              turn.role === "assistant" &&
+              decision &&
+              decision.kind !== "closed" &&
+              turn.response
+                ? turn.response.answer
+                : "";
             return (
               <article className={`chat-turn ${turn.role}`} key={turn.id}>
                 <strong>
                   {turn.role === "user" ? "You" : "Evidence assistant"}
                 </strong>
-                <p>{turn.text}</p>
-                {turn.response && (
+                {turn.role === "user" && turn.text ? <p>{turn.text}</p> : null}
+                {visibleAnswer ? <p>{visibleAnswer}</p> : null}
+                {decision?.kind === "grounded" && turn.response ? (
                   <EvidenceChatAnswerSources response={turn.response} />
-                )}
-                {turn.response && (
+                ) : null}
+                {turn.response && decision && decision.kind !== "closed" ? (
                   <AssistantOutcome
                     actionable={turn.id === turns.at(-1)?.id}
                     onEditQuestion={editQuestion}
@@ -211,7 +223,21 @@ export function EvidenceChatConversationContent({
                     question={priorQuestion}
                     response={turn.response}
                   />
-                )}
+                ) : null}
+                {decision?.kind === "closed" ? (
+                  <div
+                    className="chat-error"
+                    data-assistant-state="response_unverified"
+                    data-close-reason={decision.reason}
+                    role="alert"
+                  >
+                    <p>
+                      <strong>Response could not be verified.</strong> Evidence
+                      chat response could not be verified. Please try again
+                      later.
+                    </p>
+                  </div>
+                ) : null}
               </article>
             );
           })}
@@ -226,6 +252,7 @@ export function EvidenceChatConversationContent({
               role="alert"
               className="chat-error"
               data-assistant-state={failure.state}
+              data-close-reason={failure.reason}
               tabIndex={-1}
             >
               <p>

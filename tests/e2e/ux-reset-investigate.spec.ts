@@ -3,6 +3,8 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 
 import {
   INVESTIGATE_CASES_LIMITATION,
+  INVESTIGATE_STATE_SOURCE_URL,
+  INVESTIGATE_STATE_STALE_LIMITATION,
   INVESTIGATE_TICK_LIMITATION,
   INVESTIGATE_TICK_MEASURE_ID,
   investigateIndicatorsFixture,
@@ -305,6 +307,8 @@ test.describe("County Investigate evidence hierarchy", () => {
       "data-county",
       "08001"
     );
+    await expect(page.getByText("Loading county evidence…")).toBeVisible();
+    await expect(page.getByText("Inspect provenance")).toHaveCount(0);
     await expect(page.getByTestId("investigate-finding-text")).toHaveCount(0);
 
     await page.getByTestId("investigate-county-select").click();
@@ -393,6 +397,12 @@ test.describe("County Investigate evidence hierarchy", () => {
       page.getByTestId("investigate-family-vector_pathogen")
     ).toHaveAttribute("data-publication", "request_failed");
     await expect(
+      page.getByTestId("investigate-family-vector_pathogen")
+    ).not.toContainText("Inspect provenance");
+    await expect(page.getByTestId("investigate-family-human")).toContainText(
+      "Inspect provenance"
+    );
+    await expect(
       page.getByTestId("investigate-family-environmental_population")
     ).toContainText("Unavailable");
     await expect(page.getByTestId("investigate-evidence")).toHaveAttribute(
@@ -476,6 +486,95 @@ test.describe("County Investigate evidence hierarchy", () => {
       "data-county",
       "08001"
     );
+  });
+
+  test("opens source, period, freshness, method, and limitation disclosure", async ({
+    page,
+  }, testInfo) => {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "ambiguous" },
+      Promise.resolve(),
+      []
+    );
+    await page.goto("/app/investigate?county=08001&scope=CO");
+    const human = page.getByTestId("investigate-family-human");
+    const cdc = human.locator("[data-observation-id='obs-cases-08001']");
+    const stateSource = human.locator(
+      "[data-observation-id='obs-cases-state-08001']"
+    );
+    const cdcSummary = cdc.locator("summary", {
+      hasText: "Inspect provenance",
+    });
+    const stateSummary = stateSource.locator("summary", {
+      hasText: "Inspect provenance",
+    });
+
+    await cdcSummary.scrollIntoViewIfNeeded();
+    await cdcSummary.focus();
+    await page.keyboard.press("Enter");
+    await expect(cdc.locator("details").first()).toHaveAttribute("open", "");
+    await expect(cdc.getByTestId("evidence-provenance-period")).toContainText(
+      "2023"
+    );
+    await expect(
+      cdc.getByTestId("evidence-provenance-freshness")
+    ).toContainText("Unavailable");
+    await expect(cdc.getByTestId("evidence-provenance-method")).toContainText(
+      "Version 1.0.0"
+    );
+    await expect(cdc.getByTestId("evidence-provenance-state")).toContainText(
+      "Available"
+    );
+    await expect(
+      cdc.getByTestId("evidence-provenance-limitations")
+    ).toContainText("No governed limitations were returned.");
+    await expect(
+      cdc.getByRole("link", { name: /Open source reference/ })
+    ).toHaveCount(0);
+
+    await stateSummary.scrollIntoViewIfNeeded();
+    await stateSummary.focus();
+    await page.keyboard.press("Space");
+    await expect(stateSource.locator("details").first()).toHaveAttribute(
+      "open",
+      ""
+    );
+    await expect(
+      stateSource.getByTestId("evidence-provenance-period")
+    ).toContainText("June 30, 2023");
+    await expect(
+      stateSource.getByTestId("evidence-provenance-freshness")
+    ).toContainText("Dataset vintage 2022.2");
+    await expect(
+      stateSource.getByTestId("evidence-provenance-freshness")
+    ).not.toContainText(/stale/i);
+    await expect(
+      stateSource.getByTestId("evidence-provenance-method")
+    ).toContainText("State annual case extract");
+    await expect(
+      stateSource.getByTestId("evidence-provenance-state")
+    ).toContainText("Limited");
+    await expect(
+      stateSource.getByTestId("evidence-provenance-limitations")
+    ).toContainText(INVESTIGATE_STATE_STALE_LIMITATION);
+    const sourceLink = stateSource.getByRole("link", {
+      name: /Open source reference/,
+    });
+    await expect(sourceLink).toBeVisible();
+    await expect(sourceLink).toHaveAttribute(
+      "href",
+      INVESTIGATE_STATE_SOURCE_URL
+    );
+    await expect(sourceLink).toHaveAttribute("target", "_blank");
+    await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).not.toHaveURL(/source=/);
+
+    if (!testInfo.project.name.includes("mobile")) {
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    }
   });
 
   test("keeps the unavailable PDF explanation after reload", async ({

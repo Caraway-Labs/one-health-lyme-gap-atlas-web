@@ -130,9 +130,15 @@ function observation(input: {
   fips: string;
   limitations?: string[];
   measureId: string;
+  methodology?: string | null;
   observationId: string;
+  periodEnd?: string;
+  periodStart?: string;
   sourceId: string;
   sourceLabel: string;
+  sourcePublishedAt?: string | null;
+  sourceUrl?: string | null;
+  sourceVintage?: string | null;
   unit: string;
   value: number | null;
   valueState?: (typeof ValueState)[keyof typeof ValueState];
@@ -151,27 +157,33 @@ function observation(input: {
     limitations: input.limitations ?? [],
     lineage_source_id: null,
     measure_id: input.measureId,
-    methodology: null,
+    methodology: input.methodology ?? null,
     methodology_id: "method-1",
     methodology_version: "1.0.0",
     observation_id: input.observationId,
-    period_end: "2023-12-31",
-    period_start: "2023-01-01",
+    period_end: input.periodEnd ?? "2023-12-31",
+    period_start: input.periodStart ?? "2023-01-01",
     provenance_ref: `prov/${input.observationId}`,
     release_id: INVESTIGATE_RELEASE_ID,
     release_methodology_version: null,
     semantic_version: "1.0.0",
     source_id: input.sourceId,
     source_label: input.sourceLabel,
-    source_published_at: null,
-    source_url: null,
-    source_vintage: "2026.1",
+    source_published_at: input.sourcePublishedAt ?? null,
+    source_url: input.sourceUrl ?? null,
+    source_vintage:
+      input.sourceVintage === undefined ? "2026.1" : input.sourceVintage,
     temporal_grain: "YEAR",
     unit: input.unit,
     value: input.value,
     value_state: input.valueState ?? ValueState.OBSERVED,
   };
 }
+
+export const INVESTIGATE_STATE_SOURCE_URL =
+  "https://example.state.gov/lyme-cases";
+export const INVESTIGATE_STATE_STALE_LIMITATION =
+  "The publisher marks this extract as stale relative to the release.";
 
 export type InvestigateScenario = "ambiguous" | "mixed" | "partial" | "sparse";
 
@@ -205,6 +217,7 @@ export function investigateObservationsFor(input: {
       observationId: `obs-cases-${input.fips}`,
       sourceId: "cdc-cases",
       sourceLabel: "CDC surveillance",
+      sourceVintage: input.scenario === "ambiguous" ? null : undefined,
       unit: "cases",
       value: input.fips === "08013" ? 40 : 12,
     });
@@ -215,11 +228,19 @@ export function investigateObservationsFor(input: {
       primary,
       observation({
         fips: input.fips,
-        limitations: ["State extract covers a shorter reporting window."],
+        limitations: [
+          "State extract covers a shorter reporting window.",
+          INVESTIGATE_STATE_STALE_LIMITATION,
+        ],
         measureId: input.measureId,
+        methodology: "State annual case extract",
         observationId: `obs-cases-state-${input.fips}`,
+        periodEnd: "2023-06-30",
         sourceId: "state-cases",
         sourceLabel: "State health department",
+        sourcePublishedAt: "2022-11-01T00:00:00Z",
+        sourceUrl: INVESTIGATE_STATE_SOURCE_URL,
+        sourceVintage: "2022.2",
         unit: "cases",
         value: 3,
       }),

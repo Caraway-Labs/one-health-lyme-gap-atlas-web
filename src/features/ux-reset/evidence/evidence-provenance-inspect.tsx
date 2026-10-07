@@ -5,7 +5,16 @@ import { trackProvenanceOpened } from "@/lib/atlas-analytics";
 import { getDocsPageHref } from "@/lib/docs-config";
 import { cn } from "@/lib/utils";
 
-import type { EvidenceProvenanceModel } from "./types";
+import {
+  evidenceInspectFreshness,
+  evidenceInspectMethod,
+  evidenceInspectState,
+} from "./from-observation";
+import type {
+  EvidenceAvailability,
+  EvidenceProvenanceModel,
+  EvidenceReasonCode,
+} from "./types";
 
 import "./evidence-contract.css";
 
@@ -42,15 +51,19 @@ function configurationText(value: string | null | undefined): string | null {
 }
 
 type EvidenceProvenanceInspectProps = {
+  availability: EvidenceAvailability;
   className?: string;
   contentSurface?: ContentSurface;
   provenance: EvidenceProvenanceModel;
+  reasonCode: EvidenceReasonCode;
 };
 
 export function EvidenceProvenanceInspect({
+  availability,
   className,
   contentSurface = "source_card",
   provenance,
+  reasonCode,
 }: EvidenceProvenanceInspectProps) {
   const technical = provenance.technical;
   const evaluatedAt = technical
@@ -65,10 +78,13 @@ export function EvidenceProvenanceInspect({
     evaluatedAt !== UNAVAILABLE &&
     evaluatedAtRaw !== "" &&
     evaluatedAtRaw !== UNAVAILABLE;
+  const sourceUrl = provenance.sourceUrl?.trim() || null;
+  const referenceLines = provenance.referenceLines ?? [];
 
   return (
     <details
       className={cn("ux-reset-evidence-provenance", className)}
+      data-testid="evidence-provenance-inspect"
       onToggle={(event) => {
         if (event.currentTarget.open) {
           trackProvenanceOpened(
@@ -80,33 +96,59 @@ export function EvidenceProvenanceInspect({
     >
       <summary>Inspect provenance</summary>
       <div className="ux-reset-evidence-provenance-body">
-        <p>{provenance.inspectSummary}</p>
-        {provenance.datasetVintage ? (
-          <p className="type-small">
-            Dataset vintage: {provenance.datasetVintage}
-          </p>
+        <dl className="ux-reset-evidence-provenance-fields">
+          <div data-testid="evidence-provenance-source">
+            <dt>Source</dt>
+            <dd>
+              {provenance.sourceFamily}
+              {sourceUrl ? (
+                <p>
+                  <a href={sourceUrl} rel="noopener noreferrer" target="_blank">
+                    Open source reference ↗
+                  </a>
+                </p>
+              ) : null}
+            </dd>
+          </div>
+          <div data-testid="evidence-provenance-period">
+            <dt>Period</dt>
+            <dd>{provenance.observationPeriod}</dd>
+          </div>
+          <div data-testid="evidence-provenance-freshness">
+            <dt>Availability / freshness</dt>
+            <dd>{evidenceInspectFreshness(provenance)}</dd>
+          </div>
+          <div data-testid="evidence-provenance-method">
+            <dt>Method</dt>
+            <dd>{evidenceInspectMethod(provenance)}</dd>
+          </div>
+          <div data-testid="evidence-provenance-state">
+            <dt>Evidence state</dt>
+            <dd>{evidenceInspectState(availability, reasonCode)}</dd>
+          </div>
+        </dl>
+        {referenceLines.length > 0 ? (
+          <div data-testid="evidence-provenance-references">
+            <p className="type-small">Evidence references</p>
+            <ul className="ux-reset-evidence-limitations">
+              {referenceLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
         ) : null}
-        {provenance.limitations.length > 0 ? (
-          <div>
-            <p className="type-small">Governed limitations</p>
+        <div data-testid="evidence-provenance-limitations">
+          <p className="type-small">Governed limitations</p>
+          {provenance.limitations.length > 0 ? (
             <ul className="ux-reset-evidence-limitations">
               {provenance.limitations.map((limitation) => (
                 <li key={limitation}>{limitation}</li>
               ))}
             </ul>
-          </div>
-        ) : null}
-        {provenance.sourceUrl ? (
-          <p>
-            <a
-              href={provenance.sourceUrl}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Open source reference ↗
-            </a>
-          </p>
-        ) : null}
+          ) : (
+            <p>No governed limitations were returned.</p>
+          )}
+        </div>
         {technical ? (
           <details className="ux-reset-evidence-provenance-technical">
             <summary>Technical reproducibility identifiers</summary>

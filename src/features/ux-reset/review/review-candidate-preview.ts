@@ -103,7 +103,8 @@ function candidateQualification(
     ...caveatParts,
     ...candidate.reason_codes.map((code) => `Reason code ${code}`),
   ]);
-  const referenceSummary = references.map(referenceInspectLine).join(" ");
+  const referenceLines = references.map(referenceInspectLine);
+  const referenceSummary = referenceLines.join(" ");
   return {
     availability: evidenceAvailabilityValues.limited,
     claimLabel: "Evidence state",
@@ -115,6 +116,7 @@ function candidateQualification(
       limitations: limitations.length > 0 ? limitations : [caveat],
       materialCaveat: caveat,
       observationPeriod: GOVERNED_FIELD_UNAVAILABLE,
+      referenceLines,
       sourceFamily:
         families.length > 0 ? families.join(", ") : GOVERNED_FIELD_UNAVAILABLE,
       technical: {
