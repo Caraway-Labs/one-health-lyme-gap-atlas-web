@@ -149,7 +149,7 @@ test.beforeEach(async ({ page }) => {
         status: "answered",
         evidence_state: "limited",
         source_used: "literature_evidence",
-        answer: "Reviewed evidence answer.",
+        answer: "Reviewed claim.",
         claims: [
           {
             claim_id: "claim-1",
@@ -298,13 +298,13 @@ test("drawer hands the local conversation to the accessible workspace", async ({
   await expect(dialog).toContainText("not medical advice");
   await dialog.getByLabel("Your question").fill("What evidence is reviewed?");
   await dialog.getByRole("button", { exact: true, name: "Ask" }).click();
-  await expect(dialog).toContainText("Reviewed evidence answer.");
+  await expect(dialog).toContainText("Reviewed claim.");
   await expect(
     dialog.getByRole("link", { name: /Reviewed paper/ })
   ).toHaveAttribute("rel", "noopener noreferrer");
   await dialog.getByRole("link", { name: "Open full workspace" }).click();
   await expect(page).toHaveURL(/\/assistant\?conversation=conversation-1/);
-  await expect(page.getByText("Reviewed evidence answer.")).toBeVisible();
+  await expect(page.getByText("Reviewed claim.")).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });

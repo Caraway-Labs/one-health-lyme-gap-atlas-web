@@ -52,6 +52,23 @@ describe("knowledge chat history display", () => {
         response: {
           answer: "Short assistant summary for re-find.",
           assistant_policy_version: "policy",
+          citations: [
+            {
+              citation_id: "c1",
+              claim_ids: ["claim-1"],
+              passage_ids: ["passage-1"],
+              pmid: "12345",
+              pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+              title: "A paper",
+            },
+          ],
+          claims: [
+            {
+              citation_ids: ["c1"],
+              claim_id: "claim-1",
+              text: "Short assistant summary for re-find.",
+            },
+          ],
           configuration_version: "config",
           conversation_id: "c1",
           evidence_state: "limited",
@@ -85,5 +102,26 @@ describe("knowledge chat history display", () => {
       },
     ]);
     expect(conversationEvidenceStrengthLabel(withoutAnswer)).toBeNull();
+
+    const missingCitation = conversationWithTurns([
+      {
+        createdAt: "2026-08-25T12:00:00.000Z",
+        id: "a-missing",
+        role: "assistant",
+        text: "An answer with no citation.",
+        response: {
+          answer: "An answer with no citation.",
+          assistant_policy_version: "policy",
+          configuration_version: "config",
+          conversation_id: "c1",
+          evidence_state: "limited",
+          request_id: "r-missing",
+          source_used: "literature_evidence",
+          status: "answered",
+        },
+      },
+    ]);
+    expect(conversationTurnPreview(missingCitation)).toBeNull();
+    expect(conversationEvidenceStrengthLabel(missingCitation)).toBeNull();
   });
 });

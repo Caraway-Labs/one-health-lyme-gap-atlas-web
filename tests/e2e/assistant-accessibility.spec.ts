@@ -20,7 +20,13 @@ function chatResponse(id: number) {
     answer: "Reviewed evidence varies by setting.",
     evidence_state: "limited",
     source_used: "literature_evidence",
-    claims: [],
+    claims: [
+      {
+        claim_id: "c1",
+        citation_ids: ["p1"],
+        text: "Reviewed evidence varies by setting.",
+      },
+    ],
     citations: [
       {
         citation_id: "p1",

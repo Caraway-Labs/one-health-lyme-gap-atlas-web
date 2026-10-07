@@ -17,7 +17,7 @@ function answeredResponse(
     status: "answered",
     evidence_state: "limited",
     source_used: "literature_evidence",
-    answer: "Answer text.",
+    answer: "First claim\n\nSecond claim",
     citations: [
       {
         citation_id: "c2",
@@ -62,7 +62,7 @@ describe(safePubMedUrl, () => {
 });
 
 describe(orderedAnswerCitations, () => {
-  it("orders citations by claim citation_ids and appends unreferenced citations", () => {
+  it("orders citations by claim citation_ids", () => {
     const ordered = orderedAnswerCitations(answeredResponse());
     expect(ordered.map((citation) => citation.citation_id)).toStrictEqual([
       "c1",
@@ -70,7 +70,7 @@ describe(orderedAnswerCitations, () => {
     ]);
   });
 
-  it("appends citations that are not referenced by claims", () => {
+  it("returns no citations when a response includes an unreferenced source", () => {
     const response = answeredResponse({
       citations: [
         ...(answeredResponse().citations ?? []),
@@ -84,8 +84,6 @@ describe(orderedAnswerCitations, () => {
         },
       ],
     });
-    expect(
-      orderedAnswerCitations(response).map((citation) => citation.citation_id)
-    ).toStrictEqual(["c1", "c2", "c3"]);
+    expect(orderedAnswerCitations(response)).toStrictEqual([]);
   });
 });

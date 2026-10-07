@@ -1,12 +1,22 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { ApiResponseValidationError } from "@/lib/api-response-validation";
+import {
+  AskAtlasAnswerContractError,
+  type AskAtlasCloseReason,
+} from "@/lib/ask-atlas-answer-contract";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
 export interface ClientFailure {
   message: string;
+  reason?: AskAtlasCloseReason;
   retry: boolean;
-  state: "network_failure" | "rate_limited" | "request_not_processed";
+  state:
+    | "network_failure"
+    | "rate_limited"
+    | "request_not_processed"
+    | "response_unverified"
+    | "timeout";
   title: string;
 }
 
@@ -39,13 +49,36 @@ export function shouldReplaceOperationalTurn(
   );
 }
 
+function isTimeoutError(error: unknown): boolean {
+  if (error instanceof AtlasApiError) {
+    return error.status === 408 || error.status === 504;
+  }
+  return error instanceof Error && error.name === "TimeoutError";
+}
+
 export function clientFailure(error: unknown): ClientFailure {
-  if (error instanceof ApiResponseValidationError) {
+  if (
+    error instanceof ApiResponseValidationError ||
+    error instanceof AskAtlasAnswerContractError
+  ) {
     return {
       message: error.message,
+      reason:
+        error instanceof AskAtlasAnswerContractError
+          ? error.reason
+          : "malformed",
       retry: true,
-      state: "network_failure",
+      state: "response_unverified",
       title: "Response could not be verified.",
+    };
+  }
+  if (isTimeoutError(error)) {
+    return {
+      message:
+        "The assistant did not answer before the request timed out. This is not a finding that the Atlas corpus lacks relevant literature.",
+      retry: true,
+      state: "timeout",
+      title: "Request timed out.",
     };
   }
   if (!(error instanceof AtlasApiError)) {

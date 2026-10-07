@@ -90,6 +90,17 @@ function chatResult(answer: string, requestId: string, conversationId: string) {
       configuration_version: "config-v1",
       conversation_id: conversationId,
       conversation_token: "browser-secret",
+      citations: [
+        {
+          citation_id: "c1",
+          claim_ids: ["claim-1"],
+          passage_ids: ["passage-1"],
+          pmid: "12345",
+          pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+          title: "Source paper",
+        },
+      ],
+      claims: [{ citation_ids: ["c1"], claim_id: "claim-1", text: answer }],
       evidence_state: "limited",
       request_id: requestId,
       source_used: "literature_evidence",

@@ -11,9 +11,11 @@ import {
 
 import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import type { KnowledgeChatResponse } from "@/generated/models";
-import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
-import { validateApiResponse } from "@/lib/api-response-validation";
+import {
+  acceptAskAtlasPayload,
+  AskAtlasAnswerContractError,
+} from "@/lib/ask-atlas-answer-contract";
 import {
   readAssistantConversationId,
   resolveActiveConversation,
@@ -379,14 +381,16 @@ export function useEvidenceChat({
       if (!requestStillCurrent(serial) || controller.signal.aborted) {
         return;
       }
-      const response = validateApiResponse(
-        "Evidence chat response",
-        KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
-        result.data
-      );
-      const safeResponse = { ...response, conversation_token: undefined };
-      saveResponse(question, safeResponse, replaceOperationalTurn);
-      rememberOutcome(question, safeResponse);
+      const accepted = acceptAskAtlasPayload(result.data);
+      if (!accepted.ok) {
+        throw new AskAtlasAnswerContractError(
+          accepted.reason === "not_chat_response"
+            ? "malformed"
+            : accepted.reason
+        );
+      }
+      saveResponse(question, accepted.response, replaceOperationalTurn);
+      rememberOutcome(question, accepted.response);
     } catch (error) {
       if (
         !requestStillCurrent(serial) ||
@@ -395,21 +399,25 @@ export function useEvidenceChat({
       ) {
         return;
       }
-      const parsed =
-        error instanceof AtlasApiError
-          ? KnowledgeGraphChatV1KnowledgeGraphChatPostResponse.safeParse(
-              error.responseBody
-            )
-          : null;
-      if (parsed?.success) {
-        const response = { ...parsed.data, conversation_token: undefined };
-        saveResponse(question, response, replaceOperationalTurn);
-        rememberOutcome(question, response);
-      } else {
-        const nextFailure = clientFailure(error);
-        setRetryQuestion(nextFailure.retry ? question : "");
-        setFailure(nextFailure);
+      if (error instanceof AtlasApiError) {
+        const accepted = acceptAskAtlasPayload(error.responseBody);
+        if (accepted.ok) {
+          saveResponse(question, accepted.response, replaceOperationalTurn);
+          rememberOutcome(question, accepted.response);
+          return;
+        }
+        if (accepted.reason !== "not_chat_response") {
+          const contractError = new AskAtlasAnswerContractError(
+            accepted.reason
+          );
+          setRetryQuestion(question);
+          setFailure(clientFailure(contractError));
+          return;
+        }
       }
+      const nextFailure = clientFailure(error);
+      setRetryQuestion(nextFailure.retry ? question : "");
+      setFailure(nextFailure);
     } finally {
       requestAbort.current.delete(controller);
       if (requestStillCurrent(serial)) {
