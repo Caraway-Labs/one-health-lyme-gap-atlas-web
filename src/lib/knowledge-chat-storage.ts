@@ -4,7 +4,7 @@ import type {
   ChatHistoryTurn,
   KnowledgeChatResponse,
 } from "@/generated/models";
-import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
+import { acceptAskAtlasPayload } from "@/lib/ask-atlas-answer-contract";
 
 export const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
 export const CHAT_STORAGE_EVENT = "atlas-knowledge-chat-storage";
@@ -57,6 +57,47 @@ const chatStoreSchema = z.object({
   version: z.literal(1),
 });
 
+function restoreStoredTurn(turn: {
+  createdAt: string;
+  id: string;
+  response?: unknown;
+  role: "assistant" | "user";
+  text: string;
+}): LocalChatTurn {
+  if (turn.response === undefined) {
+    return {
+      createdAt: turn.createdAt,
+      id: turn.id,
+      role: turn.role,
+      text: turn.text,
+    };
+  }
+  const accepted = acceptAskAtlasPayload(turn.response);
+  if (!accepted.ok) {
+    if (accepted.reason === "not_chat_response") {
+      return {
+        createdAt: turn.createdAt,
+        id: turn.id,
+        role: turn.role,
+        text: turn.text,
+      };
+    }
+    return {
+      createdAt: turn.createdAt,
+      id: turn.id,
+      role: turn.role,
+      text: "",
+    };
+  }
+  return {
+    createdAt: turn.createdAt,
+    id: turn.id,
+    response: accepted.response,
+    role: turn.role,
+    text: turn.text,
+  };
+}
+
 export function loadConversations(now = Date.now()): LocalConversation[] {
   if (typeof window === "undefined") {
     return [];
@@ -74,18 +115,11 @@ export function loadConversations(now = Date.now()): LocalConversation[] {
       .filter((item) => item.success)
       .map((item) => ({
         ...item.data,
-        turns: item.data.turns.map((turn) => {
-          const response =
-            KnowledgeGraphChatV1KnowledgeGraphChatPostResponse.safeParse(
-              turn.response
-            );
-          return {
-            ...turn,
-            response: response.success
-              ? { ...response.data, conversation_token: undefined }
-              : undefined,
-          };
-        }),
+        turns: item.data.turns
+          .map((turn) => restoreStoredTurn(turn))
+          .filter(
+            (turn) => turn.text.trim().length > 0 || turn.response !== undefined
+          ),
       }))
       .filter((item) => Date.parse(item.expiresAt) > now)
       .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))

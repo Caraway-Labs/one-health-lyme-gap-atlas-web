@@ -50,6 +50,16 @@ function response(
     evidence_state,
     source_used: "literature_evidence",
     answer,
+    claims:
+      status === "answered"
+        ? [
+            {
+              claim_id: "claim-1",
+              text: answer,
+              citation_ids: ["c1"],
+            },
+          ]
+        : [],
     citations:
       status === "answered"
         ? [

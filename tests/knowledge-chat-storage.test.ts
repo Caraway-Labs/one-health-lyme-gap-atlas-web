@@ -243,4 +243,94 @@ describe("knowledge chat local storage", () => {
       { role: "assistant", content: "No passages matched this question." },
     ]);
   });
+
+  it("drops an answered turn that has no citation and does not invent a source label", () => {
+    const stored = conversation(
+      "cited",
+      "2026-08-25T00:00:00.000Z",
+      "2026-09-24T00:00:00.000Z"
+    );
+    stored.turns = [
+      {
+        createdAt: stored.createdAt,
+        id: "user",
+        role: "user",
+        text: "What is reviewed?",
+      },
+      {
+        createdAt: stored.createdAt,
+        id: "missing",
+        response: {
+          answer: "An answer with no citation.",
+          assistant_policy_version: "policy",
+          configuration_version: "config",
+          conversation_id: "cited",
+          evidence_state: "limited",
+          request_id: "missing",
+          source_used: "literature_evidence",
+          status: "answered",
+        },
+        role: "assistant",
+        text: "An answer with no citation.",
+      },
+      {
+        createdAt: stored.createdAt,
+        id: "cited-user",
+        role: "user",
+        text: "A cited question",
+      },
+      {
+        createdAt: stored.createdAt,
+        id: "cited-answer",
+        response: {
+          answer: "A cited answer.",
+          assistant_policy_version: "policy",
+          citations: [
+            {
+              citation_id: "c1",
+              claim_ids: ["claim-1"],
+              passage_ids: ["passage-1"],
+              pmid: "12345",
+              pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+              title: "Source paper",
+            },
+          ],
+          claims: [
+            {
+              citation_ids: ["c1"],
+              claim_id: "claim-1",
+              text: "A cited answer.",
+            },
+          ],
+          configuration_version: "config",
+          conversation_id: "cited",
+          evidence_state: "limited",
+          request_id: "cited-answer",
+          source_used: "literature_evidence",
+          status: "answered",
+        },
+        role: "assistant",
+        text: "A cited answer.",
+      },
+    ];
+    localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({ conversations: [stored], version: 1 })
+    );
+    const loaded = loadConversations(Date.parse("2026-08-26T00:00:00.000Z"));
+    expect(loaded[0]?.turns.map((turn) => turn.text)).toStrictEqual([
+      "What is reviewed?",
+      "A cited question",
+      "A cited answer.",
+    ]);
+    expect(JSON.stringify(loaded[0]?.turns[2]?.response)).not.toContain(
+      "PubMed / PMC Open Access"
+    );
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+      "PubMed / PMC Open Access"
+    );
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+      "An answer with no citation."
+    );
+  });
 });

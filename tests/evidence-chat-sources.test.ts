@@ -70,7 +70,7 @@ describe(orderedAnswerCitations, () => {
     ]);
   });
 
-  it("appends citations that are not referenced by claims", () => {
+  it("returns no citations when a response includes an unreferenced source", () => {
     const response = answeredResponse({
       citations: [
         ...(answeredResponse().citations ?? []),
@@ -84,8 +84,6 @@ describe(orderedAnswerCitations, () => {
         },
       ],
     });
-    expect(
-      orderedAnswerCitations(response).map((citation) => citation.citation_id)
-    ).toStrictEqual(["c1", "c2", "c3"]);
+    expect(orderedAnswerCitations(response)).toStrictEqual([]);
   });
 });
