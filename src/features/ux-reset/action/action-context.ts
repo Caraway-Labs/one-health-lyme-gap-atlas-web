@@ -1,4 +1,8 @@
-import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
+import type {
+  CountyEvidenceBundle,
+  CountyEvidenceObservation,
+} from "@/features/ux-reset/investigate/county-evidence";
 import { visibleCountyObservations } from "@/features/ux-reset/investigate/investigate-visible-summary";
 
 /**
@@ -32,14 +36,18 @@ export type ActionPlanPosture =
  * The requested period matches when it falls inside an observation interval
  * already accepted for this county. A year-grain measure does not requery
  * from the URL period, so a link period outside those intervals is stale.
- * An unloaded bundle is not stale; that is still a loading or recovery state.
+ * No accepted interval means the comparison is unverified, including an
+ * empty response, a failed request, or an unsupported period.
  */
 export function actionRequestedPeriodState(input: {
   loaded: boolean;
   observations: readonly { period_end: string; period_start: string }[];
   requestedPeriod: string | null;
 }): ActionPeriodState {
-  if (!(input.loaded && input.requestedPeriod)) {
+  if (
+    !(input.loaded && input.requestedPeriod) ||
+    input.observations.length === 0
+  ) {
     return actionPeriodStates.unspecified;
   }
   const requestedPeriod = input.requestedPeriod;
@@ -49,6 +57,22 @@ export function actionRequestedPeriodState(input: {
       observation.period_end >= requestedPeriod
   );
   return covered ? actionPeriodStates.matched : actionPeriodStates.stale;
+}
+
+/**
+ * Governed unavailable observations when no available or limited finding
+ * exists. Failed requests and empty responses are not observations.
+ */
+export function actionGovernedUnavailableRecords(
+  bundle: CountyEvidenceBundle
+): readonly CountyEvidenceObservation[] {
+  if (bundle.leadFinding) {
+    return [];
+  }
+  return visibleCountyObservations(bundle).filter(
+    (record) =>
+      record.evidence.availability === evidenceAvailabilityValues.unavailable
+  );
 }
 
 export function actionBundlePeriodState(input: {

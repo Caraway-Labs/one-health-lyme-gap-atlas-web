@@ -317,16 +317,24 @@ describe("two-county aligned comparison", () => {
     const caseRequest = observationRequests.find((request) =>
       request.includes(COMPARE_CASES_MEASURE_ID)
     );
-    expect(caseRequest).toContain("08001");
-    expect(caseRequest).toContain("08013");
-    expect(screen.getByTestId("compare-action").getAttribute("href")).toContain(
-      "compare=08001%2C08013"
-    );
-    const investigate = screen
-      .getByTestId("compare-investigate-08001")
-      .getAttribute("href");
-    expect(investigate).toContain("/app/investigate");
-    expect(investigate).toContain("county=08001");
+    const investigate =
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
+    expect({
+      action: screen.queryByTestId("compare-action"),
+      county: investigate.includes("county=08001"),
+      left: caseRequest?.includes("08001"),
+      pair: investigate.includes("compare=08001%2C08013"),
+      path: investigate.includes("/app/investigate"),
+      right: caseRequest?.includes("08013"),
+    }).toStrictEqual({
+      action: null,
+      county: true,
+      left: true,
+      pair: true,
+      path: true,
+      right: true,
+    });
   });
 
   it("keeps the compare pair when handing one county to Investigate", async () => {
@@ -394,12 +402,18 @@ describe("two-county aligned comparison", () => {
         )
       ).toBeTruthy();
     });
-    expect(screen.getByTestId("compare-action").getAttribute("href")).toContain(
-      "compare=08001%2C36001"
-    );
-    expect(screen.getByTestId("compare-workspace").dataset.fips).toBe(
-      "08001,36001"
-    );
+    expect({
+      action: screen.queryByTestId("compare-action"),
+      fips: screen.getByTestId("compare-workspace").dataset.fips,
+      pair: screen
+        .getByTestId("compare-investigate-08001")
+        .getAttribute("href")
+        ?.includes("compare=08001%2C36001"),
+    }).toStrictEqual({
+      action: null,
+      fips: "08001,36001",
+      pair: true,
+    });
   });
 
   it("removes and clears without letting the previous URL restore itself", async () => {
@@ -504,8 +518,10 @@ describe("two-county aligned comparison", () => {
       navigation
         .querySelector('a[href^="/app/action"]')
         ?.getAttribute("href") ?? "";
+    expect(screen.queryByTestId("compare-action")).toBeNull();
     const pageHref =
-      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
     expect({
       pageDataset: pageHref.includes("dataset=alpha-2026"),
       pagePair: pageHref.includes("compare=08001%2C08013"),
@@ -527,13 +543,15 @@ describe("two-county aligned comparison", () => {
     );
     await waitForPair("08001,08013");
     const alert = await screen.findByRole("alert");
-    const actionHref =
-      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect(screen.queryByTestId("compare-action")).toBeNull();
+    const investigateHref =
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
     expect({
       alignment: screen.queryByTestId("compare-alignment"),
       catalogCalls: catalogRequests.length,
-      keepsContext: actionHref.includes("compare=08001%2C08013"),
-      keepsPeriod: actionHref.includes("period=2024-06-01"),
+      keepsContext: investigateHref.includes("compare=08001%2C08013"),
+      keepsPeriod: investigateHref.includes("period=2024-06-01"),
       message: (alert.textContent ?? "").includes(
         "Governed measures could not be loaded."
       ),
@@ -548,7 +566,8 @@ describe("two-county aligned comparison", () => {
     fireEvent.click(screen.getByTestId("compare-retry-catalog"));
     await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
     const recoveredHref =
-      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
     expect({
       pair: pairFips(),
       period: recoveredHref.includes("period=2024-06-01"),
@@ -602,7 +621,8 @@ describe("two-county aligned comparison", () => {
         screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
     );
     const href =
-      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
     expect({
       pair: pairFips(),
       period: href.includes("period=2024-06-01"),
@@ -658,7 +678,8 @@ describe("two-county aligned comparison", () => {
         screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
     );
     const href =
-      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
     expect({
       pair: pairFips(),
       period: href.includes("period=2024-06-01"),
@@ -696,7 +717,8 @@ describe("two-county aligned comparison", () => {
         screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
     );
     const href =
-      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
     expect({
       afterOneSecond,
       pair: pairFips(),
@@ -774,10 +796,12 @@ describe("two-county aligned comparison", () => {
     await waitForPair("08001,08013");
     const edited =
       screen.getByTestId("compare-return").getAttribute("href") ?? "";
-    const actionHref =
-      screen.getByTestId("compare-action").getAttribute("href") ?? "";
+    expect(screen.queryByTestId("compare-action")).toBeNull();
+    const investigateHref =
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
     expect({
-      actionPair: actionHref.includes("08013"),
+      actionPair: investigateHref.includes("08013"),
       county: edited.includes("county=08001"),
       editedPair: edited.includes("08013"),
       returnTarget: screen.getByTestId("compare-workspace").dataset.return,

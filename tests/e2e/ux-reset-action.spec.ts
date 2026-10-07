@@ -3,6 +3,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 
 import {
   INVESTIGATE_CASES_LIMITATION,
+  INVESTIGATE_CONTEXT_MEASURE_ID,
   INVESTIGATE_TICK_LIMITATION,
   investigateIndicatorsFixture,
   investigateMeasuresFixture,
@@ -17,6 +18,7 @@ type ActionControls = {
   emptyObservations: boolean;
   metadataStatus: number;
   scenario: InvestigateScenario;
+  unavailableOnly: boolean;
 };
 
 async function installActionMocks(
@@ -72,8 +74,12 @@ async function installActionMocks(
     if (fips === controls.delayFips) {
       await delayed;
     }
+    const withhold =
+      controls.emptyObservations ||
+      (controls.unavailableOnly &&
+        measureId !== INVESTIGATE_CONTEXT_MEASURE_ID);
     await fulfillJson(route, {
-      data: controls.emptyObservations
+      data: withhold
         ? []
         : investigateObservationsFor({
             fips,
@@ -100,6 +106,7 @@ test.describe("Action evidence handoff", () => {
         emptyObservations: false,
         metadataStatus: 200,
         scenario: "mixed",
+        unavailableOnly: false,
       },
       Promise.resolve()
     );
@@ -208,6 +215,7 @@ test.describe("Action evidence handoff", () => {
         emptyObservations: false,
         metadataStatus: 200,
         scenario: "mixed",
+        unavailableOnly: false,
       },
       Promise.resolve()
     );
@@ -263,6 +271,7 @@ test.describe("Action evidence handoff", () => {
       emptyObservations: false,
       metadataStatus: 200,
       scenario: "sparse",
+      unavailableOnly: false,
     };
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await installActionMocks(page, controls, Promise.resolve());
@@ -294,6 +303,7 @@ test.describe("Action evidence handoff", () => {
       emptyObservations: false,
       metadataStatus: 200,
       scenario: "mixed",
+      unavailableOnly: false,
     };
     await installActionMocks(page, controls, delayed);
     await page.goto("/app/action?county=08001&scope=CO");
@@ -309,13 +319,25 @@ test.describe("Action evidence handoff", () => {
 
     controls.delayFips = null;
     controls.emptyObservations = true;
-    await page.goto("/app/action?county=08001&scope=CO");
+    await page.goto(
+      "/app/action?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
     await expect(page.getByTestId("action-finding-text")).toContainText(
       "No observed or limited finding was returned"
     );
     await expect(page.getByTestId("action-finding-text")).not.toContainText(
       "Unavailable"
     );
+    await expect(page.getByTestId("action-evidence")).toHaveAttribute(
+      "data-evidence-state",
+      ""
+    );
+    await expect(page.getByTestId("action-evidence")).toHaveAttribute(
+      "data-period-state",
+      "unspecified"
+    );
+    await expect(page.getByTestId("action-stale-period")).toHaveCount(0);
+    await expect(page.getByTestId("ux-reset-evidence-object")).toHaveCount(0);
 
     controls.emptyObservations = false;
     controls.metadataStatus = 503;
@@ -339,5 +361,73 @@ test.describe("Action evidence handoff", () => {
     await expect(
       page.getByRole("link", { name: /Evidence Brief/ })
     ).toHaveCount(0);
+  });
+
+  test("keeps unavailable-only evidence through handoff, reload, and a direct link", async ({
+    page,
+  }) => {
+    const controls: ActionControls = {
+      delayFips: null,
+      emptyObservations: false,
+      metadataStatus: 200,
+      scenario: "mixed",
+      unavailableOnly: true,
+    };
+    await installActionMocks(page, controls, Promise.resolve());
+    await page.goto(MIXED_COUNTY);
+    const investigateObject = page.getByTestId("ux-reset-evidence-object");
+    await expect(investigateObject).toHaveCount(1);
+    await expect(page.getByTestId("evidence-display-value")).toHaveText(
+      "Unavailable"
+    );
+    await expect(investigateObject).toContainText("National land cover");
+    await expect(investigateObject).toContainText("2023");
+    await expect(investigateObject).not.toContainText("0 percent");
+    await page.getByTestId("investigate-action").click();
+    await expect(page).toHaveURL(/\/app\/action/);
+    await expect(page).toHaveURL(/county=08001/);
+    const actionObject = page.getByTestId("ux-reset-evidence-object");
+    await expect(page.getByTestId("action-evidence")).toHaveAttribute(
+      "data-evidence-state",
+      "unavailable"
+    );
+    await expect(page.getByTestId("action-evidence")).toHaveAttribute(
+      "data-period-state",
+      "matched"
+    );
+    await expect(page.getByTestId("evidence-display-value")).toHaveText(
+      "Unavailable"
+    );
+    await expect(actionObject).toContainText("National land cover");
+    await expect(actionObject).toContainText("2023");
+    await expect(actionObject).not.toContainText("0 percent");
+    await expect(page.getByTestId("action-stale-period")).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByTestId("action-evidence")).toHaveAttribute(
+      "data-evidence-state",
+      "unavailable"
+    );
+    await expect(page.getByTestId("evidence-display-value")).toHaveText(
+      "Unavailable"
+    );
+    await expect(page.getByTestId("ux-reset-evidence-object")).toContainText(
+      "National land cover"
+    );
+
+    await page.goto(
+      "/app/action?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("action-evidence")).toHaveAttribute(
+      "data-evidence-state",
+      "unavailable"
+    );
+    await expect(page.getByTestId("evidence-display-value")).toHaveText(
+      "Unavailable"
+    );
+    await expect(page.getByTestId("ux-reset-evidence-object")).toContainText(
+      "2023"
+    );
+    await expect(page.getByTestId("action-stale-period")).toHaveCount(0);
   });
 });

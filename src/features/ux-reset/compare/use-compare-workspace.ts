@@ -46,7 +46,6 @@ import {
   fetchExploreMeasures,
 } from "@/features/ux-reset/explore/load-explore-resources";
 import {
-  RESET_ACTION_PATH,
   RESET_COMPARE_PATH,
   RESET_INVESTIGATE_PATH,
 } from "@/features/ux-reset/routes";
@@ -77,7 +76,6 @@ export type CompareCountyOption = {
 };
 
 export type CompareWorkspace = {
-  actionHref: string;
   alignment: CompareAlignment | null;
   catalogCoolingDown: boolean;
   catalogError: string | null;
@@ -409,13 +407,6 @@ export function useCompareWorkspace(): CompareWorkspace {
       RESET_COMPARE_PATH,
       sharedContextToSearchParams(contextFor(fips, currentPair))
     );
-  const actionHref = uxResetShellHandoffHref(
-    RESET_ACTION_PATH,
-    RESET_COMPARE_PATH,
-    sharedContextToSearchParams(
-      contextFor(currentPair[0] ?? urlState.county, currentPair)
-    )
-  );
   const returnTarget = urlState.return;
   const returnHref = returnTarget
     ? uxResetShellHandoffHref(
@@ -452,7 +443,6 @@ export function useCompareWorkspace(): CompareWorkspace {
   });
 
   return {
-    actionHref,
     alignment:
       recoveryState === "ready" &&
       evidenceQuery.data?.leftFips === leftFips &&

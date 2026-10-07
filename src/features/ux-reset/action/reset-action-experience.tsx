@@ -9,10 +9,11 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  actionBundlePeriodState,
+  actionGovernedUnavailableRecords,
   actionPeriodStates,
   actionPlanPosture,
   actionPlanPostureKinds,
-  actionBundlePeriodState,
 } from "@/features/ux-reset/action/action-context";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromAction } from "@/features/ux-reset/ask-atlas/inherited-context";
@@ -23,7 +24,10 @@ import {
   ReleaseEvidenceStateStrip,
   releaseEvidenceContextFromMetadata,
 } from "@/features/ux-reset/evidence";
-import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
+import {
+  evidenceAvailabilityValues,
+  releaseEvidenceLoadStateValues,
+} from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import {
   investigateFindingSummary,
@@ -119,19 +123,26 @@ function ActionExperienceInner() {
     requestedPeriod: workspace.period,
   });
   const planPosture = actionPlanPosture(searchParams.getAll("plan"));
+  const unavailableRecords = bundle
+    ? actionGovernedUnavailableRecords(bundle)
+    : [];
   const evidenceState = bundle?.leadFinding
     ? bundle.leadFinding.evidence.availability
-    : "";
+    : unavailableRecords.length > 0
+      ? evidenceAvailabilityValues.unavailable
+      : "";
   const limitations = bundle?.leadLimitation?.text ?? "";
+  const staleRecord = bundle?.leadFinding ?? unavailableRecords[0] ?? null;
   const releaseLoadState = workspace.metadata
     ? releaseEvidenceLoadStateValues.ready
     : workspace.metadataError
       ? releaseEvidenceLoadStateValues.error
       : releaseEvidenceLoadStateValues.loading;
   const showSeparateLimitation = Boolean(
-    bundle?.leadLimitation &&
+    bundle?.leadFinding &&
+    bundle.leadLimitation &&
     bundle.leadLimitation.observation.observation.observation_id !==
-      bundle.leadFinding?.observation.observation_id
+      bundle.leadFinding.observation.observation_id
   );
   const title =
     workspace.identity?.label ?? workspace.requestedFips ?? "Action";
@@ -318,14 +329,22 @@ function ActionExperienceInner() {
               claimHeadingLevel="h3"
               model={bundle.leadFinding.evidence}
             />
-          ) : null}
+          ) : (
+            unavailableRecords.map((record) => (
+              <EvidenceObject
+                claimHeadingLevel="h3"
+                key={record.observation.observation_id}
+                model={record.evidence}
+              />
+            ))
+          )}
           {showSeparateLimitation && bundle.leadLimitation ? (
             <EvidenceObject
               claimHeadingLevel="h3"
               model={bundle.leadLimitation.observation.evidence}
             />
           ) : null}
-          {periodState === actionPeriodStates.stale ? (
+          {periodState === actionPeriodStates.stale && staleRecord ? (
             <AtlasStatusMessage
               title="Period in this link is stale"
               titleAs="h2"
@@ -333,14 +352,10 @@ function ActionExperienceInner() {
             >
               <p data-testid="action-stale-period">
                 The period in this link does not fall inside the observations
-                for this county. The summary keeps the evidence period
-                {bundle.leadFinding
-                  ? ` ${bundle.leadFinding.evidence.provenance.observationPeriod}`
-                  : ""}
-                {bundle.leadFinding
-                  ? ` (${evidenceAvailabilityLabel(bundle.leadFinding.evidence.availability)})`
-                  : ""}
-                .
+                for this county. The summary keeps the evidence period{" "}
+                {staleRecord.evidence.provenance.observationPeriod} (
+                {evidenceAvailabilityLabel(staleRecord.evidence.availability)}
+                ).
               </p>
             </AtlasStatusMessage>
           ) : null}

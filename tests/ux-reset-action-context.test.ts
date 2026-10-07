@@ -35,12 +35,18 @@ describe("Action evidence context", () => {
         observations: [],
         requestedPeriod: "1999-01-01",
       }),
+      empty: actionRequestedPeriodState({
+        loaded: true,
+        observations: [],
+        requestedPeriod: "2023-01-01",
+      }),
     }).toStrictEqual({
       inside: "matched",
       matchedStart: "matched",
       none: "unspecified",
       outside: "stale",
       unloaded: "unspecified",
+      empty: "unspecified",
     });
   });
 

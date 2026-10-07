@@ -513,6 +513,7 @@ function CompareExperienceInner() {
           aria-label="Continue from this comparison"
           className="ux-reset-compare-next"
         >
+          {/* Action is one investigated county. Compare does not choose it. */}
           {pair.map((fips) => {
             const label =
               workspace.options.find((option) => option.fips === fips)?.label ??
@@ -533,15 +534,6 @@ function CompareExperienceInner() {
               </Link>
             );
           })}
-          <Link
-            className={cn(buttonVariants(), "ux-reset-compare-action")}
-            data-fips={pair.join(",")}
-            data-testid="compare-action"
-            data-variant="primary"
-            href={workspace.actionHref}
-          >
-            Continue to Action
-          </Link>
         </nav>
       ) : null}
     </div>

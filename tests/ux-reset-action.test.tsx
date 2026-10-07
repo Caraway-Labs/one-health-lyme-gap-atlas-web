@@ -6,10 +6,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ResetActionExperience } from "@/features/ux-reset/action/reset-action-experience";
 import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
+import { ValueState } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
   INVESTIGATE_CASES_LIMITATION,
+  INVESTIGATE_CONTEXT_MEASURE_ID,
   INVESTIGATE_RELEASE_ID,
   INVESTIGATE_TICK_LIMITATION,
   INVESTIGATE_TICK_MEASURE_ID,
@@ -22,19 +24,27 @@ import {
 } from "./fixtures/investigate-api-fixtures";
 
 const controls: {
+  canopyValueState: (typeof ValueState)[keyof typeof ValueState] | null;
   emptyObservations: boolean;
+  failAllMeasures: boolean;
   failMeasureId: string | null;
   holdMetadata: boolean;
   metadataReleaseId: string | null;
   metadataStatus: number;
   scenario: InvestigateScenario;
+  unavailableOnly: boolean;
+  unsupportedPeriod: boolean;
 } = {
+  canopyValueState: null,
   emptyObservations: false,
+  failAllMeasures: false,
   failMeasureId: null,
   holdMetadata: false,
   metadataReleaseId: null,
   metadataStatus: 200,
   scenario: "mixed",
+  unavailableOnly: false,
+  unsupportedPeriod: false,
 };
 
 let metadataGate = Promise.withResolvers<boolean>();
@@ -76,9 +86,16 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
       }
       return {
         data: {
-          data: investigateMeasuresFixture.filter(
-            (measure) => measure.geography_semantics === params?.geography_type
-          ),
+          data: investigateMeasuresFixture
+            .filter(
+              (measure) =>
+                measure.geography_semantics === params?.geography_type
+            )
+            .map((measure) =>
+              controls.unsupportedPeriod
+                ? { ...measure, temporal_semantics: "seasonal" }
+                : measure
+            ),
           links: { self: "/v1/measures" },
           meta: {},
         },
@@ -112,6 +129,13 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     observationsV1ObservationsGet: vi.fn<
       typeof import("@/generated/atlas").observationsV1ObservationsGet
     >(async (params) => {
+      if (controls.failAllMeasures) {
+        return {
+          data: { detail: "observations unavailable" },
+          headers: new Headers(),
+          status: 503,
+        } as never;
+      }
       if (params.measure_id === controls.failMeasureId) {
         throw new AtlasApiError(
           "observations failed",
@@ -120,15 +144,28 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           null
         );
       }
+      const withhold =
+        controls.emptyObservations ||
+        (controls.unavailableOnly &&
+          params.measure_id !== INVESTIGATE_CONTEXT_MEASURE_ID);
+      const rows = withhold
+        ? []
+        : investigateObservationsFor({
+            fips: params.geography_id[0] ?? "",
+            measureId: params.measure_id,
+            scenario: controls.scenario,
+          });
+      const canopyState = controls.canopyValueState;
       return {
         data: {
-          data: controls.emptyObservations
-            ? []
-            : investigateObservationsFor({
-                fips: params.geography_id[0] ?? "",
-                measureId: params.measure_id,
-                scenario: controls.scenario,
-              }),
+          data:
+            canopyState && params.measure_id === INVESTIGATE_CONTEXT_MEASURE_ID
+              ? rows.map((row) => ({
+                  ...row,
+                  limitations: [],
+                  value_state: canopyState,
+                }))
+              : rows,
           links: { self: "/v1/observations" },
           meta: {},
         },
@@ -169,23 +206,30 @@ function renderAction(search: string) {
   );
 }
 
-async function waitForEvidence(county: string) {
-  await waitFor(() => {
-    if (screen.getByTestId("action-evidence").dataset.county !== county) {
-      throw new Error(`Waiting for county ${county}.`);
-    }
-  });
+async function waitForEvidence(county: string, timeout = 1000) {
+  await waitFor(
+    () => {
+      if (screen.getByTestId("action-evidence").dataset.county !== county) {
+        throw new Error(`Waiting for county ${county}.`);
+      }
+    },
+    { timeout }
+  );
 }
 
 describe("Action evidence handoff", () => {
   afterEach(() => {
     cleanup();
+    controls.canopyValueState = null;
     controls.emptyObservations = false;
+    controls.failAllMeasures = false;
     controls.failMeasureId = null;
     controls.holdMetadata = false;
     controls.metadataReleaseId = null;
     controls.metadataStatus = 200;
     controls.scenario = "mixed";
+    controls.unavailableOnly = false;
+    controls.unsupportedPeriod = false;
     clearObservationRetryDeadlines();
     metadataGate.resolve(true);
     metadataGate = Promise.withResolvers<boolean>();
@@ -285,18 +329,108 @@ describe("Action evidence handoff", () => {
 
   it("shows an empty bundle without turning it into unavailable evidence", async () => {
     controls.emptyObservations = true;
-    renderAction("?county=08001&scope=CO");
+    renderAction("?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01");
     await waitForEvidence("08001");
+    const evidence = screen.getByTestId("action-evidence");
     const finding = screen.getByTestId("action-finding-text").textContent ?? "";
     expect({
-      evidenceState:
-        screen.getByTestId("action-evidence").dataset.evidenceState,
+      evidenceObject: screen.queryByTestId("ux-reset-evidence-object"),
+      evidenceState: evidence.dataset.evidenceState,
       finding,
+      periodState: evidence.dataset.periodState,
+      stale: screen.queryByTestId("action-stale-period"),
       zero: finding.includes("0"),
     }).toStrictEqual({
+      evidenceObject: null,
       evidenceState: "",
       finding: "No observed or limited finding was returned for this county.",
+      periodState: "unspecified",
+      stale: null,
       zero: false,
+    });
+  });
+
+  it("keeps a governed unavailable observation when no finding or caveat exists", async () => {
+    const valueStates = [
+      ValueState.UNAVAILABLE,
+      ValueState.MISSING,
+      ValueState.NO_COUNTY_LINKED_RECORD,
+    ] as const;
+    for (const valueState of valueStates) {
+      cleanup();
+      controls.unavailableOnly = true;
+      controls.canopyValueState = valueState;
+      renderAction(
+        "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+      );
+      await waitForEvidence("08001");
+      const evidence = screen.getByTestId("action-evidence");
+      const object = screen.getByTestId("ux-reset-evidence-object");
+      const display =
+        screen.getByTestId("evidence-display-value").textContent ?? "";
+      expect({
+        display,
+        evidenceState: evidence.dataset.evidenceState,
+        objects: screen.getAllByTestId("ux-reset-evidence-object").length,
+        period: object.textContent?.includes("2023"),
+        periodState: evidence.dataset.periodState,
+        source: object.textContent?.includes("National land cover"),
+        stale: screen.queryByTestId("action-stale-period"),
+        valueState,
+        zeroPercent: object.textContent?.includes("0 percent"),
+      }).toStrictEqual({
+        display: "Unavailable",
+        evidenceState: "unavailable",
+        objects: 1,
+        period: true,
+        periodState: "matched",
+        source: true,
+        stale: null,
+        valueState,
+        zeroPercent: false,
+      });
+    }
+  });
+
+  it("does not call an empty, failed, or unsupported period stale", async () => {
+    controls.failAllMeasures = true;
+    renderAction("?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01");
+    await waitForEvidence("08001", 4000);
+    const failed = screen.getByTestId("action-evidence");
+    expect({
+      evidenceObject: screen.queryByTestId("ux-reset-evidence-object"),
+      evidenceState: failed.dataset.evidenceState,
+      finding: screen.getByTestId("action-finding-text").textContent,
+      periodState: failed.dataset.periodState,
+      stale: screen.queryByTestId("action-stale-period"),
+    }).toStrictEqual({
+      evidenceObject: null,
+      evidenceState: "",
+      finding:
+        "County evidence could not be loaded. That is a request failure, not a statement that no finding was published.",
+      periodState: "unspecified",
+      stale: null,
+    });
+    cleanup();
+
+    controls.failAllMeasures = false;
+    controls.unsupportedPeriod = true;
+    renderAction("?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01");
+    await waitForEvidence("08001");
+    const unsupported = screen.getByTestId("action-evidence");
+    expect({
+      evidenceObject: screen.queryByTestId("ux-reset-evidence-object"),
+      evidenceState: unsupported.dataset.evidenceState,
+      finding: screen.getByTestId("action-finding-text").textContent,
+      periodState: unsupported.dataset.periodState,
+      stale: screen.queryByTestId("action-stale-period"),
+    }).toStrictEqual({
+      evidenceObject: null,
+      evidenceState: "",
+      finding:
+        "The selected period is not a supported bound for the published measures, so no observation query was sent.",
+      periodState: "unspecified",
+      stale: null,
     });
   });
 
