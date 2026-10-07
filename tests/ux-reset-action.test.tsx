@@ -5,6 +5,11 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ResetActionExperience } from "@/features/ux-reset/action/reset-action-experience";
+import {
+  AskAtlasInheritedContextProvider,
+  useAskAtlasInheritedContext,
+} from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { InheritedContextNotice } from "@/features/ux-reset/ask-atlas/inherited-context-notice";
 import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ValueState } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
@@ -23,12 +28,36 @@ import {
   type InvestigateScenario,
 } from "./fixtures/investigate-api-fixtures";
 
+const washingtonTemplate = investigateScoresFixture.counties[0];
+const actionScoresFixture = {
+  ...investigateScoresFixture,
+  counties: [
+    ...investigateScoresFixture.counties,
+    {
+      ...washingtonTemplate,
+      county: "Washington",
+      fips: "44009",
+      state: "RI",
+      state_name: "Rhode Island",
+    },
+    {
+      ...washingtonTemplate,
+      county: "Washington",
+      fips: "27163",
+      state: "MN",
+      state_name: "Minnesota",
+    },
+  ],
+};
+
 const controls: {
   canopyValueState: (typeof ValueState)[keyof typeof ValueState] | null;
   emptyObservations: boolean;
   failAllMeasures: boolean;
   failMeasureId: string | null;
+  failMeasures: boolean;
   holdMetadata: boolean;
+  holdObservations: boolean;
   metadataReleaseId: string | null;
   metadataStatus: number;
   scenario: InvestigateScenario;
@@ -39,7 +68,9 @@ const controls: {
   emptyObservations: false,
   failAllMeasures: false,
   failMeasureId: null,
+  failMeasures: false,
   holdMetadata: false,
+  holdObservations: false,
   metadataReleaseId: null,
   metadataStatus: 200,
   scenario: "mixed",
@@ -48,6 +79,7 @@ const controls: {
 };
 
 let metadataGate = Promise.withResolvers<boolean>();
+let observationGate = Promise.withResolvers<boolean>();
 let navigationSearchParams = new URLSearchParams("county=08001&scope=CO");
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
@@ -77,6 +109,13 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     measuresV1MeasuresGet: vi.fn<
       typeof import("@/generated/atlas").measuresV1MeasuresGet
     >(async (params) => {
+      if (controls.failMeasures) {
+        return {
+          data: { detail: "measures unavailable" },
+          headers: new Headers(),
+          status: 503,
+        } as never;
+      }
       if (params?.page_token === null || params?.geography_type === "county") {
         return {
           data: { detail: "invalid catalog request" },
@@ -121,6 +160,11 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           ...investigateMetadataFixture,
           release_id:
             controls.metadataReleaseId ?? investigateMetadataFixture.release_id,
+          states: [
+            ...investigateMetadataFixture.states,
+            { code: "RI", name: "Rhode Island" },
+            { code: "MN", name: "Minnesota" },
+          ],
         },
         headers: new Headers(),
         status: 200,
@@ -129,6 +173,9 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     observationsV1ObservationsGet: vi.fn<
       typeof import("@/generated/atlas").observationsV1ObservationsGet
     >(async (params) => {
+      if (controls.holdObservations) {
+        await observationGate.promise;
+      }
       if (controls.failAllMeasures) {
         return {
           data: { detail: "observations unavailable" },
@@ -178,7 +225,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     >(
       async () =>
         ({
-          data: investigateScoresFixture,
+          data: actionScoresFixture,
           headers: new Headers(),
           status: 200,
         }) as never
@@ -192,15 +239,45 @@ function setSearch(search: string) {
   );
 }
 
-function renderAction(search: string) {
+function PublishedActionContext() {
+  const context = useAskAtlasInheritedContext();
+  return <InheritedContextNotice context={context} />;
+}
+
+function inheritedFieldValue(
+  root: HTMLElement,
+  field: string,
+  attribute: "fieldId" | "fieldState"
+): string | null {
+  const node = root.querySelector(`[data-field="${field}"]`);
+  if (!(node instanceof HTMLElement)) {
+    return null;
+  }
+  return node.dataset[attribute] ?? null;
+}
+
+function renderAction(
+  search: string,
+  options?: { client?: QueryClient; showContext?: boolean }
+) {
   setSearch(search);
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const client =
+    options?.client ??
+    new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+  const experience = options?.showContext ? (
+    <AskAtlasInheritedContextProvider>
+      <ResetActionExperience />
+      <PublishedActionContext />
+    </AskAtlasInheritedContextProvider>
+  ) : (
+    <ResetActionExperience />
+  );
   return render(
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter hasMemory searchParams={search}>
-        <ResetActionExperience />
+        {experience}
       </NuqsTestingAdapter>
     </QueryClientProvider>
   );
@@ -224,7 +301,9 @@ describe("Action evidence handoff", () => {
     controls.emptyObservations = false;
     controls.failAllMeasures = false;
     controls.failMeasureId = null;
+    controls.failMeasures = false;
     controls.holdMetadata = false;
+    controls.holdObservations = false;
     controls.metadataReleaseId = null;
     controls.metadataStatus = 200;
     controls.scenario = "mixed";
@@ -233,6 +312,8 @@ describe("Action evidence handoff", () => {
     clearObservationRetryDeadlines();
     metadataGate.resolve(true);
     metadataGate = Promise.withResolvers<boolean>();
+    observationGate.resolve(true);
+    observationGate = Promise.withResolvers<boolean>();
   });
 
   it("repeats the Investigate summary and returns to that county", async () => {
@@ -542,5 +623,112 @@ describe("Action evidence handoff", () => {
     expect(screen.getByTestId("action-surveillance").textContent).toContain(
       "not available"
     );
+  });
+
+  it("names each Washington county by its own state and FIPS", async () => {
+    renderAction("?county=44009&scope=CO&dataset=alpha-2026");
+    await screen.findByText("FIPS 44009 · Rhode Island (RI).");
+    const rhodeIsland = screen.getByTestId("action-header").textContent ?? "";
+    cleanup();
+    renderAction("?county=27163&scope=CO&dataset=alpha-2026");
+    await screen.findByText("FIPS 27163 · Minnesota (MN).");
+    const minnesota = screen.getByTestId("action-header").textContent ?? "";
+    expect({
+      minnesotaColorado: minnesota.includes("Colorado"),
+      minnesotaHeading: screen.getByRole("heading", { level: 1 }).textContent,
+      minnesotaRhodeIsland: minnesota.includes("Rhode Island"),
+      rhodeIslandColorado: rhodeIsland.includes("Colorado"),
+      rhodeIslandHeading: rhodeIsland.includes("Washington"),
+      rhodeIslandMinnesota: rhodeIsland.includes("Minnesota"),
+    }).toStrictEqual({
+      minnesotaColorado: false,
+      minnesotaHeading: "Washington",
+      minnesotaRhodeIsland: false,
+      rhodeIslandColorado: false,
+      rhodeIslandHeading: true,
+      rhodeIslandMinnesota: false,
+    });
+  });
+
+  it("drops the previous county state and FIPS when the next county is unresolved", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const first = renderAction("?county=44009&scope=CO&dataset=alpha-2026", {
+      client,
+      showContext: true,
+    });
+    await screen.findByText("FIPS 44009 · Rhode Island (RI).");
+    first.unmount();
+    renderAction("?county=99999&scope=CO&dataset=alpha-2026", {
+      client,
+      showContext: true,
+    });
+    await waitFor(() => {
+      if (
+        screen.getByTestId("action-recovery").dataset.recovery !== "unsupported"
+      ) {
+        throw new Error("Unresolved county has not rendered.");
+      }
+    });
+    const header = screen.getByTestId("action-header").textContent ?? "";
+    const context = screen.getByTestId("ask-atlas-inherited-context");
+    expect({
+      geography: inheritedFieldValue(context, "geography", "fieldState"),
+      identity: screen.queryByTestId("action-county-identity"),
+      minnesota: header.includes("Minnesota"),
+      previousFips: header.includes("44009"),
+      rhodeIsland: header.includes("Rhode Island"),
+      washington: header.includes("Washington"),
+    }).toStrictEqual({
+      geography: "absent",
+      identity: null,
+      minnesota: false,
+      previousFips: false,
+      rhodeIsland: false,
+      washington: false,
+    });
+  });
+
+  it("keeps geography and release in Ask Atlas context before a bundle exists", async () => {
+    controls.holdObservations = true;
+    renderAction("?county=08001&scope=CO&dataset=alpha-2026", {
+      showContext: true,
+    });
+    await screen.findByText("FIPS 08001 · Colorado (CO).");
+    await screen.findByText("Loading county evidence…");
+    const loadingContext = screen.getByTestId("ask-atlas-inherited-context");
+    expect({
+      evidence: screen.queryByTestId("action-evidence"),
+      geography: inheritedFieldValue(loadingContext, "geography", "fieldId"),
+      none: screen.queryByTestId("ask-atlas-no-context"),
+      release: inheritedFieldValue(loadingContext, "release", "fieldId"),
+    }).toStrictEqual({
+      evidence: null,
+      geography: "08001",
+      none: null,
+      release: INVESTIGATE_RELEASE_ID,
+    });
+    cleanup();
+    controls.holdObservations = false;
+    controls.failMeasures = true;
+    renderAction("?county=08001&scope=CO&dataset=alpha-2026", {
+      showContext: true,
+    });
+    await screen.findByText("Governed measures could not be loaded.");
+    const failedContext = screen.getByTestId("ask-atlas-inherited-context");
+    expect({
+      evidence: screen.queryByTestId("action-evidence"),
+      geography: inheritedFieldValue(failedContext, "geography", "fieldId"),
+      identity: screen.getByTestId("action-county-identity").textContent,
+      none: screen.queryByTestId("ask-atlas-no-context"),
+      release: inheritedFieldValue(failedContext, "release", "fieldId"),
+    }).toStrictEqual({
+      evidence: null,
+      geography: "08001",
+      identity: "FIPS 08001 · Colorado (CO).",
+      none: null,
+      release: INVESTIGATE_RELEASE_ID,
+    });
   });
 });

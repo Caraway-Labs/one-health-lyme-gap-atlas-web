@@ -37,13 +37,13 @@ async function installActionMocks(
     await fulfillJson(
       route,
       controls.metadataStatus === 200
-        ? investigateMetadataFixture
+        ? actionMetadataFixture
         : { detail: "metadata unavailable" },
       controls.metadataStatus
     );
   });
   await page.route("**/v1/atlas/scores**", async (route) => {
-    await fulfillJson(route, investigateScoresFixture);
+    await fulfillJson(route, actionScoresFixture);
   });
   await page.route("**/v1/indicators**", async (route) => {
     await fulfillJson(route, {
@@ -92,6 +92,36 @@ async function installActionMocks(
   });
 }
 
+const washingtonTemplate = investigateScoresFixture.counties[0];
+const actionScoresFixture = {
+  ...investigateScoresFixture,
+  counties: [
+    ...investigateScoresFixture.counties,
+    {
+      ...washingtonTemplate,
+      county: "Washington",
+      fips: "44009",
+      state: "RI",
+      state_name: "Rhode Island",
+    },
+    {
+      ...washingtonTemplate,
+      county: "Washington",
+      fips: "27163",
+      state: "MN",
+      state_name: "Minnesota",
+    },
+  ],
+};
+const actionMetadataFixture = {
+  ...investigateMetadataFixture,
+  states: [
+    ...investigateMetadataFixture.states,
+    { code: "RI", name: "Rhode Island" },
+    { code: "MN", name: "Minnesota" },
+  ],
+};
+
 const MIXED_COUNTY =
   "/app/investigate?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01";
 
@@ -125,6 +155,9 @@ test.describe("Action evidence handoff", () => {
     await expect(page).toHaveURL(/period=2023-01-01/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Denver");
+    await expect(page.getByTestId("action-county-identity")).toHaveText(
+      "FIPS 08001 · Colorado (CO)."
+    );
     await expect(page.getByTestId("action-finding-text")).toHaveText(
       originFinding
     );
@@ -429,5 +462,81 @@ test.describe("Action evidence handoff", () => {
       "2023"
     );
     await expect(page.getByTestId("action-stale-period")).toHaveCount(0);
+  });
+
+  test("keeps same-named counties distinct across handoff, reload, and direct link", async ({
+    page,
+  }) => {
+    await installActionMocks(
+      page,
+      {
+        delayFips: null,
+        emptyObservations: false,
+        metadataStatus: 200,
+        scenario: "mixed",
+        unavailableOnly: false,
+      },
+      Promise.resolve()
+    );
+    await page.goto(
+      "/app/investigate?county=44009&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-origin")).toContainText(
+      "FIPS 44009"
+    );
+    await expect(page.getByTestId("investigate-origin")).toContainText(
+      "Rhode Island (RI)"
+    );
+    await page.getByTestId("investigate-action").click();
+    await expect(page).toHaveURL(/\/app\/action/);
+    await expect(page).toHaveURL(/county=44009/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Washington"
+    );
+    await expect(page.getByTestId("action-county-identity")).toHaveText(
+      "FIPS 44009 · Rhode Island (RI)."
+    );
+    await expect(page.getByTestId("action-header")).not.toContainText(
+      "Minnesota"
+    );
+    await expect(page.getByTestId("action-county-identity")).not.toContainText(
+      "Colorado"
+    );
+
+    await page.reload();
+    await expect(page.getByTestId("action-county-identity")).toHaveText(
+      "FIPS 44009 · Rhode Island (RI)."
+    );
+
+    await page.goto(
+      "/app/action?county=27163&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Washington"
+    );
+    await expect(page.getByTestId("action-county-identity")).toHaveText(
+      "FIPS 27163 · Minnesota (MN)."
+    );
+    await expect(page.getByTestId("action-header")).not.toContainText("44009");
+    await expect(page.getByTestId("action-header")).not.toContainText(
+      "Rhode Island"
+    );
+
+    await page.goto(
+      "/app/action?county=99999&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("action-recovery")).toHaveAttribute(
+      "data-recovery",
+      "unsupported"
+    );
+    await expect(page.getByTestId("action-county-identity")).toHaveCount(0);
+    await expect(page.getByTestId("action-header")).not.toContainText("27163");
+    await expect(page.getByTestId("action-header")).not.toContainText(
+      "Minnesota"
+    );
+    await expect(page.getByTestId("action-header")).not.toContainText(
+      "Washington"
+    );
+    await expect(page.getByTestId("action-header")).not.toContainText("44009");
   });
 });

@@ -144,18 +144,20 @@ function ActionExperienceInner() {
     bundle.leadLimitation.observation.observation.observation_id !==
       bundle.leadFinding.observation.observation_id
   );
-  const title =
-    workspace.identity?.label ?? workspace.requestedFips ?? "Action";
+  const resolvedIdentity =
+    workspace.identity?.fips === workspace.requestedFips
+      ? workspace.identity
+      : null;
+  const title = resolvedIdentity?.label ?? workspace.requestedFips ?? "Action";
+  const resolvedStateLabel = resolvedIdentity ? workspace.stateLabel : null;
   usePublishAskAtlasInheritedContext(
-    bundle
-      ? inheritedContextFromAction({
-          bundle,
-          identity: workspace.identity,
-          releaseId: workspace.releaseId,
-          releaseMismatch: workspace.recovery === "release_mismatch",
-          requestedFips: workspace.requestedFips,
-        })
-      : null
+    inheritedContextFromAction({
+      bundle,
+      identity: workspace.identity,
+      releaseId: workspace.releaseId,
+      releaseMismatch: workspace.recovery === "release_mismatch",
+      requestedFips: workspace.requestedFips,
+    })
   );
 
   return (
@@ -173,6 +175,13 @@ function ActionExperienceInner() {
       >
         <p className="eyebrow">Action</p>
         <h1>{title}</h1>
+        {/* Published county state and FIPS. The Review scope is not this state. */}
+        {resolvedIdentity ? (
+          <p className="type-body" data-testid="action-county-identity">
+            {`FIPS ${resolvedIdentity.fips}`}
+            {resolvedStateLabel ? ` · ${resolvedStateLabel}` : null}.
+          </p>
+        ) : null}
         <p className="type-body">
           Follow-up uses the evidence already read for this county. Atlas does
           not start an intervention.
