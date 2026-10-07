@@ -24,17 +24,7 @@ function observedBasis(candidate: Candidate): string {
     .join(" ");
 }
 
-function candidateCaveat(candidate: Candidate): string {
-  const parts = [...candidate.limitations];
-  const freshness = candidate.freshness_comparability.trim();
-  if (freshness) {
-    parts.push(freshness);
-  }
-  if (parts.length === 0) {
-    return "The review result did not include an additional caveat.";
-  }
-  return parts.join(" ");
-}
+const ABSENT_CAVEAT = "The review result did not include an additional caveat.";
 
 function trimmedUnique(values: readonly string[]): string[] {
   const unique: string[] = [];
@@ -46,6 +36,31 @@ function trimmedUnique(values: readonly string[]): string[] {
     unique.push(trimmed);
   }
   return unique;
+}
+
+function candidateCaveatParts(candidate: Candidate): string[] {
+  return trimmedUnique([
+    ...candidate.limitations,
+    ...candidate.evidence_references.flatMap(
+      (reference) => reference.limitations
+    ),
+    candidate.freshness_comparability,
+  ]);
+}
+
+function candidateCaveat(candidate: Candidate): string {
+  const parts = candidateCaveatParts(candidate);
+  if (parts.length === 0) {
+    return ABSENT_CAVEAT;
+  }
+  return parts.join(" ");
+}
+
+function candidateSourceFamilies(candidate: Candidate): string[] {
+  return trimmedUnique([
+    ...candidate.evidence_families,
+    ...candidate.evidence_references.map((reference) => reference.family),
+  ]);
 }
 
 function sharedReferenceValue(
@@ -82,12 +97,10 @@ function candidateQualification(
   methodologyVersion: string
 ): EvidenceObjectModel {
   const references = candidate.evidence_references;
-  const families = trimmedUnique(
-    references.map((reference) => reference.family)
-  );
+  const families = candidateSourceFamilies(candidate);
+  const caveatParts = candidateCaveatParts(candidate);
   const limitations = trimmedUnique([
-    ...candidate.limitations,
-    ...references.flatMap((reference) => reference.limitations),
+    ...caveatParts,
     ...candidate.reason_codes.map((code) => `Reason code ${code}`),
   ]);
   const referenceSummary = references.map(referenceInspectLine).join(" ");

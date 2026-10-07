@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -9,6 +10,8 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 
+import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
+import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import { buildReviewCandidatePreview } from "@/features/ux-reset/review/review-candidate-preview";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
@@ -16,7 +19,7 @@ import {
   reviewPictureState,
   reviewPictureSummary,
 } from "@/features/ux-reset/review/review-operating-state";
-import type { StateReview } from "@/generated/models";
+import type { Candidate, StateReview } from "@/generated/models";
 import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
 
 import {
@@ -302,6 +305,150 @@ describe("Review operating picture state", () => {
       records: true,
       retrievals: true,
       versions: true,
+    });
+  });
+
+  it("keeps compact and inspect caveats and families aligned", () => {
+    const absentCaveat =
+      "The review result did not include an additional caveat.";
+    const referenceOnly = "Vector reports omit collection dates.";
+    const candidateLimitation = "Candidate limitation.";
+    const sharedCaveat = "Shared caveat";
+    const referenceCaveat = "Reference only";
+    const freshness = "Cumulative through 2025.";
+    const blankCandidate = (overrides: Partial<Candidate>): Candidate => ({
+      ...reviewCandidate({
+        caveat: "replaced",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_families: [],
+      evidence_references: [],
+      freshness_comparability: "",
+      limitations: [],
+      reason_codes: [],
+      ...overrides,
+    });
+    const displayed = (candidate: Candidate) => {
+      const preview = buildReviewCandidatePreview({
+        candidate,
+        methodologyId: "atlas-county-review",
+        methodologyVersion: "1.0.0",
+        stateCode: "CO",
+        stateName: "Colorado",
+      });
+      const qualification = preview.qualification;
+      if (!qualification) {
+        throw new Error("Expected candidate qualification.");
+      }
+      const view = render(
+        <>
+          <EvidenceStateStrip model={qualification} />
+          <EvidenceProvenanceInspect provenance={qualification.provenance} />
+        </>
+      );
+      const strip = view.container.querySelector(".ux-reset-evidence-strip");
+      const compact =
+        strip?.querySelector(".ux-reset-evidence-caveat")?.textContent ?? "";
+      const sourceFamily = strip?.querySelector("dd")?.textContent ?? "";
+      const inspectItems = [
+        ...view.container.querySelectorAll(".ux-reset-evidence-limitations li"),
+      ].map((item) => item.textContent ?? "");
+      const summary =
+        view.container.querySelector(".ux-reset-evidence-provenance-body > p")
+          ?.textContent ?? "";
+      cleanup();
+      return {
+        compact,
+        inspectItems,
+        sourceFamily,
+        summaryIncludesCompact: summary.includes(compact),
+      };
+    };
+    const reference = reviewEvidenceReference("08001");
+    expect({
+      duplicates: displayed(
+        blankCandidate({
+          evidence_families: [" pathogen ", "vector", "pathogen"],
+          evidence_references: [
+            {
+              ...reference,
+              family: "pathogen",
+              limitations: [` ${sharedCaveat} `, referenceCaveat],
+            },
+            {
+              ...reference,
+              family: " vector ",
+              limitations: [referenceCaveat, sharedCaveat],
+            },
+          ],
+          freshness_comparability: sharedCaveat,
+          limitations: [sharedCaveat, ` ${sharedCaveat} `],
+        })
+      ),
+      empty: displayed(
+        blankCandidate({
+          evidence_families: ["", "  "],
+          evidence_references: [
+            { ...reference, family: "   ", limitations: ["", "  "] },
+          ],
+          freshness_comparability: "   ",
+          limitations: [" ", ""],
+        })
+      ),
+      partialReferences: displayed(
+        blankCandidate({
+          evidence_families: ["pathogen", "vector"],
+          evidence_references: [
+            { ...reference, family: "pathogen", limitations: [] },
+          ],
+          freshness_comparability: freshness,
+        })
+      ),
+      referenceOnlyCaveat: displayed(
+        blankCandidate({
+          evidence_families: ["pathogen"],
+          evidence_references: [{ ...reference, limitations: [referenceOnly] }],
+        })
+      ),
+      summaryOnlyFamilies: displayed(
+        blankCandidate({
+          evidence_families: ["pathogen", "vector"],
+          limitations: [candidateLimitation],
+        })
+      ),
+    }).toStrictEqual({
+      duplicates: {
+        compact: `${sharedCaveat} ${referenceCaveat}`,
+        inspectItems: [sharedCaveat, referenceCaveat],
+        sourceFamily: "pathogen, vector",
+        summaryIncludesCompact: true,
+      },
+      empty: {
+        compact: absentCaveat,
+        inspectItems: [absentCaveat],
+        sourceFamily: "Unavailable",
+        summaryIncludesCompact: true,
+      },
+      partialReferences: {
+        compact: freshness,
+        inspectItems: [freshness],
+        sourceFamily: "pathogen, vector",
+        summaryIncludesCompact: true,
+      },
+      referenceOnlyCaveat: {
+        compact: referenceOnly,
+        inspectItems: [referenceOnly],
+        sourceFamily: "pathogen",
+        summaryIncludesCompact: true,
+      },
+      summaryOnlyFamilies: {
+        compact: candidateLimitation,
+        inspectItems: [candidateLimitation],
+        sourceFamily: "pathogen, vector",
+        summaryIncludesCompact: true,
+      },
     });
   });
 
