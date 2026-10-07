@@ -83,8 +83,8 @@ function gapEvidenceModel(review: StateReview) {
       limitations:
         review.limitations.length > 0 ? review.limitations : [caveat],
       materialCaveat: caveat,
-      observationPeriod: review.effective_observation_context,
-      sourceFamily: firstGap?.code ?? "Unavailable",
+      observationPeriod: "Unavailable",
+      sourceFamily: "Unavailable",
     },
     reasonCode: ValueState.UNAVAILABLE,
   };

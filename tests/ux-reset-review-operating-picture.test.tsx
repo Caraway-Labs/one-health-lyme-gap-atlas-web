@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 
@@ -375,6 +375,120 @@ describe("Review operating picture state", () => {
       "null:replace",
       "null:replace",
       "null:replace",
+    ]);
+  });
+
+  it("keeps gap source family and observation period unavailable", () => {
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "08031",
+      detail: "Environmental context stays a data gap.",
+    };
+    const effectiveContext =
+      "Current cumulative county status; human snapshot 2023";
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const picture = (review: StateReview) => (
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const reviews = [
+      buildStateReview({
+        gaps: [gap],
+        resultState: "unsupported",
+        state: "CO",
+      }),
+      buildStateReview({
+        gaps: [gap],
+        resultState: "insufficient_evidence",
+        state: "CO",
+      }),
+      buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Denver",
+            fips: "08001",
+            reasonText: "Denver was returned by the method.",
+          }),
+        ],
+        gaps: [gap],
+        resultState: "candidates_found",
+        state: "CO",
+      }),
+      buildStateReview({
+        gaps: [gap],
+        resultState: "none_stand_out",
+        state: "CO",
+      }),
+    ];
+    const snapshots = reviews.map((review) => {
+      const view = render(picture(review));
+      const gaps = screen.getByTestId("review-data-gaps");
+      const gapText = screen.getByTestId("review-data-gap").textContent ?? "";
+      const header = screen.getByTestId("review-methodology").textContent ?? "";
+      const snapshot = {
+        evidenceType:
+          within(gaps).getByText("Evidence type").nextElementSibling
+            ?.textContent,
+        gapCode: gapText.includes(gap.code),
+        gapDetail: gapText.includes(gap.detail),
+        headerContext: header.includes(effectiveContext),
+        observationPeriod:
+          within(gaps).getByText("Observation period").nextElementSibling
+            ?.textContent,
+        resultState:
+          screen.getByTestId("review-state-panel").dataset.resultState,
+        sourceFamily:
+          within(gaps).getByText("Source family").nextElementSibling
+            ?.textContent,
+      };
+      view.unmount();
+      return snapshot;
+    });
+    expect(snapshots).toStrictEqual([
+      {
+        evidenceType: "Unavailable",
+        gapCode: true,
+        gapDetail: true,
+        headerContext: true,
+        observationPeriod: "Unavailable",
+        resultState: "data_gap_only",
+        sourceFamily: "Unavailable",
+      },
+      {
+        evidenceType: "Unavailable",
+        gapCode: true,
+        gapDetail: true,
+        headerContext: true,
+        observationPeriod: "Unavailable",
+        resultState: "insufficient_evidence",
+        sourceFamily: "Unavailable",
+      },
+      {
+        evidenceType: "Unavailable",
+        gapCode: true,
+        gapDetail: true,
+        headerContext: true,
+        observationPeriod: "Unavailable",
+        resultState: "candidates_found",
+        sourceFamily: "Unavailable",
+      },
+      {
+        evidenceType: "Unavailable",
+        gapCode: true,
+        gapDetail: true,
+        headerContext: true,
+        observationPeriod: "Unavailable",
+        resultState: "none_stand_out",
+        sourceFamily: "Unavailable",
+      },
     ]);
   });
 });
