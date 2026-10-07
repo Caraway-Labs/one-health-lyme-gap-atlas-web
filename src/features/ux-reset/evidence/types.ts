@@ -23,6 +23,12 @@ export type EvidenceTechnicalProvenance = {
   releaseId?: string | null;
   methodologyVersion?: string | null;
   sourceId?: string | null;
+  /** Human-readable evaluation time. Omit to leave the row out of this disclosure. */
+  evaluatedAt?: string | null;
+  /** Raw evaluation timestamp. Omit when this disclosure has no evaluation time. */
+  evaluatedAtRaw?: string | null;
+  /** Configuration identity for the result. Omit to leave the row out of this disclosure. */
+  configurationSha256?: string | null;
 };
 
 /** Human-readable provenance fields shown beside evidence (default + inspect). */

@@ -17,7 +17,10 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Card } from "@/components/ui/card";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
-import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
+import {
+  evidenceAvailabilityValues,
+  type EvidenceProvenanceModel,
+} from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { buildReviewCandidatePreview } from "@/features/ux-reset/review/review-candidate-preview";
 import {
@@ -38,6 +41,7 @@ import {
 } from "@/features/ux-reset/review/review-return-focus";
 import { ValueState, type StateReview } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
+import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
 import {
   countyDisplayGeometryQueryKey,
   fetchCountyDisplayGeometry,
@@ -87,6 +91,41 @@ function gapEvidenceModel(review: StateReview) {
       sourceFamily: "Unavailable",
     },
     reasonCode: ValueState.UNAVAILABLE,
+  };
+}
+
+const RESULT_FIELD_UNAVAILABLE = "Unavailable";
+
+function reviewEvaluatedAt(value: string): { display: string; raw: string } {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return {
+      display: RESULT_FIELD_UNAVAILABLE,
+      raw: RESULT_FIELD_UNAVAILABLE,
+    };
+  }
+  const formatted = formatAtlasTimestamp(trimmed);
+  if (formatted === RESULT_FIELD_UNAVAILABLE) {
+    return { display: RESULT_FIELD_UNAVAILABLE, raw: trimmed };
+  }
+  return { display: `${formatted} UTC`, raw: trimmed };
+}
+
+function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
+  const evaluatedAt = reviewEvaluatedAt(review.evaluated_at);
+  return {
+    evidenceType: RESULT_FIELD_UNAVAILABLE,
+    inspectSummary:
+      "Evaluation time and configuration identity for this review result.",
+    limitations: review.limitations,
+    materialCaveat: null,
+    observationPeriod: RESULT_FIELD_UNAVAILABLE,
+    sourceFamily: RESULT_FIELD_UNAVAILABLE,
+    technical: {
+      configurationSha256: review.configuration_sha256,
+      evaluatedAt: evaluatedAt.display,
+      evaluatedAtRaw: evaluatedAt.raw,
+    },
   };
 }
 
@@ -263,6 +302,11 @@ export function ReviewOperatingPicture({
           Method {review.methodology_id} {review.methodology_version}. Release{" "}
           {review.data_release_version}. {review.effective_observation_context}.
         </p>
+        <div data-testid="review-result-provenance">
+          <EvidenceProvenanceInspect
+            provenance={reviewResultProvenance(review)}
+          />
+        </div>
         <p data-testid="review-backend-result">
           Backend result: {reviewResultStateLabel(review.result_state)}.{" "}
           {review.coverage.assessed_counties} assessed,{" "}

@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 
@@ -11,6 +17,7 @@ import {
   reviewPictureSummary,
 } from "@/features/ux-reset/review/review-operating-state";
 import type { StateReview } from "@/generated/models";
+import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
 
 import {
   buildStateReview,
@@ -490,5 +497,61 @@ describe("Review operating picture state", () => {
         sourceFamily: "Unavailable",
       },
     ]);
+  });
+
+  it("shows evaluation time and configuration in the result provenance", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const picture = (review: StateReview) => (
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const present = buildStateReview({
+      resultState: "none_stand_out",
+      state: "CO",
+    });
+    const absent = buildStateReview({
+      resultState: "insufficient_evidence",
+      state: "CO",
+    });
+    absent.evaluated_at = " ";
+    absent.configuration_sha256 = "";
+    const read = (review: StateReview) => {
+      const view = render(picture(review));
+      const provenance = screen.getByTestId("review-result-provenance");
+      fireEvent.click(within(provenance).getByText("Inspect provenance"));
+      fireEvent.click(
+        within(provenance).getByText("Technical reproducibility identifiers")
+      );
+      const value = (label: string) =>
+        within(provenance).getByText(label).nextElementSibling?.textContent ??
+        "";
+      const snapshot = {
+        configuration: value("Configuration"),
+        evaluatedAt: value("Evaluated at"),
+      };
+      view.unmount();
+      return snapshot;
+    };
+    const formatted = formatAtlasTimestamp(present.evaluated_at);
+    expect({
+      absent: read(absent),
+      present: read(present),
+    }).toStrictEqual({
+      absent: {
+        configuration: "Unavailable",
+        evaluatedAt: "Unavailable",
+      },
+      present: {
+        configuration: present.configuration_sha256,
+        evaluatedAt: `${formatted} UTC (${present.evaluated_at})`,
+      },
+    });
   });
 });

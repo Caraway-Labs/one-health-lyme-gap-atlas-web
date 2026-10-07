@@ -10,6 +10,36 @@ import type { EvidenceProvenanceModel } from "./types";
 import "./evidence-contract.css";
 
 const EVIDENCE_DOCS_HREF = getDocsPageHref("evidence-and-uncertainty");
+const UNAVAILABLE = "Unavailable";
+
+function evaluatedAtText(
+  display: string | null | undefined,
+  raw: string | null | undefined
+): string | null {
+  if (display === undefined && raw === undefined) {
+    return null;
+  }
+  const readable = display?.trim() || UNAVAILABLE;
+  const timestamp = raw?.trim() || UNAVAILABLE;
+  if (readable === UNAVAILABLE && timestamp === UNAVAILABLE) {
+    return UNAVAILABLE;
+  }
+  if (timestamp === UNAVAILABLE || timestamp === readable) {
+    return readable;
+  }
+  if (readable === UNAVAILABLE) {
+    return timestamp;
+  }
+  return `${readable} (${timestamp})`;
+}
+
+function configurationText(value: string | null | undefined): string | null {
+  if (value === undefined) {
+    return null;
+  }
+  const trimmed = value?.trim() ?? "";
+  return trimmed || UNAVAILABLE;
+}
 
 type EvidenceProvenanceInspectProps = {
   className?: string;
@@ -23,6 +53,18 @@ export function EvidenceProvenanceInspect({
   provenance,
 }: EvidenceProvenanceInspectProps) {
   const technical = provenance.technical;
+  const evaluatedAt = technical
+    ? evaluatedAtText(technical.evaluatedAt, technical.evaluatedAtRaw)
+    : null;
+  const configuration = technical
+    ? configurationText(technical.configurationSha256)
+    : null;
+  const evaluatedAtRaw = technical?.evaluatedAtRaw?.trim() ?? "";
+  const evaluatedAtIsTimestamp =
+    evaluatedAt !== null &&
+    evaluatedAt !== UNAVAILABLE &&
+    evaluatedAtRaw !== "" &&
+    evaluatedAtRaw !== UNAVAILABLE;
 
   return (
     <details
@@ -91,6 +133,24 @@ export function EvidenceProvenanceInspect({
                 <div>
                   <dt>Methodology version</dt>
                   <dd>{technical.methodologyVersion}</dd>
+                </div>
+              ) : null}
+              {evaluatedAt ? (
+                <div>
+                  <dt>Evaluated at</dt>
+                  <dd>
+                    {evaluatedAtIsTimestamp ? (
+                      <time dateTime={evaluatedAtRaw}>{evaluatedAt}</time>
+                    ) : (
+                      evaluatedAt
+                    )}
+                  </dd>
+                </div>
+              ) : null}
+              {configuration ? (
+                <div>
+                  <dt>Configuration</dt>
+                  <dd>{configuration}</dd>
                 </div>
               ) : null}
             </dl>
