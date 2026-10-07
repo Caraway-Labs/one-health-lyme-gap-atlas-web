@@ -197,14 +197,20 @@ export function EvidenceChatConversationContent({
             const decision = turn.response
               ? classifyKnowledgeChatResponse(turn.response)
               : null;
+            const visibleAnswer =
+              turn.role === "assistant" &&
+              decision &&
+              decision.kind !== "closed" &&
+              turn.response
+                ? turn.response.answer
+                : "";
             return (
               <article className={`chat-turn ${turn.role}`} key={turn.id}>
                 <strong>
                   {turn.role === "user" ? "You" : "Evidence assistant"}
                 </strong>
-                {turn.text && decision?.kind !== "closed" ? (
-                  <p>{turn.text}</p>
-                ) : null}
+                {turn.role === "user" && turn.text ? <p>{turn.text}</p> : null}
+                {visibleAnswer ? <p>{visibleAnswer}</p> : null}
                 {decision?.kind === "grounded" && turn.response ? (
                   <EvidenceChatAnswerSources response={turn.response} />
                 ) : null}

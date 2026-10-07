@@ -57,45 +57,67 @@ const chatStoreSchema = z.object({
   version: z.literal(1),
 });
 
-function restoreStoredTurn(turn: {
-  createdAt: string;
-  id: string;
-  response?: unknown;
-  role: "assistant" | "user";
-  text: string;
-}): LocalChatTurn {
-  if (turn.response === undefined) {
-    return {
-      createdAt: turn.createdAt,
-      id: turn.id,
-      role: turn.role,
-      text: turn.text,
-    };
+type StoredTurn = z.infer<typeof localChatTurnSchema>;
+
+function restoreAssistantTurn(turn: StoredTurn): LocalChatTurn | null {
+  if (turn.role !== "assistant" || turn.response === undefined) {
+    return null;
   }
   const accepted = acceptAskAtlasPayload(turn.response);
   if (!accepted.ok) {
-    if (accepted.reason === "not_chat_response") {
-      return {
-        createdAt: turn.createdAt,
-        id: turn.id,
-        role: turn.role,
-        text: turn.text,
-      };
-    }
-    return {
-      createdAt: turn.createdAt,
-      id: turn.id,
-      role: turn.role,
-      text: "",
-    };
+    return null;
   }
   return {
     createdAt: turn.createdAt,
     id: turn.id,
     response: accepted.response,
-    role: turn.role,
-    text: turn.text,
+    role: "assistant",
+    text: accepted.response.answer,
   };
+}
+
+/** Drop a rejected answer together with its question so later pairs stay aligned. */
+function restoreStoredTurns(turns: StoredTurn[]): LocalChatTurn[] {
+  const restored: LocalChatTurn[] = [];
+  let index = 0;
+  while (index < turns.length) {
+    const current = turns[index];
+    const next = turns[index + 1];
+    if (current?.role === "user" && next?.role === "assistant") {
+      const assistant = restoreAssistantTurn(next);
+      if (assistant) {
+        restored.push(
+          {
+            createdAt: current.createdAt,
+            id: current.id,
+            role: "user",
+            text: current.text,
+          },
+          assistant
+        );
+      }
+      index += 2;
+      continue;
+    }
+    if (current?.role === "assistant") {
+      const assistant = restoreAssistantTurn(current);
+      if (assistant) {
+        restored.push(assistant);
+      }
+      index += 1;
+      continue;
+    }
+    if (current?.role === "user" && current.text.trim()) {
+      restored.push({
+        createdAt: current.createdAt,
+        id: current.id,
+        role: "user",
+        text: current.text,
+      });
+    }
+    index += 1;
+  }
+  return restored;
 }
 
 export function loadConversations(now = Date.now()): LocalConversation[] {
@@ -115,11 +137,7 @@ export function loadConversations(now = Date.now()): LocalConversation[] {
       .filter((item) => item.success)
       .map((item) => ({
         ...item.data,
-        turns: item.data.turns
-          .map((turn) => restoreStoredTurn(turn))
-          .filter(
-            (turn) => turn.text.trim().length > 0 || turn.response !== undefined
-          ),
+        turns: restoreStoredTurns(item.data.turns),
       }))
       .filter((item) => Date.parse(item.expiresAt) > now)
       .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
@@ -185,9 +203,11 @@ export function conversationHistory(
     const user = conversation.turns[index];
     const assistant = conversation.turns[index + 1];
     if (user.role !== "user" || assistant.role !== "assistant") continue;
-    if (isOperationalFailure(assistant)) continue;
+    if (!assistant.response || isOperationalFailure(assistant)) continue;
+    const accepted = acceptAskAtlasPayload(assistant.response);
+    if (!accepted.ok) continue;
     const question = user.text.trim().slice(0, 5000);
-    const answer = assistant.text.trim().slice(0, 5000);
+    const answer = accepted.response.answer.trim().slice(0, 5000);
     if (question && answer) {
       pairs.push([
         { role: "user", content: question },

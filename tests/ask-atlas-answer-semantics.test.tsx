@@ -205,6 +205,99 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     expect(screen.queryByText("Source paper")).toBeNull();
   });
 
+  it("fails closed when the answer text is not the claim text", async () => {
+    const payload = literaturePayload("Reviewed studies describe exposure.");
+    payload.answer = "An uncited conclusion.";
+    chatRequest.mockResolvedValue({ data: payload });
+    render(<EvidenceChat mode={mode} />);
+    await ask();
+    const alert = await screen.findByRole("alert");
+    expect({
+      answer: screen.queryByText("An uncited conclusion."),
+      claim: screen.queryByText("Reviewed studies describe exposure."),
+      reason: alert.dataset.closeReason,
+      source: screen.queryByText("Source paper"),
+    }).toStrictEqual({
+      answer: null,
+      claim: null,
+      reason: "partial",
+      source: null,
+    });
+  });
+
+  it("does not hydrate a rejected stored answer or send it in the next request", async () => {
+    const cited = literaturePayload("A cited answer.", "request-cited");
+    localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify({
+        conversations: [
+          {
+            createdAt: "2026-08-25T00:00:00.000Z",
+            expiresAt: "2099-01-01T00:00:00.000Z",
+            id: "conversation-1",
+            title: "Stored",
+            turns: [
+              {
+                createdAt: "2026-08-25T00:00:00.000Z",
+                id: "user-rejected",
+                role: "user",
+                text: "Rejected question",
+              },
+              {
+                createdAt: "2026-08-25T00:00:00.000Z",
+                id: "assistant-rejected",
+                response: { answer: "Partial only", status: "answered" },
+                role: "assistant",
+                text: "Partial only",
+              },
+              {
+                createdAt: "2026-08-25T00:00:01.000Z",
+                id: "user-cited",
+                role: "user",
+                text: "Cited question",
+              },
+              {
+                createdAt: "2026-08-25T00:00:01.000Z",
+                id: "assistant-cited",
+                response: cited,
+                role: "assistant",
+                text: "An uncited conclusion.",
+              },
+            ],
+            updatedAt: "2026-08-25T00:00:01.000Z",
+          },
+        ],
+        version: 1,
+      })
+    );
+    chatRequest.mockResolvedValue({
+      data: literaturePayload("Follow-up answer.", "request-next"),
+    });
+    render(<EvidenceChat mode={mode} />);
+    await screen.findByText("A cited answer.");
+    expect({
+      divergent: screen.queryByText("An uncited conclusion."),
+      partial: screen.queryByText("Partial only"),
+      rejectedQuestion: screen.queryByText("Rejected question"),
+    }).toStrictEqual({
+      divergent: null,
+      partial: null,
+      rejectedQuestion: null,
+    });
+    await ask("Follow-up question");
+    await screen.findByText("Follow-up answer.");
+    expect(chatRequest).toHaveBeenCalledWith(
+      {
+        history: [
+          { content: "Cited question", role: "user" },
+          { content: "A cited answer.", role: "assistant" },
+        ],
+        message: "Follow-up question",
+      },
+      { signal: expect.any(AbortSignal) }
+    );
+  });
+
   it("fails closed for a malformed or partial response", async () => {
     chatRequest.mockResolvedValue({
       data: { answer: "Partial only", status: "answered" },

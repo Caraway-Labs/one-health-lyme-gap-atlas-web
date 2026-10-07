@@ -51,16 +51,14 @@ export function conversationTurnPreview(
   const lastAssistant = conversation.turns
     .toReversed()
     .find((turn) => turn.role === "assistant" && turn.text.trim());
-  if (!lastAssistant) {
+  if (!lastAssistant?.response) {
     return null;
   }
-  if (
-    lastAssistant.response &&
-    classifyKnowledgeChatResponse(lastAssistant.response).kind === "closed"
-  ) {
+  const decision = classifyKnowledgeChatResponse(lastAssistant.response);
+  if (decision.kind === "closed") {
     return null;
   }
-  return truncate(lastAssistant.text, PREVIEW_MAX_LENGTH);
+  return truncate(lastAssistant.response.answer, PREVIEW_MAX_LENGTH);
 }
 
 export function conversationEvidenceStrengthLabel(

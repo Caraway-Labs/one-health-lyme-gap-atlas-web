@@ -273,6 +273,10 @@ function groundedCitations(
       ordered.push(citation);
     }
   }
+  // The literature service sets answer to the claim texts joined by a blank line.
+  if (response.answer !== claims.map((claim) => claim.text).join("\n\n")) {
+    return { ok: false, reason: "partial" };
+  }
   return { citations: ordered, ok: true };
 }
 

@@ -174,6 +174,42 @@ describe("Ask Atlas answer contract", () => {
     });
   });
 
+  it("fails closed when the answer is not the claim text", () => {
+    expect(
+      acceptAskAtlasPayload(
+        literatureResponse({ answer: "An uncited conclusion." })
+      )
+    ).toStrictEqual({ ok: false, reason: "partial" });
+    const joined = acceptAskAtlasPayload(
+      literatureResponse({
+        answer: "First finding.\n\nSecond finding.",
+        citations: [
+          {
+            citation_id: "c1",
+            claim_ids: ["claim-1", "claim-2"],
+            passage_ids: ["passage-1"],
+            pmid: "12345",
+            pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+            title: "Source paper",
+          },
+        ],
+        claims: [
+          {
+            citation_ids: ["c1"],
+            claim_id: "claim-1",
+            text: "First finding.",
+          },
+          {
+            citation_ids: ["c1"],
+            claim_id: "claim-2",
+            text: "Second finding.",
+          },
+        ],
+      })
+    );
+    expect(joined.ok).toBeTruthy();
+  });
+
   it("fails closed for a partial or malformed payload", () => {
     expect(
       acceptAskAtlasPayload({
