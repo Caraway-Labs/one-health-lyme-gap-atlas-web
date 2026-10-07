@@ -66,9 +66,13 @@ function referenceInspectLine(
   const product = reference.source_product.trim() || GOVERNED_FIELD_UNAVAILABLE;
   const sourceAsOf = reference.source_as_of.trim();
   const revision = sourceAsOf ? `; source as of ${sourceAsOf}` : "";
+  const version = reference.source_version.trim();
+  const versionLabel = version ? `; version ${version}` : "";
+  const retrieved = reference.retrieved_at.trim();
+  const retrievedLabel = retrieved ? `; retrieved ${retrieved}` : "";
   const record = reference.public_record_ref.trim();
   const recordLabel = record ? `; record ${record}` : "";
-  return `${family} (${product}${revision}${recordLabel})`;
+  return `${family} (${product}${revision}${versionLabel}${retrievedLabel}${recordLabel})`;
 }
 
 function candidateQualification(
@@ -81,10 +85,11 @@ function candidateQualification(
   const families = trimmedUnique(
     references.map((reference) => reference.family)
   );
-  const limitations = [
+  const limitations = trimmedUnique([
     ...candidate.limitations,
+    ...references.flatMap((reference) => reference.limitations),
     ...candidate.reason_codes.map((code) => `Reason code ${code}`),
-  ];
+  ]);
   const referenceSummary = references.map(referenceInspectLine).join(" ");
   return {
     availability: evidenceAvailabilityValues.limited,

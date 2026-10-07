@@ -217,6 +217,87 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("surfaces every reference limitation, version, and retrieval timestamp", () => {
+    const candidate = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    const referenceLimitations = [
+      "Pathogen status is cumulative.",
+      "Vector reports omit collection dates.",
+      "Human counts are a snapshot.",
+    ];
+    const versions = ["pathogen-v1", "vector-v2", "human-v3"] as const;
+    const retrievedAt = [
+      "2026-01-02T03:04:05.000Z",
+      "2026-02-03T04:05:06.000Z",
+      "2026-03-04T05:06:07.000Z",
+    ] as const;
+    const records = [
+      "public/08001-pathogen",
+      "public/08001-vector",
+      "public/08001-human",
+    ] as const;
+    candidate.evidence_references = [
+      {
+        ...reviewEvidenceReference("08001"),
+        limitations: [referenceLimitations[0]],
+        public_record_ref: records[0],
+        retrieved_at: retrievedAt[0],
+        source_version: versions[0],
+      },
+      {
+        ...reviewEvidenceReference("08001", "Reported"),
+        family: "vector",
+        limitations: [referenceLimitations[1]],
+        public_record_ref: records[1],
+        retrieved_at: retrievedAt[1],
+        source_product: "CDC vector county status",
+        source_version: versions[1],
+        target: "Ixodes scapularis",
+      },
+      {
+        ...reviewEvidenceReference("08001", "Established"),
+        family: "human",
+        limitations: [referenceLimitations[2]],
+        public_record_ref: records[2],
+        retrieved_at: retrievedAt[2],
+        source_product: "CDC human county snapshot",
+        source_version: versions[2],
+        target: "Human surveillance",
+      },
+    ];
+    const preview = buildReviewCandidatePreview({
+      candidate,
+      methodologyId: "atlas-county-review",
+      methodologyVersion: "1.0.0",
+      stateCode: "CO",
+      stateName: "Colorado",
+    });
+    const provenance = preview.qualification?.provenance;
+    const summary = provenance?.inspectSummary ?? "";
+    const limitations = provenance?.limitations ?? [];
+    expect({
+      evidenceType: provenance?.evidenceType,
+      limitations: limitations.filter((limitation) =>
+        referenceLimitations.includes(limitation)
+      ),
+      observationPeriod: provenance?.observationPeriod,
+      records: records.every((record) => summary.includes(record)),
+      retrievals: retrievedAt.every((retrieved) => summary.includes(retrieved)),
+      versions: versions.every((version) => summary.includes(version)),
+    }).toStrictEqual({
+      evidenceType: "Unavailable",
+      limitations: [...referenceLimitations],
+      observationPeriod: "Unavailable",
+      records: true,
+      retrievals: true,
+      versions: true,
+    });
+  });
+
   it("clears a stale county when the result has no candidates", async () => {
     const onCountyChange =
       vi.fn<(fips: string | null, history: "push" | "replace") => void>();
