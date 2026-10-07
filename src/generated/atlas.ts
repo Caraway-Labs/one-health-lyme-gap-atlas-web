@@ -61,6 +61,8 @@ import type {
   ScoresV1AtlasScoresGetParams,
   SourcesV1SourcesGetParams,
   StateReportPdfV1StatesStateReportPdfGetParams,
+  StateReview,
+  StateReviewV1StatesStateReviewGetParams,
   UserProfileResponse,
   UserProfileWrite
 } from './models';
@@ -3519,6 +3521,157 @@ export const useSubmitFeedbackV1FeedbackPost = <TError = ProblemDetails,
       > => {
       return useMutation(getSubmitFeedbackV1FeedbackPostMutationOptions(options), queryClient);
     }
+
+export type stateReviewV1StatesStateReviewGetResponse200 = {
+  data: StateReview
+  status: 200
+}
+
+export type stateReviewV1StatesStateReviewGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type stateReviewV1StatesStateReviewGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type stateReviewV1StatesStateReviewGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type stateReviewV1StatesStateReviewGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type stateReviewV1StatesStateReviewGetResponseSuccess = (stateReviewV1StatesStateReviewGetResponse200) & {
+  headers: Headers;
+};
+export type stateReviewV1StatesStateReviewGetResponseError = (stateReviewV1StatesStateReviewGetResponse404 | stateReviewV1StatesStateReviewGetResponse422 | stateReviewV1StatesStateReviewGetResponse429 | stateReviewV1StatesStateReviewGetResponse503) & {
+  headers: Headers;
+};
+
+export type stateReviewV1StatesStateReviewGetResponse = (stateReviewV1StatesStateReviewGetResponseSuccess | stateReviewV1StatesStateReviewGetResponseError)
+
+export const getStateReviewV1StatesStateReviewGetUrl = (state: string,
+    params?: StateReviewV1StatesStateReviewGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/states/${state}/review?${stringifiedParams}` : `/v1/states/${state}/review`
+}
+
+/**
+ * Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
+ * @summary Review a state's county evidence
+ */
+export const stateReviewV1StatesStateReviewGet = async (state: string,
+    params?: StateReviewV1StatesStateReviewGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<stateReviewV1StatesStateReviewGetResponse> => {
+
+  return apiMutator<stateReviewV1StatesStateReviewGetResponse>(getStateReviewV1StatesStateReviewGetUrl(state,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStateReviewV1StatesStateReviewGetQueryKey = (state: string,
+    params?: StateReviewV1StatesStateReviewGetParams,) => {
+    return [
+    `/v1/states/${state}/review`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getStateReviewV1StatesStateReviewGetQueryOptions = <TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(state: string,
+    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStateReviewV1StatesStateReviewGetQueryKey(state,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>> = ({ signal }) => stateReviewV1StatesStateReviewGet(state,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: state !== null && state !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type StateReviewV1StatesStateReviewGetQueryResult = NonNullable<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>>
+export type StateReviewV1StatesStateReviewGetQueryError = ProblemDetails
+
+
+export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+ state: string,
+    params: undefined |  StateReviewV1StatesStateReviewGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+ state: string,
+    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+ state: string,
+    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Review a state's county evidence
+ */
+
+export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+ state: string,
+    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getStateReviewV1StatesStateReviewGetQueryOptions(state,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse200 = {
   data: KnowledgeChatResponse

@@ -986,6 +986,79 @@ export const SubmitFeedbackV1FeedbackPostResponse = zod.object({
 
 
 /**
+ * Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
+ * @summary Review a state's county evidence
+ */
+export const stateReviewV1StatesStateReviewGetPathStateRegExp = new RegExp('^[A-Z]{2}$');
+
+
+export const StateReviewV1StatesStateReviewGetParams = zod.object({
+  "state": zod.string().regex(stateReviewV1StatesStateReviewGetPathStateRegExp)
+})
+
+export const stateReviewV1StatesStateReviewGetQueryObservationContextOneMax = 80;
+
+
+
+export const StateReviewV1StatesStateReviewGetQueryParams = zod.object({
+  "observation_context": zod.union([zod.string().max(stateReviewV1StatesStateReviewGetQueryObservationContextOneMax),zod.null()]).optional(),
+  "dataset_version": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const stateReviewV1StatesStateReviewGetResponseReviewCandidatesItemCompletenessDefault = `limited`;
+
+export const StateReviewV1StatesStateReviewGetResponse = zod.object({
+  "requested_state": zod.string(),
+  "methodology_id": zod.string(),
+  "methodology_version": zod.string(),
+  "configuration_sha256": zod.string(),
+  "data_release_version": zod.string(),
+  "evaluated_at": zod.iso.datetime({"offset":true}),
+  "requested_observation_context": zod.union([zod.string(),zod.null()]),
+  "effective_observation_context": zod.string(),
+  "result_state": zod.enum(['candidates_found', 'insufficient_evidence', 'unsupported', 'none_stand_out']),
+  "review_candidates": zod.array(zod.object({
+  "county_fips": zod.string(),
+  "county_name": zod.string(),
+  "county_url": zod.string(),
+  "reason_codes": zod.array(zod.string()),
+  "reason_text": zod.string(),
+  "evidence_families": zod.array(zod.string()),
+  "evidence_references": zod.array(zod.object({
+  "family": zod.string(),
+  "source_product": zod.string(),
+  "source_version": zod.string(),
+  "public_record_ref": zod.string(),
+  "county_fips": zod.string(),
+  "release_id": zod.string(),
+  "source_as_of": zod.string(),
+  "retrieved_at": zod.iso.datetime({"offset":true}),
+  "target": zod.string(),
+  "status": zod.string(),
+  "limitations": zod.array(zod.string())
+})),
+  "completeness": zod.literal("limited").default(stateReviewV1StatesStateReviewGetResponseReviewCandidatesItemCompletenessDefault),
+  "limitations": zod.array(zod.string()),
+  "freshness_comparability": zod.string(),
+  "suggested_next_check": zod.string()
+})),
+  "data_gaps": zod.array(zod.object({
+  "county_fips": zod.string(),
+  "code": zod.string(),
+  "detail": zod.string()
+})),
+  "coverage": zod.object({
+  "assessed_counties": zod.int(),
+  "eligible_counties": zod.int(),
+  "abstained_counties": zod.int(),
+  "evaluated_counties": zod.int(),
+  "rule_coverage": zod.record(zod.string(), zod.string())
+}),
+  "limitations": zod.array(zod.string())
+})
+
+
+/**
  * @summary Knowledge Graph Chat
  */
 export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyMessageMax = 1000;
