@@ -54,6 +54,11 @@ export function ReviewCountyPreviewPanel({
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}
       </p>
+      {preview.observedBasis ? (
+        <p className="type-body" data-testid="review-observed-basis">
+          {preview.observedBasis}
+        </p>
+      ) : null}
       {preview.qualification ? (
         <div data-testid="review-preview-qualification">
           <EvidenceStateStrip model={preview.qualification} showReason />
@@ -63,7 +68,10 @@ export function ReviewCountyPreviewPanel({
         </div>
       ) : null}
       <p className="type-body" data-testid="review-preview-follow-up">
-        <span className="eyebrow">Suggested follow-up</span> {preview.followUp}
+        <span className="eyebrow">
+          {preview.followUpLabel ?? "Suggested follow-up"}
+        </span>{" "}
+        {preview.followUp}
       </p>
       <p className="type-small" data-testid="review-preview-guardrail">
         Review priority is not a diagnosis, an individual risk estimate, or an

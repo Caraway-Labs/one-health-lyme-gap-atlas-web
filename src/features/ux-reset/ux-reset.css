@@ -277,6 +277,62 @@
   font-size: var(--type-body-size);
 }
 
+.ux-reset-review-operating {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-review-result,
+.ux-reset-review-operating-side,
+.ux-reset-review-gaps {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.ux-reset-review-candidate-list,
+.ux-reset-review-gap-list {
+  max-height: 24rem;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+
+.ux-reset-review-candidate {
+  display: grid;
+  width: 100%;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+  text-align: left;
+}
+
+.ux-reset-review-candidate[aria-current="true"] {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.ux-reset-review-gap-list li {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 960px) {
+  .ux-reset-review-operating {
+    grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.9fr);
+    align-items: start;
+  }
+
+  .ux-reset-review-result,
+  .ux-reset-review-gaps {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 800px) {
   .ux-reset-pro-app .atlas-sidebar {
     position: fixed;

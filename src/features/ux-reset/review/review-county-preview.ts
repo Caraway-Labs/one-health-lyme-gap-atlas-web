@@ -44,6 +44,10 @@ export type ReviewCountyPreviewModel = {
   countyName: string;
   fips: string;
   followUp: string;
+  /** Visible label for the next-check line. Score previews keep the legacy label. */
+  followUpLabel?: string;
+  /** Observed basis returned with a review candidate. */
+  observedBasis?: string;
   /**
    * Visible evidence-state qualification for limited and unavailable inputs.
    * Null when the score row does not show a limitation.

@@ -3,27 +3,26 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { STATE_GRID } from "@/features/geographic-explorer/model";
-import type { StateOrientationRow } from "@/features/ux-reset/review/build-review-presentation";
+import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 
 type ReviewNationalOrientationProps = {
-  rows: readonly StateOrientationRow[];
+  states: readonly AtlasStateOption[];
   onOpenState: (stateCode: string) => void;
 };
 
 export function ReviewNationalOrientation({
-  rows,
+  states,
   onOpenState,
 }: ReviewNationalOrientationProps) {
-  const byCode = new Map(rows.map((row) => [row.code, row]));
+  const byCode = new Map(states.map((state) => [state.code, state]));
 
   return (
     <Card data-testid="review-national-orientation">
       <CardHeader>
         <h2 className="type-card">State orientation</h2>
         <p className="type-body">
-          National scope summarizes counties in the governed release by state.
-          Open a state to see its county review list—Atlas does not show a
-          nationwide county leaderboard here.
+          Choose a state to open its review result. National scope does not
+          assemble a nationwide county list.
         </p>
       </CardHeader>
       <CardContent>
@@ -37,7 +36,6 @@ export function ReviewNationalOrientation({
           <div className="ux-reset-review-state-grid">
             {STATE_GRID.map(({ code, row, column }) => {
               const entry = byCode.get(code);
-              const disabled = !entry || entry.countyCount === 0;
               return (
                 <div
                   key={code}
@@ -47,16 +45,16 @@ export function ReviewNationalOrientation({
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={disabled}
-                    aria-label={`${code}: ${entry?.countyCount ?? 0} counties in scope`}
+                    disabled={!entry}
+                    aria-label={
+                      entry
+                        ? `${code}, ${entry.name}`
+                        : `${code}, not in this release`
+                    }
                     onClick={() => onOpenState(code)}
                   >
                     <strong>{code}</strong>
-                    <span>
-                      {entry?.countyCount
-                        ? `${entry.countyCount} counties`
-                        : "No counties"}
-                    </span>
+                    <span>{entry ? entry.name : "Not in this release"}</span>
                   </Button>
                 </div>
               );

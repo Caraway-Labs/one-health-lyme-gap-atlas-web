@@ -8,13 +8,15 @@ import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atla
 import { inheritedContextFromReview } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
+import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
+import { REVIEW_REQUEST_FAILURE_MESSAGE } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
 import { ReviewScopeSelector } from "@/features/ux-reset/review/review-scope-selector";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
-import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
+import { useStateReview } from "@/features/ux-reset/review/use-state-review";
 import {
   atlasStateOptionsFromMetadata,
   reviewScopeLabel,
@@ -30,7 +32,12 @@ function ResetReviewExperienceInner() {
   const scope = urlState.scope;
   const profileQuery = useProfileDefaultJurisdiction();
 
-  const presentationQuery = useReviewPresentation(scope, urlState.dataset);
+  const presentationQuery = useReviewPresentation(
+    scope,
+    urlState.dataset,
+    false
+  );
+  const stateReview = useStateReview(scope, urlState.dataset);
 
   const stateOptions = useMemo(
     () =>
@@ -63,28 +70,35 @@ function ResetReviewExperienceInner() {
     stateOptions,
   });
 
-  const presentationReady = Boolean(
-    presentationQuery.presentation &&
-    presentationQuery.requestScope === scope &&
-    presentationQuery.metadata
+  const reviewReady = Boolean(
+    scope !== "ALL" && stateReview.review?.requested_state === scope
   );
+  const nationalReady = scope === "ALL" && Boolean(presentationQuery.metadata);
+  const stateName =
+    stateOptions.find((option) => option.code === scope)?.name ?? scope;
+  const reviewIdentities =
+    reviewReady && stateReview.review
+      ? stateReview.review.review_candidates.map((candidate) => ({
+          county: candidate.county_name,
+          fips: candidate.county_fips,
+          state_name: stateName,
+        }))
+      : [];
   usePublishAskAtlasInheritedContext(
     inheritedContextFromReview({
-      rankedCounties:
-        presentationReady && scope !== "ALL"
-          ? (presentationQuery.presentation?.stateCounties ?? [])
-          : [],
-      releaseId: presentationQuery.metadata?.release_id ?? null,
-      releaseReady: presentationReady,
+      rankedCounties: reviewIdentities,
+      releaseId:
+        scope === "ALL"
+          ? (presentationQuery.metadata?.release_id ?? null)
+          : (stateReview.review?.data_release_version ?? null),
+      releaseReady: scope === "ALL" ? nationalReady : reviewReady,
       requestedCounty: urlState.county,
     })
   );
   const scopeLabel = reviewScopeLabel(scope, stateOptions);
-  const renderedScope = presentationQuery.requestScope ?? scope;
+  const renderedScope = nationalReady ? "ALL" : scope;
   const metadataLoading =
     presentationQuery.isLoading && !presentationQuery.metadata;
-  const scoresLoading =
-    presentationQuery.isLoading && Boolean(presentationQuery.metadata);
 
   return (
     <>
@@ -122,42 +136,41 @@ function ResetReviewExperienceInner() {
         </AtlasStatusMessage>
       ) : null}
 
-      {presentationQuery.scoresIsError ? (
+      {scope !== "ALL" && stateReview.isError ? (
         <AtlasStatusMessage tone="error">
-          Review data is temporarily unavailable. Try again later.
+          {REVIEW_REQUEST_FAILURE_MESSAGE}
         </AtlasStatusMessage>
       ) : null}
 
-      {scoresLoading ? (
+      {scope !== "ALL" && stateReview.isLoading ? (
         <AtlasStatusMessage tone="loading">
-          Loading county scores…
+          Loading review results…
         </AtlasStatusMessage>
       ) : null}
 
-      {presentationQuery.presentation &&
-      presentationQuery.requestScope === scope ? (
+      {reviewReady || nationalReady ? (
         <section
           aria-label="Review scope results"
           className="ux-reset-review-results"
-          data-rendered-scope={presentationQuery.presentation.scope}
+          data-rendered-scope={renderedScope}
           data-testid="review-scope-results"
         >
-          {scope === "ALL" ? (
+          {nationalReady ? (
             <ReviewNationalOrientation
-              rows={presentationQuery.presentation.orientationRows}
+              states={stateOptions}
               onOpenState={(stateCode) => setScope(stateCode)}
             />
-          ) : (
-            <ReviewStatePanel
+          ) : null}
+          {reviewReady && stateReview.review ? (
+            <ReviewOperatingPicture
               county={urlState.county}
-              mapCounties={presentationQuery.presentation.mapCounties}
               period={urlState.period}
-              rankedCounties={presentationQuery.presentation.stateCounties}
-              releaseId={presentationQuery.metadata!.release_id}
+              review={stateReview.review}
               scopeCode={scope}
+              stateName={stateName}
               onCountyChange={setCounty}
             />
-          )}
+          ) : null}
         </section>
       ) : null}
     </>
