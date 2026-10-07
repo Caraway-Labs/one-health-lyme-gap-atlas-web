@@ -109,7 +109,7 @@ test.describe("Review operating picture", () => {
       });
     });
     await page.goto("/app/review?scope=CO");
-    await expect(page.getByRole("alert")).toContainText(
+    await expect(page.locator("[data-atlas-status='error']")).toContainText(
       "temporarily unavailable"
     );
     await expect(page.getByText("Nothing stands out")).toHaveCount(0);
