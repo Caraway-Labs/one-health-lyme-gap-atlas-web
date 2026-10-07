@@ -1,6 +1,54 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  reviewScopeMetadataFixture,
+  reviewScopeScoresFixture,
+} from "../fixtures/review-scope-api-fixtures";
+
+const HISTORY_RELEASE_ID = "alpha-2026-08-06";
+
+async function installDeterministicWorkspaceMocks(page: Page) {
+  const metadata = {
+    ...reviewScopeMetadataFixture,
+    release_id: HISTORY_RELEASE_ID,
+  };
+  const scores = {
+    ...reviewScopeScoresFixture,
+    release_id: HISTORY_RELEASE_ID,
+  };
+  await page.route("**/v1/me/profile", async (route) => {
+    await route.fulfill({ json: { profile: { state_code: "CO" } } });
+  });
+  await page.route("**/v1/atlas/metadata**", async (route) => {
+    await route.fulfill({ json: metadata });
+  });
+  await page.route("**/v1/atlas/scores**", async (route) => {
+    await route.fulfill({ json: scores });
+  });
+  await page.route("**/v1/indicators**", async (route) => {
+    await route.fulfill({
+      json: { data: [], links: { self: "/v1/indicators" }, meta: {} },
+    });
+  });
+  await page.route("**/v1/measures**", async (route) => {
+    await route.fulfill({
+      json: { data: [], links: { self: "/v1/measures" }, meta: {} },
+    });
+  });
+  await page.route("**/v1/geographies/**", async (route) => {
+    await route.fulfill({
+      json: { code: "CANONICAL_DATA_UNAVAILABLE" },
+      status: 503,
+    });
+  });
+  await page.route("**/v1/observations**", async (route) => {
+    await route.fulfill({
+      json: { data: [], links: { self: "/v1/observations" }, meta: {} },
+    });
+  });
+}
+
 function isBenignHistoryNavigationError(error: unknown): boolean {
   const message = String(error);
   return (
@@ -155,6 +203,7 @@ test("bounded context survives rendered navigation, reload, and browser history"
     testInfo.project.name.includes("mobile"),
     "Desktop-only: mobile shell requires opening the drawer before each nav click."
   );
+  await installDeterministicWorkspaceMocks(page);
 
   const expectInvestigateContext = (target: URL) => {
     expect(target.pathname).toBe("/app/investigate");
@@ -192,6 +241,8 @@ test("bounded context survives rendered navigation, reload, and browser history"
   expect(url.pathname).toBe("/app/action");
   expect(url.searchParams.get("county")).toBe("08001");
 
+  // Rapid reload→Back: do not wait for metadata. Hydration can still replace
+  // this history entry with /app/action if the router listener is not ready.
   await expectHistoryNavigation(
     page,
     "back",
@@ -225,4 +276,39 @@ test("bounded context survives rendered navigation, reload, and browser history"
   expect(url.searchParams.get("scope")).toBe("ALL");
   expect(url.searchParams.get("period")).toBeNull();
   expect(url.searchParams.get("dataset")).toBe("alpha");
+});
+
+test("settled Action reload stays on Investigate after Back", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name.includes("mobile"),
+    "Desktop-only: mobile shell requires opening the drawer before each nav click."
+  );
+  await installDeterministicWorkspaceMocks(page);
+
+  await page.goto(
+    "/app/review?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
+  );
+  await clickWorkspaceLink(page, "Compare", "/app/compare");
+  await clickWorkspaceLink(page, "Investigate", "/app/investigate");
+  await clickWorkspaceLink(page, "Action", "/app/action");
+  await page.reload();
+  await expect(page.getByTestId("action-county-identity")).toHaveText(
+    "FIPS 08001 · Colorado (CO)."
+  );
+  await expect(page.getByText("Loading release metadata…")).toHaveCount(0);
+
+  await expectHistoryNavigation(
+    page,
+    "back",
+    (target) => target.pathname === "/app/investigate"
+  );
+  const url = new URL(page.url());
+  expect(url.pathname).toBe("/app/investigate");
+  expect(url.searchParams.get("scope")).toBe("CO");
+  expect(url.searchParams.get("county")).toBe("08001");
+  expect(url.searchParams.get("dataset")).toBe("alpha-2026-08-06");
+  expect(url.searchParams.get("period")).toBe("2023-01-01");
+  expect(url.searchParams.get("compare")).toBe("08001,08003");
 });
