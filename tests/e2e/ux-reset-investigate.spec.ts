@@ -12,6 +12,7 @@ import {
   investigateScoresFixture,
   type InvestigateScenario,
 } from "../fixtures/investigate-api-fixtures";
+import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 
 type InvestigateControls = {
   delayFips: string | null;
@@ -91,6 +92,10 @@ async function installInvestigateMocks(
   await page.route("**/v1/atlas/scores**", async (route) => {
     requestedUrls.push(route.request().url());
     await fulfillJson(route, investigateScoresFixture);
+  });
+  await page.route("**/v1/states/*/review**", async (route) => {
+    requestedUrls.push(route.request().url());
+    await fulfillJson(route, stateReviewResponseForUrl(route.request().url()));
   });
   await page.route("**/v1/indicators**", async (route) => {
     const url = new URL(route.request().url());

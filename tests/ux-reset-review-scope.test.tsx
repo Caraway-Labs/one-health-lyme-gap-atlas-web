@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -28,6 +29,10 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
     new URLSearchParams(mockedSearch) as ReadonlyURLSearchParams,
 }));
 
+import {
+  buildStateReview,
+  defaultReviewForState,
+} from "./fixtures/review-operating-picture-fixtures";
 import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
@@ -93,6 +98,15 @@ vi.mock(import("@/generated/atlas"), () => ({
     () => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
   >(async () => ({
     data: reviewScopeScoresFixture,
+    status: 200,
+  })),
+  stateReviewV1StatesStateReviewGet: vi.fn<
+    (state: string) => Promise<{
+      data: ReturnType<typeof defaultReviewForState>;
+      status: number;
+    }>
+  >(async (state: string) => ({
+    data: defaultReviewForState(state),
     status: 200,
   })),
 }));
@@ -281,37 +295,26 @@ describe("Reset Review scope UI", () => {
       expect(screen.getByTestId("mock-atlas-map")).toBeTruthy()
     );
     fireEvent.click(screen.getByTestId("mock-map-select-ny"));
-    const activeRow = document.querySelector(".rank-row.active");
+    const activeRow = document.querySelector(
+      '[data-testid="review-candidate"][aria-current="true"]'
+    );
     expect(activeRow?.textContent).toContain("Denver");
   });
 
-  it("renders the full county table when expanded", async () => {
-    const manyCounties = Array.from({ length: 41 }, (_, index) => {
-      const fips = String(8000 + index).padStart(5, "0");
-      return {
-        ...reviewScopeScoresFixture.counties[0],
-        county: `County ${index + 1}`,
-        fips,
-        score: {
-          ...reviewScopeScoresFixture.counties[0].score,
-          score: 90 - index,
-        },
-      };
-    });
-    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
-    vi.mocked(scoresV1AtlasScoresGet).mockResolvedValue({
-      data: { ...reviewScopeScoresFixture, counties: manyCounties },
-      status: 200,
-    } as never);
-
+  it("lists review candidates without a numeric score", async () => {
     renderReview("?scope=CO");
     await waitFor(() =>
       expect(screen.getByTestId("review-state-panel")).toBeTruthy()
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "View full county list" })
-    );
-    expect(screen.getAllByRole("row").length).toBeGreaterThan(41);
+    const candidates = screen.getAllByTestId("review-candidate");
+    expect(candidates.map((entry) => entry.dataset.fips)).toStrictEqual([
+      "08001",
+      "08013",
+    ]);
+    expect(screen.getByTestId("review-data-gap").dataset.fips).toBe("08031");
+    expect(screen.queryByRole("button", { name: /08031/ })).toBeNull();
+    expect(screen.queryByText("View full county list")).toBeNull();
+    expect(document.querySelector(".rank-score")).toBeNull();
   });
 
   it("writes scope=ALL through the nuqs setter when national scope is chosen", async () => {
@@ -531,12 +534,15 @@ describe("Reset Review scope UI", () => {
       label: expect.stringContaining("Open Investigate"),
       panel: true,
       target: href,
-      why: "Lower review priority",
+      why: "Boulder is included because the review method returned it.",
     });
     expect(
       screen.getByTestId("review-preview-qualification").textContent
-    ).toContain("Some scored inputs are unavailable");
-    expect(screen.getByText("Inspect provenance")).toBeTruthy();
+    ).toContain("Collection dates are unavailable");
+    expect(screen.getByTestId("review-observed-basis").textContent).toContain(
+      "Borrelia burgdorferi sensu stricto"
+    );
+    expect(within(preview).getByText("Inspect provenance")).toBeTruthy();
   });
 
   it("updates preview identity, why, caveat, and target together", () => {
@@ -710,6 +716,114 @@ describe("Reset Review scope UI", () => {
       page: null,
       sort: null,
     });
+  });
+
+  it("keeps request failure distinct from nothing stands out", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockRejectedValueOnce(
+      new Error("service unavailable")
+    );
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain(
+        "temporarily unavailable"
+      )
+    );
+    expect(screen.queryByText(/Nothing stands out/)).toBeNull();
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+    expect(screen.queryByTestId("review-result-summary")).toBeNull();
+  });
+
+  it("renders nothing-stands-out without turning gaps into candidates", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+      data: buildStateReview({
+        resultState: "none_stand_out",
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-state-panel").dataset.resultState).toBe(
+        "none_stand_out"
+      )
+    );
+    expect(screen.getByTestId("review-result-summary").textContent).toContain(
+      "Nothing stands out"
+    );
+    expect(screen.getByTestId("review-methodology").textContent).toContain(
+      "atlas-county-review 1.0.0"
+    );
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+  });
+
+  it("renders insufficient evidence separately from data-gap-only", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+      data: buildStateReview({
+        gaps: [
+          {
+            code: "MISSING_HUMAN_SURVEILLANCE",
+            county_fips: "08001",
+            detail: "Human surveillance for the requested period is missing.",
+          },
+        ],
+        resultState: "insufficient_evidence",
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-state-panel").dataset.resultState).toBe(
+        "insufficient_evidence"
+      )
+    );
+    expect(screen.getByTestId("review-result-summary").textContent).toContain(
+      "not enough eligible evidence"
+    );
+    expect(screen.queryByText(/Nothing stands out/)).toBeNull();
+    expect(screen.getByTestId("review-data-gap").textContent).toContain(
+      "08001"
+    );
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+  });
+
+  it("renders unsupported gaps as data-gap-only", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+      data: buildStateReview({
+        gaps: [
+          {
+            code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+            county_fips: "08001",
+            detail: "Summary statuses lack exact source rows and revisions.",
+          },
+        ],
+        resultState: "unsupported",
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-state-panel").dataset.resultState).toBe(
+        "data_gap_only"
+      )
+    );
+    expect(screen.getByTestId("review-result-summary").textContent).toContain(
+      "separate from suggestions"
+    );
+    expect(screen.queryByText(/Nothing stands out/)).toBeNull();
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+    expect(screen.getByTestId("review-data-gap").dataset.code).toBe(
+      "SOURCE_NATIVE_LINEAGE_UNAVAILABLE"
+    );
   });
 
   it("preserves scope=ALL across explore handoff URLs", () => {

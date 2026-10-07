@@ -4,6 +4,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import { UserProfileResponse as UserProfileResponseSchema } from "@/generated/zod/userProfileResponse.zod";
 import { UserProfileWrite as UserProfileWriteSchema } from "@/generated/zod/userProfileWrite.zod";
 
+import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
@@ -98,6 +99,12 @@ async function installSettingsApi(page: Page) {
   });
   await page.route("**/v1/atlas/scores**", async (route) => {
     await route.fulfill({ json: reviewScopeScoresFixture, status: 200 });
+  });
+  await page.route("**/v1/states/*/review**", async (route) => {
+    await route.fulfill({
+      json: stateReviewResponseForUrl(route.request().url()),
+      status: 200,
+    });
   });
 
   return {
