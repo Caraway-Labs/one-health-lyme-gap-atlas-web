@@ -54,7 +54,7 @@ function ResetReviewExperienceInner() {
     [setUrlState]
   );
   const setCounty = useCallback(
-    (fips: string, history: "push" | "replace") => {
+    (fips: string | null, history: "push" | "replace") => {
       void setUrlState({ county: fips }, { history });
     },
     [setUrlState]

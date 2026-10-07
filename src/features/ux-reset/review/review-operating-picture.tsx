@@ -62,7 +62,7 @@ type ReviewCountyHistory = "push" | "replace";
 
 type ReviewOperatingPictureProps = {
   county?: string | null;
-  onCountyChange?: (fips: string, history: ReviewCountyHistory) => void;
+  onCountyChange?: (fips: string | null, history: ReviewCountyHistory) => void;
   period?: string | null;
   review: StateReview;
   scopeCode: string;
@@ -125,10 +125,16 @@ export function ReviewOperatingPicture({
       : null
   );
   useEffect(() => {
-    if (!selectedFips || county === selectedFips) {
+    if (selectedFips) {
+      if (county === selectedFips) {
+        return;
+      }
+      onCountyChange?.(selectedFips, "replace");
       return;
     }
-    onCountyChange?.(selectedFips, "replace");
+    if (county) {
+      onCountyChange?.(null, "replace");
+    }
   }, [county, onCountyChange, selectedFips]);
 
   const geometryQuery = useQuery({
@@ -172,7 +178,6 @@ export function ReviewOperatingPicture({
   const preview = selected
     ? buildReviewCandidatePreview({
         candidate: selected,
-        effectiveContext: review.effective_observation_context,
         methodologyId: review.methodology_id,
         methodologyVersion: review.methodology_version,
         stateCode: scopeCode,

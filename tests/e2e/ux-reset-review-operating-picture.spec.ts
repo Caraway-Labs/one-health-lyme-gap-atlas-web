@@ -178,6 +178,46 @@ test.describe("Review operating picture", () => {
     await expect(page.getByText("Nothing stands out")).toHaveCount(0);
   });
 
+  test("clears the county when the next result has no candidates", async ({
+    page,
+  }) => {
+    await installOperatingPicture(page, (state) => {
+      if (state === "NY") {
+        return buildStateReview({
+          resultState: "none_stand_out",
+          state,
+        });
+      }
+      return buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable for this status.",
+            countyName: "Denver",
+            fips: "08001",
+            reasonText:
+              "Denver is included because the review method returned it.",
+          }),
+        ],
+        resultState: "candidates_found",
+        state,
+      });
+    });
+    await page.goto("/app/review?scope=CO&county=08001");
+    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
+      "data-county",
+      "08001"
+    );
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "New York (NY)" }).click();
+    await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
+      "data-result-state",
+      "none_stand_out"
+    );
+    await expect(page).toHaveURL(/scope=NY/);
+    await expect(page).not.toHaveURL(/county=/);
+    await expect(page.getByTestId("review-candidate")).toHaveCount(0);
+  });
+
   test("shows loading before a review result", async ({ page }) => {
     let releaseReview = () => {};
     const reviewGate = new Promise<void>((resolve) => {
