@@ -154,15 +154,11 @@ export function ReviewOperatingPicture({
   );
   const releaseId = review.data_release_version;
 
-  usePublishExploreCommittedNavigation(
-    selectedFips
-      ? {
-          county: selectedFips,
-          dataset: releaseId,
-          period,
-        }
-      : null
-  );
+  usePublishExploreCommittedNavigation({
+    county: selectedFips || null,
+    dataset: review.data_release_version,
+    period: period ?? null,
+  });
   useEffect(() => {
     if (selectedFips) {
       if (county === selectedFips) {

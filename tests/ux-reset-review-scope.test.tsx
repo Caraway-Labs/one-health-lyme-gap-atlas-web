@@ -13,6 +13,7 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetDestinationHref } from "@/features/ux-reset";
+import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
@@ -998,6 +999,259 @@ describe("Reset Review scope UI", () => {
         requestedAlpha: true,
       });
     } finally {
+      review.mockImplementation(async (state: string) => ({
+        data: defaultReviewForState(state),
+        status: 200,
+      }));
+    }
+  });
+
+  it("keeps the resolved release on shell links when no county is selected", async () => {
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "08031",
+      detail: "Environmental context stays a data gap.",
+    };
+    const period = "2023-01-01";
+    const staleUrl = `scope=CO&county=08001&period=${period}`;
+    const reloadedUrl = `scope=CO&period=${period}`;
+    let activeRelease = "release-a";
+    let mode = "none";
+    const shellLinks = () => {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      return {
+        action: href("Action"),
+        compare: href("Compare"),
+        explore: href("Explore"),
+        feed: href("Feed"),
+        investigate: href("Investigate"),
+        settings: href("Settings"),
+      };
+    };
+    const linksFor = (releaseId: string, county: string | null) => {
+      const query = county
+        ? `scope=CO&county=${county}&dataset=${releaseId}&period=${period}`
+        : `scope=CO&dataset=${releaseId}&period=${period}`;
+      return {
+        action: `/app/action?${query}`,
+        compare: `/app/compare?${query}`,
+        explore: `/app/explore?${query}`,
+        feed: "/app/feed",
+        investigate: `/app/investigate?${query}`,
+        settings: "/app/settings",
+      };
+    };
+    const reviewBody = (state: string, datasetVersion = "omitted") => {
+      const dataRelease = datasetVersion;
+      const shared = { state };
+      if (mode === "candidates") {
+        return {
+          ...buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Denver",
+                fips: "08001",
+                reasonText: "Denver was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            ...shared,
+          }),
+          data_release_version: dataRelease,
+        };
+      }
+      if (mode === "insufficient") {
+        return {
+          ...buildStateReview({
+            resultState: "insufficient_evidence",
+            ...shared,
+          }),
+          data_release_version: dataRelease,
+        };
+      }
+      if (mode === "gaps") {
+        return {
+          ...buildStateReview({
+            gaps: [gap],
+            resultState: "unsupported",
+            ...shared,
+          }),
+          data_release_version: dataRelease,
+        };
+      }
+      if (mode === "unsupported") {
+        return {
+          ...buildStateReview({ resultState: "unsupported", ...shared }),
+          data_release_version: dataRelease,
+        };
+      }
+      return {
+        ...buildStateReview({ resultState: "none_stand_out", ...shared }),
+        data_release_version: dataRelease,
+      };
+    };
+    metadata.mockImplementation(
+      async () =>
+        ({
+          data: {
+            ...reviewScopeMetadataFixture,
+            release_id: activeRelease,
+          },
+          status: 200,
+        }) as never
+    );
+    let reviewGate: PromiseWithResolvers<undefined> | null =
+      Promise.withResolvers<undefined>();
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string }
+    ) => {
+      const gate = reviewGate;
+      const result = () => ({
+        data: reviewBody(state, params?.dataset_version),
+        status: 200,
+      });
+      return gate ? gate.promise.then(result) : Promise.resolve(result());
+    }) as never);
+    const renderShell = (search: string) => {
+      mockedSearch = search;
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      const view = render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            searchParams={
+              new URL(`http://localhost/app/review?${search}`).search
+            }
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      return { client, view };
+    };
+    const settle = async (releaseId: string, county: string | null) => {
+      const expected = linksFor(releaseId, county).explore;
+      await waitFor(() => {
+        const explore = shellLinks().explore;
+        if (explore !== expected) {
+          throw new Error(explore);
+        }
+      });
+      return shellLinks();
+    };
+    try {
+      const loading = renderShell(staleUrl);
+      await waitFor(() => {
+        if (!screen.queryByText("Loading review results…")) {
+          throw new Error("review did not stay loading");
+        }
+      });
+      const whileLoading = shellLinks();
+      const finishLoading = reviewGate;
+      reviewGate = null;
+      finishLoading?.resolve();
+      const noneStandOut = await settle(activeRelease, null);
+      mode = "insufficient";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const insufficient = await settle(activeRelease, null);
+      mode = "gaps";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const unsupportedWithGaps = await settle(activeRelease, null);
+      mode = "unsupported";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const unsupportedWithoutGaps = await settle(activeRelease, null);
+      mode = "candidates";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const candidates = await settle(activeRelease, "08001");
+      mode = "none";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const afterEmptySwitch = await settle(activeRelease, null);
+      loading.view.unmount();
+      mockedSearch = reloadedUrl;
+      const reloaded = renderShell(reloadedUrl);
+      const afterReload = await settle(activeRelease, null);
+      activeRelease = "release-b";
+      await reloaded.client.invalidateQueries({
+        queryKey: ["ux-reset-review-metadata"],
+      });
+      const afterRollover = await settle(activeRelease, null);
+      review.mockRejectedValueOnce(new Error("service unavailable"));
+      reloaded.view.unmount();
+      const failed = renderShell(staleUrl);
+      await waitFor(() => {
+        if (!screen.queryByText(/temporarily unavailable/)) {
+          throw new Error("review error was not shown");
+        }
+      });
+      const whileFailed = shellLinks();
+      failed.view.unmount();
+      expect({
+        afterEmptySwitch,
+        afterReload,
+        afterRollover,
+        candidates,
+        insufficient,
+        noneStandOut,
+        unsupportedWithGaps,
+        unsupportedWithoutGaps,
+        whileFailed,
+        whileLoading,
+      }).toStrictEqual({
+        afterEmptySwitch: linksFor("release-a", null),
+        afterReload: linksFor("release-a", null),
+        afterRollover: linksFor("release-b", null),
+        candidates: linksFor("release-a", "08001"),
+        insufficient: linksFor("release-a", null),
+        noneStandOut: linksFor("release-a", null),
+        unsupportedWithGaps: linksFor("release-a", null),
+        unsupportedWithoutGaps: linksFor("release-a", null),
+        whileFailed: {
+          action: `/app/action?scope=CO&county=08001&period=${period}`,
+          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
+          explore: `/app/explore?scope=CO&county=08001&period=${period}`,
+          feed: "/app/feed",
+          investigate: `/app/investigate?scope=CO&county=08001&period=${period}`,
+          settings: "/app/settings",
+        },
+        whileLoading: {
+          action: `/app/action?scope=CO&county=08001&period=${period}`,
+          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
+          explore: `/app/explore?scope=CO&county=08001&period=${period}`,
+          feed: "/app/feed",
+          investigate: `/app/investigate?scope=CO&county=08001&period=${period}`,
+          settings: "/app/settings",
+        },
+      });
+    } finally {
+      metadata.mockImplementation(async () => ({
+        data: reviewScopeMetadataFixture,
+        status: 200,
+      }));
       review.mockImplementation(async (state: string) => ({
         data: defaultReviewForState(state),
         status: 200,
