@@ -344,6 +344,16 @@ export function inheritedContextFromInvestigate(input: {
   });
 }
 
+export function inheritedContextFromAction(
+  input: Parameters<typeof inheritedContextFromInvestigate>[0]
+): AskAtlasInheritedContext | null {
+  const context = inheritedContextFromInvestigate(input);
+  if (!context) {
+    return null;
+  }
+  return { ...context, surface: "action" };
+}
+
 function reviewSelectedCounty(
   rankedCounties: readonly ReviewCountyIdentity[],
   requestedCounty: string | null

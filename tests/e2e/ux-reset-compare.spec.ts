@@ -253,7 +253,8 @@ test.describe("two-county Compare", () => {
     await expect(withheld).toHaveAttribute("data-relation", "withheld");
     await expect(withheld).toContainText("periods differ");
     await expect(withheld).not.toContainText("differ by");
-    await expect(page.getByTestId("compare-action")).toHaveAttribute(
+    await expect(page.getByTestId("compare-action")).toHaveCount(0);
+    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
       "href",
       /compare=08001(?:%2C|,)08013/
     );

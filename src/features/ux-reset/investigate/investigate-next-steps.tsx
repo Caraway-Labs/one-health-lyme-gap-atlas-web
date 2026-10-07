@@ -5,6 +5,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
 import {
+  investigateActionOffer,
   investigateCompareOffer,
   investigatePdfContext,
   type InvestigateCompareOfferKind,
@@ -28,6 +29,7 @@ function investigateCompareTestId(kind: InvestigateCompareOfferKind): string {
 }
 
 export function InvestigateNextSteps({
+  actionHref,
   bundle,
   compare,
   compareHref,
@@ -35,6 +37,7 @@ export function InvestigateNextSteps({
   requestedPeriod,
   resolvedCounty,
 }: {
+  actionHref: string;
   bundle: CountyEvidenceBundle | null;
   compare: readonly string[];
   compareHref: string;
@@ -46,6 +49,7 @@ export function InvestigateNextSteps({
     compare,
     resolvedCounty,
   });
+  const actionOffer = investigateActionOffer({ bundle });
   const pdfContext = bundle
     ? investigatePdfContext(bundle, requestedPeriod)
     : null;
@@ -71,6 +75,20 @@ export function InvestigateNextSteps({
           href={compareHref}
         >
           {offer.label}
+        </Link>
+      ) : null}
+      {actionOffer ? (
+        <Link
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-investigate-action"
+          )}
+          data-destination="action"
+          data-testid="investigate-action"
+          data-variant="secondary"
+          href={actionHref}
+        >
+          {actionOffer.label}
         </Link>
       ) : null}
       {bundle?.leadFinding ? (

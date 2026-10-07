@@ -302,7 +302,8 @@
   }
 }
 
-.ux-reset-investigate {
+.ux-reset-investigate,
+.ux-reset-action {
   display: grid;
   gap: var(--space-4);
 }
@@ -312,20 +313,27 @@
 .ux-reset-investigate-summary,
 .ux-reset-investigate-family,
 .ux-reset-investigate-next,
-.ux-reset-investigate-callout {
+.ux-reset-investigate-callout,
+.ux-reset-action-header,
+.ux-reset-action-summary,
+.ux-reset-action-callout,
+.ux-reset-action-workflows {
   display: grid;
   gap: var(--space-2);
 }
 
 .ux-reset-investigate-header,
-.ux-reset-investigate-toolbar {
+.ux-reset-investigate-toolbar,
+.ux-reset-action-header,
+.ux-reset-action-workflows {
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--card);
 }
 
-.ux-reset-investigate-header {
+.ux-reset-investigate-header,
+.ux-reset-action-header {
   border-left: 4px solid var(--primary);
 }
 
@@ -357,6 +365,12 @@
 
 .ux-reset-pro-main a.ux-reset-investigate-action[data-variant="secondary"] {
   color: var(--secondary-foreground);
+}
+
+.ux-reset-pro-main a.ux-reset-action-return {
+  width: fit-content;
+  text-decoration: none;
+  color: var(--primary-foreground);
 }
 
 .ux-reset-compare {

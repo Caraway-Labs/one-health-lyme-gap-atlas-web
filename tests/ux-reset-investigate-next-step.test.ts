@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  investigateActionOffer,
   investigateCompareOffer,
   investigateContinueDestination,
   investigateCountyReportExportOffer,
 } from "@/features/ux-reset/investigate/investigate-next-step";
 
 describe("Investigate continue destination", () => {
-  it("offers no Action path when the compare pair is incomplete", () => {
+  it("does not treat an incomplete compare list as a compare return", () => {
     expect({
       duplicate: investigateContinueDestination({
         compare: ["08001", "08001"],
@@ -25,6 +26,28 @@ describe("Investigate continue destination", () => {
     expect(
       investigateContinueDestination({ compare: ["08001", "08013"] })
     ).toBe("compare");
+  });
+
+  it("offers Action only after a county evidence bundle exists", () => {
+    expect({
+      empty: investigateActionOffer({ bundle: null }),
+      loaded: investigateActionOffer({
+        bundle: {
+          county: { fips: "08001", label: "Denver", stateCode: "CO" },
+          releaseId: "alpha-2026",
+        },
+      }),
+      missingRelease: investigateActionOffer({
+        bundle: {
+          county: { fips: "08001", label: "Denver", stateCode: "CO" },
+          releaseId: "",
+        },
+      }),
+    }).toStrictEqual({
+      empty: null,
+      loaded: { label: "Continue to Action" },
+      missingRelease: null,
+    });
   });
 
   it("offers Compare for a resolved county without choosing a second", () => {
