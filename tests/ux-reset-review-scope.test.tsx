@@ -32,6 +32,7 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
 import {
   buildStateReview,
   defaultReviewForState,
+  reviewCandidate,
 } from "./fixtures/review-operating-picture-fixtures";
 import {
   reviewScopeMetadataFixture,
@@ -205,7 +206,9 @@ describe("Reset Review scope UI", () => {
   });
 
   it("requests metadata for a supplied dataset query param", async () => {
-    const { metadataV1AtlasMetadataGet } = await import("@/generated/atlas");
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
     renderReview("?scope=CO&dataset=legacy-release");
     await waitFor(() =>
       expect(metadataV1AtlasMetadataGet).toHaveBeenCalledWith(
@@ -213,6 +216,10 @@ describe("Reset Review scope UI", () => {
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       )
     );
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain("legacy-release")
+    );
+    expect(stateReviewV1StatesStateReviewGet).not.toHaveBeenCalled();
   });
 
   it("follows a restored URL county after an interactive selection", async () => {
@@ -354,16 +361,19 @@ describe("Reset Review scope UI", () => {
   });
 
   it("surfaces unavailable dataset metadata without a perpetual loading state", async () => {
-    const { metadataV1AtlasMetadataGet } = await import("@/generated/atlas");
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
     vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValueOnce({
       data: null,
       status: 404,
     } as never);
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
     renderReview("?scope=CO&dataset=older-release");
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toContain("older-release")
     );
     expect(screen.queryByText("Loading county scores…")).toBeNull();
+    expect(stateReviewV1StatesStateReviewGet).not.toHaveBeenCalled();
   });
 
   it("realigns the active county when switching state scopes", async () => {
@@ -824,6 +834,175 @@ describe("Reset Review scope UI", () => {
     expect(screen.getByTestId("review-data-gap").dataset.code).toBe(
       "SOURCE_NATIVE_LINEAGE_UNAVAILABLE"
     );
+  });
+
+  it("requests review with the explicit release metadata confirmed", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockClear();
+    renderReview("?scope=CO&dataset=alpha-2026");
+    await waitFor(() =>
+      expect(review).toHaveBeenCalledWith(
+        "CO",
+        { dataset_version: "alpha-2026" },
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      )
+    );
+  });
+
+  it("keeps metadata and review on one release when the default rolls over", async () => {
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const releases = ["release-a"];
+    metadata.mockImplementation(
+      async () =>
+        ({
+          data: {
+            ...reviewScopeMetadataFixture,
+            release_id: releases.at(-1) ?? "release-a",
+          },
+          status: 200,
+        }) as never
+    );
+    review.mockImplementation((async (
+      state: string,
+      params?: { dataset_version?: string }
+    ) => ({
+      data: {
+        ...buildStateReview({
+          candidates: [
+            reviewCandidate({
+              caveat: "Collection dates are unavailable.",
+              countyName:
+                params?.dataset_version === "release-b" ? "Boulder" : "Denver",
+              fips: params?.dataset_version === "release-b" ? "08013" : "08001",
+              reasonText: `Returned for ${params?.dataset_version ?? "omitted"}.`,
+            }),
+          ],
+          state,
+        }),
+        data_release_version: params?.dataset_version ?? "omitted",
+      },
+      status: 200,
+    })) as never);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    mockedSearch = "scope=CO";
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter searchParams="?scope=CO">
+            <ResetReviewExperience />
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("review-methodology").textContent).toContain(
+          "Release release-a"
+        )
+      );
+      releases.push("release-b");
+      await client.invalidateQueries({
+        queryKey: ["ux-reset-review-metadata"],
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId("review-methodology").textContent).toContain(
+          "Release release-b"
+        )
+      );
+      const requested = new Set(
+        review.mock.calls.map((call) => {
+          const params = (call as readonly unknown[])[1] as
+            | { dataset_version?: string }
+            | undefined;
+          return params?.dataset_version ?? "omitted";
+        })
+      );
+      expect({
+        omitted: requested.has("omitted"),
+        sawReleaseA: requested.has("release-a"),
+        sawReleaseB: requested.has("release-b"),
+        showsBoulder: screen
+          .getByTestId("review-candidate")
+          .textContent?.includes("Boulder"),
+        showsDenver: screen.queryByText("Denver") !== null,
+      }).toStrictEqual({
+        omitted: false,
+        sawReleaseA: true,
+        sawReleaseB: true,
+        showsBoulder: true,
+        showsDenver: false,
+      });
+    } finally {
+      metadata.mockImplementation(async () => ({
+        data: reviewScopeMetadataFixture,
+        status: 200,
+      }));
+      review.mockImplementation(async (state: string) => ({
+        data: defaultReviewForState(state),
+        status: 200,
+      }));
+    }
+  });
+
+  it("rejects a review body from a different release", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockClear();
+    review.mockResolvedValue({
+      data: {
+        ...buildStateReview({
+          candidates: [
+            reviewCandidate({
+              caveat: "Collection dates are unavailable.",
+              countyName: "Denver",
+              fips: "08001",
+              reasonText: "Returned for a different release.",
+            }),
+          ],
+          state: "CO",
+        }),
+        data_release_version: "release-other",
+      },
+      status: 200,
+    } as never);
+    try {
+      renderReview("?scope=CO");
+      await waitFor(() =>
+        expect(screen.getByRole("alert").textContent).toContain(
+          "temporarily unavailable"
+        )
+      );
+      const requested = new Set(
+        review.mock.calls.map((call) => {
+          const params = (call as readonly unknown[])[1] as
+            | { dataset_version?: string }
+            | undefined;
+          return params?.dataset_version ?? "omitted";
+        })
+      );
+      expect({
+        candidate: screen.queryByTestId("review-candidate"),
+        omitted: requested.has("omitted"),
+        otherRelease: screen.queryByText(/Release release-other/),
+        requestedAlpha: requested.has("alpha-2026"),
+      }).toStrictEqual({
+        candidate: null,
+        omitted: false,
+        otherRelease: null,
+        requestedAlpha: true,
+      });
+    } finally {
+      review.mockImplementation(async (state: string) => ({
+        data: defaultReviewForState(state),
+        status: 200,
+      }));
+    }
   });
 
   it("preserves scope=ALL across explore handoff URLs", () => {

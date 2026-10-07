@@ -58,11 +58,20 @@ export function useReviewPresentation(
           null
         );
       }
-      return validateApiResponse(
+      const metadata = validateApiResponse(
         "Atlas metadata",
         MetadataV1AtlasMetadataGetResponse,
         response.data
       );
+      if (requestedDataset && metadata.release_id !== requestedDataset) {
+        throw new AtlasApiError(
+          `Release "${requestedDataset}" is not available.`,
+          "/v1/atlas/metadata",
+          response.status,
+          null
+        );
+      }
+      return metadata;
     },
     queryKey: ["ux-reset-review-metadata", requestedDataset],
   });

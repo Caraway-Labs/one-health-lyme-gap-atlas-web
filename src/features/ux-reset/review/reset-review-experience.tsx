@@ -37,7 +37,13 @@ function ResetReviewExperienceInner() {
     urlState.dataset,
     false
   );
-  const stateReview = useStateReview(scope, urlState.dataset);
+  const confirmedRelease =
+    presentationQuery.metadata &&
+    (urlState.dataset === null ||
+      presentationQuery.metadata.release_id === urlState.dataset)
+      ? presentationQuery.metadata.release_id
+      : null;
+  const stateReview = useStateReview(scope, confirmedRelease);
 
   const stateOptions = useMemo(
     () =>

@@ -17,18 +17,25 @@ function reviewErrorMessage(error: unknown): string {
   return "Unable to load the state review result.";
 }
 
-/** Loads the authoritative state review result. National scope does not aggregate one. */
+/**
+ * Loads the authoritative state review for one already resolved release.
+ * National scope does not aggregate a review, and an unresolved release
+ * does not start a second default-release request.
+ */
 export function useStateReview(
   scope: ReviewScope,
-  requestedDataset: string | null
+  resolvedRelease: string | null
 ) {
-  const enabled = STATE_SCOPE.test(scope);
+  const enabled = STATE_SCOPE.test(scope) && Boolean(resolvedRelease);
   const query = useQuery({
     enabled,
     queryFn: async ({ signal }) => {
+      if (!resolvedRelease) {
+        throw new Error("State review requires a resolved release.");
+      }
       const response = await stateReviewV1StatesStateReviewGet(
         scope,
-        requestedDataset ? { dataset_version: requestedDataset } : undefined,
+        { dataset_version: resolvedRelease },
         { signal }
       );
       if (response.status !== 200) {
@@ -52,13 +59,25 @@ export function useStateReview(
           null
         );
       }
+      if (review.data_release_version !== resolvedRelease) {
+        throw new AtlasApiError(
+          "State review response did not match the requested release.",
+          `/v1/states/${scope}/review`,
+          response.status,
+          null
+        );
+      }
       return review;
     },
-    queryKey: ["ux-reset-state-review", scope, requestedDataset],
+    queryKey: ["ux-reset-state-review", scope, resolvedRelease],
   });
 
   const review =
-    query.data && query.data.requested_state === scope ? query.data : null;
+    query.data &&
+    query.data.requested_state === scope &&
+    query.data.data_release_version === resolvedRelease
+      ? query.data
+      : null;
 
   return {
     errorMessage: query.isError ? reviewErrorMessage(query.error) : null,
