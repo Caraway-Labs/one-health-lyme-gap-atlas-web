@@ -5,7 +5,7 @@ import PrivacyPage from "@/app/privacy/page";
 import { ATLAS_ROUTES, getRouteShell } from "@/lib/navigation";
 
 const ANALYTICAL_SHELL_HREFS = [
-  "/",
+  "/overview",
   "/geographic_explorer",
   "/investigate",
   "/assistant",
@@ -31,7 +31,7 @@ describe("public privacy page", () => {
       screen
         .getByRole("link", { name: "Return to the Atlas" })
         .getAttribute("href")
-    ).toBe("/#atlas");
+    ).toBe("/overview#atlas");
   });
 
   it("qualifies analytics, assistant storage, and account controls against current behavior", () => {

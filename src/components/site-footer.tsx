@@ -9,7 +9,7 @@ import {
 } from "@/components/feedback-dialog";
 import { PrivacyPreferences } from "@/components/privacy-preferences";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
-import { FOOTER_NAVIGATION_ITEMS } from "@/lib/navigation";
+import { ATLAS_OVERVIEW_PATH, FOOTER_NAVIGATION_ITEMS } from "@/lib/navigation";
 
 export function SiteFooter() {
   const pathname = usePathname();
@@ -58,7 +58,7 @@ export function SiteFooter() {
         <PrivacyPreferences />
         <a
           {...analyticsControlAttributes("footer_back_to_atlas")}
-          href="#atlas"
+          href={`${ATLAS_OVERVIEW_PATH}#atlas`}
         >
           Back to Atlas ↑
         </a>

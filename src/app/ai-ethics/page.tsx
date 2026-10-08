@@ -6,7 +6,7 @@ import {
   aiEthicsContent,
   type AiEthicsStatementStatus,
 } from "@/lib/ai-ethics-content";
-import { pageMetadataForRoute } from "@/lib/navigation";
+import { ATLAS_OVERVIEW_PATH, pageMetadataForRoute } from "@/lib/navigation";
 
 export const metadata = pageMetadataForRoute("/ai-ethics");
 
@@ -40,7 +40,7 @@ export function AiEthicsPage() {
             className: "cta-on-dark",
             variant: "ghost",
           })}
-          href="/#atlas"
+          href={`${ATLAS_OVERVIEW_PATH}#atlas`}
         >
           Return to the Atlas
         </Link>

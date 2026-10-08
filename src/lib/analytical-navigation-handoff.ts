@@ -1,7 +1,9 @@
+import { ATLAS_OVERVIEW_PATH } from "@/lib/navigation";
+
 const FIPS_PATTERN = /^\d{5}$/;
 
 export const ANALYTICAL_NAVIGATION_PATHS = [
-  "/",
+  ATLAS_OVERVIEW_PATH,
   "/geographic_explorer",
   "/investigate",
 ] as const;

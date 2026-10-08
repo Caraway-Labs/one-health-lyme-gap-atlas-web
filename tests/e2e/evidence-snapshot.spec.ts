@@ -86,7 +86,7 @@ test.describe("evidence snapshot presentation", () => {
   test("overview avoids conflicting Alpha labels and exposes technical IDs on demand", async ({
     page,
   }, testInfo) => {
-    await page.goto("/");
+    await page.goto("/overview");
     await expect(
       page.getByText("Source vintages in this Alpha release")
     ).toHaveCount(0);

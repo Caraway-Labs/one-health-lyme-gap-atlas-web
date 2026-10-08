@@ -17,7 +17,7 @@ describe("Atlas navigation contract", () => {
 
     expect(new Set(hrefs).size).toBe(hrefs.length);
     expect(hrefs).toStrictEqual([
-      "/",
+      "/overview",
       "/geographic_explorer",
       "/investigate",
       "/assistant",
@@ -70,12 +70,15 @@ describe("Atlas navigation contract", () => {
   });
 
   it("matches exact and nested routes without query sensitivity", () => {
-    const overview = NAVIGATION_ITEMS.find((item) => item.href === "/")!;
+    const overview = NAVIGATION_ITEMS.find(
+      (item) => item.href === "/overview"
+    )!;
     const assistant = NAVIGATION_ITEMS.find(
       (item) => item.href === "/assistant"
     )!;
 
-    expect(isNavigationItemActive(overview, "/")).toBeTruthy();
+    expect(isNavigationItemActive(overview, "/overview")).toBeTruthy();
+    expect(isNavigationItemActive(overview, "/")).toBeFalsy();
     expect(isNavigationItemActive(overview, "/variant_1")).toBeFalsy();
     expect(isNavigationItemActive(assistant, "/assistant")).toBeTruthy();
     expect(
@@ -116,6 +119,8 @@ describe("Atlas navigation contract", () => {
   });
 
   it("assigns shells to public, docs, and direct-link routes", () => {
+    expect(getRouteShell("/")).toBe("none");
+    expect(getRouteShell("/overview")).toBe("analytical");
     expect(getRouteShell("/privacy")).toBe("public");
     expect(getRouteShell("/docs/evidence-and-uncertainty")).toBe("docs");
     expect(getRouteShell("/variant_1")).toBe("none");

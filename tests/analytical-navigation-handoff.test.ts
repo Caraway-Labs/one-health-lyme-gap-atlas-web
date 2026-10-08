@@ -18,7 +18,7 @@ describe("analytical navigation handoff", () => {
       "dataset=alpha-2026-08-06&county=18097&state=IN"
     );
     expectHrefQuery(
-      analyticalNavigationHref("/geographic_explorer", "/", source),
+      analyticalNavigationHref("/geographic_explorer", "/overview", source),
       {
         county: "18097",
         dataset: "alpha-2026-08-06",
@@ -27,15 +27,18 @@ describe("analytical navigation handoff", () => {
     );
     expect(
       new URL(
-        analyticalNavigationHref("/investigate", "/", source),
+        analyticalNavigationHref("/investigate", "/overview", source),
         "http://localhost"
       ).pathname
     ).toBe("/investigate");
-    expectHrefQuery(analyticalNavigationHref("/investigate", "/", source), {
-      county: "18097",
-      dataset: "alpha-2026-08-06",
-      state: "IN",
-    });
+    expectHrefQuery(
+      analyticalNavigationHref("/investigate", "/overview", source),
+      {
+        county: "18097",
+        dataset: "alpha-2026-08-06",
+        state: "IN",
+      }
+    );
   });
 
   it("does not fabricate Geographic Explorer-only parameters on other routes", () => {
@@ -45,7 +48,7 @@ describe("analytical navigation handoff", () => {
     expect(
       analyticalNavigationHandoffSearchParams(
         "/geographic_explorer",
-        "/",
+        "/overview",
         source
       ).toString()
     ).toBe("county=08001");
@@ -63,7 +66,7 @@ describe("analytical navigation handoff", () => {
       "county=08001&view=maps&metric=score&page=3"
     );
     const handoff = analyticalNavigationHandoffSearchParams(
-      "/",
+      "/overview",
       "/geographic_explorer",
       source
     );
@@ -77,7 +80,7 @@ describe("analytical navigation handoff", () => {
     const source = new URLSearchParams("county=not-a-fips&dataset=alpha");
     expect(
       analyticalNavigationHandoffSearchParams(
-        "/",
+        "/overview",
         "/geographic_explorer",
         source
       ).toString()
@@ -86,7 +89,10 @@ describe("analytical navigation handoff", () => {
 
   it("does not hand off analytical state from non-analytical routes", () => {
     const source = new URLSearchParams("county=08001");
-    expect(analyticalNavigationHref("/", "/privacy", source)).toBe("/");
+    expect(analyticalNavigationHref("/overview", "/privacy", source)).toBe(
+      "/overview"
+    );
+    expect(analyticalNavigationHref("/", "/overview", source)).toBe("/");
   });
 
   it("leaves external and utility destinations unchanged", () => {

@@ -145,7 +145,7 @@ test("stops analytics after grant on legacy Atlas, Back, and footer withdrawal",
     .getByRole("banner")
     .getByRole("link", { name: "Open legacy Atlas" })
     .click();
-  await expect.poll(() => new URL(page.url()).pathname).toBe("/");
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/overview");
 
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page

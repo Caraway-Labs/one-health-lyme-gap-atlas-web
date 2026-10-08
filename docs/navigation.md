@@ -10,7 +10,8 @@ The initial hierarchy is task-oriented for epidemiologists and public-health pro
 
 | Group | Destination | Route | Status | Placement |
 | --- | --- | --- | --- | --- |
-| Explore | Atlas overview | `/` | Available | Sidebar |
+| Public | One Health Atlas | `/` | Available | Not in the analytical sidebar |
+| Explore | Atlas overview | `/overview` | Available | Sidebar |
 | Explore | Geographic Explorer | `/geographic_explorer` | Available | Sidebar |
 | Explore | Investigation Workspace | `/investigate` | Available | Sidebar |
 | Research | Atlas Assistant | `/assistant` | Early access when enabled; Coming Soon when disabled | Sidebar when chat is off, or on `/assistant` when chat is on (see [Assistant entry points](./assistant-entry-points.md)) |
@@ -25,7 +26,8 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 
 | Route family | Navigation role | Status | Shell | Rationale |
 | --- | --- | --- | --- | --- |
-| `/`, `/geographic_explorer`, `/investigate` | Primary sidebar | Available | Analytical | Released public Atlas workflows. The Investigation Workspace is the promoted wide-workbench county investigation experience. |
+| `/` | Public Front Porch | Available | None | Qualitative public introduction. It does not use the analytical sidebar or require sign-in. |
+| `/overview`, `/geographic_explorer`, `/investigate` | Primary sidebar | Available | Analytical | Released public Atlas workflows. The Investigation Workspace is the promoted wide-workbench county investigation experience. |
 | `/assistant` | Primary sidebar or launcher handoff | In development | Analytical | Literature-only chat is feature-gated. When enabled, the floating launcher is the primary entry on other analytical routes; the sidebar link appears on `/assistant` for wayfinding. See [Assistant entry points](./assistant-entry-points.md). |
 | `/knowledge-graph` | Legacy deep link | Hidden | Analytical | Redirects to `/assistant`, preserving the local conversation selector. |
 | `/variant_6` | Legacy deep link | Hidden | Analytical | Redirects to `/investigate`, preserving supported analytical query state. |
@@ -63,7 +65,7 @@ The status is metadata, not a page-specific conditional. The sidebar renders the
 
 The shell persists only the boolean expanded/collapsed sidebar presentation preference under `atlas-sidebar-open`. It never stores analytical URL state, profile values, credentials, or sensitive data. Focus mode temporarily forces the sidebar compact without changing or overwriting that preference; exiting focus mode restores the user's normal shell choice. Responsive mobile rules take precedence over desktop preference and use an accessible drawer.
 
-Primary navigation between `/`, `/geographic_explorer`, and `/investigate` copies supported query parameters from the current URL into each destination link via `src/lib/analytical-navigation-handoff.ts`. Shared county (`county`), release (`dataset`), and Overview or Investigation Workspace filters are preserved when the target route accepts them. Geographic Explorer-only parameters (`view`, `metric`, `selected`, `page`) are not invented on other routes, and other routes do not silently drop a validated county FIPS when the destination can represent it.
+Primary navigation between `/overview`, `/geographic_explorer`, and `/investigate` copies supported query parameters from the current URL into each destination link via `src/lib/analytical-navigation-handoff.ts`. Shared county (`county`), release (`dataset`), and Overview or Investigation Workspace filters are preserved when the target route accepts them. Geographic Explorer-only parameters (`view`, `metric`, `selected`, `page`) are not invented on other routes, and other routes do not silently drop a validated county FIPS when the destination can represent it.
 
 The shell provides navigation landmarks, `aria-current="page"`, keyboard focus containment for the mobile drawer, visible focus, status text that does not rely on color alone, reduced-motion-compatible transitions, and the same route behavior across desktop and mobile presentations.
 

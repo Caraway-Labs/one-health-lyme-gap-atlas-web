@@ -187,7 +187,7 @@ test("homepage footer links stay clickable on mobile with the assistant dock", a
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/");
+  await page.goto("/overview");
   const privacy = page.getByRole("link", { name: "Privacy" });
   await privacy.scrollIntoViewIfNeeded();
   await expect(privacy).toBeVisible();

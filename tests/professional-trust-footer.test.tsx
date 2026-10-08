@@ -25,7 +25,7 @@ const amplitude = vi.hoisted(() => ({
 
 vi.mock(import("@amplitude/analytics-browser"), () => amplitude as never);
 
-let pathname = "/";
+let pathname = "/overview";
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -49,7 +49,7 @@ describe("professional trust footer", () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    pathname = "/";
+    pathname = "/overview";
     vi.stubEnv(
       "NEXT_PUBLIC_AMPLITUDE_API_KEY",
       "00000000000000000000000000000000"

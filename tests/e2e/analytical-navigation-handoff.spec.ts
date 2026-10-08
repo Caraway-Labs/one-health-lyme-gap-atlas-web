@@ -20,7 +20,7 @@ test("preserves county and dataset across Overview, Geographic Explorer, and Inv
 }, testInfo) => {
   const release = "alpha-explorer";
   const county = "06085";
-  await page.goto(`/?dataset=${release}&county=${county}`);
+  await page.goto(`/overview?dataset=${release}&county=${county}`);
   await openPrimaryNavigation(page);
 
   const navigation = page.getByRole("navigation", {
@@ -62,21 +62,25 @@ test("preserves county and dataset across Overview, Geographic Explorer, and Inv
 
   await openPrimaryNavigation(page);
   const overview = navigation.getByRole("link", { name: "Atlas overview" });
-  expectAnalyticalHandoffHref(await overview.getAttribute("href"), "/", {
-    county,
-    dataset: release,
-  });
+  expectAnalyticalHandoffHref(
+    await overview.getAttribute("href"),
+    "/overview",
+    {
+      county,
+      dataset: release,
+    }
+  );
   await overview.click();
   await expect(page).toHaveURL(
     new RegExp(
-      `/\\?.*county=${county}.*dataset=${release}|/\\?.*dataset=${release}.*county=${county}`
+      `/overview\\?.*county=${county}.*dataset=${release}|/overview\\?.*dataset=${release}.*county=${county}`
     )
   );
 
   await page.reload();
   await expect(page).toHaveURL(
     new RegExp(
-      `/\\?.*county=${county}.*dataset=${release}|/\\?.*dataset=${release}.*county=${county}`
+      `/overview\\?.*county=${county}.*dataset=${release}|/overview\\?.*dataset=${release}.*county=${county}`
     )
   );
 
@@ -101,9 +105,13 @@ test("does not carry Geographic Explorer view state onto Overview navigation lin
   const overview = page
     .getByRole("navigation", { name: "Primary navigation" })
     .getByRole("link", { name: "Atlas overview" });
-  expectAnalyticalHandoffHref(await overview.getAttribute("href"), "/", {
-    county: "06085",
-  });
+  expectAnalyticalHandoffHref(
+    await overview.getAttribute("href"),
+    "/overview",
+    {
+      county: "06085",
+    }
+  );
 });
 
 test("shows an explicit unavailable-county state instead of switching FIPS silently", async ({
