@@ -1069,6 +1069,77 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("normalizes a blank observed basis", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = {
+      ...reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_references: [
+        {
+          ...reviewEvidenceReference("08001"),
+          source_as_of: " ",
+          source_product: "",
+          status: " ",
+          target: "",
+        },
+      ],
+    };
+    const review = buildStateReview({
+      candidates: [candidate],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
+    view.unmount();
+    expect(basis).toBe(
+      "Unavailable: Unavailable (Unavailable, as of Unavailable)"
+    );
+  });
+
+  it("normalizes a blank review result header", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const review = buildStateReview({
+      resultState: "none_stand_out",
+      state: "CO",
+    });
+    review.methodology_id = " ";
+    review.methodology_version = "";
+    review.effective_observation_context = " ";
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const header = (screen.getByTestId("review-methodology").textContent ?? "")
+      .replaceAll(/\s+/g, " ")
+      .trim();
+    view.unmount();
+    expect(header).toBe(
+      "Method Unavailable Unavailable. Release alpha-2026. Unavailable."
+    );
+  });
+
   it("marks a blank reference revision and version unavailable", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },

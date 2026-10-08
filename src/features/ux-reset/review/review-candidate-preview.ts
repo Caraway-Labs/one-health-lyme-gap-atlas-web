@@ -12,15 +12,22 @@ import type {
 const CANDIDATE_FOLLOW_UP_LABEL = "Suggested next check";
 const GOVERNED_FIELD_UNAVAILABLE = "Unavailable";
 
+function governedField(value: string): string {
+  return value.trim() || GOVERNED_FIELD_UNAVAILABLE;
+}
+
 function observedBasis(candidate: Candidate): string {
   if (candidate.evidence_references.length === 0) {
     return "The review result did not include an observed basis for this county.";
   }
   return candidate.evidence_references
-    .map(
-      (reference) =>
-        `${reference.target}: ${reference.status} (${reference.source_product}, as of ${reference.source_as_of})`
-    )
+    .map((reference) => {
+      const target = governedField(reference.target);
+      const status = governedField(reference.status);
+      const product = governedField(reference.source_product);
+      const sourceAsOf = governedField(reference.source_as_of);
+      return `${target}: ${status} (${product}, as of ${sourceAsOf})`;
+    })
     .join(" ");
 }
 

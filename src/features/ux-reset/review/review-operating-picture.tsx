@@ -99,6 +99,10 @@ function gapEvidenceModel(review: StateReview) {
 
 const RESULT_FIELD_UNAVAILABLE = "Unavailable";
 
+function reviewDisplayValue(value: string): string {
+  return value.trim() || RESULT_FIELD_UNAVAILABLE;
+}
+
 function reviewRuleCoverage(
   coverage: StateReview["coverage"]
 ): { rule: string; status: string }[] {
@@ -322,8 +326,10 @@ export function ReviewOperatingPicture({
           {reviewPictureSummary(pictureState)}
         </p>
         <p data-testid="review-methodology">
-          Method {review.methodology_id} {review.methodology_version}. Release{" "}
-          {review.data_release_version}. {review.effective_observation_context}.
+          Method {reviewDisplayValue(review.methodology_id)}{" "}
+          {reviewDisplayValue(review.methodology_version)}. Release{" "}
+          {reviewDisplayValue(review.data_release_version)}.{" "}
+          {reviewDisplayValue(review.effective_observation_context)}.
         </p>
         <div data-testid="review-result-provenance">
           <EvidenceProvenanceInspect
