@@ -15,6 +15,7 @@ import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel"
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
+import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import {
   atlasStateOptionsFromMetadata,
   reviewScopeLabel,
@@ -120,6 +121,14 @@ function ResetReviewExperienceInner() {
         <AtlasStatusMessage tone="loading">
           Loading review scope…
         </AtlasStatusMessage>
+      ) : null}
+
+      {presentationQuery.metadataIsError && urlState.county ? (
+        <Tier1SurveillancePriority
+          fips={urlState.county}
+          headingLevel="h2"
+          release={{ status: "unknown" }}
+        />
       ) : null}
 
       {presentationQuery.scoresIsError ? (

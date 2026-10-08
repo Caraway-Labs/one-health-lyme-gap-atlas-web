@@ -290,6 +290,7 @@ export function ReviewStatePanel({
           href={handoff.href}
           openRef={openRef}
           preview={preview}
+          releaseId={releaseId}
           onOpen={markReviewReturnFocus}
         />
       ) : null}

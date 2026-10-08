@@ -19,6 +19,7 @@ type ReviewCountyPreviewPanelProps = {
   onOpen: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   preview: ReviewCountyPreviewModel;
+  releaseId: string;
 };
 
 export function ReviewCountyPreviewPanel({
@@ -28,6 +29,7 @@ export function ReviewCountyPreviewPanel({
   onOpen,
   openRef,
   preview,
+  releaseId,
 }: ReviewCountyPreviewPanelProps) {
   const title = `${preview.countyName}, ${preview.stateName}`;
   return (
@@ -65,7 +67,11 @@ export function ReviewCountyPreviewPanel({
           />
         </div>
       ) : null}
-      <Tier1SurveillancePriority fips={preview.fips} headingLevel="h3" />
+      <Tier1SurveillancePriority
+        fips={preview.fips}
+        headingLevel="h3"
+        release={{ releaseId, status: "ready" }}
+      />
       <p className="type-body" data-testid="review-preview-follow-up">
         <span className="eyebrow">Suggested follow-up</span> {preview.followUp}
       </p>

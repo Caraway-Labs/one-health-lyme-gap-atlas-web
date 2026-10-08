@@ -18,9 +18,26 @@ import { reviewSearchParams } from "@/features/ux-reset/review/review-search-par
 import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
 import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
+import type { Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
+import {
+  tier1HighSufficientFixture,
+  tier1PriorityForCounty,
+  tier1PriorityForRelease,
+} from "./fixtures/tier1-surveillance-priority";
+
 let mockedSearch = "";
+
+const reviewReleaseControls: {
+  metadataReleaseId: string | null;
+  metadataStatus: number;
+  tier1Result: Tier1CountyPriority | null;
+} = {
+  metadataReleaseId: null,
+  metadataStatus: 200,
+  tier1Result: null,
+};
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -87,8 +104,13 @@ vi.mock(import("@/generated/atlas"), () => ({
   metadataV1AtlasMetadataGet: vi.fn<
     () => Promise<{ data: typeof reviewScopeMetadataFixture; status: number }>
   >(async () => ({
-    data: reviewScopeMetadataFixture,
-    status: 200,
+    data: {
+      ...reviewScopeMetadataFixture,
+      release_id:
+        reviewReleaseControls.metadataReleaseId ??
+        reviewScopeMetadataFixture.release_id,
+    },
+    status: reviewReleaseControls.metadataStatus,
   })),
   scoresV1AtlasScoresGet: vi.fn<
     () => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
@@ -99,12 +121,20 @@ vi.mock(import("@/generated/atlas"), () => ({
   countyTier1SurveillancePriorityGet: vi.fn<
     typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
   >(async (fips) => {
-    throw new AtlasApiError(
-      "No current Tier 1 county result",
-      `/v1/counties/${fips}/tier1-surveillance-priority`,
-      404,
-      null
-    );
+    const result = reviewReleaseControls.tier1Result;
+    if (!result) {
+      throw new AtlasApiError(
+        "No current Tier 1 county result",
+        `/v1/counties/${fips}/tier1-surveillance-priority`,
+        404,
+        null
+      );
+    }
+    return {
+      data: result,
+      headers: new Headers(),
+      status: 200,
+    };
   }),
 }));
 
@@ -126,16 +156,20 @@ function stubDesktopMatchMedia() {
 function renderReview(
   search = "",
   options: {
+    client?: QueryClient;
     onUrlUpdate?: (queryString: string) => void;
   } = {}
 ) {
   mockedSearch = search.startsWith("?") ? search.slice(1) : search;
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
+  const client =
+    options.client ??
+    new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+  const view = render(
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter
+        hasMemory
         onUrlUpdate={({ queryString }) => options.onUrlUpdate?.(queryString)}
         searchParams={new URL(`http://localhost/app/review${search}`).search}
       >
@@ -143,6 +177,22 @@ function renderReview(
       </NuqsTestingAdapter>
     </QueryClientProvider>
   );
+  return {
+    ...view,
+    rerenderSearch(next: string) {
+      mockedSearch = next.startsWith("?") ? next.slice(1) : next;
+      view.rerender(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            searchParams={new URL(`http://localhost/app/review${next}`).search}
+          >
+            <ResetReviewExperience />
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+    },
+  };
 }
 
 describe("Reset Review scope UI", () => {
@@ -156,6 +206,9 @@ describe("Reset Review scope UI", () => {
     cleanup();
     sessionStorage.clear();
     history.replaceState(null, "");
+    reviewReleaseControls.metadataReleaseId = null;
+    reviewReleaseControls.metadataStatus = 200;
+    reviewReleaseControls.tier1Result = null;
     vi.unstubAllGlobals();
   });
 
@@ -736,6 +789,105 @@ describe("Reset Review scope UI", () => {
       new URLSearchParams(href.split("?")[1] ?? "")
     );
     expect(returnHref).toContain("scope=ALL");
+  });
+
+  it("shows a Tier 1 result only for the resolved review release", async () => {
+    reviewReleaseControls.tier1Result = tier1PriorityForRelease(
+      tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
+      "alpha-2026"
+    );
+    renderReview("?scope=NY&county=36001&dataset=alpha-2026");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
+    );
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.sufficiency
+    ).toBe("SUFFICIENT");
+  });
+
+  it("keeps a historical review dataset from showing the current Tier 1 batch", async () => {
+    reviewReleaseControls.metadataReleaseId = "historical-2024";
+    reviewReleaseControls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "36001"
+    );
+    renderReview("?scope=NY&county=36001&dataset=historical-2024");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.state
+      ).toBe("release-unaligned")
+    );
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      reason: region.dataset.releaseReason,
+      tier: region.dataset.tier,
+    }).toStrictEqual({
+      low: false,
+      reason: "mismatch",
+      tier: undefined,
+    });
+  });
+
+  it("drops the Tier 1 tier when the same review county changes release", async () => {
+    reviewReleaseControls.tier1Result = tier1PriorityForRelease(
+      tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
+      "alpha-2026"
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = renderReview("?scope=NY&county=36001&dataset=alpha-2026", {
+      client,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
+    );
+    reviewReleaseControls.metadataReleaseId = "historical-2024";
+    view.rerenderSearch("?scope=NY&county=36001&dataset=historical-2024");
+    await waitFor(() => {
+      const region = screen.getByTestId("tier1-surveillance-priority");
+      if (
+        region.dataset.state !== "release-unaligned" ||
+        region.dataset.tier === "HIGH"
+      ) {
+        throw new Error("The previous Tier 1 result stayed on screen.");
+      }
+    });
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+    ).toBe("mismatch");
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").textContent
+    ).not.toMatch(/\bLOW\b|\bHIGH\b/);
+  });
+
+  it("does not align a Tier 1 result when review release metadata fails", async () => {
+    reviewReleaseControls.metadataStatus = 503;
+    reviewReleaseControls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "36001"
+    );
+    renderReview("?scope=NY&county=36001&dataset=older-release");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+      ).toBe("unknown")
+    );
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      state: region.dataset.state,
+      tier: region.dataset.tier,
+    }).toStrictEqual({
+      low: false,
+      state: "release-unaligned",
+      tier: undefined,
+    });
   });
 });
 

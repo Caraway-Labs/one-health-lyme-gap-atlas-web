@@ -9,9 +9,12 @@ import {
   TIER1_MODEL_ASSISTED_LABEL,
   TIER1_REASON_ABSENCE,
   TIER1_REGION_LABEL,
+  TIER1_RELEASE_MISMATCH_MESSAGE,
+  TIER1_RELEASE_UNKNOWN_MESSAGE,
   TIER1_STALE_MESSAGE,
   TIER1_SUPPORT_NOTE,
   TIER1_UNAVAILABLE_MESSAGE,
+  type Tier1ActiveRelease,
 } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import {
   Tier1SurveillancePriority,
@@ -66,15 +69,41 @@ function renderPanel(
   );
 }
 
-function renderConnected(fips: string) {
+const alignedRelease: Tier1ActiveRelease = {
+  releaseId: tier1HighSufficientFixture.release_id,
+  status: "ready",
+};
+
+function renderConnected(
+  fips: string,
+  release: Tier1ActiveRelease = alignedRelease
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
-      <Tier1SurveillancePriority fips={fips} headingLevel="h3" />
+      <Tier1SurveillancePriority
+        fips={fips}
+        headingLevel="h3"
+        release={release}
+      />
     </QueryClientProvider>
   );
+  return {
+    ...view,
+    rerenderRelease(next: Tier1ActiveRelease) {
+      view.rerender(
+        <QueryClientProvider client={client}>
+          <Tier1SurveillancePriority
+            fips={fips}
+            headingLevel="h3"
+            release={next}
+          />
+        </QueryClientProvider>
+      );
+    },
+  };
 }
 
 describe("Tier 1 surveillance priority presentation", () => {
@@ -86,6 +115,7 @@ describe("Tier 1 surveillance priority presentation", () => {
   it("shows a returned HIGH result, model-assisted label, reasons, and limitation", () => {
     const view = presentTier1SurveillancePriority({
       errorStatus: null,
+      release: alignedRelease,
       requestedFips: tier1HighSufficientFixture.county_fips,
       result: tier1HighSufficientFixture,
       status: "success",
@@ -141,6 +171,7 @@ describe("Tier 1 surveillance priority presentation", () => {
   it("keeps LOW distinct from insufficient evidence", () => {
     const view = presentTier1SurveillancePriority({
       errorStatus: null,
+      release: alignedRelease,
       requestedFips: "01001",
       result: tier1LowInsufficientFixture,
       status: "success",
@@ -167,6 +198,7 @@ describe("Tier 1 surveillance priority presentation", () => {
   it("shows MEDIUM from the returned tier without using the percentile as a tier", () => {
     const view = presentTier1SurveillancePriority({
       errorStatus: null,
+      release: alignedRelease,
       requestedFips: "01003",
       result: tier1MediumSufficientFixture,
       status: "success",
@@ -177,6 +209,7 @@ describe("Tier 1 surveillance priority presentation", () => {
   it("does not render unavailable output as LOW", () => {
     const view = presentTier1SurveillancePriority({
       errorStatus: 404,
+      release: alignedRelease,
       requestedFips: "99999",
       result: null,
       status: "error",
@@ -193,12 +226,14 @@ describe("Tier 1 surveillance priority presentation", () => {
   it("does not treat a failed or stale request as LOW", () => {
     const failed = presentTier1SurveillancePriority({
       errorStatus: 503,
+      release: alignedRelease,
       requestedFips: "09110",
       result: null,
       status: "error",
     });
     const stale = presentTier1SurveillancePriority({
       errorStatus: null,
+      release: alignedRelease,
       requestedFips: "09110",
       result: tier1MediumSufficientFixture,
       status: "success",
@@ -223,18 +258,21 @@ describe("Tier 1 surveillance priority presentation", () => {
   it("does not invent reasons or a tier when reasons are absent or the result is not estimable", () => {
     const noReasons = presentTier1SurveillancePriority({
       errorStatus: null,
+      release: alignedRelease,
       requestedFips: "09110",
       result: { ...tier1HighSufficientFixture, reasons: [] },
       status: "success",
     });
     const notEstimable = presentTier1SurveillancePriority({
       errorStatus: null,
+      release: alignedRelease,
       requestedFips: "09110",
       result: notEstimableFixture("09110"),
       status: "success",
     });
     const incoherent = presentTier1SurveillancePriority({
       errorStatus: null,
+      release: alignedRelease,
       requestedFips: "01001",
       result: {
         ...tier1LowInsufficientFixture,
@@ -319,5 +357,118 @@ describe("Tier 1 surveillance priority presentation", () => {
     expect(
       screen.getByTestId("tier1-surveillance-priority").textContent
     ).not.toMatch(/\bLOW\b/);
+  });
+
+  it("hides a tier when the result belongs to a different release", () => {
+    const view = presentTier1SurveillancePriority({
+      errorStatus: null,
+      release: { releaseId: "historical-2024", status: "ready" },
+      requestedFips: tier1HighSufficientFixture.county_fips,
+      result: tier1HighSufficientFixture,
+      status: "success",
+    });
+    renderPanel(view);
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      reason: region.dataset.releaseReason,
+      state: region.dataset.state,
+      text: region.textContent,
+      tier: region.dataset.tier,
+      tierNode: screen.queryByTestId("tier1-priority-tier"),
+    }).toStrictEqual({
+      low: false,
+      reason: "mismatch",
+      state: "release-unaligned",
+      text: expect.stringContaining(TIER1_RELEASE_MISMATCH_MESSAGE),
+      tier: undefined,
+      tierNode: null,
+    });
+  });
+
+  it("does not present a tier when the governed release is unknown", () => {
+    const pending = presentTier1SurveillancePriority({
+      errorStatus: null,
+      release: { status: "pending" },
+      requestedFips: "09110",
+      result: tier1HighSufficientFixture,
+      status: "success",
+    });
+    const unknown = presentTier1SurveillancePriority({
+      errorStatus: null,
+      release: { status: "unknown" },
+      requestedFips: "09110",
+      result: tier1LowInsufficientFixture,
+      status: "success",
+    });
+    const pendingView = renderPanel(pending);
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.state
+    ).toBe("loading");
+    expect(screen.queryByTestId("tier1-priority-tier")).toBeNull();
+    pendingView.unmount();
+    renderPanel(unknown);
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      reason: region.dataset.releaseReason,
+      state: region.dataset.state,
+      text: region.textContent,
+    }).toStrictEqual({
+      low: false,
+      reason: "unknown",
+      state: "release-unaligned",
+      text: expect.stringContaining(TIER1_RELEASE_UNKNOWN_MESSAGE),
+    });
+  });
+
+  it("drops a matched tier when the same county moves to another release", async () => {
+    tier1Get.mockResolvedValue({
+      data: tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
+      headers: new Headers(),
+      status: 200,
+    });
+    const view = renderConnected("36001", alignedRelease);
+    await waitFor(() =>
+      expect(screen.getByTestId("tier1-priority-tier").textContent).toBe("HIGH")
+    );
+
+    view.rerenderRelease({ status: "pending" });
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.state
+    ).toBe("loading");
+    expect(screen.queryByTestId("tier1-priority-tier")).toBeNull();
+
+    view.rerenderRelease({ releaseId: "historical-2024", status: "ready" });
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.tier
+    ).toBeUndefined();
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.state
+      ).toBe("release-unaligned")
+    );
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      reason: region.dataset.releaseReason,
+      tier: region.dataset.tier,
+    }).toStrictEqual({
+      low: false,
+      reason: "mismatch",
+      tier: undefined,
+    });
+
+    view.rerenderRelease({ status: "unknown" });
+    expect({
+      reason: screen.getByTestId("tier1-surveillance-priority").dataset
+        .releaseReason,
+      state: screen.getByTestId("tier1-surveillance-priority").dataset.state,
+      tier: screen.queryByTestId("tier1-priority-tier"),
+    }).toStrictEqual({
+      reason: "unknown",
+      state: "release-unaligned",
+      tier: null,
+    });
   });
 });

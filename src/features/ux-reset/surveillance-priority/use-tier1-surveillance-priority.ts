@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { countyTier1SurveillancePriorityGet } from "@/generated/atlas";
 import type { Tier1CountyPriority } from "@/generated/models";
 import { CountyTier1SurveillancePriorityGetResponse } from "@/generated/zod/atlas";
@@ -10,9 +11,13 @@ import { validateApiResponse } from "@/lib/api-response-validation";
 
 const COUNTY_FIPS = /^\d{5}$/;
 
-export function useTier1SurveillancePriority(fips: string) {
+export function useTier1SurveillancePriority(
+  fips: string,
+  release: Tier1ActiveRelease
+) {
+  const releaseId = release.status === "ready" ? release.releaseId : null;
   return useQuery({
-    enabled: COUNTY_FIPS.test(fips),
+    enabled: COUNTY_FIPS.test(fips) && releaseId !== null,
     queryFn: async ({ signal }): Promise<Tier1CountyPriority> => {
       const response = await countyTier1SurveillancePriorityGet(fips, {
         signal,
@@ -31,7 +36,7 @@ export function useTier1SurveillancePriority(fips: string) {
         response.data
       );
     },
-    queryKey: ["ux-reset-tier1-surveillance-priority", fips],
+    queryKey: ["ux-reset-tier1-surveillance-priority", fips, releaseId],
     retry: (failureCount, error) => {
       if (error instanceof AtlasApiError && error.status === 404) {
         return false;

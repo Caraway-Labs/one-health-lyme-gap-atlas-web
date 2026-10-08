@@ -13,9 +13,12 @@ import {
   TIER1_MODEL_ASSISTED_LABEL,
   TIER1_REASON_ABSENCE,
   TIER1_REGION_LABEL,
+  TIER1_RELEASE_MISMATCH_MESSAGE,
+  TIER1_RELEASE_UNKNOWN_MESSAGE,
   TIER1_STALE_MESSAGE,
   TIER1_SUPPORT_NOTE,
   TIER1_UNAVAILABLE_MESSAGE,
+  type Tier1ActiveRelease,
   type Tier1ModelDetails,
   type Tier1ReasonDisplay,
   type Tier1SurveillancePriorityView,
@@ -26,6 +29,21 @@ import { AtlasApiError } from "@/lib/api-mutator";
 import "./surveillance-priority.css";
 
 type HeadingLevel = "h2" | "h3";
+
+function releaseUnalignedMessage(reason: "mismatch" | "unknown"): string {
+  switch (reason) {
+    case "mismatch": {
+      return TIER1_RELEASE_MISMATCH_MESSAGE;
+    }
+    case "unknown": {
+      return TIER1_RELEASE_UNKNOWN_MESSAGE;
+    }
+    default: {
+      const exhaustive: never = reason;
+      return exhaustive;
+    }
+  }
+}
 
 function queryStatus(query: {
   isError: boolean;
@@ -47,15 +65,18 @@ function queryStatus(query: {
 export function Tier1SurveillancePriority({
   fips,
   headingLevel = "h2",
+  release,
 }: {
   fips: string;
   headingLevel?: HeadingLevel;
+  release: Tier1ActiveRelease;
 }) {
-  const query = useTier1SurveillancePriority(fips);
+  const query = useTier1SurveillancePriority(fips, release);
   const status = queryStatus(query);
   const view = presentTier1SurveillancePriority({
     errorStatus:
       query.error instanceof AtlasApiError ? query.error.status : null,
+    release,
     requestedFips: fips,
     result: status === "success" ? (query.data ?? null) : null,
     status,
@@ -79,6 +100,9 @@ export function Tier1SurveillancePriorityPanel({
       aria-label={TIER1_REGION_LABEL}
       className="ux-reset-model-signal"
       data-fips={view.fips}
+      data-release-reason={
+        view.kind === "release-unaligned" ? view.reason : undefined
+      }
       data-signal="model-assisted"
       data-state={view.kind}
       data-sufficiency={viewSufficiency(view)}
@@ -130,6 +154,13 @@ function Tier1SurveillancePriorityBody({
         </AtlasStatusMessage>
       );
     }
+    case "release-unaligned": {
+      return (
+        <AtlasStatusMessage tone="empty">
+          {releaseUnalignedMessage(view.reason)}
+        </AtlasStatusMessage>
+      );
+    }
     case "not-estimable": {
       return (
         <Tier1ReturnedPriority
@@ -170,7 +201,8 @@ function viewSufficiency(
     case "loading":
     case "unavailable":
     case "failed":
-    case "stale": {
+    case "stale":
+    case "release-unaligned": {
       return undefined;
     }
     default: {

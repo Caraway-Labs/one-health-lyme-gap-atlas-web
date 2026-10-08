@@ -13,7 +13,10 @@ import {
   tier1HighSufficientFixture,
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
+  tier1PriorityForRelease,
 } from "../fixtures/tier1-surveillance-priority";
+
+const E2E_RELEASE_ID = "alpha-2026";
 
 const scoreBreakdown = {
   access_signal: 0.5,
@@ -65,22 +68,53 @@ function problem(status: number, detail: string) {
   };
 }
 
+function alignedTier(result: Tier1CountyPriority, fips: string) {
+  return tier1PriorityForRelease(
+    tier1PriorityForCounty(result, fips),
+    E2E_RELEASE_ID
+  );
+}
+
 async function installTier1Review(
   page: Page,
-  routes: Record<string, Tier1Route>
+  routes: Record<string, Tier1Route>,
+  options: { metadataStatus?: number } = {}
 ) {
   await page.route("**/v1/me/profile", async (route) => {
     await route.fulfill({ json: { profile: null }, status: 200 });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
-    await route.fulfill({ json: reviewScopeMetadataFixture, status: 200 });
+    if (options.metadataStatus && options.metadataStatus !== 200) {
+      await route.fulfill({
+        contentType: "application/problem+json",
+        json: problem(
+          options.metadataStatus,
+          "Release metadata is unavailable."
+        ),
+        status: options.metadataStatus,
+      });
+      return;
+    }
+    const requested = new URL(route.request().url()).searchParams.get(
+      "dataset_version"
+    );
+    await route.fulfill({
+      json: {
+        ...reviewScopeMetadataFixture,
+        release_id: requested || reviewScopeMetadataFixture.release_id,
+      },
+      status: 200,
+    });
   });
   await page.route("**/v1/atlas/scores**", async (route) => {
+    const requested = new URL(route.request().url()).searchParams.get(
+      "dataset_version"
+    );
     await route.fulfill({
       json: {
         counties: reviewCounties,
         methodology_version: "1",
-        release_id: "alpha-2026",
+        release_id: requested || E2E_RELEASE_ID,
         settings: {
           ecological_share: 65,
           low_incidence_breakpoint: 10,
@@ -182,7 +216,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
   }, testInfo) => {
     await installTier1Review(page, {
       "36001": {
-        body: tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
+        body: alignedTier(tier1HighSufficientFixture, "36001"),
         status: 200,
       },
     });
@@ -229,7 +263,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
   }, testInfo) => {
     await installTier1Review(page, {
       "36003": {
-        body: tier1PriorityForCounty(tier1LowInsufficientFixture, "36003"),
+        body: alignedTier(tier1LowInsufficientFixture, "36003"),
         status: 200,
       },
     });
@@ -252,7 +286,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
   }, testInfo) => {
     await installTier1Review(page, {
       "36001": {
-        body: tier1PriorityForCounty(
+        body: alignedTier(
           { ...tier1HighSufficientFixture, reasons: [] },
           "36001"
         ),
@@ -286,7 +320,10 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
   }) => {
     await installTier1Review(page, {
       "36001": {
-        body: tier1LowInsufficientFixture,
+        body: tier1PriorityForRelease(
+          tier1LowInsufficientFixture,
+          E2E_RELEASE_ID
+        ),
         status: 200,
       },
     });
@@ -295,5 +332,130 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await expect(region).toHaveAttribute("data-state", "stale");
     await expectNoLowTier(page);
     await expect(region).not.toContainText("MEDIUM");
+  });
+
+  test("does not show the current batch for a historical review or investigate release", async ({
+    page,
+  }) => {
+    await installTier1Review(page, {
+      "36001": {
+        body: tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
+        status: 200,
+      },
+    });
+    await page.goto(
+      "/app/review?scope=NY&county=36001&dataset=historical-2024"
+    );
+    const review = page.getByTestId("tier1-surveillance-priority");
+    await expect(review).toHaveAttribute("data-state", "release-unaligned");
+    await expect(review).toHaveAttribute("data-release-reason", "mismatch");
+    await expectNoLowTier(page);
+    await expect(review).not.toContainText("HIGH");
+    await expect(page.getByTestId("review-county-preview")).toBeVisible();
+
+    await page.goto(
+      "/app/investigate?county=36001&scope=NY&dataset=historical-2024"
+    );
+    const investigate = page.getByTestId("tier1-surveillance-priority");
+    await expect(investigate).toHaveAttribute(
+      "data-state",
+      "release-unaligned"
+    );
+    await expect(investigate).toHaveAttribute(
+      "data-release-reason",
+      "mismatch"
+    );
+    await expectNoLowTier(page);
+    await expect(investigate).not.toContainText("HIGH");
+  });
+
+  test("drops a matched tier when the same county changes release", async ({
+    page,
+  }) => {
+    await installTier1Review(page, {
+      "36001": {
+        body: alignedTier(tier1HighSufficientFixture, "36001"),
+        status: 200,
+      },
+    });
+    await page.goto("/app/review?scope=NY&county=36001&dataset=alpha-2026");
+    await expect(
+      page.getByTestId("tier1-surveillance-priority")
+    ).toHaveAttribute("data-tier", "HIGH");
+    await page.evaluate(() => {
+      const link = document.createElement("a");
+      link.href = "/app/review?scope=NY&county=36001&dataset=historical-2024";
+      link.textContent = "Switch governed release";
+      link.dataset.testid = "tier1-dataset-switch";
+      document.body.append(link);
+    });
+    await page.getByTestId("tier1-dataset-switch").click();
+    await expect(page).toHaveURL(/dataset=historical-2024/);
+    const review = page.getByTestId("tier1-surveillance-priority");
+    await expect(review).toHaveAttribute("data-state", "release-unaligned");
+    await expect(review).toHaveAttribute("data-release-reason", "mismatch");
+    await expect(review).not.toHaveAttribute("data-tier", "HIGH");
+    await expectNoLowTier(page);
+
+    await page.goto(
+      "/app/investigate?county=36001&scope=NY&dataset=alpha-2026"
+    );
+    await expect(
+      page.getByTestId("tier1-surveillance-priority")
+    ).toHaveAttribute("data-tier", "HIGH");
+    await page.evaluate(() => {
+      const link = document.createElement("a");
+      link.href =
+        "/app/investigate?county=36001&scope=NY&dataset=historical-2024";
+      link.textContent = "Switch governed release";
+      link.dataset.testid = "tier1-dataset-switch";
+      document.body.append(link);
+    });
+    await page.getByTestId("tier1-dataset-switch").click();
+    await expect(page).toHaveURL(/dataset=historical-2024/);
+    const investigate = page.getByTestId("tier1-surveillance-priority");
+    await expect(investigate).toHaveAttribute(
+      "data-state",
+      "release-unaligned"
+    );
+    await expect(investigate).toHaveAttribute(
+      "data-release-reason",
+      "mismatch"
+    );
+    await expect(investigate).not.toHaveAttribute("data-tier", "HIGH");
+    await expectNoLowTier(page);
+  });
+
+  test("does not align a tier when release metadata fails", async ({
+    page,
+  }) => {
+    await installTier1Review(
+      page,
+      {
+        "36001": {
+          body: alignedTier(tier1HighSufficientFixture, "36001"),
+          status: 200,
+        },
+      },
+      { metadataStatus: 503 }
+    );
+    await page.goto("/app/review?scope=NY&county=36001&dataset=alpha-2026");
+    const review = page.getByTestId("tier1-surveillance-priority");
+    await expect(review).toHaveAttribute("data-state", "release-unaligned");
+    await expect(review).toHaveAttribute("data-release-reason", "unknown");
+    await expectNoLowTier(page);
+    await expect(review).not.toContainText("HIGH");
+
+    await page.goto(
+      "/app/investigate?county=36001&scope=NY&dataset=alpha-2026"
+    );
+    const investigate = page.getByTestId("tier1-surveillance-priority");
+    await expect(investigate).toHaveAttribute(
+      "data-state",
+      "release-unaligned"
+    );
+    await expect(investigate).toHaveAttribute("data-release-reason", "unknown");
+    await expectNoLowTier(page);
+    await expect(investigate).not.toContainText("HIGH");
   });
 });

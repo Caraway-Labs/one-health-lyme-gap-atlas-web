@@ -28,6 +28,12 @@ export const TIER1_FAILED_MESSAGE =
 export const TIER1_STALE_MESSAGE =
   "This model-assisted priority did not match the selected county, so it was not shown. It is not low priority.";
 
+export const TIER1_RELEASE_MISMATCH_MESSAGE =
+  "This model-assisted priority is for a different release than the evidence on screen, so it was not shown. It is not low priority.";
+
+export const TIER1_RELEASE_UNKNOWN_MESSAGE =
+  "Model-assisted surveillance priority is not shown because the governed release for this page is not known. It is not low priority.";
+
 export const TIER1_REASON_ABSENCE = "No contributing reasons were returned.";
 
 export const TIER1_NOT_RETURNED = "Not returned";
@@ -62,11 +68,35 @@ export type Tier1ModelDetails = {
   tierPolicyVersion: string;
 };
 
+/** The governed release the model result must match before a tier is shown. */
+export type Tier1ActiveRelease =
+  | { status: "pending" }
+  | { status: "unknown" }
+  | { releaseId: string; status: "ready" };
+
+export function tier1ReleaseFromMetadata(input: {
+  isError: boolean;
+  isLoading: boolean;
+  releaseId: string | null | undefined;
+}): Tier1ActiveRelease {
+  if (input.isError) {
+    return { status: "unknown" };
+  }
+  if (input.isLoading) {
+    return { status: "pending" };
+  }
+  if (!input.releaseId) {
+    return { status: "unknown" };
+  }
+  return { releaseId: input.releaseId, status: "ready" };
+}
+
 export type Tier1SurveillancePriorityView =
   | { fips: string; kind: "loading" }
   | { fips: string; kind: "unavailable" }
   | { fips: string; kind: "failed" }
   | { fips: string; kind: "stale" }
+  | { fips: string; kind: "release-unaligned"; reason: "mismatch" | "unknown" }
   | {
       details: Tier1ModelDetails;
       fips: string;
@@ -193,11 +223,22 @@ function isCoherent(result: Tier1CountyPriority): boolean {
 
 export function presentTier1SurveillancePriority(input: {
   errorStatus: number | null;
+  release: Tier1ActiveRelease;
   requestedFips: string;
   result: Tier1CountyPriority | null;
   status: "error" | "loading" | "success";
 }): Tier1SurveillancePriorityView {
-  const { errorStatus, requestedFips, result, status } = input;
+  const { errorStatus, release, requestedFips, result, status } = input;
+  if (release.status === "pending") {
+    return { fips: requestedFips, kind: "loading" };
+  }
+  if (release.status === "unknown") {
+    return {
+      fips: requestedFips,
+      kind: "release-unaligned",
+      reason: "unknown",
+    };
+  }
   switch (status) {
     case "loading": {
       return { fips: requestedFips, kind: "loading" };
@@ -211,6 +252,13 @@ export function presentTier1SurveillancePriority(input: {
     case "success": {
       if (!result || result.county_fips !== requestedFips) {
         return { fips: requestedFips, kind: "stale" };
+      }
+      if (result.release_id !== release.releaseId) {
+        return {
+          fips: requestedFips,
+          kind: "release-unaligned",
+          reason: "mismatch",
+        };
       }
       if (!isCoherent(result)) {
         return { fips: requestedFips, kind: "failed" };
