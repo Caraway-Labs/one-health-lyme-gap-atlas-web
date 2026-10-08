@@ -54,10 +54,12 @@ describe("Atlas Amplitude boundary", () => {
       frontPorch: routeIdForPathname("/"),
       known: routeIds.includes("front_porch"),
       overview: routeIdForPathname("/overview"),
+      privacy: routeIdForPathname("/privacy"),
     }).toStrictEqual({
       frontPorch: "front_porch",
       known: true,
       overview: "atlas_home",
+      privacy: "privacy",
     });
   });
 

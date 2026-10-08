@@ -127,6 +127,26 @@ describe("analytical navigation handoff", () => {
     });
   });
 
+  it("accepts repeated legacy parameters and a fragment search without a question mark", () => {
+    expect({
+      array: legacyAnalyticalOverviewHref({
+        county: ["08001"],
+        state: ["CO"],
+      }),
+      fragment: legacyAnalyticalFragmentHref("#methods", "state=CO"),
+      overviewQuery: backToAtlasHref(
+        "/overview?county=08001",
+        new URLSearchParams()
+      ),
+      root: backToAtlasHref("", new URLSearchParams()),
+    }).toStrictEqual({
+      array: "/overview?county=08001&state=CO",
+      fragment: "/overview?state=CO#methods",
+      overviewQuery: "#atlas",
+      root: "/overview#atlas",
+    });
+  });
+
   it("sends legacy analytical root queries to Overview", () => {
     expect(
       legacyAnalyticalOverviewHref({

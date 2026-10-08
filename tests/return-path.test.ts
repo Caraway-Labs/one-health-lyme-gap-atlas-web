@@ -12,10 +12,12 @@ describe("safe return path", () => {
 
   it("sends an account-free exit away from a protected workspace path", () => {
     expect({
+      bareQuery: accountFreeContinueHref("?county=08001"),
       overview: accountFreeContinueHref("/overview?county=08001&state=CO"),
       review: accountFreeContinueHref("/app/review"),
       reviewQuery: accountFreeContinueHref("/app/review?scope=CO"),
     }).toStrictEqual({
+      bareQuery: "?county=08001",
       overview: "/overview?county=08001&state=CO",
       review: "/overview",
       reviewQuery: "/overview",
