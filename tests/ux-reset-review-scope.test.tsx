@@ -10,6 +10,7 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetDestinationHref } from "@/features/ux-reset";
@@ -442,6 +443,185 @@ describe("Reset Review scope UI", () => {
       shellInvestigate:
         "/app/investigate?scope=AK&dataset=alpha-2026&period=2023-01-01",
     });
+  });
+
+  it("clears the prior county when the next state's review does not succeed", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    let mode: "fail" | "hold" | "ok" = "ok";
+    const search = "scope=CO&county=08001&dataset=alpha-2026&period=2023-01-01";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string },
+      init?: { signal?: AbortSignal }
+    ) => {
+      if (mode === "fail") {
+        return Promise.reject(new Error("service unavailable"));
+      }
+      if (mode === "hold") {
+        const held = Promise.withResolvers<never>();
+        const abort = () => {
+          held.reject(
+            new DOMException("The operation was aborted.", "AbortError")
+          );
+        };
+        if (init?.signal?.aborted) {
+          abort();
+        } else {
+          init?.signal?.addEventListener("abort", abort, { once: true });
+        }
+        return held.promise;
+      }
+      return Promise.resolve(defaultStateReviewResponse(state, params));
+    }) as never);
+    function ReviewShellHarness() {
+      const [, setSearchTick] = useState(0);
+      return (
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => {
+              mockedSearch = queryString.replace(/^\?/, "");
+              setSearchTick((tick) => tick + 1);
+            }}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+    }
+    const view = render(<ReviewShellHarness />);
+    const shellCounty = (label: string) => {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href =
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const params = new URL(href, "http://localhost").searchParams;
+      return {
+        county: params.get("county"),
+        href,
+        scope: params.get("scope"),
+      };
+    };
+    try {
+      await waitFor(() => {
+        const selected = screen
+          .getAllByTestId("review-candidate")
+          .find((entry) => entry.getAttribute("aria-current") === "true");
+        expect(selected?.dataset.fips).toBe("08001");
+      });
+      expect(shellCounty("Investigate").county).toBe("08001");
+      mode = "hold";
+      fireEvent.click(screen.getByTestId("review-scope-select"));
+      const newYork = await screen.findByRole("option", {
+        name: "New York (NY)",
+      });
+      fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+      fireEvent.click(newYork);
+      await waitFor(() => {
+        if (!screen.queryByText("Loading review results…")) {
+          throw new Error("review did not stay loading");
+        }
+        const investigate = shellCounty("Investigate");
+        if (
+          investigate.scope !== "NY" ||
+          investigate.county !== null ||
+          mockedSearch.includes("county=")
+        ) {
+          throw new Error(`${mockedSearch} ${investigate.href}`);
+        }
+      });
+      const whileLoading = {
+        action: shellCounty("Action").county,
+        compare: shellCounty("Compare").county,
+        explore: shellCounty("Explore").county,
+        investigate: shellCounty("Investigate").county,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: shellCounty("Investigate").scope,
+        urlCounty: mockedSearch.includes("county="),
+      };
+      await client.cancelQueries({ queryKey: ["ux-reset-state-review"] });
+      await waitFor(() => {
+        const investigate = shellCounty("Investigate");
+        if (
+          investigate.scope !== "NY" ||
+          investigate.county !== null ||
+          investigate.href.includes("08001") ||
+          mockedSearch.includes("08001")
+        ) {
+          throw new Error(`${mockedSearch} ${investigate.href}`);
+        }
+      });
+      const whileAborted = {
+        county: shellCounty("Investigate").county,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: shellCounty("Investigate").scope,
+        url: mockedSearch,
+      };
+      mode = "fail";
+      await client.invalidateQueries({ queryKey: ["ux-reset-state-review"] });
+      await waitFor(() => {
+        if (!screen.queryByText(/temporarily unavailable/)) {
+          throw new Error("review error was not shown");
+        }
+        const investigate = shellCounty("Investigate");
+        if (investigate.county !== null || mockedSearch.includes("county=")) {
+          throw new Error(`${mockedSearch} ${investigate.href}`);
+        }
+      });
+      const whileFailed = {
+        action: shellCounty("Action").county,
+        compare: shellCounty("Compare").county,
+        explore: shellCounty("Explore").county,
+        investigate: shellCounty("Investigate").county,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: shellCounty("Investigate").scope,
+        urlCounty: mockedSearch.includes("county="),
+      };
+      view.unmount();
+      expect({ whileAborted, whileFailed, whileLoading }).toStrictEqual({
+        whileAborted: {
+          county: null,
+          picture: false,
+          scope: "NY",
+          url: expect.not.stringContaining("08001"),
+        },
+        whileFailed: {
+          action: null,
+          compare: null,
+          explore: null,
+          investigate: null,
+          picture: false,
+          scope: "NY",
+          urlCounty: false,
+        },
+        whileLoading: {
+          action: null,
+          compare: null,
+          explore: null,
+          investigate: null,
+          picture: false,
+          scope: "NY",
+          urlCounty: false,
+        },
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
   });
 
   it("renders national orientation for United States scope", async () => {

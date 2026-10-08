@@ -69,9 +69,14 @@ function ResetReviewExperienceInner() {
 
   const setScope = useCallback(
     (nextScope: "ALL" | string) => {
-      setUrlState({ scope: nextScope });
+      if (nextScope === scope) {
+        return;
+      }
+      // The previous county belongs to the scope being left. Clear it with
+      // the transition so loading, failure, and abort cannot publish it.
+      void setUrlState({ county: null, scope: nextScope });
     },
-    [setUrlState]
+    [scope, setUrlState]
   );
   const setCounty = useCallback(
     (fips: string | null, history: "push" | "replace") => {
