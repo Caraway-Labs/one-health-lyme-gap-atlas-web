@@ -238,22 +238,36 @@ describe("Investigate canonical PDF", () => {
     }
   );
 
-  it.each(["empty", "json", "cacheable"])(
-    "rejects a %s report",
-    async (kind) => {
-      const response = pdfResponse();
-      if (kind === "empty") response.data = new Blob([]);
-      if (kind === "json")
-        response.headers.set("content-type", "application/json");
-      if (kind === "cacheable")
-        response.headers.set("cache-control", "public, max-age=300");
-      api.report.mockResolvedValue(response);
-      await expect(downloadInvestigatePdf(context(), {})).rejects.toThrow(
-        "matching PDF"
-      );
-      expect(click).not.toHaveBeenCalled();
-    }
-  );
+  it.each([
+    "empty",
+    "json",
+    "cacheable",
+    "application/pdf+json",
+    "application/pdf-error",
+  ])("rejects a %s report", async (kind) => {
+    const response = pdfResponse();
+    if (kind === "empty") response.data = new Blob([]);
+    if (kind.startsWith("application/pdf"))
+      response.headers.set("content-type", kind);
+    if (kind === "json")
+      response.headers.set("content-type", "application/json");
+    if (kind === "cacheable")
+      response.headers.set("cache-control", "public, max-age=300");
+    api.report.mockResolvedValue(response);
+    await expect(downloadInvestigatePdf(context(), {})).rejects.toThrow(
+      "matching PDF"
+    );
+    expect(click).not.toHaveBeenCalled();
+  });
+
+  it("accepts an exact PDF media type with optional parameters", async () => {
+    const response = pdfResponse();
+    response.headers.set("content-type", "Application/PDF; charset=binary");
+    api.report.mockResolvedValue(response);
+    await expect(downloadInvestigatePdf(context(), {})).resolves.toStrictEqual({
+      committed: true,
+    });
+  });
 
   it("withholds incomplete, mixed-period, missing-provenance and unavailable selections", () => {
     const base = context();

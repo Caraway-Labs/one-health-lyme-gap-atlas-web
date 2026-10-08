@@ -94,10 +94,11 @@ export async function downloadInvestigatePdf(
     response.status !== 200 ||
     !(response.data instanceof Blob) ||
     response.data.size === 0 ||
-    !response.headers
+    response.headers
       .get("content-type")
-      ?.toLowerCase()
-      .startsWith("application/pdf") ||
+      ?.split(";", 1)[0]
+      ?.trim()
+      .toLowerCase() !== "application/pdf" ||
     !response.headers
       .get("cache-control")
       ?.toLowerCase()
