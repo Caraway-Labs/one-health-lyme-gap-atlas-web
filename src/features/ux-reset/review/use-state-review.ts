@@ -71,12 +71,14 @@ export function useStateReview(
     queryKey: ["ux-reset-state-review", scope, resolvedRelease],
   });
 
-  const review =
-    query.data &&
-    query.data.requested_state === scope &&
-    query.data.data_release_version === resolvedRelease
-      ? query.data
-      : null;
+  const cachedReview = query.data;
+  const reviewMatchesScope =
+    cachedReview?.requested_state === scope &&
+    cachedReview.data_release_version === resolvedRelease;
+  // A failed refresh leaves the last payload on query.data and sets isError.
+  // That payload is not the current result, so callers must not render it
+  // or publish its county, Ask Atlas context, or handoffs.
+  const review = query.isError || !reviewMatchesScope ? null : cachedReview;
 
   return {
     errorMessage: query.isError ? reviewErrorMessage(query.error) : null,

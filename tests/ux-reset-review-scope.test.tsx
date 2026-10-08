@@ -1218,6 +1218,122 @@ describe("Reset Review scope UI", () => {
     }
   });
 
+  it("hides a loaded review when a later refetch fails", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    let failRefresh = false;
+    review.mockImplementation(async (state: string) => {
+      if (failRefresh) {
+        throw new Error("service unavailable");
+      }
+      return {
+        data: buildStateReview({
+          candidates: [
+            reviewCandidate({
+              caveat: "Collection dates are unavailable.",
+              countyName: "Denver",
+              fips: "08001",
+              reasonText: "Denver was returned by the method.",
+            }),
+          ],
+          state,
+        }),
+        status: 200 as const,
+      };
+    });
+    const search = "scope=CO&county=08001&dataset=alpha-2026";
+    const urlUpdates: string[] = [];
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => {
+              mockedSearch = queryString.replace(/^\?/, "");
+              urlUpdates.push(queryString);
+            }}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        const selected = screen.getByTestId("review-candidate");
+        if (!selected.textContent?.includes("Denver, CO")) {
+          throw new Error(selected.textContent ?? "candidate missing");
+        }
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+      const panel = await screen.findByTestId("ask-atlas-panel");
+      await waitFor(() => {
+        const geography = panel.querySelector('[data-field="geography"]');
+        if (
+          geography?.dataset.fieldState !== "validated" ||
+          !geography.textContent?.includes("Denver, Colorado (08001)")
+        ) {
+          throw new Error(geography?.textContent ?? "geography missing");
+        }
+      });
+      failRefresh = true;
+      await client.invalidateQueries({ queryKey: ["ux-reset-state-review"] });
+      await waitFor(() => {
+        if (
+          !screen
+            .queryByRole("alert")
+            ?.textContent?.includes("temporarily unavailable")
+        ) {
+          throw new Error("review error was not shown");
+        }
+      });
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const shellHref = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const latestUrl = urlUpdates.at(-1) ?? search;
+      expect({
+        actionCounty: shellHref("Action").includes("county=08001"),
+        candidates: screen.queryAllByTestId("review-candidate").length,
+        compareAction: screen.queryByTestId("review-compare"),
+        exploreCounty: shellHref("Explore").includes("county=08001"),
+        failure: screen.getByRole("alert").textContent,
+        investigateAction: screen.queryByTestId("review-investigate"),
+        investigateCounty: shellHref("Investigate").includes("county=08001"),
+        noContext: screen.getByTestId("ask-atlas-no-context").textContent,
+        picture: screen.queryByTestId("review-state-panel"),
+        staleGeography: panel.textContent?.includes("Denver") ?? false,
+        urlCounty: latestUrl.includes("county=08001"),
+      }).toStrictEqual({
+        actionCounty: true,
+        candidates: 0,
+        compareAction: null,
+        exploreCounty: true,
+        failure: expect.stringContaining("temporarily unavailable"),
+        investigateAction: null,
+        investigateCounty: true,
+        noContext: "No validated page context is available to inherit.",
+        picture: null,
+        staleGeography: false,
+        urlCounty: true,
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
   it("renders national orientation for United States scope", async () => {
     renderReview();
     await waitFor(() =>
