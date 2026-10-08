@@ -1,0 +1,59 @@
+.ux-reset-model-signal {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+
+.ux-reset-model-signal-heading {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-model-signal-heading h2,
+.ux-reset-model-signal-heading h3 {
+  margin: 0;
+}
+
+.ux-reset-model-signal-facts,
+.ux-reset-model-signal-details dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.ux-reset-model-signal-facts dt,
+.ux-reset-model-signal-details dt {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.ux-reset-model-signal-facts dd,
+.ux-reset-model-signal-details dd {
+  margin: 0;
+}
+
+.ux-reset-model-signal-reasons {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.ux-reset-model-signal-limitation,
+.ux-reset-model-signal-support {
+  margin: 0;
+}
+
+.ux-reset-model-signal-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding-block: var(--space-2);
+}
+
+.ux-reset-model-signal-details-note {
+  margin: var(--space-2) 0 0;
+}

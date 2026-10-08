@@ -34,6 +34,9 @@ import {
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
+import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
+
+const COUNTY_FIPS = /^\d{5}$/;
 
 function recoveryMessage(
   recovery: InvestigateRecovery,
@@ -297,6 +300,15 @@ function InvestigateExperienceInner() {
             ) : null}
           </AtlasStatusMessage>
         </div>
+      ) : null}
+
+      {workspace.requestedFips &&
+      COUNTY_FIPS.test(workspace.requestedFips) &&
+      !workspace.recovery ? (
+        <Tier1SurveillancePriority
+          fips={workspace.requestedFips}
+          headingLevel="h2"
+        />
       ) : null}
 
       {bundle ? (

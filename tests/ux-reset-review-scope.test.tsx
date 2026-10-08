@@ -18,6 +18,7 @@ import { reviewSearchParams } from "@/features/ux-reset/review/review-search-par
 import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
 import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
+import { AtlasApiError } from "@/lib/api-mutator";
 
 let mockedSearch = "";
 
@@ -95,6 +96,16 @@ vi.mock(import("@/generated/atlas"), () => ({
     data: reviewScopeScoresFixture,
     status: 200,
   })),
+  countyTier1SurveillancePriorityGet: vi.fn<
+    typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+  >(async (fips) => {
+    throw new AtlasApiError(
+      "No current Tier 1 county result",
+      `/v1/counties/${fips}/tier1-surveillance-priority`,
+      404,
+      null
+    );
+  }),
 }));
 
 function stubDesktopMatchMedia() {

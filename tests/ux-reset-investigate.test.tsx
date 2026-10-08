@@ -240,6 +240,16 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 200,
         }) as never
     ),
+    countyTier1SurveillancePriorityGet: vi.fn<
+      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+    >(async (fips) => {
+      throw new AtlasApiError(
+        "No current Tier 1 county result",
+        `/v1/counties/${fips}/tier1-surveillance-priority`,
+        404,
+        null
+      );
+    }),
   };
 });
 
