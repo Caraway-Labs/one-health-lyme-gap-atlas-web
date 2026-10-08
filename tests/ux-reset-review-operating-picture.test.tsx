@@ -1107,7 +1107,7 @@ describe("Review operating picture state", () => {
     const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
     view.unmount();
     expect(basis).toBe(
-      "Unavailable: Unavailable (Unavailable, as of Unavailable)"
+      "Unavailable: Unavailable (Unavailable, FIPS 08001, as of Unavailable)"
     );
   });
 
@@ -1138,6 +1138,171 @@ describe("Review operating picture state", () => {
     expect(header).toBe(
       "Method Unavailable Unavailable. Release alpha-2026. Unavailable."
     );
+  });
+
+  it("keeps each reference county on its inspect line", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = {
+      ...reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_references: [
+        reviewEvidenceReference("08001"),
+        {
+          ...reviewEvidenceReference("08031", "Reported"),
+          family: "vector",
+        },
+        {
+          ...reviewEvidenceReference("08001"),
+          county_fips: " ",
+          family: "human",
+          public_record_ref: "public/08001-human",
+          retrieved_at: "",
+        },
+      ],
+    };
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            candidates: [candidate],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const qualification = screen.getByTestId("review-preview-qualification");
+    fireEvent.click(within(qualification).getByText("Inspect provenance"));
+    const lines = [
+      ...within(qualification)
+        .getByTestId("evidence-provenance-references")
+        .querySelectorAll("li"),
+    ].map((item) => item.textContent ?? "");
+    const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
+    view.unmount();
+    expect({
+      basisNamesBlank: basis.includes("FIPS Unavailable"),
+      basisNamesOtherCounty: basis.includes("FIPS 08031"),
+      blankCounty: lines[2]?.includes("county Unavailable"),
+      blankRetrieved: lines[2]?.includes("retrieved Unavailable"),
+      candidateCounty: lines[0]?.includes("county 08001"),
+      otherCounty: lines[1]?.includes("county 08031"),
+    }).toStrictEqual({
+      basisNamesBlank: true,
+      basisNamesOtherCounty: true,
+      blankCounty: true,
+      blankRetrieved: true,
+      candidateCounty: true,
+      otherCounty: true,
+    });
+  });
+
+  it("explains a candidate when the reason text is blank", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const reasonCode = "PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW";
+    const read = (candidate: ReturnType<typeof reviewCandidate>) => {
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={buildStateReview({
+              candidates: [candidate],
+              resultState: "candidates_found",
+              state: "CO",
+            })}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const row =
+        screen.getByTestId("review-candidate").querySelector("small")
+          ?.textContent ?? "";
+      const why = screen.getByTestId("review-preview-why").textContent ?? "";
+      view.unmount();
+      return { row, why };
+    };
+    const withCode = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    withCode.reason_text = " ";
+    withCode.reason_codes = [reasonCode];
+    const withoutCode = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    withoutCode.reason_codes = [" "];
+    withoutCode.reason_text = "";
+    expect({
+      withCode: read(withCode),
+      withoutCode: read(withoutCode),
+    }).toStrictEqual({
+      withCode: { row: reasonCode, why: reasonCode },
+      withoutCode: {
+        row: "The review result did not include a reason for this county.",
+        why: "The review result did not include a reason for this county.",
+      },
+    });
+  });
+
+  it("normalizes blank gap, county, and limitation text", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    candidate.county_name = " ";
+    const review = buildStateReview({
+      candidates: [candidate],
+      gaps: [{ code: " ", county_fips: "", detail: " " }],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    review.limitations = [" ", "Review is not disease risk."];
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const rowName =
+      screen.getByTestId("review-candidate").querySelector("strong")
+        ?.textContent ?? "";
+    const gap = screen.getByTestId("review-data-gap").textContent ?? "";
+    const limitations = [
+      ...screen.getByTestId("review-limitations").querySelectorAll("li"),
+    ].map((item) => item.textContent ?? "");
+    view.unmount();
+    expect({
+      gap,
+      limitations,
+      rowName: rowName.replaceAll(/\s+/g, " ").trim(),
+    }).toStrictEqual({
+      gap: "FIPS Unavailable Unavailable. Unavailable",
+      limitations: ["Review is not disease risk."],
+      rowName: "Unavailable, CO",
+    });
   });
 
   it("marks a blank reference revision and version unavailable", () => {

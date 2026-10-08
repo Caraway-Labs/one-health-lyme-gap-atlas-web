@@ -33,7 +33,11 @@ export function ReviewCountyPreviewPanel({
   preview,
   release,
 }: ReviewCountyPreviewPanelProps) {
-  const title = `${preview.countyName}, ${preview.stateName}`;
+  const countyName = preview.countyName.trim() || "Unavailable";
+  const stateName = preview.stateName.trim() || "Unavailable";
+  const stateCode = preview.stateCode.trim() || "Unavailable";
+  const fipsLabel = preview.fips.trim() || "Unavailable";
+  const title = `${countyName}, ${stateName}`;
   return (
     <Card
       aria-label={`County preview for ${title}`}
@@ -54,7 +58,7 @@ export function ReviewCountyPreviewPanel({
         title={title}
       />
       <p className="type-body" data-testid="review-preview-identity">
-        FIPS {preview.fips} · {preview.stateCode}
+        FIPS {fipsLabel} · {stateCode}
       </p>
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}

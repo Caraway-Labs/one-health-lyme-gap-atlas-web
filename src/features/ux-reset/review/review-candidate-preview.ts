@@ -25,8 +25,9 @@ function observedBasis(candidate: Candidate): string {
       const target = governedField(reference.target);
       const status = governedField(reference.status);
       const product = governedField(reference.source_product);
+      const county = governedField(reference.county_fips);
       const sourceAsOf = governedField(reference.source_as_of);
-      return `${target}: ${status} (${product}, as of ${sourceAsOf})`;
+      return `${target}: ${status} (${product}, FIPS ${county}, as of ${sourceAsOf})`;
     })
     .join(" ");
 }
@@ -53,6 +54,18 @@ function candidateCaveatParts(candidate: Candidate): string[] {
     ),
     candidate.freshness_comparability,
   ]);
+}
+
+export function reviewCandidateExplanation(candidate: Candidate): string {
+  const text = candidate.reason_text.trim();
+  if (text) {
+    return text;
+  }
+  const codes = trimmedUnique(candidate.reason_codes);
+  if (codes.length > 0) {
+    return codes.join(", ");
+  }
+  return "The review result did not include a reason for this county.";
 }
 
 function candidateCaveat(candidate: Candidate): string {
@@ -98,13 +111,13 @@ function referenceInspectLine(
   const revision = `; source as of ${sourceAsOf}`;
   const version = reference.source_version.trim() || GOVERNED_FIELD_UNAVAILABLE;
   const versionLabel = `; version ${version}`;
-  const retrieved = reference.retrieved_at.trim();
-  const retrievedLabel = retrieved ? `; retrieved ${retrieved}` : "";
+  const county = reference.county_fips.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const retrieved = reference.retrieved_at.trim() || GOVERNED_FIELD_UNAVAILABLE;
   const record =
     reference.public_record_ref.trim() || GOVERNED_FIELD_UNAVAILABLE;
   const recordLabel = `; record ${record}`;
   const release = reference.release_id.trim() || GOVERNED_FIELD_UNAVAILABLE;
-  return `${family} (${product}${revision}${versionLabel}${retrievedLabel}${recordLabel}; release ${release})`;
+  return `${family} (${product}; county ${county}${revision}${versionLabel}; retrieved ${retrieved}${recordLabel}; release ${release})`;
 }
 
 function candidateQualification(
@@ -118,6 +131,8 @@ function candidateQualification(
   const caveatParts = candidateCaveatParts(candidate);
   const referenceLines = references.map(referenceInspectLine);
   const referenceSummary = referenceLines.join(" ");
+  const methodId = methodologyId.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const methodVersion = methodologyVersion.trim() || GOVERNED_FIELD_UNAVAILABLE;
   return {
     availability: evidenceAvailabilityValues.limited,
     claimLabel: "Evidence state",
@@ -125,7 +140,7 @@ function candidateQualification(
     provenance: {
       evidenceType: GOVERNED_FIELD_UNAVAILABLE,
       inspectSummary:
-        `${candidate.reason_text} ${caveat} Method ${methodologyId} ${methodologyVersion}. ${referenceSummary}`.trim(),
+        `${reviewCandidateExplanation(candidate)} ${caveat} Method ${methodId} ${methodVersion}. ${referenceSummary}`.trim(),
       limitations: caveatParts,
       materialCaveat: caveat,
       methodLabel: methodologyId.trim() || null,
@@ -135,7 +150,7 @@ function candidateQualification(
       sourceFamily:
         families.length > 0 ? families.join(", ") : GOVERNED_FIELD_UNAVAILABLE,
       technical: {
-        methodologyVersion,
+        methodologyVersion: methodologyVersion.trim() || null,
         provenanceRef: sharedReferenceValue(
           references,
           (reference) => reference.public_record_ref
@@ -172,7 +187,7 @@ export function buildReviewCandidatePreview(input: {
   return {
     availability: evidenceAvailabilityValues.limited,
     caveat,
-    countyName: input.candidate.county_name,
+    countyName: governedField(input.candidate.county_name),
     reasonCodes: trimmedUnique(input.candidate.reason_codes),
     fips: input.candidate.county_fips,
     followUp: nextCheck || "The review result did not include a next check.",
@@ -186,6 +201,6 @@ export function buildReviewCandidatePreview(input: {
     ),
     stateCode: input.stateCode,
     stateName: input.stateName,
-    why: input.candidate.reason_text,
+    why: reviewCandidateExplanation(input.candidate),
   };
 }

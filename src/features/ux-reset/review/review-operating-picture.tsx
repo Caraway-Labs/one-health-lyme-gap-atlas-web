@@ -22,7 +22,10 @@ import {
   type EvidenceProvenanceModel,
 } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
-import { buildReviewCandidatePreview } from "@/features/ux-reset/review/review-candidate-preview";
+import {
+  buildReviewCandidatePreview,
+  reviewCandidateExplanation,
+} from "@/features/ux-reset/review/review-candidate-preview";
 import {
   buildReviewCompareHandoff,
   buildReviewInvestigateHandoff,
@@ -77,19 +80,33 @@ type ReviewOperatingPictureProps = {
   tierRelease?: Tier1ActiveRelease;
 };
 
+function visibleLines(values: readonly string[]): string[] {
+  const lines: string[] = [];
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed || lines.includes(trimmed)) {
+      continue;
+    }
+    lines.push(trimmed);
+  }
+  return lines;
+}
+
 function gapEvidenceModel(review: StateReview) {
-  const firstGap = review.data_gaps[0];
+  const limitations = visibleLines(review.limitations);
+  const detail = review.data_gaps
+    .map((gap) => gap.detail.trim())
+    .find((value) => value.length > 0);
   const caveat =
-    firstGap?.detail ??
-    review.limitations[0] ??
+    detail ??
+    limitations[0] ??
     "A data gap was returned without further detail.";
   return {
     availability: evidenceAvailabilityValues.unavailable,
     provenance: {
       evidenceType: "Unavailable",
       inspectSummary: caveat,
-      limitations:
-        review.limitations.length > 0 ? review.limitations : [caveat],
+      limitations: limitations.length > 0 ? limitations : [caveat],
       materialCaveat: caveat,
       observationPeriod: "Unavailable",
       sourceFamily: "Unavailable",
@@ -144,14 +161,15 @@ function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
     evidenceType: RESULT_FIELD_UNAVAILABLE,
     inspectSummary:
       "Evaluation time and configuration identity for this review result.",
-    limitations: review.limitations,
+    limitations: visibleLines(review.limitations),
     materialCaveat: null,
     observationPeriod: RESULT_FIELD_UNAVAILABLE,
     sourceFamily: RESULT_FIELD_UNAVAILABLE,
-    methodLabel: review.methodology_id,
-    methodVersion: review.methodology_version,
+    methodLabel: review.methodology_id.trim() || null,
+    methodVersion: review.methodology_version.trim() || null,
     technical: {
       configurationSha256: review.configuration_sha256,
+      methodologyVersion: review.methodology_version.trim() || null,
       evaluatedAt: evaluatedAt.display,
       evaluatedAtRaw: evaluatedAt.raw,
     },
@@ -308,6 +326,7 @@ export function ReviewOperatingPicture({
   const hasMapCounties = mapCounties.length > 0;
   const gapModel =
     review.data_gaps.length > 0 ? gapEvidenceModel(review) : null;
+  const resultLimitations = visibleLines(review.limitations);
   const ruleCoverage = reviewRuleCoverage(review.coverage);
 
   return (
@@ -364,9 +383,9 @@ export function ReviewOperatingPicture({
             </ul>
           </section>
         ) : null}
-        {review.limitations.length > 0 ? (
+        {resultLimitations.length > 0 ? (
           <ul data-testid="review-limitations">
-            {review.limitations.map((limitation) => (
+            {resultLimitations.map((limitation) => (
               <li key={limitation}>{limitation}</li>
             ))}
           </ul>
@@ -461,9 +480,9 @@ export function ReviewOperatingPicture({
                     }
                   >
                     <strong>
-                      {candidate.county_name}, {scopeCode}
+                      {reviewDisplayValue(candidate.county_name)}, {scopeCode}
                     </strong>
-                    <small>{candidate.reason_text}</small>
+                    <small>{reviewCandidateExplanation(candidate)}</small>
                   </button>
                 </div>
               ))}
@@ -504,7 +523,8 @@ export function ReviewOperatingPicture({
                 data-fips={gap.county_fips}
                 data-testid="review-data-gap"
               >
-                <strong>FIPS {gap.county_fips}</strong> {gap.code}. {gap.detail}
+                <strong>FIPS {reviewDisplayValue(gap.county_fips)}</strong>{" "}
+                {reviewDisplayValue(gap.code)}. {reviewDisplayValue(gap.detail)}
               </li>
             ))}
           </ul>
