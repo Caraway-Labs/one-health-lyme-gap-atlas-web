@@ -127,13 +127,6 @@ export function unsupportedReviewScopeMessage(scopeCode: string): string {
   return `${name} is not supported — lower 48 only.`;
 }
 
-export function reviewAbstainedOutcomeCopy(count: number): string {
-  if (count === 1) {
-    return "1 county abstained. The review result did not name that county.";
-  }
-  return `${count} counties abstained. The review result did not name those counties.`;
-}
-
 export function reviewMapCounties(input: {
   candidateFips: readonly string[];
   geometryFips: readonly string[];

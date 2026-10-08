@@ -768,6 +768,7 @@ describe("Review operating picture state", () => {
           .textContent ?? "";
       view.unmount();
       return {
+        heading: state.startsWith("Review result"),
         inventedLimited: state.includes("Limited"),
         inventedMaterial: limitations.includes("Material limitation"),
         limitations,
@@ -779,6 +780,7 @@ describe("Review operating picture state", () => {
       withLimitation: read(withLimitation),
     }).toStrictEqual({
       empty: {
+        heading: true,
         inventedLimited: false,
         inventedMaterial: false,
         limitations: expect.stringContaining(
@@ -787,6 +789,7 @@ describe("Review operating picture state", () => {
         state: expect.stringContaining("Nothing stands out"),
       },
       withLimitation: {
+        heading: true,
         inventedLimited: false,
         inventedMaterial: false,
         limitations: expect.stringContaining(
@@ -845,12 +848,16 @@ describe("Review operating picture state", () => {
         within(qualification).getByTestId("evidence-provenance-state")
           .textContent ?? "";
       const codes = screen.getByTestId("review-reason-codes").textContent ?? "";
+      const method =
+        within(qualification).getByTestId("evidence-provenance-method")
+          .textContent ?? "";
       view.unmount();
       return {
         codes,
         limitationsIncludeCode: limitations.includes(reasonCode),
         limitationsIncludeReasonLabel: limitations.includes("Reason code"),
         materialReason: state.includes("Coverage or methodology limits apply"),
+        method,
         state,
       };
     };
@@ -863,6 +870,7 @@ describe("Review operating picture state", () => {
         limitationsIncludeCode: false,
         limitationsIncludeReasonLabel: false,
         materialReason: true,
+        method: "Methodatlas-county-review. Version 1.0.0.",
         state: expect.stringContaining("Limited"),
       },
       withoutCaveat: {
@@ -870,12 +878,13 @@ describe("Review operating picture state", () => {
         limitationsIncludeCode: false,
         limitationsIncludeReasonLabel: false,
         materialReason: false,
+        method: "Methodatlas-county-review. Version 1.0.0.",
         state: "Evidence stateLimited",
       },
     });
   });
 
-  it("shows abstained counties when candidates were found", () => {
+  it("shows the review method on candidate inspect", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -885,34 +894,14 @@ describe("Review operating picture state", () => {
       fips: "08001",
       reasonText: "Denver was returned by the method.",
     });
-    const gap = {
-      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
-      county_fips: "08031",
-      detail: "Environmental context stays a data gap.",
-    };
-    const found = buildStateReview({
-      candidates: [candidate],
-      gaps: [gap],
-      resultState: "candidates_found",
-      state: "CO",
-    });
-    found.coverage.abstained_counties = 1;
-    found.coverage.rule_coverage = {
-      human_emerging: "disabled",
-      pathogen_present_vector_reported: "enabled",
-    };
-    const noneAbstained = buildStateReview({
-      candidates: [candidate],
-      resultState: "candidates_found",
-      state: "CO",
-    });
-    const insufficient = buildStateReview({
-      gaps: [gap],
-      resultState: "insufficient_evidence",
-      state: "CO",
-    });
-    insufficient.coverage.abstained_counties = 2;
-    const read = (review: StateReview) => {
+    const read = (methodologyId: string, methodologyVersion: string) => {
+      const review = buildStateReview({
+        candidates: [candidate],
+        resultState: "candidates_found",
+        state: "CO",
+      });
+      review.methodology_id = methodologyId;
+      review.methodology_version = methodologyVersion;
       const view = render(
         <QueryClientProvider client={client}>
           <ReviewOperatingPicture
@@ -922,54 +911,26 @@ describe("Review operating picture state", () => {
           />
         </QueryClientProvider>
       );
-      const section = screen.queryByTestId("review-abstained-outcomes");
-      const text = section?.textContent ?? "";
-      const rules = section
-        ? [...section.querySelectorAll("li")].map(
-            (item) => item.textContent ?? ""
-          )
-        : [];
-      const snapshot = {
-        candidate: Boolean(screen.queryByTestId("review-candidate")),
-        gap: Boolean(screen.queryByTestId("review-data-gap")),
-        namesCounty: text.includes("Denver") || text.includes("08001"),
-        rules,
-        text,
-      };
+      const qualification = screen.getByTestId("review-preview-qualification");
+      fireEvent.click(within(qualification).getByText("Inspect provenance"));
+      const method =
+        within(qualification).getByTestId("evidence-provenance-method")
+          .textContent ?? "";
       view.unmount();
-      return snapshot;
+      return method;
     };
+    const present = read("atlas-county-review", "1.0.0");
+    const missing = read(" ", "");
     expect({
-      found: read(found),
-      insufficient: read(insufficient),
-      noneAbstained: read(noneAbstained),
+      missing,
+      presentId: present.includes("atlas-county-review"),
+      presentVersion: present.includes("1.0.0"),
+      unavailable: missing.includes("Unavailable"),
     }).toStrictEqual({
-      found: {
-        candidate: true,
-        gap: true,
-        namesCounty: false,
-        rules: [
-          "human_emerging: disabled",
-          "pathogen_present_vector_reported: enabled",
-        ],
-        text: expect.stringContaining(
-          "1 county abstained. The review result did not name that county."
-        ),
-      },
-      insufficient: {
-        candidate: false,
-        gap: true,
-        namesCounty: false,
-        rules: [],
-        text: "",
-      },
-      noneAbstained: {
-        candidate: true,
-        gap: false,
-        namesCounty: false,
-        rules: [],
-        text: "",
-      },
+      missing: "MethodUnavailable",
+      presentId: true,
+      presentVersion: true,
+      unavailable: true,
     });
   });
 });

@@ -111,6 +111,8 @@ function candidateQualification(
         `${candidate.reason_text} ${caveat} Method ${methodologyId} ${methodologyVersion}. ${referenceSummary}`.trim(),
       limitations: caveatParts,
       materialCaveat: caveat,
+      methodLabel: methodologyId.trim() || null,
+      methodVersion: methodologyVersion.trim() || null,
       observationPeriod: GOVERNED_FIELD_UNAVAILABLE,
       referenceLines,
       sourceFamily:

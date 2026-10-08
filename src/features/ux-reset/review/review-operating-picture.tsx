@@ -29,7 +29,6 @@ import {
 } from "@/features/ux-reset/review/review-county-preview";
 import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
-  reviewAbstainedOutcomeCopy,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
@@ -309,6 +308,7 @@ export function ReviewOperatingPicture({
         <div data-testid="review-result-provenance">
           <EvidenceProvenanceInspect
             provenance={reviewResultProvenance(review)}
+            stateHeading="Review result"
             stateLabel={reviewResultStateLabel(review.result_state)}
           />
         </div>
@@ -425,29 +425,6 @@ export function ReviewOperatingPicture({
             </div>
           )}
         </Card>
-        {pictureState === "candidates_found" &&
-        review.coverage.abstained_counties > 0 ? (
-          <section
-            aria-label="Abstained counties"
-            className="ux-reset-review-gaps"
-            data-testid="review-abstained-outcomes"
-          >
-            <h3 className="type-card">Abstained counties</h3>
-            <p className="type-body">
-              {reviewAbstainedOutcomeCopy(review.coverage.abstained_counties)}
-            </p>
-            <p className="type-small">Rule coverage</p>
-            <ul className="ux-reset-review-gap-list">
-              {Object.entries(review.coverage.rule_coverage)
-                .toSorted(([left], [right]) => left.localeCompare(right))
-                .map(([rule, status]) => (
-                  <li key={rule} data-rule={rule} data-status={status}>
-                    {rule}: {status}
-                  </li>
-                ))}
-            </ul>
-          </section>
-        ) : null}
         {preview && handoff ? (
           <ReviewCountyPreviewPanel
             compareHref={handoff.compareHref}

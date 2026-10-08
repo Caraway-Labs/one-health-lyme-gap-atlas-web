@@ -54,6 +54,8 @@ type EvidenceProvenanceInspectProps = {
   className?: string;
   contentSurface?: ContentSurface;
   provenance: EvidenceProvenanceModel;
+  /** Overrides the evidence-state row label. Shared evidence keeps “Evidence state”. */
+  stateHeading?: string;
 } & (
   | {
       availability: EvidenceAvailability;
@@ -136,7 +138,7 @@ export function EvidenceProvenanceInspect(
             <dd>{evidenceInspectMethod(provenance)}</dd>
           </div>
           <div data-testid="evidence-provenance-state">
-            <dt>Evidence state</dt>
+            <dt>{props.stateHeading ?? "Evidence state"}</dt>
             <dd>{evidenceStateText(props)}</dd>
           </div>
         </dl>
