@@ -941,6 +941,66 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("keeps each reference release id when they differ", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const read = (references: ReturnType<typeof reviewEvidenceReference>[]) => {
+      const candidate = {
+        ...reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Denver",
+          fips: "08001",
+          reasonText: "Denver was returned by the method.",
+        }),
+        evidence_references: references,
+      };
+      const review = buildStateReview({
+        candidates: [candidate],
+        resultState: "candidates_found",
+        state: "CO",
+      });
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const qualification = screen.getByTestId("review-preview-qualification");
+      fireEvent.click(within(qualification).getByText("Inspect provenance"));
+      const lines = within(qualification)
+        .getAllByTestId("evidence-provenance-references")
+        .flatMap((list) =>
+          [...list.querySelectorAll("li")].map((item) => item.textContent ?? "")
+        );
+      view.unmount();
+      return lines;
+    };
+    const shared = reviewEvidenceReference("08001");
+    const mixed = read([
+      shared,
+      {
+        ...reviewEvidenceReference("08001", "Reported"),
+        family: "vector",
+        release_id: "beta-2026",
+        source_product: "CDC vector county status",
+      },
+    ]);
+    const blank = read([{ ...shared, release_id: " " }]);
+    expect({
+      blank,
+      first: mixed[0]?.includes("release alpha-2026"),
+      second: mixed[1]?.includes("release beta-2026"),
+    }).toStrictEqual({
+      blank: [expect.stringContaining("release Unavailable")],
+      first: true,
+      second: true,
+    });
+  });
+
   it("shows returned rule coverage without turning rules into counties", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },

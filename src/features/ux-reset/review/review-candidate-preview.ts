@@ -87,7 +87,8 @@ function referenceInspectLine(
   const retrievedLabel = retrieved ? `; retrieved ${retrieved}` : "";
   const record = reference.public_record_ref.trim();
   const recordLabel = record ? `; record ${record}` : "";
-  return `${family} (${product}${revision}${versionLabel}${retrievedLabel}${recordLabel})`;
+  const release = reference.release_id.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  return `${family} (${product}${revision}${versionLabel}${retrievedLabel}${recordLabel}; release ${release})`;
 }
 
 function candidateQualification(
