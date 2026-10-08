@@ -211,30 +211,52 @@ export function reviewCandidateCountyLabel(countyName: string | null): string {
   return countyName ?? REVIEW_FIELD_UNAVAILABLE;
 }
 
+export type ScopedReviewCandidateList = {
+  candidates: ScopedReviewCandidate[];
+  /** Later rows whose FIPS was already kept. They are not a second county. */
+  omittedDuplicateCount: number;
+  /** Blank, malformed, or other-state FIPS. */
+  omittedOutOfScopeCount: number;
+};
+
 /**
  * Candidates the Review UI, Ask Atlas, handoffs, and shell links share.
- * A FIPS that is not five digits in the requested state is omitted.
+ * The first valid FIPS in the requested state is the only record for that
+ * county. Later copies and out-of-scope FIPS are counted, not published.
  */
 export function scopedReviewCandidates(
   candidates: readonly Candidate[],
   scopeCode: string
-): ScopedReviewCandidate[] {
+): ScopedReviewCandidateList {
   const scoped: ScopedReviewCandidate[] = [];
+  const seen = new Set<string>();
+  let omittedDuplicateCount = 0;
+  let omittedOutOfScopeCount = 0;
   for (const candidate of candidates) {
     const countyFips = reviewCandidateFipsForScope(
       candidate.county_fips,
       scopeCode
     );
     if (!countyFips) {
+      omittedOutOfScopeCount += 1;
       continue;
     }
+    if (seen.has(countyFips)) {
+      omittedDuplicateCount += 1;
+      continue;
+    }
+    seen.add(countyFips);
     scoped.push({
       candidate: { ...candidate, county_fips: countyFips },
       countyFips,
       countyName: reviewCountyName(candidate.county_name),
     });
   }
-  return scoped;
+  return {
+    candidates: scoped,
+    omittedDuplicateCount,
+    omittedOutOfScopeCount,
+  };
 }
 
 export function reviewMapCounties(input: {

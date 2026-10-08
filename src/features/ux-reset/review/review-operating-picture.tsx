@@ -198,12 +198,13 @@ export function ReviewOperatingPicture({
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
 }: ReviewOperatingPictureProps) {
-  const candidates = useMemo(
+  const scopedCandidates = useMemo(
     () => scopedReviewCandidates(review.review_candidates, scopeCode),
     [review.review_candidates, scopeCode]
   );
-  const omittedCandidateCount =
-    review.review_candidates.length - candidates.length;
+  const candidates = scopedCandidates.candidates;
+  const omittedDuplicateCount = scopedCandidates.omittedDuplicateCount;
+  const omittedOutOfScopeCount = scopedCandidates.omittedOutOfScopeCount;
   const candidateFips = useMemo(
     () => new Set(candidates.map((entry) => entry.countyFips)),
     [candidates]
@@ -358,6 +359,10 @@ export function ReviewOperatingPicture({
 
   const geometryError = Boolean(geometryQuery.isError);
   const geometryReady = Boolean(geometryQuery.data);
+  // A disabled geometry query stays pending in React Query v5. An unusable
+  // release never starts that request, so it is unavailable rather than loading.
+  const geometryUnavailable = !releaseId;
+  const geometryPending = Boolean(releaseId) && geometryQuery.isPending;
   const hasMapCounties = mapCounties.length > 0;
   const gapModel =
     review.data_gaps.length > 0 ? gapEvidenceModel(review) : null;
@@ -467,7 +472,18 @@ export function ReviewOperatingPicture({
                 inspect the same review result.
               </p>
             </AtlasStatusMessage>
-          ) : !hasMapCounties && !geometryQuery.isPending ? (
+          ) : geometryUnavailable ? (
+            <AtlasStatusMessage
+              className="map-loading"
+              data-testid="review-state-map-unavailable"
+              tone="empty"
+            >
+              <p data-testid="review-state-map-unavailable">
+                The map is unavailable. This result did not include a release
+                Atlas can request.
+              </p>
+            </AtlasStatusMessage>
+          ) : !hasMapCounties && !geometryPending ? (
             <AtlasStatusMessage
               className="map-loading"
               data-testid="review-state-map-empty"
@@ -499,14 +515,26 @@ export function ReviewOperatingPicture({
             headingLevel="h3"
             title="Counties to inspect"
           />
-          {omittedCandidateCount > 0 ? (
+          {omittedOutOfScopeCount > 0 ? (
             <p className="type-body" data-testid="review-omitted-candidates">
-              {omittedCandidateCount === 1
+              {omittedOutOfScopeCount === 1
                 ? `1 candidate was omitted because its county FIPS is not in ${stateName}.`
-                : `${omittedCandidateCount} candidates were omitted because their county FIPS is not in ${stateName}.`}
+                : `${omittedOutOfScopeCount} candidates were omitted because their county FIPS is not in ${stateName}.`}
             </p>
           ) : null}
-          {candidates.length === 0 && omittedCandidateCount === 0 ? (
+          {omittedDuplicateCount > 0 ? (
+            <p
+              className="type-body"
+              data-testid="review-omitted-duplicate-candidates"
+            >
+              {omittedDuplicateCount === 1
+                ? "1 candidate was omitted because its county FIPS was already listed."
+                : `${omittedDuplicateCount} candidates were omitted because their county FIPS was already listed.`}
+            </p>
+          ) : null}
+          {candidates.length === 0 &&
+          omittedOutOfScopeCount === 0 &&
+          omittedDuplicateCount === 0 ? (
             <p data-testid="review-no-candidates">
               No counties were returned in review candidates.
             </p>

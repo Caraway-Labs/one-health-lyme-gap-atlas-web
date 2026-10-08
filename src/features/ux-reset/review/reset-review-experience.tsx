@@ -109,13 +109,14 @@ function ResetReviewExperienceInner() {
     stateOptions.find((option) => option.code === scope)?.name ?? scope;
   const reviewIdentities =
     reviewReady && stateReview.review
-      ? scopedReviewCandidates(stateReview.review.review_candidates, scope).map(
-          (candidate) => ({
-            county: candidate.countyName,
-            fips: candidate.countyFips,
-            state_name: stateName,
-          })
-        )
+      ? scopedReviewCandidates(
+          stateReview.review.review_candidates,
+          scope
+        ).candidates.map((candidate) => ({
+          county: candidate.countyName,
+          fips: candidate.countyFips,
+          state_name: stateName,
+        }))
       : [];
   usePublishAskAtlasInheritedContext(
     inheritedContextFromReview({

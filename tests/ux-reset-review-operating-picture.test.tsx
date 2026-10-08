@@ -655,6 +655,176 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("treats an unusable review release as unavailable instead of a loading map", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const reviewFor = (release: string) => {
+      const review = buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Denver",
+            fips: "08001",
+            reasonText: "Denver was returned by the method.",
+          }),
+        ],
+        resultState: "candidates_found",
+        state: "CO",
+      });
+      review.data_release_version = release;
+      return review;
+    };
+    const read = () => {
+      const investigate =
+        screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      const compare =
+        screen.getByTestId("review-compare").getAttribute("href") ?? "";
+      const regionText = (
+        screen.getByTestId("review-state-map-region").textContent ?? ""
+      ).replaceAll(/\s+/g, " ");
+      return {
+        compareDataset: new URL(compare, "http://localhost").searchParams.get(
+          "dataset"
+        ),
+        county: new URL(investigate, "http://localhost").searchParams.get(
+          "county"
+        ),
+        investigateDataset: new URL(
+          investigate,
+          "http://localhost"
+        ).searchParams.get("dataset"),
+        loading: regionText.includes("Loading map"),
+        map: Boolean(screen.queryByTestId("mock-atlas-map")),
+        releaseLabel: (
+          screen.getByTestId("review-methodology").textContent ?? ""
+        ).replaceAll(/\s+/g, " "),
+        unavailable: regionText.includes(
+          "The map is unavailable. This result did not include a release Atlas can request."
+        ),
+      };
+    };
+    const valid = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={reviewFor("alpha-2026")}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      if (!screen.queryByTestId("mock-atlas-map")) {
+        throw new Error("map did not leave the loading state");
+      }
+    });
+    const usable = read();
+    valid.unmount();
+    const invalid = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={reviewFor("bad release")}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const unusable = read();
+    invalid.unmount();
+    expect({ unusable, usable }).toStrictEqual({
+      unusable: {
+        compareDataset: null,
+        county: "08001",
+        investigateDataset: null,
+        loading: false,
+        map: false,
+        releaseLabel: expect.stringContaining("Release Unavailable"),
+        unavailable: true,
+      },
+      usable: {
+        compareDataset: "alpha-2026",
+        county: "08001",
+        investigateDataset: "alpha-2026",
+        loading: false,
+        map: true,
+        releaseLabel: expect.stringContaining("Release alpha-2026"),
+        unavailable: false,
+      },
+    });
+  });
+
+  it("keeps the first candidate when a county FIPS is repeated", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Adams",
+                fips: "08001",
+                reasonText: "Adams was returned first.",
+              }),
+              reviewCandidate({
+                caveat: "A later copy is not a second county.",
+                countyName: "Denver",
+                fips: " 08001 ",
+                reasonText: "Denver was returned second.",
+              }),
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Boulder",
+                fips: "08013",
+                reasonText: "Boulder was returned once.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const rows = screen.getAllByTestId("review-candidate").map((row) => ({
+      fips: row.dataset.fips ?? "",
+      name: row.textContent?.includes("Adams, CO")
+        ? "Adams"
+        : row.textContent?.includes("Boulder, CO")
+          ? "Boulder"
+          : "other",
+    }));
+    const investigate =
+      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+    const snapshot = {
+      county: new URL(investigate, "http://localhost").searchParams.get(
+        "county"
+      ),
+      duplicateNote: screen.getByTestId("review-omitted-duplicate-candidates")
+        .textContent,
+      outOfScope: screen.queryByTestId("review-omitted-candidates"),
+      preview: screen.getByTestId("review-preview-why").textContent,
+      rows,
+      secondReason: screen.queryByText("Denver was returned second."),
+    };
+    view.unmount();
+    expect(snapshot).toStrictEqual({
+      county: "08001",
+      duplicateNote:
+        "1 candidate was omitted because its county FIPS was already listed.",
+      outOfScope: null,
+      preview: "Adams was returned first.",
+      rows: [
+        { fips: "08001", name: "Adams" },
+        { fips: "08013", name: "Boulder" },
+      ],
+      secondReason: null,
+    });
+  });
+
   it("clears the URL county when every candidate FIPS is out of scope", async () => {
     const onCountyChange =
       vi.fn<(fips: string | null, history: "push" | "replace") => void>();
