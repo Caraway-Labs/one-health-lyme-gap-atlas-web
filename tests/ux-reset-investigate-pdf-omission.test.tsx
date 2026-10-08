@@ -101,7 +101,8 @@ describe("Investigate PDF omission wording", () => {
     render(
       <InvestigatePdfExport context={investigatePdfContext(bundle, null)} />
     );
-    const omitted = screen.getByTestId("investigate-pdf-omitted").textContent ?? "";
+    const omitted =
+      screen.getByTestId("investigate-pdf-omitted").textContent ?? "";
     expect({
       button: screen.queryByRole("button", { name: "Export PDF" }),
       daily: omitted.includes(
@@ -128,7 +129,8 @@ describe("Investigate PDF omission wording", () => {
     render(
       <InvestigatePdfExport context={investigatePdfContext(bundle, null)} />
     );
-    const omitted = screen.getByTestId("investigate-pdf-omitted").textContent ?? "";
+    const omitted =
+      screen.getByTestId("investigate-pdf-omitted").textContent ?? "";
     expect({
       emptyReason: omitted.includes(
         "empty-cases. No observations were returned for this county and selected period."
