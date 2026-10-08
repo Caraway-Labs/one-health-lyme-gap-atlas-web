@@ -45,6 +45,7 @@ import {
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
+  reviewResultPayloadConsistent,
   reviewResultStateLabel,
   scopedReviewCandidates,
 } from "@/features/ux-reset/review/review-operating-state";
@@ -202,20 +203,38 @@ export function ReviewOperatingPicture({
     () => scopedReviewCandidates(review.review_candidates, scopeCode),
     [review.review_candidates, scopeCode]
   );
-  const candidates = scopedCandidates.candidates;
-  const omittedDuplicateCount = scopedCandidates.omittedDuplicateCount;
-  const omittedOutOfScopeCount = scopedCandidates.omittedOutOfScopeCount;
+  const resultState = isGovernedReviewResultState(review.result_state)
+    ? review.result_state
+    : null;
+  const payloadConsistent =
+    resultState !== null &&
+    reviewResultPayloadConsistent({
+      data_gaps: review.data_gaps,
+      result_state: resultState,
+      review_candidates: review.review_candidates,
+    });
+  const authoritativeResultState = payloadConsistent ? resultState : null;
+  // An ungoverned state still shows returned rows. A governed state that
+  // contradicts its candidate list publishes none of them.
+  const suppressCandidates = resultState !== null && !payloadConsistent;
+  const candidates = useMemo(
+    () => (suppressCandidates ? [] : scopedCandidates.candidates),
+    [scopedCandidates.candidates, suppressCandidates]
+  );
+  const omittedDuplicateCount = suppressCandidates
+    ? 0
+    : scopedCandidates.omittedDuplicateCount;
+  const omittedOutOfScopeCount = suppressCandidates
+    ? 0
+    : scopedCandidates.omittedOutOfScopeCount;
   const candidateFips = useMemo(
     () => new Set(candidates.map((entry) => entry.countyFips)),
     [candidates]
   );
-  const resultState = isGovernedReviewResultState(review.result_state)
-    ? review.result_state
-    : null;
-  const pictureState = resultState
+  const pictureState = authoritativeResultState
     ? reviewPictureState({
         data_gaps: review.data_gaps,
-        result_state: resultState,
+        result_state: authoritativeResultState,
         review_candidates: review.review_candidates,
       })
     : null;
@@ -399,16 +418,16 @@ export function ReviewOperatingPicture({
             provenance={reviewResultProvenance(review)}
             stateHeading="Review result"
             stateLabel={
-              resultState
-                ? reviewResultStateLabel(resultState)
+              authoritativeResultState
+                ? reviewResultStateLabel(authoritativeResultState)
                 : REVIEW_FIELD_UNAVAILABLE
             }
           />
         </div>
         <p data-testid="review-backend-result">
           Backend result:{" "}
-          {resultState
-            ? reviewResultStateLabel(resultState)
+          {authoritativeResultState
+            ? reviewResultStateLabel(authoritativeResultState)
             : REVIEW_FIELD_UNAVAILABLE}
           . {review.coverage.assessed_counties} assessed,{" "}
           {review.coverage.eligible_counties} eligible,{" "}
@@ -532,7 +551,8 @@ export function ReviewOperatingPicture({
                 : `${omittedDuplicateCount} candidates were omitted because their county FIPS was already listed.`}
             </p>
           ) : null}
-          {candidates.length === 0 &&
+          {!suppressCandidates &&
+          candidates.length === 0 &&
           omittedOutOfScopeCount === 0 &&
           omittedDuplicateCount === 0 ? (
             <p data-testid="review-no-candidates">

@@ -12,10 +12,12 @@ import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-valu
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
+  isGovernedReviewResultState,
   isUnsupportedReviewScope,
   normalizeReviewCounty,
   REVIEW_REQUEST_FAILURE_MESSAGE,
   reviewCandidateFipsForScope,
+  reviewResultPayloadConsistent,
   scopedReviewCandidates,
   unsupportedReviewScopeMessage,
 } from "@/features/ux-reset/review/review-operating-state";
@@ -107,10 +109,17 @@ function ResetReviewExperienceInner() {
   const nationalReady = scope === "ALL" && Boolean(presentationQuery.metadata);
   const stateName =
     stateOptions.find((option) => option.code === scope)?.name ?? scope;
+  const reviewRecord = stateReview.review;
+  const candidatesAreFindings = Boolean(
+    reviewRecord &&
+    isGovernedReviewResultState(reviewRecord.result_state) &&
+    reviewResultPayloadConsistent(reviewRecord) &&
+    reviewRecord.result_state === "candidates_found"
+  );
   const reviewIdentities =
-    reviewReady && stateReview.review
+    reviewReady && reviewRecord && candidatesAreFindings
       ? scopedReviewCandidates(
-          stateReview.review.review_candidates,
+          reviewRecord.review_candidates,
           scope
         ).candidates.map((candidate) => ({
           county: candidate.countyName,

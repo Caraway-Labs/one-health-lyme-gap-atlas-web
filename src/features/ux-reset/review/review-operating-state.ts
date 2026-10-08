@@ -24,6 +24,32 @@ type ReviewPictureInput = Pick<
 >;
 
 /**
+ * Methodology precedence: one or more candidates means `candidates_found`.
+ * Data gaps may accompany any state, including a mixed `candidates_found`
+ * result. Any other pairing is not a finding.
+ */
+export function reviewResultPayloadConsistent(
+  review: ReviewPictureInput
+): boolean {
+  const hasCandidates = review.review_candidates.length > 0;
+  switch (review.result_state) {
+    case "candidates_found": {
+      return hasCandidates;
+    }
+    case "insufficient_evidence":
+    case "none_stand_out":
+    case "unsupported": {
+      return !hasCandidates;
+    }
+    default: {
+      const exhaustive: never = review.result_state;
+      void exhaustive;
+      return false;
+    }
+  }
+}
+
+/**
  * Headline for a successful review response.
  * Data-gap-only is the unsupported result that lists gaps and no candidates.
  * Other backend states stay distinct, including when gaps are also present.

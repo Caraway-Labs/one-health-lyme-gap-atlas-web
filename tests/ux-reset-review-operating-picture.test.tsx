@@ -587,6 +587,168 @@ describe("Review operating picture state", () => {
     ]);
   });
 
+  it("does not publish a county when the result state contradicts its candidates", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "08031",
+      detail: "Environmental context stays a data gap.",
+    };
+    const adams = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Adams",
+      fips: "08001",
+      reasonText: "Adams was returned by the method.",
+    });
+    const mismatches = [
+      {
+        name: "noneStandOut",
+        review: buildStateReview({
+          candidates: [adams],
+          resultState: "none_stand_out",
+          state: "CO",
+        }),
+      },
+      {
+        name: "insufficient",
+        review: buildStateReview({
+          candidates: [adams],
+          gaps: [gap],
+          resultState: "insufficient_evidence",
+          state: "CO",
+        }),
+      },
+      {
+        name: "unsupported",
+        review: buildStateReview({
+          candidates: [adams],
+          gaps: [gap],
+          resultState: "unsupported",
+          state: "CO",
+        }),
+      },
+      {
+        name: "emptyFound",
+        review: buildStateReview({
+          resultState: "candidates_found",
+          state: "CO",
+        }),
+      },
+      {
+        name: "emptyFoundWithGaps",
+        review: buildStateReview({
+          gaps: [gap],
+          resultState: "candidates_found",
+          state: "CO",
+        }),
+      },
+    ] as const;
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const readMismatch = async (review: StateReview) => {
+      onCountyChange.mockClear();
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            county="08001"
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+            onCountyChange={onCountyChange}
+          />
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        if (onCountyChange.mock.calls[0]?.[0] !== null) {
+          throw new Error("county was still published");
+        }
+      });
+      const summary =
+        screen.getByTestId("review-result-summary").textContent ?? "";
+      const backend =
+        screen.getByTestId("review-backend-result").textContent ?? "";
+      const publishedCall = onCountyChange.mock.calls[0];
+      const snapshot = {
+        backendClaimsFinding:
+          backend.includes("Nothing stands out") ||
+          backend.includes("Candidates found"),
+        candidate: screen.queryByTestId("review-candidate"),
+        compare: screen.queryByTestId("review-compare"),
+        investigate: screen.queryByTestId("review-investigate"),
+        published: publishedCall ? publishedCall[0] : "missing",
+        resultState:
+          screen.getByTestId("review-state-panel").dataset.resultState,
+        summary,
+      };
+      view.unmount();
+      return snapshot;
+    };
+    const rejected = [];
+    for (const entry of mismatches) {
+      rejected.push({
+        ...(await readMismatch(entry.review)),
+        name: entry.name,
+      });
+    }
+    onCountyChange.mockClear();
+    const keptView = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          county="08001"
+          review={buildStateReview({
+            candidates: [adams],
+            gaps: [gap],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          onCountyChange={onCountyChange}
+        />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      if (!screen.queryByTestId("review-candidate")) {
+        throw new Error("consistent candidate was not shown");
+      }
+    });
+    const kept = {
+      candidate: screen.getByTestId("review-candidate").textContent,
+      investigate: screen
+        .getByTestId("review-investigate")
+        .getAttribute("href"),
+      published: onCountyChange.mock.calls.length,
+      resultState: screen.getByTestId("review-state-panel").dataset.resultState,
+    };
+    keptView.unmount();
+    const unavailable = {
+      backendClaimsFinding: false,
+      candidate: null,
+      compare: null,
+      investigate: null,
+      published: null,
+      resultState: "unavailable",
+      summary: "Unavailable",
+    };
+    expect({ kept, rejected }).toStrictEqual({
+      kept: {
+        candidate: expect.stringContaining("Adams, CO"),
+        investigate: expect.stringContaining("county=08001"),
+        published: 0,
+        resultState: "candidates_found",
+      },
+      rejected: [
+        { ...unavailable, name: "noneStandOut" },
+        { ...unavailable, name: "insufficient" },
+        { ...unavailable, name: "unsupported" },
+        { ...unavailable, name: "emptyFound" },
+        { ...unavailable, name: "emptyFoundWithGaps" },
+      ],
+    });
+  });
+
   it("omits candidate FIPS that are not in the requested state", async () => {
     const onCountyChange =
       vi.fn<(fips: string | null, history: "push" | "replace") => void>();
