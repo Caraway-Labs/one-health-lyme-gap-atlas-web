@@ -232,13 +232,17 @@ describe("compare pair contract", () => {
     );
     expect({
       compareCounty: clearedCompareHref.get("county"),
+      compareDataset: clearedCompareHref.get("dataset"),
       compareList: clearedCompareHref.get("compare"),
+      compareScope: clearedCompareHref.get("scope"),
       investigateCompare: investigateHref.get("compare"),
       investigateCounty: investigateHref.get("county"),
       investigateScope: investigateHref.get("scope"),
     }).toStrictEqual({
-      compareCounty: null,
+      compareCounty: "08001",
+      compareDataset: "alpha-2026",
       compareList: null,
+      compareScope: "CO",
       investigateCompare: null,
       investigateCounty: null,
       investigateScope: "CO",

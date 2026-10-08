@@ -710,6 +710,414 @@ describe("Reset Review scope UI", () => {
     }
   });
 
+  it("normalizes mismatched counties on direct loads and scope changes before shell links publish", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    let mode: "empty" | "fail" | "hold" | "ok" = "ok";
+    const origin =
+      "scope=CO&county=08001&compare=08001,08013&dataset=alpha-2026&period=2023-01-01";
+    const mismatched =
+      "scope=NY&county=08001&compare=08001,08013&dataset=alpha-2026&period=2023-01-01";
+    const matched =
+      "scope=NY&county=36001&compare=36001,36003&dataset=alpha-2026&period=2023-01-01";
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string },
+      init?: { signal?: AbortSignal }
+    ) => {
+      if (mode === "fail") {
+        return Promise.reject(new Error("service unavailable"));
+      }
+      if (mode === "empty") {
+        return Promise.resolve({
+          data: buildStateReview({
+            resultState: "none_stand_out",
+            state,
+          }),
+          status: 200,
+        });
+      }
+      if (mode === "hold") {
+        const held = Promise.withResolvers<never>();
+        const abort = () => {
+          held.reject(
+            new DOMException("The operation was aborted.", "AbortError")
+          );
+        };
+        if (init?.signal?.aborted) {
+          abort();
+        } else {
+          init?.signal?.addEventListener("abort", abort, { once: true });
+        }
+        return held.promise;
+      }
+      return Promise.resolve(defaultStateReviewResponse(state, params));
+    }) as never);
+
+    function shellCounty() {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href =
+        navigation
+          .querySelector('a[aria-label="Investigate"]')
+          ?.getAttribute("href") ?? "";
+      const params = new URL(href, "http://localhost").searchParams;
+      return {
+        compare: params.get("compare"),
+        county: params.get("county"),
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: params.get("scope"),
+        urlCompare: mockedSearch.includes("compare="),
+        urlCounty: mockedSearch.includes("county="),
+      };
+    }
+
+    function ScopeJump({ scope }: { scope: string }) {
+      const [, setUrlState] = useQueryStates(reviewSearchParams, {
+        history: "push",
+      });
+      return (
+        <button
+          data-testid="jump-review-scope"
+          type="button"
+          onClick={() => {
+            void setUrlState({ scope });
+          }}
+        >
+          Jump scope
+        </button>
+      );
+    }
+
+    function ReviewEntry({
+      client,
+      jumpTo,
+      search,
+    }: {
+      client: QueryClient;
+      jumpTo?: string;
+      search: string;
+    }) {
+      const [, setSearchTick] = useState(0);
+      return (
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => {
+              mockedSearch = queryString.replace(/^\?/, "");
+              setSearchTick((tick) => tick + 1);
+            }}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+            {jumpTo ? <ScopeJump scope={jumpTo} /> : null}
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+    }
+
+    function mount(search: string, jumpTo?: string) {
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      mockedSearch = search;
+      const view = render(
+        <ReviewEntry client={client} jumpTo={jumpTo} search={search} />
+      );
+      return { client, view };
+    }
+
+    async function until(ready: () => boolean) {
+      await waitFor(() => {
+        if (!ready()) {
+          throw new Error(mockedSearch);
+        }
+      });
+      return shellCounty();
+    }
+
+    async function changeScope(nextMode: typeof mode, jumpTo?: string) {
+      mode = "ok";
+      const { client, view } = mount(origin, jumpTo);
+      try {
+        await until(() => {
+          const selected = screen
+            .queryAllByTestId("review-candidate")
+            .find((entry) => entry.getAttribute("aria-current") === "true");
+          return selected?.dataset.fips === "08001";
+        });
+        mode = nextMode;
+        if (jumpTo) {
+          fireEvent.click(screen.getByTestId("jump-review-scope"));
+        } else {
+          fireEvent.click(screen.getByTestId("review-scope-select"));
+          const newYork = await screen.findByRole("option", {
+            name: "New York (NY)",
+          });
+          fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+          fireEvent.click(newYork);
+        }
+        return { client, view };
+      } catch (error) {
+        view.unmount();
+        throw error;
+      }
+    }
+
+    try {
+      mode = "hold";
+      const loadingView = mount(mismatched);
+      const directLoading = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().urlCompare === true &&
+          Boolean(screen.queryByText("Loading review results…"))
+      );
+      loadingView.view.unmount();
+      const matchedLoadingView = mount(matched);
+      const directMatchedLoading = await until(
+        () =>
+          shellCounty().county === "36001" &&
+          shellCounty().urlCounty === true &&
+          Boolean(screen.queryByText("Loading review results…"))
+      );
+      matchedLoadingView.view.unmount();
+
+      const abortDirect = mount(mismatched);
+      await until(() => Boolean(screen.queryByText("Loading review results…")));
+      await abortDirect.client.cancelQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const directAborted = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().picture === false
+      );
+      abortDirect.view.unmount();
+
+      mode = "fail";
+      const failedView = mount(mismatched);
+      const directFailed = await until(
+        () =>
+          shellCounty().county === null &&
+          Boolean(screen.queryByText(/temporarily unavailable/))
+      );
+      failedView.view.unmount();
+      const matchedFailedView = mount(matched);
+      const directMatchedFailed = await until(
+        () =>
+          shellCounty().county === "36001" &&
+          shellCounty().urlCounty === true &&
+          Boolean(screen.queryByText(/temporarily unavailable/))
+      );
+      matchedFailedView.view.unmount();
+
+      mode = "empty";
+      const emptyView = mount(mismatched);
+      const directEmpty = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          Boolean(screen.queryByTestId("review-result-summary"))
+      );
+      emptyView.view.unmount();
+
+      mode = "ok";
+      review.mockClear();
+      const unsupportedView = mount(
+        "scope=PR&county=08001&compare=08001,08013&dataset=alpha-2026&period=2023-01-01"
+      );
+      const directUnsupported = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().compare === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().urlCompare === false &&
+          Boolean(screen.queryByTestId("review-scope-unsupported"))
+      );
+      const unsupportedReviewCalls = review.mock.calls.length;
+      unsupportedView.view.unmount();
+
+      const loadingChange = await changeScope("hold");
+      const changedLoading = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().compare === "08001,08013" &&
+          shellCounty().urlCounty === false &&
+          Boolean(screen.queryByText("Loading review results…"))
+      );
+      await loadingChange.client.cancelQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const changedAborted = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().picture === false
+      );
+      loadingChange.view.unmount();
+
+      const failedChange = await changeScope("fail");
+      const changedFailed = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().compare === "08001,08013" &&
+          Boolean(screen.queryByText(/temporarily unavailable/))
+      );
+      failedChange.view.unmount();
+
+      const emptyChange = await changeScope("empty");
+      const changedEmpty = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          Boolean(screen.queryByTestId("review-result-summary"))
+      );
+      emptyChange.view.unmount();
+
+      const unsupportedChange = await changeScope("ok", "AK");
+      const changedUnsupported = await until(
+        () =>
+          shellCounty().scope === "AK" &&
+          shellCounty().county === null &&
+          shellCounty().compare === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().urlCompare === false &&
+          Boolean(screen.queryByTestId("review-scope-unsupported"))
+      );
+      unsupportedChange.view.unmount();
+
+      expect({
+        changedAborted,
+        changedEmpty,
+        changedFailed,
+        changedLoading,
+        changedUnsupported,
+        directAborted,
+        directEmpty,
+        directFailed,
+        directLoading,
+        directMatchedFailed,
+        directMatchedLoading,
+        directUnsupported,
+        unsupportedReviewCalls,
+      }).toStrictEqual({
+        changedAborted: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedEmpty: {
+          compare: "08001,08013",
+          county: null,
+          picture: true,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedFailed: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedLoading: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedUnsupported: {
+          compare: null,
+          county: null,
+          picture: false,
+          scope: "AK",
+          urlCompare: false,
+          urlCounty: false,
+        },
+        directAborted: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directEmpty: {
+          compare: "08001,08013",
+          county: null,
+          picture: true,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directFailed: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directLoading: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directMatchedFailed: {
+          compare: "36001,36003",
+          county: "36001",
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: true,
+        },
+        directMatchedLoading: {
+          compare: "36001,36003",
+          county: "36001",
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: true,
+        },
+        directUnsupported: {
+          compare: null,
+          county: null,
+          picture: false,
+          scope: "PR",
+          urlCompare: false,
+          urlCounty: false,
+        },
+        unsupportedReviewCalls: 0,
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
   it("renders national orientation for United States scope", async () => {
     renderReview();
     await waitFor(() =>

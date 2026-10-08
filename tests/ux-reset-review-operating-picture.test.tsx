@@ -16,6 +16,7 @@ import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-st
 import { buildReviewCandidatePreview } from "@/features/ux-reset/review/review-candidate-preview";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
+  normalizeReviewCounty,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
@@ -118,6 +119,28 @@ describe("Review operating picture state", () => {
       none: "none_stand_out",
       noneSummary: expect.stringContaining("Nothing stands out"),
       unsupported: "unsupported",
+    });
+  });
+
+  it("keeps a review county only when its prefix matches a lower-48 scope", () => {
+    expect({
+      all: normalizeReviewCounty("ALL", "08001"),
+      blank: normalizeReviewCounty("CO", null),
+      dcMatch: normalizeReviewCounty("DC", "11001"),
+      dcMismatch: normalizeReviewCounty("DC", "08001"),
+      match: normalizeReviewCounty("NY", "36001"),
+      mismatch: normalizeReviewCounty("NY", "08001"),
+      trimmed: normalizeReviewCounty("NY", " 36001 "),
+      unsupported: normalizeReviewCounty("PR", "08001"),
+    }).toStrictEqual({
+      all: "08001",
+      blank: null,
+      dcMatch: "11001",
+      dcMismatch: null,
+      match: "36001",
+      mismatch: null,
+      trimmed: "36001",
+      unsupported: null,
     });
   });
 

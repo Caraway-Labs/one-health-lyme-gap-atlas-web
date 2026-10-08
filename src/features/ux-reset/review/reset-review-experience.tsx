@@ -13,6 +13,7 @@ import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-nat
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
   isUnsupportedReviewScope,
+  normalizeReviewCounty,
   REVIEW_REQUEST_FAILURE_MESSAGE,
   reviewCandidateFipsForScope,
   unsupportedReviewScopeMessage,
@@ -39,6 +40,7 @@ function ResetReviewExperienceInner() {
     shallow: true,
   });
   const scope = urlState.scope;
+  const reviewCounty = normalizeReviewCounty(scope, urlState.county);
   const profileQuery = useProfileDefaultJurisdiction();
 
   const scopeUnsupported = isUnsupportedReviewScope(scope);
@@ -73,9 +75,7 @@ function ResetReviewExperienceInner() {
       if (nextScope === scope) {
         return;
       }
-      // The previous county belongs to the scope being left. Clear it with
-      // the transition so loading, failure, and abort cannot publish it.
-      void setUrlState({ county: null, scope: nextScope });
+      void setUrlState({ scope: nextScope });
     },
     [scope, setUrlState]
   );
@@ -133,18 +133,24 @@ function ResetReviewExperienceInner() {
           ? (presentationQuery.metadata?.release_id ?? null)
           : reviewDatasetId(stateReview.review?.data_release_version),
       releaseReady: scope === "ALL" ? nationalReady : reviewReady,
-      requestedCounty: scopeUnsupported ? null : urlState.county,
+      requestedCounty: reviewCounty,
     })
   );
+  const pictureActive = Boolean(reviewReady && stateReview.review);
+  const clearCounty = urlState.county !== reviewCounty;
+  const clearCompare = scopeUnsupported && urlState.compare.length > 0;
   useLayoutEffect(() => {
-    if (
-      !scopeUnsupported ||
-      (urlState.county === null && urlState.compare.length === 0)
-    ) {
+    if (!(clearCounty || clearCompare)) {
       return;
     }
-    void setUrlState({ compare: null, county: null }, { history: "replace" });
-  }, [scopeUnsupported, setUrlState, urlState.compare, urlState.county]);
+    void setUrlState(
+      {
+        ...(clearCompare ? { compare: null } : {}),
+        ...(clearCounty ? { county: reviewCounty } : {}),
+      },
+      { history: "replace" }
+    );
+  }, [clearCompare, clearCounty, reviewCounty, setUrlState]);
   const scopeLabel = reviewScopeLabel(scope, stateOptions);
   const renderedScope = nationalReady ? "ALL" : scope;
   const metadataLoading =
@@ -192,21 +198,22 @@ function ResetReviewExperienceInner() {
       ) : null}
 
       {presentationQuery.metadataIsError &&
-      urlState.county &&
+      reviewCounty &&
       !reviewReady &&
       !scopeUnsupported ? (
         <Tier1SurveillancePriority
-          fips={urlState.county}
+          fips={reviewCounty}
           headingLevel="h2"
           release={tierRelease}
         />
       ) : null}
 
-      {scopeUnsupported ? (
-        <UnsupportedReviewScopeNotice
+      {scopeUnsupported ? <UnsupportedReviewScopeNotice scope={scope} /> : null}
+      {scopeUnsupported || (!pictureActive && clearCounty) ? (
+        <ReviewUrlContextPublisher
+          clearCompare={scopeUnsupported}
           dataset={urlState.dataset}
           period={urlState.period}
-          scope={scope}
         />
       ) : null}
 
@@ -237,7 +244,7 @@ function ResetReviewExperienceInner() {
           ) : null}
           {reviewReady && stateReview.review ? (
             <ReviewOperatingPicture
-              county={urlState.county}
+              county={reviewCounty}
               period={urlState.period}
               review={stateReview.review}
               scopeCode={scope}
@@ -252,21 +259,33 @@ function ResetReviewExperienceInner() {
   );
 }
 
-function UnsupportedReviewScopeNotice({
+function ReviewUrlContextPublisher({
+  clearCompare,
   dataset,
   period,
-  scope,
 }: {
+  clearCompare: boolean;
   dataset: string | null;
   period: string | null;
-  scope: string;
 }) {
-  usePublishExploreCommittedNavigation({
-    county: null,
-    compare: [],
-    dataset,
-    period,
-  });
+  usePublishExploreCommittedNavigation(
+    clearCompare
+      ? {
+          county: null,
+          compare: [],
+          dataset,
+          period,
+        }
+      : {
+          county: null,
+          dataset,
+          period,
+        }
+  );
+  return null;
+}
+
+function UnsupportedReviewScopeNotice({ scope }: { scope: string }) {
   return (
     <AtlasStatusMessage tone="empty">
       <p data-testid="review-scope-unsupported">

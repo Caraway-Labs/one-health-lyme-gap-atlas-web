@@ -157,6 +157,24 @@ const REVIEW_COUNTY_FIPS_PATTERN = /^\d{5}$/;
  * County geography for URL and shell links. Five digits, and the FIPS prefix
  * for the requested state. A blank, malformed, or other-state value is omitted.
  */
+/**
+ * Review URL county after one normalization. Unsupported scopes drop it.
+ * A lower-48 or DC scope keeps it only when the FIPS prefix matches.
+ * National scope is not a state prefix check.
+ */
+export function normalizeReviewCounty(
+  scopeCode: string,
+  county: string | null
+): string | null {
+  if (county === null || isUnsupportedReviewScope(scopeCode)) {
+    return null;
+  }
+  if (!isLower48ReviewScope(scopeCode)) {
+    return county;
+  }
+  return reviewCandidateFipsForScope(county, scopeCode);
+}
+
 export function reviewCandidateFipsForScope(
   fips: string,
   scopeCode: string
