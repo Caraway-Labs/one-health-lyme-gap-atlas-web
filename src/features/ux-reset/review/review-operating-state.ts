@@ -285,22 +285,28 @@ export function scopedReviewCandidates(
   };
 }
 
+/**
+ * Counties the map can draw. Only display-geometry features in the requested
+ * lower-48 or DC state count. Candidate FIPS are not polygons and do not
+ * frame Alaska, Hawaii, or a state the geometry collection omitted.
+ */
 export function reviewMapCounties(input: {
-  candidateFips: readonly string[];
   geometryFips: readonly string[];
   scopeCode: string;
 }): ReviewMapCounty[] {
+  if (!isLower48ReviewScope(input.scopeCode)) {
+    return [];
+  }
   const prefix = stateFipsPrefix(input.scopeCode);
-  const inState = prefix
-    ? input.geometryFips.filter((fips) => fips.startsWith(prefix))
-    : [];
-  const locatedCandidates = input.candidateFips.flatMap((fips) => {
-    const located = reviewCandidateFipsForScope(fips, input.scopeCode);
-    return located ? [located] : [];
-  });
-  const fips = inState.length > 0 ? inState : locatedCandidates;
-  return fips.map((entry) => ({
-    fips: entry,
-    state: input.scopeCode,
-  }));
+  if (!prefix) {
+    return [];
+  }
+  const counties: ReviewMapCounty[] = [];
+  for (const fips of input.geometryFips) {
+    if (!fips.startsWith(prefix)) {
+      continue;
+    }
+    counties.push({ fips, state: input.scopeCode });
+  }
+  return counties;
 }

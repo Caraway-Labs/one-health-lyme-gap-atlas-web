@@ -291,11 +291,10 @@ export function ReviewOperatingPicture({
   const mapCounties = useMemo(
     () =>
       reviewMapCounties({
-        candidateFips: candidates.map((entry) => entry.countyFips),
         geometryFips,
         scopeCode,
       }),
-    [candidates, geometryFips, scopeCode]
+    [geometryFips, scopeCode]
   );
   const selectCounty = useCallback(
     (fips: string, _surface: GeographySelectionSurface) => {
@@ -503,12 +502,10 @@ export function ReviewOperatingPicture({
               </p>
             </AtlasStatusMessage>
           ) : !hasMapCounties && !geometryPending ? (
-            <AtlasStatusMessage
-              className="map-loading"
-              data-testid="review-state-map-empty"
-              tone="empty"
-            >
-              <p>No county shapes were returned to draw for this result.</p>
+            <AtlasStatusMessage className="map-loading" tone="empty">
+              <p data-testid="review-state-map-empty">
+                No county shapes were returned to draw for this result.
+              </p>
             </AtlasStatusMessage>
           ) : (
             <AtlasStatusMessage

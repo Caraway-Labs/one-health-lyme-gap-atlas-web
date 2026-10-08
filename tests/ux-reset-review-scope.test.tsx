@@ -1459,15 +1459,49 @@ describe("Reset Review scope UI", () => {
     ).toContain("county=08013");
   });
 
-  it("passes only in-state counties to the map", async () => {
+  it("passes only in-state geometry to the map", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-104.9, 39.7], type: "Point" },
+          properties: { fips: "08031" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
     renderReview("?scope=CO");
     await waitFor(() =>
       expect(screen.getByTestId("mock-atlas-map")).toBeTruthy()
     );
-    expect(lastMapScoreFips).toBe("08001,08013");
+    expect(lastMapScoreFips).toBe("08001,08031");
   });
 
   it("rejects out-of-state map selection", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
     renderReview("?scope=CO");
     await waitFor(() =>
       expect(screen.getByTestId("mock-atlas-map")).toBeTruthy()

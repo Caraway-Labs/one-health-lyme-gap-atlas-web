@@ -46,7 +46,18 @@ vi.mock(import("@/lib/county-geography"), async (importOriginal) => {
     ...actual,
     fetchCountyDisplayGeometry: vi.fn<typeof actual.fetchCountyDisplayGeometry>(
       async () => ({
-        features: [],
+        features: [
+          {
+            geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+            properties: { fips: "08001" },
+            type: "Feature",
+          },
+          {
+            geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+            properties: { fips: "36001" },
+            type: "Feature",
+          },
+        ],
         type: "FeatureCollection",
       })
     ),
@@ -144,28 +155,102 @@ describe("Review operating picture state", () => {
     });
   });
 
-  it("frames the map to state geometry and keeps candidate order without geometry", () => {
-    expect(
-      reviewMapCounties({
-        candidateFips: ["08001"],
-        geometryFips: ["08001", "08031", "36001"],
-        scopeCode: "CO",
-      }).map((entry) => entry.fips)
-    ).toStrictEqual(["08001", "08031"]);
-    expect(
-      reviewMapCounties({
-        candidateFips: ["08099", "08001"],
-        geometryFips: [],
-        scopeCode: "CO",
-      }).map((entry) => entry.fips)
-    ).toStrictEqual(["08099", "08001"]);
-    expect(
-      reviewMapCounties({
-        candidateFips: ["08099", "08001", "36001", "0800", " 08013 "],
-        geometryFips: [],
-        scopeCode: "CO",
-      }).map((entry) => entry.fips)
-    ).toStrictEqual(["08099", "08001", "08013"]);
+  it("frames the map from in-state geometry and ignores candidate identifiers", () => {
+    const fips = (
+      geometryFips: readonly string[],
+      scopeCode: string
+    ): string[] =>
+      reviewMapCounties({ geometryFips, scopeCode }).map((entry) => entry.fips);
+    expect({
+      alaska: fips(["02013", "08001"], "AK"),
+      empty: fips([], "CO"),
+      hawaii: fips(["15001"], "HI"),
+      inState: fips(["08001", "08031", "36001"], "CO"),
+      otherState: fips(["36001", "36003"], "CO"),
+    }).toStrictEqual({
+      alaska: [],
+      empty: [],
+      hawaii: [],
+      inState: ["08001", "08031"],
+      otherState: [],
+    });
+  });
+
+  it("shows an empty map when geometry has no features in the requested state", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const geometry = vi.mocked(fetchCountyDisplayGeometry);
+    const restore = geometry.getMockImplementation();
+    geometry.mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-73.7, 42.8], type: "Point" },
+          properties: { fips: "36003" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={buildStateReview({
+              candidates: [
+                reviewCandidate({
+                  caveat: "Collection dates are unavailable.",
+                  countyName: "Adams",
+                  fips: "08001",
+                  reasonText: "Adams was returned by the method.",
+                }),
+              ],
+              resultState: "candidates_found",
+              state: "CO",
+            })}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        if (!screen.queryByTestId("review-state-map-empty")) {
+          throw new Error("empty map notice was not shown");
+        }
+      });
+      const investigate =
+        screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      expect({
+        candidate: screen.getByTestId("review-candidate").textContent,
+        county: new URL(investigate, "http://localhost").searchParams.get(
+          "county"
+        ),
+        empty: screen.getByTestId("review-state-map-empty").textContent,
+        loading: (
+          screen.getByTestId("review-state-map-region").textContent ?? ""
+        ).includes("Loading map"),
+        map: screen.queryByTestId("mock-atlas-map"),
+        summary: screen.getByTestId("review-result-summary").textContent,
+      }).toStrictEqual({
+        candidate: expect.stringContaining("Adams, CO"),
+        county: "08001",
+        empty: "No county shapes were returned to draw for this result.",
+        loading: false,
+        map: null,
+        summary: expect.stringContaining("counties to inspect"),
+      });
+    } finally {
+      if (restore) {
+        geometry.mockImplementation(restore);
+      }
+    }
   });
 
   it("builds a limited candidate preview from the returned record", () => {
