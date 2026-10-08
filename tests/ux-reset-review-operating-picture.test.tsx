@@ -627,6 +627,9 @@ describe("Review operating picture state", () => {
         sourceFamily:
           within(gaps).getByText("Source family").nextElementSibling
             ?.textContent,
+        valueStateReason: (gaps.textContent ?? "").includes(
+          "Unavailable for this release"
+        ),
       };
       view.unmount();
       return snapshot;
@@ -640,6 +643,7 @@ describe("Review operating picture state", () => {
         observationPeriod: "Unavailable",
         resultState: "data_gap_only",
         sourceFamily: "Unavailable",
+        valueStateReason: false,
       },
       {
         evidenceType: "Unavailable",
@@ -649,6 +653,7 @@ describe("Review operating picture state", () => {
         observationPeriod: "Unavailable",
         resultState: "insufficient_evidence",
         sourceFamily: "Unavailable",
+        valueStateReason: false,
       },
       {
         evidenceType: "Unavailable",
@@ -658,6 +663,7 @@ describe("Review operating picture state", () => {
         observationPeriod: "Unavailable",
         resultState: "candidates_found",
         sourceFamily: "Unavailable",
+        valueStateReason: false,
       },
       {
         evidenceType: "Unavailable",
@@ -667,6 +673,7 @@ describe("Review operating picture state", () => {
         observationPeriod: "Unavailable",
         resultState: "none_stand_out",
         sourceFamily: "Unavailable",
+        valueStateReason: false,
       },
     ]);
   });
@@ -931,6 +938,113 @@ describe("Review operating picture state", () => {
       presentId: true,
       presentVersion: true,
       unavailable: true,
+    });
+  });
+
+  it("shows returned rule coverage without turning rules into counties", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "08031",
+      detail: "Lineage is unavailable.",
+    };
+    const candidate = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    const rules = {
+      human_emerging: "disabled",
+      vector_transition: "insufficient",
+    };
+    const read = (review: StateReview, coverage: Record<string, string>) => {
+      review.coverage.rule_coverage = coverage;
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const section = screen.queryByTestId("review-rule-coverage");
+      const items = section
+        ? within(section)
+            .getAllByRole("listitem")
+            .map((item) => item.textContent)
+        : [];
+      const sectionText = section?.textContent ?? "";
+      view.unmount();
+      return {
+        items,
+        namesCounty:
+          sectionText.includes("08031") || sectionText.includes("Denver"),
+      };
+    };
+    expect({
+      blankStatus: read(
+        buildStateReview({
+          gaps: [gap],
+          resultState: "unsupported",
+          state: "CO",
+        }),
+        { human_emerging: " " }
+      ),
+      empty: read(
+        buildStateReview({
+          gaps: [gap],
+          resultState: "unsupported",
+          state: "CO",
+        }),
+        {}
+      ),
+      insufficient: read(
+        buildStateReview({
+          gaps: [gap],
+          resultState: "insufficient_evidence",
+          state: "CO",
+        }),
+        rules
+      ),
+      mixed: read(
+        buildStateReview({
+          candidates: [candidate],
+          gaps: [gap],
+          resultState: "candidates_found",
+          state: "CO",
+        }),
+        rules
+      ),
+      unsupported: read(
+        buildStateReview({
+          gaps: [gap],
+          resultState: "unsupported",
+          state: "CO",
+        }),
+        rules
+      ),
+    }).toStrictEqual({
+      blankStatus: {
+        items: ["human_emerging: Unavailable"],
+        namesCounty: false,
+      },
+      empty: { items: [], namesCounty: false },
+      insufficient: {
+        items: ["human_emerging: disabled", "vector_transition: insufficient"],
+        namesCounty: false,
+      },
+      mixed: {
+        items: ["human_emerging: disabled", "vector_transition: insufficient"],
+        namesCounty: false,
+      },
+      unsupported: {
+        items: ["human_emerging: disabled", "vector_transition: insufficient"],
+        namesCounty: false,
+      },
     });
   });
 });

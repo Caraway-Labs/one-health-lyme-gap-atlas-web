@@ -291,7 +291,8 @@
 }
 
 .ux-reset-review-candidate-list,
-.ux-reset-review-gap-list {
+.ux-reset-review-gap-list,
+.ux-reset-review-rule-list {
   max-height: 24rem;
   margin: 0;
   padding: 0;
@@ -316,7 +317,8 @@
   box-shadow: inset 3px 0 0 var(--primary);
 }
 
-.ux-reset-review-gap-list li {
+.ux-reset-review-gap-list li,
+.ux-reset-review-rule-list li {
   padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--border);
 }

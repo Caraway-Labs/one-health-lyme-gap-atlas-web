@@ -40,7 +40,7 @@ import {
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import { ValueState, type StateReview } from "@/generated/models";
+import type { StateReview } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
 import {
@@ -94,11 +94,30 @@ function gapEvidenceModel(review: StateReview) {
       observationPeriod: "Unavailable",
       sourceFamily: "Unavailable",
     },
-    reasonCode: ValueState.UNAVAILABLE,
   };
 }
 
 const RESULT_FIELD_UNAVAILABLE = "Unavailable";
+
+function reviewRuleCoverage(
+  coverage: StateReview["coverage"]
+): { rule: string; status: string }[] {
+  return Object.entries(coverage.rule_coverage)
+    .flatMap(([rule, status]) => {
+      const trimmedRule = rule.trim();
+      if (trimmedRule.length === 0) {
+        return [];
+      }
+      const trimmedStatus = status.trim();
+      return [
+        {
+          rule: trimmedRule,
+          status: trimmedStatus || RESULT_FIELD_UNAVAILABLE,
+        },
+      ];
+    })
+    .toSorted((left, right) => left.rule.localeCompare(right.rule));
+}
 
 function reviewEvaluatedAt(value: string): { display: string; raw: string } {
   const trimmed = value.trim();
@@ -285,6 +304,7 @@ export function ReviewOperatingPicture({
   const hasMapCounties = mapCounties.length > 0;
   const gapModel =
     review.data_gaps.length > 0 ? gapEvidenceModel(review) : null;
+  const ruleCoverage = reviewRuleCoverage(review.coverage);
 
   return (
     <div
@@ -319,6 +339,25 @@ export function ReviewOperatingPicture({
           {review.coverage.abstained_counties} abstained,{" "}
           {review.coverage.evaluated_counties} evaluated.
         </p>
+        {ruleCoverage.length > 0 ? (
+          <section
+            aria-label="Rule coverage"
+            data-testid="review-rule-coverage"
+          >
+            <h3 className="type-card">Rule coverage</h3>
+            <ul className="ux-reset-review-rule-list">
+              {ruleCoverage.map((entry) => (
+                <li
+                  key={entry.rule}
+                  data-rule={entry.rule}
+                  data-status={entry.status}
+                >
+                  {entry.rule}: {entry.status}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {review.limitations.length > 0 ? (
           <ul data-testid="review-limitations">
             {review.limitations.map((limitation) => (
@@ -446,11 +485,10 @@ export function ReviewOperatingPicture({
         >
           <h3 className="type-card">Data gaps</h3>
           <p className="type-body">These records are not review candidates.</p>
-          <EvidenceStateStrip model={gapModel} showReason />
+          <EvidenceStateStrip model={gapModel} />
           <EvidenceProvenanceInspect
-            availability={gapModel.availability}
             provenance={gapModel.provenance}
-            reasonCode={gapModel.reasonCode}
+            stateLabel="Unavailable"
           />
           <ul className="ux-reset-review-gap-list">
             {review.data_gaps.map((gap) => (
