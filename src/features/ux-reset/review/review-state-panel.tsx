@@ -34,6 +34,7 @@ import {
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
+import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { CountyScoreSummary } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
@@ -66,6 +67,7 @@ type ReviewStatePanelProps = {
   onCountyChange?: (fips: string, history: ReviewCountyHistory) => void;
   period?: string | null;
   releaseId: string;
+  tierRelease?: Tier1ActiveRelease;
 };
 
 export function ReviewStatePanel({
@@ -76,7 +78,12 @@ export function ReviewStatePanel({
   onCountyChange,
   period = null,
   releaseId,
+  tierRelease,
 }: ReviewStatePanelProps) {
+  const modelRelease = tierRelease ?? {
+    releaseId,
+    status: "ready" as const,
+  };
   const inScopeFips = useMemo(
     () => new Set(rankedCounties.map((entry) => entry.fips)),
     [rankedCounties]
@@ -290,6 +297,7 @@ export function ReviewStatePanel({
           href={handoff.href}
           openRef={openRef}
           preview={preview}
+          release={modelRelease}
           onOpen={markReviewReturnFocus}
         />
       ) : null}

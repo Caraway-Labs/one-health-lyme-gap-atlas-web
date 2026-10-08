@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ResetInvestigateExperience } from "@/features/ux-reset/investigate/reset-investigate-experience";
+import type { Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
@@ -31,6 +32,11 @@ import {
   investigateScoresFixture,
   type InvestigateScenario,
 } from "./fixtures/investigate-api-fixtures";
+import {
+  tier1HighSufficientFixture,
+  tier1PriorityForCounty,
+  tier1PriorityForRelease,
+} from "./fixtures/tier1-surveillance-priority";
 
 const controls: {
   delayFips: string | null;
@@ -40,8 +46,10 @@ const controls: {
   metadataReleaseId: string | null;
   metadataStatus: number;
   rateLimitRemaining: number;
+  tier1Result: Tier1CountyPriority | null;
   retryAfterSeconds: number;
   scenario: InvestigateScenario;
+  scoresReleaseId: string | null;
   transientStatus: number;
 } = {
   delayFips: null,
@@ -51,8 +59,10 @@ const controls: {
   metadataReleaseId: null,
   metadataStatus: 200,
   rateLimitRemaining: 0,
+  tier1Result: null,
   retryAfterSeconds: 0,
   scenario: "mixed",
+  scoresReleaseId: null,
   transientStatus: 429,
 };
 
@@ -235,11 +245,33 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     >(
       async () =>
         ({
-          data: investigateScoresFixture,
+          data: {
+            ...investigateScoresFixture,
+            release_id:
+              controls.scoresReleaseId ?? investigateScoresFixture.release_id,
+          },
           headers: new Headers(),
           status: 200,
         }) as never
     ),
+    countyTier1SurveillancePriorityGet: vi.fn<
+      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+    >(async (fips) => {
+      const result = controls.tier1Result;
+      if (!result) {
+        throw new AtlasApiError(
+          "No current Tier 1 county result",
+          `/v1/counties/${fips}/tier1-surveillance-priority`,
+          404,
+          null
+        );
+      }
+      return {
+        data: result,
+        headers: new Headers(),
+        status: 200,
+      };
+    }),
   };
 });
 
@@ -354,12 +386,14 @@ describe("County Investigate workspace", () => {
     controls.metadataReleaseId = null;
     controls.metadataStatus = 200;
     controls.rateLimitRemaining = 0;
+    controls.tier1Result = null;
     controls.retryAfterSeconds = 0;
     controls.transientStatus = 429;
     clearObservationRetryDeadlines();
     metadataGate.resolve(true);
     metadataGate = Promise.withResolvers<boolean>();
     controls.scenario = "mixed";
+    controls.scoresReleaseId = null;
     delayedCompletions = 0;
     delayedObservations = Promise.resolve();
     observationRequests.length = 0;
@@ -1327,5 +1361,110 @@ describe("County Investigate workspace", () => {
       state: "unavailable",
     });
     fetchMock.mockRestore();
+  });
+
+  it("shows a Tier 1 result only for the resolved investigate release", async () => {
+    controls.tier1Result = tier1PriorityForRelease(
+      tier1PriorityForCounty(tier1HighSufficientFixture, "08001"),
+      "alpha-2026"
+    );
+    renderInvestigate("?county=08001&scope=CO&dataset=alpha-2026");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
+    );
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.sufficiency
+    ).toBe("SUFFICIENT");
+  });
+
+  it("keeps a historical investigate dataset from showing the current Tier 1 batch", async () => {
+    controls.metadataReleaseId = "historical-2024";
+    controls.scoresReleaseId = "historical-2024";
+    controls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "08001"
+    );
+    renderInvestigate("?county=08001&scope=CO&dataset=historical-2024");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.state
+      ).toBe("release-unaligned")
+    );
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      reason: region.dataset.releaseReason,
+      tier: region.dataset.tier,
+    }).toStrictEqual({
+      low: false,
+      reason: "mismatch",
+      tier: undefined,
+    });
+  });
+
+  it("drops the Tier 1 tier when the same investigate county changes release", async () => {
+    controls.tier1Result = tier1PriorityForRelease(
+      tier1PriorityForCounty(tier1HighSufficientFixture, "08001"),
+      "alpha-2026"
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = renderInvestigate(
+      "?county=08001&scope=CO&dataset=alpha-2026",
+      { client }
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
+    );
+    controls.metadataReleaseId = "beta-2026";
+    controls.scoresReleaseId = "beta-2026";
+    await view.rerenderSearch("?county=08001&scope=CO&dataset=beta-2026");
+    await waitFor(() => {
+      const region = screen.getByTestId("tier1-surveillance-priority");
+      if (
+        region.dataset.state !== "release-unaligned" ||
+        region.dataset.tier === "HIGH"
+      ) {
+        throw new Error("The previous Tier 1 result stayed on screen.");
+      }
+    });
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+    ).toBe("mismatch");
+    expect(screen.getByTestId("investigate-header").dataset.release).toBe(
+      "beta-2026"
+    );
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").textContent
+    ).not.toMatch(/\bLOW\b|\bHIGH\b/);
+  });
+
+  it("does not align a Tier 1 result when investigate release metadata fails", async () => {
+    controls.metadataStatus = 503;
+    controls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "08001"
+    );
+    renderInvestigate("?county=08001&scope=CO&dataset=older-release");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+      ).toBe("unknown")
+    );
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      state: region.dataset.state,
+      tier: region.dataset.tier,
+    }).toStrictEqual({
+      low: false,
+      state: "release-unaligned",
+      tier: undefined,
+    });
   });
 });

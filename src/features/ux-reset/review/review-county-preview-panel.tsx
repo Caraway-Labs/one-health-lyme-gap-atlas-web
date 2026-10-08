@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
+import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import { cn } from "@/lib/utils";
 
 type ReviewCountyPreviewPanelProps = {
@@ -18,6 +20,7 @@ type ReviewCountyPreviewPanelProps = {
   onOpen: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   preview: ReviewCountyPreviewModel;
+  release: Tier1ActiveRelease;
 };
 
 export function ReviewCountyPreviewPanel({
@@ -27,6 +30,7 @@ export function ReviewCountyPreviewPanel({
   onOpen,
   openRef,
   preview,
+  release,
 }: ReviewCountyPreviewPanelProps) {
   const title = `${preview.countyName}, ${preview.stateName}`;
   return (
@@ -64,6 +68,11 @@ export function ReviewCountyPreviewPanel({
           />
         </div>
       ) : null}
+      <Tier1SurveillancePriority
+        fips={preview.fips}
+        headingLevel="h3"
+        release={release}
+      />
       <p className="type-body" data-testid="review-preview-follow-up">
         <span className="eyebrow">Suggested follow-up</span> {preview.followUp}
       </p>
