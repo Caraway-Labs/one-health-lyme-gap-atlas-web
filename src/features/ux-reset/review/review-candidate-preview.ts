@@ -86,10 +86,11 @@ function referenceInspectLine(
 ): string {
   const family = reference.family.trim() || GOVERNED_FIELD_UNAVAILABLE;
   const product = reference.source_product.trim() || GOVERNED_FIELD_UNAVAILABLE;
-  const sourceAsOf = reference.source_as_of.trim();
-  const revision = sourceAsOf ? `; source as of ${sourceAsOf}` : "";
-  const version = reference.source_version.trim();
-  const versionLabel = version ? `; version ${version}` : "";
+  const sourceAsOf =
+    reference.source_as_of.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const revision = `; source as of ${sourceAsOf}`;
+  const version = reference.source_version.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const versionLabel = `; version ${version}`;
   const retrieved = reference.retrieved_at.trim();
   const retrievedLabel = retrieved ? `; retrieved ${retrieved}` : "";
   const record =

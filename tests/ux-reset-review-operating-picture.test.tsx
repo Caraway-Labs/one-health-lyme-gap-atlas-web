@@ -1069,6 +1069,55 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("marks a blank reference revision and version unavailable", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = {
+      ...reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_references: [
+        {
+          ...reviewEvidenceReference("08001"),
+          source_as_of: " ",
+          source_version: "",
+        },
+      ],
+    };
+    const review = buildStateReview({
+      candidates: [candidate],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const qualification = screen.getByTestId("review-preview-qualification");
+    fireEvent.click(within(qualification).getByText("Inspect provenance"));
+    const line =
+      within(qualification)
+        .getByTestId("evidence-provenance-references")
+        .querySelector("li")?.textContent ?? "";
+    view.unmount();
+    expect({
+      revision: line.includes("source as of Unavailable"),
+      version: line.includes("version Unavailable"),
+    }).toStrictEqual({
+      revision: true,
+      version: true,
+    });
+  });
+
   it("shows returned rule coverage without turning rules into counties", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
