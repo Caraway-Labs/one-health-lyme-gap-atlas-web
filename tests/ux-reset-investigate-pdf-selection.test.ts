@@ -114,9 +114,15 @@ describe("Investigate PDF measure selection", () => {
     expect(
       selection.omitted.map((measure) => [measure.measureId, measure.reason])
     ).toStrictEqual([
-      ["population_2022", "No published data for this period."],
+      [
+        "population_2022",
+        "This measure's observation period is not supported for this selection.",
+      ],
       ["rucc_2023", "This measure could not be loaded."],
-      ["tree-canopy", "No published data for this release."],
+      [
+        "tree-canopy",
+        "No observations were returned for this county and selected period.",
+      ],
     ]);
   });
 

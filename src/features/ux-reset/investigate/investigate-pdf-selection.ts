@@ -14,10 +14,12 @@ export const investigatePdfOmissionReasons = {
   mismatchedIdentity: "Does not match this county and release.",
   missingProvenance: "Missing provenance.",
   mixedPeriod: "Mixed observation period.",
-  noPublishedPeriod: "No published data for this period.",
-  noPublishedRelease: "No published data for this release.",
+  noObservationsReturned:
+    "No observations were returned for this county and selected period.",
   observationLimit: "Too many observations to include in one report.",
   periodLimit: "The observation period is outside the report limit.",
+  unsupportedSelection:
+    "This measure's observation period is not supported for this selection.",
   unsupportedState: "Unsupported evidence state.",
 } as const;
 
@@ -131,7 +133,7 @@ function rowProblem(
 function measureProblem(rows: readonly PdfRecord[]): string | null {
   const [first] = rows;
   if (!first) {
-    return investigatePdfOmissionReasons.noPublishedRelease;
+    return investigatePdfOmissionReasons.noObservationsReturned;
   }
   const period = `${first.observation.period_start}..${first.observation.period_end}`;
   for (const row of rows) {
@@ -203,7 +205,7 @@ export function selectInvestigatePdfMeasures(input: {
       omitted,
       measureId,
       measureId,
-      investigatePdfOmissionReasons.noPublishedPeriod
+      investigatePdfOmissionReasons.unsupportedSelection
     );
   }
 
@@ -219,7 +221,7 @@ export function selectInvestigatePdfMeasures(input: {
         omitted,
         measureId,
         measureId,
-        investigatePdfOmissionReasons.noPublishedRelease
+        investigatePdfOmissionReasons.noObservationsReturned
       );
     }
   }

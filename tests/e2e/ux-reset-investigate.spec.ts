@@ -690,7 +690,7 @@ test.describe("County Investigate evidence hierarchy", () => {
       "Reported Lyme cases"
     );
     await expect(page.getByTestId("investigate-pdf-omitted")).toContainText(
-      "No published data for this release."
+      "No observations were returned for this county and selected period."
     );
     await expect(page.getByTestId("investigate-limitation-text")).toContainText(
       INVESTIGATE_CASES_LIMITATION

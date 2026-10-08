@@ -1085,7 +1085,10 @@ describe("County Investigate workspace", () => {
       exportButton: screen.queryByRole("button", { name: "Export PDF" }),
       includedCases: included.includes("Reported Lyme cases"),
       limitation: screen.getByTestId("investigate-limitation-text").textContent,
-      omittedTicks: omitted.includes("No published data for this release."),
+      omittedTicks: omitted.includes(
+        "No observations were returned for this county and selected period."
+      ),
+      publishedAbsence: omitted.includes("No published data"),
       returnCounty: (
         screen.getByTestId("investigate-return").getAttribute("href") ?? ""
       ).includes("county=08001"),
@@ -1101,6 +1104,7 @@ describe("County Investigate workspace", () => {
       includedCases: true,
       limitation: expect.stringContaining(INVESTIGATE_CASES_LIMITATION),
       omittedTicks: true,
+      publishedAbsence: false,
       returnCounty: true,
     });
   });
