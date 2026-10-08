@@ -186,7 +186,7 @@ test("professional workspace shell supports navigation, focus, and responsive la
   expect(new URL(page.url()).search).toBe("");
 
   await page.locator(".app-header .ux-reset-legacy-link").click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/overview$/);
   await expect(page.locator(".app-shell")).toHaveCount(1);
 
   expect(
