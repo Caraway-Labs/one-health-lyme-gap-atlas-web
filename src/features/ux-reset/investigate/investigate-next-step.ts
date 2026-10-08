@@ -6,6 +6,7 @@ import type {
   CountyEvidenceBundle,
   CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
+import type { Observation } from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
 
 export const investigateContinueDestinations = {
@@ -88,6 +89,8 @@ export function investigateCompareOffer(input: {
 }
 
 export type InvestigatePdfContext = {
+  observations?: readonly Observation[];
+  incomplete?: boolean;
   caveats: readonly string[];
   countyFips: string;
   periods: readonly string[];
@@ -132,6 +135,12 @@ export function investigatePdfContext(
     }
   }
   return {
+    observations: visibleObservations(bundle).map(
+      (record) => record.observation
+    ),
+    incomplete:
+      bundle.measureFailures.length > 0 ||
+      bundle.unsupportedPeriodMeasureIds.length > 0,
     caveats,
     countyFips: bundle.county.fips,
     periods,
@@ -141,32 +150,86 @@ export function investigatePdfContext(
   };
 }
 
-export type InvestigatePdfExportOffer = {
-  /**
-   * The county report contract returns a PDF blob. It does not carry the
-   * requested period, observation period, source family, or caveat on this
-   * page, so export stays unavailable until that comparison is possible.
-   */
-  reason: string;
-  state: "unavailable";
-};
+export type InvestigatePdfExportOffer =
+  | { reason: string; state: "unavailable" }
+  | {
+      reason: string;
+      state: "available";
+      periodStart: string;
+      periodEnd: string;
+      measureIds: string[];
+    };
 
-function visibleList(values: readonly string[]): string {
-  return values.length > 0 ? values.join("; ") : "none";
-}
-
-/**
- * Offer export only when the report is provably the same evidence context.
- * `GET /v1/counties/{fips}/report.pdf` accepts county, release, template, and
- * score settings, and the response schema is an opaque PDF. That cannot prove
- * a match, including for a non-default period or an observation caveat.
- */
+/** Only complete canonical evidence can select the server-owned county-v2 report. */
 export function investigateCountyReportExportOffer(
   context: InvestigatePdfContext
 ): InvestigatePdfExportOffer {
-  const requested = context.requestedPeriod ?? "none";
+  const records = context.observations ?? [];
+  const first = records[0];
+  const unavailable = {
+    reason: `A matching report is unavailable for requested period ${context.requestedPeriod ?? "none"}, observation period ${context.periods.join("; ")}, source ${context.sources.join("; ")}, and caveat ${context.caveats.join("; ")}. Complete canonical evidence and provenance are required.`,
+    state: "unavailable" as const,
+  };
+  if (
+    !first ||
+    context.incomplete ||
+    !isCountyFips(context.countyFips) ||
+    !context.releaseId
+  ) {
+    return unavailable;
+  }
+  const start = Date.parse(first.period_start);
+  const end = Date.parse(first.period_end);
+  const days = (end - start) / 86_400_000 + 1;
+  if (
+    !Number.isFinite(days) ||
+    days < 1 ||
+    days > 500 ||
+    new Date(start).toISOString().slice(0, 10) !== first.period_start ||
+    new Date(end).toISOString().slice(0, 10) !== first.period_end ||
+    (context.requestedPeriod && context.requestedPeriod !== first.period_start)
+  ) {
+    return unavailable;
+  }
+  const ids = new Set<string>();
+  const counts = new Map<string, number>();
+  for (const observation of records) {
+    if (
+      ids.has(observation.observation_id) ||
+      observation.geography.geography_type !== "county" ||
+      observation.geography.geography_id !== context.countyFips ||
+      observation.release_id !== context.releaseId ||
+      observation.period_start !== first.period_start ||
+      observation.period_end !== first.period_end ||
+      !["OBSERVED", "ZERO", "SUPPRESSED"].includes(observation.value_state) ||
+      ![
+        observation.measure_id,
+        observation.source_id,
+        observation.source_label,
+        observation.lineage_source_id,
+        observation.dataset_id,
+        observation.provenance_ref,
+        observation.methodology_version,
+        observation.semantic_version,
+      ].every((value) => value?.trim())
+    ) {
+      return unavailable;
+    }
+    ids.add(observation.observation_id);
+    counts.set(
+      observation.measure_id,
+      (counts.get(observation.measure_id) ?? 0) + 1
+    );
+  }
+  if (counts.size > 20 || [...counts.values()].some((count) => count > 500)) {
+    return unavailable;
+  }
   return {
-    reason: `The county report does not include requested period ${requested}, observation period ${visibleList(context.periods)}, source ${visibleList(context.sources)}, or caveat ${visibleList(context.caveats)}. Export is not offered for this evidence.`,
-    state: "unavailable",
+    state: "available",
+    reason:
+      "Export the county evidence with its observation period, sources, and caveats.",
+    periodStart: first.period_start,
+    periodEnd: first.period_end,
+    measureIds: [...counts.keys()].sort(),
   };
 }
