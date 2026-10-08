@@ -2,6 +2,10 @@
 
 import type { ContentSurface } from "@/lib/atlas-analytics";
 import { trackProvenanceOpened } from "@/lib/atlas-analytics";
+import {
+  parseAtlasDateTime,
+  parseConfigurationSha256,
+} from "@/lib/atlas-evidence-metadata";
 import { getDocsPageHref } from "@/lib/docs-config";
 import { cn } from "@/lib/utils";
 
@@ -29,15 +33,12 @@ function evaluatedAtText(
     return null;
   }
   const readable = display?.trim() || UNAVAILABLE;
-  const timestamp = raw?.trim() || UNAVAILABLE;
-  if (readable === UNAVAILABLE && timestamp === UNAVAILABLE) {
+  const timestamp = parseAtlasDateTime(raw);
+  if (!timestamp || readable === UNAVAILABLE) {
     return UNAVAILABLE;
   }
-  if (timestamp === UNAVAILABLE || timestamp === readable) {
+  if (timestamp === readable) {
     return readable;
-  }
-  if (readable === UNAVAILABLE) {
-    return timestamp;
   }
   return `${readable} (${timestamp})`;
 }
@@ -46,8 +47,7 @@ function configurationText(value: string | null | undefined): string | null {
   if (value === undefined) {
     return null;
   }
-  const trimmed = value?.trim() ?? "";
-  return trimmed || UNAVAILABLE;
+  return parseConfigurationSha256(value) ?? UNAVAILABLE;
 }
 
 type EvidenceProvenanceInspectProps = {
@@ -87,12 +87,11 @@ export function EvidenceProvenanceInspect(
   const configuration = technical
     ? configurationText(technical.configurationSha256)
     : null;
-  const evaluatedAtRaw = technical?.evaluatedAtRaw?.trim() ?? "";
+  const evaluatedAtRaw = parseAtlasDateTime(technical?.evaluatedAtRaw);
   const evaluatedAtIsTimestamp =
     evaluatedAt !== null &&
     evaluatedAt !== UNAVAILABLE &&
-    evaluatedAtRaw !== "" &&
-    evaluatedAtRaw !== UNAVAILABLE;
+    evaluatedAtRaw !== null;
   const sourceUrl = provenance.sourceUrl?.trim() || null;
   const referenceLines = provenance.referenceLines ?? [];
 
@@ -196,7 +195,7 @@ export function EvidenceProvenanceInspect(
                 <div>
                   <dt>Evaluated at</dt>
                   <dd>
-                    {evaluatedAtIsTimestamp ? (
+                    {evaluatedAtIsTimestamp && evaluatedAtRaw ? (
                       <time dateTime={evaluatedAtRaw}>{evaluatedAt}</time>
                     ) : (
                       evaluatedAt

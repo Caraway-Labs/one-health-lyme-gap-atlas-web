@@ -866,6 +866,166 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("does not present malformed timestamps, versions, or ids as authoritative", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = {
+      ...reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_references: [
+        {
+          ...reviewEvidenceReference("08001"),
+          county_fips: "12",
+          public_record_ref: "bad record!!",
+          release_id: "bad release",
+          retrieved_at: "yesterday",
+          source_as_of: "2025-02-31",
+          source_version: "bad version",
+        },
+      ],
+      reason_codes: ["not a code"],
+    };
+    const malformed = buildStateReview({
+      candidates: [candidate],
+      gaps: [
+        {
+          code: "bad code",
+          county_fips: "NOPE",
+          detail: "Lineage is unavailable.",
+        },
+      ],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    malformed.configuration_sha256 = "not-a-hash";
+    malformed.data_release_version = "bad release";
+    malformed.evaluated_at = "not-a-timestamp";
+    malformed.methodology_id = "not an id";
+    malformed.methodology_version = "v 1";
+    malformed.result_state = "bogus" as StateReview["result_state"];
+    const dateOnly = buildStateReview({
+      resultState: "none_stand_out",
+      state: "CO",
+    });
+    dateOnly.evaluated_at = "2026-10-06";
+    const read = (review: StateReview) => {
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const provenance = screen.getByTestId("review-result-provenance");
+      fireEvent.click(within(provenance).getByText("Inspect provenance"));
+      fireEvent.click(
+        within(provenance).getByText("Technical reproducibility identifiers")
+      );
+      const evaluatedAt =
+        within(provenance).getByText("Evaluated at").nextElementSibling
+          ?.textContent ?? "";
+      const configuration =
+        within(provenance).getByText("Configuration").nextElementSibling
+          ?.textContent ?? "";
+      const time = provenance.querySelector("time");
+      view.unmount();
+      return {
+        configuration,
+        evaluatedAt,
+        time: time?.getAttribute("dateTime") ?? null,
+      };
+    };
+    const dateOnlyProvenance = read(dateOnly);
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={malformed}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const panel = screen.getByTestId("review-state-panel");
+    const provenance = screen.getByTestId("review-result-provenance");
+    fireEvent.click(within(provenance).getByText("Inspect provenance"));
+    fireEvent.click(
+      within(provenance).getByText("Technical reproducibility identifiers")
+    );
+    const qualification = screen.getByTestId("review-preview-qualification");
+    fireEvent.click(within(qualification).getByText("Inspect provenance"));
+    const reference =
+      within(qualification)
+        .getByTestId("evidence-provenance-references")
+        .querySelector("li")?.textContent ?? "";
+    const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
+    const header = (screen.getByTestId("review-methodology").textContent ?? "")
+      .replaceAll(/\s+/g, " ")
+      .trim();
+    const backend =
+      screen.getByTestId("review-backend-result").textContent ?? "";
+    const investigate =
+      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+    const compare =
+      screen.getByTestId("review-compare").getAttribute("href") ?? "";
+    const gap = screen.getByTestId("review-data-gap").textContent ?? "";
+    const reasonCodes = screen.queryByTestId("review-reason-codes");
+    const snapshot = {
+      backendNamesBogus: backend.includes("bogus"),
+      basisNamesImpossibleDate: basis.includes("2025-02-31"),
+      compareNamesRelease: compare.includes("bad"),
+      configuration:
+        within(provenance).getByText("Configuration").nextElementSibling
+          ?.textContent,
+      configurationAttribute: panel.dataset.configurationSha256 ?? null,
+      dateOnly: dateOnlyProvenance,
+      evaluatedAt:
+        within(provenance).getByText("Evaluated at").nextElementSibling
+          ?.textContent,
+      gap,
+      header,
+      investigateNamesRelease: investigate.includes("bad"),
+      reasonCodes: reasonCodes?.textContent ?? "",
+      reference,
+      resultState: panel.dataset.resultState,
+      time: provenance.querySelector("time")?.getAttribute("dateTime") ?? null,
+    };
+    view.unmount();
+    expect(snapshot).toStrictEqual({
+      backendNamesBogus: false,
+      basisNamesImpossibleDate: false,
+      compareNamesRelease: false,
+      configuration: "Unavailable",
+      configurationAttribute: null,
+      dateOnly: {
+        configuration: dateOnly.configuration_sha256,
+        evaluatedAt: "Unavailable",
+        time: null,
+      },
+      evaluatedAt: "Unavailable",
+      gap: "FIPS Unavailable Unavailable. Lineage is unavailable.",
+      header:
+        "Method Unavailable Unavailable. Release Unavailable. Current cumulative county status; human snapshot 2023.",
+      investigateNamesRelease: false,
+      reasonCodes: "",
+      reference: expect.stringContaining(
+        "county Unavailable; source as of Unavailable; version Unavailable; retrieved Unavailable; record Unavailable; release Unavailable"
+      ),
+      resultState: "unavailable",
+      time: null,
+    });
+    expect(reference).not.toContain("yesterday");
+    expect(reference).not.toContain("bad version");
+    expect(reference).not.toContain("bad record");
+    expect(backend).toContain("Unavailable");
+  });
+
   it("shows the API result state without inventing a material limitation", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },

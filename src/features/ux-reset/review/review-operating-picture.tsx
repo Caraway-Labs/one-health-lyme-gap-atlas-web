@@ -32,6 +32,17 @@ import {
 } from "@/features/ux-reset/review/review-county-preview";
 import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
+  REVIEW_FIELD_UNAVAILABLE,
+  reviewDatasetId,
+  reviewDatasetText,
+  reviewFips,
+  reviewFipsText,
+  reviewIdentifier,
+  reviewIdentifierText,
+  reviewText,
+} from "@/features/ux-reset/review/review-governed-values";
+import {
+  isGovernedReviewResultState,
   reviewCandidateFipsForScope,
   reviewMapCounties,
   reviewPictureState,
@@ -46,7 +57,11 @@ import {
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { StateReview } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
-import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
+import {
+  formatAtlasTimestamp,
+  parseAtlasDateTime,
+  parseConfigurationSha256,
+} from "@/lib/atlas-evidence-metadata";
 import {
   countyDisplayGeometryQueryKey,
   fetchCountyDisplayGeometry,
@@ -115,26 +130,19 @@ function gapEvidenceModel(review: StateReview) {
   };
 }
 
-const RESULT_FIELD_UNAVAILABLE = "Unavailable";
-
-function reviewDisplayValue(value: string): string {
-  return value.trim() || RESULT_FIELD_UNAVAILABLE;
-}
-
 function reviewRuleCoverage(
   coverage: StateReview["coverage"]
 ): { rule: string; status: string }[] {
   return Object.entries(coverage.rule_coverage)
     .flatMap(([rule, status]) => {
-      const trimmedRule = rule.trim();
-      if (trimmedRule.length === 0) {
+      const trimmedRule = reviewIdentifier(rule);
+      if (!trimmedRule) {
         return [];
       }
-      const trimmedStatus = status.trim();
       return [
         {
           rule: trimmedRule,
-          status: trimmedStatus || RESULT_FIELD_UNAVAILABLE,
+          status: reviewIdentifier(status) ?? REVIEW_FIELD_UNAVAILABLE,
         },
       ];
     })
@@ -142,35 +150,40 @@ function reviewRuleCoverage(
 }
 
 function reviewEvaluatedAt(value: string): { display: string; raw: string } {
-  const trimmed = value.trim();
-  if (!trimmed) {
+  const raw = parseAtlasDateTime(value);
+  if (!raw) {
     return {
-      display: RESULT_FIELD_UNAVAILABLE,
-      raw: RESULT_FIELD_UNAVAILABLE,
+      display: REVIEW_FIELD_UNAVAILABLE,
+      raw: REVIEW_FIELD_UNAVAILABLE,
     };
   }
-  const formatted = formatAtlasTimestamp(trimmed);
-  if (formatted === RESULT_FIELD_UNAVAILABLE) {
-    return { display: RESULT_FIELD_UNAVAILABLE, raw: trimmed };
+  const formatted = formatAtlasTimestamp(raw);
+  if (formatted === REVIEW_FIELD_UNAVAILABLE) {
+    return {
+      display: REVIEW_FIELD_UNAVAILABLE,
+      raw: REVIEW_FIELD_UNAVAILABLE,
+    };
   }
-  return { display: `${formatted} UTC`, raw: trimmed };
+  return { display: `${formatted} UTC`, raw };
 }
 
 function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
   const evaluatedAt = reviewEvaluatedAt(review.evaluated_at);
   return {
-    evidenceType: RESULT_FIELD_UNAVAILABLE,
+    evidenceType: REVIEW_FIELD_UNAVAILABLE,
     inspectSummary:
       "Evaluation time and configuration identity for this review result.",
     limitations: visibleLines(review.limitations),
     materialCaveat: null,
-    observationPeriod: RESULT_FIELD_UNAVAILABLE,
-    sourceFamily: RESULT_FIELD_UNAVAILABLE,
-    methodLabel: review.methodology_id.trim() || null,
-    methodVersion: review.methodology_version.trim() || null,
+    observationPeriod: REVIEW_FIELD_UNAVAILABLE,
+    sourceFamily: REVIEW_FIELD_UNAVAILABLE,
+    methodLabel: reviewIdentifier(review.methodology_id),
+    methodVersion: reviewIdentifier(review.methodology_version),
     technical: {
-      configurationSha256: review.configuration_sha256,
-      methodologyVersion: review.methodology_version.trim() || null,
+      configurationSha256: parseConfigurationSha256(
+        review.configuration_sha256
+      ),
+      methodologyVersion: reviewIdentifier(review.methodology_version),
       evaluatedAt: evaluatedAt.display,
       evaluatedAtRaw: evaluatedAt.raw,
     },
@@ -206,7 +219,16 @@ export function ReviewOperatingPicture({
     () => new Set(candidates.map((entry) => entry.county_fips)),
     [candidates]
   );
-  const pictureState = reviewPictureState(review);
+  const resultState = isGovernedReviewResultState(review.result_state)
+    ? review.result_state
+    : null;
+  const pictureState = resultState
+    ? reviewPictureState({
+        data_gaps: review.data_gaps,
+        result_state: resultState,
+        review_candidates: review.review_candidates,
+      })
+    : null;
   const selectedFips = useMemo(() => {
     if (county && candidateFips.has(county)) {
       return county;
@@ -216,11 +238,11 @@ export function ReviewOperatingPicture({
   const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
   );
-  const releaseId = review.data_release_version;
+  const releaseId = reviewDatasetId(review.data_release_version);
 
   usePublishExploreCommittedNavigation({
     county: selectedFips || null,
-    dataset: review.data_release_version,
+    dataset: releaseId,
     period: period ?? null,
   });
   useEffect(() => {
@@ -238,8 +260,16 @@ export function ReviewOperatingPicture({
 
   const geometryQuery = useQuery({
     enabled: Boolean(releaseId),
-    queryFn: async () => fetchCountyDisplayGeometry(releaseId),
-    queryKey: countyDisplayGeometryQueryKey("atlas-home", releaseId),
+    queryFn: async () => {
+      if (!releaseId) {
+        throw new Error("Review geometry requires a release id.");
+      }
+      return fetchCountyDisplayGeometry(releaseId);
+    },
+    queryKey: countyDisplayGeometryQueryKey(
+      "atlas-home",
+      releaseId ?? undefined
+    ),
     staleTime: Infinity,
   });
   const geometryFips = useMemo(
@@ -289,7 +319,7 @@ export function ReviewOperatingPicture({
     }
     const source = {
       period,
-      releaseId,
+      releaseId: releaseId ?? "",
       scopeCode,
       searchParams: new URLSearchParams(searchKey),
       selectedFips,
@@ -349,33 +379,46 @@ export function ReviewOperatingPicture({
     <div
       ref={layoutRef}
       className="ux-reset-review-operating"
-      data-configuration-sha256={review.configuration_sha256}
-      data-methodology-id={review.methodology_id}
-      data-methodology-version={review.methodology_version}
-      data-result-state={pictureState}
+      data-configuration-sha256={
+        parseConfigurationSha256(review.configuration_sha256) ?? undefined
+      }
+      data-methodology-id={reviewIdentifier(review.methodology_id) ?? undefined}
+      data-methodology-version={
+        reviewIdentifier(review.methodology_version) ?? undefined
+      }
+      data-result-state={pictureState ?? "unavailable"}
       data-testid="review-state-panel"
     >
       <div className="ux-reset-review-result">
         <h2 className="type-card">Review result</h2>
         <p data-testid="review-result-summary">
-          {reviewPictureSummary(pictureState)}
+          {pictureState
+            ? reviewPictureSummary(pictureState)
+            : REVIEW_FIELD_UNAVAILABLE}
         </p>
         <p data-testid="review-methodology">
-          Method {reviewDisplayValue(review.methodology_id)}{" "}
-          {reviewDisplayValue(review.methodology_version)}. Release{" "}
-          {reviewDisplayValue(review.data_release_version)}.{" "}
-          {reviewDisplayValue(review.effective_observation_context)}.
+          Method {reviewIdentifierText(review.methodology_id)}{" "}
+          {reviewIdentifierText(review.methodology_version)}. Release{" "}
+          {reviewDatasetText(review.data_release_version)}.{" "}
+          {reviewText(review.effective_observation_context)}.
         </p>
         <div data-testid="review-result-provenance">
           <EvidenceProvenanceInspect
             provenance={reviewResultProvenance(review)}
             stateHeading="Review result"
-            stateLabel={reviewResultStateLabel(review.result_state)}
+            stateLabel={
+              resultState
+                ? reviewResultStateLabel(resultState)
+                : REVIEW_FIELD_UNAVAILABLE
+            }
           />
         </div>
         <p data-testid="review-backend-result">
-          Backend result: {reviewResultStateLabel(review.result_state)}.{" "}
-          {review.coverage.assessed_counties} assessed,{" "}
+          Backend result:{" "}
+          {resultState
+            ? reviewResultStateLabel(resultState)
+            : REVIEW_FIELD_UNAVAILABLE}
+          . {review.coverage.assessed_counties} assessed,{" "}
           {review.coverage.eligible_counties} eligible,{" "}
           {review.coverage.abstained_counties} abstained,{" "}
           {review.coverage.evaluated_counties} evaluated.
@@ -504,7 +547,7 @@ export function ReviewOperatingPicture({
                     }
                   >
                     <strong>
-                      {reviewDisplayValue(candidate.county_name)}, {scopeCode}
+                      {reviewText(candidate.county_name)}, {scopeCode}
                     </strong>
                     <small>{reviewCandidateExplanation(candidate)}</small>
                   </button>
@@ -543,12 +586,12 @@ export function ReviewOperatingPicture({
             {review.data_gaps.map((gap) => (
               <li
                 key={`${gap.county_fips}-${gap.code}`}
-                data-code={gap.code}
-                data-fips={gap.county_fips}
+                data-code={reviewIdentifier(gap.code) ?? undefined}
+                data-fips={reviewFips(gap.county_fips) ?? undefined}
                 data-testid="review-data-gap"
               >
-                <strong>FIPS {reviewDisplayValue(gap.county_fips)}</strong>{" "}
-                {reviewDisplayValue(gap.code)}. {reviewDisplayValue(gap.detail)}
+                <strong>FIPS {reviewFipsText(gap.county_fips)}</strong>{" "}
+                {reviewIdentifierText(gap.code)}. {reviewText(gap.detail)}
               </li>
             ))}
           </ul>

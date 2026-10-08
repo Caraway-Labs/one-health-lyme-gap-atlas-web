@@ -1,5 +1,32 @@
+import { z } from "zod";
+
 import type { AtlasMetadata } from "@/generated/models";
 import type { SourceMetadata } from "@/generated/models/sourceMetadata";
+
+const atlasDateTime = z.iso.datetime({ offset: true });
+const CONFIGURATION_SHA256 = /^[a-fA-F0-9]{64}$/;
+
+/**
+ * ISO-8601 date-time with a `Z` or numeric offset.
+ * A value `Date` can parse, including a bare calendar date, is not enough.
+ */
+export function parseAtlasDateTime(
+  value: string | null | undefined
+): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!atlasDateTime.safeParse(trimmed).success) {
+    return null;
+  }
+  return trimmed;
+}
+
+/** 64 hex characters. Any other string is not a configuration digest. */
+export function parseConfigurationSha256(
+  value: string | null | undefined
+): string | null {
+  const trimmed = value?.trim() ?? "";
+  return CONFIGURATION_SHA256.test(trimmed) ? trimmed : null;
+}
 
 const RELEASE_ASSEMBLY_DATE =
   /^(?:governed|alpha)-(?<assemblyDate>\d{4}-\d{2}-\d{2})\b/;

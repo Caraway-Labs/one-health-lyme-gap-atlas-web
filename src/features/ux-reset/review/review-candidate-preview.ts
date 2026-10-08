@@ -4,6 +4,17 @@ import {
 } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
+import {
+  reviewDatasetId,
+  reviewDatasetText,
+  reviewFipsText,
+  reviewIdentifier,
+  reviewIdentifierText,
+  reviewRecordRef,
+  reviewRecordRefText,
+  reviewRetrievedAt,
+  reviewSourceAsOf,
+} from "@/features/ux-reset/review/review-governed-values";
 import type {
   Candidate,
   PublicReviewEvidenceReference,
@@ -23,10 +34,10 @@ function observedBasis(candidate: Candidate): string {
   return candidate.evidence_references
     .map((reference) => {
       const target = governedField(reference.target);
-      const status = governedField(reference.status);
+      const status = reviewIdentifierText(reference.status);
       const product = governedField(reference.source_product);
-      const county = governedField(reference.county_fips);
-      const sourceAsOf = governedField(reference.source_as_of);
+      const county = reviewFipsText(reference.county_fips);
+      const sourceAsOf = reviewSourceAsOf(reference.source_as_of);
       return `${target}: ${status} (${product}, FIPS ${county}, as of ${sourceAsOf})`;
     })
     .join(" ");
@@ -61,7 +72,10 @@ export function reviewCandidateExplanation(candidate: Candidate): string {
   if (text) {
     return text;
   }
-  const codes = trimmedUnique(candidate.reason_codes);
+  const codes = trimmedUnique(candidate.reason_codes).flatMap((code) => {
+    const token = reviewIdentifier(code);
+    return token ? [token] : [];
+  });
   if (codes.length > 0) {
     return codes.join(", ");
   }
@@ -80,7 +94,10 @@ function candidateSourceFamilies(candidate: Candidate): string[] {
   return trimmedUnique([
     ...candidate.evidence_families,
     ...candidate.evidence_references.map((reference) => reference.family),
-  ]);
+  ]).flatMap((family) => {
+    const token = reviewIdentifier(family);
+    return token ? [token] : [];
+  });
 }
 
 function sharedReferenceValue(
@@ -104,19 +121,17 @@ function sharedReferenceValue(
 function referenceInspectLine(
   reference: PublicReviewEvidenceReference
 ): string {
-  const family = reference.family.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const family = reviewIdentifierText(reference.family);
   const product = reference.source_product.trim() || GOVERNED_FIELD_UNAVAILABLE;
-  const sourceAsOf =
-    reference.source_as_of.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const sourceAsOf = reviewSourceAsOf(reference.source_as_of);
   const revision = `; source as of ${sourceAsOf}`;
-  const version = reference.source_version.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const version = reviewIdentifierText(reference.source_version);
   const versionLabel = `; version ${version}`;
-  const county = reference.county_fips.trim() || GOVERNED_FIELD_UNAVAILABLE;
-  const retrieved = reference.retrieved_at.trim() || GOVERNED_FIELD_UNAVAILABLE;
-  const record =
-    reference.public_record_ref.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const county = reviewFipsText(reference.county_fips);
+  const retrieved = reviewRetrievedAt(reference.retrieved_at);
+  const record = reviewRecordRefText(reference.public_record_ref);
   const recordLabel = `; record ${record}`;
-  const release = reference.release_id.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const release = reviewDatasetText(reference.release_id);
   return `${family} (${product}; county ${county}${revision}${versionLabel}; retrieved ${retrieved}${recordLabel}; release ${release})`;
 }
 
@@ -131,8 +146,8 @@ function candidateQualification(
   const caveatParts = candidateCaveatParts(candidate);
   const referenceLines = references.map(referenceInspectLine);
   const referenceSummary = referenceLines.join(" ");
-  const methodId = methodologyId.trim() || GOVERNED_FIELD_UNAVAILABLE;
-  const methodVersion = methodologyVersion.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const methodId = reviewIdentifierText(methodologyId);
+  const methodVersion = reviewIdentifierText(methodologyVersion);
   return {
     availability: evidenceAvailabilityValues.limited,
     claimLabel: "Evidence state",
@@ -143,21 +158,21 @@ function candidateQualification(
         `${reviewCandidateExplanation(candidate)} ${caveat} Method ${methodId} ${methodVersion}. ${referenceSummary}`.trim(),
       limitations: caveatParts,
       materialCaveat: caveat,
-      methodLabel: methodologyId.trim() || null,
-      methodVersion: methodologyVersion.trim() || null,
+      methodLabel: reviewIdentifier(methodologyId),
+      methodVersion: reviewIdentifier(methodologyVersion),
       observationPeriod: GOVERNED_FIELD_UNAVAILABLE,
       referenceLines,
       sourceFamily:
         families.length > 0 ? families.join(", ") : GOVERNED_FIELD_UNAVAILABLE,
       technical: {
-        methodologyVersion: methodologyVersion.trim() || null,
+        methodologyVersion: reviewIdentifier(methodologyVersion),
         provenanceRef: sharedReferenceValue(
           references,
-          (reference) => reference.public_record_ref
+          (reference) => reviewRecordRef(reference.public_record_ref) ?? ""
         ),
         releaseId: sharedReferenceValue(
           references,
-          (reference) => reference.release_id
+          (reference) => reviewDatasetId(reference.release_id) ?? ""
         ),
         sourceId: sharedReferenceValue(
           references,
@@ -188,7 +203,10 @@ export function buildReviewCandidatePreview(input: {
     availability: evidenceAvailabilityValues.limited,
     caveat,
     countyName: governedField(input.candidate.county_name),
-    reasonCodes: trimmedUnique(input.candidate.reason_codes),
+    reasonCodes: trimmedUnique(input.candidate.reason_codes).flatMap((code) => {
+      const token = reviewIdentifier(code);
+      return token ? [token] : [];
+    }),
     fips: input.candidate.county_fips,
     followUp: nextCheck || "The review result did not include a next check.",
     followUpLabel: CANDIDATE_FOLLOW_UP_LABEL,

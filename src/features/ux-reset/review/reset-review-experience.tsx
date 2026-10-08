@@ -8,6 +8,7 @@ import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atla
 import { inheritedContextFromReview } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { resetRouteById } from "@/features/ux-reset/paths";
+import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
@@ -130,7 +131,7 @@ function ResetReviewExperienceInner() {
       releaseId:
         scope === "ALL"
           ? (presentationQuery.metadata?.release_id ?? null)
-          : (stateReview.review?.data_release_version ?? null),
+          : reviewDatasetId(stateReview.review?.data_release_version),
       releaseReady: scope === "ALL" ? nationalReady : reviewReady,
       requestedCounty: scopeUnsupported ? null : urlState.county,
     })

@@ -3,6 +3,7 @@ import {
   uxResetContextHandoffSearchParams,
   uxResetShellHandoffHref,
 } from "@/features/ux-reset/context-handoff";
+import { parseCalendarIsoDate } from "@/features/ux-reset/context-params";
 import { evidenceTypeFromGovernedMetadata } from "@/features/ux-reset/evidence/evidence-type";
 import {
   evidenceAvailabilityValues,
@@ -14,6 +15,7 @@ import {
   availabilityFromGovernedValueState,
   evidenceAvailabilityLabel,
 } from "@/features/ux-reset/evidence/value-state-contract";
+import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
 import { reviewCandidateFipsForScope } from "@/features/ux-reset/review/review-operating-state";
 import {
   RESET_INVESTIGATE_PATH,
@@ -247,6 +249,31 @@ function writeReviewHandoffCounty(
   return null;
 }
 
+function writeReviewHandoffDataset(
+  source: URLSearchParams,
+  releaseId: string
+): string | null {
+  const dataset = reviewDatasetId(releaseId);
+  if (dataset) {
+    source.set("dataset", dataset);
+    return dataset;
+  }
+  source.delete("dataset");
+  return null;
+}
+
+function writeReviewHandoffPeriod(
+  source: URLSearchParams,
+  period: string | null
+): void {
+  const parsed = period ? parseCalendarIsoDate(period) : null;
+  if (parsed) {
+    source.set("period", parsed);
+    return;
+  }
+  source.delete("period");
+}
+
 export function buildReviewInvestigateHandoff(input: {
   period: string | null;
   releaseId: string;
@@ -257,12 +284,8 @@ export function buildReviewInvestigateHandoff(input: {
   const source = new URLSearchParams(input.searchParams.toString());
   source.set("scope", input.scopeCode);
   writeReviewHandoffCounty(source, input.selectedFips, input.scopeCode);
-  source.set("dataset", input.releaseId);
-  if (input.period) {
-    source.set("period", input.period);
-  } else {
-    source.delete("period");
-  }
+  writeReviewHandoffDataset(source, input.releaseId);
+  writeReviewHandoffPeriod(source, input.period);
   const handoff = uxResetContextHandoffSearchParams(
     RESET_REVIEW_PATH,
     RESET_INVESTIGATE_PATH,
@@ -296,15 +319,11 @@ export function buildReviewCompareHandoff(input: {
     input.selectedFips,
     input.scopeCode
   );
-  source.set("dataset", input.releaseId);
-  if (input.period) {
-    source.set("period", input.period);
-  } else {
-    source.delete("period");
-  }
+  const dataset = writeReviewHandoffDataset(source, input.releaseId);
+  writeReviewHandoffPeriod(source, input.period);
   return buildCompareEntryHref({
     county,
-    dataset: input.releaseId,
+    dataset,
     period: input.period,
     returnTo: "review",
     scope: input.scopeCode,

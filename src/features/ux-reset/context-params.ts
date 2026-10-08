@@ -4,6 +4,11 @@ import { z } from "zod";
 import { isCountyFips } from "@/lib/county-geography";
 
 const DATASET_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+
+/** Dataset and release tokens accepted on UX Reset URLs. Callers trim first. */
+export function isUxResetDatasetId(value: string): boolean {
+  return DATASET_PATTERN.test(value);
+}
 const ISO_DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
 const STATE_SCOPE_PATTERN = /^[A-Z]{2}$/;
 

@@ -51,7 +51,8 @@ export function reviewPictureState(
     }
     default: {
       const exhaustive: never = review.result_state;
-      return exhaustive;
+      void exhaustive;
+      return reviewPictureStateValues.unsupported;
     }
   }
 }
@@ -80,6 +81,22 @@ export function reviewPictureSummary(state: ReviewPictureState): string {
   }
 }
 
+export function isGovernedReviewResultState(
+  value: string
+): value is StateReviewResultState {
+  switch (value) {
+    case "candidates_found":
+    case "insufficient_evidence":
+    case "none_stand_out":
+    case "unsupported": {
+      return true;
+    }
+    default: {
+      return false;
+    }
+  }
+}
+
 export function reviewResultStateLabel(
   resultState: StateReviewResultState
 ): string {
@@ -98,7 +115,8 @@ export function reviewResultStateLabel(
     }
     default: {
       const exhaustive: never = resultState;
-      return exhaustive;
+      void exhaustive;
+      return "Unavailable";
     }
   }
 }

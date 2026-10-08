@@ -6,6 +6,8 @@ import {
   describeReleaseAssembly,
   formatAtlasTimestamp,
   formatEvidenceSnapshotSummary,
+  parseAtlasDateTime,
+  parseConfigurationSha256,
   summarizeSourceVintages,
 } from "@/lib/atlas-evidence-metadata";
 
@@ -70,6 +72,37 @@ describe("atlas evidence metadata", () => {
     expect(formatAtlasTimestamp("")).toBe("Unavailable");
     expect(formatAtlasTimestamp("not-a-date")).toBe("Unavailable");
     expect(formatAtlasTimestamp("2026-08-06T05:37:16Z")).toContain("2026");
+  });
+
+  it("accepts offset date-times and rejects other strings", () => {
+    expect({
+      blank: parseAtlasDateTime(""),
+      dateOnly: parseAtlasDateTime("2026-10-06"),
+      impossible: parseAtlasDateTime("2026-02-31T00:00:00Z"),
+      offset: parseAtlasDateTime(" 2026-10-06T04:57:46+00:00 "),
+      text: parseAtlasDateTime("not-a-timestamp"),
+      utc: parseAtlasDateTime("2026-10-06T04:57:46.000Z"),
+    }).toStrictEqual({
+      blank: null,
+      dateOnly: null,
+      impossible: null,
+      offset: "2026-10-06T04:57:46+00:00",
+      text: null,
+      utc: "2026-10-06T04:57:46.000Z",
+    });
+  });
+
+  it("accepts a 64-hex configuration id", () => {
+    const digest = "a".repeat(64);
+    expect({
+      blank: parseConfigurationSha256(""),
+      digest: parseConfigurationSha256(digest),
+      text: parseConfigurationSha256("not-a-hash"),
+    }).toStrictEqual({
+      blank: null,
+      digest,
+      text: null,
+    });
   });
 
   it("builds a summary without raw release or method IDs", () => {
