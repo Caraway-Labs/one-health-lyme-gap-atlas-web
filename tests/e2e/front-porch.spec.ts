@@ -94,6 +94,34 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
   ).toBeVisible();
 });
 
+test("account-free sign-in exit does not reload the protected Review path", async ({
+  page,
+}) => {
+  await page.goto("/auth/sign-in?next=%2Fapp%2Freview");
+  await page.getByRole("link", { name: "Continue without an account" }).click();
+  await expect(page).toHaveURL(/\/overview\/?$/);
+  await expect(page).not.toHaveURL(/sign-in/);
+  await expectNoCountyPreselection(page);
+});
+
+test("public privacy shell returns to the analytical Atlas", async ({
+  page,
+}) => {
+  await page.goto("/privacy");
+  const backToAtlas = page.getByRole("link", {
+    exact: true,
+    name: "Back to Atlas",
+  });
+  await expect(backToAtlas).toHaveAttribute("href", "/overview");
+  await backToAtlas.click();
+  await expect(page).toHaveURL(/\/overview\/?$/);
+  await expect(
+    page.getByRole("heading", {
+      name: "The data is telling more than one story.",
+    })
+  ).toHaveCount(0);
+});
+
 test("signed-in review entry does not preselect a county", async ({ page }) => {
   await page.goto("/app/review");
   await expect(page).toHaveURL(/\/app\/review\/?$/);
