@@ -8,7 +8,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
+import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
+import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import { cn } from "@/lib/utils";
 
 type ReviewCountyPreviewPanelProps = {
@@ -18,6 +21,7 @@ type ReviewCountyPreviewPanelProps = {
   onOpen: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   preview: ReviewCountyPreviewModel;
+  release: Tier1ActiveRelease;
 };
 
 export function ReviewCountyPreviewPanel({
@@ -27,6 +31,7 @@ export function ReviewCountyPreviewPanel({
   onOpen,
   openRef,
   preview,
+  release,
 }: ReviewCountyPreviewPanelProps) {
   const title = `${preview.countyName}, ${preview.stateName}`;
   return (
@@ -54,6 +59,16 @@ export function ReviewCountyPreviewPanel({
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}
       </p>
+      {preview.reasonCodes.length > 0 ? (
+        <div data-testid="review-reason-codes">
+          <p className="type-small">Review reason codes</p>
+          <ul>
+            {preview.reasonCodes.map((code) => (
+              <li key={code}>{code}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {preview.observedBasis ? (
         <p className="type-body" data-testid="review-observed-basis">
           {preview.observedBasis}
@@ -61,14 +76,31 @@ export function ReviewCountyPreviewPanel({
       ) : null}
       {preview.qualification ? (
         <div data-testid="review-preview-qualification">
-          <EvidenceStateStrip model={preview.qualification} showReason />
-          <EvidenceProvenanceInspect
-            availability={preview.qualification.availability}
-            provenance={preview.qualification.provenance}
-            reasonCode={preview.qualification.reasonCode}
+          <EvidenceStateStrip
+            model={preview.qualification}
+            showReason={Boolean(preview.qualification.reasonCode)}
           />
+          {preview.qualification.reasonCode ? (
+            <EvidenceProvenanceInspect
+              availability={preview.qualification.availability}
+              provenance={preview.qualification.provenance}
+              reasonCode={preview.qualification.reasonCode}
+            />
+          ) : (
+            <EvidenceProvenanceInspect
+              provenance={preview.qualification.provenance}
+              stateLabel={evidenceAvailabilityLabel(
+                preview.qualification.availability
+              )}
+            />
+          )}
         </div>
       ) : null}
+      <Tier1SurveillancePriority
+        fips={preview.fips}
+        headingLevel="h3"
+        release={release}
+      />
       <p className="type-body" data-testid="review-preview-follow-up">
         <span className="eyebrow">
           {preview.followUpLabel ?? "Suggested follow-up"}

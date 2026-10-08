@@ -1,13 +1,24 @@
-import { pageMetadataForRoute } from "@/lib/navigation";
+import { redirect } from "next/navigation";
 
-import { AtlasHomePage } from "./atlas-home-page";
+import { FrontPorchPage } from "@/features/front-porch/front-porch-page";
+import { legacyAnalyticalOverviewHref } from "@/lib/analytical-navigation-handoff";
+import { pageMetadataForRoute } from "@/lib/navigation";
 
 export const metadata = pageMetadataForRoute("/");
 
-// The homepage includes global navigation that must reflect a completed deployment.
-// Render this route on request so an obsolete static homepage cannot outlive it.
+// The public root must reflect the current Front Porch after each deployment.
 export const dynamic = "force-dynamic";
 
-export default function Page() {
-  return <AtlasHomePage />;
+type SearchParamValue = string | string[] | undefined;
+
+interface RootPageProps {
+  searchParams: Promise<Record<string, SearchParamValue>>;
+}
+
+export default async function Page({ searchParams }: RootPageProps) {
+  const legacyOverviewHref = legacyAnalyticalOverviewHref(await searchParams);
+  if (legacyOverviewHref) {
+    redirect(legacyOverviewHref);
+  }
+  return <FrontPorchPage />;
 }

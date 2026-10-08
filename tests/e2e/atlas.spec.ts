@@ -185,7 +185,7 @@ test.beforeEach(async ({ page }) => {
 test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages", async ({
   page,
 }, testInfo) => {
-  await page.goto("/");
+  await page.goto("/overview");
   await expect(
     page.getByRole("heading", {
       name: "Find counties that may deserve a closer look.",
@@ -276,7 +276,7 @@ test("TC22: declared favicon and canonical fallback resolve without 404", async 
     if (response.url().includes("favicon") && response.status() === 404)
       failedFavicons.push(response.url());
   });
-  await page.goto("/");
+  await page.goto("/overview");
   const icon = page.locator('head link[rel="icon"]');
   await expect(icon).toHaveAttribute("href", "/favicon.svg");
   const declared = await request.get("/favicon.svg");
@@ -292,7 +292,7 @@ test("TC22: declared favicon and canonical fallback resolve without 404", async 
 test("drawer hands the local conversation to the accessible workspace", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/overview");
   await page.getByRole("button", { name: "Atlas Assistant" }).click();
   const dialog = page.getByRole("dialog", { name: "Atlas Assistant" });
   await expect(dialog).toContainText("not medical advice");
@@ -329,7 +329,7 @@ test("redirects legacy research links to the single assistant workspace", async 
 test("renders the atlas and full non-map results", async ({
   page,
 }, testInfo) => {
-  await page.goto("/");
+  await page.goto("/overview");
   const navigation = page.getByRole("navigation", {
     name: "Primary navigation",
   });
@@ -363,7 +363,7 @@ test("renders the atlas and full non-map results", async ({
 test("ranked county selection keeps the shareable URL and profile in sync", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/overview");
   await expect(
     page.getByRole("heading", { name: "Los Angeles, California" })
   ).toBeVisible();
@@ -405,7 +405,7 @@ test("variant county list selection keeps the shareable URL and profile in sync"
 });
 
 test("publishes an accessible, clear privacy summary", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/overview");
   await page.getByRole("link", { name: "Privacy" }).click();
 
   await expect(page).toHaveURL(/\/privacy$/);
@@ -478,7 +478,7 @@ test("does not contact Amplitude before consent or after opt-out", async ({
     amplitudeCalls.push(route.request().url());
     await route.abort();
   });
-  await page.goto("/");
+  await page.goto("/overview");
   await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
@@ -495,7 +495,7 @@ test("sends Amplitude events after analytics consent", async ({ page }) => {
     amplitudeCalls.push(route.request().url());
     await route.fulfill({ status: 200, body: "{}" });
   });
-  await page.goto("/");
+  await page.goto("/overview");
   await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
@@ -519,7 +519,7 @@ test("keeps Amplitude off when Do Not Track is enabled", async ({ page }) => {
     amplitudeCalls.push(route.request().url());
     await route.abort();
   });
-  await page.goto("/");
+  await page.goto("/overview");
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await expect(
     page.getByRole("button", { name: "Allow optional analytics" })
@@ -530,7 +530,7 @@ test("keeps Amplitude off when Do Not Track is enabled", async ({ page }) => {
 test("downloads county and state PDF reports with server filenames", async ({
   page,
 }) => {
-  await page.goto("/?county=08001&state=CO");
+  await page.goto("/overview?county=08001&state=CO");
   await expect(page.getByText("Adams, Colorado")).toBeVisible();
 
   const countyDownload = page.waitForEvent("download");
@@ -545,7 +545,7 @@ test("downloads county and state PDF reports with server filenames", async ({
 test("keeps filters and score settings in the shareable URL", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/overview");
   await page.getByRole("combobox", { name: "State" }).click();
   await page.getByRole("option", { name: "Colorado" }).click();
   await page.getByLabel("County name or FIPS code").fill("Adams");
@@ -608,7 +608,7 @@ test("shows a recoverable status when the governed API release is unavailable", 
     await route.abort();
   });
 
-  await page.goto("/");
+  await page.goto("/overview");
   await expect(
     page.getByRole("heading", { name: "The Atlas is temporarily unavailable" })
   ).toBeVisible();
@@ -693,7 +693,7 @@ test("keeps mobile drawer focus contained and restores it after Escape", async (
 }, testInfo) => {
   test.skip(!testInfo.project.name.includes("mobile"));
 
-  await page.goto("/");
+  await page.goto("/overview");
   const trigger = page.getByRole("button", { name: "Open navigation" });
   await trigger.focus();
   await trigger.click();
@@ -739,7 +739,7 @@ test("keeps the shared shell responsive and preserves deep links during keyboard
   page,
 }, testInfo) => {
   const routes = [
-    "/",
+    "/overview",
     "/geographic_explorer?county=08001",
     "/investigate?county=08001",
     "/assistant",
@@ -763,7 +763,7 @@ test("keeps the shared shell responsive and preserves deep links during keyboard
     page.getByRole("navigation", { name: "Primary navigation" })
   ).toHaveCount(0);
 
-  await page.goto("/?county=08001");
+  await page.goto("/overview?county=08001");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
@@ -913,7 +913,7 @@ test("opens the Investigation Workspace from shared navigation and keeps it curr
   page,
 }, testInfo) => {
   const mobile = testInfo.project.name.includes("mobile");
-  await page.goto("/?county=08001&dataset=alpha-2026-08-06");
+  await page.goto("/overview?county=08001&dataset=alpha-2026-08-06");
   if (mobile) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
@@ -926,7 +926,7 @@ test("opens the Investigation Workspace from shared navigation and keeps it curr
   expect(handoffUrl.searchParams.get("county")).toBe("08001");
   expect(handoffUrl.searchParams.get("dataset")).toBe("alpha-2026-08-06");
 
-  await page.goto("/");
+  await page.goto("/overview");
   if (mobile) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }

@@ -39,7 +39,7 @@ export function EvidenceStateStrip({
       <Badge className="ux-reset-evidence-availability" variant="outline">
         {evidenceAvailabilityLabel(availability)}
       </Badge>
-      {showReason ? (
+      {showReason && reasonCode ? (
         <span className="ux-reset-evidence-reason type-small">
           {evidenceReasonLabel(reasonCode)}
         </span>

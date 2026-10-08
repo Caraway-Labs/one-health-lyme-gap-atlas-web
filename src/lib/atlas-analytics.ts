@@ -14,6 +14,7 @@ export const ANALYTICS_RELEASE_VERSION = "atlas-web/0.1.0";
 
 export const routeIds = [
   "atlas_home",
+  "front_porch",
   "privacy",
   "knowledge_graph",
   "atlas_variant",
@@ -228,7 +229,9 @@ type AnalyticsEvent =
       properties: { outcome: FeedbackOutcome };
     };
 
-function routeIdForPathname(pathname: string): RouteId {
+export function routeIdForPathname(pathname: string): RouteId {
+  if (pathname === "/") return "front_porch";
+  if (pathname === "/overview") return "atlas_home";
   if (pathname === "/privacy") return "privacy";
   if (pathname === "/knowledge-graph") return "knowledge_graph";
   if (pathname.startsWith("/variant_")) return "atlas_variant";

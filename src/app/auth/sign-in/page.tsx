@@ -6,12 +6,16 @@ import { FormEvent, Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { safeReturnPath } from "@/lib/auth/return-path";
+import {
+  accountFreeContinueHref,
+  safeReturnPath,
+} from "@/lib/auth/return-path";
 import { createClient } from "@/lib/supabase/client";
 
 function SignInForm() {
   const searchParams = useSearchParams();
   const next = safeReturnPath(searchParams.get("next"));
+  const continueWithoutAccountHref = accountFreeContinueHref(next);
   const [email, setEmail] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -102,7 +106,7 @@ function SignInForm() {
             {notice}
           </p>
         )}
-        <Link className="text-sm underline" href={next}>
+        <Link className="text-sm underline" href={continueWithoutAccountHref}>
           Continue without an account
         </Link>
       </section>

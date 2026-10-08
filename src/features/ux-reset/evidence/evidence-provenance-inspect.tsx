@@ -51,20 +51,33 @@ function configurationText(value: string | null | undefined): string | null {
 }
 
 type EvidenceProvenanceInspectProps = {
-  availability: EvidenceAvailability;
   className?: string;
   contentSurface?: ContentSurface;
   provenance: EvidenceProvenanceModel;
-  reasonCode: EvidenceReasonCode;
-};
+} & (
+  | {
+      availability: EvidenceAvailability;
+      reasonCode: EvidenceReasonCode;
+      stateLabel?: undefined;
+    }
+  | {
+      availability?: undefined;
+      reasonCode?: undefined;
+      stateLabel: string;
+    }
+);
 
-export function EvidenceProvenanceInspect({
-  availability,
-  className,
-  contentSurface = "source_card",
-  provenance,
-  reasonCode,
-}: EvidenceProvenanceInspectProps) {
+function evidenceStateText(props: EvidenceProvenanceInspectProps): string {
+  if (props.stateLabel !== undefined) {
+    return props.stateLabel;
+  }
+  return evidenceInspectState(props.availability, props.reasonCode);
+}
+
+export function EvidenceProvenanceInspect(
+  props: EvidenceProvenanceInspectProps
+) {
+  const { className, contentSurface = "source_card", provenance } = props;
   const technical = provenance.technical;
   const evaluatedAt = technical
     ? evaluatedAtText(technical.evaluatedAt, technical.evaluatedAtRaw)
@@ -124,7 +137,7 @@ export function EvidenceProvenanceInspect({
           </div>
           <div data-testid="evidence-provenance-state">
             <dt>Evidence state</dt>
-            <dd>{evidenceInspectState(availability, reasonCode)}</dd>
+            <dd>{evidenceStateText(props)}</dd>
           </div>
         </dl>
         {referenceLines.length > 0 ? (

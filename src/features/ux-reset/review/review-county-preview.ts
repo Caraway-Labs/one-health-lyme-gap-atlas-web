@@ -53,6 +53,8 @@ export type ReviewCountyPreviewModel = {
    * Null when the score row does not show a limitation.
    */
   qualification: EvidenceObjectModel | null;
+  /** Why the county surfaced. These are not governed limitations. */
+  reasonCodes: readonly string[];
   stateCode: string;
   stateName: string;
   why: string;
@@ -182,6 +184,7 @@ export function buildReviewCountyPreview(
     fips: county.fips,
     followUp: suggestedFollowUpForColor(county.color),
     qualification: reviewCountyPreviewQualification(county),
+    reasonCodes: [],
     stateCode: county.state,
     stateName: county.state_name,
     why: reviewCountyPreviewWhy(county),

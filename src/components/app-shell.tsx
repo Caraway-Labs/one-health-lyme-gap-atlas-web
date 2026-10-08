@@ -40,6 +40,7 @@ import {
 } from "@/lib/assistant-entry-points";
 import { getDocsUrl } from "@/lib/docs-config";
 import {
+  ATLAS_OVERVIEW_PATH,
   NAVIGATION_GROUPS,
   NAVIGATION_STATUS_LABELS,
   UTILITY_NAVIGATION_ITEMS,
@@ -158,7 +159,7 @@ function AppShellContent({
       >
         <SidebarHeader className="app-brand">
           <Link
-            href="/"
+            href={ATLAS_OVERVIEW_PATH}
             aria-label="One Health Lyme Gap Atlas home"
             onClick={selectDestination}
           >

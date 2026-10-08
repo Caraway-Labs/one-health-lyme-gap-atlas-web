@@ -29,17 +29,18 @@ import {
 } from "@/features/ux-reset/review/review-county-preview";
 import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
+  reviewAbstainedOutcomeCopy,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
   reviewResultStateLabel,
-  reviewScopeHasContiguousMap,
 } from "@/features/ux-reset/review/review-operating-state";
 import {
   consumeReviewReturnFocus,
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
+import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { ValueState, type StateReview } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
@@ -63,6 +64,8 @@ const AtlasMap = dynamic(
   }
 );
 
+const UNKNOWN_TIER_RELEASE: Tier1ActiveRelease = { status: "unknown" };
+
 type ReviewCountyHistory = "push" | "replace";
 
 type ReviewOperatingPictureProps = {
@@ -72,6 +75,7 @@ type ReviewOperatingPictureProps = {
   review: StateReview;
   scopeCode: string;
   stateName: string;
+  tierRelease?: Tier1ActiveRelease;
 };
 
 function gapEvidenceModel(review: StateReview) {
@@ -139,6 +143,7 @@ export function ReviewOperatingPicture({
   review,
   scopeCode,
   stateName,
+  tierRelease = UNKNOWN_TIER_RELEASE,
 }: ReviewOperatingPictureProps) {
   const candidates = review.review_candidates;
   const candidateFips = useMemo(
@@ -175,9 +180,8 @@ export function ReviewOperatingPicture({
     }
   }, [county, onCountyChange, selectedFips]);
 
-  const mapSupported = reviewScopeHasContiguousMap(scopeCode);
   const geometryQuery = useQuery({
-    enabled: mapSupported && Boolean(releaseId),
+    enabled: Boolean(releaseId),
     queryFn: async () => fetchCountyDisplayGeometry(releaseId),
     queryKey: countyDisplayGeometryQueryKey("atlas-home", releaseId),
     staleTime: Infinity,
@@ -304,9 +308,8 @@ export function ReviewOperatingPicture({
         </p>
         <div data-testid="review-result-provenance">
           <EvidenceProvenanceInspect
-            availability={evidenceAvailabilityValues.limited}
             provenance={reviewResultProvenance(review)}
-            reasonCode="MATERIAL_LIMITATION"
+            stateLabel={reviewResultStateLabel(review.result_state)}
           />
         </div>
         <p data-testid="review-backend-result">
@@ -333,18 +336,7 @@ export function ReviewOperatingPicture({
           title={`Counties in ${stateName}`}
         />
         <div className="map-wrap" data-testid="review-state-map-region">
-          {mapSupported ? null : (
-            <div data-testid="review-state-map-unsupported">
-              <AtlasStatusMessage className="map-loading" tone="empty">
-                <p>
-                  The county map covers the contiguous United States, so it does
-                  not draw {stateName}. The county list and evidence still show
-                  this review result.
-                </p>
-              </AtlasStatusMessage>
-            </div>
-          )}
-          {mapSupported && geometryReady && hasMapCounties ? (
+          {geometryReady && hasMapCounties ? (
             <AtlasMap
               ariaLabel={`Map of ${stateName}. Review suggestions are in the county list.`}
               cameraFrameState={scopeCode}
@@ -354,7 +346,7 @@ export function ReviewOperatingPicture({
               selectedState={scopeCode}
               onSelect={selectCounty}
             />
-          ) : mapSupported && geometryError ? (
+          ) : geometryError ? (
             <AtlasStatusMessage
               className="map-loading"
               data-testid="review-state-map-error"
@@ -365,7 +357,7 @@ export function ReviewOperatingPicture({
                 inspect the same review result.
               </p>
             </AtlasStatusMessage>
-          ) : mapSupported && !hasMapCounties && !geometryQuery.isPending ? (
+          ) : !hasMapCounties && !geometryQuery.isPending ? (
             <AtlasStatusMessage
               className="map-loading"
               data-testid="review-state-map-empty"
@@ -373,7 +365,7 @@ export function ReviewOperatingPicture({
             >
               <p>No county shapes were returned to draw for this result.</p>
             </AtlasStatusMessage>
-          ) : mapSupported ? (
+          ) : (
             <AtlasStatusMessage
               className="map-loading"
               data-testid="review-state-map-loading"
@@ -381,12 +373,11 @@ export function ReviewOperatingPicture({
             >
               Loading map…
             </AtlasStatusMessage>
-          ) : null}
+          )}
         </div>
         <p className="type-small">
-          {mapSupported
-            ? "The map shows place. It does not color counties by a risk score. Suggestions are the review list."
-            : "Suggestions stay in the review list. This map does not draw Alaska or Hawaii."}
+          The map shows place. It does not color counties by a risk score.
+          Suggestions are the review list.
         </p>
       </Card>
 
@@ -434,6 +425,29 @@ export function ReviewOperatingPicture({
             </div>
           )}
         </Card>
+        {pictureState === "candidates_found" &&
+        review.coverage.abstained_counties > 0 ? (
+          <section
+            aria-label="Abstained counties"
+            className="ux-reset-review-gaps"
+            data-testid="review-abstained-outcomes"
+          >
+            <h3 className="type-card">Abstained counties</h3>
+            <p className="type-body">
+              {reviewAbstainedOutcomeCopy(review.coverage.abstained_counties)}
+            </p>
+            <p className="type-small">Rule coverage</p>
+            <ul className="ux-reset-review-gap-list">
+              {Object.entries(review.coverage.rule_coverage)
+                .toSorted(([left], [right]) => left.localeCompare(right))
+                .map(([rule, status]) => (
+                  <li key={rule} data-rule={rule} data-status={status}>
+                    {rule}: {status}
+                  </li>
+                ))}
+            </ul>
+          </section>
+        ) : null}
         {preview && handoff ? (
           <ReviewCountyPreviewPanel
             compareHref={handoff.compareHref}
@@ -441,6 +455,7 @@ export function ReviewOperatingPicture({
             href={handoff.href}
             openRef={openRef}
             preview={preview}
+            release={tierRelease}
             onOpen={markReviewReturnFocus}
           />
         ) : null}

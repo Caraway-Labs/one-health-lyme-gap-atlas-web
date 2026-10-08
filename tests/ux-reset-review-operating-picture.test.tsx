@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
+import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import { buildReviewCandidatePreview } from "@/features/ux-reset/review/review-candidate-preview";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
@@ -345,11 +346,18 @@ describe("Review operating picture state", () => {
       const view = render(
         <>
           <EvidenceStateStrip model={qualification} />
-          <EvidenceProvenanceInspect
-            availability={qualification.availability}
-            provenance={qualification.provenance}
-            reasonCode={qualification.reasonCode}
-          />
+          {qualification.reasonCode ? (
+            <EvidenceProvenanceInspect
+              availability={qualification.availability}
+              provenance={qualification.provenance}
+              reasonCode={qualification.reasonCode}
+            />
+          ) : (
+            <EvidenceProvenanceInspect
+              provenance={qualification.provenance}
+              stateLabel={evidenceAvailabilityLabel(qualification.availability)}
+            />
+          )}
         </>
       );
       const strip = view.container.querySelector(".ux-reset-evidence-strip");
@@ -440,7 +448,7 @@ describe("Review operating picture state", () => {
       },
       empty: {
         compact: absentCaveat,
-        inspectItems: [absentCaveat],
+        inspectItems: [],
         inspectSource: "Unavailable",
         referenceLine: expect.stringContaining("Unavailable"),
         sourceFamily: "Unavailable",
@@ -719,71 +727,248 @@ describe("Review operating picture state", () => {
     });
   });
 
-  it("keeps Alaska and Hawaii on the list without the contiguous map", async () => {
+  it("shows the API result state without inventing a material limitation", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const read = async (scopeCode: string, stateName: string, fips: string) => {
+    const empty = buildStateReview({
+      resultState: "none_stand_out",
+      state: "CO",
+    });
+    empty.limitations = [];
+    const withLimitation = buildStateReview({
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Denver",
+          fips: "08001",
+          reasonText: "Denver was returned by the method.",
+        }),
+      ],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const read = (review: StateReview) => {
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const provenance = screen.getByTestId("review-result-provenance");
+      fireEvent.click(within(provenance).getByText("Inspect provenance"));
+      const state =
+        within(provenance).getByTestId("evidence-provenance-state")
+          .textContent ?? "";
+      const limitations =
+        within(provenance).getByTestId("evidence-provenance-limitations")
+          .textContent ?? "";
+      view.unmount();
+      return {
+        inventedLimited: state.includes("Limited"),
+        inventedMaterial: limitations.includes("Material limitation"),
+        limitations,
+        state,
+      };
+    };
+    expect({
+      empty: read(empty),
+      withLimitation: read(withLimitation),
+    }).toStrictEqual({
+      empty: {
+        inventedLimited: false,
+        inventedMaterial: false,
+        limitations: expect.stringContaining(
+          "No governed limitations were returned."
+        ),
+        state: expect.stringContaining("Nothing stands out"),
+      },
+      withLimitation: {
+        inventedLimited: false,
+        inventedMaterial: false,
+        limitations: expect.stringContaining(
+          "Review is not disease risk. Candidates come only from the review result."
+        ),
+        state: expect.stringContaining("Candidates found"),
+      },
+    });
+  });
+
+  it("keeps reason codes out of governed limitations", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const reasonCode = "PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW";
+    const caveat = "Collection dates are unavailable.";
+    const withoutCaveat = reviewCandidate({
+      caveat: "replaced",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    withoutCaveat.evidence_references = [
+      { ...reviewEvidenceReference("08001"), limitations: [] },
+    ];
+    withoutCaveat.freshness_comparability = "";
+    withoutCaveat.limitations = [];
+    withoutCaveat.reason_codes = [reasonCode];
+    const withCaveat = reviewCandidate({
+      caveat,
+      countyName: "Boulder",
+      fips: "08013",
+      reasonText: "Boulder was returned by the method.",
+    });
+    withCaveat.reason_codes = [reasonCode];
+    const read = (candidate: Candidate) => {
       const view = render(
         <QueryClientProvider client={client}>
           <ReviewOperatingPicture
             review={buildStateReview({
-              candidates: [
-                reviewCandidate({
-                  caveat: "Collection dates are unavailable.",
-                  countyName: "Example",
-                  fips,
-                  reasonText: `${stateName} was returned by the method.`,
-                }),
-              ],
+              candidates: [candidate],
               resultState: "candidates_found",
-              state: scopeCode,
+              state: "CO",
             })}
-            scopeCode={scopeCode}
-            stateName={stateName}
+            scopeCode="CO"
+            stateName="Colorado"
           />
         </QueryClientProvider>
       );
-      if (scopeCode === "CO") {
-        await waitFor(() => {
-          if (!screen.queryByTestId("mock-atlas-map")) {
-            throw new Error("contiguous map did not render");
-          }
-        });
-      }
-      const region = screen.getByTestId("review-state-map-region");
+      const qualification = screen.getByTestId("review-preview-qualification");
+      fireEvent.click(within(qualification).getByText("Inspect provenance"));
+      const limitations =
+        within(qualification).getByTestId("evidence-provenance-limitations")
+          .textContent ?? "";
+      const state =
+        within(qualification).getByTestId("evidence-provenance-state")
+          .textContent ?? "";
+      const codes = screen.getByTestId("review-reason-codes").textContent ?? "";
+      view.unmount();
+      return {
+        codes,
+        limitationsIncludeCode: limitations.includes(reasonCode),
+        limitationsIncludeReasonLabel: limitations.includes("Reason code"),
+        materialReason: state.includes("Coverage or methodology limits apply"),
+        state,
+      };
+    };
+    expect({
+      withCaveat: read(withCaveat),
+      withoutCaveat: read(withoutCaveat),
+    }).toStrictEqual({
+      withCaveat: {
+        codes: expect.stringContaining(reasonCode),
+        limitationsIncludeCode: false,
+        limitationsIncludeReasonLabel: false,
+        materialReason: true,
+        state: expect.stringContaining("Limited"),
+      },
+      withoutCaveat: {
+        codes: expect.stringContaining(reasonCode),
+        limitationsIncludeCode: false,
+        limitationsIncludeReasonLabel: false,
+        materialReason: false,
+        state: "Evidence stateLimited",
+      },
+    });
+  });
+
+  it("shows abstained counties when candidates were found", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "08031",
+      detail: "Environmental context stays a data gap.",
+    };
+    const found = buildStateReview({
+      candidates: [candidate],
+      gaps: [gap],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    found.coverage.abstained_counties = 1;
+    found.coverage.rule_coverage = {
+      human_emerging: "disabled",
+      pathogen_present_vector_reported: "enabled",
+    };
+    const noneAbstained = buildStateReview({
+      candidates: [candidate],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const insufficient = buildStateReview({
+      gaps: [gap],
+      resultState: "insufficient_evidence",
+      state: "CO",
+    });
+    insufficient.coverage.abstained_counties = 2;
+    const read = (review: StateReview) => {
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const section = screen.queryByTestId("review-abstained-outcomes");
+      const text = section?.textContent ?? "";
+      const rules = section
+        ? [...section.querySelectorAll("li")].map(
+            (item) => item.textContent ?? ""
+          )
+        : [];
       const snapshot = {
-        candidate: screen.getByTestId("review-candidate").textContent ?? "",
-        map: Boolean(region.querySelector("[data-testid='mock-atlas-map']")),
-        preview: screen.getByTestId("review-preview-why").textContent ?? "",
-        unsupported:
-          region.querySelector("[data-testid='review-state-map-unsupported']")
-            ?.textContent ?? "",
+        candidate: Boolean(screen.queryByTestId("review-candidate")),
+        gap: Boolean(screen.queryByTestId("review-data-gap")),
+        namesCounty: text.includes("Denver") || text.includes("08001"),
+        rules,
+        text,
       };
       view.unmount();
       return snapshot;
     };
-    const alaska = await read("AK", "Alaska", "02020");
-    const hawaii = await read("HI", "Hawaii", "15003");
-    const colorado = await read("CO", "Colorado", "08001");
-    expect({ alaska, colorado, hawaii }).toStrictEqual({
-      alaska: {
-        candidate: expect.stringContaining("Alaska"),
-        map: false,
-        preview: "Alaska was returned by the method.",
-        unsupported: expect.stringContaining("does not draw Alaska"),
+    expect({
+      found: read(found),
+      insufficient: read(insufficient),
+      noneAbstained: read(noneAbstained),
+    }).toStrictEqual({
+      found: {
+        candidate: true,
+        gap: true,
+        namesCounty: false,
+        rules: [
+          "human_emerging: disabled",
+          "pathogen_present_vector_reported: enabled",
+        ],
+        text: expect.stringContaining(
+          "1 county abstained. The review result did not name that county."
+        ),
       },
-      colorado: {
-        candidate: expect.stringContaining("Colorado"),
-        map: true,
-        preview: "Colorado was returned by the method.",
-        unsupported: "",
+      insufficient: {
+        candidate: false,
+        gap: true,
+        namesCounty: false,
+        rules: [],
+        text: "",
       },
-      hawaii: {
-        candidate: expect.stringContaining("Hawaii"),
-        map: false,
-        preview: "Hawaii was returned by the method.",
-        unsupported: expect.stringContaining("does not draw Hawaii"),
+      noneAbstained: {
+        candidate: true,
+        gap: false,
+        namesCounty: false,
+        rules: [],
+        text: "",
       },
     });
   });

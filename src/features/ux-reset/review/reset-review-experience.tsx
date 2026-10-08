@@ -9,7 +9,11 @@ import { inheritedContextFromReview } from "@/features/ux-reset/ask-atlas/inheri
 import { resetRouteById } from "@/features/ux-reset/paths";
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
-import { REVIEW_REQUEST_FAILURE_MESSAGE } from "@/features/ux-reset/review/review-operating-state";
+import {
+  isUnsupportedReviewScope,
+  REVIEW_REQUEST_FAILURE_MESSAGE,
+  unsupportedReviewScopeMessage,
+} from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
 import { ReviewScopeSelector } from "@/features/ux-reset/review/review-scope-selector";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
@@ -17,6 +21,8 @@ import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-app
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
 import { useStateReview } from "@/features/ux-reset/review/use-state-review";
+import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import {
   atlasStateOptionsFromMetadata,
   reviewScopeLabel,
@@ -32,6 +38,7 @@ function ResetReviewExperienceInner() {
   const scope = urlState.scope;
   const profileQuery = useProfileDefaultJurisdiction();
 
+  const scopeUnsupported = isUnsupportedReviewScope(scope);
   const presentationQuery = useReviewPresentation(
     scope,
     urlState.dataset,
@@ -43,12 +50,17 @@ function ResetReviewExperienceInner() {
       presentationQuery.metadata.release_id === urlState.dataset)
       ? presentationQuery.metadata.release_id
       : null;
-  const stateReview = useStateReview(scope, confirmedRelease);
+  const stateReview = useStateReview(
+    scope,
+    scopeUnsupported ? null : confirmedRelease
+  );
 
   const stateOptions = useMemo(
     () =>
       presentationQuery.metadata
-        ? atlasStateOptionsFromMetadata(presentationQuery.metadata.states)
+        ? atlasStateOptionsFromMetadata(
+            presentationQuery.metadata.states
+          ).filter((option) => !isUnsupportedReviewScope(option.code))
         : [],
     [presentationQuery.metadata]
   );
@@ -77,7 +89,9 @@ function ResetReviewExperienceInner() {
   });
 
   const reviewReady = Boolean(
-    scope !== "ALL" && stateReview.review?.requested_state === scope
+    !scopeUnsupported &&
+    scope !== "ALL" &&
+    stateReview.review?.requested_state === scope
   );
   const nationalReady = scope === "ALL" && Boolean(presentationQuery.metadata);
   const stateName =
@@ -105,6 +119,11 @@ function ResetReviewExperienceInner() {
   const renderedScope = nationalReady ? "ALL" : scope;
   const metadataLoading =
     presentationQuery.isLoading && !presentationQuery.metadata;
+  const tierRelease = tier1ReleaseFromMetadata({
+    isError: presentationQuery.metadataIsError,
+    isLoading: metadataLoading,
+    releaseId: presentationQuery.metadata?.release_id,
+  });
 
   return (
     <>
@@ -142,13 +161,29 @@ function ResetReviewExperienceInner() {
         </AtlasStatusMessage>
       ) : null}
 
-      {scope !== "ALL" && stateReview.isError ? (
+      {presentationQuery.metadataIsError && urlState.county && !reviewReady ? (
+        <Tier1SurveillancePriority
+          fips={urlState.county}
+          headingLevel="h2"
+          release={tierRelease}
+        />
+      ) : null}
+
+      {scopeUnsupported ? (
+        <AtlasStatusMessage tone="empty">
+          <p data-testid="review-scope-unsupported">
+            {unsupportedReviewScopeMessage(scope)}
+          </p>
+        </AtlasStatusMessage>
+      ) : null}
+
+      {scope !== "ALL" && !scopeUnsupported && stateReview.isError ? (
         <AtlasStatusMessage tone="error">
           {REVIEW_REQUEST_FAILURE_MESSAGE}
         </AtlasStatusMessage>
       ) : null}
 
-      {scope !== "ALL" && stateReview.isLoading ? (
+      {scope !== "ALL" && !scopeUnsupported && stateReview.isLoading ? (
         <AtlasStatusMessage tone="loading">
           Loading review results…
         </AtlasStatusMessage>
@@ -174,6 +209,7 @@ function ResetReviewExperienceInner() {
               review={stateReview.review}
               scopeCode={scope}
               stateName={stateName}
+              tierRelease={tierRelease}
               onCountyChange={setCounty}
             />
           ) : null}

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { EvidenceProvenanceInspect } from "./evidence-provenance-inspect";
 import { EvidenceStateStrip } from "./evidence-state-strip";
 import type { EvidenceObjectModel } from "./types";
+import { evidenceAvailabilityLabel } from "./value-state-contract";
 
 import "./evidence-contract.css";
 
@@ -49,12 +50,20 @@ export function EvidenceObject({
         ) : null}
       </div>
       <EvidenceStateStrip model={model} showReason={showReason} />
-      <EvidenceProvenanceInspect
-        availability={model.availability}
-        contentSurface={contentSurface}
-        provenance={model.provenance}
-        reasonCode={model.reasonCode}
-      />
+      {model.reasonCode ? (
+        <EvidenceProvenanceInspect
+          availability={model.availability}
+          contentSurface={contentSurface}
+          provenance={model.provenance}
+          reasonCode={model.reasonCode}
+        />
+      ) : (
+        <EvidenceProvenanceInspect
+          contentSurface={contentSurface}
+          provenance={model.provenance}
+          stateLabel={evidenceAvailabilityLabel(model.availability)}
+        />
+      )}
     </Card>
   );
 }

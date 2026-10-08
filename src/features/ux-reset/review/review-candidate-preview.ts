@@ -99,10 +99,6 @@ function candidateQualification(
   const references = candidate.evidence_references;
   const families = candidateSourceFamilies(candidate);
   const caveatParts = candidateCaveatParts(candidate);
-  const limitations = trimmedUnique([
-    ...caveatParts,
-    ...candidate.reason_codes.map((code) => `Reason code ${code}`),
-  ]);
   const referenceLines = references.map(referenceInspectLine);
   const referenceSummary = referenceLines.join(" ");
   return {
@@ -113,7 +109,7 @@ function candidateQualification(
       evidenceType: GOVERNED_FIELD_UNAVAILABLE,
       inspectSummary:
         `${candidate.reason_text} ${caveat} Method ${methodologyId} ${methodologyVersion}. ${referenceSummary}`.trim(),
-      limitations: limitations.length > 0 ? limitations : [caveat],
+      limitations: caveatParts,
       materialCaveat: caveat,
       observationPeriod: GOVERNED_FIELD_UNAVAILABLE,
       referenceLines,
@@ -135,7 +131,9 @@ function candidateQualification(
         ),
       },
     },
-    reasonCode: "MATERIAL_LIMITATION",
+    ...(caveatParts.length > 0
+      ? { reasonCode: "MATERIAL_LIMITATION" as const }
+      : {}),
   };
 }
 
@@ -156,6 +154,7 @@ export function buildReviewCandidatePreview(input: {
     availability: evidenceAvailabilityValues.limited,
     caveat,
     countyName: input.candidate.county_name,
+    reasonCodes: trimmedUnique(input.candidate.reason_codes),
     fips: input.candidate.county_fips,
     followUp: nextCheck || "The review result did not include a next check.",
     followUpLabel: CANDIDATE_FOLLOW_UP_LABEL,

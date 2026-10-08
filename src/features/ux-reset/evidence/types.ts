@@ -66,7 +66,11 @@ export type EvidenceProvenanceModel = {
 export type EvidenceObjectModel = {
   claimLabel: string;
   availability: EvidenceAvailability;
-  reasonCode: EvidenceReasonCode;
+  /**
+   * Governed reason behind availability. Omit when the record has no
+   * value_state and no material limitation to disclose.
+   */
+  reasonCode?: EvidenceReasonCode;
   displayValue: string;
   valueNote?: string | null;
   provenance: EvidenceProvenanceModel;

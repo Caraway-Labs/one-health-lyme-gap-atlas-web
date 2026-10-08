@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ResetInvestigateExperience } from "@/features/ux-reset/investigate/reset-investigate-experience";
+import type { Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
@@ -31,6 +32,11 @@ import {
   investigateScoresFixture,
   type InvestigateScenario,
 } from "./fixtures/investigate-api-fixtures";
+import {
+  tier1HighSufficientFixture,
+  tier1PriorityForCounty,
+  tier1PriorityForRelease,
+} from "./fixtures/tier1-surveillance-priority";
 
 const controls: {
   delayFips: string | null;
@@ -40,8 +46,10 @@ const controls: {
   metadataReleaseId: string | null;
   metadataStatus: number;
   rateLimitRemaining: number;
+  tier1Result: Tier1CountyPriority | null;
   retryAfterSeconds: number;
   scenario: InvestigateScenario;
+  scoresReleaseId: string | null;
   transientStatus: number;
 } = {
   delayFips: null,
@@ -51,8 +59,10 @@ const controls: {
   metadataReleaseId: null,
   metadataStatus: 200,
   rateLimitRemaining: 0,
+  tier1Result: null,
   retryAfterSeconds: 0,
   scenario: "mixed",
+  scoresReleaseId: null,
   transientStatus: 429,
 };
 
@@ -235,11 +245,33 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     >(
       async () =>
         ({
-          data: investigateScoresFixture,
+          data: {
+            ...investigateScoresFixture,
+            release_id:
+              controls.scoresReleaseId ?? investigateScoresFixture.release_id,
+          },
           headers: new Headers(),
           status: 200,
         }) as never
     ),
+    countyTier1SurveillancePriorityGet: vi.fn<
+      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+    >(async (fips) => {
+      const result = controls.tier1Result;
+      if (!result) {
+        throw new AtlasApiError(
+          "No current Tier 1 county result",
+          `/v1/counties/${fips}/tier1-surveillance-priority`,
+          404,
+          null
+        );
+      }
+      return {
+        data: result,
+        headers: new Headers(),
+        status: 200,
+      };
+    }),
   };
 });
 
@@ -354,12 +386,14 @@ describe("County Investigate workspace", () => {
     controls.metadataReleaseId = null;
     controls.metadataStatus = 200;
     controls.rateLimitRemaining = 0;
+    controls.tier1Result = null;
     controls.retryAfterSeconds = 0;
     controls.transientStatus = 429;
     clearObservationRetryDeadlines();
     metadataGate.resolve(true);
     metadataGate = Promise.withResolvers<boolean>();
     controls.scenario = "mixed";
+    controls.scoresReleaseId = null;
     delayedCompletions = 0;
     delayedObservations = Promise.resolve();
     observationRequests.length = 0;
@@ -1032,8 +1066,10 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-finding-text").textContent
       ).toContain("7 cases")
     );
-    const unavailable =
-      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
+    const included =
+      screen.getByTestId("investigate-pdf-included").textContent ?? "";
+    const omitted =
+      screen.getByTestId("investigate-pdf-omitted").textContent ?? "";
     const action = screen.getByRole("link", { name: "Continue to Action" });
     const actionHref = action.getAttribute("href") ?? "";
     expect({
@@ -1046,13 +1082,16 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-family-vector_pathogen").textContent ??
         ""
       ).includes("Inspect provenance"),
-      exportButton: screen.queryByTestId("investigate-export"),
+      exportButton: screen.queryByRole("button", { name: "Export PDF" }),
+      includedCases: included.includes("Reported Lyme cases"),
       limitation: screen.getByTestId("investigate-limitation-text").textContent,
+      omittedTicks: omitted.includes(
+        "No observations were returned for this county and selected period."
+      ),
+      publishedAbsence: omitted.includes("No published data"),
       returnCounty: (
         screen.getByTestId("investigate-return").getAttribute("href") ?? ""
       ).includes("county=08001"),
-      unavailableCases: unavailable.includes(INVESTIGATE_CASES_LIMITATION),
-      unavailableTicks: unavailable.includes(INVESTIGATE_TICK_LIMITATION),
     }).toStrictEqual({
       actionCounty: true,
       actionPath: true,
@@ -1061,15 +1100,16 @@ describe("County Investigate workspace", () => {
         "No governed observations were returned"
       ),
       emptyInspect: false,
-      exportButton: null,
+      exportButton: expect.anything(),
+      includedCases: true,
       limitation: expect.stringContaining(INVESTIGATE_CASES_LIMITATION),
+      omittedTicks: true,
+      publishedAbsence: false,
       returnCounty: true,
-      unavailableCases: true,
-      unavailableTicks: false,
     });
   });
 
-  it("offers Action and withholds the county PDF for available and limited evidence", async () => {
+  it("offers Action and a county PDF for the published measures", async () => {
     const search =
       "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01";
     const view = renderInvestigate(search);
@@ -1084,8 +1124,8 @@ describe("County Investigate workspace", () => {
       }
     });
     const context = screen.getByTestId("investigate-export-context");
-    const unavailable =
-      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
+    const included =
+      screen.getByTestId("investigate-pdf-included").textContent ?? "";
     const evidenceText =
       screen.getByTestId("investigate-evidence").textContent ?? "";
     const action = screen.getByRole("link", { name: "Continue to Action" });
@@ -1103,10 +1143,10 @@ describe("County Investigate workspace", () => {
       evidenceTicks: evidenceText.includes(INVESTIGATE_TICK_LIMITATION),
       exportButton: screen.queryByRole("button", { name: "Export PDF" }),
       exportState: context.dataset.exportState,
+      includedCases: included.includes("Reported Lyme cases"),
+      includedTicks: included.includes("Tick pathogen detections"),
       observationPeriods: context.dataset.observationPeriods,
       period: context.dataset.period,
-      reasonPeriod: unavailable.includes("2023-01-01"),
-      reasonSource: unavailable.includes("Tick survey"),
       release: context.dataset.release,
       returnReview: (
         screen.getByTestId("investigate-return").getAttribute("href") ?? ""
@@ -1123,12 +1163,12 @@ describe("County Investigate workspace", () => {
       evidenceCases: true,
       evidenceCover: true,
       evidenceTicks: true,
-      exportButton: null,
-      exportState: "unavailable",
+      exportButton: expect.anything(),
+      exportState: "available",
+      includedCases: true,
+      includedTicks: true,
       observationPeriods: "2023",
       period: "2023-01-01",
-      reasonPeriod: true,
-      reasonSource: true,
       release: INVESTIGATE_RELEASE_ID,
       returnReview: true,
       sources: "CDC surveillance\nTick survey\nNational land cover",
@@ -1141,10 +1181,10 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-export-context").dataset.period !==
           "2023-01-01" ||
         !screen
-          .getByTestId("investigate-pdf-unavailable")
-          .textContent?.includes(INVESTIGATE_TICK_LIMITATION)
+          .getByTestId("investigate-pdf-included")
+          .textContent?.includes("Tick pathogen detections")
       ) {
-        throw new Error("Reloaded page dropped the unavailable PDF context.");
+        throw new Error("Reloaded page dropped the PDF measure list.");
       }
     });
   });
@@ -1297,20 +1337,17 @@ describe("County Investigate workspace", () => {
     ).toBeNull();
   });
 
-  it("does not request a county report for the visible period and caveat", async () => {
+  it("does not request a county report until the export button is used", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
     renderInvestigate(
       "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
     );
     await waitFor(() => {
-      const reason = screen.queryByTestId(
-        "investigate-pdf-unavailable"
+      const included = screen.queryByTestId(
+        "investigate-pdf-included"
       )?.textContent;
-      if (
-        !reason?.includes("2023-01-01") ||
-        !reason.includes(INVESTIGATE_TICK_LIMITATION)
-      ) {
-        throw new Error("Unavailable PDF explanation has not rendered.");
+      if (!included?.includes("Tick pathogen detections")) {
+        throw new Error("PDF measure list has not rendered.");
       }
     });
     const reportCalls = fetchMock.mock.calls.filter((call) =>
@@ -1322,10 +1359,115 @@ describe("County Investigate workspace", () => {
       state: screen.getByTestId("investigate-export-context").dataset
         .exportState,
     }).toStrictEqual({
-      exportButton: null,
+      exportButton: expect.anything(),
       reportCalls: 0,
-      state: "unavailable",
+      state: "available",
     });
     fetchMock.mockRestore();
+  });
+
+  it("shows a Tier 1 result only for the resolved investigate release", async () => {
+    controls.tier1Result = tier1PriorityForRelease(
+      tier1PriorityForCounty(tier1HighSufficientFixture, "08001"),
+      "alpha-2026"
+    );
+    renderInvestigate("?county=08001&scope=CO&dataset=alpha-2026");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
+    );
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.sufficiency
+    ).toBe("SUFFICIENT");
+  });
+
+  it("keeps a historical investigate dataset from showing the current Tier 1 batch", async () => {
+    controls.metadataReleaseId = "historical-2024";
+    controls.scoresReleaseId = "historical-2024";
+    controls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "08001"
+    );
+    renderInvestigate("?county=08001&scope=CO&dataset=historical-2024");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.state
+      ).toBe("release-unaligned")
+    );
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      reason: region.dataset.releaseReason,
+      tier: region.dataset.tier,
+    }).toStrictEqual({
+      low: false,
+      reason: "mismatch",
+      tier: undefined,
+    });
+  });
+
+  it("drops the Tier 1 tier when the same investigate county changes release", async () => {
+    controls.tier1Result = tier1PriorityForRelease(
+      tier1PriorityForCounty(tier1HighSufficientFixture, "08001"),
+      "alpha-2026"
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = renderInvestigate(
+      "?county=08001&scope=CO&dataset=alpha-2026",
+      { client }
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
+    );
+    controls.metadataReleaseId = "beta-2026";
+    controls.scoresReleaseId = "beta-2026";
+    await view.rerenderSearch("?county=08001&scope=CO&dataset=beta-2026");
+    await waitFor(() => {
+      const region = screen.getByTestId("tier1-surveillance-priority");
+      if (
+        region.dataset.state !== "release-unaligned" ||
+        region.dataset.tier === "HIGH"
+      ) {
+        throw new Error("The previous Tier 1 result stayed on screen.");
+      }
+    });
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+    ).toBe("mismatch");
+    expect(screen.getByTestId("investigate-header").dataset.release).toBe(
+      "beta-2026"
+    );
+    expect(
+      screen.getByTestId("tier1-surveillance-priority").textContent
+    ).not.toMatch(/\bLOW\b|\bHIGH\b/);
+  });
+
+  it("does not align a Tier 1 result when investigate release metadata fails", async () => {
+    controls.metadataStatus = 503;
+    controls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "08001"
+    );
+    renderInvestigate("?county=08001&scope=CO&dataset=older-release");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+      ).toBe("unknown")
+    );
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect({
+      low: /\bLOW\b/.test(region.textContent ?? ""),
+      state: region.dataset.state,
+      tier: region.dataset.tier,
+    }).toStrictEqual({
+      low: false,
+      state: "release-unaligned",
+      tier: undefined,
+    });
   });
 });

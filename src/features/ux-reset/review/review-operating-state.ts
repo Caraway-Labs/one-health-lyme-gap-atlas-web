@@ -1,6 +1,5 @@
 import type { StateReview } from "@/generated/models";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
-import { isContiguousUsCounty } from "@/lib/atlas-geometry";
 
 import { stateFipsPrefix } from "./review-state-fips";
 
@@ -113,10 +112,26 @@ export type ReviewMapCounty = {
  * Frame the map to the requested state. Candidate counties are not ranked,
  * and data-gap counties are not added as suggestions.
  */
-/** AtlasMap draws the contiguous United States. Alaska and Hawaii stay in the list. */
-export function reviewScopeHasContiguousMap(scopeCode: string): boolean {
-  const prefix = stateFipsPrefix(scopeCode);
-  return prefix !== null && isContiguousUsCounty(prefix);
+const UNSUPPORTED_REVIEW_SCOPE_LABELS: Record<string, string> = {
+  AK: "Alaska",
+  HI: "Hawaii",
+};
+
+/** Atlas Review covers the lower 48 and DC. Alaska and Hawaii are not scopes. */
+export function isUnsupportedReviewScope(scopeCode: string): boolean {
+  return Object.hasOwn(UNSUPPORTED_REVIEW_SCOPE_LABELS, scopeCode);
+}
+
+export function unsupportedReviewScopeMessage(scopeCode: string): string {
+  const name = UNSUPPORTED_REVIEW_SCOPE_LABELS[scopeCode] ?? scopeCode;
+  return `${name} is not supported — lower 48 only.`;
+}
+
+export function reviewAbstainedOutcomeCopy(count: number): string {
+  if (count === 1) {
+    return "1 county abstained. The review result did not name that county.";
+  }
+  return `${count} counties abstained. The review result did not name those counties.`;
 }
 
 export function reviewMapCounties(input: {

@@ -75,7 +75,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/overview");
     await openFeedback(page);
     await page
       .getByLabel(/^Message/)
@@ -106,7 +106,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/overview");
     await openFeedback(page);
     await page.getByLabel("Feedback category").click();
     await page.getByRole("option", { name: "Usability" }).click();
@@ -127,7 +127,7 @@ test.describe("in-product feedback dialog", () => {
         json: { detail: "unused" },
       });
     });
-    await page.goto("/");
+    await page.goto("/overview");
     await page
       .getByRole("button", { name: "Feedback", exact: true })
       .press("Enter");
@@ -157,7 +157,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/overview");
     await openFeedback(page);
     const message = "Please keep this draft through temporary API failures.";
     await page.getByLabel(/^Message/).fill(message);
@@ -193,7 +193,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/overview");
     await openFeedback(page);
     await page
       .getByLabel(/^Message/)
@@ -224,7 +224,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/overview");
     const feedback = page.getByRole("button", {
       name: "Feedback",
       exact: true,

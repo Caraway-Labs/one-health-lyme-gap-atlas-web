@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AnalyticsClient } from "@/components/analytics-client";
@@ -25,11 +26,13 @@ const amplitude = vi.hoisted(() => ({
 
 vi.mock(import("@amplitude/analytics-browser"), () => amplitude as never);
 
-let pathname = "/";
+let pathname = "/overview";
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => pathname,
+  useSearchParams: (): ReadonlyURLSearchParams =>
+    new URLSearchParams() as unknown as ReadonlyURLSearchParams,
 }));
 
 function LegacyAtlasOrWorkspace() {
@@ -49,7 +52,7 @@ describe("professional trust footer", () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    pathname = "/";
+    pathname = "/overview";
     vi.stubEnv(
       "NEXT_PUBLIC_AMPLITUDE_API_KEY",
       "00000000000000000000000000000000"

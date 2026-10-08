@@ -25,6 +25,8 @@ export {
   UX_RESET_APP_PREFIX as RESET_APP_PATH,
 } from "@/features/ux-reset/routes";
 
+export { ATLAS_OVERVIEW_PATH as LEGACY_ATLAS_PATH } from "@/lib/navigation";
+
 import {
   DOCS_PATH,
   RESET_ACTION_PATH,
@@ -55,8 +57,6 @@ export type ResetRoute = {
   /** When set, navigation opens this href instead of an in-shell page. */
   externalHref?: string;
 };
-
-export const LEGACY_ATLAS_PATH = "/" as const;
 
 export const RETURN_TO_LEGACY_ATLAS_LABEL = "Open legacy Atlas";
 

@@ -339,7 +339,10 @@ test.describe("County Investigate evidence hierarchy", () => {
     ).toHaveAttribute("data-county", "08013");
     await expect(
       page.getByTestId("investigate-export-context")
-    ).toHaveAttribute("data-export-state", "unavailable");
+    ).toHaveAttribute("data-export-state", "available");
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
     await expect(page.getByTestId("investigate-return")).toHaveAttribute(
       "href",
       /county=08013/
@@ -577,9 +580,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     }
   });
 
-  test("keeps the unavailable PDF explanation after reload", async ({
-    page,
-  }) => {
+  test("keeps the county PDF offer after reload", async ({ page }) => {
     await installInvestigateMocks(
       page,
       { delayFips: null, failMeasureId: null, scenario: "mixed" },
@@ -594,19 +595,20 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(context).toHaveAttribute("data-release", "alpha-2026");
     await expect(context).toHaveAttribute("data-period", "2023-01-01");
     await expect(context).toHaveAttribute("data-observation-periods", "2023");
-    await expect(context).toHaveAttribute("data-export-state", "unavailable");
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+    await expect(context).toHaveAttribute("data-export-state", "available");
+    await expect(page.getByTestId("investigate-pdf-scope")).toContainText(
       "2023-01-01"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Tick pathogen detections"
+    );
+    await expect(context).toHaveAttribute(
+      "data-caveats",
       INVESTIGATE_TICK_LIMITATION
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      "Tick survey"
-    );
-    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
-      0
-    );
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
     await expect(page.getByTestId("investigate-action")).toHaveAttribute(
       "href",
       /\/app\/action/
@@ -627,9 +629,18 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(
       page.getByTestId("investigate-export-context")
     ).toHaveAttribute("data-period", "2023-01-01");
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      INVESTIGATE_TICK_LIMITATION
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-export-state", "available");
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Tick pathogen detections"
     );
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-caveats", INVESTIGATE_TICK_LIMITATION);
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .include('[data-testid="investigate-workspace"]')
@@ -680,8 +691,11 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.goto(
       "/app/investigate?county=08001&scope=CO&dataset=alpha-2026"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      INVESTIGATE_CASES_LIMITATION
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Reported Lyme cases"
+    );
+    await expect(page.getByTestId("investigate-pdf-omitted")).toContainText(
+      "No observations were returned for this county and selected period."
     );
     await expect(page.getByTestId("investigate-limitation-text")).toContainText(
       INVESTIGATE_CASES_LIMITATION
@@ -707,9 +721,9 @@ test.describe("County Investigate evidence hierarchy", () => {
       "href",
       /\/app\/review/
     );
-    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
-      0
-    );
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
   });
 
   test("does not request a report while the visible period and caveat are unmatched", async ({
@@ -732,15 +746,15 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.goto(
       "/app/investigate?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+    await expect(page.getByTestId("investigate-pdf-scope")).toContainText(
       "2023-01-01"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      INVESTIGATE_TICK_LIMITATION
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Tick pathogen detections"
     );
-    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
-      0
-    );
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
     await expect(
       page.getByTestId("investigate-next-steps").getByRole("alert")
     ).toHaveCount(0);
@@ -752,7 +766,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     ).toHaveAttribute("data-county", "08013");
     await expect(
       page.getByTestId("investigate-export-context")
-    ).toHaveAttribute("data-export-state", "unavailable");
+    ).toHaveAttribute("data-export-state", "available");
     expect(pdfUrls).toEqual([]);
   });
 
@@ -877,5 +891,137 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/app\/investigate/);
     await expect(page).not.toHaveURL(/compare=/);
+  });
+});
+
+test.describe("Investigate canonical PDF export", () => {
+  async function fulfillPdfJson(route: Route, body: unknown, status = 200) {
+    await route.fulfill({
+      status,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function installCanonicalPdfEvidence(page: Page) {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    await page.route("**/v1/measures**", async (route) => {
+      const url = new URL(route.request().url());
+      await fulfillPdfJson(route, {
+        data:
+          url.searchParams.get("geography_type") === "COUNTY_FIPS_5"
+            ? investigateMeasuresFixture.filter(
+                (measure) => measure.measure_id === INVESTIGATE_TICK_MEASURE_ID
+              )
+            : [],
+        meta: {},
+        links: { self: "/v1/measures" },
+      });
+    });
+    await page.route("**/v1/observations**", async (route) => {
+      const url = new URL(route.request().url());
+      await fulfillPdfJson(route, {
+        data: investigateObservationsFor({
+          fips: url.searchParams.get("geography_id") ?? "08001",
+          measureId: INVESTIGATE_TICK_MEASURE_ID,
+          scenario: "mixed",
+        }).map((item) => ({ ...item, lineage_source_id: "tick-lineage" })),
+        meta: {},
+        links: { self: "/v1/observations" },
+      });
+    });
+  }
+
+  test("exports the canonical full period with source caveats and passes accessibility", async ({
+    page,
+  }) => {
+    await installCanonicalPdfEvidence(page);
+    const reports: URL[] = [];
+    await page.route("**/v1/counties/**/report.pdf**", async (route) => {
+      reports.push(new URL(route.request().url()));
+      await route.fulfill({
+        body: "%PDF-1.7 fixture",
+        contentType: "application/pdf",
+        headers: { "Cache-Control": "no-store" },
+      });
+    });
+    await page.goto(
+      "/app/investigate?county=08001&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-limitation-text")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+    const button = page.getByRole("button", { name: "Export PDF" });
+    await expect(button).toBeVisible();
+    const download = page.waitForEvent("download");
+    await button.click();
+    await download;
+    expect(
+      reports.map((url) => ({
+        county: url.pathname,
+        template: url.searchParams.get("template"),
+        release: url.searchParams.get("dataset_version"),
+        start: url.searchParams.get("period_start"),
+        end: url.searchParams.get("period_end"),
+        measures: url.searchParams.getAll("measure_id"),
+      }))
+    ).toEqual([
+      {
+        county: "/v1/counties/08001/report.pdf",
+        template: "county-v2",
+        release: "alpha-2026",
+        start: "2023-01-01",
+        end: "2023-12-31",
+        measures: [INVESTIGATE_TICK_MEASURE_ID],
+      },
+    ]);
+    const accessibility = await new AxeBuilder({ page })
+      .include('[data-testid="investigate-next-steps"]')
+      .analyze();
+    expect(accessibility.violations).toEqual([]);
+  });
+
+  test("withholds download on a canonical mismatch and shows renderer failures honestly", async ({
+    page,
+  }) => {
+    await installCanonicalPdfEvidence(page);
+    let reports = 0;
+    await page.route("**/v1/counties/**/report.pdf**", async (route) => {
+      reports += 1;
+      await fulfillPdfJson(route, { detail: "Renderer unavailable" }, 503);
+    });
+    await page.goto(
+      "/app/investigate?county=08001&dataset=alpha-2026&period=2023-01-01"
+    );
+    await page.getByRole("button", { name: "Export PDF" }).click();
+    await expect(
+      page.getByTestId("investigate-next-steps").getByRole("alert")
+    ).toContainText("Renderer unavailable");
+    expect(reports).toBe(1);
+    await page.route("**/v1/observations**", async (route) => {
+      await fulfillPdfJson(route, {
+        data: investigateObservationsFor({
+          fips: "08001",
+          measureId: INVESTIGATE_TICK_MEASURE_ID,
+          scenario: "mixed",
+        }).map((item) => ({
+          ...item,
+          lineage_source_id: "tick-lineage",
+          limitations: ["Changed caveat"],
+        })),
+        meta: {},
+        links: { self: "/v1/observations" },
+      });
+    });
+    await page.getByRole("button", { name: "Export PDF" }).click();
+    await expect(
+      page.getByTestId("investigate-next-steps").getByRole("alert")
+    ).toContainText("Evidence changed");
+    expect(reports).toBe(1);
   });
 });

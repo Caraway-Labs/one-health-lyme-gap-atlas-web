@@ -3,12 +3,27 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { STATE_GRID } from "@/features/geographic-explorer/model";
+import { isUnsupportedReviewScope } from "@/features/ux-reset/review/review-operating-state";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 
 type ReviewNationalOrientationProps = {
   states: readonly AtlasStateOption[];
   onOpenState: (stateCode: string) => void;
 };
+
+function orientationTileLabel(
+  code: string,
+  unsupported: boolean,
+  name: string | undefined
+): string {
+  if (unsupported) {
+    return `${code}, not supported — lower 48 only`;
+  }
+  if (name) {
+    return `${code}, ${name}`;
+  }
+  return `${code}, not in this release`;
+}
 
 export function ReviewNationalOrientation({
   states,
@@ -35,7 +50,13 @@ export function ReviewNationalOrientation({
         >
           <div className="ux-reset-review-state-grid">
             {STATE_GRID.map(({ code, row, column }) => {
-              const entry = byCode.get(code);
+              const unsupported = isUnsupportedReviewScope(code);
+              const entry = unsupported ? undefined : byCode.get(code);
+              const label = orientationTileLabel(
+                code,
+                unsupported,
+                entry?.name
+              );
               return (
                 <div
                   key={code}
@@ -46,15 +67,17 @@ export function ReviewNationalOrientation({
                     className="h-auto min-h-14 w-full px-1 py-1 leading-tight whitespace-normal"
                     type="button"
                     variant="outline"
-                    disabled={!entry}
-                    aria-label={
-                      entry
-                        ? `${code}, ${entry.name}`
-                        : `${code}, not in this release`
-                    }
-                    onClick={() => onOpenState(code)}
+                    disabled={unsupported || !entry}
+                    aria-label={label}
+                    onClick={() => {
+                      if (unsupported || !entry) {
+                        return;
+                      }
+                      onOpenState(code);
+                    }}
                   >
                     <strong>{code}</strong>
+                    {unsupported ? <span>Not supported</span> : null}
                     {entry ? <span>{entry.name}</span> : null}
                   </Button>
                 </div>

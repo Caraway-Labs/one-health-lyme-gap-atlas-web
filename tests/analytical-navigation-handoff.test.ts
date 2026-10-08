@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   analyticalNavigationHandoffSearchParams,
   analyticalNavigationHref,
+  backToAtlasHref,
+  legacyAnalyticalFragmentHref,
+  legacyAnalyticalOverviewHref,
 } from "@/lib/analytical-navigation-handoff";
 
 function expectHrefQuery(href: string, expected: Record<string, string>) {
@@ -18,7 +21,7 @@ describe("analytical navigation handoff", () => {
       "dataset=alpha-2026-08-06&county=18097&state=IN"
     );
     expectHrefQuery(
-      analyticalNavigationHref("/geographic_explorer", "/", source),
+      analyticalNavigationHref("/geographic_explorer", "/overview", source),
       {
         county: "18097",
         dataset: "alpha-2026-08-06",
@@ -27,15 +30,18 @@ describe("analytical navigation handoff", () => {
     );
     expect(
       new URL(
-        analyticalNavigationHref("/investigate", "/", source),
+        analyticalNavigationHref("/investigate", "/overview", source),
         "http://localhost"
       ).pathname
     ).toBe("/investigate");
-    expectHrefQuery(analyticalNavigationHref("/investigate", "/", source), {
-      county: "18097",
-      dataset: "alpha-2026-08-06",
-      state: "IN",
-    });
+    expectHrefQuery(
+      analyticalNavigationHref("/investigate", "/overview", source),
+      {
+        county: "18097",
+        dataset: "alpha-2026-08-06",
+        state: "IN",
+      }
+    );
   });
 
   it("does not fabricate Geographic Explorer-only parameters on other routes", () => {
@@ -45,7 +51,7 @@ describe("analytical navigation handoff", () => {
     expect(
       analyticalNavigationHandoffSearchParams(
         "/geographic_explorer",
-        "/",
+        "/overview",
         source
       ).toString()
     ).toBe("county=08001");
@@ -63,7 +69,7 @@ describe("analytical navigation handoff", () => {
       "county=08001&view=maps&metric=score&page=3"
     );
     const handoff = analyticalNavigationHandoffSearchParams(
-      "/",
+      "/overview",
       "/geographic_explorer",
       source
     );
@@ -77,7 +83,7 @@ describe("analytical navigation handoff", () => {
     const source = new URLSearchParams("county=not-a-fips&dataset=alpha");
     expect(
       analyticalNavigationHandoffSearchParams(
-        "/",
+        "/overview",
         "/geographic_explorer",
         source
       ).toString()
@@ -86,12 +92,71 @@ describe("analytical navigation handoff", () => {
 
   it("does not hand off analytical state from non-analytical routes", () => {
     const source = new URLSearchParams("county=08001");
-    expect(analyticalNavigationHref("/", "/privacy", source)).toBe("/");
+    expect(analyticalNavigationHref("/overview", "/privacy", source)).toBe(
+      "/overview"
+    );
+    expect(analyticalNavigationHref("/", "/overview", source)).toBe("/");
   });
 
   it("leaves external and utility destinations unchanged", () => {
     const source = new URLSearchParams("county=08001");
     expect(analyticalNavigationHref("/docs", "/", source)).toBe("/docs");
     expect(analyticalNavigationHref("/account", "/", source)).toBe("/account");
+  });
+
+  it("keeps the current Overview query on a same-page Atlas anchor", () => {
+    const source = new URLSearchParams("county=08001&state=CO&eco=70");
+    expect(backToAtlasHref("/overview", source)).toBe("#atlas");
+    expect(backToAtlasHref("/geographic_explorer", source)).toBe(
+      "/overview?county=08001&eco=70&state=CO#atlas"
+    );
+    expect(backToAtlasHref("/privacy", source)).toBe("/overview#atlas");
+  });
+
+  it("moves legacy root section fragments onto Overview", () => {
+    expect({
+      atlas: legacyAnalyticalFragmentHref("#atlas"),
+      methods: legacyAnalyticalFragmentHref("#methods", "?state=CO"),
+      scoring: legacyAnalyticalFragmentHref("scoring"),
+      story: legacyAnalyticalFragmentHref("#front-porch-story"),
+    }).toStrictEqual({
+      atlas: "/overview#atlas",
+      methods: "/overview?state=CO#methods",
+      scoring: "/overview#scoring",
+      story: null,
+    });
+  });
+
+  it("accepts repeated legacy parameters and a fragment search without a question mark", () => {
+    expect({
+      array: legacyAnalyticalOverviewHref({
+        county: ["08001"],
+        state: ["CO"],
+      }),
+      fragment: legacyAnalyticalFragmentHref("#methods", "state=CO"),
+      overviewQuery: backToAtlasHref(
+        "/overview?county=08001",
+        new URLSearchParams()
+      ),
+      root: backToAtlasHref("", new URLSearchParams()),
+    }).toStrictEqual({
+      array: "/overview?county=08001&state=CO",
+      fragment: "/overview?state=CO#methods",
+      overviewQuery: "#atlas",
+      root: "/overview#atlas",
+    });
+  });
+
+  it("sends legacy analytical root queries to Overview", () => {
+    expect(
+      legacyAnalyticalOverviewHref({
+        county: "08001",
+        dataset: "alpha-explorer",
+        state: "CO",
+      })
+    ).toBe("/overview?county=08001&dataset=alpha-explorer&state=CO");
+    expect(legacyAnalyticalOverviewHref({})).toBeNull();
+    expect(legacyAnalyticalOverviewHref({ utm_source: "share" })).toBeNull();
+    expect(legacyAnalyticalOverviewHref({ county: "not-a-fips" })).toBeNull();
   });
 });
