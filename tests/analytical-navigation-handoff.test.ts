@@ -4,6 +4,7 @@ import {
   analyticalNavigationHandoffSearchParams,
   analyticalNavigationHref,
   backToAtlasHref,
+  legacyAnalyticalFragmentHref,
   legacyAnalyticalOverviewHref,
 } from "@/lib/analytical-navigation-handoff";
 
@@ -110,6 +111,20 @@ describe("analytical navigation handoff", () => {
       "/overview?county=08001&eco=70&state=CO#atlas"
     );
     expect(backToAtlasHref("/privacy", source)).toBe("/overview#atlas");
+  });
+
+  it("moves legacy root section fragments onto Overview", () => {
+    expect({
+      atlas: legacyAnalyticalFragmentHref("#atlas"),
+      methods: legacyAnalyticalFragmentHref("#methods", "?state=CO"),
+      scoring: legacyAnalyticalFragmentHref("scoring"),
+      story: legacyAnalyticalFragmentHref("#front-porch-story"),
+    }).toStrictEqual({
+      atlas: "/overview#atlas",
+      methods: "/overview?state=CO#methods",
+      scoring: "/overview#scoring",
+      story: null,
+    });
   });
 
   it("sends legacy analytical root queries to Overview", () => {

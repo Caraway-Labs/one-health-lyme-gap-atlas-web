@@ -119,6 +119,29 @@ export function analyticalNavigationHref(
 
 const ATLAS_SECTION_HASH = "#atlas";
 
+/** Section ids that existed on the analytical page when it lived at `/`. */
+const LEGACY_ROOT_SECTION_IDS = new Set(["atlas", "methods", "scoring"]);
+
+function legacyFragmentSearch(search: string): string {
+  if (!search) return "";
+  if (search.startsWith("?")) return search;
+  return `?${search}`;
+}
+
+/**
+ * Fragments are not sent to the server, so a bare `/#atlas` still renders the
+ * Front Porch. Recognized legacy section ids move to the same section on
+ * Overview.
+ */
+export function legacyAnalyticalFragmentHref(
+  hash: string,
+  search = ""
+): string | null {
+  const sectionId = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (!LEGACY_ROOT_SECTION_IDS.has(sectionId)) return null;
+  return `${ATLAS_OVERVIEW_PATH}${legacyFragmentSearch(search)}#${sectionId}`;
+}
+
 /**
  * Footer return to the analytical Atlas.
  * On Overview, a fragment-only link keeps the current query. From another

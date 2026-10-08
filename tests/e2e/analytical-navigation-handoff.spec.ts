@@ -203,6 +203,31 @@ test("opens a legacy analytical root URL on Overview with its county and filters
   ).toHaveCount(0);
 });
 
+test("sends a legacy root section fragment to the same Overview section", async ({
+  page,
+}) => {
+  await page.goto("/#atlas");
+  await expect(page).toHaveURL(/\/overview#atlas$/);
+  await expect(page.locator("#atlas")).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "The data is telling more than one story.",
+    })
+  ).toHaveCount(0);
+
+  await page.goto("/#methods");
+  await expect(page).toHaveURL(/\/overview#methods$/);
+  await expect(page.locator("#methods")).toBeVisible();
+
+  await page.goto("/#front-porch-story");
+  await expect(page).toHaveURL(/\/#front-porch-story$/);
+  await expect(
+    page.getByRole("heading", {
+      name: "The data is telling more than one story.",
+    })
+  ).toBeVisible();
+});
+
 test("shows an explicit unavailable-county state instead of switching FIPS silently", async ({
   page,
 }) => {
