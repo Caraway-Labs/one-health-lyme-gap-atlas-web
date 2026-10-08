@@ -1001,6 +1001,74 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("does not treat a blank reference value as shared provenance", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const populated = reviewEvidenceReference("08001");
+    const candidate = {
+      ...reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_references: [
+        populated,
+        {
+          ...reviewEvidenceReference("08001", "Reported"),
+          family: "vector",
+          public_record_ref: " ",
+          release_id: "",
+        },
+      ],
+    };
+    const review = buildStateReview({
+      candidates: [candidate],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const qualification = screen.getByTestId("review-preview-qualification");
+    fireEvent.click(within(qualification).getByText("Inspect provenance"));
+    fireEvent.click(
+      within(qualification).getByText("Technical reproducibility identifiers")
+    );
+    const technicalValue = (label: string) =>
+      within(qualification).queryByText(label)?.nextElementSibling
+        ?.textContent ?? "";
+    const lines = [
+      ...within(qualification)
+        .getByTestId("evidence-provenance-references")
+        .querySelectorAll("li"),
+    ].map((item) => item.textContent ?? "");
+    const snapshot = {
+      blankRecord: lines[1]?.includes("record Unavailable"),
+      blankRelease: lines[1]?.includes("release Unavailable"),
+      populatedRecord: lines[0]?.includes("record public/08001"),
+      populatedRelease: lines[0]?.includes("release alpha-2026"),
+      provenanceRef: technicalValue("Provenance reference"),
+      releaseId: technicalValue("Release ID"),
+    };
+    view.unmount();
+    expect(snapshot).toStrictEqual({
+      blankRecord: true,
+      blankRelease: true,
+      populatedRecord: true,
+      populatedRelease: true,
+      provenanceRef: "",
+      releaseId: "",
+    });
+  });
+
   it("shows returned rule coverage without turning rules into counties", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },

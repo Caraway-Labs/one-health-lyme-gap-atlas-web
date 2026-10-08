@@ -67,11 +67,18 @@ function sharedReferenceValue(
   references: readonly PublicReviewEvidenceReference[],
   read: (reference: PublicReviewEvidenceReference) => string
 ): string | null {
-  const unique = trimmedUnique(references.map(read));
-  if (unique.length !== 1) {
+  if (references.length === 0) {
     return null;
   }
-  return unique[0] ?? null;
+  let shared = "";
+  for (const reference of references) {
+    const value = read(reference).trim();
+    if (!value || (shared && value !== shared)) {
+      return null;
+    }
+    shared = value;
+  }
+  return shared;
 }
 
 function referenceInspectLine(
@@ -85,8 +92,9 @@ function referenceInspectLine(
   const versionLabel = version ? `; version ${version}` : "";
   const retrieved = reference.retrieved_at.trim();
   const retrievedLabel = retrieved ? `; retrieved ${retrieved}` : "";
-  const record = reference.public_record_ref.trim();
-  const recordLabel = record ? `; record ${record}` : "";
+  const record =
+    reference.public_record_ref.trim() || GOVERNED_FIELD_UNAVAILABLE;
+  const recordLabel = `; record ${record}`;
   const release = reference.release_id.trim() || GOVERNED_FIELD_UNAVAILABLE;
   return `${family} (${product}${revision}${versionLabel}${retrievedLabel}${recordLabel}; release ${release})`;
 }
