@@ -334,7 +334,10 @@ test.describe("County Investigate evidence hierarchy", () => {
     ).toHaveAttribute("data-county", "08013");
     await expect(
       page.getByTestId("investigate-export-context")
-    ).toHaveAttribute("data-export-state", "unavailable");
+    ).toHaveAttribute("data-export-state", "available");
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
     await expect(page.getByTestId("investigate-return")).toHaveAttribute(
       "href",
       /county=08013/
@@ -572,9 +575,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     }
   });
 
-  test("keeps the unavailable PDF explanation after reload", async ({
-    page,
-  }) => {
+  test("keeps the county PDF offer after reload", async ({ page }) => {
     await installInvestigateMocks(
       page,
       { delayFips: null, failMeasureId: null, scenario: "mixed" },
@@ -589,19 +590,20 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(context).toHaveAttribute("data-release", "alpha-2026");
     await expect(context).toHaveAttribute("data-period", "2023-01-01");
     await expect(context).toHaveAttribute("data-observation-periods", "2023");
-    await expect(context).toHaveAttribute("data-export-state", "unavailable");
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+    await expect(context).toHaveAttribute("data-export-state", "available");
+    await expect(page.getByTestId("investigate-pdf-scope")).toContainText(
       "2023-01-01"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Tick pathogen detections"
+    );
+    await expect(context).toHaveAttribute(
+      "data-caveats",
       INVESTIGATE_TICK_LIMITATION
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      "Tick survey"
-    );
-    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
-      0
-    );
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
     await expect(page.getByTestId("investigate-action")).toHaveAttribute(
       "href",
       /\/app\/action/
@@ -622,9 +624,18 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(
       page.getByTestId("investigate-export-context")
     ).toHaveAttribute("data-period", "2023-01-01");
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      INVESTIGATE_TICK_LIMITATION
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-export-state", "available");
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Tick pathogen detections"
     );
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).toHaveAttribute("data-caveats", INVESTIGATE_TICK_LIMITATION);
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .include('[data-testid="investigate-workspace"]')
@@ -675,8 +686,11 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.goto(
       "/app/investigate?county=08001&scope=CO&dataset=alpha-2026"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      INVESTIGATE_CASES_LIMITATION
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Reported Lyme cases"
+    );
+    await expect(page.getByTestId("investigate-pdf-omitted")).toContainText(
+      "No observations were returned for this county and selected period."
     );
     await expect(page.getByTestId("investigate-limitation-text")).toContainText(
       INVESTIGATE_CASES_LIMITATION
@@ -702,9 +716,9 @@ test.describe("County Investigate evidence hierarchy", () => {
       "href",
       /\/app\/review/
     );
-    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
-      0
-    );
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
   });
 
   test("does not request a report while the visible period and caveat are unmatched", async ({
@@ -727,15 +741,15 @@ test.describe("County Investigate evidence hierarchy", () => {
     await page.goto(
       "/app/investigate?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
+    await expect(page.getByTestId("investigate-pdf-scope")).toContainText(
       "2023-01-01"
     );
-    await expect(page.getByTestId("investigate-pdf-unavailable")).toContainText(
-      INVESTIGATE_TICK_LIMITATION
+    await expect(page.getByTestId("investigate-pdf-included")).toContainText(
+      "Tick pathogen detections"
     );
-    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
-      0
-    );
+    await expect(
+      page.getByRole("button", { name: "Export PDF" })
+    ).toBeVisible();
     await expect(
       page.getByTestId("investigate-next-steps").getByRole("alert")
     ).toHaveCount(0);
@@ -747,7 +761,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     ).toHaveAttribute("data-county", "08013");
     await expect(
       page.getByTestId("investigate-export-context")
-    ).toHaveAttribute("data-export-state", "unavailable");
+    ).toHaveAttribute("data-export-state", "available");
     expect(pdfUrls).toEqual([]);
   });
 

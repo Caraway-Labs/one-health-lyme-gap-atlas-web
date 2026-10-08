@@ -269,32 +269,146 @@ describe("Investigate canonical PDF", () => {
     });
   });
 
-  it("withholds incomplete, mixed-period, missing-provenance and unavailable selections", () => {
+  it("includes published states and leaves out measures that cannot be sent", () => {
     const base = context();
     const record = base.observations?.[0];
     if (!record) throw new Error("Missing fixture");
-    for (const candidate of [
-      { ...base, incomplete: true },
-      { ...base, observations: [] },
-      { ...base, requestedPeriod: "2024-01-01" },
-      { ...base, observations: [{ ...record, lineage_source_id: null }] },
-      {
-        ...base,
-        observations: [
-          { ...record, value_state: "UNAVAILABLE" as const, value: null },
-        ],
-      },
-      {
-        ...base,
-        observations: [
-          record,
-          { ...record, observation_id: "second", period_end: "2023-06-30" },
-        ],
-      },
-    ])
-      expect(investigateCountyReportExportOffer(candidate).state).toBe(
-        "unavailable"
-      );
+    const published = investigateCountyReportExportOffer({
+      ...base,
+      incomplete: true,
+      observations: [
+        record,
+        {
+          ...record,
+          measure_id: "human_status",
+          observation_id: "human",
+          value: "no_county_linked_record",
+          value_state: "NO_COUNTY_LINKED_RECORD",
+        },
+      ],
+      requestedPeriod: "2024-01-01",
+    });
+    const missingLineage = investigateCountyReportExportOffer({
+      ...base,
+      observations: [{ ...record, lineage_source_id: null }],
+    });
+    const mixedPeriod = investigateCountyReportExportOffer({
+      ...base,
+      observations: [
+        record,
+        { ...record, observation_id: "second", period_end: "2023-06-30" },
+      ],
+    });
+    const empty = investigateCountyReportExportOffer({
+      ...base,
+      observations: [],
+    });
+    expect({
+      empty: empty.state,
+      mixed: mixedPeriod.state,
+      missing: missingLineage.state,
+      published:
+        published.state === "available"
+          ? published.measureIds
+          : published.state,
+    }).toStrictEqual({
+      empty: "unavailable",
+      mixed: "unavailable",
+      missing: "unavailable",
+      published: ["human_status", "tick_survey"],
+    });
+  });
+
+  it("lists omitted measures beside the export button", () => {
+    render(
+      <InvestigatePdfExport
+        context={{
+          ...context(),
+          included: [{ label: "Tick survey", measureId: "tick_survey" }],
+          omitted: [
+            {
+              label: "RUCC 2023",
+              measureId: "rucc_2023",
+              reason: "No published data for this release.",
+            },
+          ],
+        }}
+      />
+    );
+    expect(
+      screen.getByTestId("investigate-pdf-included").textContent
+    ).toContain("Tick survey");
+    expect(screen.getByTestId("investigate-pdf-omitted").textContent).toContain(
+      "No published data for this release."
+    );
+    expect(screen.getByRole("button", { name: "Export PDF" })).toBeTruthy();
+  });
+
+  it("names left-out measures when nothing can be included", () => {
+    render(
+      <InvestigatePdfExport
+        context={{
+          ...context(),
+          included: [],
+          observations: [],
+          omitted: [
+            {
+              label: "RUCC 2023",
+              measureId: "rucc_2023",
+              reason: "No published data for this release.",
+            },
+          ],
+        }}
+      />
+    );
+    expect(screen.getByTestId("investigate-pdf-empty").textContent).toContain(
+      "No published measure can be included"
+    );
+    expect(screen.getByTestId("investigate-pdf-omitted").textContent).toContain(
+      "RUCC 2023"
+    );
+    expect(screen.queryByRole("button", { name: "Export PDF" })).toBeNull();
+  });
+
+  it("checks only the included observations before rendering", async () => {
+    const base = context();
+    const included = base.observations?.[0];
+    if (!included) throw new Error("Missing fixture");
+    const second = {
+      ...included,
+      measure_id: "human_status",
+      observation_id: "human",
+    };
+    const excluded = {
+      ...included,
+      measure_id: "other",
+      observation_id: "other",
+    };
+    api.observations.mockImplementation(async (params) =>
+      observationResponse(
+        [included, second].filter((row) => row.measure_id === params.measure_id)
+      )
+    );
+    await expect(
+      downloadInvestigatePdf(
+        {
+          ...base,
+          included: [
+            { label: "Tick survey", measureId: "tick_survey" },
+            { label: "Human status", measureId: "human_status" },
+          ],
+          observations: [included, second, excluded],
+        },
+        {}
+      )
+    ).resolves.toStrictEqual({ committed: true });
+    expect(api.report).toHaveBeenCalledWith(
+      "08001",
+      expect.objectContaining({
+        measure_id: ["tick_survey", "human_status"],
+      }),
+      expect.anything()
+    );
   });
 
   it("shows an accessible failure and allows a fresh retry", async () => {
