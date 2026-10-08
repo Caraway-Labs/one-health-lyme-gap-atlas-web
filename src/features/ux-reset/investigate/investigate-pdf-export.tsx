@@ -87,7 +87,13 @@ function InvestigatePdfExportForContext({
       data-testid="investigate-export-context"
     >
       {offer.state === "available" ? (
-        <Button disabled={pending} onClick={exportPdf} type="button">
+        <Button
+          className="w-fit"
+          variant="secondary"
+          disabled={pending}
+          onClick={exportPdf}
+          type="button"
+        >
           {pending ? "Generating PDF…" : "Export PDF"}
         </Button>
       ) : (
