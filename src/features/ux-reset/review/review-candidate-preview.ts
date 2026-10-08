@@ -9,6 +9,10 @@ import {
   reviewRetrievedAt,
   reviewText,
 } from "@/features/ux-reset/review/review-governed-values";
+import {
+  reviewCandidateCountyLabel,
+  reviewCountyName,
+} from "@/features/ux-reset/review/review-operating-state";
 import type {
   Candidate,
   PublicReviewEvidenceReference,
@@ -190,7 +194,9 @@ export function buildReviewCandidatePreview(input: {
   return {
     availability: evidenceAvailabilityValues.limited,
     caveat,
-    countyName: governedField(input.candidate.county_name),
+    countyName: reviewCandidateCountyLabel(
+      reviewCountyName(input.candidate.county_name)
+    ),
     reasonCodes: trimmedUnique(input.candidate.reason_codes),
     fips: input.candidate.county_fips,
     followUp: nextCheck || "The review result did not include a next check.",

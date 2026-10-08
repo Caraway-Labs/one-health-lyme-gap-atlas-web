@@ -1,6 +1,7 @@
-import type { StateReview } from "@/generated/models";
+import type { Candidate, StateReview } from "@/generated/models";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
 
+import { REVIEW_FIELD_UNAVAILABLE } from "./review-governed-values";
 import { isLower48ReviewScope, stateFipsPrefix } from "./review-state-fips";
 
 export const reviewPictureStateValues = {
@@ -154,10 +155,6 @@ export function unsupportedReviewScopeMessage(scopeCode: string): string {
 const REVIEW_COUNTY_FIPS_PATTERN = /^\d{5}$/;
 
 /**
- * County geography for URL and shell links. Five digits, and the FIPS prefix
- * for the requested state. A blank, malformed, or other-state value is omitted.
- */
-/**
  * Review URL county after one normalization. Unsupported scopes drop it.
  * A lower-48 or DC scope keeps it only when the FIPS prefix matches.
  * National scope is not a state prefix check.
@@ -175,6 +172,10 @@ export function normalizeReviewCounty(
   return reviewCandidateFipsForScope(county, scopeCode);
 }
 
+/**
+ * County geography for URL and shell links. Five digits, and the FIPS prefix
+ * for the requested state. A blank, malformed, or other-state value is omitted.
+ */
 export function reviewCandidateFipsForScope(
   fips: string,
   scopeCode: string
@@ -191,6 +192,49 @@ export function reviewCandidateFipsForScope(
     return null;
   }
   return trimmed;
+}
+
+export type ScopedReviewCandidate = {
+  candidate: Candidate;
+  countyFips: string;
+  /** Trimmed name. Null when blank, so it cannot be validated as geography. */
+  countyName: string | null;
+};
+
+/** Blank contract names stay null. Display uses `reviewCandidateCountyLabel`. */
+export function reviewCountyName(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+export function reviewCandidateCountyLabel(countyName: string | null): string {
+  return countyName ?? REVIEW_FIELD_UNAVAILABLE;
+}
+
+/**
+ * Candidates the Review UI, Ask Atlas, handoffs, and shell links share.
+ * A FIPS that is not five digits in the requested state is omitted.
+ */
+export function scopedReviewCandidates(
+  candidates: readonly Candidate[],
+  scopeCode: string
+): ScopedReviewCandidate[] {
+  const scoped: ScopedReviewCandidate[] = [];
+  for (const candidate of candidates) {
+    const countyFips = reviewCandidateFipsForScope(
+      candidate.county_fips,
+      scopeCode
+    );
+    if (!countyFips) {
+      continue;
+    }
+    scoped.push({
+      candidate: { ...candidate, county_fips: countyFips },
+      countyFips,
+      countyName: reviewCountyName(candidate.county_name),
+    });
+  }
+  return scoped;
 }
 
 export function reviewMapCounties(input: {

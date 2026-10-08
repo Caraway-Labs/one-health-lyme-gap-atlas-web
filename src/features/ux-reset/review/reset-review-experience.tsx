@@ -16,6 +16,7 @@ import {
   normalizeReviewCounty,
   REVIEW_REQUEST_FAILURE_MESSAGE,
   reviewCandidateFipsForScope,
+  scopedReviewCandidates,
   unsupportedReviewScopeMessage,
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
@@ -108,22 +109,13 @@ function ResetReviewExperienceInner() {
     stateOptions.find((option) => option.code === scope)?.name ?? scope;
   const reviewIdentities =
     reviewReady && stateReview.review
-      ? stateReview.review.review_candidates.flatMap((candidate) => {
-          const fips = reviewCandidateFipsForScope(
-            candidate.county_fips,
-            scope
-          );
-          if (!fips) {
-            return [];
-          }
-          return [
-            {
-              county: candidate.county_name,
-              fips,
-              state_name: stateName,
-            },
-          ];
-        })
+      ? scopedReviewCandidates(stateReview.review.review_candidates, scope).map(
+          (candidate) => ({
+            county: candidate.countyName,
+            fips: candidate.countyFips,
+            state_name: stateName,
+          })
+        )
       : [];
   usePublishAskAtlasInheritedContext(
     inheritedContextFromReview({

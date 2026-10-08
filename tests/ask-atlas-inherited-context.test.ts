@@ -287,6 +287,52 @@ describe("Ask Atlas inherited context allowlist", () => {
     ).toBeNull();
   });
 
+  it("withholds a blank Review county name from inherited geography", () => {
+    const blank = inheritedContextFromReview({
+      rankedCounties: [
+        { county: "   ", fips: "08001", state_name: "Colorado" },
+      ],
+      releaseId: "alpha-2026",
+      releaseReady: true,
+      requestedCounty: "08001",
+    });
+    const unavailable = inheritedContextFromReview({
+      rankedCounties: [
+        { county: "Unavailable", fips: "08001", state_name: "Colorado" },
+      ],
+      releaseId: "alpha-2026",
+      releaseReady: true,
+      requestedCounty: "08001",
+    });
+    const named = inheritedContextFromReview({
+      rankedCounties: [
+        { county: "Denver", fips: "08001", state_name: "Colorado" },
+      ],
+      releaseId: "alpha-2026",
+      releaseReady: true,
+      requestedCounty: "08001",
+    });
+    expect({
+      blank: field(blank, "geography"),
+      named: field(named, "geography"),
+      release: field(blank, "release"),
+      unavailable: field(unavailable, "geography"),
+    }).toStrictEqual({
+      blank: { state: "absent" },
+      named: {
+        id: "08001",
+        label: "Denver, Colorado (08001)",
+        state: "validated",
+      },
+      release: {
+        id: "alpha-2026",
+        label: "alpha-2026",
+        state: "validated",
+      },
+      unavailable: { state: "absent" },
+    });
+  });
+
   it("publishes a resolved Compare pair and withholds an unresolved county label", () => {
     const ready = inheritedContextFromCompare({
       alignment: compareAlignment([["2023-01-01", "2023-12-31"]]),

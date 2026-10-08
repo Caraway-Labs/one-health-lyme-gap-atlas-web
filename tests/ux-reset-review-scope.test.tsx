@@ -1118,6 +1118,106 @@ describe("Reset Review scope UI", () => {
     }
   });
 
+  it("withholds a blank county name from Ask Atlas and keeps that county on handoffs", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockResolvedValue({
+      data: buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "   ",
+            fips: "08001",
+            reasonText: "Adams was returned without a county name.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Boulder",
+            fips: "08013",
+            reasonText: "Boulder was returned with a county name.",
+          }),
+        ],
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    const search = "scope=CO&county=08001&dataset=alpha-2026";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter hasMemory searchParams={`?${search}`}>
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        const blankRow = screen
+          .getAllByTestId("review-candidate")
+          .find((row) => row.dataset.fips === "08001");
+        if (!blankRow?.textContent?.includes("Unavailable, CO")) {
+          throw new Error(blankRow?.textContent ?? "blank county row missing");
+        }
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+      const panel = await screen.findByTestId("ask-atlas-panel");
+      const geography = panel.querySelector('[data-field="geography"]');
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const shellHref = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const investigate =
+        screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      const compare =
+        screen.getByTestId("review-compare").getAttribute("href") ?? "";
+      const action = shellHref("Action");
+      const explore = shellHref("Explore");
+      expect({
+        actionCounty: action.includes("county=08001"),
+        actionOtherCounty: action.includes("08013"),
+        compareCounty: compare.includes("county=08001"),
+        compareOtherCounty: compare.includes("08013"),
+        exploreCounty: explore.includes("county=08001"),
+        geographyLabel: geography?.querySelector("dd")?.textContent,
+        geographyState: geography?.dataset.fieldState,
+        investigateCounty: investigate.includes("county=08001"),
+        investigateOtherCounty: investigate.includes("08013"),
+        malformedLabel: panel.textContent?.includes(", Colorado (") ?? false,
+        namedCountyInPanel: panel.textContent?.includes("Boulder") ?? false,
+        preview: screen
+          .getByTestId("review-county-preview")
+          .getAttribute("aria-label"),
+      }).toStrictEqual({
+        actionCounty: true,
+        actionOtherCounty: false,
+        compareCounty: true,
+        compareOtherCounty: false,
+        exploreCounty: true,
+        geographyLabel: "Not validated on this page",
+        geographyState: "absent",
+        investigateCounty: true,
+        investigateOtherCounty: false,
+        malformedLabel: false,
+        namedCountyInPanel: false,
+        preview: "County preview for Unavailable, Colorado",
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
   it("renders national orientation for United States scope", async () => {
     renderReview();
     await waitFor(() =>

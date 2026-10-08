@@ -41,11 +41,12 @@ import {
 } from "@/features/ux-reset/review/review-governed-values";
 import {
   isGovernedReviewResultState,
-  reviewCandidateFipsForScope,
+  reviewCandidateCountyLabel,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
   reviewResultStateLabel,
+  scopedReviewCandidates,
 } from "@/features/ux-reset/review/review-operating-state";
 import {
   consumeReviewReturnFocus,
@@ -198,23 +199,13 @@ export function ReviewOperatingPicture({
   tierRelease = UNKNOWN_TIER_RELEASE,
 }: ReviewOperatingPictureProps) {
   const candidates = useMemo(
-    () =>
-      review.review_candidates.flatMap((candidate) => {
-        const fips = reviewCandidateFipsForScope(
-          candidate.county_fips,
-          scopeCode
-        );
-        if (!fips) {
-          return [];
-        }
-        return [{ ...candidate, county_fips: fips }];
-      }),
+    () => scopedReviewCandidates(review.review_candidates, scopeCode),
     [review.review_candidates, scopeCode]
   );
   const omittedCandidateCount =
     review.review_candidates.length - candidates.length;
   const candidateFips = useMemo(
-    () => new Set(candidates.map((entry) => entry.county_fips)),
+    () => new Set(candidates.map((entry) => entry.countyFips)),
     [candidates]
   );
   const resultState = isGovernedReviewResultState(review.result_state)
@@ -231,7 +222,7 @@ export function ReviewOperatingPicture({
     if (county && candidateFips.has(county)) {
       return county;
     }
-    return candidates[0]?.county_fips ?? "";
+    return candidates[0]?.countyFips ?? "";
   }, [candidateFips, candidates, county]);
   const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
@@ -280,7 +271,7 @@ export function ReviewOperatingPicture({
   const mapCounties = useMemo(
     () =>
       reviewMapCounties({
-        candidateFips: candidates.map((entry) => entry.county_fips),
+        candidateFips: candidates.map((entry) => entry.countyFips),
         geometryFips,
         scopeCode,
       }),
@@ -300,11 +291,11 @@ export function ReviewOperatingPicture({
   const layoutRef = useRef<HTMLDivElement>(null);
   const openRef = useRef<HTMLAnchorElement>(null);
   const selected = candidates.find(
-    (entry) => entry.county_fips === selectedFips
+    (entry) => entry.countyFips === selectedFips
   );
   const preview = selected
     ? buildReviewCandidatePreview({
-        candidate: selected,
+        candidate: selected.candidate,
         methodologyId: review.methodology_id,
         methodologyVersion: review.methodology_version,
         stateCode: scopeCode,
@@ -527,25 +518,26 @@ export function ReviewOperatingPicture({
               role="list"
             >
               {candidates.map((candidate) => (
-                <div key={candidate.county_fips} role="listitem">
+                <div key={candidate.countyFips} role="listitem">
                   <button
                     aria-current={
-                      candidate.county_fips === selectedFips
-                        ? "true"
-                        : undefined
+                      candidate.countyFips === selectedFips ? "true" : undefined
                     }
                     className="ux-reset-review-candidate"
-                    data-fips={candidate.county_fips}
+                    data-fips={candidate.countyFips}
                     data-testid="review-candidate"
                     type="button"
                     onClick={() =>
-                      selectCounty(candidate.county_fips, "ranked_list")
+                      selectCounty(candidate.countyFips, "ranked_list")
                     }
                   >
                     <strong>
-                      {reviewText(candidate.county_name)}, {scopeCode}
+                      {reviewCandidateCountyLabel(candidate.countyName)},{" "}
+                      {scopeCode}
                     </strong>
-                    <small>{reviewCandidateExplanation(candidate)}</small>
+                    <small>
+                      {reviewCandidateExplanation(candidate.candidate)}
+                    </small>
                   </button>
                 </div>
               ))}
