@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { buttonVariants } from "@/components/ui/button";
-import { pageMetadataForRoute } from "@/lib/navigation";
+import { ATLAS_OVERVIEW_PATH, pageMetadataForRoute } from "@/lib/navigation";
 
 export const metadata = pageMetadataForRoute("/privacy");
 
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
             className: "cta-on-dark",
             variant: "ghost",
           })}
-          href="/#atlas"
+          href={`${ATLAS_OVERVIEW_PATH}#atlas`}
         >
           Return to the Atlas
         </Link>

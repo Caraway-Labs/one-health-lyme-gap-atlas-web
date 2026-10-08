@@ -262,7 +262,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
 test("opens the configured docs destination from the analytical sidebar", async ({
   page,
 }, testInfo) => {
-  await page.goto("/");
+  await page.goto("/overview");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }

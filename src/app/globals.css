@@ -4592,3 +4592,237 @@ select:focus-visible {
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   align-items: start;
 }
+
+.front-porch {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+.front-porch-skip {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.front-porch-skip:focus {
+  position: fixed;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 30;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  overflow: visible;
+  clip: auto;
+  background: var(--white);
+  color: var(--navy);
+  border-radius: var(--radius);
+}
+.front-porch-bar {
+  display: flex;
+  min-height: var(--shell-utility-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--layout-inline);
+  background: var(--navy);
+  color: var(--white);
+}
+.front-porch-brand,
+.front-porch-sign-in {
+  color: var(--white);
+  font-weight: 650;
+  text-decoration: none;
+}
+.front-porch-brand {
+  letter-spacing: -0.02em;
+}
+.front-porch-sign-in {
+  font-size: var(--type-small-size);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.hero.front-porch-hero::after {
+  content: none;
+}
+.front-porch-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(16rem, 0.92fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  max-width: var(--layout-content-max);
+  margin: 0 auto;
+  padding: var(--layout-hero-block) var(--layout-inline);
+}
+.hero.front-porch-hero h1 {
+  max-width: 16ch;
+  margin: 0 0 var(--space-5);
+  color: var(--white);
+  font-family: var(--font-front-porch-hero), sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-synthesis: none;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.front-porch-support {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--white);
+  font-size: 1.12rem;
+  line-height: 1.7;
+}
+.front-porch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+.front-porch-cta {
+  min-height: var(--control-height);
+  padding-inline: var(--space-4);
+}
+.front-porch-figure {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-5);
+  margin: 0;
+}
+.front-porch-image-frame {
+  display: grid;
+  width: min(100%, 26rem);
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--white) 28%, transparent);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      color-mix(in srgb, var(--teal) 45%, transparent),
+      transparent 70%
+    ),
+    color-mix(in srgb, var(--white) 8%, transparent);
+  box-shadow:
+    0 0 0 1.25rem color-mix(in srgb, var(--white) 5%, transparent),
+    0 0 0 2.5rem color-mix(in srgb, var(--white) 3%, transparent);
+}
+.front-porch-image-frame img {
+  width: 68%;
+  height: 68%;
+  object-fit: contain;
+}
+.front-porch-callout {
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--white) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--white) 12%, transparent);
+  color: var(--white);
+  font-size: var(--type-small-size);
+  font-weight: 650;
+  line-height: 1.4;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+.front-porch-story {
+  display: grid;
+  gap: var(--space-12);
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--layout-section-block) var(--layout-inline)
+    var(--layout-section-block);
+}
+.front-porch-beat h2 {
+  margin: 0 0 var(--space-4);
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.15rem);
+  font-weight: 500;
+  line-height: 1.25;
+}
+.front-porch-beat p {
+  margin: 0 0 var(--space-4);
+}
+.front-porch-beat a {
+  color: var(--teal-dark);
+  font-weight: 650;
+}
+.front-porch-close {
+  padding: var(--space-8);
+  border-radius: var(--radius-lg);
+  background: var(--navy);
+  color: var(--white);
+}
+.front-porch-close h2,
+.front-porch-close p,
+.front-porch-close-support {
+  color: var(--white);
+}
+.front-porch-close-support {
+  margin-top: var(--space-4);
+  margin-bottom: 0;
+}
+.front-porch-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--layout-inline);
+  background: var(--navy);
+  color: var(--white);
+}
+.front-porch-footer p {
+  margin: 0;
+  color: var(--white);
+}
+.front-porch-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+  align-items: center;
+}
+.front-porch-footer a,
+.front-porch-footer .footer-link {
+  color: var(--atlas-action-primary);
+  font-size: var(--type-small-size);
+  font-weight: 650;
+}
+.front-porch a:focus-visible,
+.front-porch button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 3px;
+}
+.front-porch-hero a:focus-visible,
+.front-porch-bar a:focus-visible,
+.front-porch-footer a:focus-visible,
+.front-porch-footer button:focus-visible,
+.front-porch-close a:focus-visible {
+  outline-color: var(--white);
+}
+@media (max-width: 800px) {
+  .front-porch-hero-inner {
+    grid-template-columns: 1fr;
+  }
+  .front-porch-image-frame {
+    width: min(100%, 18rem);
+    box-shadow:
+      0 0 0 0.75rem color-mix(in srgb, var(--white) 5%, transparent),
+      0 0 0 1.5rem color-mix(in srgb, var(--white) 3%, transparent);
+  }
+  .front-porch-close {
+    padding: var(--space-6);
+  }
+  .hero.front-porch-hero h1 {
+    max-width: none;
+  }
+}

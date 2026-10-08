@@ -42,6 +42,9 @@ export type RouteMetadata = {
   status: NavigationStatus;
 };
 
+/** Analytical county overview. The public root is the Front Porch, not this workspace. */
+export const ATLAS_OVERVIEW_PATH = "/overview" as const;
+
 export const NAVIGATION_STATUS_LABELS: Record<NavigationStatus, string> = {
   available: "Available",
   experimental: "Experimental",
@@ -68,9 +71,22 @@ export const NAVIGATION_GROUPS: readonly {
  */
 export const ATLAS_ROUTES: readonly RouteMetadata[] = [
   {
+    description: "Public introduction to One Health Atlas for epidemiologists.",
+    href: "/",
+    id: "front-porch",
+    label: "One Health Atlas",
+    match: "exact",
+    pageDescription:
+      "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps epidemiologists connect those perspectives and decide what deserves a closer look.",
+    pageTitle: "One Health Atlas",
+    placement: "none",
+    shell: "none",
+    status: "available",
+  },
+  {
     description: "Start a county surveillance review.",
     group: "explore",
-    href: "/",
+    href: ATLAS_OVERVIEW_PATH,
     icon: Compass,
     id: "overview",
     label: "Atlas overview",

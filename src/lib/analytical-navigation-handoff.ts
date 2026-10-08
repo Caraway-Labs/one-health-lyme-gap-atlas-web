@@ -1,7 +1,9 @@
+import { ATLAS_OVERVIEW_PATH } from "@/lib/navigation";
+
 const FIPS_PATTERN = /^\d{5}$/;
 
 export const ANALYTICAL_NAVIGATION_PATHS = [
-  "/",
+  ATLAS_OVERVIEW_PATH,
   "/geographic_explorer",
   "/investigate",
 ] as const;
@@ -113,4 +115,81 @@ export function analyticalNavigationHref(
   );
   const serialized = handoff.toString();
   return serialized ? `${targetPath}?${serialized}` : targetPath;
+}
+
+const ATLAS_SECTION_HASH = "#atlas";
+
+/** Section ids that existed on the analytical page when it lived at `/`. */
+const LEGACY_ROOT_SECTION_IDS = new Set(["atlas", "methods", "scoring"]);
+
+function legacyFragmentSearch(search: string): string {
+  if (!search) return "";
+  if (search.startsWith("?")) return search;
+  return `?${search}`;
+}
+
+/**
+ * Fragments are not sent to the server, so a bare `/#atlas` still renders the
+ * Front Porch. Recognized legacy section ids move to the same section on
+ * Overview.
+ */
+export function legacyAnalyticalFragmentHref(
+  hash: string,
+  search = ""
+): string | null {
+  const sectionId = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (!LEGACY_ROOT_SECTION_IDS.has(sectionId)) return null;
+  return `${ATLAS_OVERVIEW_PATH}${legacyFragmentSearch(search)}#${sectionId}`;
+}
+
+/**
+ * Footer return to the analytical Atlas.
+ * On Overview, a fragment-only link keeps the current query. From another
+ * analytical route, copy only parameters Overview understands.
+ */
+export function backToAtlasHref(
+  pathname: string,
+  searchParams: SearchParamSource
+): string {
+  const normalized = pathname.split(/[?#]/, 1)[0] || "/";
+  if (normalized === ATLAS_OVERVIEW_PATH) {
+    return ATLAS_SECTION_HASH;
+  }
+  if (!isAnalyticalNavigationPath(normalized)) {
+    return `${ATLAS_OVERVIEW_PATH}${ATLAS_SECTION_HASH}`;
+  }
+  return `${analyticalNavigationHref(ATLAS_OVERVIEW_PATH, normalized, searchParams)}${ATLAS_SECTION_HASH}`;
+}
+
+type LegacySearchParamValue = string | string[] | undefined;
+
+/**
+ * Previously shared Atlas links used `/` plus analytical query parameters.
+ * Plain `/` stays the Front Porch. A supported parameter sends the request
+ * to Overview with that state intact.
+ */
+export function legacyAnalyticalOverviewHref(
+  searchParams: Record<string, LegacySearchParamValue>
+): string | null {
+  const source = new URLSearchParams();
+  for (const key of OVERVIEW_INVESTIGATE_HANDOFF_PARAMS) {
+    const value = searchParams[key];
+    if (typeof value === "string") {
+      source.append(key, value);
+      continue;
+    }
+    if (!Array.isArray(value)) continue;
+    for (const item of value) {
+      source.append(key, item);
+    }
+  }
+
+  const handoff = analyticalNavigationHandoffSearchParams(
+    ATLAS_OVERVIEW_PATH,
+    ATLAS_OVERVIEW_PATH,
+    source
+  );
+  const serialized = handoff.toString();
+  if (!serialized) return null;
+  return `${ATLAS_OVERVIEW_PATH}?${serialized}`;
 }

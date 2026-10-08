@@ -87,7 +87,9 @@ describe("UX Reset shell accessibility", () => {
         ?.getAttribute("aria-label")
     ).toBe("Review");
     expect(
-      navigation.querySelector('a[href="/"]')?.getAttribute("aria-label")
+      navigation
+        .querySelector('a[href="/overview"]')
+        ?.getAttribute("aria-label")
     ).toBe("Open legacy Atlas");
   });
 

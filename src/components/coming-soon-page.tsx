@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
+import { ATLAS_OVERVIEW_PATH } from "@/lib/navigation";
 
 export function ComingSoonPage({
   description,
@@ -19,7 +20,10 @@ export function ComingSoonPage({
           This Atlas capability is in development. It is not available as a
           released analytical workflow yet.
         </p>
-        <Link className={buttonVariants({ className: "mt-6" })} href="/">
+        <Link
+          className={buttonVariants({ className: "mt-6" })}
+          href={ATLAS_OVERVIEW_PATH}
+        >
           Return to Atlas overview
         </Link>
       </section>

@@ -1,15 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 import {
   FeedbackTrigger,
   useOptionalFeedbackController,
 } from "@/components/feedback-dialog";
 import { PrivacyPreferences } from "@/components/privacy-preferences";
+import { backToAtlasHref } from "@/lib/analytical-navigation-handoff";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
-import { FOOTER_NAVIGATION_ITEMS } from "@/lib/navigation";
+import { ATLAS_OVERVIEW_PATH, FOOTER_NAVIGATION_ITEMS } from "@/lib/navigation";
+
+function BackToAtlasLink() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  return (
+    <a
+      {...analyticsControlAttributes("footer_back_to_atlas")}
+      href={backToAtlasHref(pathname, searchParams)}
+    >
+      Back to Atlas ↑
+    </a>
+  );
+}
 
 export function SiteFooter() {
   const pathname = usePathname();
@@ -56,12 +72,18 @@ export function SiteFooter() {
           />
         ) : null}
         <PrivacyPreferences />
-        <a
-          {...analyticsControlAttributes("footer_back_to_atlas")}
-          href="#atlas"
+        <Suspense
+          fallback={
+            <a
+              {...analyticsControlAttributes("footer_back_to_atlas")}
+              href={`${ATLAS_OVERVIEW_PATH}#atlas`}
+            >
+              Back to Atlas ↑
+            </a>
+          }
         >
-          Back to Atlas ↑
-        </a>
+          <BackToAtlasLink />
+        </Suspense>
       </nav>
     </footer>
   );

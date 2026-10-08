@@ -47,9 +47,9 @@ describe("assistant context handoff", () => {
 
   it("skips invalid county values instead of inventing a replacement", () => {
     const source = new URLSearchParams("county=not-a-fips&dataset=alpha");
-    expect(assistantContextHandoffSearchParams("/", source).toString()).toBe(
-      "dataset=alpha"
-    );
+    expect(
+      assistantContextHandoffSearchParams("/overview", source).toString()
+    ).toBe("dataset=alpha");
   });
 
   it("does not hand off analytical state from non-analytical routes", () => {
