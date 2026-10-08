@@ -1,20 +1,13 @@
-import { isSupabaseAuthConfigured } from "@/lib/auth/app-route-guard";
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
+
+import {
+  FRONT_PORCH_SESSION_HEADER,
+  isFrontPorchSignedInHeader,
+} from "@/lib/auth/front-porch-session-header";
 
 export async function readFrontPorchSignedIn(): Promise<boolean> {
-  const configured = isSupabaseAuthConfigured(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  const headerStore = await headers();
+  return isFrontPorchSignedInHeader(
+    headerStore.get(FRONT_PORCH_SESSION_HEADER)
   );
-  if (!configured) {
-    return false;
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase.auth.getUser();
-    return Boolean(data.user);
-  } catch {
-    return false;
-  }
 }

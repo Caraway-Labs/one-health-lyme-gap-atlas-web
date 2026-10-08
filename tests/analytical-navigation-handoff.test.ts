@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   analyticalNavigationHandoffSearchParams,
   analyticalNavigationHref,
+  backToAtlasHref,
+  legacyAnalyticalOverviewHref,
 } from "@/lib/analytical-navigation-handoff";
 
 function expectHrefQuery(href: string, expected: Record<string, string>) {
@@ -99,5 +101,27 @@ describe("analytical navigation handoff", () => {
     const source = new URLSearchParams("county=08001");
     expect(analyticalNavigationHref("/docs", "/", source)).toBe("/docs");
     expect(analyticalNavigationHref("/account", "/", source)).toBe("/account");
+  });
+
+  it("keeps the current Overview query on a same-page Atlas anchor", () => {
+    const source = new URLSearchParams("county=08001&state=CO&eco=70");
+    expect(backToAtlasHref("/overview", source)).toBe("#atlas");
+    expect(backToAtlasHref("/geographic_explorer", source)).toBe(
+      "/overview?county=08001&eco=70&state=CO#atlas"
+    );
+    expect(backToAtlasHref("/privacy", source)).toBe("/overview#atlas");
+  });
+
+  it("sends legacy analytical root queries to Overview", () => {
+    expect(
+      legacyAnalyticalOverviewHref({
+        county: "08001",
+        dataset: "alpha-explorer",
+        state: "CO",
+      })
+    ).toBe("/overview?county=08001&dataset=alpha-explorer&state=CO");
+    expect(legacyAnalyticalOverviewHref({})).toBeNull();
+    expect(legacyAnalyticalOverviewHref({ utm_source: "share" })).toBeNull();
+    expect(legacyAnalyticalOverviewHref({ county: "not-a-fips" })).toBeNull();
   });
 });

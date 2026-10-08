@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AnalyticsClient } from "@/components/analytics-client";
@@ -30,6 +31,8 @@ let pathname = "/overview";
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => pathname,
+  useSearchParams: (): ReadonlyURLSearchParams =>
+    new URLSearchParams() as unknown as ReadonlyURLSearchParams,
 }));
 
 function LegacyAtlasOrWorkspace() {

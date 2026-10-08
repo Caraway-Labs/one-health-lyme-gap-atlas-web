@@ -10,6 +10,7 @@ import {
   isCountyFips,
   isUiControlId,
   isValidScoreValue,
+  routeIdForPathname,
   routeIds,
   uiControlIds,
 } from "../src/lib/atlas-analytics";
@@ -46,6 +47,18 @@ describe("Atlas Amplitude boundary", () => {
 
     expect(loadAmplitude).not.toHaveBeenCalled();
     expect(amplitude.track).not.toHaveBeenCalled();
+  });
+
+  it("keeps Front Porch route views distinct from Overview", () => {
+    expect({
+      frontPorch: routeIdForPathname("/"),
+      known: routeIds.includes("front_porch"),
+      overview: routeIdForPathname("/overview"),
+    }).toStrictEqual({
+      frontPorch: "front_porch",
+      known: true,
+      overview: "atlas_home",
+    });
   });
 
   it("uses unique typed route and control allowlists", () => {
