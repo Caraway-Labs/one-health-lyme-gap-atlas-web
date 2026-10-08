@@ -344,6 +344,73 @@ describe("Investigate canonical PDF", () => {
     expect(screen.getByRole("button", { name: "Export PDF" })).toBeTruthy();
   });
 
+  it("names left-out measures when nothing can be included", () => {
+    render(
+      <InvestigatePdfExport
+        context={{
+          ...context(),
+          included: [],
+          observations: [],
+          omitted: [
+            {
+              label: "RUCC 2023",
+              measureId: "rucc_2023",
+              reason: "No published data for this release.",
+            },
+          ],
+        }}
+      />
+    );
+    expect(screen.getByTestId("investigate-pdf-empty").textContent).toContain(
+      "No published measure can be included"
+    );
+    expect(screen.getByTestId("investigate-pdf-omitted").textContent).toContain(
+      "RUCC 2023"
+    );
+    expect(screen.queryByRole("button", { name: "Export PDF" })).toBeNull();
+  });
+
+  it("checks only the included observations before rendering", async () => {
+    const base = context();
+    const included = base.observations?.[0];
+    if (!included) throw new Error("Missing fixture");
+    const second = {
+      ...included,
+      measure_id: "human_status",
+      observation_id: "human",
+    };
+    const excluded = {
+      ...included,
+      measure_id: "other",
+      observation_id: "other",
+    };
+    api.observations.mockImplementation(async (params) =>
+      observationResponse(
+        [included, second].filter((row) => row.measure_id === params.measure_id)
+      )
+    );
+    await expect(
+      downloadInvestigatePdf(
+        {
+          ...base,
+          included: [
+            { label: "Tick survey", measureId: "tick_survey" },
+            { label: "Human status", measureId: "human_status" },
+          ],
+          observations: [included, second, excluded],
+        },
+        {}
+      )
+    ).resolves.toStrictEqual({ committed: true });
+    expect(api.report).toHaveBeenCalledWith(
+      "08001",
+      expect.objectContaining({
+        measure_id: ["tick_survey", "human_status"],
+      }),
+      expect.anything()
+    );
+  });
+
   it("shows an accessible failure and allows a fresh retry", async () => {
     api.report.mockRejectedValueOnce(new Error("Renderer unavailable"));
     render(<InvestigatePdfExport context={context()} />);

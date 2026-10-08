@@ -67,7 +67,7 @@ function publishedValueState(state: Observation["value_state"]): boolean {
     }
     default: {
       const exhaustive: never = state;
-      return exhaustive;
+      return Boolean(exhaustive) && false;
     }
   }
 }
