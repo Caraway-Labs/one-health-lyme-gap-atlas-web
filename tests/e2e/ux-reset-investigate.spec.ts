@@ -874,3 +874,135 @@ test.describe("County Investigate evidence hierarchy", () => {
     await expect(page).not.toHaveURL(/compare=/);
   });
 });
+
+test.describe("Investigate canonical PDF export", () => {
+  async function fulfillPdfJson(route: Route, body: unknown, status = 200) {
+    await route.fulfill({
+      status,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function installCanonicalPdfEvidence(page: Page) {
+    await installInvestigateMocks(
+      page,
+      { delayFips: null, failMeasureId: null, scenario: "mixed" },
+      Promise.resolve(),
+      []
+    );
+    await page.route("**/v1/measures**", async (route) => {
+      const url = new URL(route.request().url());
+      await fulfillPdfJson(route, {
+        data:
+          url.searchParams.get("geography_type") === "COUNTY_FIPS_5"
+            ? investigateMeasuresFixture.filter(
+                (measure) => measure.measure_id === INVESTIGATE_TICK_MEASURE_ID
+              )
+            : [],
+        meta: {},
+        links: { self: "/v1/measures" },
+      });
+    });
+    await page.route("**/v1/observations**", async (route) => {
+      const url = new URL(route.request().url());
+      await fulfillPdfJson(route, {
+        data: investigateObservationsFor({
+          fips: url.searchParams.get("geography_id") ?? "08001",
+          measureId: INVESTIGATE_TICK_MEASURE_ID,
+          scenario: "mixed",
+        }).map((item) => ({ ...item, lineage_source_id: "tick-lineage" })),
+        meta: {},
+        links: { self: "/v1/observations" },
+      });
+    });
+  }
+
+  test("exports the canonical full period with source caveats and passes accessibility", async ({
+    page,
+  }) => {
+    await installCanonicalPdfEvidence(page);
+    const reports: URL[] = [];
+    await page.route("**/v1/counties/**/report.pdf**", async (route) => {
+      reports.push(new URL(route.request().url()));
+      await route.fulfill({
+        body: "%PDF-1.7 fixture",
+        contentType: "application/pdf",
+        headers: { "Cache-Control": "no-store" },
+      });
+    });
+    await page.goto(
+      "/app/investigate?county=08001&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("investigate-limitation-text")).toContainText(
+      INVESTIGATE_TICK_LIMITATION
+    );
+    const button = page.getByRole("button", { name: "Export PDF" });
+    await expect(button).toBeVisible();
+    const download = page.waitForEvent("download");
+    await button.click();
+    await download;
+    expect(
+      reports.map((url) => ({
+        county: url.pathname,
+        template: url.searchParams.get("template"),
+        release: url.searchParams.get("dataset_version"),
+        start: url.searchParams.get("period_start"),
+        end: url.searchParams.get("period_end"),
+        measures: url.searchParams.getAll("measure_id"),
+      }))
+    ).toEqual([
+      {
+        county: "/v1/counties/08001/report.pdf",
+        template: "county-v2",
+        release: "alpha-2026",
+        start: "2023-01-01",
+        end: "2023-12-31",
+        measures: [INVESTIGATE_TICK_MEASURE_ID],
+      },
+    ]);
+    const accessibility = await new AxeBuilder({ page })
+      .include('[data-testid="investigate-next-steps"]')
+      .analyze();
+    expect(accessibility.violations).toEqual([]);
+  });
+
+  test("withholds download on a canonical mismatch and shows renderer failures honestly", async ({
+    page,
+  }) => {
+    await installCanonicalPdfEvidence(page);
+    let reports = 0;
+    await page.route("**/v1/counties/**/report.pdf**", async (route) => {
+      reports += 1;
+      await fulfillPdfJson(route, { detail: "Renderer unavailable" }, 503);
+    });
+    await page.goto(
+      "/app/investigate?county=08001&dataset=alpha-2026&period=2023-01-01"
+    );
+    await page.getByRole("button", { name: "Export PDF" }).click();
+    await expect(
+      page.getByTestId("investigate-next-steps").getByRole("alert")
+    ).toContainText("Renderer unavailable");
+    expect(reports).toBe(1);
+    await page.route("**/v1/observations**", async (route) => {
+      await fulfillPdfJson(route, {
+        data: investigateObservationsFor({
+          fips: "08001",
+          measureId: INVESTIGATE_TICK_MEASURE_ID,
+          scenario: "mixed",
+        }).map((item) => ({
+          ...item,
+          lineage_source_id: "tick-lineage",
+          limitations: ["Changed caveat"],
+        })),
+        meta: {},
+        links: { self: "/v1/observations" },
+      });
+    });
+    await page.getByRole("button", { name: "Export PDF" }).click();
+    await expect(
+      page.getByTestId("investigate-next-steps").getByRole("alert")
+    ).toContainText("Evidence changed");
+    expect(reports).toBe(1);
+  });
+});
