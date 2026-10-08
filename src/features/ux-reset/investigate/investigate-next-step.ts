@@ -6,6 +6,11 @@ import type {
   CountyEvidenceBundle,
   CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  selectInvestigatePdfMeasures,
+  type InvestigatePdfMeasure,
+  type InvestigatePdfOmission,
+} from "@/features/ux-reset/investigate/investigate-pdf-selection";
 import type { Observation } from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
 
@@ -90,6 +95,8 @@ export function investigateCompareOffer(input: {
 
 export type InvestigatePdfContext = {
   observations?: readonly Observation[];
+  included?: readonly InvestigatePdfMeasure[];
+  omitted?: readonly InvestigatePdfOmission[];
   incomplete?: boolean;
   caveats: readonly string[];
   countyFips: string;
@@ -118,7 +125,7 @@ function appendUnique(values: string[], value: string): void {
 
 /**
  * County, release, periods, sources, and caveats copied from the observations
- * already on the page. Empty families contribute nothing.
+ * already on the page. The PDF includes published measures and names the rest.
  */
 export function investigatePdfContext(
   bundle: CountyEvidenceBundle,
@@ -127,17 +134,30 @@ export function investigatePdfContext(
   const sources: string[] = [];
   const periods: string[] = [];
   const caveats: string[] = [];
-  for (const record of visibleObservations(bundle)) {
+  const records = visibleObservations(bundle);
+  for (const record of records) {
     appendUnique(sources, record.evidence.provenance.sourceFamily);
     appendUnique(periods, record.evidence.provenance.observationPeriod);
     for (const limitation of record.evidence.provenance.limitations) {
       appendUnique(caveats, limitation);
     }
   }
+  const selection = selectInvestigatePdfMeasures({
+    countyFips: bundle.county.fips,
+    failures: bundle.measureFailures,
+    readyMeasureIds: bundle.readyMeasureIds,
+    records: records.map((record) => ({
+      measureId: record.measureId,
+      measureLabel: record.measureLabel,
+      observation: record.observation,
+    })),
+    releaseId: bundle.releaseId,
+    unsupportedPeriodMeasureIds: bundle.unsupportedPeriodMeasureIds,
+  });
   return {
-    observations: visibleObservations(bundle).map(
-      (record) => record.observation
-    ),
+    observations: selection.observations,
+    included: selection.included,
+    omitted: selection.omitted,
     incomplete:
       bundle.measureFailures.length > 0 ||
       bundle.unsupportedPeriodMeasureIds.length > 0,
@@ -151,85 +171,75 @@ export function investigatePdfContext(
 }
 
 export type InvestigatePdfExportOffer =
-  | { reason: string; state: "unavailable" }
   | {
+      omitted: readonly InvestigatePdfOmission[];
+      reason: string;
+      state: "unavailable";
+    }
+  | {
+      included: readonly InvestigatePdfMeasure[];
+      measureIds: string[];
+      omitted: readonly InvestigatePdfOmission[];
+      periodEnd: string;
+      periodStart: string;
       reason: string;
       state: "available";
-      periodStart: string;
-      periodEnd: string;
-      measureIds: string[];
     };
 
-/** Only complete canonical evidence can select the server-owned county-v2 report. */
+function selectionForContext(context: InvestigatePdfContext) {
+  if (context.included) {
+    const [first] = context.observations ?? [];
+    return {
+      included: context.included,
+      observations: context.observations ?? [],
+      omitted: context.omitted ?? [],
+      periodEnd: first?.period_end ?? null,
+      periodStart: first?.period_start ?? null,
+    };
+  }
+  return selectInvestigatePdfMeasures({
+    countyFips: context.countyFips,
+    failures: [],
+    readyMeasureIds: [],
+    records: (context.observations ?? []).map((observation) => ({
+      measureId: observation.measure_id,
+      measureLabel: observation.measure_id,
+      observation,
+    })),
+    releaseId: context.releaseId,
+    unsupportedPeriodMeasureIds: [],
+  });
+}
+
+/** Published measures select the server-owned county-v2 report. The rest stay listed. */
 export function investigateCountyReportExportOffer(
   context: InvestigatePdfContext
 ): InvestigatePdfExportOffer {
-  const records = context.observations ?? [];
-  const first = records[0];
-  const unavailable = {
-    reason: `A matching report is unavailable for requested period ${context.requestedPeriod ?? "none"}, observation period ${context.periods.join("; ")}, source ${context.sources.join("; ")}, and caveat ${context.caveats.join("; ")}. Complete canonical evidence and provenance are required.`,
-    state: "unavailable" as const,
-  };
+  const selection = selectionForContext(context);
+  const periodStart = selection.periodStart;
+  const periodEnd = selection.periodEnd;
   if (
-    !first ||
-    context.incomplete ||
-    !isCountyFips(context.countyFips) ||
-    !context.releaseId
+    !(
+      periodStart &&
+      periodEnd &&
+      selection.included.length > 0 &&
+      isCountyFips(context.countyFips) &&
+      context.releaseId
+    )
   ) {
-    return unavailable;
-  }
-  const start = Date.parse(first.period_start);
-  const end = Date.parse(first.period_end);
-  const days = (end - start) / 86_400_000 + 1;
-  if (
-    !Number.isFinite(days) ||
-    days < 1 ||
-    days > 500 ||
-    new Date(start).toISOString().slice(0, 10) !== first.period_start ||
-    new Date(end).toISOString().slice(0, 10) !== first.period_end ||
-    (context.requestedPeriod && context.requestedPeriod !== first.period_start)
-  ) {
-    return unavailable;
-  }
-  const ids = new Set<string>();
-  const counts = new Map<string, number>();
-  for (const observation of records) {
-    if (
-      ids.has(observation.observation_id) ||
-      observation.geography.geography_type !== "county" ||
-      observation.geography.geography_id !== context.countyFips ||
-      observation.release_id !== context.releaseId ||
-      observation.period_start !== first.period_start ||
-      observation.period_end !== first.period_end ||
-      !["OBSERVED", "ZERO", "SUPPRESSED"].includes(observation.value_state) ||
-      ![
-        observation.measure_id,
-        observation.source_id,
-        observation.source_label,
-        observation.lineage_source_id,
-        observation.dataset_id,
-        observation.provenance_ref,
-        observation.methodology_version,
-        observation.semantic_version,
-      ].every((value) => value?.trim())
-    ) {
-      return unavailable;
-    }
-    ids.add(observation.observation_id);
-    counts.set(
-      observation.measure_id,
-      (counts.get(observation.measure_id) ?? 0) + 1
-    );
-  }
-  if (counts.size > 20 || [...counts.values()].some((count) => count > 500)) {
-    return unavailable;
+    return {
+      omitted: selection.omitted,
+      reason: "No published measure can be included in the county report.",
+      state: "unavailable",
+    };
   }
   return {
+    included: selection.included,
+    measureIds: selection.included.map((measure) => measure.measureId),
+    omitted: selection.omitted,
+    periodEnd,
+    periodStart,
+    reason: `Export published measures for ${periodStart} through ${periodEnd}.`,
     state: "available",
-    reason:
-      "Export the county evidence with its observation period, sources, and caveats.",
-    periodStart: first.period_start,
-    periodEnd: first.period_end,
-    measureIds: [...counts.keys()].sort(),
   };
 }

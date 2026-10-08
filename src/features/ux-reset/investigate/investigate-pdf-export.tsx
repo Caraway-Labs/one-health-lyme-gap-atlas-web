@@ -80,29 +80,73 @@ function InvestigatePdfExportForContext({
       data-caveats={context.caveats.join("\n")}
       data-county={context.countyFips}
       data-export-state={offer.state}
+      data-included={
+        offer.state === "available" ? offer.measureIds.join("\n") : ""
+      }
       data-observation-periods={context.periods.join("\n")}
+      data-omitted={offer.omitted
+        .map((measure) => measure.measureId)
+        .join("\n")}
       data-period={context.requestedPeriod ?? ""}
       data-release={context.releaseId}
       data-sources={context.sources.join("\n")}
       data-testid="investigate-export-context"
     >
       {offer.state === "available" ? (
-        <Button
-          className="w-fit"
-          variant="secondary"
-          disabled={pending}
-          onClick={exportPdf}
-          type="button"
-        >
-          {pending ? "Generating PDF…" : "Export PDF"}
-        </Button>
+        <div data-testid="investigate-pdf-scope">
+          <h3 className="type-body">County PDF</h3>
+          <p className="type-body">
+            {`This PDF uses ${offer.periodStart} through ${offer.periodEnd}. It includes the published measures below.`}
+          </p>
+          <h4 className="type-body">Included</h4>
+          <ul data-testid="investigate-pdf-included">
+            {offer.included.map((measure) => (
+              <li key={measure.measureId}>{measure.label}</li>
+            ))}
+          </ul>
+          {offer.omitted.length > 0 ? (
+            <>
+              <h4 className="type-body">Left out</h4>
+              <ul data-testid="investigate-pdf-omitted">
+                {offer.omitted.map((measure) => (
+                  <li key={measure.measureId}>
+                    {`${measure.label}. ${measure.reason}`}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          <Button
+            className="w-fit"
+            variant="secondary"
+            disabled={pending}
+            onClick={exportPdf}
+            type="button"
+          >
+            {pending ? "Generating PDF…" : "Export PDF"}
+          </Button>
+        </div>
       ) : (
-        <AtlasStatusMessage title="PDF unavailable" titleAs="h3" tone="empty">
-          <p data-testid="investigate-pdf-unavailable">{offer.reason}</p>
-        </AtlasStatusMessage>
+        <div data-testid="investigate-pdf-empty">
+          <h3 className="type-body">County PDF</h3>
+          <p>{offer.reason}</p>
+          {offer.omitted.length > 0 ? (
+            <ul data-testid="investigate-pdf-omitted">
+              {offer.omitted.map((measure) => (
+                <li key={measure.measureId}>
+                  {`${measure.label}. ${measure.reason}`}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       )}
       {error ? (
-        <AtlasStatusMessage title="PDF unavailable" titleAs="h3" tone="error">
+        <AtlasStatusMessage
+          title="The PDF did not download"
+          titleAs="h3"
+          tone="error"
+        >
           <p>{error}</p>
         </AtlasStatusMessage>
       ) : null}

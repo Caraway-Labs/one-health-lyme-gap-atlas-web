@@ -1066,8 +1066,10 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-finding-text").textContent
       ).toContain("7 cases")
     );
-    const unavailable =
-      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
+    const included =
+      screen.getByTestId("investigate-pdf-included").textContent ?? "";
+    const omitted =
+      screen.getByTestId("investigate-pdf-omitted").textContent ?? "";
     const action = screen.getByRole("link", { name: "Continue to Action" });
     const actionHref = action.getAttribute("href") ?? "";
     expect({
@@ -1080,13 +1082,13 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-family-vector_pathogen").textContent ??
         ""
       ).includes("Inspect provenance"),
-      exportButton: screen.queryByTestId("investigate-export"),
+      exportButton: screen.queryByRole("button", { name: "Export PDF" }),
+      includedCases: included.includes("Reported Lyme cases"),
       limitation: screen.getByTestId("investigate-limitation-text").textContent,
+      omittedTicks: omitted.includes("No published data for this release."),
       returnCounty: (
         screen.getByTestId("investigate-return").getAttribute("href") ?? ""
       ).includes("county=08001"),
-      unavailableCases: unavailable.includes(INVESTIGATE_CASES_LIMITATION),
-      unavailableTicks: unavailable.includes(INVESTIGATE_TICK_LIMITATION),
     }).toStrictEqual({
       actionCounty: true,
       actionPath: true,
@@ -1095,15 +1097,15 @@ describe("County Investigate workspace", () => {
         "No governed observations were returned"
       ),
       emptyInspect: false,
-      exportButton: null,
+      exportButton: expect.anything(),
+      includedCases: true,
       limitation: expect.stringContaining(INVESTIGATE_CASES_LIMITATION),
+      omittedTicks: true,
       returnCounty: true,
-      unavailableCases: true,
-      unavailableTicks: false,
     });
   });
 
-  it("offers Action and withholds the county PDF for available and limited evidence", async () => {
+  it("offers Action and a county PDF for the published measures", async () => {
     const search =
       "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01";
     const view = renderInvestigate(search);
@@ -1118,8 +1120,8 @@ describe("County Investigate workspace", () => {
       }
     });
     const context = screen.getByTestId("investigate-export-context");
-    const unavailable =
-      screen.getByTestId("investigate-pdf-unavailable").textContent ?? "";
+    const included =
+      screen.getByTestId("investigate-pdf-included").textContent ?? "";
     const evidenceText =
       screen.getByTestId("investigate-evidence").textContent ?? "";
     const action = screen.getByRole("link", { name: "Continue to Action" });
@@ -1137,10 +1139,10 @@ describe("County Investigate workspace", () => {
       evidenceTicks: evidenceText.includes(INVESTIGATE_TICK_LIMITATION),
       exportButton: screen.queryByRole("button", { name: "Export PDF" }),
       exportState: context.dataset.exportState,
+      includedCases: included.includes("Reported Lyme cases"),
+      includedTicks: included.includes("Tick pathogen detections"),
       observationPeriods: context.dataset.observationPeriods,
       period: context.dataset.period,
-      reasonPeriod: unavailable.includes("2023-01-01"),
-      reasonSource: unavailable.includes("Tick survey"),
       release: context.dataset.release,
       returnReview: (
         screen.getByTestId("investigate-return").getAttribute("href") ?? ""
@@ -1157,12 +1159,12 @@ describe("County Investigate workspace", () => {
       evidenceCases: true,
       evidenceCover: true,
       evidenceTicks: true,
-      exportButton: null,
-      exportState: "unavailable",
+      exportButton: expect.anything(),
+      exportState: "available",
+      includedCases: true,
+      includedTicks: true,
       observationPeriods: "2023",
       period: "2023-01-01",
-      reasonPeriod: true,
-      reasonSource: true,
       release: INVESTIGATE_RELEASE_ID,
       returnReview: true,
       sources: "CDC surveillance\nTick survey\nNational land cover",
@@ -1175,10 +1177,10 @@ describe("County Investigate workspace", () => {
         screen.getByTestId("investigate-export-context").dataset.period !==
           "2023-01-01" ||
         !screen
-          .getByTestId("investigate-pdf-unavailable")
-          .textContent?.includes(INVESTIGATE_TICK_LIMITATION)
+          .getByTestId("investigate-pdf-included")
+          .textContent?.includes("Tick pathogen detections")
       ) {
-        throw new Error("Reloaded page dropped the unavailable PDF context.");
+        throw new Error("Reloaded page dropped the PDF measure list.");
       }
     });
   });
@@ -1331,20 +1333,17 @@ describe("County Investigate workspace", () => {
     ).toBeNull();
   });
 
-  it("does not request a county report for the visible period and caveat", async () => {
+  it("does not request a county report until the export button is used", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
     renderInvestigate(
       "?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
     );
     await waitFor(() => {
-      const reason = screen.queryByTestId(
-        "investigate-pdf-unavailable"
+      const included = screen.queryByTestId(
+        "investigate-pdf-included"
       )?.textContent;
-      if (
-        !reason?.includes("2023-01-01") ||
-        !reason.includes(INVESTIGATE_TICK_LIMITATION)
-      ) {
-        throw new Error("Unavailable PDF explanation has not rendered.");
+      if (!included?.includes("Tick pathogen detections")) {
+        throw new Error("PDF measure list has not rendered.");
       }
     });
     const reportCalls = fetchMock.mock.calls.filter((call) =>
@@ -1356,9 +1355,9 @@ describe("County Investigate workspace", () => {
       state: screen.getByTestId("investigate-export-context").dataset
         .exportState,
     }).toStrictEqual({
-      exportButton: null,
+      exportButton: expect.anything(),
       reportCalls: 0,
-      state: "unavailable",
+      state: "available",
     });
     fetchMock.mockRestore();
   });

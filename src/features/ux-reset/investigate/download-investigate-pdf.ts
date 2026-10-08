@@ -41,7 +41,11 @@ export async function downloadInvestigatePdf(
   const superseded = () =>
     options.signal?.aborted || options.shouldCommit?.() === false;
   if (superseded()) return { committed: false };
-  const expected = evidenceIdentity(context.observations ?? []);
+  const expected = evidenceIdentity(
+    (context.observations ?? []).filter((observation) =>
+      offer.measureIds.includes(observation.measure_id)
+    )
+  );
   const verify = async () => {
     const fresh: Observation[] = [];
     // Match the backend's bounded, unpaginated read. Never reuse the query cache.

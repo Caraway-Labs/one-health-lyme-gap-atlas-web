@@ -505,6 +505,9 @@ function failureMessage(error: unknown): string {
   if (error instanceof InvestigateContractError) {
     return "This measure response did not match the requested county.";
   }
+  if (error instanceof AtlasApiError && error.status === 404) {
+    return "No published data for this release.";
+  }
   return "This measure could not be loaded.";
 }
 

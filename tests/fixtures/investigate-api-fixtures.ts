@@ -155,7 +155,7 @@ function observation(input: {
     },
     geography: { geography_id: input.fips, geography_type: "county" },
     limitations: input.limitations ?? [],
-    lineage_source_id: null,
+    lineage_source_id: `${input.sourceId}-lineage`,
     measure_id: input.measureId,
     methodology: input.methodology ?? null,
     methodology_id: "method-1",

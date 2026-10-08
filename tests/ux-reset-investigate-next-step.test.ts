@@ -95,7 +95,7 @@ describe("Investigate continue destination", () => {
 });
 
 describe("Investigate county report offer", () => {
-  it("withholds export when the report cannot show the period and caveat", () => {
+  it("does not offer a report when the page has no published measure", () => {
     const offer = investigateCountyReportExportOffer({
       caveats: ["Surveillance sites do not represent the whole county."],
       countyFips: "08001",
@@ -104,18 +104,6 @@ describe("Investigate county report offer", () => {
       requestedPeriod: "2023-01-01",
       sources: ["Tick survey"],
     });
-    expect({
-      caveat: offer.reason.includes(
-        "Surveillance sites do not represent the whole county."
-      ),
-      period: offer.reason.includes("2023-01-01"),
-      source: offer.reason.includes("Tick survey"),
-      state: offer.state,
-    }).toStrictEqual({
-      caveat: true,
-      period: true,
-      source: true,
-      state: "unavailable",
-    });
+    expect(offer.state).toBe("unavailable");
   });
 });
