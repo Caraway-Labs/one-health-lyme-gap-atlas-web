@@ -136,6 +136,13 @@ describe("Review operating picture state", () => {
         scopeCode: "CO",
       }).map((entry) => entry.fips)
     ).toStrictEqual(["08099", "08001"]);
+    expect(
+      reviewMapCounties({
+        candidateFips: ["08099", "08001", "36001", "0800", " 08013 "],
+        geometryFips: [],
+        scopeCode: "CO",
+      }).map((entry) => entry.fips)
+    ).toStrictEqual(["08099", "08001", "08013"]);
   });
 
   it("builds a limited candidate preview from the returned record", () => {
@@ -491,7 +498,7 @@ describe("Review operating picture state", () => {
     const picture = (review: StateReview) => (
       <QueryClientProvider client={client}>
         <ReviewOperatingPicture
-          county="08001"
+          county="36001"
           period="2023-01-01"
           review={review}
           scopeCode="NY"
@@ -506,13 +513,13 @@ describe("Review operating picture state", () => {
           candidates: [
             reviewCandidate({
               caveat: "Collection dates are unavailable.",
-              countyName: "Denver",
-              fips: "08001",
-              reasonText: "Denver was returned by the method.",
+              countyName: "Albany",
+              fips: "36001",
+              reasonText: "Albany was returned by the method.",
             }),
           ],
           resultState: "candidates_found",
-          state: "CO",
+          state: "NY",
         })
       )
     );
@@ -555,6 +562,131 @@ describe("Review operating picture state", () => {
       "null:replace",
       "null:replace",
     ]);
+  });
+
+  it("omits candidate FIPS that are not in the requested state", async () => {
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = (countyName: string, fips: string) =>
+      reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName,
+        fips,
+        reasonText: `${countyName} was returned by the method.`,
+      });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          county="36001"
+          review={buildStateReview({
+            candidates: [
+              candidate("Adams", "08001"),
+              candidate("Albany", "36001"),
+              candidate("Short", "0800"),
+              candidate("Boulder", " 08013 "),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          onCountyChange={onCountyChange}
+        />
+      </QueryClientProvider>
+    );
+    await waitFor(() =>
+      expect(screen.getAllByTestId("review-candidate")).toHaveLength(2)
+    );
+    const listed = screen
+      .getAllByTestId("review-candidate")
+      .map((entry) => entry.dataset.fips);
+    const investigate =
+      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+    const compare =
+      screen.getByTestId("review-compare").getAttribute("href") ?? "";
+    const note =
+      screen.getByTestId("review-omitted-candidates").textContent ?? "";
+    view.unmount();
+    expect({
+      compareCounty: new URL(compare, "http://localhost").searchParams.get(
+        "county"
+      ),
+      investigateCounty: new URL(
+        investigate,
+        "http://localhost"
+      ).searchParams.get("county"),
+      listed,
+      note,
+      published: onCountyChange.mock.calls,
+      wrongState: investigate.includes("36001") || compare.includes("36001"),
+    }).toStrictEqual({
+      compareCounty: "08001",
+      investigateCounty: "08001",
+      listed: ["08001", "08013"],
+      note: "2 candidates were omitted because their county FIPS is not in Colorado.",
+      published: [["08001", "replace"]],
+      wrongState: false,
+    });
+  });
+
+  it("clears the URL county when every candidate FIPS is out of scope", async () => {
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          county="36001"
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Albany",
+                fips: "36001",
+                reasonText: "Albany was returned by the method.",
+              }),
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Malformed",
+                fips: "08",
+                reasonText: "A malformed FIPS was returned.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          onCountyChange={onCountyChange}
+        />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      if (onCountyChange.mock.calls.length === 0) {
+        throw new Error("county was not cleared");
+      }
+    });
+    const note =
+      screen.getByTestId("review-omitted-candidates").textContent ?? "";
+    const listed = screen.queryByTestId("review-candidate");
+    const investigate = screen.queryByTestId("review-investigate");
+    view.unmount();
+    expect({
+      investigate,
+      listed,
+      note,
+      published: onCountyChange.mock.calls,
+    }).toStrictEqual({
+      investigate: null,
+      listed: null,
+      note: "2 candidates were omitted because their county FIPS is not in Colorado.",
+      published: [[null, "replace"]],
+    });
   });
 
   it("keeps gap source family and observation period unavailable", () => {

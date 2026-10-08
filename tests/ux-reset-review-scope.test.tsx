@@ -366,6 +366,84 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("clears a stale county when the review scope is not supported", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockClear();
+    const urlUpdates: string[] = [];
+    const search =
+      "scope=AK&county=08001&dataset=alpha-2026&period=2023-01-01&compare=08001,08013";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter
+          hasMemory
+          onUrlUpdate={({ queryString }) => urlUpdates.push(queryString)}
+          searchParams={`?${search}`}
+        >
+          <ResetProfessionalShell>
+            <ResetReviewExperience />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("review-scope-unsupported").textContent).toBe(
+        "Alaska is not supported — lower 48 only."
+      );
+    });
+    await waitFor(() => {
+      const latest = urlUpdates.at(-1) ?? "";
+      if (latest.includes("county=") || !latest.includes("scope=AK")) {
+        throw new Error(latest || "county was not cleared");
+      }
+    });
+    const navigation = screen.getByRole("navigation", {
+      name: "Professional workspace",
+    });
+    const href = (label: string) =>
+      navigation
+        .querySelector(`a[aria-label="${label}"]`)
+        ?.getAttribute("href") ?? "";
+    const shell = {
+      compare: href("Compare"),
+      explore: href("Explore"),
+      investigate: href("Investigate"),
+    };
+    const presence = {
+      map: Boolean(screen.queryByTestId("mock-atlas-map")),
+      picture: Boolean(screen.queryByTestId("review-state-panel")),
+    };
+    view.unmount();
+    const cleared = urlUpdates.at(-1) ?? "";
+    expect({
+      clearedCounty: cleared.includes("county="),
+      clearedScope: cleared.includes("scope=AK"),
+      map: presence.map,
+      picture: presence.picture,
+      reviewCalls: review.mock.calls.length,
+      shellCompare:
+        shell.compare.includes("county=") || shell.compare.includes("compare="),
+      shellExplore: shell.explore,
+      shellInvestigate: shell.investigate,
+    }).toStrictEqual({
+      clearedCounty: false,
+      clearedScope: true,
+      map: false,
+      picture: false,
+      reviewCalls: 0,
+      shellCompare: false,
+      shellExplore:
+        "/app/explore?scope=AK&dataset=alpha-2026&period=2023-01-01",
+      shellInvestigate:
+        "/app/investigate?scope=AK&dataset=alpha-2026&period=2023-01-01",
+    });
+  });
+
   it("renders national orientation for United States scope", async () => {
     renderReview();
     await waitFor(() =>
@@ -813,7 +891,7 @@ describe("Reset Review scope UI", () => {
       albany: {
         caveat: expect.stringContaining("not treated as zero"),
         fips: "36001",
-        target: expect.stringContaining("county=36001"),
+        target: expect.not.stringContaining("county="),
         why: "Lower review priority",
       },
       caveatChanged: true,

@@ -127,6 +127,30 @@ export function unsupportedReviewScopeMessage(scopeCode: string): string {
   return `${name} is not supported — lower 48 only.`;
 }
 
+const REVIEW_COUNTY_FIPS_PATTERN = /^\d{5}$/;
+
+/**
+ * County geography for URL and shell links. Five digits, and the FIPS prefix
+ * for the requested state. A blank, malformed, or other-state value is omitted.
+ */
+export function reviewCandidateFipsForScope(
+  fips: string,
+  scopeCode: string
+): string | null {
+  const trimmed = fips.trim();
+  const prefix = stateFipsPrefix(scopeCode);
+  if (
+    !(
+      prefix &&
+      REVIEW_COUNTY_FIPS_PATTERN.test(trimmed) &&
+      trimmed.startsWith(prefix)
+    )
+  ) {
+    return null;
+  }
+  return trimmed;
+}
+
 export function reviewMapCounties(input: {
   candidateFips: readonly string[];
   geometryFips: readonly string[];
@@ -136,7 +160,11 @@ export function reviewMapCounties(input: {
   const inState = prefix
     ? input.geometryFips.filter((fips) => fips.startsWith(prefix))
     : [];
-  const fips = inState.length > 0 ? inState : input.candidateFips;
+  const locatedCandidates = input.candidateFips.flatMap((fips) => {
+    const located = reviewCandidateFipsForScope(fips, input.scopeCode);
+    return located ? [located] : [];
+  });
+  const fips = inState.length > 0 ? inState : locatedCandidates;
   return fips.map((entry) => ({
     fips: entry,
     state: input.scopeCode,

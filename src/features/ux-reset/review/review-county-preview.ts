@@ -14,6 +14,7 @@ import {
   availabilityFromGovernedValueState,
   evidenceAvailabilityLabel,
 } from "@/features/ux-reset/evidence/value-state-contract";
+import { reviewCandidateFipsForScope } from "@/features/ux-reset/review/review-operating-state";
 import {
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
@@ -232,6 +233,20 @@ export function reviewInvestigateDropNotes(
   return notes;
 }
 
+function writeReviewHandoffCounty(
+  source: URLSearchParams,
+  selectedFips: string,
+  scopeCode: string
+): string | null {
+  const county = reviewCandidateFipsForScope(selectedFips, scopeCode);
+  if (county) {
+    source.set("county", county);
+    return county;
+  }
+  source.delete("county");
+  return null;
+}
+
 export function buildReviewInvestigateHandoff(input: {
   period: string | null;
   releaseId: string;
@@ -241,7 +256,7 @@ export function buildReviewInvestigateHandoff(input: {
 }): { droppedNotes: string[]; href: string } {
   const source = new URLSearchParams(input.searchParams.toString());
   source.set("scope", input.scopeCode);
-  source.set("county", input.selectedFips);
+  writeReviewHandoffCounty(source, input.selectedFips, input.scopeCode);
   source.set("dataset", input.releaseId);
   if (input.period) {
     source.set("period", input.period);
@@ -276,7 +291,11 @@ export function buildReviewCompareHandoff(input: {
 }): string {
   const source = new URLSearchParams(input.searchParams.toString());
   source.set("scope", input.scopeCode);
-  source.set("county", input.selectedFips);
+  const county = writeReviewHandoffCounty(
+    source,
+    input.selectedFips,
+    input.scopeCode
+  );
   source.set("dataset", input.releaseId);
   if (input.period) {
     source.set("period", input.period);
@@ -284,7 +303,7 @@ export function buildReviewCompareHandoff(input: {
     source.delete("period");
   }
   return buildCompareEntryHref({
-    county: input.selectedFips,
+    county,
     dataset: input.releaseId,
     period: input.period,
     returnTo: "review",

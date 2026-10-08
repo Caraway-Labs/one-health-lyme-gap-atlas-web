@@ -32,6 +32,7 @@ import {
 } from "@/features/ux-reset/review/review-county-preview";
 import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
+  reviewCandidateFipsForScope,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
@@ -185,7 +186,22 @@ export function ReviewOperatingPicture({
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
 }: ReviewOperatingPictureProps) {
-  const candidates = review.review_candidates;
+  const candidates = useMemo(
+    () =>
+      review.review_candidates.flatMap((candidate) => {
+        const fips = reviewCandidateFipsForScope(
+          candidate.county_fips,
+          scopeCode
+        );
+        if (!fips) {
+          return [];
+        }
+        return [{ ...candidate, county_fips: fips }];
+      }),
+    [review.review_candidates, scopeCode]
+  );
+  const omittedCandidateCount =
+    review.review_candidates.length - candidates.length;
   const candidateFips = useMemo(
     () => new Set(candidates.map((entry) => entry.county_fips)),
     [candidates]
@@ -453,11 +469,19 @@ export function ReviewOperatingPicture({
             headingLevel="h3"
             title="Counties to inspect"
           />
-          {candidates.length === 0 ? (
+          {omittedCandidateCount > 0 ? (
+            <p className="type-body" data-testid="review-omitted-candidates">
+              {omittedCandidateCount === 1
+                ? `1 candidate was omitted because its county FIPS is not in ${stateName}.`
+                : `${omittedCandidateCount} candidates were omitted because their county FIPS is not in ${stateName}.`}
+            </p>
+          ) : null}
+          {candidates.length === 0 && omittedCandidateCount === 0 ? (
             <p data-testid="review-no-candidates">
               No counties were returned in review candidates.
             </p>
-          ) : (
+          ) : null}
+          {candidates.length > 0 ? (
             <div
               aria-label="Counties suggested for review"
               className="ux-reset-review-candidate-list"
@@ -487,7 +511,7 @@ export function ReviewOperatingPicture({
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
         </Card>
         {preview && handoff ? (
           <ReviewCountyPreviewPanel

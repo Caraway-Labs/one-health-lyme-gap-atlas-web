@@ -162,5 +162,11 @@ export function searchParamsWithCommittedExploreContext(
       params.set("compare", serializeCompareFipsList(comparePair));
     }
   }
+  if (committed.compare?.length === 0) {
+    params.delete("compare");
+    if (!onCommittedShell) {
+      params.delete("county");
+    }
+  }
   return params;
 }
