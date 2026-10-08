@@ -1,7 +1,7 @@
 import type { StateReview } from "@/generated/models";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
 
-import { stateFipsPrefix } from "./review-state-fips";
+import { isLower48ReviewScope, stateFipsPrefix } from "./review-state-fips";
 
 export const reviewPictureStateValues = {
   candidatesFound: "candidates_found",
@@ -135,9 +135,15 @@ const UNSUPPORTED_REVIEW_SCOPE_LABELS: Record<string, string> = {
   HI: "Hawaii",
 };
 
-/** Atlas Review covers the lower 48 and DC. Alaska and Hawaii are not scopes. */
+/**
+ * Atlas Review covers the lower 48 and DC. National scope stays available.
+ * Any other code, including Alaska, Hawaii, and territories, is not a scope.
+ */
 export function isUnsupportedReviewScope(scopeCode: string): boolean {
-  return Object.hasOwn(UNSUPPORTED_REVIEW_SCOPE_LABELS, scopeCode);
+  if (scopeCode === "ALL") {
+    return false;
+  }
+  return !isLower48ReviewScope(scopeCode);
 }
 
 export function unsupportedReviewScopeMessage(scopeCode: string): string {

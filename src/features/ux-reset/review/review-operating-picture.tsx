@@ -37,8 +37,6 @@ import {
   reviewDatasetText,
   reviewFips,
   reviewFipsText,
-  reviewIdentifier,
-  reviewIdentifierText,
   reviewText,
 } from "@/features/ux-reset/review/review-governed-values";
 import {
@@ -135,14 +133,14 @@ function reviewRuleCoverage(
 ): { rule: string; status: string }[] {
   return Object.entries(coverage.rule_coverage)
     .flatMap(([rule, status]) => {
-      const trimmedRule = reviewIdentifier(rule);
+      const trimmedRule = rule.trim();
       if (!trimmedRule) {
         return [];
       }
       return [
         {
           rule: trimmedRule,
-          status: reviewIdentifier(status) ?? REVIEW_FIELD_UNAVAILABLE,
+          status: reviewText(status),
         },
       ];
     })
@@ -177,13 +175,13 @@ function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
     materialCaveat: null,
     observationPeriod: REVIEW_FIELD_UNAVAILABLE,
     sourceFamily: REVIEW_FIELD_UNAVAILABLE,
-    methodLabel: reviewIdentifier(review.methodology_id),
-    methodVersion: reviewIdentifier(review.methodology_version),
+    methodLabel: review.methodology_id.trim() || null,
+    methodVersion: review.methodology_version.trim() || null,
     technical: {
       configurationSha256: parseConfigurationSha256(
         review.configuration_sha256
       ),
-      methodologyVersion: reviewIdentifier(review.methodology_version),
+      methodologyVersion: review.methodology_version.trim() || null,
       evaluatedAt: evaluatedAt.display,
       evaluatedAtRaw: evaluatedAt.raw,
     },
@@ -382,10 +380,8 @@ export function ReviewOperatingPicture({
       data-configuration-sha256={
         parseConfigurationSha256(review.configuration_sha256) ?? undefined
       }
-      data-methodology-id={reviewIdentifier(review.methodology_id) ?? undefined}
-      data-methodology-version={
-        reviewIdentifier(review.methodology_version) ?? undefined
-      }
+      data-methodology-id={review.methodology_id.trim() || undefined}
+      data-methodology-version={review.methodology_version.trim() || undefined}
       data-result-state={pictureState ?? "unavailable"}
       data-testid="review-state-panel"
     >
@@ -397,8 +393,8 @@ export function ReviewOperatingPicture({
             : REVIEW_FIELD_UNAVAILABLE}
         </p>
         <p data-testid="review-methodology">
-          Method {reviewIdentifierText(review.methodology_id)}{" "}
-          {reviewIdentifierText(review.methodology_version)}. Release{" "}
+          Method {reviewText(review.methodology_id)}{" "}
+          {reviewText(review.methodology_version)}. Release{" "}
           {reviewDatasetText(review.data_release_version)}.{" "}
           {reviewText(review.effective_observation_context)}.
         </p>
@@ -586,12 +582,12 @@ export function ReviewOperatingPicture({
             {review.data_gaps.map((gap) => (
               <li
                 key={`${gap.county_fips}-${gap.code}`}
-                data-code={reviewIdentifier(gap.code) ?? undefined}
+                data-code={gap.code.trim() || undefined}
                 data-fips={reviewFips(gap.county_fips) ?? undefined}
                 data-testid="review-data-gap"
               >
                 <strong>FIPS {reviewFipsText(gap.county_fips)}</strong>{" "}
-                {reviewIdentifierText(gap.code)}. {reviewText(gap.detail)}
+                {reviewText(gap.code)}. {reviewText(gap.detail)}
               </li>
             ))}
           </ul>

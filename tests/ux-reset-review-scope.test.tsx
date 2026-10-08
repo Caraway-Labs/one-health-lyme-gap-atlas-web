@@ -445,6 +445,92 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("clears a mismatched county for scopes outside the lower 48", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const codes = ["PR", "ZZ", "GU"] as const;
+    const snapshots: {
+      clearedCounty: boolean;
+      clearedScope: boolean;
+      map: boolean;
+      message: string | null;
+      picture: boolean;
+      reviewCalls: number;
+      shellCompare: boolean;
+      shellExplore: string;
+      shellInvestigate: string;
+    }[] = [];
+    for (const code of codes) {
+      review.mockClear();
+      const urlUpdates: string[] = [];
+      const search = `scope=${code}&county=08001&dataset=alpha-2026&period=2023-01-01&compare=08001,08013`;
+      mockedSearch = search;
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      const view = render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => urlUpdates.push(queryString)}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId("review-scope-unsupported").textContent).toBe(
+          `${code} is not supported — lower 48 only.`
+        );
+      });
+      await waitFor(() => {
+        const latest = urlUpdates.at(-1) ?? "";
+        if (latest.includes("county=") || !latest.includes(`scope=${code}`)) {
+          throw new Error(latest || "county was not cleared");
+        }
+      });
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const cleared = urlUpdates.at(-1) ?? "";
+      snapshots.push({
+        clearedCounty: cleared.includes("county="),
+        clearedScope: cleared.includes(`scope=${code}`),
+        map: Boolean(screen.queryByTestId("mock-atlas-map")),
+        message: screen.getByTestId("review-scope-unsupported").textContent,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        reviewCalls: review.mock.calls.length,
+        shellCompare:
+          href("Compare").includes("county=") ||
+          href("Compare").includes("compare="),
+        shellExplore: href("Explore"),
+        shellInvestigate: href("Investigate"),
+      });
+      view.unmount();
+    }
+    expect(snapshots).toStrictEqual(
+      codes.map((code) => ({
+        clearedCounty: false,
+        clearedScope: true,
+        map: false,
+        message: `${code} is not supported — lower 48 only.`,
+        picture: false,
+        reviewCalls: 0,
+        shellCompare: false,
+        shellExplore: `/app/explore?scope=${code}&dataset=alpha-2026&period=2023-01-01`,
+        shellInvestigate: `/app/investigate?scope=${code}&dataset=alpha-2026&period=2023-01-01`,
+      }))
+    );
+  });
+
   it("clears the prior county when the next state's review does not succeed", async () => {
     const { stateReviewV1StatesStateReviewGet } =
       await import("@/generated/atlas");

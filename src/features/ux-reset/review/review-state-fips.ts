@@ -58,9 +58,20 @@ export const STATE_FIPS_PREFIX = {
 
 export type ReviewStatePostal = keyof typeof STATE_FIPS_PREFIX;
 
+/** In the FIPS map for other atlas geography, and not a Review scope. */
+const OUTSIDE_LOWER_48_REVIEW = new Set<ReviewStatePostal>(["AK", "HI"]);
+
 export function stateFipsPrefix(scopeCode: string): string | null {
   if (!Object.hasOwn(STATE_FIPS_PREFIX, scopeCode)) {
     return null;
   }
   return STATE_FIPS_PREFIX[scopeCode as ReviewStatePostal];
+}
+
+/** Lower 48 and DC. The same map as `stateFipsPrefix`, without Alaska and Hawaii. */
+export function isLower48ReviewScope(scopeCode: string): boolean {
+  return (
+    Object.hasOwn(STATE_FIPS_PREFIX, scopeCode) &&
+    !OUTSIDE_LOWER_48_REVIEW.has(scopeCode as ReviewStatePostal)
+  );
 }

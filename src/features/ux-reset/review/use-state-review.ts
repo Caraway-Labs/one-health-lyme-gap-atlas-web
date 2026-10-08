@@ -3,12 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { ReviewScope } from "@/features/ux-reset/review/resolve-review-scope";
+import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
 import { stateReviewV1StatesStateReviewGet } from "@/generated/atlas";
 import { StateReviewV1StatesStateReviewGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
-
-const STATE_SCOPE = /^[A-Z]{2}$/;
 
 function reviewErrorMessage(error: unknown): string {
   if (error instanceof AtlasApiError) {
@@ -26,7 +25,7 @@ export function useStateReview(
   scope: ReviewScope,
   resolvedRelease: string | null
 ) {
-  const enabled = STATE_SCOPE.test(scope) && Boolean(resolvedRelease);
+  const enabled = isLower48ReviewScope(scope) && Boolean(resolvedRelease);
   const query = useQuery({
     enabled,
     queryFn: async ({ signal }) => {

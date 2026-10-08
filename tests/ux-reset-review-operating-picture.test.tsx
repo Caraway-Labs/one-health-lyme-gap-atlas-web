@@ -913,6 +913,11 @@ describe("Review operating picture state", () => {
       state: "CO",
     });
     dateOnly.evaluated_at = "2026-10-06";
+    const impossible = buildStateReview({
+      resultState: "none_stand_out",
+      state: "CO",
+    });
+    impossible.evaluated_at = "2026-02-31T00:00:00Z";
     const read = (review: StateReview) => {
       const view = render(
         <QueryClientProvider client={client}>
@@ -943,6 +948,7 @@ describe("Review operating picture state", () => {
       };
     };
     const dateOnlyProvenance = read(dateOnly);
+    const impossibleProvenance = read(impossible);
     const view = render(
       <QueryClientProvider client={client}>
         <ReviewOperatingPicture
@@ -978,7 +984,7 @@ describe("Review operating picture state", () => {
     const reasonCodes = screen.queryByTestId("review-reason-codes");
     const snapshot = {
       backendNamesBogus: backend.includes("bogus"),
-      basisNamesImpossibleDate: basis.includes("2025-02-31"),
+      basisKeepsSourceDate: basis.includes("as of 2025-02-31"),
       compareNamesRelease: compare.includes("bad"),
       configuration:
         within(provenance).getByText("Configuration").nextElementSibling
@@ -990,8 +996,9 @@ describe("Review operating picture state", () => {
           ?.textContent,
       gap,
       header,
+      impossible: impossibleProvenance,
       investigateNamesRelease: investigate.includes("bad"),
-      reasonCodes: reasonCodes?.textContent ?? "",
+      reasonCodes: (reasonCodes?.textContent ?? "").includes("not a code"),
       reference,
       resultState: panel.dataset.resultState,
       time: provenance.querySelector("time")?.getAttribute("dateTime") ?? null,
@@ -999,7 +1006,7 @@ describe("Review operating picture state", () => {
     view.unmount();
     expect(snapshot).toStrictEqual({
       backendNamesBogus: false,
-      basisNamesImpossibleDate: false,
+      basisKeepsSourceDate: true,
       compareNamesRelease: false,
       configuration: "Unavailable",
       configurationAttribute: null,
@@ -1009,21 +1016,85 @@ describe("Review operating picture state", () => {
         time: null,
       },
       evaluatedAt: "Unavailable",
-      gap: "FIPS Unavailable Unavailable. Lineage is unavailable.",
+      gap: "FIPS Unavailable bad code. Lineage is unavailable.",
       header:
-        "Method Unavailable Unavailable. Release Unavailable. Current cumulative county status; human snapshot 2023.",
+        "Method not an id v 1. Release Unavailable. Current cumulative county status; human snapshot 2023.",
+      impossible: {
+        configuration: impossible.configuration_sha256,
+        evaluatedAt: "Unavailable",
+        time: null,
+      },
       investigateNamesRelease: false,
-      reasonCodes: "",
+      reasonCodes: true,
       reference: expect.stringContaining(
-        "county Unavailable; source as of Unavailable; version Unavailable; retrieved Unavailable; record Unavailable; release Unavailable"
+        "county Unavailable; source as of 2025-02-31; version bad version; retrieved Unavailable; record bad record!!; release bad release"
       ),
       resultState: "unavailable",
       time: null,
     });
     expect(reference).not.toContain("yesterday");
-    expect(reference).not.toContain("bad version");
-    expect(reference).not.toContain("bad record");
     expect(backend).toContain("Unavailable");
+  });
+
+  it("keeps source-native statuses and marks a blank status unavailable", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const reported = {
+      ...reviewEvidenceReference("08001"),
+      status: "Reported",
+      target: "Ixodes scapularis",
+    };
+    const noRecords = {
+      ...reviewEvidenceReference("08001", "No records"),
+      source_product: "CDC vector county status",
+      target: "Ixodes pacificus",
+    };
+    const blank = {
+      ...reviewEvidenceReference("08001"),
+      status: " ",
+      target: "Ixodes scapularis",
+    };
+    const read = (references: (typeof reported)[]) => {
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={buildStateReview({
+              candidates: [
+                {
+                  ...reviewCandidate({
+                    caveat: "Collection dates are unavailable.",
+                    countyName: "Denver",
+                    fips: "08001",
+                    reasonText: "Denver was returned by the method.",
+                  }),
+                  evidence_references: references,
+                },
+              ],
+              resultState: "candidates_found",
+              state: "CO",
+            })}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const basis =
+        screen.getByTestId("review-observed-basis").textContent ?? "";
+      view.unmount();
+      return basis;
+    };
+    const present = read([reported, noRecords]);
+    const missing = read([blank]);
+    expect({
+      blank: missing.includes("Ixodes scapularis: Unavailable"),
+      noRecords: present.includes("Ixodes pacificus: No records"),
+      reported: present.includes("Ixodes scapularis: Reported"),
+    }).toStrictEqual({
+      blank: true,
+      noRecords: true,
+      reported: true,
+    });
   });
 
   it("shows the API result state without inventing a material limitation", () => {
