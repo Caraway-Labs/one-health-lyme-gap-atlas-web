@@ -61,6 +61,7 @@ import type {
   ScoresV1AtlasScoresGetParams,
   SourcesV1SourcesGetParams,
   StateReportPdfV1StatesStateReportPdfGetParams,
+  Tier1CountyPriority,
   UserProfileResponse,
   UserProfileWrite
 } from './models';
@@ -2961,6 +2962,142 @@ export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof cou
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCountyV1CountiesFipsGetQueryOptions(fips,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type countyTier1SurveillancePriorityGetResponse200 = {
+  data: Tier1CountyPriority
+  status: 200
+}
+
+export type countyTier1SurveillancePriorityGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type countyTier1SurveillancePriorityGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type countyTier1SurveillancePriorityGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type countyTier1SurveillancePriorityGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type countyTier1SurveillancePriorityGetResponseSuccess = (countyTier1SurveillancePriorityGetResponse200) & {
+  headers: Headers;
+};
+export type countyTier1SurveillancePriorityGetResponseError = (countyTier1SurveillancePriorityGetResponse404 | countyTier1SurveillancePriorityGetResponse422 | countyTier1SurveillancePriorityGetResponse429 | countyTier1SurveillancePriorityGetResponse503) & {
+  headers: Headers;
+};
+
+export type countyTier1SurveillancePriorityGetResponse = (countyTier1SurveillancePriorityGetResponseSuccess | countyTier1SurveillancePriorityGetResponseError)
+
+export const getCountyTier1SurveillancePriorityGetUrl = (fips: string,) => {
+
+
+
+
+  return `/v1/counties/${fips}/tier1-surveillance-priority`
+}
+
+/**
+ * Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.
+ * @summary Get persisted Tier 1 model-assisted surveillance review priority
+ */
+export const countyTier1SurveillancePriorityGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countyTier1SurveillancePriorityGetResponse> => {
+
+  return apiMutator<countyTier1SurveillancePriorityGetResponse>(getCountyTier1SurveillancePriorityGetUrl(fips),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCountyTier1SurveillancePriorityGetQueryKey = (fips: string,) => {
+    return [
+    `/v1/counties/${fips}/tier1-surveillance-priority`
+    ] as const;
+    }
+
+
+export const getCountyTier1SurveillancePriorityGetQueryOptions = <TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCountyTier1SurveillancePriorityGetQueryKey(fips);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>> = ({ signal }) => countyTier1SurveillancePriorityGet(fips, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CountyTier1SurveillancePriorityGetQueryResult = NonNullable<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>>
+export type CountyTier1SurveillancePriorityGetQueryError = ProblemDetails
+
+
+export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
+ fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>,
+          TError,
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>,
+          TError,
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get persisted Tier 1 model-assisted surveillance review priority
+ */
+
+export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCountyTier1SurveillancePriorityGetQueryOptions(fips,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

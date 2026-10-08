@@ -34,6 +34,10 @@ import {
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
+import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
+
+const COUNTY_FIPS = /^\d{5}$/;
 
 function recoveryMessage(
   recovery: InvestigateRecovery,
@@ -297,6 +301,23 @@ function InvestigateExperienceInner() {
             ) : null}
           </AtlasStatusMessage>
         </div>
+      ) : null}
+
+      {workspace.requestedFips &&
+      COUNTY_FIPS.test(workspace.requestedFips) &&
+      (workspace.recovery === null ||
+        workspace.recovery === "release_mismatch") ? (
+        <Tier1SurveillancePriority
+          fips={workspace.requestedFips}
+          headingLevel="h2"
+          release={tier1ReleaseFromMetadata({
+            isError:
+              Boolean(workspace.metadataError) ||
+              workspace.recovery === "release_mismatch",
+            isLoading: workspace.metadataLoading,
+            releaseId: workspace.releaseId,
+          })}
+        />
       ) : null}
 
       {bundle ? (
