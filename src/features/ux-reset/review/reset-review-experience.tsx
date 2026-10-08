@@ -15,6 +15,7 @@ import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel"
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
+import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import {
   atlasStateOptionsFromMetadata,
@@ -86,6 +87,16 @@ function ResetReviewExperienceInner() {
     presentationQuery.isLoading && !presentationQuery.metadata;
   const scoresLoading =
     presentationQuery.isLoading && Boolean(presentationQuery.metadata);
+  const tierRelease = tier1ReleaseFromMetadata({
+    isError: presentationQuery.metadataIsError,
+    isLoading: metadataLoading,
+    releaseId: presentationQuery.metadata?.release_id,
+  });
+  const stateResultsVisible = Boolean(
+    presentationQuery.presentation &&
+    presentationQuery.requestScope === scope &&
+    scope !== "ALL"
+  );
 
   return (
     <>
@@ -123,11 +134,13 @@ function ResetReviewExperienceInner() {
         </AtlasStatusMessage>
       ) : null}
 
-      {presentationQuery.metadataIsError && urlState.county ? (
+      {presentationQuery.metadataIsError &&
+      urlState.county &&
+      !stateResultsVisible ? (
         <Tier1SurveillancePriority
           fips={urlState.county}
           headingLevel="h2"
-          release={{ status: "unknown" }}
+          release={tierRelease}
         />
       ) : null}
 
@@ -164,6 +177,7 @@ function ResetReviewExperienceInner() {
               rankedCounties={presentationQuery.presentation.stateCounties}
               releaseId={presentationQuery.metadata!.release_id}
               scopeCode={scope}
+              tierRelease={tierRelease}
               onCountyChange={setCounty}
             />
           )}

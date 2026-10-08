@@ -889,6 +889,52 @@ describe("Reset Review scope UI", () => {
       tier: undefined,
     });
   });
+
+  it("drops a matched tier when a metadata refetch fails in the same client", async () => {
+    reviewReleaseControls.tier1Result = tier1PriorityForRelease(
+      tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
+      "alpha-2026"
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderReview("?scope=NY&county=36001&dataset=alpha-2026", { client });
+    await waitFor(() =>
+      expect(screen.getByTestId("tier1-priority-tier").textContent).toBe("HIGH")
+    );
+
+    reviewReleaseControls.metadataStatus = 503;
+    await client.refetchQueries({
+      queryKey: ["ux-reset-review-metadata"],
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.state
+      ).toBe("release-unaligned")
+    );
+    const pageText = document.body.textContent ?? "";
+    expect({
+      high: /\bHIGH\b/.test(pageText),
+      insufficient: /\bINSUFFICIENT\b/.test(pageText),
+      low: /\bLOW\b/.test(pageText),
+      medium: /\bMEDIUM\b/.test(pageText),
+      panels: screen.getAllByTestId("tier1-surveillance-priority").length,
+      reason: screen.getByTestId("tier1-surveillance-priority").dataset
+        .releaseReason,
+      sufficiency: screen.queryByTestId("tier1-evidence-sufficiency"),
+      tier: screen.queryByTestId("tier1-priority-tier"),
+    }).toStrictEqual({
+      high: false,
+      insufficient: false,
+      low: false,
+      medium: false,
+      panels: 1,
+      reason: "unknown",
+      sufficiency: null,
+      tier: null,
+    });
+  });
 });
 
 describe("Settings default jurisdiction readout", () => {

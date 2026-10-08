@@ -20,6 +20,7 @@ import {
   Tier1SurveillancePriority,
   Tier1SurveillancePriorityPanel,
 } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
+import { tier1SurveillancePriorityRetryDelay } from "@/features/ux-reset/surveillance-priority/use-tier1-surveillance-priority";
 import type { Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
@@ -337,6 +338,43 @@ describe("Tier 1 surveillance priority presentation", () => {
     expect(screen.getByTestId("tier1-limitation").textContent).toBe(
       TIER1_LIMITATION
     );
+  });
+
+  it("waits for Retry-After before the generic priority backoff", () => {
+    const throttled = new AtlasApiError(
+      "Too many requests",
+      "/v1/counties/36001/tier1-surveillance-priority",
+      429,
+      null,
+      60
+    );
+    const unavailable = new AtlasApiError(
+      "Temporarily unavailable",
+      "/v1/counties/36001/tier1-surveillance-priority",
+      503,
+      null,
+      45
+    );
+    expect({
+      backoff: tier1SurveillancePriorityRetryDelay(0, new Error("no header")),
+      configured: tier1SurveillancePriorityRetryDelay(
+        0,
+        new Error("no header"),
+        250
+      ),
+      laterBackoff: tier1SurveillancePriorityRetryDelay(
+        1,
+        new Error("no header")
+      ),
+      throttled: tier1SurveillancePriorityRetryDelay(0, throttled, 250),
+      unavailable: tier1SurveillancePriorityRetryDelay(1, unavailable),
+    }).toStrictEqual({
+      backoff: 1000,
+      configured: 250,
+      laterBackoff: 2000,
+      throttled: 60_000,
+      unavailable: 45_000,
+    });
   });
 
   it("loads a 404 as unavailable rather than LOW", async () => {
