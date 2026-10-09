@@ -17,6 +17,7 @@ import { buildReviewCandidatePreview } from "@/features/ux-reset/review/review-c
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
   normalizeReviewCounty,
+  reviewCandidateFipsForScope,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
@@ -152,6 +153,26 @@ describe("Review operating picture state", () => {
       mismatch: null,
       trimmed: "36001",
       unsupported: null,
+    });
+  });
+
+  it("accepts review geography only inside the requested lower-48 state", () => {
+    expect({
+      alaska: reviewCandidateFipsForScope("02013", "AK"),
+      blank: reviewCandidateFipsForScope(" ", "CO"),
+      hawaii: reviewCandidateFipsForScope("15001", "HI"),
+      malformed: reviewCandidateFipsForScope("0800", "CO"),
+      match: reviewCandidateFipsForScope(" 08031 ", "CO"),
+      otherState: reviewCandidateFipsForScope("36001", "CO"),
+      puertoRico: reviewCandidateFipsForScope("72001", "PR"),
+    }).toStrictEqual({
+      alaska: null,
+      blank: null,
+      hawaii: null,
+      malformed: null,
+      match: "08031",
+      otherState: null,
+      puertoRico: null,
     });
   });
 
@@ -1420,7 +1441,9 @@ describe("Review operating picture state", () => {
       screen.getByTestId("review-investigate").getAttribute("href") ?? "";
     const compare =
       screen.getByTestId("review-compare").getAttribute("href") ?? "";
-    const gap = screen.getByTestId("review-data-gap").textContent ?? "";
+    const gap = screen.queryByTestId("review-data-gap");
+    const omittedGaps =
+      screen.getByTestId("review-omitted-gaps").textContent ?? "";
     const reasonCodes = screen.queryByTestId("review-reason-codes");
     const snapshot = {
       backendNamesBogus: backend.includes("bogus"),
@@ -1436,6 +1459,7 @@ describe("Review operating picture state", () => {
           ?.textContent,
       gap,
       header,
+      omittedGaps,
       impossible: impossibleProvenance,
       investigateNamesRelease: investigate.includes("bad"),
       reasonCodes: (reasonCodes?.textContent ?? "").includes("not a code"),
@@ -1456,7 +1480,7 @@ describe("Review operating picture state", () => {
         time: null,
       },
       evaluatedAt: "Unavailable",
-      gap: "FIPS Unavailable bad code. Lineage is unavailable.",
+      gap: null,
       header:
         "Method not an id v 1. Release Unavailable. Current cumulative county status; human snapshot 2023.",
       impossible: {
@@ -1465,6 +1489,8 @@ describe("Review operating picture state", () => {
         time: null,
       },
       investigateNamesRelease: false,
+      omittedGaps:
+        "1 data gap was omitted because its county FIPS is not in Colorado.",
       reasonCodes: true,
       reference: expect.stringContaining(
         "county Unavailable; source as of 2025-02-31; version bad version; retrieved Unavailable; record bad record!!; release bad release"
@@ -2075,7 +2101,10 @@ describe("Review operating picture state", () => {
     candidate.county_name = " ";
     const review = buildStateReview({
       candidates: [candidate],
-      gaps: [{ code: " ", county_fips: "", detail: " " }],
+      gaps: [
+        { code: " ", county_fips: " 08031 ", detail: " " },
+        { code: " ", county_fips: "", detail: " " },
+      ],
       resultState: "candidates_found",
       state: "CO",
     });
@@ -2092,19 +2121,177 @@ describe("Review operating picture state", () => {
     const rowName =
       screen.getByTestId("review-candidate").querySelector("strong")
         ?.textContent ?? "";
-    const gap = screen.getByTestId("review-data-gap").textContent ?? "";
+    const gapRow = screen.getByTestId("review-data-gap").textContent ?? "";
+    const omitted = screen.getByTestId("review-omitted-gaps").textContent ?? "";
     const limitations = [
       ...screen.getByTestId("review-limitations").querySelectorAll("li"),
     ].map((item) => item.textContent ?? "");
     view.unmount();
     expect({
-      gap,
+      gapRow,
       limitations,
+      omitted,
       rowName: rowName.replaceAll(/\s+/g, " ").trim(),
     }).toStrictEqual({
-      gap: "FIPS Unavailable Unavailable. Unavailable",
+      gapRow: "FIPS 08031 Unavailable. Unavailable",
       limitations: ["Review is not disease risk."],
+      omitted:
+        "1 data gap was omitted because its county FIPS is not in Colorado.",
       rowName: "Unavailable, CO",
+    });
+  });
+
+  it("omits data-gap counties that are outside the requested state", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = {
+      ...reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_references: [
+        reviewEvidenceReference("08001"),
+        reviewEvidenceReference("36001", "Reported"),
+        {
+          ...reviewEvidenceReference("08001"),
+          county_fips: " ",
+        },
+      ],
+    };
+    const mixed = buildStateReview({
+      candidates: [candidate],
+      gaps: [
+        {
+          code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+          county_fips: " 08031 ",
+          detail: "Environmental context stays a data gap.",
+        },
+        {
+          code: "OUT_OF_STATE",
+          county_fips: "36001",
+          detail: "New York must not become a Colorado gap.",
+        },
+        {
+          code: "MALFORMED",
+          county_fips: "08",
+          detail: "A short FIPS must not become a Colorado gap.",
+        },
+      ],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    mixed.coverage.rule_coverage = {
+      ...mixed.coverage.rule_coverage,
+      "08031": "in state",
+      "36001": "out of state",
+    };
+    const mixedView = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={mixed}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const gaps = screen.getByTestId("review-data-gaps");
+    const gapRows = screen.getAllByTestId("review-data-gap").map((row) => ({
+      code: row.dataset.code ?? "",
+      fips: row.dataset.fips ?? "",
+    }));
+    const investigate =
+      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+    const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
+    const rules = [
+      ...screen.getByTestId("review-rule-coverage").querySelectorAll("li"),
+    ].map((item) => item.textContent ?? "");
+    const mixedSnapshot = {
+      basisBlank: basis.includes("FIPS Unavailable"),
+      basisOtherState: basis.includes("FIPS 36001"),
+      caveatUsesOtherState: (gaps.textContent ?? "").includes(
+        "New York must not become a Colorado gap."
+      ),
+      county: new URL(investigate, "http://localhost").searchParams.get(
+        "county"
+      ),
+      gapRows,
+      inStateDetail: (gaps.textContent ?? "").includes(
+        "Environmental context stays a data gap."
+      ),
+      omitted: screen.getByTestId("review-omitted-gaps").textContent,
+      resultState: screen.getByTestId("review-state-panel").dataset.resultState,
+      rulesIncludeInStateKey: rules.some((rule) => rule.startsWith("08031:")),
+      rulesIncludeName: rules.some((rule) =>
+        rule.startsWith("human_emerging:")
+      ),
+      rulesIncludeOtherState: rules.some((rule) => rule.startsWith("36001:")),
+    };
+    mixedView.unmount();
+    const unsupportedView = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            gaps: [
+              {
+                code: "OUT_OF_STATE",
+                county_fips: "36001",
+                detail: "New York must not become a Colorado gap.",
+              },
+            ],
+            resultState: "unsupported",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const unsupportedSnapshot = {
+      gapRow: screen.queryByTestId("review-data-gap"),
+      gapSection: screen.queryByTestId("review-data-gaps"),
+      omitted: screen.getByTestId("review-omitted-gaps").textContent,
+      otherStateDetail: (
+        screen.getByTestId("review-state-panel").textContent ?? ""
+      ).includes("New York must not become a Colorado gap."),
+      resultState: screen.getByTestId("review-state-panel").dataset.resultState,
+      summary: screen.getByTestId("review-result-summary").textContent,
+    };
+    unsupportedView.unmount();
+    expect({
+      mixed: mixedSnapshot,
+      unsupported: unsupportedSnapshot,
+    }).toStrictEqual({
+      mixed: {
+        basisBlank: true,
+        basisOtherState: true,
+        caveatUsesOtherState: false,
+        county: "08001",
+        gapRows: [
+          {
+            code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+            fips: "08031",
+          },
+        ],
+        inStateDetail: true,
+        omitted:
+          "2 data gaps were omitted because their county FIPS is not in Colorado.",
+        resultState: "candidates_found",
+        rulesIncludeInStateKey: true,
+        rulesIncludeName: true,
+        rulesIncludeOtherState: false,
+      },
+      unsupported: {
+        gapRow: null,
+        gapSection: null,
+        omitted:
+          "1 data gap was omitted because its county FIPS is not in Colorado.",
+        otherStateDetail: false,
+        resultState: "unsupported",
+        summary: "No review rule is enabled for this result.",
+      },
     });
   });
 

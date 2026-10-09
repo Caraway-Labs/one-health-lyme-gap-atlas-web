@@ -36,18 +36,19 @@ import {
   reviewDatasetId,
   reviewDatasetText,
   reviewFips,
-  reviewFipsText,
   reviewText,
 } from "@/features/ux-reset/review/review-governed-values";
 import {
   isGovernedReviewResultState,
   reviewCandidateCountyLabel,
+  reviewCandidateFipsForScope,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
   reviewResultPayloadConsistent,
   reviewResultStateLabel,
   scopedReviewCandidates,
+  scopedReviewGaps,
 } from "@/features/ux-reset/review/review-operating-state";
 import {
   consumeReviewReturnFocus,
@@ -55,7 +56,7 @@ import {
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import type { StateReview } from "@/generated/models";
+import type { DataGap, StateReview } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   formatAtlasTimestamp,
@@ -108,9 +109,12 @@ function visibleLines(values: readonly string[]): string[] {
   return lines;
 }
 
-function gapEvidenceModel(review: StateReview) {
-  const limitations = visibleLines(review.limitations);
-  const detail = review.data_gaps
+function gapEvidenceModel(
+  gaps: readonly DataGap[],
+  limitationLines: readonly string[]
+) {
+  const limitations = visibleLines(limitationLines);
+  const detail = gaps
     .map((gap) => gap.detail.trim())
     .find((value) => value.length > 0);
   const caveat =
@@ -131,12 +135,21 @@ function gapEvidenceModel(review: StateReview) {
 }
 
 function reviewRuleCoverage(
-  coverage: StateReview["coverage"]
+  coverage: StateReview["coverage"],
+  scopeCode: string
 ): { rule: string; status: string }[] {
   return Object.entries(coverage.rule_coverage)
     .flatMap(([rule, status]) => {
       const trimmedRule = rule.trim();
       if (!trimmedRule) {
+        return [];
+      }
+      // Rule names stay as returned. A key that is itself a county FIPS is
+      // geography and must be in the requested state.
+      if (
+        reviewFips(trimmedRule) &&
+        !reviewCandidateFipsForScope(trimmedRule, scopeCode)
+      ) {
         return [];
       }
       return [
@@ -147,6 +160,12 @@ function reviewRuleCoverage(
       ];
     })
     .toSorted((left, right) => left.rule.localeCompare(right.rule));
+}
+
+function omittedGapNote(count: number, stateName: string): string {
+  return count === 1
+    ? `1 data gap was omitted because its county FIPS is not in ${stateName}.`
+    : `${count} data gaps were omitted because their county FIPS is not in ${stateName}.`;
 }
 
 function reviewEvaluatedAt(value: string): { display: string; raw: string } {
@@ -203,6 +222,10 @@ export function ReviewOperatingPicture({
     () => scopedReviewCandidates(review.review_candidates, scopeCode),
     [review.review_candidates, scopeCode]
   );
+  const scopedGaps = useMemo(
+    () => scopedReviewGaps(review.data_gaps, scopeCode),
+    [review.data_gaps, scopeCode]
+  );
   const resultState = isGovernedReviewResultState(review.result_state)
     ? review.result_state
     : null;
@@ -233,7 +256,7 @@ export function ReviewOperatingPicture({
   );
   const pictureState = authoritativeResultState
     ? reviewPictureState({
-        data_gaps: review.data_gaps,
+        data_gaps: scopedGaps.gaps.map((entry) => entry.gap),
         result_state: authoritativeResultState,
         review_candidates: review.review_candidates,
       })
@@ -383,9 +406,15 @@ export function ReviewOperatingPicture({
   const geometryPending = Boolean(releaseId) && geometryQuery.isPending;
   const hasMapCounties = mapCounties.length > 0;
   const gapModel =
-    review.data_gaps.length > 0 ? gapEvidenceModel(review) : null;
+    scopedGaps.gaps.length > 0
+      ? gapEvidenceModel(
+          scopedGaps.gaps.map((entry) => entry.gap),
+          review.limitations
+        )
+      : null;
+  const omittedGapCount = scopedGaps.omittedOutOfScopeCount;
   const resultLimitations = visibleLines(review.limitations);
-  const ruleCoverage = reviewRuleCoverage(review.coverage);
+  const ruleCoverage = reviewRuleCoverage(review.coverage, scopeCode);
 
   return (
     <div
@@ -615,20 +644,30 @@ export function ReviewOperatingPicture({
             provenance={gapModel.provenance}
             stateLabel="Unavailable"
           />
+          {omittedGapCount > 0 ? (
+            <p className="type-body" data-testid="review-omitted-gaps">
+              {omittedGapNote(omittedGapCount, stateName)}
+            </p>
+          ) : null}
           <ul className="ux-reset-review-gap-list">
-            {review.data_gaps.map((gap) => (
+            {scopedGaps.gaps.map((entry) => (
               <li
-                key={`${gap.county_fips}-${gap.code}`}
-                data-code={gap.code.trim() || undefined}
-                data-fips={reviewFips(gap.county_fips) ?? undefined}
+                key={`${entry.countyFips}-${entry.gap.code}`}
+                data-code={entry.gap.code.trim() || undefined}
+                data-fips={entry.countyFips}
                 data-testid="review-data-gap"
               >
-                <strong>FIPS {reviewFipsText(gap.county_fips)}</strong>{" "}
-                {reviewText(gap.code)}. {reviewText(gap.detail)}
+                <strong>FIPS {entry.countyFips}</strong>{" "}
+                {reviewText(entry.gap.code)}. {reviewText(entry.gap.detail)}
               </li>
             ))}
           </ul>
         </section>
+      ) : null}
+      {omittedGapCount > 0 && !gapModel ? (
+        <p className="type-body" data-testid="review-omitted-gaps">
+          {omittedGapNote(omittedGapCount, stateName)}
+        </p>
       ) : null}
     </div>
   );

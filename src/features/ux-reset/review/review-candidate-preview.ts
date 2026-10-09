@@ -34,6 +34,7 @@ function observedBasis(candidate: Candidate): string {
       const target = governedField(reference.target);
       const status = reviewText(reference.status);
       const product = governedField(reference.source_product);
+      // This reference's own county, including one that differs from the candidate.
       const county = reviewFipsText(reference.county_fips);
       const sourceAsOf = reviewText(reference.source_as_of);
       return `${target}: ${status} (${product}, FIPS ${county}, as of ${sourceAsOf})`;
@@ -119,6 +120,7 @@ function referenceInspectLine(
   const revision = `; source as of ${sourceAsOf}`;
   const version = reviewText(reference.source_version);
   const versionLabel = `; version ${version}`;
+  // This reference's own county, including one that differs from the candidate.
   const county = reviewFipsText(reference.county_fips);
   const retrieved = reviewRetrievedAt(reference.retrieved_at);
   const record = reviewText(reference.public_record_ref);

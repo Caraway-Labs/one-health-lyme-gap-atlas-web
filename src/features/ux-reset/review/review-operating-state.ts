@@ -1,4 +1,4 @@
-import type { Candidate, StateReview } from "@/generated/models";
+import type { Candidate, DataGap, StateReview } from "@/generated/models";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
 
 import { REVIEW_FIELD_UNAVAILABLE } from "./review-governed-values";
@@ -52,7 +52,8 @@ export function reviewResultPayloadConsistent(
 /**
  * Headline for a successful review response.
  * Data-gap-only is the unsupported result that lists gaps and no candidates.
- * Other backend states stay distinct, including when gaps are also present.
+ * `data_gaps` must already be counties in the requested state. Other backend
+ * states stay distinct, including when those gaps are also present.
  */
 export function reviewPictureState(
   review: ReviewPictureInput
@@ -199,14 +200,19 @@ export function normalizeReviewCounty(
 }
 
 /**
- * County geography for URL and shell links. Five digits, and the FIPS prefix
- * for the requested state. A blank, malformed, or other-state value is omitted.
+ * County geography for Review: gaps, candidates, rule-coverage county keys,
+ * and URL or handoff context. Five digits in the requested lower-48 or DC
+ * state. Blank, malformed, other-state, Alaska, and Hawaii values are omitted.
+ * Evidence-reference FIPS are display-only and do not use this check.
  */
 export function reviewCandidateFipsForScope(
   fips: string,
   scopeCode: string
 ): string | null {
   const trimmed = fips.trim();
+  if (!isLower48ReviewScope(scopeCode)) {
+    return null;
+  }
   const prefix = stateFipsPrefix(scopeCode);
   if (
     !(
@@ -285,6 +291,41 @@ export function scopedReviewCandidates(
   };
 }
 
+export type ScopedReviewGap = {
+  countyFips: string;
+  gap: DataGap;
+};
+
+export type ScopedReviewGapList = {
+  gaps: ScopedReviewGap[];
+  /** Blank, malformed, or other-state FIPS. They are not Review geography. */
+  omittedOutOfScopeCount: number;
+};
+
+/**
+ * Data gaps that can appear in the requested state. Out-of-scope rows are
+ * counted and are not used for the picture headline or the gap list.
+ */
+export function scopedReviewGaps(
+  gaps: readonly DataGap[],
+  scopeCode: string
+): ScopedReviewGapList {
+  const scoped: ScopedReviewGap[] = [];
+  let omittedOutOfScopeCount = 0;
+  for (const gap of gaps) {
+    const countyFips = reviewCandidateFipsForScope(gap.county_fips, scopeCode);
+    if (!countyFips) {
+      omittedOutOfScopeCount += 1;
+      continue;
+    }
+    scoped.push({
+      countyFips,
+      gap: { ...gap, county_fips: countyFips },
+    });
+  }
+  return { gaps: scoped, omittedOutOfScopeCount };
+}
+
 /**
  * Counties the map can draw. Only display-geometry features in the requested
  * lower-48 or DC state count. Candidate FIPS are not polygons and do not
@@ -294,19 +335,13 @@ export function reviewMapCounties(input: {
   geometryFips: readonly string[];
   scopeCode: string;
 }): ReviewMapCounty[] {
-  if (!isLower48ReviewScope(input.scopeCode)) {
-    return [];
-  }
-  const prefix = stateFipsPrefix(input.scopeCode);
-  if (!prefix) {
-    return [];
-  }
   const counties: ReviewMapCounty[] = [];
   for (const fips of input.geometryFips) {
-    if (!fips.startsWith(prefix)) {
+    const countyFips = reviewCandidateFipsForScope(fips, input.scopeCode);
+    if (!countyFips) {
       continue;
     }
-    counties.push({ fips, state: input.scopeCode });
+    counties.push({ fips: countyFips, state: input.scopeCode });
   }
   return counties;
 }
