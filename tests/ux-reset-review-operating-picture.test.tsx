@@ -2481,4 +2481,358 @@ describe("Review operating picture state", () => {
       },
     });
   });
+
+  it("shows each result's evaluation time and full configuration hash", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "08031",
+      detail: "Environmental context stays a data gap.",
+    };
+    const candidate = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Denver",
+      fips: "08001",
+      reasonText: "Denver was returned by the method.",
+    });
+    const identities = [
+      {
+        evaluatedAt: "2026-01-15T16:30:00.000Z",
+        hash: "a".repeat(64),
+        name: "candidates",
+        picture: "candidates_found",
+        review: buildStateReview({
+          candidates: [candidate],
+          gaps: [gap],
+          resultState: "candidates_found",
+          state: "CO",
+        }),
+      },
+      {
+        evaluatedAt: "2026-02-16T17:31:00.000Z",
+        hash: "b".repeat(64),
+        name: "none",
+        picture: "none_stand_out",
+        review: buildStateReview({
+          resultState: "none_stand_out",
+          state: "CO",
+        }),
+      },
+      {
+        evaluatedAt: "2026-03-17T18:32:00.000Z",
+        hash: "c".repeat(64),
+        name: "insufficient",
+        picture: "insufficient_evidence",
+        review: buildStateReview({
+          gaps: [gap],
+          resultState: "insufficient_evidence",
+          state: "CO",
+        }),
+      },
+      {
+        evaluatedAt: "2026-04-18T19:33:00.000Z",
+        hash: "d".repeat(64),
+        name: "unsupported",
+        picture: "data_gap_only",
+        review: buildStateReview({
+          gaps: [gap],
+          resultState: "unsupported",
+          state: "CO",
+        }),
+      },
+    ] as const;
+    const read = (entry: (typeof identities)[number]) => {
+      const review = {
+        ...entry.review,
+        configuration_sha256: entry.hash,
+        evaluated_at: entry.evaluatedAt,
+      };
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const panel = screen.getByTestId("review-state-panel");
+      const provenance = screen.getByTestId("review-result-provenance");
+      const disclosure = provenance.querySelector("details");
+      const header = (
+        screen.getByTestId("review-methodology").textContent ?? ""
+      )
+        .replaceAll(/\s+/g, " ")
+        .trim();
+      const closed = {
+        disclosureOpen:
+          disclosure instanceof HTMLDetailsElement ? disclosure.open : null,
+        header,
+        headerHasHash: header.includes(entry.hash),
+        headerHasEvaluatedAt: header.includes(entry.evaluatedAt),
+        picture: panel.dataset.resultState ?? null,
+      };
+      fireEvent.click(within(provenance).getByText("Inspect provenance"));
+      fireEvent.click(
+        within(provenance).getByText("Technical reproducibility identifiers")
+      );
+      const configuration =
+        within(provenance).getByText("Configuration").nextElementSibling;
+      const evaluated =
+        within(provenance).getByText("Evaluated at").nextElementSibling;
+      const gaps = screen.queryByTestId("review-data-gaps");
+      const foreignHash = identities.some(
+        (other) =>
+          other.hash !== entry.hash &&
+          (provenance.textContent ?? "").includes(other.hash)
+      );
+      const snapshot = {
+        ...closed,
+        configuration: configuration?.textContent ?? "",
+        configurationClass: configuration?.className ?? "",
+        evaluatedAt: evaluated?.textContent ?? "",
+        evaluatedClass: evaluated?.className ?? "",
+        foreignHash,
+        gapContainsHash: (gaps?.textContent ?? "").includes(entry.hash),
+        panelHash: panel.dataset.configurationSha256 ?? null,
+        time:
+          provenance.querySelector("time")?.getAttribute("dateTime") ?? null,
+      };
+      view.unmount();
+      return snapshot;
+    };
+    const formatted = (value: string) =>
+      `${formatAtlasTimestamp(value)} UTC (${value})`;
+    expect(identities.map(read)).toStrictEqual(
+      identities.map((entry) => ({
+        configuration: entry.hash,
+        configurationClass: "ux-reset-evidence-reproducibility-value",
+        disclosureOpen: false,
+        evaluatedAt: formatted(entry.evaluatedAt),
+        evaluatedClass: "ux-reset-evidence-reproducibility-value",
+        foreignHash: false,
+        gapContainsHash: false,
+        header:
+          "Method atlas-county-review 1.0.0. Release alpha-2026. Current cumulative county status; human snapshot 2023.",
+        headerHasEvaluatedAt: false,
+        headerHasHash: false,
+        panelHash: entry.hash,
+        picture: entry.picture,
+        time: entry.evaluatedAt,
+      }))
+    );
+  });
+
+  it("distinguishes evaluation time from observation, source-as-of, and retrieval dates", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const evaluatedAt = "2026-10-06T04:57:46.000Z";
+    const retrievedAt = "2026-08-15T15:04:05.000Z";
+    const otherRetrievedAt = "2026-07-01T00:00:00.000Z";
+    const sourceAsOf = "2024-06-01";
+    const otherSourceAsOf = "2023-11-30";
+    const observationContext =
+      "Current cumulative county status; human snapshot 2023";
+    const candidate = {
+      ...reviewCandidate({
+        caveat: "Collection dates are unavailable.",
+        countyName: "Denver",
+        fips: "08001",
+        reasonText: "Denver was returned by the method.",
+      }),
+      evidence_references: [
+        {
+          ...reviewEvidenceReference("08001"),
+          retrieved_at: retrievedAt,
+          source_as_of: sourceAsOf,
+        },
+        {
+          ...reviewEvidenceReference("08031", "Reported"),
+          family: "vector",
+          retrieved_at: otherRetrievedAt,
+          source_as_of: otherSourceAsOf,
+        },
+      ],
+    };
+    const review = buildStateReview({
+      candidates: [candidate],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    review.effective_observation_context = observationContext;
+    review.evaluated_at = evaluatedAt;
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const provenance = screen.getByTestId("review-result-provenance");
+    fireEvent.click(within(provenance).getByText("Inspect provenance"));
+    const field = (testId: string) =>
+      within(provenance).getByTestId(testId).querySelector("dd")?.textContent ??
+      "";
+    const period = field("evidence-provenance-period");
+    const freshness = field("evidence-provenance-freshness");
+    fireEvent.click(
+      within(provenance).getByText("Technical reproducibility identifiers")
+    );
+    const evaluated =
+      within(provenance).getByText("Evaluated at").nextElementSibling
+        ?.textContent ?? "";
+    const qualification = screen.getByTestId("review-preview-qualification");
+    fireEvent.click(within(qualification).getByText("Inspect provenance"));
+    const lines = [
+      ...within(qualification)
+        .getByTestId("evidence-provenance-references")
+        .querySelectorAll("li"),
+    ].map((item) => item.textContent ?? "");
+    const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
+    const header = (screen.getByTestId("review-methodology").textContent ?? "")
+      .replaceAll(/\s+/g, " ")
+      .trim();
+    const snapshot = {
+      basisHasEvaluation: basis.includes(evaluatedAt),
+      basisHasSource: basis.includes(`as of ${sourceAsOf}`),
+      evaluatedHasObservation: evaluated.includes("snapshot"),
+      evaluatedHasRetrieval: evaluated.includes(retrievedAt),
+      evaluatedHasSource: evaluated.includes(sourceAsOf),
+      evaluatedText: evaluated,
+      firstCounty: lines[0]?.includes("county 08001"),
+      firstRetrieved: lines[0]?.includes(`retrieved ${retrievedAt}`),
+      firstSource: lines[0]?.includes(`source as of ${sourceAsOf}`),
+      freshness,
+      header,
+      period,
+      qualificationHasEvaluation: (qualification.textContent ?? "").includes(
+        evaluatedAt
+      ),
+      secondCounty: lines[1]?.includes("county 08031"),
+      secondRetrieved: lines[1]?.includes(`retrieved ${otherRetrievedAt}`),
+      secondSource: lines[1]?.includes(`source as of ${otherSourceAsOf}`),
+    };
+    view.unmount();
+    expect(snapshot).toStrictEqual({
+      basisHasEvaluation: false,
+      basisHasSource: true,
+      evaluatedHasObservation: false,
+      evaluatedHasRetrieval: false,
+      evaluatedHasSource: false,
+      evaluatedText: `${formatAtlasTimestamp(evaluatedAt)} UTC (${evaluatedAt})`,
+      firstCounty: true,
+      firstRetrieved: true,
+      firstSource: true,
+      freshness: "Unavailable",
+      header: `Method atlas-county-review 1.0.0. Release alpha-2026. ${observationContext}.`,
+      period: "Unavailable",
+      qualificationHasEvaluation: false,
+      secondCounty: true,
+      secondRetrieved: true,
+      secondSource: true,
+    });
+    expect(evaluated).not.toContain(otherRetrievedAt);
+    expect(lines[0]).not.toContain(evaluatedAt);
+    expect(freshness).not.toContain("Source published");
+  });
+
+  it("replaces reproducibility identifiers when the displayed result changes", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const first = buildStateReview({
+      resultState: "none_stand_out",
+      state: "CO",
+    });
+    first.configuration_sha256 = "a".repeat(64);
+    first.data_release_version = "alpha-2026";
+    first.evaluated_at = "2026-01-15T16:30:00.000Z";
+    first.methodology_version = "1.0.0";
+    const second = buildStateReview({
+      gaps: [
+        {
+          code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+          county_fips: "08031",
+          detail: "Environmental context stays a data gap.",
+        },
+      ],
+      resultState: "unsupported",
+      state: "CO",
+    });
+    second.configuration_sha256 = "b".repeat(64);
+    second.data_release_version = "release-b";
+    second.effective_observation_context = "Human snapshot 2024";
+    second.evaluated_at = "2026-04-18T19:33:00.000Z";
+    second.methodology_version = "2.0.0";
+    const picture = (review: StateReview) => (
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const read = () => {
+      const provenance = screen.getByTestId("review-result-provenance");
+      fireEvent.click(within(provenance).getByText("Inspect provenance"));
+      fireEvent.click(
+        within(provenance).getByText("Technical reproducibility identifiers")
+      );
+      const header = (
+        screen.getByTestId("review-methodology").textContent ?? ""
+      )
+        .replaceAll(/\s+/g, " ")
+        .trim();
+      return {
+        configuration:
+          within(provenance).getByText("Configuration").nextElementSibling
+            ?.textContent ?? "",
+        evaluatedAt:
+          within(provenance).getByText("Evaluated at").nextElementSibling
+            ?.textContent ?? "",
+        header,
+        picture:
+          screen.getByTestId("review-state-panel").dataset.resultState ?? null,
+        time:
+          provenance.querySelector("time")?.getAttribute("dateTime") ?? null,
+      };
+    };
+    const view = render(picture(first));
+    const before = read();
+    view.rerender(picture(second));
+    const after = read();
+    const pageText = document.body.textContent ?? "";
+    view.unmount();
+    expect({
+      after,
+      before,
+      keepsFirstEvaluation: pageText.includes(first.evaluated_at),
+      keepsFirstHash: pageText.includes(first.configuration_sha256),
+    }).toStrictEqual({
+      after: {
+        configuration: second.configuration_sha256,
+        evaluatedAt: `${formatAtlasTimestamp(second.evaluated_at)} UTC (${second.evaluated_at})`,
+        header:
+          "Method atlas-county-review 2.0.0. Release release-b. Human snapshot 2024.",
+        picture: "data_gap_only",
+        time: second.evaluated_at,
+      },
+      before: {
+        configuration: first.configuration_sha256,
+        evaluatedAt: `${formatAtlasTimestamp(first.evaluated_at)} UTC (${first.evaluated_at})`,
+        header:
+          "Method atlas-county-review 1.0.0. Release alpha-2026. Current cumulative county status; human snapshot 2023.",
+        picture: "none_stand_out",
+        time: first.evaluated_at,
+      },
+      keepsFirstEvaluation: false,
+      keepsFirstHash: false,
+    });
+  });
 });

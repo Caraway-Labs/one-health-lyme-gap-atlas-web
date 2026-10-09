@@ -194,7 +194,7 @@ export function EvidenceProvenanceInspect(
               {evaluatedAt ? (
                 <div>
                   <dt>Evaluated at</dt>
-                  <dd>
+                  <dd className="ux-reset-evidence-reproducibility-value">
                     {evaluatedAtIsTimestamp && evaluatedAtRaw ? (
                       <time dateTime={evaluatedAtRaw}>{evaluatedAt}</time>
                     ) : (
@@ -206,7 +206,9 @@ export function EvidenceProvenanceInspect(
               {configuration ? (
                 <div>
                   <dt>Configuration</dt>
-                  <dd>{configuration}</dd>
+                  <dd className="ux-reset-evidence-reproducibility-value">
+                    {configuration}
+                  </dd>
                 </div>
               ) : null}
             </dl>
