@@ -2183,11 +2183,6 @@ describe("Review operating picture state", () => {
       resultState: "candidates_found",
       state: "CO",
     });
-    mixed.coverage.rule_coverage = {
-      ...mixed.coverage.rule_coverage,
-      "08031": "in state",
-      "36001": "out of state",
-    };
     const mixedView = render(
       <QueryClientProvider client={client}>
         <ReviewOperatingPicture
@@ -2205,9 +2200,6 @@ describe("Review operating picture state", () => {
     const investigate =
       screen.getByTestId("review-investigate").getAttribute("href") ?? "";
     const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
-    const rules = [
-      ...screen.getByTestId("review-rule-coverage").querySelectorAll("li"),
-    ].map((item) => item.textContent ?? "");
     const mixedSnapshot = {
       basisBlank: basis.includes("FIPS Unavailable"),
       basisOtherState: basis.includes("FIPS 36001"),
@@ -2223,11 +2215,6 @@ describe("Review operating picture state", () => {
       ),
       omitted: screen.getByTestId("review-omitted-gaps").textContent,
       resultState: screen.getByTestId("review-state-panel").dataset.resultState,
-      rulesIncludeInStateKey: rules.some((rule) => rule.startsWith("08031:")),
-      rulesIncludeName: rules.some((rule) =>
-        rule.startsWith("human_emerging:")
-      ),
-      rulesIncludeOtherState: rules.some((rule) => rule.startsWith("36001:")),
     };
     mixedView.unmount();
     const unsupportedView = render(
@@ -2279,9 +2266,6 @@ describe("Review operating picture state", () => {
         omitted:
           "2 data gaps were omitted because their county FIPS is not in Colorado.",
         resultState: "candidates_found",
-        rulesIncludeInStateKey: true,
-        rulesIncludeName: true,
-        rulesIncludeOtherState: false,
       },
       unsupported: {
         gapRow: null,
@@ -2292,6 +2276,53 @@ describe("Review operating picture state", () => {
         resultState: "unsupported",
         summary: "No review rule is enabled for this result.",
       },
+    });
+  });
+
+  it("shows numeric rule keys and still omits an out-of-state data gap", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const review = buildStateReview({
+      gaps: [
+        {
+          code: "OUT_OF_STATE",
+          county_fips: "36001",
+          detail: "New York must not become a Colorado gap.",
+        },
+      ],
+      resultState: "unsupported",
+      state: "CO",
+    });
+    review.coverage.rule_coverage = {
+      " ": "hidden",
+      "08031": "in state",
+      "36001": "disabled",
+      human_emerging: "disabled",
+    };
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    const rules = [
+      ...screen.getByTestId("review-rule-coverage").querySelectorAll("li"),
+    ].map((item) => item.textContent ?? "");
+    const snapshot = {
+      gapRow: screen.queryByTestId("review-data-gap"),
+      omitted: screen.getByTestId("review-omitted-gaps").textContent,
+      rules,
+    };
+    view.unmount();
+    expect(snapshot).toStrictEqual({
+      gapRow: null,
+      omitted:
+        "1 data gap was omitted because its county FIPS is not in Colorado.",
+      rules: ["08031: in state", "36001: disabled", "human_emerging: disabled"],
     });
   });
 

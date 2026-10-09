@@ -200,10 +200,10 @@ export function normalizeReviewCounty(
 }
 
 /**
- * County geography for Review: gaps, candidates, rule-coverage county keys,
- * and URL or handoff context. Five digits in the requested lower-48 or DC
- * state. Blank, malformed, other-state, Alaska, and Hawaii values are omitted.
- * Evidence-reference FIPS are display-only and do not use this check.
+ * County geography for Review: gaps, candidates, and URL or handoff context.
+ * Five digits in the requested lower-48 or DC state. Blank, malformed,
+ * other-state, Alaska, and Hawaii values are omitted. Evidence-reference
+ * FIPS and rule-coverage keys are not geography and do not use this check.
  */
 export function reviewCandidateFipsForScope(
   fips: string,

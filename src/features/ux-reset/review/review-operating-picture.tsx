@@ -35,13 +35,11 @@ import {
   REVIEW_FIELD_UNAVAILABLE,
   reviewDatasetId,
   reviewDatasetText,
-  reviewFips,
   reviewText,
 } from "@/features/ux-reset/review/review-governed-values";
 import {
   isGovernedReviewResultState,
   reviewCandidateCountyLabel,
-  reviewCandidateFipsForScope,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
@@ -135,21 +133,12 @@ function gapEvidenceModel(
 }
 
 function reviewRuleCoverage(
-  coverage: StateReview["coverage"],
-  scopeCode: string
+  coverage: StateReview["coverage"]
 ): { rule: string; status: string }[] {
   return Object.entries(coverage.rule_coverage)
     .flatMap(([rule, status]) => {
       const trimmedRule = rule.trim();
       if (!trimmedRule) {
-        return [];
-      }
-      // Rule names stay as returned. A key that is itself a county FIPS is
-      // geography and must be in the requested state.
-      if (
-        reviewFips(trimmedRule) &&
-        !reviewCandidateFipsForScope(trimmedRule, scopeCode)
-      ) {
         return [];
       }
       return [
@@ -414,7 +403,7 @@ export function ReviewOperatingPicture({
       : null;
   const omittedGapCount = scopedGaps.omittedOutOfScopeCount;
   const resultLimitations = visibleLines(review.limitations);
-  const ruleCoverage = reviewRuleCoverage(review.coverage, scopeCode);
+  const ruleCoverage = reviewRuleCoverage(review.coverage);
 
   return (
     <div
