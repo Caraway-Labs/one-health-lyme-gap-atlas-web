@@ -18,15 +18,10 @@ export const FRONT_PORCH_EXPLORE_LABEL = "Explore counties like this in Atlas";
 export const FRONT_PORCH_EXPLORE_SUPPORT =
   "Built for public-health epidemiologists";
 
-/**
- * Approved transparent ecosystem art from issue 475 was not in the issue
- * artifacts, the workshop documents, or this repository. Until
- * `public/images/one-health-ecosystem.png` is supplied, the hero uses the
- * existing production brand mark. This is not the approved illustration.
- */
+/** Owner-approved transparent ecosystem illustration (Web #478 / #475). */
 export const FRONT_PORCH_HERO_IMAGE = {
-  approved: false,
-  src: "/favicon.svg",
+  approved: true,
+  src: "/images/one-health-ecosystem.png",
 } as const;
 
 export const FRONT_PORCH_METHODOLOGY_HREF = "/docs/releases-and-methodology";

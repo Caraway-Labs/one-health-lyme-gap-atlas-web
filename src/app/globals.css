@@ -4699,25 +4699,12 @@ select:focus-visible {
 .front-porch-image-frame {
   display: grid;
   width: min(100%, 26rem);
-  aspect-ratio: 1;
+  aspect-ratio: 1280 / 1229;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--white) 28%, transparent);
-  border-radius: 50%;
-  background:
-    radial-gradient(
-      circle at 50% 42%,
-      color-mix(in srgb, var(--teal) 45%, transparent),
-      transparent 70%
-    ),
-    color-mix(in srgb, var(--white) 8%, transparent);
-  box-shadow:
-    0 0 0 1.25rem color-mix(in srgb, var(--white) 5%, transparent),
-    0 0 0 2.5rem color-mix(in srgb, var(--white) 3%, transparent);
 }
 .front-porch-image-frame img {
-  width: 68%;
-  height: 68%;
+  width: 100%;
+  height: auto;
   object-fit: contain;
 }
 .front-porch-callout {
@@ -4815,9 +4802,6 @@ select:focus-visible {
   }
   .front-porch-image-frame {
     width: min(100%, 18rem);
-    box-shadow:
-      0 0 0 0.75rem color-mix(in srgb, var(--white) 5%, transparent),
-      0 0 0 1.5rem color-mix(in srgb, var(--white) 3%, transparent);
   }
   .front-porch-close {
     padding: var(--space-6);

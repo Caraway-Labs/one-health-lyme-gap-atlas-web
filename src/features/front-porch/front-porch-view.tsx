@@ -72,10 +72,11 @@ export function FrontPorchView({
               <div className="front-porch-image-frame">
                 <Image
                   alt=""
-                  height={512}
+                  height={1229}
                   src={FRONT_PORCH_HERO_IMAGE.src}
-                  unoptimized
-                  width={512}
+                  preload
+                  sizes="(max-width: 800px) 288px, 416px"
+                  width={1280}
                 />
               </div>
               <figcaption className="front-porch-callout">
