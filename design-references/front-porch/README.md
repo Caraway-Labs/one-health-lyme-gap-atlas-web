@@ -20,6 +20,10 @@ Navigation destinations are the story anchor, published methodology, `/docs`, an
 
 ## Deterministic visual verification
 
+Run `$env:ATLAS_VISUAL_PRODUCTION="1"; npx playwright test tests/e2e/front-porch-visual.spec.ts` in PowerShell (or `ATLAS_VISUAL_PRODUCTION=1 npx playwright test tests/e2e/front-porch-visual.spec.ts` on Linux). This builds and starts the production application. The ordinary development E2E run excludes this file; CI runs it as a separate required quality step. Captures assert no `nextjs-portal`, no browser runtime exceptions, and bundled DM Sans glyph rendering using Chromium's font inspection. Approved-reference attachments are collected before stored-snapshot assertions.
+
+Canonical refreshed baselines were captured on Playwright 1.62.1 Chromium in `mcr.microsoft.com/playwright:v1.62.1-noble` (digest `sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e`). Only the 390px hero, 320px hero and 320px first-transition snapshots were refreshed. The original HTML and artwork hashes above remain unchanged.
+
 `tests/e2e/front-porch-visual.spec.ts` renders both actual HTML and React at 1440×900, 1280×800, 390×844 and 320×700. Fonts are local licensed Manrope and DM Sans, loaded before capture. Motion is reduced, screenshot animations disabled, and no content is masked. The original HTML is attached untouched; a separately labeled comparison replaces only later-approved paragraph/CTA, qualifies the Lyme example by removing the provisional county, and removes the decorative sign-in arrow. Runtime copy is never taken from the old prototype.
 
 Direct reference comparisons allow at most 2% mismatched pixels, counting pixels whose largest RGB channel delta exceeds 51 (20% of 255). This channel tolerance accommodates edge antialiasing; geometry assertions independently check sizes. No threshold increase is authorized. Stored hero and first-transition snapshots also use Playwright's 2% mismatch cap. Snapshot updates do not bypass direct reference comparisons. CI retains attachments, differences and traces.

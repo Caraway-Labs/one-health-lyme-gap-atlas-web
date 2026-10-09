@@ -23,7 +23,14 @@ async function visit(suite) {
         );
       }
       if (attachment.name === "diff-ratio") {
-        ratios.push(JSON.parse(body.toString()));
+        const comparison = JSON.parse(body.toString());
+        if (
+          !ratios.some(
+            (entry) => entry.viewport.width === comparison.viewport.width
+          )
+        ) {
+          ratios.push(comparison);
+        }
       }
     }
   }

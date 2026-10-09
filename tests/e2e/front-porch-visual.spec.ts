@@ -26,10 +26,39 @@ for (const viewport of viewports) {
     page,
     context,
   }, testInfo) => {
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => runtimeErrors.push(error.message));
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
+    await page.locator(".front-porch-support").evaluate(async (element) => {
+      const style = getComputedStyle(element);
+      await document.fonts.load(
+        `${style.fontSize} ${style.fontFamily.split(",")[0]}`
+      );
+    });
     await page.evaluate(() => document.fonts.ready);
+    const fontSession = await context.newCDPSession(page);
+    await fontSession.send("DOM.enable");
+    await fontSession.send("CSS.enable");
+    const { root } = await fontSession.send("DOM.getDocument");
+    const { nodeId } = await fontSession.send("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: ".front-porch-support",
+    });
+    const { fonts } = await fontSession.send("CSS.getPlatformFontsForNode", {
+      nodeId,
+    });
+    await testInfo.attach("rendered-body-font", {
+      body: JSON.stringify(fonts),
+      contentType: "application/json",
+    });
+    expect(
+      fonts.some(
+        (font) => font.isCustomFont && font.familyName.startsWith("DM Sans")
+      )
+    ).toBeTruthy();
+    await fontSession.detach();
     await page
       .locator(".front-porch-image-frame img")
       .evaluate((image: HTMLImageElement) => image.decode());
@@ -67,6 +96,7 @@ for (const viewport of viewports) {
       await page.evaluate(() => document.documentElement.scrollWidth)
     ).toBe(viewport.width);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await expect(page.locator("nextjs-portal")).toHaveCount(0);
     const actual = await hero.screenshot({ animations: "disabled" });
     await attachImage(
       testInfo,
@@ -74,14 +104,6 @@ for (const viewport of viewports) {
       await page.screenshot({ animations: "disabled" })
     );
     await attachImage(testInfo, "implementation", actual);
-    await expect(hero).toHaveScreenshot(`front-porch-${viewport.width}.png`, {
-      animations: "disabled",
-      maxDiffPixelRatio: 0.02,
-    });
-    await expect(page.locator(".front-porch-beat").first()).toHaveScreenshot(
-      `first-transition-${viewport.width}.png`,
-      { animations: "disabled", maxDiffPixelRatio: 0.02 }
-    );
     await expect(page.locator(".front-porch-beat").first()).toHaveCSS(
       "padding-top",
       "90px"
@@ -246,6 +268,15 @@ for (const viewport of viewports) {
       }
     }
     await reference.close();
+    expect(runtimeErrors).toEqual([]);
+    await expect(hero).toHaveScreenshot(`front-porch-${viewport.width}.png`, {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.02,
+    });
+    await expect(page.locator(".front-porch-beat").first()).toHaveScreenshot(
+      `first-transition-${viewport.width}.png`,
+      { animations: "disabled", maxDiffPixelRatio: 0.02 }
+    );
   });
 }
 
