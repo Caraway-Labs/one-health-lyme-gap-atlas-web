@@ -6,12 +6,12 @@ Candidate based on `origin/main` at `f09fa3db368d16ff9e7f0dab4e89cfebb82e69a0`. 
 
 [Open the five-panel visual review package](review/index.html). Original prototype, current production baseline, candidate, reference with finalized copy, and highlighted difference are available at each requested viewport. Stored regression snapshots also cover the first chapter transition.
 
-| Viewport | Direct hero pixel mismatch | Limit |
-| --- | --- | --- |
-| 1440 × 900 | 0.468% | 2% |
-| 1280 × 800 | 0.515% | 2% |
-| 390 × 844 | 0.429% | 2% |
-| 320 × 700 | 1.591% | 2% |
+| Viewport   | Direct hero pixel mismatch | Limit |
+| ---------- | -------------------------- | ----- |
+| 1440 × 900 | 0.468%                     | 2%    |
+| 1280 × 800 | 0.515%                     | 2%    |
+| 390 × 844  | 0.429%                     | 2%    |
+| 320 × 700  | 1.591%                     | 2%    |
 
 Method and reference-to-React mapping are in [README.md](README.md). Fonts load locally, motion is reduced, no elements are masked, and direct live-reference comparisons cannot be waived through snapshot updates. Raw approved screenshots retain the prototype's older copy; normalized comparison uses #475 wording and removes the provisional county assertion.
 

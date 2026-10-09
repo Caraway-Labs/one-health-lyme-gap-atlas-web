@@ -1,8 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type TestInfo } from "@playwright/test";
 
 import { FRONT_PORCH_HERO_SUPPORT } from "../../src/features/front-porch/front-porch-copy";
 
@@ -14,6 +14,12 @@ const viewports = [
 ];
 
 test.use({ deviceScaleFactor: 1, isMobile: false });
+
+async function attachImage(testInfo: TestInfo, name: string, body: Buffer) {
+  const imagePath = testInfo.outputPath(`${name}.png`);
+  await writeFile(imagePath, body);
+  await testInfo.attach(name, { path: imagePath, contentType: "image/png" });
+}
 
 for (const viewport of viewports) {
   test(`approved Front Porch composition ${viewport.width}`, async ({
@@ -62,14 +68,12 @@ for (const viewport of viewports) {
     ).toBe(viewport.width);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     const actual = await hero.screenshot({ animations: "disabled" });
-    await testInfo.attach("implementation-page", {
-      body: await page.screenshot({ animations: "disabled" }),
-      contentType: "image/png",
-    });
-    await testInfo.attach("implementation", {
-      body: actual,
-      contentType: "image/png",
-    });
+    await attachImage(
+      testInfo,
+      "implementation-page",
+      await page.screenshot({ animations: "disabled" })
+    );
+    await attachImage(testInfo, "implementation", actual);
     await expect(hero).toHaveScreenshot(`front-porch-${viewport.width}.png`, {
       animations: "disabled",
       maxDiffPixelRatio: 0.02,
@@ -125,10 +129,11 @@ for (const viewport of viewports) {
     await reference
       .locator("img")
       .evaluate((image: HTMLImageElement) => image.decode());
-    await testInfo.attach("approved-original", {
-      body: await reference.screenshot({ animations: "disabled" }),
-      contentType: "image/png",
-    });
+    await attachImage(
+      testInfo,
+      "approved-original",
+      await reference.screenshot({ animations: "disabled" })
+    );
     // Compare like-for-like approved copy, while retaining the original above.
     await reference
       .locator(".copy > p")
@@ -148,10 +153,7 @@ for (const viewport of viewports) {
     const normalized = await reference
       .locator(".hero")
       .screenshot({ animations: "disabled" });
-    await testInfo.attach("approved-with-final-copy", {
-      body: normalized,
-      contentType: "image/png",
-    });
+    await attachImage(testInfo, "approved-with-final-copy", normalized);
     // Direct live reference comparison cannot be bypassed by updating snapshots.
     const difference = await page.evaluate(
       async ({ actualPng, referencePng }) => {
@@ -206,10 +208,11 @@ for (const viewport of viewports) {
         referencePng: normalized.toString("base64"),
       }
     );
-    await testInfo.attach("highlighted-reference-diff", {
-      body: Buffer.from(difference.png, "base64"),
-      contentType: "image/png",
-    });
+    await attachImage(
+      testInfo,
+      "highlighted-reference-diff",
+      Buffer.from(difference.png, "base64")
+    );
     await testInfo.attach("diff-ratio", {
       body: JSON.stringify({ viewport, mismatchRatio: difference.ratio }),
       contentType: "application/json",
