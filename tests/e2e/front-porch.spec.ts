@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -54,6 +56,46 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
   expect(imageSrc).toBeTruthy();
   const imageResponse = await page.request.get(imageSrc!);
   expect(imageResponse.status()).toBe(200);
+  await expect(image).toHaveJSProperty("complete", true);
+  expect(
+    await image.evaluate((element: HTMLImageElement) => element.naturalWidth)
+  ).toBeGreaterThan(0);
+  const frame = page.locator(".front-porch-image-frame");
+  const frameStyle = await frame.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      background: style.backgroundColor,
+      radius: style.borderRadius,
+      overflow: style.overflow,
+    };
+  });
+  expect(frameStyle).toEqual({
+    background: "rgba(0, 0, 0, 0)",
+    radius: "0px",
+    overflow: "visible",
+  });
+  const imageBounds = await image.boundingBox();
+  const frameBounds = await frame.boundingBox();
+  expect(imageBounds!.width).toBeCloseTo(frameBounds!.width, 0);
+  expect(imageBounds!.width / imageBounds!.height).toBeCloseTo(1280 / 1229, 2);
+  const original = await page.request.get("/images/one-health-ecosystem.png");
+  expect(original.status()).toBe(200);
+  expect(original.headers()["content-type"]).toContain("image/png");
+  expect(
+    createHash("sha256")
+      .update(await original.body())
+      .digest("hex")
+  ).toBe("4025b63ba21fb82174eec77f9e1aa2dd192275692c515cf26c8674ba9178c326");
+  expect(
+    await image.evaluate((element: HTMLImageElement) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = element.naturalWidth;
+      canvas.height = element.naturalHeight;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(element, 0, 0);
+      return context.getImageData(0, 0, 1, 1).data[3];
+    })
+  ).toBe(0);
 
   for (const beat of FRONT_PORCH_BEATS) {
     await expect(

@@ -33,8 +33,8 @@ describe("front porch copy", () => {
       "Human health + Vectors + Environment"
     );
     expect(FRONT_PORCH_HERO_IMAGE).toMatchObject({
-      approved: false,
-      src: "/favicon.svg",
+      approved: true,
+      src: "/images/one-health-ecosystem.png",
     });
   });
 
@@ -108,7 +108,16 @@ describe("front porch view", () => {
     expect([
       image?.getAttribute("src"),
       image?.getAttribute("alt"),
-    ]).toStrictEqual(["/favicon.svg", ""]);
+      image?.getAttribute("width"),
+      image?.getAttribute("height"),
+    ]).toStrictEqual([
+      expect.stringContaining(
+        encodeURIComponent("/images/one-health-ecosystem.png")
+      ),
+      "",
+      "1280",
+      "1229",
+    ]);
     expect(
       FRONT_PORCH_FOOTER_LINKS.every((item) =>
         screen
