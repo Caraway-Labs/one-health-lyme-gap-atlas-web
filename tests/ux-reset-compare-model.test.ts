@@ -214,6 +214,39 @@ describe("compare pair contract", () => {
       }
     );
     expect(reviewHref.get("compare")).toBe("08001,08013");
+    const cleared = {
+      county: null,
+      compare: [],
+      dataset: "alpha-2026",
+      period: "2023-01-01",
+    };
+    const investigateHref = searchParamsWithCommittedExploreContext(
+      "/app/investigate",
+      source,
+      cleared
+    );
+    const clearedCompareHref = searchParamsWithCommittedExploreContext(
+      "/app/compare",
+      source,
+      cleared
+    );
+    expect({
+      compareCounty: clearedCompareHref.get("county"),
+      compareDataset: clearedCompareHref.get("dataset"),
+      compareList: clearedCompareHref.get("compare"),
+      compareScope: clearedCompareHref.get("scope"),
+      investigateCompare: investigateHref.get("compare"),
+      investigateCounty: investigateHref.get("county"),
+      investigateScope: investigateHref.get("scope"),
+    }).toStrictEqual({
+      compareCounty: "08001",
+      compareDataset: "alpha-2026",
+      compareList: null,
+      compareScope: "CO",
+      investigateCompare: null,
+      investigateCounty: null,
+      investigateScope: "CO",
+    });
   });
 
   it("puts the resolved release on Compare shell links when the URL omits dataset", () => {

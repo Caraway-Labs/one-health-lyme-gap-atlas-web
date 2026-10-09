@@ -14,6 +14,11 @@ import {
   compareScoresFixture,
 } from "../fixtures/compare-api-fixtures";
 import { investigateMetadataFixture } from "../fixtures/investigate-api-fixtures";
+import {
+  buildStateReview,
+  reviewCandidate,
+  stateReviewResponseForUrl,
+} from "../fixtures/review-operating-picture-fixtures";
 
 async function installCompareMocks(page: Page, requested: string[]) {
   const fulfill = async (route: Route, body: unknown, status = 200) => {
@@ -29,6 +34,10 @@ async function installCompareMocks(page: Page, requested: string[]) {
   await page.route("**/v1/atlas/scores**", async (route) => {
     requested.push(route.request().url());
     await fulfill(route, compareScoresFixture);
+  });
+  await page.route("**/v1/states/*/review**", async (route) => {
+    requested.push(route.request().url());
+    await fulfill(route, stateReviewResponseForUrl(route.request().url()));
   });
   await page.route("**/v1/measures**", async (route) => {
     const url = new URL(route.request().url());
@@ -114,16 +123,41 @@ function overflowReviewScores() {
   };
 }
 
+function overflowReview() {
+  return buildStateReview({
+    candidates: Array.from({ length: 41 }, (_, index) => {
+      const fips = String(8001 + index).padStart(5, "0");
+      return reviewCandidate({
+        caveat: "The review result included a limitation for this county.",
+        countyName: `County ${String(index + 1).padStart(2, "0")}`,
+        fips,
+        reasonText: `County ${index + 1} is included because the review method returned it.`,
+      });
+    }),
+    resultState: "candidates_found",
+    state: "CO",
+  });
+}
+
 async function installOverflowReviewScores(page: Page) {
   await page.route("**/v1/atlas/scores**", async (route) => {
     await route.fulfill({ json: overflowReviewScores() });
+  });
+  await page.route("**/v1/states/*/review**", async (route) => {
+    const state = new URL(route.request().url()).pathname.split("/").at(-2);
+    await route.fulfill({
+      json:
+        state === "CO"
+          ? overflowReview()
+          : stateReviewResponseForUrl(route.request().url()),
+      status: 200,
+    });
   });
 }
 
 async function openOverflowCountyCompare(page: Page, fips: string) {
   await page.goto("/app/review?scope=CO&dataset=alpha-2026");
-  await page.getByRole("button", { name: "View full county list" }).click();
-  await page.locator(`.full-table button[data-fips="${fips}"]`).click();
+  await page.locator(`button[data-fips="${fips}"]`).click();
   await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
     "data-fips",
     fips
@@ -139,12 +173,9 @@ async function openOverflowCountyCompare(page: Page, fips: string) {
 }
 
 async function expectOverflowCountyRestored(page: Page, fips: string) {
-  const row = page.locator(`.full-table button[data-fips="${fips}"]`);
+  const row = page.locator(`button[data-fips="${fips}"]`);
   await expect(row).toBeVisible();
   await expect(row).toBeFocused();
-  await expect(
-    page.getByRole("button", { name: "Hide full county list" })
-  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -155,7 +186,7 @@ async function expectOverflowCountyRestored(page: Page, fips: string) {
   await expect
     .poll(() =>
       row.evaluate((element) => {
-        const scroller = element.closest(".table-scroll");
+        const scroller = element.closest(".ux-reset-review-candidate-list");
         if (!(scroller instanceof HTMLElement)) {
           return false;
         }
@@ -171,12 +202,9 @@ async function expectOverflowCountyRestored(page: Page, fips: string) {
 
 async function expectConsumedReviewReturn(page: Page, fips: string) {
   await page.goto(`/app/review?scope=CO&dataset=alpha-2026&county=${fips}`);
-  await expect(
-    page.getByRole("button", { name: "View full county list" })
-  ).toBeVisible();
-  await expect(
-    page.locator(`.full-table button[data-fips="${fips}"]`)
-  ).toHaveCount(0);
+  const row = page.locator(`button[data-fips="${fips}"]`);
+  await expect(row).toBeVisible();
+  await expect(row).not.toBeFocused();
 }
 
 test.describe("two-county Compare", () => {

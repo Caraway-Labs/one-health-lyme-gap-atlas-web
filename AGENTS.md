@@ -26,6 +26,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | Pattern | Location | Why native / domain CSS remains |
 | --- | --- | --- |
 | Rank-row county buttons | `src/components/ranked-counties.tsx` | Domain list rows with score-color encoding, not generic actions |
+| Review candidate rows | `src/features/ux-reset/review/review-operating-picture.tsx` | Authoritative suggestion rows with reason text, not generic actions and not a score column |
 | Variant county-list rows | `src/components/experiment-atlas.tsx` | Same ranked-list semantics in interview variants |
 | Guided-step tabs | `src/components/experiment-atlas.tsx` | Native `role="tab"` stepper, not a shared Button |
 | Scoring range inputs | `src/components/experiment-atlas.tsx` | Native `input type="range"`; no shared Slider primitive |

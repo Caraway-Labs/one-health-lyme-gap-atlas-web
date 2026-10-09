@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
@@ -31,6 +32,13 @@ async function installReviewApiMocks(
       await new Promise((resolve) => setTimeout(resolve, scoreDelayMs));
     }
     await route.fulfill({ json: reviewScopeScoresFixture, status: 200 });
+  });
+
+  await page.route("**/v1/states/*/review**", async (route) => {
+    await route.fulfill({
+      json: stateReviewResponseForUrl(route.request().url()),
+      status: 200,
+    });
   });
 }
 
@@ -221,6 +229,12 @@ test.describe("Review national and state scope controls", () => {
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
       await route.fulfill({ json: reviewScopeScoresFixture, status: 200 });
+    });
+    await page.route("**/v1/states/*/review**", async (route) => {
+      await route.fulfill({
+        json: stateReviewResponseForUrl(route.request().url()),
+        status: 200,
+      });
     });
 
     await page.goto("/app/review?scope=CO");

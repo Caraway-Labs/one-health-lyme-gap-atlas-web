@@ -8,6 +8,10 @@ import {
   investigateMeasuresFixture,
   investigateObservationsFor,
 } from "../fixtures/investigate-api-fixtures";
+import {
+  buildStateReview,
+  reviewCandidate,
+} from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 import {
   tier1HighSufficientFixture,
@@ -124,6 +128,39 @@ async function installTier1Review(
       status: 200,
     });
   });
+  await page.route("**/v1/states/*/review**", async (route) => {
+    const url = new URL(route.request().url());
+    const state = url.pathname.split("/").at(-2) ?? "";
+    const dataset = url.searchParams.get("dataset_version") ?? E2E_RELEASE_ID;
+    const counties =
+      state === "NY"
+        ? [
+            { countyName: "Albany", fips: "36001" },
+            { countyName: "Orange", fips: "36003" },
+            { countyName: "Bronx", fips: "36005" },
+          ]
+        : [];
+    const review = buildStateReview({
+      candidates: counties.map((county) =>
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: county.countyName,
+          fips: county.fips,
+          reasonText: `${county.countyName} is included because the review method returned it.`,
+        })
+      ),
+      resultState: counties.length > 0 ? "candidates_found" : "none_stand_out",
+      state,
+    });
+    await route.fulfill({
+      json: {
+        ...review,
+        data_release_version: dataset,
+        requested_state: state,
+      },
+      status: 200,
+    });
+  });
   await page.route("**/v1/atlas/geometry**", async (route) => {
     await route.fulfill({
       json: { detail: "display geometry unavailable" },
@@ -231,7 +268,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
       "not disease risk or predicted incidence"
     );
     await expect(page.getByTestId("review-preview-why")).toContainText(
-      "Lower review priority"
+      "Albany is included because the review method returned it."
     );
     await review.getByText("Model and as-of details").click();
     await expect(review).toContainText("tier1-statistical-reference-v1");

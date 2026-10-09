@@ -6,6 +6,10 @@ import {
   investigateMeasuresFixture,
   investigateObservationsFor,
 } from "../fixtures/investigate-api-fixtures";
+import {
+  buildStateReview,
+  reviewCandidate,
+} from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 
 const scoreBreakdown = {
@@ -129,6 +133,32 @@ async function installPreviewMocks(
   await page.route("**/v1/atlas/scores**", async (route) => {
     await route.fulfill({ json: scoresPayload(counties), status: 200 });
   });
+  await page.route("**/v1/states/*/review**", async (route) => {
+    const state =
+      new URL(route.request().url()).pathname.split("/").at(-2) ?? "";
+    const matches = counties.filter(
+      (county) => (county.state ?? "NY") === state
+    );
+    await route.fulfill({
+      json: buildStateReview({
+        candidates: matches.map((county) =>
+          reviewCandidate({
+            caveat:
+              county.human_status === "missing"
+                ? "A missing record is not treated as zero cases."
+                : "Collection dates are unavailable for this status.",
+            countyName: county.county,
+            fips: county.fips,
+            nextCheck: "Review the cited source records.",
+            reasonText: `${county.county} is included because the review method returned it.`,
+          })
+        ),
+        resultState: matches.length > 0 ? "candidates_found" : "none_stand_out",
+        state,
+      }),
+      status: 200,
+    });
+  });
   await page.route("**/v1/atlas/geometry**", async (route) => {
     if (!geometry) {
       await route.fulfill({
@@ -191,8 +221,8 @@ async function installPreviewMocks(
 }
 
 async function rowVisibleInRankList(page: Page, fips: string) {
-  return page.locator(`.rank-row[data-fips="${fips}"]`).evaluate((element) => {
-    const list = element.closest(".rank-list");
+  return page.locator(`button[data-fips="${fips}"]`).evaluate((element) => {
+    const list = element.closest(".ux-reset-review-candidate-list");
     if (!(list instanceof HTMLElement)) {
       return false;
     }
@@ -225,13 +255,13 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     await expect(albany).toHaveAttribute(
       "data-follow-up",
-      "Continue routine review"
+      "Review the cited source records."
     );
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/sort=score/);
     await expect(page).toHaveURL(/page=2/);
 
-    const suffolkRow = page.locator('.rank-row[data-fips="36024"]');
+    const suffolkRow = page.locator('button[data-fips="36024"]');
     await suffolkRow.click();
     const suffolk = page.getByTestId("review-county-preview");
     await expect(suffolk).toHaveAttribute("data-fips", "36024");
@@ -248,9 +278,11 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(previewState).toMatchObject({
       availability: "limited",
       fips: "36024",
-      followUp: "Prioritize targeted follow-up",
+      followUp: "Review the cited source records.",
     });
-    expect(previewState.why).toContain("Highest review priority");
+    expect(previewState.why).toContain(
+      "Suffolk is included because the review method returned it."
+    );
     expect(previewState.why).not.toMatch(/available for review/i);
     expect(previewState.caveat).toContain("not treated as zero");
     await expect(
@@ -261,7 +293,9 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(
       page.getByTestId("review-preview-qualification")
     ).toContainText("not treated as zero");
-    await expect(page.getByText("Inspect provenance")).toBeVisible();
+    await expect(
+      page.getByTestId("review-county-preview").getByText("Inspect provenance")
+    ).toBeVisible();
     expect(`${previewState.why} ${previewState.caveat}`).not.toMatch(/0 cases/);
     expect(previewState.target).toContain("county=36024");
     expect(previewState.target).toContain("scope=NY");
@@ -313,11 +347,8 @@ test.describe("Review county preview and Investigate handoff", () => {
       "New York"
     );
     await expect(page.getByTestId("review-scope-select")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "View full county list" })
-    ).toBeVisible();
     await expect.poll(() => rowVisibleInRankList(page, "36024")).toBe(true);
-    await expect(page.locator('.rank-row[data-fips="36024"]')).toBeFocused();
+    await expect(page.locator('button[data-fips="36024"]')).toBeFocused();
 
     await page.goForward({ waitUntil: "commit" });
     await expect(page).toHaveURL(/\/app\/investigate/);
@@ -333,7 +364,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     );
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/sort=score/);
-    await expect(page.locator('.rank-row[data-fips="36024"]')).toBeFocused();
+    await expect(page.locator('button[data-fips="36024"]')).toBeFocused();
   });
 
   test("opens the same Investigate county from the map and the list", async ({
@@ -362,7 +393,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-fips",
       "36001"
     );
-    await page.locator('.rank-row[data-fips="36001"]').click();
+    await page.locator('button[data-fips="36001"]').click();
     await expect(page).toHaveURL(/\/app\/review/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
@@ -410,13 +441,13 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(mapHref).toContain("period=2023-01-01");
     expect(mapHref).not.toContain("sort=");
 
-    await page.locator('.rank-row[data-fips="36001"]').click();
+    await page.locator('button[data-fips="36001"]').click();
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
       "36001"
     );
     await expect(page).not.toHaveURL(/\/app\/investigate/);
-    await page.locator('.rank-row[data-fips="36003"]').click();
+    await page.locator('button[data-fips="36003"]').click();
     const listPreview = page.getByTestId("review-county-preview");
     await expect(listPreview).toHaveAttribute("data-fips", "36003");
     const listHref =
@@ -485,7 +516,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-fips",
       "36045"
     );
-    await page.locator('.rank-row[data-fips="36047"]').click();
+    await page.locator('button[data-fips="36047"]').click();
     const preview = page.getByTestId("review-county-preview");
     await expect(preview).toHaveAttribute("data-fips", "36047");
     await expect(preview).toContainText("Jefferson, New York");
@@ -494,7 +525,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     );
     await expect(preview).toHaveAttribute(
       "data-follow-up",
-      "Conduct targeted follow-up"
+      "Review the cited source records."
     );
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
       "href",

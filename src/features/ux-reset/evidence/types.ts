@@ -23,6 +23,12 @@ export type EvidenceTechnicalProvenance = {
   releaseId?: string | null;
   methodologyVersion?: string | null;
   sourceId?: string | null;
+  /** Human-readable evaluation time. Omit to leave the row out of this disclosure. */
+  evaluatedAt?: string | null;
+  /** Raw evaluation timestamp. Omit when this disclosure has no evaluation time. */
+  evaluatedAtRaw?: string | null;
+  /** Configuration identity for the result. Omit to leave the row out of this disclosure. */
+  configurationSha256?: string | null;
 };
 
 /** Human-readable provenance fields shown beside evidence (default + inspect). */
@@ -38,6 +44,11 @@ export type EvidenceProvenanceModel = {
   limitations: string[];
   /** One-paragraph human summary retained for callers that quote provenance. */
   inspectSummary: string;
+  /**
+   * Per-reference provenance lines. Omit when the record has no evidence
+   * references. These are not inferred source families or observation periods.
+   */
+  referenceLines?: readonly string[];
   /** Governed method narrative from `Observation.methodology`. */
   methodLabel?: string | null;
   /** Governed `methodology_version`. Blank values stay unset. */
@@ -55,7 +66,11 @@ export type EvidenceProvenanceModel = {
 export type EvidenceObjectModel = {
   claimLabel: string;
   availability: EvidenceAvailability;
-  reasonCode: EvidenceReasonCode;
+  /**
+   * Governed reason behind availability. Omit when the record has no
+   * value_state and no material limitation to disclose.
+   */
+  reasonCode?: EvidenceReasonCode;
   displayValue: string;
   valueNote?: string | null;
   provenance: EvidenceProvenanceModel;

@@ -1,20 +1,33 @@
 "use client";
 
 import { useQueryStates } from "nuqs";
-import { Suspense, useCallback, useMemo } from "react";
+import { Suspense, useCallback, useLayoutEffect, useMemo } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromReview } from "@/features/ux-reset/ask-atlas/inherited-context";
+import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { resetRouteById } from "@/features/ux-reset/paths";
+import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
+import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
+import {
+  isGovernedReviewResultState,
+  isUnsupportedReviewScope,
+  normalizeReviewCounty,
+  REVIEW_REQUEST_FAILURE_MESSAGE,
+  reviewCandidateFipsForScope,
+  reviewResultPayloadConsistent,
+  scopedReviewCandidates,
+  unsupportedReviewScopeMessage,
+} from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
 import { ReviewScopeSelector } from "@/features/ux-reset/review/review-scope-selector";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
-import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
+import { useStateReview } from "@/features/ux-reset/review/use-state-review";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import {
@@ -30,29 +43,52 @@ function ResetReviewExperienceInner() {
     shallow: true,
   });
   const scope = urlState.scope;
+  const reviewCounty = normalizeReviewCounty(scope, urlState.county);
   const profileQuery = useProfileDefaultJurisdiction();
 
-  const presentationQuery = useReviewPresentation(scope, urlState.dataset);
+  const scopeUnsupported = isUnsupportedReviewScope(scope);
+  const presentationQuery = useReviewPresentation(
+    scope,
+    urlState.dataset,
+    false
+  );
+  const confirmedRelease =
+    presentationQuery.metadata &&
+    (urlState.dataset === null ||
+      presentationQuery.metadata.release_id === urlState.dataset)
+      ? presentationQuery.metadata.release_id
+      : null;
+  const stateReview = useStateReview(
+    scope,
+    scopeUnsupported ? null : confirmedRelease
+  );
 
   const stateOptions = useMemo(
     () =>
       presentationQuery.metadata
-        ? atlasStateOptionsFromMetadata(presentationQuery.metadata.states)
+        ? atlasStateOptionsFromMetadata(
+            presentationQuery.metadata.states
+          ).filter((option) => !isUnsupportedReviewScope(option.code))
         : [],
     [presentationQuery.metadata]
   );
 
   const setScope = useCallback(
     (nextScope: "ALL" | string) => {
-      setUrlState({ scope: nextScope });
+      if (nextScope === scope) {
+        return;
+      }
+      void setUrlState({ scope: nextScope });
     },
-    [setUrlState]
+    [scope, setUrlState]
   );
   const setCounty = useCallback(
-    (fips: string, history: "push" | "replace") => {
-      void setUrlState({ county: fips }, { history });
+    (fips: string | null, history: "push" | "replace") => {
+      const county =
+        fips === null ? null : reviewCandidateFipsForScope(fips, scope);
+      void setUrlState({ county }, { history });
     },
-    [setUrlState]
+    [scope, setUrlState]
   );
 
   useApplyProfileStartingScope({
@@ -65,38 +101,67 @@ function ResetReviewExperienceInner() {
     stateOptions,
   });
 
-  const presentationReady = Boolean(
-    presentationQuery.presentation &&
-    presentationQuery.requestScope === scope &&
-    presentationQuery.metadata
+  const reviewReady = Boolean(
+    !scopeUnsupported &&
+    scope !== "ALL" &&
+    stateReview.review?.requested_state === scope
   );
+  const nationalReady = scope === "ALL" && Boolean(presentationQuery.metadata);
+  const stateName =
+    stateOptions.find((option) => option.code === scope)?.name ?? scope;
+  const reviewRecord = stateReview.review;
+  const candidatesAreFindings = Boolean(
+    reviewRecord &&
+    isGovernedReviewResultState(reviewRecord.result_state) &&
+    reviewResultPayloadConsistent(reviewRecord) &&
+    reviewRecord.result_state === "candidates_found"
+  );
+  const reviewIdentities =
+    reviewReady && reviewRecord && candidatesAreFindings
+      ? scopedReviewCandidates(
+          reviewRecord.review_candidates,
+          scope
+        ).candidates.map((candidate) => ({
+          county: candidate.countyName,
+          fips: candidate.countyFips,
+          state_name: stateName,
+        }))
+      : [];
   usePublishAskAtlasInheritedContext(
     inheritedContextFromReview({
-      rankedCounties:
-        presentationReady && scope !== "ALL"
-          ? (presentationQuery.presentation?.stateCounties ?? [])
-          : [],
-      releaseId: presentationQuery.metadata?.release_id ?? null,
-      releaseReady: presentationReady,
-      requestedCounty: urlState.county,
+      rankedCounties: reviewIdentities,
+      releaseId:
+        scope === "ALL"
+          ? (presentationQuery.metadata?.release_id ?? null)
+          : reviewDatasetId(stateReview.review?.data_release_version),
+      releaseReady: scope === "ALL" ? nationalReady : reviewReady,
+      requestedCounty: reviewCounty,
     })
   );
+  const pictureActive = Boolean(reviewReady && stateReview.review);
+  const clearCounty = urlState.county !== reviewCounty;
+  const clearCompare = scopeUnsupported && urlState.compare.length > 0;
+  useLayoutEffect(() => {
+    if (!(clearCounty || clearCompare)) {
+      return;
+    }
+    void setUrlState(
+      {
+        ...(clearCompare ? { compare: null } : {}),
+        ...(clearCounty ? { county: reviewCounty } : {}),
+      },
+      { history: "replace" }
+    );
+  }, [clearCompare, clearCounty, reviewCounty, setUrlState]);
   const scopeLabel = reviewScopeLabel(scope, stateOptions);
-  const renderedScope = presentationQuery.requestScope ?? scope;
+  const renderedScope = nationalReady ? "ALL" : scope;
   const metadataLoading =
     presentationQuery.isLoading && !presentationQuery.metadata;
-  const scoresLoading =
-    presentationQuery.isLoading && Boolean(presentationQuery.metadata);
   const tierRelease = tier1ReleaseFromMetadata({
     isError: presentationQuery.metadataIsError,
     isLoading: metadataLoading,
     releaseId: presentationQuery.metadata?.release_id,
   });
-  const stateResultsVisible = Boolean(
-    presentationQuery.presentation &&
-    presentationQuery.requestScope === scope &&
-    scope !== "ALL"
-  );
 
   return (
     <>
@@ -135,55 +200,100 @@ function ResetReviewExperienceInner() {
       ) : null}
 
       {presentationQuery.metadataIsError &&
-      urlState.county &&
-      !stateResultsVisible ? (
+      reviewCounty &&
+      !reviewReady &&
+      !scopeUnsupported ? (
         <Tier1SurveillancePriority
-          fips={urlState.county}
+          fips={reviewCounty}
           headingLevel="h2"
           release={tierRelease}
         />
       ) : null}
 
-      {presentationQuery.scoresIsError ? (
+      {scopeUnsupported ? <UnsupportedReviewScopeNotice scope={scope} /> : null}
+      {scopeUnsupported || (!pictureActive && clearCounty) ? (
+        <ReviewUrlContextPublisher
+          clearCompare={scopeUnsupported}
+          dataset={urlState.dataset}
+          period={urlState.period}
+        />
+      ) : null}
+
+      {scope !== "ALL" && !scopeUnsupported && stateReview.isError ? (
         <AtlasStatusMessage tone="error">
-          Review data is temporarily unavailable. Try again later.
+          {REVIEW_REQUEST_FAILURE_MESSAGE}
         </AtlasStatusMessage>
       ) : null}
 
-      {scoresLoading ? (
+      {scope !== "ALL" && !scopeUnsupported && stateReview.isLoading ? (
         <AtlasStatusMessage tone="loading">
-          Loading county scores…
+          Loading review results…
         </AtlasStatusMessage>
       ) : null}
 
-      {presentationQuery.presentation &&
-      presentationQuery.requestScope === scope ? (
+      {reviewReady || nationalReady ? (
         <section
           aria-label="Review scope results"
           className="ux-reset-review-results"
-          data-rendered-scope={presentationQuery.presentation.scope}
+          data-rendered-scope={renderedScope}
           data-testid="review-scope-results"
         >
-          {scope === "ALL" ? (
+          {nationalReady ? (
             <ReviewNationalOrientation
-              rows={presentationQuery.presentation.orientationRows}
+              states={stateOptions}
               onOpenState={(stateCode) => setScope(stateCode)}
             />
-          ) : (
-            <ReviewStatePanel
-              county={urlState.county}
-              mapCounties={presentationQuery.presentation.mapCounties}
+          ) : null}
+          {reviewReady && stateReview.review ? (
+            <ReviewOperatingPicture
+              county={reviewCounty}
               period={urlState.period}
-              rankedCounties={presentationQuery.presentation.stateCounties}
-              releaseId={presentationQuery.metadata!.release_id}
+              review={stateReview.review}
               scopeCode={scope}
+              stateName={stateName}
               tierRelease={tierRelease}
               onCountyChange={setCounty}
             />
-          )}
+          ) : null}
         </section>
       ) : null}
     </>
+  );
+}
+
+function ReviewUrlContextPublisher({
+  clearCompare,
+  dataset,
+  period,
+}: {
+  clearCompare: boolean;
+  dataset: string | null;
+  period: string | null;
+}) {
+  usePublishExploreCommittedNavigation(
+    clearCompare
+      ? {
+          county: null,
+          compare: [],
+          dataset,
+          period,
+        }
+      : {
+          county: null,
+          dataset,
+          period,
+        }
+  );
+  return null;
+}
+
+function UnsupportedReviewScopeNotice({ scope }: { scope: string }) {
+  return (
+    <AtlasStatusMessage tone="empty">
+      <p data-testid="review-scope-unsupported">
+        {unsupportedReviewScopeMessage(scope)}
+      </p>
+    </AtlasStatusMessage>
   );
 }
 
