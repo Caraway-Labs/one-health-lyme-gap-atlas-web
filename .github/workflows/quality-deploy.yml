@@ -107,6 +107,7 @@ jobs:
           path: |
             test-results/playwright-junit.xml
             playwright-report/
+            test-results/playwright/
           if-no-files-found: warn
 
       - name: Upload Playwright failure traces
