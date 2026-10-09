@@ -4595,8 +4595,9 @@ select:focus-visible {
 
 .front-porch {
   min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
+  background: #f6f7f2;
+  color: #133841;
+  font-family: var(--font-front-porch-body), Arial, sans-serif;
 }
 .front-porch-skip {
   position: absolute;
@@ -4625,13 +4626,14 @@ select:focus-visible {
   border-radius: var(--radius);
 }
 .front-porch-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
   display: flex;
-  min-height: var(--shell-utility-height);
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-3) var(--layout-inline);
-  background: var(--navy);
+  padding: 25px min(6vw, 90px);
   color: var(--white);
 }
 .front-porch-brand,
@@ -4641,44 +4643,84 @@ select:focus-visible {
   text-decoration: none;
 }
 .front-porch-brand {
-  letter-spacing: -0.02em;
+  font-family: var(--font-front-porch-hero), Arial, sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+.front-porch-brand span {
+  margin-right: 10px;
+  color: #b4ddd0;
+}
+.front-porch-navlinks {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.front-porch-navlinks a {
+  color: white;
+  text-decoration: none;
 }
 .front-porch-sign-in {
-  font-size: var(--type-small-size);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+  padding: 11px 19px;
+  border: 1px solid #93c4b8;
+  border-radius: 7px;
 }
-.hero.front-porch-hero::after {
-  content: none;
+.front-porch-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 720px;
+  overflow: hidden;
+  background: radial-gradient(
+    circle at 78% 48%,
+    #28616a 0%,
+    #12454d 35%,
+    #082d37 78%
+  );
+  color: white;
+  line-height: normal;
 }
 .front-porch-hero-inner {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(16rem, 0.92fr);
-  gap: clamp(1.5rem, 4vw, 4rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4vw;
   align-items: center;
-  max-width: var(--layout-content-max);
-  margin: 0 auto;
-  padding: var(--layout-hero-block) var(--layout-inline);
+  width: min(1180px, 88vw);
+  margin: auto;
+  padding-top: 65px;
 }
-.hero.front-porch-hero h1 {
-  max-width: 16ch;
-  margin: 0 0 var(--space-5);
+.front-porch-hero h1 {
+  max-width: 690px;
+  margin: 0 0 25px;
   color: var(--white);
   font-family: var(--font-front-porch-hero), sans-serif;
   font-style: normal;
   font-weight: 500;
   font-synthesis: none;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-size: clamp(40px, 4.45vw, 66px);
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+}
+.front-porch-eyebrow {
+  color: #72bda9;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 24px;
 }
 .front-porch-support {
-  max-width: 42rem;
-  margin: 0;
-  color: var(--white);
-  font-size: 1.12rem;
-  line-height: 1.7;
+  max-width: 510px;
+  margin: 0 0 32px;
+  color: #c9dcde;
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.65;
 }
 .front-porch-actions {
   display: flex;
@@ -4690,15 +4732,48 @@ select:focus-visible {
   min-height: var(--control-height);
   padding-inline: var(--space-4);
 }
+.front-porch-hero .front-porch-actions {
+  margin-top: 0;
+}
+.front-porch-hero .front-porch-cta {
+  height: auto;
+  min-height: 0;
+  padding: 15px 23px;
+  border: 0;
+  border-radius: 7px;
+  background: #bde2d3;
+  color: #0b3640;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: normal;
+}
+.front-porch-fine {
+  margin: 16px 0 32px;
+  color: #afc7c8;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.front-porch-scroll {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #b5d2d2;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+}
 .front-porch-figure {
+  position: relative;
   display: grid;
-  justify-items: center;
-  gap: var(--space-5);
+  height: 480px;
+  place-items: center;
   margin: 0;
 }
 .front-porch-image-frame {
   display: grid;
-  width: min(100%, 26rem);
+  width: min(100%, 510px);
   aspect-ratio: 1280 / 1229;
   place-items: center;
 }
@@ -4706,27 +4781,57 @@ select:focus-visible {
   width: 100%;
   height: auto;
   object-fit: contain;
+  transform: translateY(-3px);
+  filter: drop-shadow(0 18px 32px rgba(3, 25, 30, 0.22));
 }
 .front-porch-callout {
+  position: absolute;
+  right: 0;
+  bottom: 65px;
   margin: 0;
-  padding: var(--space-3) var(--space-5);
-  border: 1px solid color-mix(in srgb, var(--white) 32%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--white) 12%, transparent);
-  color: var(--white);
-  font-size: var(--type-small-size);
-  font-weight: 650;
-  line-height: 1.4;
+  padding: 14px 19px;
+  border: 1px solid rgba(151, 207, 198, 0.66);
+  border-radius: 7px;
+  background: rgba(5, 38, 45, 0.76);
+  color: #e3f2ec;
+  font-size: 12px;
+  line-height: normal;
+  box-shadow: 0 8px 24px rgba(2, 20, 25, 0.18);
   text-align: center;
   backdrop-filter: blur(8px);
 }
 .front-porch-story {
   display: grid;
   gap: var(--space-12);
-  max-width: 48rem;
   margin: 0 auto;
-  padding: var(--layout-section-block) var(--layout-inline)
-    var(--layout-section-block);
+  padding-bottom: var(--layout-section-block);
+}
+.front-porch-beat {
+  width: min(48rem, 100%);
+  margin-inline: auto;
+  padding-inline: var(--layout-inline);
+}
+.front-porch-beat:first-child {
+  width: 100%;
+  padding: 90px max(24px, 7vw);
+  text-align: center;
+  background: white;
+}
+.front-porch-beat:first-child h2 {
+  max-width: 850px;
+  margin: 0 auto 20px;
+  font-family: var(--font-front-porch-hero), Arial, sans-serif;
+  font-size: clamp(30px, 3.4vw, 48px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: normal;
+}
+.front-porch-beat:first-child p {
+  max-width: 740px;
+  margin: auto;
+  color: #587078;
+  line-height: 1.65;
+  font-size: 18px;
 }
 .front-porch-beat h2 {
   margin: 0 0 var(--space-4);
@@ -4796,17 +4901,62 @@ select:focus-visible {
 .front-porch-close a:focus-visible {
   outline-color: var(--white);
 }
-@media (max-width: 800px) {
+@media (max-width: 850px) {
+  .front-porch-bar {
+    padding: 22px 24px;
+    gap: 12px;
+  }
+  .front-porch-navlinks a:not(.front-porch-sign-in) {
+    display: none;
+  }
+  .front-porch-hero {
+    min-height: 770px;
+  }
   .front-porch-hero-inner {
     grid-template-columns: 1fr;
+    padding-top: 115px;
+    padding-bottom: 70px;
+  }
+  .front-porch-figure {
+    height: 340px;
   }
   .front-porch-image-frame {
-    width: min(100%, 18rem);
+    width: min(100%, 300px);
+  }
+  .front-porch-image-frame img {
+    transform: none;
+  }
+  .front-porch-callout {
+    right: 4%;
+    bottom: 8px;
+    max-width: 96%;
+  }
+  .front-porch-scroll {
+    display: none;
   }
   .front-porch-close {
     padding: var(--space-6);
   }
-  .hero.front-porch-hero h1 {
+  .front-porch-hero h1 {
     max-width: none;
+    font-size: clamp(38px, 8vw, 54px);
+  }
+}
+@media (max-width: 360px) {
+  .front-porch-callout {
+    padding-inline: 12px;
+  }
+  .front-porch-bar {
+    padding-inline: 16px;
+  }
+  .front-porch-brand {
+    font-size: 18px;
+  }
+  .front-porch-brand span {
+    margin-right: 6px;
+  }
+  .front-porch-sign-in {
+    padding-inline: 10px;
+    white-space: nowrap;
   }
 }
