@@ -18,7 +18,7 @@ export const FRONT_PORCH_EXPLORE_LABEL = "Explore counties like this in Atlas";
 export const FRONT_PORCH_EXPLORE_SUPPORT =
   "Built for public-health epidemiologists";
 
-/** Owner-approved transparent ecosystem illustration (Web #478 / #475). */
+/** Owner-approved transparent ecosystem illustration (Web issues 478 / 475). */
 export const FRONT_PORCH_HERO_IMAGE = {
   approved: true,
   src: "/images/one-health-ecosystem.png",
