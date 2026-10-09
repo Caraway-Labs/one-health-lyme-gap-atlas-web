@@ -33,10 +33,14 @@ function metadataErrorMessage(error: unknown, requestedDataset: string | null) {
   return "Unable to load governed release metadata for Review.";
 }
 
-/** Loads governed county scores and projects them for the active Review scope. */
+/**
+ * Loads governed release metadata. County scores stay optional so Review can
+ * avoid a browser ranking when the state review result is authoritative.
+ */
 export function useReviewPresentation(
   scope: ReviewScope,
-  requestedDataset: string | null
+  requestedDataset: string | null,
+  loadScores = true
 ) {
   const metadataQuery = useQuery({
     queryFn: async ({ signal }) => {
@@ -54,11 +58,20 @@ export function useReviewPresentation(
           null
         );
       }
-      return validateApiResponse(
+      const metadata = validateApiResponse(
         "Atlas metadata",
         MetadataV1AtlasMetadataGetResponse,
         response.data
       );
+      if (requestedDataset && metadata.release_id !== requestedDataset) {
+        throw new AtlasApiError(
+          `Release "${requestedDataset}" is not available.`,
+          "/v1/atlas/metadata",
+          response.status,
+          null
+        );
+      }
+      return metadata;
     },
     queryKey: ["ux-reset-review-metadata", requestedDataset],
   });
@@ -66,7 +79,7 @@ export function useReviewPresentation(
   const releaseId = metadataQuery.data?.release_id;
 
   const scoresQuery = useQuery({
-    enabled: Boolean(releaseId),
+    enabled: loadScores && Boolean(releaseId),
     queryFn: async ({ signal }) =>
       validateApiResponse(
         "Atlas scores",
@@ -82,13 +95,14 @@ export function useReviewPresentation(
   });
 
   const presentation = useMemo(() => {
-    if (!scoresQuery.data) {
+    if (!(loadScores && scoresQuery.data)) {
       return null;
     }
     return buildReviewScopePresentation(scope, scoresQuery.data.counties);
-  }, [scope, scoresQuery.data]);
+  }, [loadScores, scope, scoresQuery.data]);
 
-  const scoresQueryEnabled = Boolean(releaseId) && !metadataQuery.isError;
+  const scoresQueryEnabled =
+    loadScores && Boolean(releaseId) && !metadataQuery.isError;
   const isLoading =
     metadataQuery.isPending || (scoresQueryEnabled && scoresQuery.isPending);
   const metadataIsError = metadataQuery.isError;

@@ -348,7 +348,7 @@ describe("Review county preview", () => {
       searchParams: new URLSearchParams(
         "scope=CO&county=08001&compare=08001,08013&dataset=alpha-2026"
       ),
-      selectedFips: "36001",
+      selectedFips: "08031",
     });
     const url = new URL(href, "http://localhost");
     expect({
@@ -357,8 +357,49 @@ describe("Review county preview", () => {
       returnTo: url.searchParams.get("return"),
     }).toStrictEqual({
       compare: "08001,08013",
-      county: "36001",
+      county: "08031",
       returnTo: "review",
+    });
+  });
+
+  it("drops a candidate county that is not a five-digit FIPS in the review scope", () => {
+    const shared = {
+      period: null,
+      releaseId: "alpha-2026",
+      scopeCode: "CO",
+    };
+    const investigate = buildReviewInvestigateHandoff({
+      ...shared,
+      searchParams: new URLSearchParams(
+        "scope=CO&county=36001&dataset=alpha-2026"
+      ),
+      selectedFips: "36001",
+    });
+    const malformed = buildReviewInvestigateHandoff({
+      ...shared,
+      searchParams: new URLSearchParams(
+        "scope=CO&county=08001&dataset=alpha-2026"
+      ),
+      selectedFips: "0800",
+    });
+    const trimmed = buildReviewCompareHandoff({
+      ...shared,
+      searchParams: new URLSearchParams("scope=CO&county=36001"),
+      selectedFips: " 08001 ",
+    });
+    const investigateUrl = new URL(investigate.href, "http://localhost");
+    const malformedUrl = new URL(malformed.href, "http://localhost");
+    const trimmedUrl = new URL(trimmed, "http://localhost");
+    expect({
+      investigateCounty: investigateUrl.searchParams.get("county"),
+      malformedCounty: malformedUrl.searchParams.get("county"),
+      trimmedCounty: trimmedUrl.searchParams.get("county"),
+      trimmedScope: trimmedUrl.searchParams.get("scope"),
+    }).toStrictEqual({
+      investigateCounty: null,
+      malformedCounty: null,
+      trimmedCounty: "08001",
+      trimmedScope: "CO",
     });
   });
 

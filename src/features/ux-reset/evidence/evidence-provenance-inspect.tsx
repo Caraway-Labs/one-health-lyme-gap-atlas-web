@@ -2,6 +2,10 @@
 
 import type { ContentSurface } from "@/lib/atlas-analytics";
 import { trackProvenanceOpened } from "@/lib/atlas-analytics";
+import {
+  parseAtlasDateTime,
+  parseConfigurationSha256,
+} from "@/lib/atlas-evidence-metadata";
 import { getDocsPageHref } from "@/lib/docs-config";
 import { cn } from "@/lib/utils";
 
@@ -19,24 +23,77 @@ import type {
 import "./evidence-contract.css";
 
 const EVIDENCE_DOCS_HREF = getDocsPageHref("evidence-and-uncertainty");
+const UNAVAILABLE = "Unavailable";
+
+function evaluatedAtText(
+  display: string | null | undefined,
+  raw: string | null | undefined
+): string | null {
+  if (display === undefined && raw === undefined) {
+    return null;
+  }
+  const readable = display?.trim() || UNAVAILABLE;
+  const timestamp = parseAtlasDateTime(raw);
+  if (!timestamp || readable === UNAVAILABLE) {
+    return UNAVAILABLE;
+  }
+  if (timestamp === readable) {
+    return readable;
+  }
+  return `${readable} (${timestamp})`;
+}
+
+function configurationText(value: string | null | undefined): string | null {
+  if (value === undefined) {
+    return null;
+  }
+  return parseConfigurationSha256(value) ?? UNAVAILABLE;
+}
 
 type EvidenceProvenanceInspectProps = {
-  availability: EvidenceAvailability;
   className?: string;
   contentSurface?: ContentSurface;
   provenance: EvidenceProvenanceModel;
-  reasonCode: EvidenceReasonCode;
-};
+  /** Overrides the evidence-state row label. Shared evidence keeps “Evidence state”. */
+  stateHeading?: string;
+} & (
+  | {
+      availability: EvidenceAvailability;
+      reasonCode: EvidenceReasonCode;
+      stateLabel?: undefined;
+    }
+  | {
+      availability?: undefined;
+      reasonCode?: undefined;
+      stateLabel: string;
+    }
+);
 
-export function EvidenceProvenanceInspect({
-  availability,
-  className,
-  contentSurface = "source_card",
-  provenance,
-  reasonCode,
-}: EvidenceProvenanceInspectProps) {
+function evidenceStateText(props: EvidenceProvenanceInspectProps): string {
+  if (props.stateLabel !== undefined) {
+    return props.stateLabel;
+  }
+  return evidenceInspectState(props.availability, props.reasonCode);
+}
+
+export function EvidenceProvenanceInspect(
+  props: EvidenceProvenanceInspectProps
+) {
+  const { className, contentSurface = "source_card", provenance } = props;
   const technical = provenance.technical;
+  const evaluatedAt = technical
+    ? evaluatedAtText(technical.evaluatedAt, technical.evaluatedAtRaw)
+    : null;
+  const configuration = technical
+    ? configurationText(technical.configurationSha256)
+    : null;
+  const evaluatedAtRaw = parseAtlasDateTime(technical?.evaluatedAtRaw);
+  const evaluatedAtIsTimestamp =
+    evaluatedAt !== null &&
+    evaluatedAt !== UNAVAILABLE &&
+    evaluatedAtRaw !== null;
   const sourceUrl = provenance.sourceUrl?.trim() || null;
+  const referenceLines = provenance.referenceLines ?? [];
 
   return (
     <details
@@ -80,10 +137,20 @@ export function EvidenceProvenanceInspect({
             <dd>{evidenceInspectMethod(provenance)}</dd>
           </div>
           <div data-testid="evidence-provenance-state">
-            <dt>Evidence state</dt>
-            <dd>{evidenceInspectState(availability, reasonCode)}</dd>
+            <dt>{props.stateHeading ?? "Evidence state"}</dt>
+            <dd>{evidenceStateText(props)}</dd>
           </div>
         </dl>
+        {referenceLines.length > 0 ? (
+          <div data-testid="evidence-provenance-references">
+            <p className="type-small">Evidence references</p>
+            <ul className="ux-reset-evidence-limitations">
+              {referenceLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div data-testid="evidence-provenance-limitations">
           <p className="type-small">Governed limitations</p>
           {provenance.limitations.length > 0 ? (
@@ -122,6 +189,24 @@ export function EvidenceProvenanceInspect({
                 <div>
                   <dt>Methodology version</dt>
                   <dd>{technical.methodologyVersion}</dd>
+                </div>
+              ) : null}
+              {evaluatedAt ? (
+                <div>
+                  <dt>Evaluated at</dt>
+                  <dd>
+                    {evaluatedAtIsTimestamp && evaluatedAtRaw ? (
+                      <time dateTime={evaluatedAtRaw}>{evaluatedAt}</time>
+                    ) : (
+                      evaluatedAt
+                    )}
+                  </dd>
+                </div>
+              ) : null}
+              {configuration ? (
+                <div>
+                  <dt>Configuration</dt>
+                  <dd>{configuration}</dd>
                 </div>
               ) : null}
             </dl>

@@ -5,13 +5,16 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetDestinationHref } from "@/features/ux-reset";
+import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
@@ -47,11 +50,43 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
 }));
 
 import {
+  buildStateReview,
+  defaultReviewForState,
+  reviewCandidate,
+} from "./fixtures/review-operating-picture-fixtures";
+import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "./fixtures/review-scope-api-fixtures";
 
 let lastMapScoreFips = "";
+
+function defaultMetadataResponse() {
+  return {
+    data: {
+      ...reviewScopeMetadataFixture,
+      release_id:
+        reviewReleaseControls.metadataReleaseId ??
+        reviewScopeMetadataFixture.release_id,
+    },
+    status: reviewReleaseControls.metadataStatus,
+  };
+}
+
+function defaultStateReviewResponse(
+  state: string,
+  params?: { dataset_version?: string }
+) {
+  const review = defaultReviewForState(state);
+  return {
+    data: {
+      ...review,
+      data_release_version:
+        params?.dataset_version ?? review.data_release_version,
+    },
+    status: 200 as const,
+  };
+}
 
 vi.mock(import("@/lib/county-geography"), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -103,21 +138,24 @@ vi.mock(import("@/generated/atlas"), () => ({
   })),
   metadataV1AtlasMetadataGet: vi.fn<
     () => Promise<{ data: typeof reviewScopeMetadataFixture; status: number }>
-  >(async () => ({
-    data: {
-      ...reviewScopeMetadataFixture,
-      release_id:
-        reviewReleaseControls.metadataReleaseId ??
-        reviewScopeMetadataFixture.release_id,
-    },
-    status: reviewReleaseControls.metadataStatus,
-  })),
+  >(async () => defaultMetadataResponse()),
   scoresV1AtlasScoresGet: vi.fn<
     () => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
   >(async () => ({
     data: reviewScopeScoresFixture,
     status: 200,
   })),
+  stateReviewV1StatesStateReviewGet: vi.fn<
+    (
+      state: string,
+      params?: { dataset_version?: string }
+    ) => Promise<{
+      data: ReturnType<typeof defaultReviewForState>;
+      status: number;
+    }>
+  >(async (state: string, params?: { dataset_version?: string }) =>
+    defaultStateReviewResponse(state, params)
+  ),
   countyTier1SurveillancePriorityGet: vi.fn<
     typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
   >(async (fips) => {
@@ -212,6 +250,1090 @@ describe("Reset Review scope UI", () => {
     vi.unstubAllGlobals();
   });
 
+  it("does not offer Alaska or Hawaii as Review scopes", async () => {
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    metadata.mockResolvedValue({
+      data: {
+        ...reviewScopeMetadataFixture,
+        states: [
+          { code: "CO", name: "Colorado" },
+          { code: "AK", name: "Alaska" },
+          { code: "HI", name: "Hawaii" },
+        ],
+      },
+      status: 200,
+    });
+    review.mockClear();
+    const restoreMetadata = () => {
+      metadata.mockImplementation(async () => defaultMetadataResponse());
+    };
+    const read = async (search: string) => {
+      const view = renderReview(search);
+      await waitFor(() => {
+        if (search.includes("scope=ALL")) {
+          if (!screen.queryByRole("button", { name: "CO, Colorado" })) {
+            throw new Error("lower 48 scope was not offered");
+          }
+          return;
+        }
+        if (!screen.queryByTestId("review-scope-unsupported")) {
+          throw new Error("unsupported scope message did not render");
+        }
+      });
+      const snapshot = {
+        colorado: Boolean(
+          screen.queryByRole("button", { name: "CO, Colorado" })
+        ),
+        map: Boolean(screen.queryByTestId("mock-atlas-map")),
+        offeredAlaska: Boolean(
+          screen.queryByRole("button", { name: "AK, Alaska" })
+        ),
+        offeredHawaii: Boolean(
+          screen.queryByRole("button", { name: "HI, Hawaii" })
+        ),
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        unsupported:
+          screen.queryByTestId("review-scope-unsupported")?.textContent ?? "",
+        unsupportedAlaska: Boolean(
+          screen.queryByRole("button", {
+            name: "AK, not supported — lower 48 only",
+          })
+        ),
+        unsupportedHawaii: Boolean(
+          screen.queryByRole("button", {
+            name: "HI, not supported — lower 48 only",
+          })
+        ),
+      };
+      view.unmount();
+      return snapshot;
+    };
+    let alaska: Awaited<ReturnType<typeof read>> | undefined;
+    let hawaii: Awaited<ReturnType<typeof read>> | undefined;
+    let national: Awaited<ReturnType<typeof read>> | undefined;
+    let callsAfterAlaska = 0;
+    let callsAfterHawaii = 0;
+    try {
+      alaska = await read("?scope=AK");
+      callsAfterAlaska = review.mock.calls.length;
+      hawaii = await read("?scope=HI");
+      callsAfterHawaii = review.mock.calls.length;
+      national = await read("?scope=ALL");
+    } finally {
+      restoreMetadata();
+    }
+    expect({
+      alaska,
+      callsAfterAlaska,
+      callsAfterHawaii,
+      hawaii,
+      national,
+    }).toStrictEqual({
+      alaska: {
+        colorado: false,
+        map: false,
+        offeredAlaska: false,
+        offeredHawaii: false,
+        picture: false,
+        unsupported: "Alaska is not supported — lower 48 only.",
+        unsupportedAlaska: false,
+        unsupportedHawaii: false,
+      },
+      callsAfterAlaska: 0,
+      callsAfterHawaii: 0,
+      hawaii: {
+        colorado: false,
+        map: false,
+        offeredAlaska: false,
+        offeredHawaii: false,
+        picture: false,
+        unsupported: "Hawaii is not supported — lower 48 only.",
+        unsupportedAlaska: false,
+        unsupportedHawaii: false,
+      },
+      national: {
+        colorado: true,
+        map: false,
+        offeredAlaska: false,
+        offeredHawaii: false,
+        picture: false,
+        unsupported: "",
+        unsupportedAlaska: true,
+        unsupportedHawaii: true,
+      },
+    });
+  });
+
+  it("clears a stale county when the review scope is not supported", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockClear();
+    const urlUpdates: string[] = [];
+    const search =
+      "scope=AK&county=08001&dataset=alpha-2026&period=2023-01-01&compare=08001,08013";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter
+          hasMemory
+          onUrlUpdate={({ queryString }) => urlUpdates.push(queryString)}
+          searchParams={`?${search}`}
+        >
+          <ResetProfessionalShell>
+            <ResetReviewExperience />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("review-scope-unsupported").textContent).toBe(
+        "Alaska is not supported — lower 48 only."
+      );
+    });
+    await waitFor(() => {
+      const latest = urlUpdates.at(-1) ?? "";
+      if (latest.includes("county=") || !latest.includes("scope=AK")) {
+        throw new Error(latest || "county was not cleared");
+      }
+    });
+    const navigation = screen.getByRole("navigation", {
+      name: "Professional workspace",
+    });
+    const href = (label: string) =>
+      navigation
+        .querySelector(`a[aria-label="${label}"]`)
+        ?.getAttribute("href") ?? "";
+    const shell = {
+      compare: href("Compare"),
+      explore: href("Explore"),
+      investigate: href("Investigate"),
+    };
+    const presence = {
+      map: Boolean(screen.queryByTestId("mock-atlas-map")),
+      picture: Boolean(screen.queryByTestId("review-state-panel")),
+    };
+    view.unmount();
+    const cleared = urlUpdates.at(-1) ?? "";
+    expect({
+      clearedCounty: cleared.includes("county="),
+      clearedScope: cleared.includes("scope=AK"),
+      map: presence.map,
+      picture: presence.picture,
+      reviewCalls: review.mock.calls.length,
+      shellCompare:
+        shell.compare.includes("county=") || shell.compare.includes("compare="),
+      shellExplore: shell.explore,
+      shellInvestigate: shell.investigate,
+    }).toStrictEqual({
+      clearedCounty: false,
+      clearedScope: true,
+      map: false,
+      picture: false,
+      reviewCalls: 0,
+      shellCompare: false,
+      shellExplore:
+        "/app/explore?scope=AK&dataset=alpha-2026&period=2023-01-01",
+      shellInvestigate:
+        "/app/investigate?scope=AK&dataset=alpha-2026&period=2023-01-01",
+    });
+  });
+
+  it("clears a mismatched county for scopes outside the lower 48", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const codes = ["PR", "ZZ", "GU"] as const;
+    const snapshots: {
+      clearedCounty: boolean;
+      clearedScope: boolean;
+      map: boolean;
+      message: string | null;
+      picture: boolean;
+      reviewCalls: number;
+      shellCompare: boolean;
+      shellExplore: string;
+      shellInvestigate: string;
+    }[] = [];
+    for (const code of codes) {
+      review.mockClear();
+      const urlUpdates: string[] = [];
+      const search = `scope=${code}&county=08001&dataset=alpha-2026&period=2023-01-01&compare=08001,08013`;
+      mockedSearch = search;
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      const view = render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => urlUpdates.push(queryString)}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId("review-scope-unsupported").textContent).toBe(
+          `${code} is not supported — lower 48 only.`
+        );
+      });
+      await waitFor(() => {
+        const latest = urlUpdates.at(-1) ?? "";
+        if (latest.includes("county=") || !latest.includes(`scope=${code}`)) {
+          throw new Error(latest || "county was not cleared");
+        }
+      });
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const cleared = urlUpdates.at(-1) ?? "";
+      snapshots.push({
+        clearedCounty: cleared.includes("county="),
+        clearedScope: cleared.includes(`scope=${code}`),
+        map: Boolean(screen.queryByTestId("mock-atlas-map")),
+        message: screen.getByTestId("review-scope-unsupported").textContent,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        reviewCalls: review.mock.calls.length,
+        shellCompare:
+          href("Compare").includes("county=") ||
+          href("Compare").includes("compare="),
+        shellExplore: href("Explore"),
+        shellInvestigate: href("Investigate"),
+      });
+      view.unmount();
+    }
+    expect(snapshots).toStrictEqual(
+      codes.map((code) => ({
+        clearedCounty: false,
+        clearedScope: true,
+        map: false,
+        message: `${code} is not supported — lower 48 only.`,
+        picture: false,
+        reviewCalls: 0,
+        shellCompare: false,
+        shellExplore: `/app/explore?scope=${code}&dataset=alpha-2026&period=2023-01-01`,
+        shellInvestigate: `/app/investigate?scope=${code}&dataset=alpha-2026&period=2023-01-01`,
+      }))
+    );
+  });
+
+  it("clears the prior county when the next state's review does not succeed", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    let mode: "fail" | "hold" | "ok" = "ok";
+    const search = "scope=CO&county=08001&dataset=alpha-2026&period=2023-01-01";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string },
+      init?: { signal?: AbortSignal }
+    ) => {
+      if (mode === "fail") {
+        return Promise.reject(new Error("service unavailable"));
+      }
+      if (mode === "hold") {
+        const held = Promise.withResolvers<never>();
+        const abort = () => {
+          held.reject(
+            new DOMException("The operation was aborted.", "AbortError")
+          );
+        };
+        if (init?.signal?.aborted) {
+          abort();
+        } else {
+          init?.signal?.addEventListener("abort", abort, { once: true });
+        }
+        return held.promise;
+      }
+      return Promise.resolve(defaultStateReviewResponse(state, params));
+    }) as never);
+    function ReviewShellHarness() {
+      const [, setSearchTick] = useState(0);
+      return (
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => {
+              mockedSearch = queryString.replace(/^\?/, "");
+              setSearchTick((tick) => tick + 1);
+            }}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+    }
+    const view = render(<ReviewShellHarness />);
+    const shellCounty = (label: string) => {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href =
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const params = new URL(href, "http://localhost").searchParams;
+      return {
+        county: params.get("county"),
+        href,
+        scope: params.get("scope"),
+      };
+    };
+    try {
+      await waitFor(() => {
+        const selected = screen
+          .getAllByTestId("review-candidate")
+          .find((entry) => entry.getAttribute("aria-current") === "true");
+        expect(selected?.dataset.fips).toBe("08001");
+      });
+      expect(shellCounty("Investigate").county).toBe("08001");
+      mode = "hold";
+      fireEvent.click(screen.getByTestId("review-scope-select"));
+      const newYork = await screen.findByRole("option", {
+        name: "New York (NY)",
+      });
+      fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+      fireEvent.click(newYork);
+      await waitFor(() => {
+        if (!screen.queryByText("Loading review results…")) {
+          throw new Error("review did not stay loading");
+        }
+        const investigate = shellCounty("Investigate");
+        if (
+          investigate.scope !== "NY" ||
+          investigate.county !== null ||
+          mockedSearch.includes("county=")
+        ) {
+          throw new Error(`${mockedSearch} ${investigate.href}`);
+        }
+      });
+      const whileLoading = {
+        action: shellCounty("Action").county,
+        compare: shellCounty("Compare").county,
+        explore: shellCounty("Explore").county,
+        investigate: shellCounty("Investigate").county,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: shellCounty("Investigate").scope,
+        urlCounty: mockedSearch.includes("county="),
+      };
+      await client.cancelQueries({ queryKey: ["ux-reset-state-review"] });
+      await waitFor(() => {
+        const investigate = shellCounty("Investigate");
+        if (
+          investigate.scope !== "NY" ||
+          investigate.county !== null ||
+          investigate.href.includes("08001") ||
+          mockedSearch.includes("08001")
+        ) {
+          throw new Error(`${mockedSearch} ${investigate.href}`);
+        }
+      });
+      const whileAborted = {
+        county: shellCounty("Investigate").county,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: shellCounty("Investigate").scope,
+        url: mockedSearch,
+      };
+      mode = "fail";
+      await client.invalidateQueries({ queryKey: ["ux-reset-state-review"] });
+      await waitFor(() => {
+        if (!screen.queryByText(/temporarily unavailable/)) {
+          throw new Error("review error was not shown");
+        }
+        const investigate = shellCounty("Investigate");
+        if (investigate.county !== null || mockedSearch.includes("county=")) {
+          throw new Error(`${mockedSearch} ${investigate.href}`);
+        }
+      });
+      const whileFailed = {
+        action: shellCounty("Action").county,
+        compare: shellCounty("Compare").county,
+        explore: shellCounty("Explore").county,
+        investigate: shellCounty("Investigate").county,
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: shellCounty("Investigate").scope,
+        urlCounty: mockedSearch.includes("county="),
+      };
+      view.unmount();
+      expect({ whileAborted, whileFailed, whileLoading }).toStrictEqual({
+        whileAborted: {
+          county: null,
+          picture: false,
+          scope: "NY",
+          url: expect.not.stringContaining("08001"),
+        },
+        whileFailed: {
+          action: null,
+          compare: null,
+          explore: null,
+          investigate: null,
+          picture: false,
+          scope: "NY",
+          urlCounty: false,
+        },
+        whileLoading: {
+          action: null,
+          compare: null,
+          explore: null,
+          investigate: null,
+          picture: false,
+          scope: "NY",
+          urlCounty: false,
+        },
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
+  it("normalizes mismatched counties on direct loads and scope changes before shell links publish", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    let mode: "empty" | "fail" | "hold" | "ok" = "ok";
+    const origin =
+      "scope=CO&county=08001&compare=08001,08013&dataset=alpha-2026&period=2023-01-01";
+    const mismatched =
+      "scope=NY&county=08001&compare=08001,08013&dataset=alpha-2026&period=2023-01-01";
+    const matched =
+      "scope=NY&county=36001&compare=36001,36003&dataset=alpha-2026&period=2023-01-01";
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string },
+      init?: { signal?: AbortSignal }
+    ) => {
+      if (mode === "fail") {
+        return Promise.reject(new Error("service unavailable"));
+      }
+      if (mode === "empty") {
+        return Promise.resolve({
+          data: buildStateReview({
+            resultState: "none_stand_out",
+            state,
+          }),
+          status: 200,
+        });
+      }
+      if (mode === "hold") {
+        const held = Promise.withResolvers<never>();
+        const abort = () => {
+          held.reject(
+            new DOMException("The operation was aborted.", "AbortError")
+          );
+        };
+        if (init?.signal?.aborted) {
+          abort();
+        } else {
+          init?.signal?.addEventListener("abort", abort, { once: true });
+        }
+        return held.promise;
+      }
+      return Promise.resolve(defaultStateReviewResponse(state, params));
+    }) as never);
+
+    function shellCounty() {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href =
+        navigation
+          .querySelector('a[aria-label="Investigate"]')
+          ?.getAttribute("href") ?? "";
+      const params = new URL(href, "http://localhost").searchParams;
+      return {
+        compare: params.get("compare"),
+        county: params.get("county"),
+        picture: Boolean(screen.queryByTestId("review-state-panel")),
+        scope: params.get("scope"),
+        urlCompare: mockedSearch.includes("compare="),
+        urlCounty: mockedSearch.includes("county="),
+      };
+    }
+
+    function ScopeJump({ scope }: { scope: string }) {
+      const [, setUrlState] = useQueryStates(reviewSearchParams, {
+        history: "push",
+      });
+      return (
+        <button
+          data-testid="jump-review-scope"
+          type="button"
+          onClick={() => {
+            void setUrlState({ scope });
+          }}
+        >
+          Jump scope
+        </button>
+      );
+    }
+
+    function ReviewEntry({
+      client,
+      jumpTo,
+      search,
+    }: {
+      client: QueryClient;
+      jumpTo?: string;
+      search: string;
+    }) {
+      const [, setSearchTick] = useState(0);
+      return (
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => {
+              mockedSearch = queryString.replace(/^\?/, "");
+              setSearchTick((tick) => tick + 1);
+            }}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+            {jumpTo ? <ScopeJump scope={jumpTo} /> : null}
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+    }
+
+    function mount(search: string, jumpTo?: string) {
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      mockedSearch = search;
+      const view = render(
+        <ReviewEntry client={client} jumpTo={jumpTo} search={search} />
+      );
+      return { client, view };
+    }
+
+    async function until(ready: () => boolean) {
+      await waitFor(() => {
+        if (!ready()) {
+          throw new Error(mockedSearch);
+        }
+      });
+      return shellCounty();
+    }
+
+    async function changeScope(nextMode: typeof mode, jumpTo?: string) {
+      mode = "ok";
+      const { client, view } = mount(origin, jumpTo);
+      try {
+        await until(() => {
+          const selected = screen
+            .queryAllByTestId("review-candidate")
+            .find((entry) => entry.getAttribute("aria-current") === "true");
+          return selected?.dataset.fips === "08001";
+        });
+        mode = nextMode;
+        if (jumpTo) {
+          fireEvent.click(screen.getByTestId("jump-review-scope"));
+        } else {
+          fireEvent.click(screen.getByTestId("review-scope-select"));
+          const newYork = await screen.findByRole("option", {
+            name: "New York (NY)",
+          });
+          fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+          fireEvent.click(newYork);
+        }
+        return { client, view };
+      } catch (error) {
+        view.unmount();
+        throw error;
+      }
+    }
+
+    try {
+      mode = "hold";
+      const loadingView = mount(mismatched);
+      const directLoading = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().urlCompare === true &&
+          Boolean(screen.queryByText("Loading review results…"))
+      );
+      loadingView.view.unmount();
+      const matchedLoadingView = mount(matched);
+      const directMatchedLoading = await until(
+        () =>
+          shellCounty().county === "36001" &&
+          shellCounty().urlCounty === true &&
+          Boolean(screen.queryByText("Loading review results…"))
+      );
+      matchedLoadingView.view.unmount();
+
+      const abortDirect = mount(mismatched);
+      await until(() => Boolean(screen.queryByText("Loading review results…")));
+      await abortDirect.client.cancelQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const directAborted = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().picture === false
+      );
+      abortDirect.view.unmount();
+
+      mode = "fail";
+      const failedView = mount(mismatched);
+      const directFailed = await until(
+        () =>
+          shellCounty().county === null &&
+          Boolean(screen.queryByText(/temporarily unavailable/))
+      );
+      failedView.view.unmount();
+      const matchedFailedView = mount(matched);
+      const directMatchedFailed = await until(
+        () =>
+          shellCounty().county === "36001" &&
+          shellCounty().urlCounty === true &&
+          Boolean(screen.queryByText(/temporarily unavailable/))
+      );
+      matchedFailedView.view.unmount();
+
+      mode = "empty";
+      const emptyView = mount(mismatched);
+      const directEmpty = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          Boolean(screen.queryByTestId("review-result-summary"))
+      );
+      emptyView.view.unmount();
+
+      mode = "ok";
+      review.mockClear();
+      const unsupportedView = mount(
+        "scope=PR&county=08001&compare=08001,08013&dataset=alpha-2026&period=2023-01-01"
+      );
+      const directUnsupported = await until(
+        () =>
+          shellCounty().county === null &&
+          shellCounty().compare === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().urlCompare === false &&
+          Boolean(screen.queryByTestId("review-scope-unsupported"))
+      );
+      const unsupportedReviewCalls = review.mock.calls.length;
+      unsupportedView.view.unmount();
+
+      const loadingChange = await changeScope("hold");
+      const changedLoading = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().compare === "08001,08013" &&
+          shellCounty().urlCounty === false &&
+          Boolean(screen.queryByText("Loading review results…"))
+      );
+      await loadingChange.client.cancelQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const changedAborted = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().picture === false
+      );
+      loadingChange.view.unmount();
+
+      const failedChange = await changeScope("fail");
+      const changedFailed = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().compare === "08001,08013" &&
+          Boolean(screen.queryByText(/temporarily unavailable/))
+      );
+      failedChange.view.unmount();
+
+      const emptyChange = await changeScope("empty");
+      const changedEmpty = await until(
+        () =>
+          shellCounty().scope === "NY" &&
+          shellCounty().county === null &&
+          shellCounty().urlCounty === false &&
+          Boolean(screen.queryByTestId("review-result-summary"))
+      );
+      emptyChange.view.unmount();
+
+      const unsupportedChange = await changeScope("ok", "AK");
+      const changedUnsupported = await until(
+        () =>
+          shellCounty().scope === "AK" &&
+          shellCounty().county === null &&
+          shellCounty().compare === null &&
+          shellCounty().urlCounty === false &&
+          shellCounty().urlCompare === false &&
+          Boolean(screen.queryByTestId("review-scope-unsupported"))
+      );
+      unsupportedChange.view.unmount();
+
+      expect({
+        changedAborted,
+        changedEmpty,
+        changedFailed,
+        changedLoading,
+        changedUnsupported,
+        directAborted,
+        directEmpty,
+        directFailed,
+        directLoading,
+        directMatchedFailed,
+        directMatchedLoading,
+        directUnsupported,
+        unsupportedReviewCalls,
+      }).toStrictEqual({
+        changedAborted: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedEmpty: {
+          compare: "08001,08013",
+          county: null,
+          picture: true,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedFailed: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedLoading: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        changedUnsupported: {
+          compare: null,
+          county: null,
+          picture: false,
+          scope: "AK",
+          urlCompare: false,
+          urlCounty: false,
+        },
+        directAborted: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directEmpty: {
+          compare: "08001,08013",
+          county: null,
+          picture: true,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directFailed: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directLoading: {
+          compare: "08001,08013",
+          county: null,
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: false,
+        },
+        directMatchedFailed: {
+          compare: "36001,36003",
+          county: "36001",
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: true,
+        },
+        directMatchedLoading: {
+          compare: "36001,36003",
+          county: "36001",
+          picture: false,
+          scope: "NY",
+          urlCompare: true,
+          urlCounty: true,
+        },
+        directUnsupported: {
+          compare: null,
+          county: null,
+          picture: false,
+          scope: "PR",
+          urlCompare: false,
+          urlCounty: false,
+        },
+        unsupportedReviewCalls: 0,
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
+  it("withholds a blank county name from Ask Atlas and keeps that county on handoffs", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockResolvedValue({
+      data: buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "   ",
+            fips: "08001",
+            reasonText: "Adams was returned without a county name.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Boulder",
+            fips: "08013",
+            reasonText: "Boulder was returned with a county name.",
+          }),
+        ],
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    const search = "scope=CO&county=08001&dataset=alpha-2026";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter hasMemory searchParams={`?${search}`}>
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        const blankRow = screen
+          .getAllByTestId("review-candidate")
+          .find((row) => row.dataset.fips === "08001");
+        if (!blankRow?.textContent?.includes("Unavailable, CO")) {
+          throw new Error(blankRow?.textContent ?? "blank county row missing");
+        }
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+      const panel = await screen.findByTestId("ask-atlas-panel");
+      const geography = panel.querySelector('[data-field="geography"]');
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const shellHref = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const investigate =
+        screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      const compare =
+        screen.getByTestId("review-compare").getAttribute("href") ?? "";
+      const action = shellHref("Action");
+      const explore = shellHref("Explore");
+      expect({
+        actionCounty: action.includes("county=08001"),
+        actionOtherCounty: action.includes("08013"),
+        compareCounty: compare.includes("county=08001"),
+        compareOtherCounty: compare.includes("08013"),
+        exploreCounty: explore.includes("county=08001"),
+        geographyLabel: geography?.querySelector("dd")?.textContent,
+        geographyState: geography?.dataset.fieldState,
+        investigateCounty: investigate.includes("county=08001"),
+        investigateOtherCounty: investigate.includes("08013"),
+        malformedLabel: panel.textContent?.includes(", Colorado (") ?? false,
+        namedCountyInPanel: panel.textContent?.includes("Boulder") ?? false,
+        preview: screen
+          .getByTestId("review-county-preview")
+          .getAttribute("aria-label"),
+      }).toStrictEqual({
+        actionCounty: true,
+        actionOtherCounty: false,
+        compareCounty: true,
+        compareOtherCounty: false,
+        exploreCounty: true,
+        geographyLabel: "Not validated on this page",
+        geographyState: "absent",
+        investigateCounty: true,
+        investigateOtherCounty: false,
+        malformedLabel: false,
+        namedCountyInPanel: false,
+        preview: "County preview for Unavailable, Colorado",
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
+  it("hides a loaded review when a later refetch fails", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    let failRefresh = false;
+    review.mockImplementation(async (state: string) => {
+      if (failRefresh) {
+        throw new Error("service unavailable");
+      }
+      return {
+        data: buildStateReview({
+          candidates: [
+            reviewCandidate({
+              caveat: "Collection dates are unavailable.",
+              countyName: "Denver",
+              fips: "08001",
+              reasonText: "Denver was returned by the method.",
+            }),
+          ],
+          state,
+        }),
+        status: 200 as const,
+      };
+    });
+    const search = "scope=CO&county=08001&dataset=alpha-2026";
+    const urlUpdates: string[] = [];
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => {
+              mockedSearch = queryString.replace(/^\?/, "");
+              urlUpdates.push(queryString);
+            }}
+            searchParams={`?${search}`}
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        const selected = screen.getByTestId("review-candidate");
+        if (!selected.textContent?.includes("Denver, CO")) {
+          throw new Error(selected.textContent ?? "candidate missing");
+        }
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+      const panel = await screen.findByTestId("ask-atlas-panel");
+      await waitFor(() => {
+        const geography = panel.querySelector('[data-field="geography"]');
+        if (
+          geography?.dataset.fieldState !== "validated" ||
+          !geography.textContent?.includes("Denver, Colorado (08001)")
+        ) {
+          throw new Error(geography?.textContent ?? "geography missing");
+        }
+      });
+      failRefresh = true;
+      await client.invalidateQueries({ queryKey: ["ux-reset-state-review"] });
+      await waitFor(() => {
+        if (
+          !screen
+            .queryByRole("alert")
+            ?.textContent?.includes("temporarily unavailable")
+        ) {
+          throw new Error("review error was not shown");
+        }
+      });
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const shellHref = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      const latestUrl = urlUpdates.at(-1) ?? search;
+      expect({
+        actionCounty: shellHref("Action").includes("county=08001"),
+        candidates: screen.queryAllByTestId("review-candidate").length,
+        compareAction: screen.queryByTestId("review-compare"),
+        exploreCounty: shellHref("Explore").includes("county=08001"),
+        failure: screen.getByRole("alert").textContent,
+        investigateAction: screen.queryByTestId("review-investigate"),
+        investigateCounty: shellHref("Investigate").includes("county=08001"),
+        noContext: screen.getByTestId("ask-atlas-no-context").textContent,
+        picture: screen.queryByTestId("review-state-panel"),
+        staleGeography: panel.textContent?.includes("Denver") ?? false,
+        urlCounty: latestUrl.includes("county=08001"),
+      }).toStrictEqual({
+        actionCounty: true,
+        candidates: 0,
+        compareAction: null,
+        exploreCounty: true,
+        failure: expect.stringContaining("temporarily unavailable"),
+        investigateAction: null,
+        investigateCounty: true,
+        noContext: "No validated page context is available to inherit.",
+        picture: null,
+        staleGeography: false,
+        urlCounty: true,
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
   it("renders national orientation for United States scope", async () => {
     renderReview();
     await waitFor(() =>
@@ -255,7 +1377,9 @@ describe("Reset Review scope UI", () => {
   });
 
   it("requests metadata for a supplied dataset query param", async () => {
-    const { metadataV1AtlasMetadataGet } = await import("@/generated/atlas");
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
     renderReview("?scope=CO&dataset=legacy-release");
     await waitFor(() =>
       expect(metadataV1AtlasMetadataGet).toHaveBeenCalledWith(
@@ -263,6 +1387,10 @@ describe("Reset Review scope UI", () => {
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       )
     );
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain("legacy-release")
+    );
+    expect(stateReviewV1StatesStateReviewGet).not.toHaveBeenCalled();
   });
 
   it("follows a restored URL county after an interactive selection", async () => {
@@ -331,51 +1459,74 @@ describe("Reset Review scope UI", () => {
     ).toContain("county=08013");
   });
 
-  it("passes only in-state counties to the map", async () => {
+  it("passes only in-state geometry to the map", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-104.9, 39.7], type: "Point" },
+          properties: { fips: "08031" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
     renderReview("?scope=CO");
     await waitFor(() =>
       expect(screen.getByTestId("mock-atlas-map")).toBeTruthy()
     );
-    expect(lastMapScoreFips).toBe("08001,08013");
+    expect(lastMapScoreFips).toBe("08001,08031");
   });
 
   it("rejects out-of-state map selection", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
     renderReview("?scope=CO");
     await waitFor(() =>
       expect(screen.getByTestId("mock-atlas-map")).toBeTruthy()
     );
     fireEvent.click(screen.getByTestId("mock-map-select-ny"));
-    const activeRow = document.querySelector(".rank-row.active");
+    const activeRow = document.querySelector(
+      '[data-testid="review-candidate"][aria-current="true"]'
+    );
     expect(activeRow?.textContent).toContain("Denver");
   });
 
-  it("renders the full county table when expanded", async () => {
-    const manyCounties = Array.from({ length: 41 }, (_, index) => {
-      const fips = String(8000 + index).padStart(5, "0");
-      return {
-        ...reviewScopeScoresFixture.counties[0],
-        county: `County ${index + 1}`,
-        fips,
-        score: {
-          ...reviewScopeScoresFixture.counties[0].score,
-          score: 90 - index,
-        },
-      };
-    });
-    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
-    vi.mocked(scoresV1AtlasScoresGet).mockResolvedValue({
-      data: { ...reviewScopeScoresFixture, counties: manyCounties },
-      status: 200,
-    } as never);
-
+  it("lists review candidates without a numeric score", async () => {
     renderReview("?scope=CO");
     await waitFor(() =>
       expect(screen.getByTestId("review-state-panel")).toBeTruthy()
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "View full county list" })
-    );
-    expect(screen.getAllByRole("row").length).toBeGreaterThan(41);
+    const candidates = screen.getAllByTestId("review-candidate");
+    expect(candidates.map((entry) => entry.dataset.fips)).toStrictEqual([
+      "08001",
+      "08013",
+    ]);
+    expect(screen.getByTestId("review-data-gap").dataset.fips).toBe("08031");
+    expect(screen.queryByRole("button", { name: /08031/ })).toBeNull();
+    expect(screen.queryByText("View full county list")).toBeNull();
+    expect(document.querySelector(".rank-score")).toBeNull();
   });
 
   it("writes scope=ALL through the nuqs setter when national scope is chosen", async () => {
@@ -415,16 +1566,19 @@ describe("Reset Review scope UI", () => {
   });
 
   it("surfaces unavailable dataset metadata without a perpetual loading state", async () => {
-    const { metadataV1AtlasMetadataGet } = await import("@/generated/atlas");
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
     vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValueOnce({
       data: null,
       status: 404,
     } as never);
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
     renderReview("?scope=CO&dataset=older-release");
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toContain("older-release")
     );
     expect(screen.queryByText("Loading county scores…")).toBeNull();
+    expect(stateReviewV1StatesStateReviewGet).not.toHaveBeenCalled();
   });
 
   it("realigns the active county when switching state scopes", async () => {
@@ -595,12 +1749,15 @@ describe("Reset Review scope UI", () => {
       label: expect.stringContaining("Open Investigate"),
       panel: true,
       target: href,
-      why: "Lower review priority",
+      why: "Boulder is included because the review method returned it.",
     });
     expect(
       screen.getByTestId("review-preview-qualification").textContent
-    ).toContain("Some scored inputs are unavailable");
-    expect(screen.getByText("Inspect provenance")).toBeTruthy();
+    ).toContain("Collection dates are unavailable");
+    expect(screen.getByTestId("review-observed-basis").textContent).toContain(
+      "Borrelia burgdorferi sensu stricto"
+    );
+    expect(within(preview).getByText("Inspect provenance")).toBeTruthy();
   });
 
   it("updates preview identity, why, caveat, and target together", () => {
@@ -658,7 +1815,7 @@ describe("Reset Review scope UI", () => {
       albany: {
         caveat: expect.stringContaining("not treated as zero"),
         fips: "36001",
-        target: expect.stringContaining("county=36001"),
+        target: expect.not.stringContaining("county="),
         why: "Lower review priority",
       },
       caveatChanged: true,
@@ -774,6 +1931,530 @@ describe("Reset Review scope UI", () => {
       page: null,
       sort: null,
     });
+  });
+
+  it("keeps request failure distinct from nothing stands out", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockRejectedValueOnce(
+      new Error("service unavailable")
+    );
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain(
+        "temporarily unavailable"
+      )
+    );
+    expect(screen.queryByText(/Nothing stands out/)).toBeNull();
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+    expect(screen.queryByTestId("review-result-summary")).toBeNull();
+  });
+
+  it("renders nothing-stands-out without turning gaps into candidates", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+      data: buildStateReview({
+        resultState: "none_stand_out",
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-state-panel").dataset.resultState).toBe(
+        "none_stand_out"
+      )
+    );
+    expect(screen.getByTestId("review-result-summary").textContent).toContain(
+      "Nothing stands out"
+    );
+    expect(screen.getByTestId("review-methodology").textContent).toContain(
+      "atlas-county-review 1.0.0"
+    );
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+  });
+
+  it("renders insufficient evidence separately from data-gap-only", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+      data: buildStateReview({
+        gaps: [
+          {
+            code: "MISSING_HUMAN_SURVEILLANCE",
+            county_fips: "08001",
+            detail: "Human surveillance for the requested period is missing.",
+          },
+        ],
+        resultState: "insufficient_evidence",
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-state-panel").dataset.resultState).toBe(
+        "insufficient_evidence"
+      )
+    );
+    expect(screen.getByTestId("review-result-summary").textContent).toContain(
+      "not enough eligible evidence"
+    );
+    expect(screen.queryByText(/Nothing stands out/)).toBeNull();
+    expect(screen.getByTestId("review-data-gap").textContent).toContain(
+      "08001"
+    );
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+  });
+
+  it("renders unsupported gaps as data-gap-only", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+      data: buildStateReview({
+        gaps: [
+          {
+            code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+            county_fips: "08001",
+            detail: "Summary statuses lack exact source rows and revisions.",
+          },
+        ],
+        resultState: "unsupported",
+        state: "CO",
+      }),
+      status: 200,
+    } as never);
+    renderReview("?scope=CO");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-state-panel").dataset.resultState).toBe(
+        "data_gap_only"
+      )
+    );
+    expect(screen.getByTestId("review-result-summary").textContent).toContain(
+      "separate from suggestions"
+    );
+    expect(screen.queryByText(/Nothing stands out/)).toBeNull();
+    expect(screen.queryByTestId("review-candidate")).toBeNull();
+    expect(screen.getByTestId("review-data-gap").dataset.code).toBe(
+      "SOURCE_NATIVE_LINEAGE_UNAVAILABLE"
+    );
+  });
+
+  it("requests review with the explicit release metadata confirmed", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockClear();
+    renderReview("?scope=CO&dataset=alpha-2026");
+    await waitFor(() =>
+      expect(review).toHaveBeenCalledWith(
+        "CO",
+        { dataset_version: "alpha-2026" },
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      )
+    );
+  });
+
+  it("keeps metadata and review on one release when the default rolls over", async () => {
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const releases = ["release-a"];
+    metadata.mockImplementation(
+      async () =>
+        ({
+          data: {
+            ...reviewScopeMetadataFixture,
+            release_id: releases.at(-1) ?? "release-a",
+          },
+          status: 200,
+        }) as never
+    );
+    review.mockImplementation((async (
+      state: string,
+      params?: { dataset_version?: string }
+    ) => ({
+      data: {
+        ...buildStateReview({
+          candidates: [
+            reviewCandidate({
+              caveat: "Collection dates are unavailable.",
+              countyName:
+                params?.dataset_version === "release-b" ? "Boulder" : "Denver",
+              fips: params?.dataset_version === "release-b" ? "08013" : "08001",
+              reasonText: `Returned for ${params?.dataset_version ?? "omitted"}.`,
+            }),
+          ],
+          state,
+        }),
+        data_release_version: params?.dataset_version ?? "omitted",
+      },
+      status: 200,
+    })) as never);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    mockedSearch = "scope=CO";
+    try {
+      render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter searchParams="?scope=CO">
+            <ResetReviewExperience />
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("review-methodology").textContent).toContain(
+          "Release release-a"
+        )
+      );
+      releases.push("release-b");
+      await client.invalidateQueries({
+        queryKey: ["ux-reset-review-metadata"],
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId("review-methodology").textContent).toContain(
+          "Release release-b"
+        )
+      );
+      const requested = new Set(
+        review.mock.calls.map((call) => {
+          const params = (call as readonly unknown[])[1] as
+            | { dataset_version?: string }
+            | undefined;
+          return params?.dataset_version ?? "omitted";
+        })
+      );
+      expect({
+        omitted: requested.has("omitted"),
+        sawReleaseA: requested.has("release-a"),
+        sawReleaseB: requested.has("release-b"),
+        showsBoulder: screen
+          .getByTestId("review-candidate")
+          .textContent?.includes("Boulder"),
+        showsDenver: screen.queryByText("Denver") !== null,
+      }).toStrictEqual({
+        omitted: false,
+        sawReleaseA: true,
+        sawReleaseB: true,
+        showsBoulder: true,
+        showsDenver: false,
+      });
+    } finally {
+      metadata.mockImplementation(async () => defaultMetadataResponse());
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
+  it("rejects a review body from a different release", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    review.mockClear();
+    review.mockResolvedValue({
+      data: {
+        ...buildStateReview({
+          candidates: [
+            reviewCandidate({
+              caveat: "Collection dates are unavailable.",
+              countyName: "Denver",
+              fips: "08001",
+              reasonText: "Returned for a different release.",
+            }),
+          ],
+          state: "CO",
+        }),
+        data_release_version: "release-other",
+      },
+      status: 200,
+    } as never);
+    try {
+      renderReview("?scope=CO");
+      await waitFor(() =>
+        expect(screen.getByRole("alert").textContent).toContain(
+          "temporarily unavailable"
+        )
+      );
+      const requested = new Set(
+        review.mock.calls.map((call) => {
+          const params = (call as readonly unknown[])[1] as
+            | { dataset_version?: string }
+            | undefined;
+          return params?.dataset_version ?? "omitted";
+        })
+      );
+      expect({
+        candidate: screen.queryByTestId("review-candidate"),
+        omitted: requested.has("omitted"),
+        otherRelease: screen.queryByText(/Release release-other/),
+        requestedAlpha: requested.has("alpha-2026"),
+      }).toStrictEqual({
+        candidate: null,
+        omitted: false,
+        otherRelease: null,
+        requestedAlpha: true,
+      });
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
+
+  it("keeps the resolved release on shell links when no county is selected", async () => {
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "08031",
+      detail: "Environmental context stays a data gap.",
+    };
+    const period = "2023-01-01";
+    const staleUrl = `scope=CO&county=08001&period=${period}`;
+    const reloadedUrl = `scope=CO&period=${period}`;
+    let activeRelease = "release-a";
+    let mode = "none";
+    const shellLinks = () => {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href = (label: string) =>
+        navigation
+          .querySelector(`a[aria-label="${label}"]`)
+          ?.getAttribute("href") ?? "";
+      return {
+        action: href("Action"),
+        compare: href("Compare"),
+        explore: href("Explore"),
+        feed: href("Feed"),
+        investigate: href("Investigate"),
+        settings: href("Settings"),
+      };
+    };
+    const linksFor = (releaseId: string, county: string | null) => {
+      const query = county
+        ? `scope=CO&county=${county}&dataset=${releaseId}&period=${period}`
+        : `scope=CO&dataset=${releaseId}&period=${period}`;
+      return {
+        action: `/app/action?${query}`,
+        compare: `/app/compare?${query}`,
+        explore: `/app/explore?${query}`,
+        feed: "/app/feed",
+        investigate: `/app/investigate?${query}`,
+        settings: "/app/settings",
+      };
+    };
+    const reviewBody = (state: string, datasetVersion = "omitted") => {
+      const dataRelease = datasetVersion;
+      const shared = { state };
+      if (mode === "candidates") {
+        return {
+          ...buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Denver",
+                fips: "08001",
+                reasonText: "Denver was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            ...shared,
+          }),
+          data_release_version: dataRelease,
+        };
+      }
+      if (mode === "insufficient") {
+        return {
+          ...buildStateReview({
+            resultState: "insufficient_evidence",
+            ...shared,
+          }),
+          data_release_version: dataRelease,
+        };
+      }
+      if (mode === "gaps") {
+        return {
+          ...buildStateReview({
+            gaps: [gap],
+            resultState: "unsupported",
+            ...shared,
+          }),
+          data_release_version: dataRelease,
+        };
+      }
+      if (mode === "unsupported") {
+        return {
+          ...buildStateReview({ resultState: "unsupported", ...shared }),
+          data_release_version: dataRelease,
+        };
+      }
+      return {
+        ...buildStateReview({ resultState: "none_stand_out", ...shared }),
+        data_release_version: dataRelease,
+      };
+    };
+    metadata.mockImplementation(
+      async () =>
+        ({
+          data: {
+            ...reviewScopeMetadataFixture,
+            release_id: activeRelease,
+          },
+          status: 200,
+        }) as never
+    );
+    let reviewGate: PromiseWithResolvers<undefined> | null =
+      Promise.withResolvers<undefined>();
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string }
+    ) => {
+      const gate = reviewGate;
+      const result = () => ({
+        data: reviewBody(state, params?.dataset_version),
+        status: 200,
+      });
+      return gate ? gate.promise.then(result) : Promise.resolve(result());
+    }) as never);
+    const renderShell = (search: string) => {
+      mockedSearch = search;
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      const view = render(
+        <QueryClientProvider client={client}>
+          <NuqsTestingAdapter
+            searchParams={
+              new URL(`http://localhost/app/review?${search}`).search
+            }
+          >
+            <ResetProfessionalShell>
+              <ResetReviewExperience />
+            </ResetProfessionalShell>
+          </NuqsTestingAdapter>
+        </QueryClientProvider>
+      );
+      return { client, view };
+    };
+    const settle = async (releaseId: string, county: string | null) => {
+      const expected = linksFor(releaseId, county).explore;
+      await waitFor(() => {
+        const explore = shellLinks().explore;
+        if (explore !== expected) {
+          throw new Error(explore);
+        }
+      });
+      return shellLinks();
+    };
+    try {
+      const loading = renderShell(staleUrl);
+      await waitFor(() => {
+        if (!screen.queryByText("Loading review results…")) {
+          throw new Error("review did not stay loading");
+        }
+      });
+      const whileLoading = shellLinks();
+      const finishLoading = reviewGate;
+      reviewGate = null;
+      finishLoading?.resolve();
+      const noneStandOut = await settle(activeRelease, null);
+      mode = "insufficient";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const insufficient = await settle(activeRelease, null);
+      mode = "gaps";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const unsupportedWithGaps = await settle(activeRelease, null);
+      mode = "unsupported";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const unsupportedWithoutGaps = await settle(activeRelease, null);
+      mode = "candidates";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const candidates = await settle(activeRelease, "08001");
+      mode = "none";
+      await loading.client.invalidateQueries({
+        queryKey: ["ux-reset-state-review"],
+      });
+      const afterEmptySwitch = await settle(activeRelease, null);
+      loading.view.unmount();
+      mockedSearch = reloadedUrl;
+      const reloaded = renderShell(reloadedUrl);
+      const afterReload = await settle(activeRelease, null);
+      activeRelease = "release-b";
+      await reloaded.client.invalidateQueries({
+        queryKey: ["ux-reset-review-metadata"],
+      });
+      const afterRollover = await settle(activeRelease, null);
+      review.mockRejectedValueOnce(new Error("service unavailable"));
+      reloaded.view.unmount();
+      const failed = renderShell(staleUrl);
+      await waitFor(() => {
+        if (!screen.queryByText(/temporarily unavailable/)) {
+          throw new Error("review error was not shown");
+        }
+      });
+      const whileFailed = shellLinks();
+      failed.view.unmount();
+      expect({
+        afterEmptySwitch,
+        afterReload,
+        afterRollover,
+        candidates,
+        insufficient,
+        noneStandOut,
+        unsupportedWithGaps,
+        unsupportedWithoutGaps,
+        whileFailed,
+        whileLoading,
+      }).toStrictEqual({
+        afterEmptySwitch: linksFor("release-a", null),
+        afterReload: linksFor("release-a", null),
+        afterRollover: linksFor("release-b", null),
+        candidates: linksFor("release-a", "08001"),
+        insufficient: linksFor("release-a", null),
+        noneStandOut: linksFor("release-a", null),
+        unsupportedWithGaps: linksFor("release-a", null),
+        unsupportedWithoutGaps: linksFor("release-a", null),
+        whileFailed: {
+          action: `/app/action?scope=CO&county=08001&period=${period}`,
+          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
+          explore: `/app/explore?scope=CO&county=08001&period=${period}`,
+          feed: "/app/feed",
+          investigate: `/app/investigate?scope=CO&county=08001&period=${period}`,
+          settings: "/app/settings",
+        },
+        whileLoading: {
+          action: `/app/action?scope=CO&county=08001&period=${period}`,
+          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
+          explore: `/app/explore?scope=CO&county=08001&period=${period}`,
+          feed: "/app/feed",
+          investigate: `/app/investigate?scope=CO&county=08001&period=${period}`,
+          settings: "/app/settings",
+        },
+      });
+    } finally {
+      metadata.mockImplementation(async () => defaultMetadataResponse());
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
   });
 
   it("preserves scope=ALL across explore handoff URLs", () => {

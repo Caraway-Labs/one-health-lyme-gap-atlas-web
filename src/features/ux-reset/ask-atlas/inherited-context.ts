@@ -3,6 +3,7 @@ import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-per
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import type { ExploreCommittedSelection } from "@/features/ux-reset/explore/explore-model";
 import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import { REVIEW_FIELD_UNAVAILABLE } from "@/features/ux-reset/review/review-governed-values";
 import type { Observation } from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
 
@@ -46,7 +47,7 @@ export type AskAtlasInheritedContext = {
 const UNRESOLVED_COMPARE_COUNTY_LABEL = /^County \d{5}$/;
 
 type ReviewCountyIdentity = {
-  county: string;
+  county: string | null;
   fips: string;
   state_name: string;
 };
@@ -372,6 +373,23 @@ function reviewSelectedCounty(
   return rankedCounties[0] ?? null;
 }
 
+function reviewGeographyField(
+  selected: ReviewCountyIdentity
+): AskAtlasInheritedField {
+  const county = selected.county?.trim() ?? "";
+  const stateName = selected.state_name.trim();
+  if (
+    !(county && stateName && isCountyFips(selected.fips)) ||
+    county === REVIEW_FIELD_UNAVAILABLE
+  ) {
+    return absentInheritedField();
+  }
+  return validatedInheritedField(
+    selected.fips,
+    `${county}, ${stateName} (${selected.fips})`
+  );
+}
+
 export function inheritedContextFromReview(input: {
   rankedCounties: readonly ReviewCountyIdentity[];
   releaseId: string | null;
@@ -388,10 +406,7 @@ export function inheritedContextFromReview(input: {
   return finalizeInheritedContext({
     fields: {
       geography: selected
-        ? validatedInheritedField(
-            selected.fips,
-            `${selected.county}, ${selected.state_name} (${selected.fips})`
-          )
+        ? reviewGeographyField(selected)
         : absentInheritedField(),
       measure: absentInheritedField(),
       period: absentInheritedField(),

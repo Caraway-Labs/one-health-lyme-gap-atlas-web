@@ -78,6 +78,7 @@ export function usePublishExploreCommittedNavigation(
   const dataset = next?.dataset ?? null;
   const period = next?.period ?? null;
   const compareProvided = Boolean(next && Object.hasOwn(next, "compare"));
+  const clearCounty = next !== null && next.county === null;
   const compareKey = compareProvided
     ? serializeCompareFipsList(next?.compare ?? [])
     : null;
@@ -88,8 +89,10 @@ export function usePublishExploreCommittedNavigation(
         : compareKey.length > 0
           ? compareKey.split(",")
           : [];
+    // A null county is explicit: committed shell links must not keep a stale one
+    // while release and period are still unknown.
     const shouldPublish = Boolean(
-      county || dataset || period || compareProvided
+      county || dataset || period || compareProvided || clearCounty
     );
     setNavigation(
       shouldPublish
@@ -101,7 +104,15 @@ export function usePublishExploreCommittedNavigation(
           }
         : null
     );
-  }, [compareKey, compareProvided, county, dataset, period, setNavigation]);
+  }, [
+    clearCounty,
+    compareKey,
+    compareProvided,
+    county,
+    dataset,
+    period,
+    setNavigation,
+  ]);
   useLayoutEffect(() => () => setNavigation(null), [setNavigation]);
 }
 
@@ -161,6 +172,10 @@ export function searchParamsWithCommittedExploreContext(
     } else {
       params.set("compare", serializeCompareFipsList(comparePair));
     }
+  }
+  // An empty pair drops `compare` only. Compare keeps the originating county.
+  if (committed.compare?.length === 0) {
+    params.delete("compare");
   }
   return params;
 }
