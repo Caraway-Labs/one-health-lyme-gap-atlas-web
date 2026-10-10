@@ -75,9 +75,7 @@ describe("UX Reset shell accessibility", () => {
       </ResetProfessionalShell>
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Collapse navigation" })
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Hide navigation" }));
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",
     });

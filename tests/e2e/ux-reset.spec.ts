@@ -151,9 +151,9 @@ async function revealWorkspaceNavigation(
     return;
   }
 
-  await page.getByRole("button", { name: "Collapse navigation" }).click();
+  await page.getByRole("button", { name: "Hide navigation" }).click();
   await expect(
-    page.getByRole("button", { name: "Expand navigation" })
+    page.getByRole("button", { name: "Show navigation" })
   ).toBeVisible();
   await expect(page.locator("#ux-reset-pro-navigation")).toHaveAttribute(
     "data-state",
@@ -200,7 +200,7 @@ async function expectWorkspaceWithoutLegacyDiscovery(
         links: section.querySelectorAll("a[href]").length,
       }))
     );
-  expect(groups.map((group) => group.label)).toEqual(["Workspace", "Access"]);
+  expect(groups.map((group) => group.label)).toEqual(["WORKSPACE", "MORE"]);
   expect(groups.every((group) => group.links > 0)).toBe(true);
 }
 
