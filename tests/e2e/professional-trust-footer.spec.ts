@@ -118,7 +118,7 @@ test("opens trust links from the professional footer", async ({
   await expect(brand).toBeFocused();
   expect(await visibleFocusCue(brand)).toEqual(LINK_FOCUS_CUE);
 
-  const privacy = footer.getByRole("link", { name: "Privacy" });
+  const privacy = footer.getByRole("link", { exact: true, name: "Privacy" });
   await expect(privacy).toHaveAttribute("href", "/privacy");
   await expect(privacy).not.toHaveAttribute("target", /.*/);
   await page.keyboard.press("Tab");
