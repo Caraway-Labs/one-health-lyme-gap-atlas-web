@@ -4,13 +4,16 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AnalyticsClient } from "@/components/analytics-client";
+import { PrivacyPreferences } from "@/components/privacy-preferences";
 import { SiteFooter } from "@/components/site-footer";
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
+import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
 import { atlasAnalytics } from "@/lib/atlas-analytics";
 import { getRouteShell } from "@/lib/navigation";
 
@@ -65,29 +68,51 @@ describe("professional trust footer", () => {
     vi.unstubAllEnvs();
   });
 
-  it("opens the public Privacy link and privacy settings from the footer", () => {
+  it("links the brand, public privacy, responsible use, and settings", () => {
     pathname = "/app";
     render(<ProfessionalTrustFooter />);
 
-    const privacy = screen.getByRole("link", { name: "Privacy" });
-    const responsibleUse = screen.getByRole("link", {
-      name: "AI / Responsible Use",
+    const footer = screen.getByRole("contentinfo");
+    const brand = screen.getByRole("link", {
+      name: "One Health Atlas by Caraway Labs (opens in a new tab)",
     });
-    expect(privacy.getAttribute("href")).toBe("/privacy");
-    expect(privacy.getAttribute("target")).toBeNull();
-    expect(responsibleUse.getAttribute("href")).toBe("/app/ai-responsible-use");
+    expect({
+      href: brand.getAttribute("href"),
+      inFooter: footer.contains(brand),
+      inTrustNav: footer.querySelector("nav")?.contains(brand) ?? false,
+      rel: brand.getAttribute("rel"),
+      target: brand.getAttribute("target"),
+      text: brand.textContent?.replaceAll(/\s+/g, " ").trim(),
+    }).toStrictEqual({
+      href: ABOUT_CARAWAY_LABS_PATH,
+      inFooter: true,
+      inTrustNav: false,
+      rel: "noopener noreferrer",
+      target: "_blank",
+      text: "One Health Atlas by Caraway Labs ↗ (opens in a new tab)",
+    });
 
-    fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
-    const dialog = screen.getByRole("dialog", { name: "Privacy settings" });
-    expect(dialog.textContent).toContain(
-      "Optional analytics are off until you make a choice."
-    );
+    const trust = within(screen.getByRole("navigation", { name: "Trust" }));
     expect(
-      screen.getByRole("button", { name: "Keep optional analytics off" })
-    ).toBeTruthy();
+      trust.getAllByRole("link").map((link) => ({
+        href: link.getAttribute("href"),
+        target: link.getAttribute("target"),
+        text: link.textContent,
+      }))
+    ).toStrictEqual([
+      { href: "/privacy", target: null, text: "Privacy" },
+      {
+        href: "/app/ai-responsible-use",
+        target: null,
+        text: "AI / Responsible Use",
+      },
+      { href: "/app/settings", target: null, text: "Privacy settings" },
+    ]);
+    expect(footer.querySelector("button")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("stops a legacy Atlas session when the professional footer withdraws consent", async () => {
+  it("keeps a legacy Atlas session until the shared privacy control withdraws it", async () => {
     const view = render(<LegacyAtlasOrWorkspace />);
     fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
     fireEvent.click(
@@ -114,7 +139,14 @@ describe("professional trust footer", () => {
     ) {
       throw new Error("vendor storage was cleared before withdrawal");
     }
+    expect(
+      screen
+        .getByRole("link", { name: "Privacy settings" })
+        .getAttribute("href")
+    ).toBe("/app/settings");
+    expect(screen.queryByRole("dialog")).toBeNull();
 
+    render(<PrivacyPreferences />);
     fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Keep optional analytics off" })

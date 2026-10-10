@@ -155,12 +155,23 @@ describe("UX Reset professional workspace", () => {
 
     const footer = screen.getByRole("contentinfo");
     const privacy = screen.getByRole("link", { name: "Privacy" });
-    expect(footer.contains(privacy)).toBeTruthy();
-    expect(privacy.getAttribute("href")).toBe("/privacy");
-    expect(privacy.getAttribute("target")).toBeNull();
-    expect(footer.querySelector("button")?.textContent).toContain(
-      "Privacy settings"
-    );
+    const settings = screen.getByRole("link", { name: "Privacy settings" });
+    expect({
+      privacyHref: privacy.getAttribute("href"),
+      privacyInFooter: footer.contains(privacy),
+      privacyTarget: privacy.getAttribute("target"),
+      settingsHref: settings.getAttribute("href"),
+      settingsInFooter: footer.contains(settings),
+      settingsTarget: settings.getAttribute("target"),
+    }).toStrictEqual({
+      privacyHref: "/privacy",
+      privacyInFooter: true,
+      privacyTarget: null,
+      settingsHref: "/app/settings",
+      settingsInFooter: true,
+      settingsTarget: null,
+    });
+    expect(footer.querySelector("button")).toBeNull();
   });
 
   it("links AI / Responsible Use from the workspace footer", () => {
