@@ -161,7 +161,7 @@ Each primary destination has **one job**. Cross-links and shared context hand of
 
 - Product orientation belongs in **Docs** (`/docs`) and explicit **empty/loading/error** copy on each page.
 - Do not add a parallel help framework in `src/features` for Reset routes.
-- UX Lab prototypes under `/ux-lab/*` are **disposable references**, not approval to ship contextual help in production Reset routes.
+- Retired UX Lab persona prototypes are not approval to ship contextual help in production Reset routes. Those `/ux-lab/*` pages are removed; git history is the archive.
 
 ## Design system first
 

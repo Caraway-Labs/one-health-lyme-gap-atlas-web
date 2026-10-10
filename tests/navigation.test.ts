@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import robots from "@/app/robots";
+import sitemap from "@/app/sitemap";
 import {
   ATLAS_ROUTES,
   FOOTER_NAVIGATION_ITEMS,
@@ -48,14 +50,24 @@ describe("Atlas navigation contract", () => {
     expect(findRouteMetadata("/auth/callback")?.shell).toBe("none");
   });
 
-  it("keeps the UX Lab namespace hidden from production shells", () => {
-    expect(findRouteMetadata("/ux-lab")).toMatchObject({
-      placement: "none",
-      shell: "none",
-      status: "hidden",
-    });
-    expect(findRouteMetadata("/ux-lab/persona-gateway")?.status).toBe("hidden");
-    expect(getRouteShell("/ux-lab/persona-gateway")).toBe("none");
+  it("does not register retired UX Lab routes", () => {
+    expect(
+      ATLAS_ROUTES.filter(
+        (route) => route.href === "/ux-lab" || route.href.startsWith("/ux-lab/")
+      )
+    ).toStrictEqual([]);
+    expect([
+      findRouteMetadata("/ux-lab"),
+      findRouteMetadata("/ux-lab/persona-gateway"),
+      findRouteMetadata("/ux-lab/not-a-real-concept"),
+    ]).toStrictEqual([undefined, undefined, undefined]);
+  });
+
+  it("does not advertise retired UX Lab paths to crawlers", () => {
+    expect(JSON.stringify(robots().rules)).not.toContain("ux-lab");
+    expect(
+      sitemap().some((entry) => entry.url.includes("/ux-lab"))
+    ).toBeFalsy();
   });
 
   it("keeps the UX Reset professional workspace off the legacy analytical shell", () => {
