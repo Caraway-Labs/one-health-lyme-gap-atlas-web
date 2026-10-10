@@ -6,7 +6,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       lastModified: "2026-09-13",
       priority: 0.8,
-      url: "https://carawaylabs.com/docs",
+      url: "https://onehealthatlas.org/docs",
     },
   ];
 }

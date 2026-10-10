@@ -9,6 +9,18 @@ const nextConfig: NextConfig = {
   devIndicators: process.env.ATLAS_E2E === "1" ? false : undefined,
   async redirects() {
     return [
+      ...[
+        "www.onehealthatlas.org",
+        "onehealthatlas.com",
+        "www.onehealthatlas.com",
+        "onehealthatlas.ai",
+        "www.onehealthatlas.ai",
+      ].map((host) => ({
+        destination: "https://onehealthatlas.org/:path*",
+        has: [{ type: "host" as const, value: host }],
+        permanent: true,
+        source: "/:path*",
+      })),
       {
         destination: "/favicon.svg",
         permanent: true,
