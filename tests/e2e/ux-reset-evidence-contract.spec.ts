@@ -34,7 +34,17 @@ async function tabUntilFocused(
  */
 test("ux-reset evidence provenance keyboard, expanded axe, and doc/source links", async ({
   page,
+  context,
+  baseURL,
 }, testInfo) => {
+  // Validate the candidate docs, even before the production hostname cutover.
+  await context.route("https://onehealthatlas.org/docs/**", async (route) => {
+    const remote = new URL(route.request().url());
+    const response = await route.fetch({
+      url: new URL(`${remote.pathname}${remote.search}`, baseURL).toString(),
+    });
+    await route.fulfill({ response });
+  });
   await page.goto("/design-system");
   const specimen = page.getByTestId("ux-reset-evidence-object").first();
   await specimen.scrollIntoViewIfNeeded();

@@ -2,7 +2,7 @@ name: one-health-lyme-gap-atlas-web
 region: sfo
 domains:
   - domain: onehealthatlas.org
-    type: PRIMARY
+    type: ALIAS
     minimum_tls_version: "1.2"
   - domain: www.onehealthatlas.org
     type: ALIAS
@@ -20,7 +20,7 @@ domains:
     type: ALIAS
     minimum_tls_version: "1.2"
   - domain: carawaylabs.com
-    type: ALIAS
+    type: PRIMARY
     zone: carawaylabs.com
     minimum_tls_version: "1.2"
   - domain: www.carawaylabs.com
