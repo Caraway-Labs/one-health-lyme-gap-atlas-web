@@ -101,7 +101,7 @@ test.describe("professional navigation desktop", () => {
       const sidebar = page.locator("#ux-reset-pro-navigation");
       await expect(sidebar).toHaveAttribute("data-state", "expanded");
 
-      const brand = nav.getByRole("link", {
+      const brand = sidebar.getByRole("link", {
         exact: true,
         name: "One Health Atlas",
       });
@@ -222,22 +222,43 @@ test.describe("professional navigation desktop", () => {
     const sidebar = page.locator("#ux-reset-pro-navigation");
     await expect(sidebar).toHaveAttribute("data-state", "collapsed");
 
-    const brand = page.getByRole("link", {
+    const brand = sidebar.getByRole("link", {
       exact: true,
       name: "One Health Atlas",
     });
     const show = page.getByRole("button", { name: "Show navigation" });
     await expect(brand).toBeVisible();
     await expect(show).toBeVisible();
-    const brandBox = await box(brand);
-    const showBox = await box(show);
-    expect(overlaps(brandBox, showBox)).toBe(false);
-    expect(brandBox.bottom).toBeLessThanOrEqual(showBox.top + 0.5);
-    expect(
-      Math.abs(
-        brandBox.left + brandBox.width / 2 - (showBox.left + showBox.width / 2)
-      )
-    ).toBeLessThan(2);
+    const stacked = await page.evaluate(() => {
+      const header = document.querySelector(
+        "#ux-reset-pro-navigation [data-slot='sidebar-header']"
+      );
+      const brandLink = header?.querySelector(".ux-reset-pro-brand");
+      const toggle = header?.querySelector(".app-sidebar-toggle");
+      if (
+        !(brandLink instanceof HTMLElement) ||
+        !(toggle instanceof HTMLElement)
+      ) {
+        throw new Error("collapsed header controls are missing");
+      }
+      const brandRect = brandLink.getBoundingClientRect();
+      const toggleRect = toggle.getBoundingClientRect();
+      return {
+        brandCenter: brandRect.left + brandRect.width / 2,
+        overlap:
+          brandRect.left < toggleRect.right &&
+          brandRect.right > toggleRect.left &&
+          brandRect.top < toggleRect.bottom &&
+          brandRect.bottom > toggleRect.top,
+        stacked: brandRect.bottom <= toggleRect.top + 0.5,
+        toggleCenter: toggleRect.left + toggleRect.width / 2,
+      };
+    });
+    expect(stacked.overlap).toBe(false);
+    expect(stacked.stacked).toBe(true);
+    expect(Math.abs(stacked.brandCenter - stacked.toggleCenter)).toBeLessThan(
+      1
+    );
 
     const review = (await navigation(page)).getByRole("link", {
       exact: true,
@@ -245,10 +266,16 @@ test.describe("professional navigation desktop", () => {
     });
     expect(Math.abs((await box(review)).height - 38)).toBeLessThan(0.6);
     await review.hover();
-    await expect(page.getByRole("tooltip", { name: "Review" })).toBeVisible();
+    await expect(
+      page
+        .locator("[data-slot='tooltip-content']")
+        .filter({ hasText: "Review" })
+    ).toBeVisible();
     await show.hover();
     await expect(
-      page.getByRole("tooltip", { name: "Show navigation" })
+      page
+        .locator("[data-slot='tooltip-content']")
+        .filter({ hasText: "Show navigation" })
     ).toBeVisible();
 
     await expect(page.getByRole("heading", { name: "WORKSPACE" })).toBeHidden();
@@ -350,7 +377,7 @@ test.describe("professional navigation mobile", () => {
         page.getByRole("button", { name: "Hide navigation" })
       ).toHaveCount(0);
 
-      const brand = nav.getByRole("link", {
+      const brand = sidebar.getByRole("link", {
         exact: true,
         name: "One Health Atlas",
       });

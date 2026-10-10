@@ -144,19 +144,15 @@
   .ux-reset-pro-app
     .atlas-sidebar[data-state="collapsed"]
     [data-slot="sidebar-header"]
-    > a {
+    > a,
+  .ux-reset-pro-app .atlas-sidebar[data-state="collapsed"] .app-sidebar-toggle {
     display: grid;
     width: 2rem;
     height: 2rem;
     flex: none;
+    align-self: center;
     margin: 0;
     place-items: center;
-  }
-
-  .ux-reset-pro-app .atlas-sidebar[data-state="collapsed"] .app-sidebar-toggle {
-    position: static;
-    top: auto;
-    right: auto;
   }
 }
 
