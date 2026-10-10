@@ -96,6 +96,114 @@ async function expectHistoryNavigation(
   await page.waitForLoadState("domcontentloaded");
 }
 
+const WORKSPACE_DESTINATIONS = [
+  {
+    heading: "Review",
+    path: "/app/review",
+    title: "Review | One Health Lyme Gap Atlas",
+  },
+  {
+    heading: "Settings",
+    path: "/app/settings",
+    title: "Settings | One Health Lyme Gap Atlas",
+  },
+  {
+    heading: "Workspace overview",
+    path: "/app",
+    title: "Professional workspace | One Health Lyme Gap Atlas",
+  },
+  {
+    heading: "Feed",
+    path: "/app/feed",
+    title: "Feed | One Health Lyme Gap Atlas",
+  },
+] as const;
+
+const WORKSPACE_NAV_LABELS = [
+  "Workspace overview",
+  "Review",
+  "Explore",
+  "Investigate",
+  "Compare",
+  "Action",
+  "Assistant",
+  "Feed",
+  "Settings",
+  "Docs",
+] as const;
+
+type WorkspaceDestination = (typeof WORKSPACE_DESTINATIONS)[number];
+
+function isMobileProject(projectName: string): boolean {
+  return projectName.includes("mobile");
+}
+
+/** Open the drawer, or collapse the desktop rail, before absence checks. */
+async function revealWorkspaceNavigation(
+  page: Page,
+  mobile: boolean
+): Promise<void> {
+  if (mobile) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+    await expect(
+      page.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeVisible();
+    return;
+  }
+
+  await page.getByRole("button", { name: "Collapse navigation" }).click();
+  await expect(
+    page.getByRole("button", { name: "Expand navigation" })
+  ).toBeVisible();
+  await expect(page.locator("#ux-reset-pro-navigation")).toHaveAttribute(
+    "data-state",
+    "collapsed"
+  );
+}
+
+async function expectWorkspaceWithoutLegacyDiscovery(
+  page: Page,
+  destination: WorkspaceDestination
+): Promise<void> {
+  await expect(page).toHaveTitle(destination.title);
+  await expect(
+    page.locator("h1").filter({ hasText: destination.heading })
+  ).toBeVisible();
+
+  const navigation = page.getByRole("navigation", {
+    name: "Professional workspace",
+  });
+  for (const label of WORKSPACE_NAV_LABELS) {
+    const name = label === "Docs" ? "Docs, opens in a new tab" : label;
+    await expect(
+      navigation.getByRole("link", { exact: true, name })
+    ).toBeVisible();
+  }
+
+  await expect(
+    navigation.getByRole("heading", { name: /legacy atlas/i })
+  ).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /legacy atlas/i })).toHaveCount(
+    0
+  );
+  await expect(page.getByRole("button", { name: /legacy atlas/i })).toHaveCount(
+    0
+  );
+  await expect(page.locator('a[href="/overview"]')).toHaveCount(0);
+  await expect(page.getByText(/ux reset/i)).toHaveCount(0);
+
+  const groups = await page
+    .locator('#ux-reset-pro-navigation [data-slot="sidebar-group"]')
+    .evaluateAll((sections) =>
+      sections.map((section) => ({
+        label: section.querySelector("h2")?.textContent?.trim() ?? "",
+        links: section.querySelectorAll("a[href]").length,
+      }))
+    );
+  expect(groups.map((group) => group.label)).toEqual(["Workspace", "Access"]);
+  expect(groups.every((group) => group.links > 0)).toBe(true);
+}
+
 /** Client-side workspace links update the URL after the click returns. */
 async function clickWorkspaceLink(page: Page, name: string, pathname: string) {
   await page
@@ -184,12 +292,6 @@ test("professional workspace shell supports navigation, focus, and responsive la
     page.getByRole("heading", { level: 1, name: "Settings" })
   ).toBeVisible();
   expect(new URL(page.url()).search).toBe("");
-
-  await expect(page.getByRole("link", { name: /legacy atlas/i })).toHaveCount(
-    0
-  );
-  await expect(page.locator('a[href="/overview"]')).toHaveCount(0);
-  await expect(page.getByText(/ux reset/i)).toHaveCount(0);
   await expect(page.locator(".app-shell")).toHaveCount(1);
 
   expect(
@@ -197,6 +299,28 @@ test("professional workspace shell supports navigation, focus, and responsive la
       () => document.documentElement.scrollWidth <= window.innerWidth
     )
   ).toBe(true);
+});
+
+test.describe("professional workspace omits legacy discovery and UX Reset labels", () => {
+  for (const destination of WORKSPACE_DESTINATIONS) {
+    test(`${destination.path} keeps its title and navigation without a legacy entry`, async ({
+      page,
+    }, testInfo) => {
+      const mobile = isMobileProject(testInfo.project.name);
+      await page.setViewportSize(
+        mobile ? { height: 900, width: 390 } : { height: 900, width: 1280 }
+      );
+      await page.goto(destination.path);
+      await expect
+        .poll(() => new URL(page.url()).pathname)
+        .toBe(destination.path);
+      await expect(
+        page.getByRole("heading", { level: 1, name: destination.heading })
+      ).toBeVisible();
+      await revealWorkspaceNavigation(page, mobile);
+      await expectWorkspaceWithoutLegacyDiscovery(page, destination);
+    });
+  }
 });
 
 test("bounded context survives rendered navigation, reload, and browser history", async ({
