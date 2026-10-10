@@ -210,13 +210,15 @@ export function SidebarTrigger({
   mobile = false,
   mobileAction = "toggle",
   onClick,
+  tooltip,
   ...props
 }: ComponentProps<typeof Button> & {
   mobile?: boolean;
   mobileAction?: "toggle" | "open" | "close";
+  tooltip?: string;
 }) {
   const { setMobileOpen, toggleMobileSidebar, toggleSidebar } = useSidebar();
-  return (
+  const button = (
     <Button
       data-slot="sidebar-trigger"
       type="button"
@@ -233,5 +235,12 @@ export function SidebarTrigger({
         else toggleMobileSidebar();
       }}
     />
+  );
+  if (!tooltip) return button;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={button} />
+      <TooltipContent side="right">{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
