@@ -9,10 +9,10 @@ Atlas publishes one public HTTP contract. Human guides on this site explain how 
 
 | Surface | Status | Where it lives |
 | --- | --- | --- |
-| Public REST API, version 1 | Available now | Anonymous read-only JSON at `https://api.carawaylabs.com` |
-| OpenAPI schema | Available now | [OpenAPI schema](https://api.carawaylabs.com/openapi.json) |
-| Interactive reference | Available now | [Swagger reference](https://api.carawaylabs.com/docs) for approved public GET requests |
-| Read-only reference | Available now | [ReDoc reference](https://api.carawaylabs.com/redoc) |
+| Public REST API, version 1 | Available now | Anonymous read-only JSON at `https://api.onehealthatlas.org` |
+| OpenAPI schema | Available now | [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) |
+| Interactive reference | Available now | [Swagger reference](https://api.onehealthatlas.org/docs) for approved public GET requests |
+| Read-only reference | Available now | [ReDoc reference](https://api.onehealthatlas.org/redoc) |
 | Development MCP smoke tools | Experimental/demo | `server_status` and `atlas_smoke_test` only, owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). A development endpoint and 2026-09-26 acceptance test are recorded there. This page does not re-check that the host is up. |
 | Atlas-data MCP | Not supported | Production MCP does not serve indicators, measures, observations, sources, or methodologies. Use the public REST API for Atlas data. |
 | User API keys in Settings | Not available | The public API does not use a key, and Settings does not create one |
@@ -32,16 +32,16 @@ Settings can save a default jurisdiction for a signed-in reviewer. That preferen
 These requests use measure and county identifiers published for the current production release. County FIPS codes are five characters, with any leading zero preserved. `case_count_floor_2023` is a privacy-protected case floor in `cases`, not a complete incidence count and not a diagnosis.
 
 ```sh
-curl -fsS 'https://api.carawaylabs.com/v1/indicators?page_size=10'
-curl -fsS 'https://api.carawaylabs.com/v1/measures?indicator_id=human_disease_burden&page_size=10'
-curl -fsS 'https://api.carawaylabs.com/v1/measures/case_count_floor_2023'
-curl -fsS 'https://api.carawaylabs.com/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&year=2023'
+curl -fsS 'https://api.onehealthatlas.org/v1/indicators?page_size=10'
+curl -fsS 'https://api.onehealthatlas.org/v1/measures?indicator_id=human_disease_burden&page_size=10'
+curl -fsS 'https://api.onehealthatlas.org/v1/measures/case_count_floor_2023'
+curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&year=2023'
 ```
 
 Compare two counties by repeating `geography_id`. Use `year` or a complete `start_date` and `end_date` pair. The published county observations for this release are the annual 2023 period.
 
 ```sh
-curl -fsS 'https://api.carawaylabs.com/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=08003&year=2023&page_size=1'
+curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=08003&year=2023&page_size=1'
 ```
 
 If `meta.next_page_token` is present, send it back as `page_token` with every other query parameter unchanged. Stop when the token is null. Tokens are opaque and bound to that query and release. A changed or rejected token means you start again at the first page. A page token is not a citation.
@@ -49,8 +49,8 @@ If `meta.next_page_token` is present, send it back as `page_token` with every ot
 Follow `source_id` and `methodology_id` on an observation when you need publisher, vintage, and method limitations:
 
 ```sh
-curl -fsS 'https://api.carawaylabs.com/v1/sources/human'
-curl -fsS 'https://api.carawaylabs.com/v1/methodologies/human_confirmed_probable_case_floor_v1'
+curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
+curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
 ```
 
 Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD`. `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` are gaps. `SUPPRESSED` is a privacy-protected observation: the value was withheld, and the workspace shows **Suppressed** rather than a number. Do not replace a gap or a suppressed observation with zero. A published `ZERO` stays a real zero. The same rule is explained for reviewers in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
@@ -59,7 +59,7 @@ Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `Z
 
 The observation query needs one measure, `geography_type=county`, one or more five-digit county FIPS codes, and either `year` or both dates. The service rejects unsupported filters, strata, sorting, and aggregation instead of ignoring them. Problem `code` values include `RESOURCE_NOT_FOUND`, `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, and `UNSUPPORTED_STRATIFICATION`. Keep `request_id` if you need support.
 
-Anonymous public reads are limited to 60 requests per rolling minute and five simultaneous requests per connecting address. A `429` response includes `Retry-After` of one to 60 seconds. Wait for that interval before you retry. Successful current-release reads can be cached briefly. Stable detail responses may include an `ETag`; send `If-None-Match` to receive `304` when the representation is unchanged. The [OpenAPI schema](https://api.carawaylabs.com/openapi.json) is the authority for parameters, status codes, and schema fields.
+Anonymous public reads are limited to 60 requests per rolling minute and five simultaneous requests per connecting address. A `429` response includes `Retry-After` of one to 60 seconds. Wait for that interval before you retry. Successful current-release reads can be cached briefly. Stable detail responses may include an `ETag`; send `If-None-Match` to receive `304` when the representation is unchanged. The [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) is the authority for parameters, status codes, and schema fields.
 
 ## Reproduce a result
 

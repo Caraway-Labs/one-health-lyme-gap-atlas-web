@@ -242,10 +242,10 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
     .first();
   await expect(openApiLink).toHaveAttribute(
     "href",
-    "https://api.carawaylabs.com/openapi.json"
+    "https://api.onehealthatlas.org/openapi.json"
   );
   await openApiLink.click();
-  await expect(docsPage).toHaveURL("https://api.carawaylabs.com/openapi.json");
+  await expect(docsPage).toHaveURL("https://api.onehealthatlas.org/openapi.json");
   await expect(docsPage.locator("body")).toContainText('"openapi"');
 
   await page.bringToFront();
