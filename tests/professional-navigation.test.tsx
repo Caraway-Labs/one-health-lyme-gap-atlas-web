@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RESET_APP_PATH, RESET_REVIEW_PATH } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
-let pathname = RESET_APP_PATH;
+let pathname: string = RESET_APP_PATH;
 const searchParams = new URLSearchParams();
 const SIDEBAR_PREFERENCE_KEY = "ux-reset-pro-sidebar";
 
@@ -75,10 +75,8 @@ describe("professional workspace navigation", () => {
     ].map((label) => label.textContent);
     expect({
       accessHeading: screen.queryByRole("heading", { name: "ACCESS" }),
-      brand: screen.getByRole("link", {
-        exact: true,
-        name: "One Health Atlas",
-      }).textContent,
+      brand: screen.getByRole("link", { name: /^One Health Atlas$/ })
+        .textContent,
       hideNavigation: screen.getByRole("button", { name: "Hide navigation" })
         .textContent,
       labels,
@@ -158,8 +156,8 @@ describe("professional workspace navigation", () => {
       </ResetProfessionalShell>
     );
 
-    const review = screen.getByRole("link", { exact: true, name: "Review" });
-    const explore = screen.getByRole("link", { exact: true, name: "Explore" });
+    const review = screen.getByRole("link", { name: /^Review$/ });
+    const explore = screen.getByRole("link", { name: /^Explore$/ });
     const docs = screen.getByRole("link", { name: "Docs, opens in a new tab" });
     expect({
       docsRel: docs.getAttribute("rel"),
