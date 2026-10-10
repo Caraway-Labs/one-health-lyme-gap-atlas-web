@@ -101,7 +101,10 @@ test.describe("professional navigation desktop", () => {
       const sidebar = page.locator("#ux-reset-pro-navigation");
       await expect(sidebar).toHaveAttribute("data-state", "expanded");
 
-      const brand = nav.getByRole("link", { name: "One Health Atlas" });
+      const brand = nav.getByRole("link", {
+        exact: true,
+        name: "One Health Atlas",
+      });
       const hide = page.getByRole("button", { name: "Hide navigation" });
       await expect(brand).toBeVisible();
       await expect(brand).toContainText("One Health Atlas");
@@ -219,7 +222,10 @@ test.describe("professional navigation desktop", () => {
     const sidebar = page.locator("#ux-reset-pro-navigation");
     await expect(sidebar).toHaveAttribute("data-state", "collapsed");
 
-    const brand = page.getByRole("link", { name: "One Health Atlas" });
+    const brand = page.getByRole("link", {
+      exact: true,
+      name: "One Health Atlas",
+    });
     const show = page.getByRole("button", { name: "Show navigation" });
     await expect(brand).toBeVisible();
     await expect(show).toBeVisible();
@@ -344,7 +350,10 @@ test.describe("professional navigation mobile", () => {
         page.getByRole("button", { name: "Hide navigation" })
       ).toHaveCount(0);
 
-      const brand = nav.getByRole("link", { name: "One Health Atlas" });
+      const brand = nav.getByRole("link", {
+        exact: true,
+        name: "One Health Atlas",
+      });
       const close = page.getByRole("button", { name: "Close navigation" });
       await expect(brand).toContainText("One Health Atlas");
       await expect(

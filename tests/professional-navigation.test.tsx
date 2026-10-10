@@ -75,7 +75,10 @@ describe("professional workspace navigation", () => {
     ].map((label) => label.textContent);
     expect({
       accessHeading: screen.queryByRole("heading", { name: "ACCESS" }),
-      brand: screen.getByRole("link", { name: "One Health Atlas" }).textContent,
+      brand: screen.getByRole("link", {
+        exact: true,
+        name: "One Health Atlas",
+      }).textContent,
       hideNavigation: screen.getByRole("button", { name: "Hide navigation" })
         .textContent,
       labels,
