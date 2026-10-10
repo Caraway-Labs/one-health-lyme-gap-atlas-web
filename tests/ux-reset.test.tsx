@@ -194,7 +194,20 @@ describe("UX Reset professional workspace", () => {
       screen.queryByRole("link", { name: "Geographic Explorer" })
     ).toBeNull();
     expect(
-      screen.getAllByRole("link", { name: "Open legacy Atlas" }).length
-    ).toBeGreaterThan(0);
+      screen.queryByRole("link", { name: "Open legacy Atlas" })
+    ).toBeNull();
+  });
+
+  it("does not show internal program branding or a legacy Atlas entry", () => {
+    pathname = RESET_APP_PATH;
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+    expect(screen.queryByRole("link", { name: /legacy atlas/i })).toBeNull();
+    expect(screen.queryByText("Legacy Atlas")).toBeNull();
+    expect(screen.queryByText(/ux reset/i)).toBeNull();
+    expect(document.querySelector('a[href="/overview"]')).toBeNull();
   });
 });

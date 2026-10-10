@@ -6,7 +6,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type { MouseEvent, ReactNode } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
@@ -32,10 +31,8 @@ import {
   useExploreCommittedNavigation,
 } from "@/features/ux-reset/explore-committed-navigation";
 import {
-  LEGACY_ATLAS_PATH,
   RESET_ACCESS_NAV,
   RESET_WORKSPACE_NAV,
-  RETURN_TO_LEGACY_ATLAS_LABEL,
   isResetRouteActive,
   resetRouteById,
   type ResetRoute,
@@ -291,23 +288,6 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
                 })}
               </SidebarMenu>
             </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupLabel>Legacy Atlas</SidebarGroupLabel>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    aria-label={RETURN_TO_LEGACY_ATLAS_LABEL}
-                    href={LEGACY_ATLAS_PATH}
-                    onClick={closeMobileNavigation}
-                    tooltip={RETURN_TO_LEGACY_ATLAS_LABEL}
-                  >
-                    <span className="sidebar-item-label">
-                      {RETURN_TO_LEGACY_ATLAS_LABEL}
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
           </nav>
         </SidebarContent>
       </Sidebar>
@@ -339,11 +319,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
             <Menu />
           </SidebarTrigger>
           <span className="app-header-label">Professional workspace</span>
-          <Badge variant="outline">UX Reset</Badge>
           {askAtlas.launcher}
-          <Link className="ux-reset-legacy-link" href={LEGACY_ATLAS_PATH}>
-            {RETURN_TO_LEGACY_ATLAS_LABEL}
-          </Link>
         </header>
         <div className="ux-reset-workspace-body">
           <main className="app-content ux-reset-pro-main">{children}</main>

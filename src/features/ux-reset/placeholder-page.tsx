@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { uxResetShellHandoffHref } from "@/features/ux-reset";
 import {
-  LEGACY_ATLAS_PATH,
   RESET_ROUTES,
   type ResetRoute,
   resetRouteById,
@@ -38,7 +37,6 @@ export function ResetPlaceholderPage({ routeId }: ResetPlaceholderPageProps) {
   return (
     <>
       <header className="ux-reset-page-header">
-        <p className="eyebrow">UX Reset professional workspace</p>
         <h1>{route.label}</h1>
         <p className="type-body">{route.description}</p>
       </header>
@@ -47,18 +45,13 @@ export function ResetPlaceholderPage({ routeId }: ResetPlaceholderPageProps) {
           <CardHeader>
             <h2 className="type-card">Placeholder shell route</h2>
             <CardDescription>
-              This destination is reserved for a later UX Reset story. Legacy
-              Atlas workflows remain available while the professional workspace
-              is built out.
+              This destination is reserved for a later release of the
+              professional workspace.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="type-body">
               Route: <code>{route.href}</code>
-            </p>
-            <p className="type-body">
-              <Link href={LEGACY_ATLAS_PATH}>Open legacy Atlas overview</Link>{" "}
-              to use the current production experience.
             </p>
           </CardContent>
         </Card>
