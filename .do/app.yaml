@@ -54,7 +54,7 @@ services:
       failure_threshold: 5
     envs:
       - key: NEXT_PUBLIC_API_BASE_URL
-        value: https://api.carawaylabs.com
+        value: https://api.onehealthatlas.org
         scope: BUILD_TIME
       - key: NEXT_PUBLIC_SITE_URL
         value: https://onehealthatlas.org
