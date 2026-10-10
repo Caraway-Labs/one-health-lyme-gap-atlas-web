@@ -2616,6 +2616,225 @@ describe("Reset Review scope UI", () => {
       tier: null,
     });
   });
+
+  it("does not mix reproducibility identifiers across scope or release changes", async () => {
+    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const hashFor = (seed: string) => seed.repeat(64);
+    const coloradoHash = hashFor("a");
+    const newYorkHash = hashFor("b");
+    const releaseHash = hashFor("c");
+    const coloradoEvaluatedAt = "2026-01-15T16:30:00.000Z";
+    const newYorkEvaluatedAt = "2026-02-16T17:31:00.000Z";
+    const releaseEvaluatedAt = "2026-03-17T18:32:00.000Z";
+    const gap = {
+      code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
+      county_fips: "36001",
+      detail: "Eligible evidence is missing for this county.",
+    };
+    const reviewBody = (state: string, dataset: string) => {
+      if (dataset === "release-b") {
+        return {
+          ...buildStateReview({
+            gaps: [gap],
+            resultState: "insufficient_evidence" as const,
+            state,
+          }),
+          configuration_sha256: releaseHash,
+          data_release_version: dataset,
+          effective_observation_context: "Human snapshot 2024",
+          evaluated_at: releaseEvaluatedAt,
+          methodology_version: "2.0.0",
+        };
+      }
+      if (state === "NY") {
+        return {
+          ...buildStateReview({
+            resultState: "none_stand_out",
+            state,
+          }),
+          configuration_sha256: newYorkHash,
+          data_release_version: dataset,
+          effective_observation_context: "Human snapshot 2022",
+          evaluated_at: newYorkEvaluatedAt,
+          methodology_version: "1.1.0",
+        };
+      }
+      return {
+        ...buildStateReview({
+          candidates: [
+            reviewCandidate({
+              caveat: "Collection dates are unavailable.",
+              countyName: "Denver",
+              fips: "08001",
+              reasonText: "Denver was returned by the method.",
+            }),
+          ],
+          resultState: "candidates_found",
+          state,
+        }),
+        configuration_sha256: coloradoHash,
+        data_release_version: dataset,
+        evaluated_at: coloradoEvaluatedAt,
+        methodology_version: "1.0.0",
+      };
+    };
+    let held: PromiseWithResolvers<undefined> | null = null;
+    const holdReviews = () => {
+      held = Promise.withResolvers<undefined>();
+    };
+    const releaseHold = () => {
+      held?.resolve();
+      held = null;
+    };
+    metadata.mockImplementation(
+      async (params?: { dataset_version?: string }) =>
+        ({
+          data: {
+            ...reviewScopeMetadataFixture,
+            release_id: params?.dataset_version ?? "alpha-2026",
+          },
+          status: 200,
+        }) as never
+    );
+    review.mockImplementation((async (
+      state: string,
+      params?: { dataset_version?: string }
+    ) => {
+      const dataset = params?.dataset_version ?? "alpha-2026";
+      if (held) {
+        await held.promise;
+      }
+      return {
+        data: reviewBody(state, dataset),
+        status: 200,
+      };
+    }) as never);
+    const read = () => {
+      const provenance = screen.getByTestId("review-result-provenance");
+      const outer = provenance.querySelector("details");
+      if (outer instanceof HTMLDetailsElement && !outer.open) {
+        fireEvent.click(within(provenance).getByText("Inspect provenance"));
+      }
+      const technical = provenance.querySelector(
+        ".ux-reset-evidence-provenance-technical"
+      );
+      if (technical instanceof HTMLDetailsElement && !technical.open) {
+        fireEvent.click(
+          within(provenance).getByText("Technical reproducibility identifiers")
+        );
+      }
+      const value = (label: string) =>
+        within(provenance).getByText(label).nextElementSibling?.textContent ??
+        "";
+      return {
+        configuration: value("Configuration"),
+        evaluatedAt: value("Evaluated at"),
+        header: (screen.getByTestId("review-methodology").textContent ?? "")
+          .replaceAll(/\s+/g, " ")
+          .trim(),
+        picture:
+          screen.getByTestId("review-state-panel").dataset.resultState ?? null,
+      };
+    };
+    const absent = () => ({
+      colorado: document.body.textContent?.includes(coloradoHash) ?? false,
+      newYork: document.body.textContent?.includes(newYorkHash) ?? false,
+      panel: screen.queryByTestId("review-state-panel") !== null,
+      release: document.body.textContent?.includes(releaseHash) ?? false,
+    });
+    try {
+      const view = renderReview("?scope=CO&dataset=alpha-2026");
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("review-state-panel").dataset.configurationSha256
+        ).toBe(coloradoHash);
+      });
+      const colorado = read();
+      holdReviews();
+      fireEvent.click(screen.getByTestId("review-scope-select"));
+      const newYork = await screen.findByRole("option", {
+        name: "New York (NY)",
+      });
+      fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+      fireEvent.click(newYork);
+      await waitFor(() => {
+        expect(screen.getByText("Loading review results…")).toBeTruthy();
+      });
+      const whileScopeChanges = absent();
+      releaseHold();
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("review-state-panel").dataset.configurationSha256
+        ).toBe(newYorkHash);
+      });
+      const newYorkResult = read();
+      holdReviews();
+      view.rerenderSearch("?scope=NY&dataset=release-b");
+      await waitFor(() => {
+        expect(screen.getByText("Loading review results…")).toBeTruthy();
+      });
+      const whileReleaseChanges = absent();
+      releaseHold();
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("review-state-panel").dataset.configurationSha256
+        ).toBe(releaseHash);
+      });
+      const releaseResult = read();
+      view.unmount();
+      expect({
+        colorado,
+        newYorkResult,
+        releaseResult,
+        whileReleaseChanges,
+        whileScopeChanges,
+      }).toStrictEqual({
+        colorado: {
+          configuration: coloradoHash,
+          evaluatedAt: expect.stringContaining(coloradoEvaluatedAt),
+          header:
+            "Method atlas-county-review 1.0.0. Release alpha-2026. Current cumulative county status; human snapshot 2023.",
+          picture: "candidates_found",
+        },
+        newYorkResult: {
+          configuration: newYorkHash,
+          evaluatedAt: expect.stringContaining(newYorkEvaluatedAt),
+          header:
+            "Method atlas-county-review 1.1.0. Release alpha-2026. Human snapshot 2022.",
+          picture: "none_stand_out",
+        },
+        releaseResult: {
+          configuration: releaseHash,
+          evaluatedAt: expect.stringContaining(releaseEvaluatedAt),
+          header:
+            "Method atlas-county-review 2.0.0. Release release-b. Human snapshot 2024.",
+          picture: "insufficient_evidence",
+        },
+        whileReleaseChanges: {
+          colorado: false,
+          newYork: false,
+          panel: false,
+          release: false,
+        },
+        whileScopeChanges: {
+          colorado: false,
+          newYork: false,
+          panel: false,
+          release: false,
+        },
+      });
+    } finally {
+      releaseHold();
+      metadata.mockImplementation(async () => defaultMetadataResponse());
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
+  });
 });
 
 describe("Settings default jurisdiction readout", () => {
