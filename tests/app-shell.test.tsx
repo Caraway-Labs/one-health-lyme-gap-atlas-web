@@ -105,7 +105,7 @@ describe("Atlas application shell", () => {
 
     expect(
       screen.getByRole("link", { name: "Docs" }).getAttribute("href")
-    ).toBe("https://carawaylabs.com/docs");
+    ).toBe("https://onehealthatlas.org/docs");
     expect(
       screen.getByRole("link", { name: "Docs" }).getAttribute("target")
     ).toBe("_blank");

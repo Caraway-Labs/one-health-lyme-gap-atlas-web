@@ -272,7 +272,7 @@ test("opens the configured docs destination from the analytical sidebar", async 
 
   await expect(docsLink).toHaveAttribute(
     "href",
-    "https://carawaylabs.com/docs"
+    "https://onehealthatlas.org/docs"
   );
   await expect(docsLink).toHaveAttribute("target", "_blank");
   await expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
@@ -280,5 +280,5 @@ test("opens the configured docs destination from the analytical sidebar", async 
   const newTab = page.waitForEvent("popup");
   await docsLink.click();
   const docsPage = await newTab;
-  await expect(docsPage).toHaveURL("https://carawaylabs.com/docs");
+  await expect(docsPage).toHaveURL("https://onehealthatlas.org/docs");
 });
