@@ -187,6 +187,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     previousFocusRef.current = event.currentTarget;
     event.currentTarget.blur();
   };
+  const navigationToggleLabel = open ? "Hide navigation" : "Show navigation";
 
   return (
     <div className="app-shell ux-reset-pro-app">
@@ -205,16 +206,18 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         <SidebarHeader>
           <Link
             href={shellHref(resetRouteById("overview"))}
-            aria-label="Atlas professional workspace"
+            aria-label="One Health Atlas"
+            className="ux-reset-pro-brand"
             onClick={closeMobileNavigation}
           >
             <span aria-hidden="true">+</span>
-            <b>Atlas professional workspace</b>
+            <b>One Health Atlas</b>
           </Link>
           <SidebarTrigger
-            aria-label={open ? "Collapse navigation" : "Expand navigation"}
+            aria-label={navigationToggleLabel}
             className="app-sidebar-toggle"
             size="icon-sm"
+            tooltip={navigationToggleLabel}
             variant="outline"
           >
             <PanelLeftClose className="app-sidebar-expanded-icon" />
@@ -234,7 +237,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         <SidebarContent>
           <nav aria-label="Professional workspace">
             <SidebarGroup>
-              <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+              <SidebarGroupLabel>WORKSPACE</SidebarGroupLabel>
               <SidebarMenu>
                 {RESET_WORKSPACE_NAV.map((item) => {
                   const Icon = item.icon;
@@ -258,7 +261,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
               </SidebarMenu>
             </SidebarGroup>
             <SidebarGroup>
-              <SidebarGroupLabel>Access</SidebarGroupLabel>
+              <SidebarGroupLabel>MORE</SidebarGroupLabel>
               <SidebarMenu>
                 {RESET_ACCESS_NAV.map((item) => {
                   const Icon = item.icon;
