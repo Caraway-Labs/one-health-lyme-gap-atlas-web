@@ -3,6 +3,6 @@ import type { MetadataRoute } from "next";
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: { allow: "/", disallow: "/ux-lab", userAgent: "*" },
-    sitemap: "https://carawaylabs.com/sitemap.xml",
+    sitemap: "https://onehealthatlas.org/sitemap.xml",
   };
 }

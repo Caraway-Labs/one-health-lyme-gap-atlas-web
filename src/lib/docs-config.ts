@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const DEFAULT_DOCS_URL = "https://carawaylabs.com/docs";
+const DEFAULT_DOCS_URL = "https://onehealthatlas.org/docs";
 const docsUrlSchema = z
   .string()
   .url()

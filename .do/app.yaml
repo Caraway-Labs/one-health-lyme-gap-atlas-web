@@ -1,6 +1,24 @@
 name: one-health-lyme-gap-atlas-web
 region: sfo
 domains:
+  - domain: onehealthatlas.org
+    type: ALIAS
+    minimum_tls_version: "1.2"
+  - domain: www.onehealthatlas.org
+    type: ALIAS
+    minimum_tls_version: "1.2"
+  - domain: onehealthatlas.com
+    type: ALIAS
+    minimum_tls_version: "1.2"
+  - domain: www.onehealthatlas.com
+    type: ALIAS
+    minimum_tls_version: "1.2"
+  - domain: onehealthatlas.ai
+    type: ALIAS
+    minimum_tls_version: "1.2"
+  - domain: www.onehealthatlas.ai
+    type: ALIAS
+    minimum_tls_version: "1.2"
   - domain: carawaylabs.com
     type: PRIMARY
     zone: carawaylabs.com
@@ -39,10 +57,10 @@ services:
         value: https://api.carawaylabs.com
         scope: BUILD_TIME
       - key: NEXT_PUBLIC_SITE_URL
-        value: https://carawaylabs.com
+        value: https://onehealthatlas.org
         scope: BUILD_TIME
       - key: NEXT_PUBLIC_DOCS_URL
-        value: https://carawaylabs.com/docs
+        value: https://onehealthatlas.org/docs
         scope: BUILD_TIME
       - key: NEXT_PUBLIC_AMPLITUDE_API_KEY
         value: ${NEXT_PUBLIC_AMPLITUDE_API_KEY}

@@ -40,22 +40,37 @@ export function FrontPorchView({
       <a className="front-porch-skip" href={`#${FRONT_PORCH_STORY_ID}`}>
         Skip to the story
       </a>
-      <header className="front-porch-bar">
-        <Link className="front-porch-brand" href="/">
-          One Health Atlas
-        </Link>
-        <Link className="front-porch-sign-in" href={exploreHref}>
-          {headerAccountLabel}
-        </Link>
-      </header>
       <main>
         <section
           aria-labelledby="front-porch-headline"
-          className="hero front-porch-hero"
+          className="front-porch-hero"
         >
+          <header className="front-porch-bar">
+            <Link className="front-porch-brand" href="/">
+              <span aria-hidden="true">✧</span>One Health Atlas
+            </Link>
+            <nav aria-label="Primary" className="front-porch-navlinks">
+              <a href={`#${FRONT_PORCH_STORY_ID}`}>The evidence</a>
+              <Link href={FRONT_PORCH_METHODOLOGY_HREF}>Our approach</Link>
+              <Link href="/docs">Resources</Link>
+              <Link className="front-porch-sign-in" href={exploreHref}>
+                {headerAccountLabel}
+              </Link>
+            </nav>
+          </header>
           <div className="front-porch-hero-inner">
             <div className="front-porch-hero-copy">
-              <h1 id="front-porch-headline">{FRONT_PORCH_HERO_HEADLINE}</h1>
+              <div className="front-porch-eyebrow">
+                One county. Many signals. A clearer picture.
+              </div>
+              <h1
+                id="front-porch-headline"
+                aria-label={FRONT_PORCH_HERO_HEADLINE}
+              >
+                The data is telling
+                <br className="front-porch-headline-break" /> more than one
+                story.
+              </h1>
               <p className="front-porch-support">{FRONT_PORCH_HERO_SUPPORT}</p>
               <div className="front-porch-actions">
                 <a
@@ -67,22 +82,32 @@ export function FrontPorchView({
                   {FRONT_PORCH_FOLLOW_STORY_LABEL}
                 </a>
               </div>
+              <p className="front-porch-fine">
+                Our opening example: Lyme disease.
+              </p>
             </div>
             <figure className="front-porch-figure">
               <div className="front-porch-image-frame">
                 <Image
                   alt=""
-                  height={512}
+                  height={1229}
                   src={FRONT_PORCH_HERO_IMAGE.src}
-                  unoptimized
-                  width={512}
+                  preload
+                  sizes="(max-width: 850px) 300px, 510px"
+                  width={1280}
                 />
               </div>
               <figcaption className="front-porch-callout">
-                {FRONT_PORCH_GLASS_CALLOUT}
+                {FRONT_PORCH_GLASS_CALLOUT.replaceAll(
+                  " + ",
+                  " \u00A0 + \u00A0 "
+                )}
               </figcaption>
             </figure>
           </div>
+          <a className="front-porch-scroll" href={`#${FRONT_PORCH_STORY_ID}`}>
+            Scroll to explore <span aria-hidden="true">↓</span>
+          </a>
         </section>
         <div className="front-porch-story" id={FRONT_PORCH_STORY_ID}>
           {FRONT_PORCH_BEATS.map((beat) => (

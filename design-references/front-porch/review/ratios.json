@@ -1,0 +1,30 @@
+[
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "mismatchRatio": 0.005733989197530864
+  },
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "mismatchRatio": 0.006429036458333333
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "mismatchRatio": 0.0047234842550524835
+  },
+  {
+    "viewport": {
+      "width": 320,
+      "height": 700
+    },
+    "mismatchRatio": 0.011715768129770992
+  }
+]

@@ -91,6 +91,12 @@ jobs:
         env:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/playwright-junit.xml
 
+      - name: Front Porch production visual comparisons
+        run: npx playwright test tests/e2e/front-porch-visual.spec.ts --reporter=list --reporter=junit
+        env:
+          ATLAS_VISUAL_PRODUCTION: "1"
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/front-porch-visual-junit.xml
+
       - name: Upload Playwright auth JUnit
         if: always()
         uses: actions/upload-artifact@v4
@@ -107,6 +113,9 @@ jobs:
           path: |
             test-results/playwright-junit.xml
             playwright-report/
+            test-results/playwright/
+            test-results/front-porch-visual/
+            test-results/front-porch-visual-junit.xml
           if-no-files-found: warn
 
       - name: Upload Playwright failure traces
@@ -117,6 +126,8 @@ jobs:
           path: |
             test-results/playwright/**/trace.zip
             test-results/playwright/**/error-context.md
+            test-results/front-porch-visual/**/trace.zip
+            test-results/front-porch-visual/**/error-context.md
           if-no-files-found: warn
 
       - name: Publish unit test results (PR check)
@@ -149,6 +160,16 @@ jobs:
           fail-on-error: false
           fail-on-empty: false
 
+      - name: Publish Front Porch visual results (PR check)
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Front Porch Visual Results
+          path: test-results/front-porch-visual-junit.xml
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
+
       - name: Publish auth e2e test results (PR check)
         if: always()
         uses: dorny/test-reporter@v1
@@ -172,14 +193,14 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: https://api.carawaylabs.com
-          NEXT_PUBLIC_SITE_URL: https://carawaylabs.com
+          NEXT_PUBLIC_SITE_URL: https://onehealthatlas.org
           NEXT_PUBLIC_KG_CHAT_ENABLED: "true"
           NEXT_PUBLIC_AMPLITUDE_API_KEY: ${{ secrets.NEXT_PUBLIC_AMPLITUDE_API_KEY }}
           NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       - run: >-
-          docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.carawaylabs.com --build-arg NEXT_PUBLIC_SITE_URL=https://carawaylabs.com --build-arg NEXT_PUBLIC_DOCS_URL=https://carawaylabs.com/docs --build-arg NEXT_PUBLIC_KG_CHAT_ENABLED=true --build-arg NEXT_PUBLIC_AMPLITUDE_API_KEY=${{ secrets.NEXT_PUBLIC_AMPLITUDE_API_KEY }} --build-arg NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET=production --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }} .
+          docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.carawaylabs.com --build-arg NEXT_PUBLIC_SITE_URL=https://onehealthatlas.org --build-arg NEXT_PUBLIC_DOCS_URL=https://onehealthatlas.org/docs --build-arg NEXT_PUBLIC_KG_CHAT_ENABLED=true --build-arg NEXT_PUBLIC_AMPLITUDE_API_KEY=${{ secrets.NEXT_PUBLIC_AMPLITUDE_API_KEY }} --build-arg NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET=production --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }} .
       - name: Scan Git history for secrets
         run: >-
           docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f git /repo --redact --no-banner
@@ -218,7 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://carawaylabs.com
+      url: https://onehealthatlas.org
     # Former group name: web-production. Renamed so the web app does not share
     # a lock with any other service. In-flight runs started before this rename
     # still occupy web-production until they finish.
@@ -256,7 +277,7 @@ jobs:
         if: steps.production.outcome == 'success'
         run: |
           for attempt in {1..5}; do
-            if curl --fail --silent --show-error https://carawaylabs.com/assistant | grep -q 'Your question'; then
+            if curl --fail --silent --show-error https://onehealthatlas.org/assistant | grep -q 'Your question'; then
               exit 0
             fi
             sleep 10

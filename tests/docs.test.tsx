@@ -8,12 +8,12 @@ describe("documentation configuration", () => {
   afterEach(() => cleanup());
 
   it("uses the canonical public docs URL by default", () => {
-    expect(getDocsUrl({})).toBe("https://carawaylabs.com/docs");
+    expect(getDocsUrl({})).toBe("https://onehealthatlas.org/docs");
     expect(getDocsHref("missing-is-not-zero")).toBe(
-      "https://carawaylabs.com/docs#missing-is-not-zero"
+      "https://onehealthatlas.org/docs#missing-is-not-zero"
     );
     expect(getDocsPageHref("evidence-and-uncertainty")).toBe(
-      "https://carawaylabs.com/docs/evidence-and-uncertainty"
+      "https://onehealthatlas.org/docs/evidence-and-uncertainty"
     );
   });
 
@@ -32,7 +32,7 @@ describe("documentation configuration", () => {
       name: "Open Atlas documentation (opens in a new tab)",
     });
 
-    expect(link.getAttribute("href")).toBe("https://carawaylabs.com/docs");
+    expect(link.getAttribute("href")).toBe("https://onehealthatlas.org/docs");
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
   });
