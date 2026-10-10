@@ -516,6 +516,7 @@
 
 .ux-reset-trust-brand,
 .ux-reset-trust-links {
+  grid-column: 1;
   grid-row: 1;
 }
 

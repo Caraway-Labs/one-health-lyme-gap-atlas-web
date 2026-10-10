@@ -10,7 +10,7 @@ import {
 
 /**
  * Trust footer for the signed-in workspace.
- * The brand opens the public About route from issue #523 in a new tab.
+ * The brand opens the public About route from issue 523 in a new tab.
  * Privacy stays on `/privacy`. AI / Responsible Use stays inside the workspace.
  * Privacy settings navigates to Settings in the same tab. Consent controls stay
  * on the shared privacy preference surface, not in this footer.
