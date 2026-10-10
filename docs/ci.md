@@ -52,6 +52,12 @@ DigitalOcean App Platform builds the `main` branch in `.do/app.yaml` when the ac
 
 ## Rollback
 
+### Branded API cutover (Web #355)
+
+The production manifest and quality build/Docker arguments use `https://api.onehealthatlas.org` for `NEXT_PUBLIC_API_BASE_URL`. This is a build-time value: changing a runtime environment setting alone does not update the browser bundle. The existing deploy action applies the checked-out app manifest and rebuilds the existing DigitalOcean service after approved merge. No separate manual environment change or new service is needed.
+
+Deploy the focused API metadata/CORS follow-up first, including its approved live CORS addition for legacy Swagger. Then approve this Web cutover. Before and after Web deployment, compare the live spec and preserve unrelated settings, domains and authentication values. Verify the deployed source SHA, ACTIVE phase, live `NEXT_PUBLIC_API_BASE_URL` and browser requests from public explorer and authenticated Ask Atlas. Keep Web #355 open until those checks pass. The retained `api.carawaylabs.com` remains available to existing clients and for rollback.
+
 Roll back from the DigitalOcean App Platform deployment history to the last successful deployment. That restores the image App Platform already built.
 
 A revert commit on `main` is a new candidate. It deploys only after `quality` passes and only if it is still `origin/main`.
