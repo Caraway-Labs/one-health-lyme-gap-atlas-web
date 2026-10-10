@@ -26,6 +26,7 @@ export {
   type UxResetSharedContextParamKey,
 } from "@/features/ux-reset/context-params";
 export {
+  ABOUT_CARAWAY_LABS_PATH,
   DOCS_PATH,
   isUxResetRoutePath,
   RESET_ACTION_PATH,
