@@ -97,7 +97,13 @@
 
 .ux-reset-evidence-provenance-technical dd {
   margin: 0;
+  overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.ux-reset-evidence-reproducibility-value {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  user-select: text;
 }
 
 .ux-reset-evidence-limitations {
