@@ -279,13 +279,13 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
   {
     auth: "required",
     description:
-      "Authenticated professional workspace for the UX Reset program.",
+      "Authenticated professional workspace for the One Health Lyme Gap Atlas.",
     href: "/app",
     id: "ux-reset-app",
     label: "Professional workspace",
     match: "prefix",
     pageDescription:
-      "Authenticated professional workspace for the UX Reset program.",
+      "Authenticated professional workspace for the One Health Lyme Gap Atlas.",
     pageTitle: "Professional workspace | One Health Lyme Gap Atlas",
     placement: "none",
     shell: "none",

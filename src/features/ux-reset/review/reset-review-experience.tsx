@@ -166,7 +166,6 @@ function ResetReviewExperienceInner() {
   return (
     <>
       <header className="ux-reset-page-header">
-        <p className="eyebrow">UX Reset professional workspace</p>
         <h1>{route.label}</h1>
         <p className="type-body">{route.description}</p>
       </header>

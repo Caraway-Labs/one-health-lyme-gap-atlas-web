@@ -25,8 +25,6 @@ export {
   UX_RESET_APP_PREFIX as RESET_APP_PATH,
 } from "@/features/ux-reset/routes";
 
-export { ATLAS_OVERVIEW_PATH as LEGACY_ATLAS_PATH } from "@/lib/navigation";
-
 import {
   DOCS_PATH,
   RESET_ACTION_PATH,
@@ -58,8 +56,6 @@ export type ResetRoute = {
   externalHref?: string;
 };
 
-export const RETURN_TO_LEGACY_ATLAS_LABEL = "Open legacy Atlas";
-
 export const RESET_ROUTES: readonly ResetRoute[] = [
   {
     description:
@@ -71,7 +67,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "exact",
     navGroup: "workspace",
     pageDescription:
-      "Authenticated professional workspace for the UX Reset program.",
+      "Authenticated professional workspace for the One Health Lyme Gap Atlas.",
     pageTitle: "Professional workspace | One Health Lyme Gap Atlas",
   },
   {
@@ -83,8 +79,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     label: "Review",
     match: "prefix",
     navGroup: "workspace",
-    pageDescription:
-      "Placeholder for the professional Review destination in the UX Reset workspace.",
+    pageDescription: "Placeholder for the professional Review destination.",
     pageTitle: "Review | One Health Lyme Gap Atlas",
   },
   {
@@ -158,8 +153,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     label: "Feed",
     match: "prefix",
     navGroup: "access",
-    pageDescription:
-      "Placeholder for the professional Feed destination in the UX Reset workspace.",
+    pageDescription: "Placeholder for the professional Feed destination.",
     pageTitle: "Feed | One Health Lyme Gap Atlas",
   },
   {

@@ -86,11 +86,10 @@ describe("UX Reset shell accessibility", () => {
         .querySelector('a[href="/app/review"]')
         ?.getAttribute("aria-label")
     ).toBe("Review");
+    expect(navigation.querySelector('a[href="/overview"]')).toBeNull();
     expect(
-      navigation
-        .querySelector('a[href="/overview"]')
-        ?.getAttribute("aria-label")
-    ).toBe("Open legacy Atlas");
+      screen.queryByRole("link", { name: "Open legacy Atlas" })
+    ).toBeNull();
   });
 
   it("marks the mobile drawer inert while closed so links are not tabbable", async () => {
