@@ -4,7 +4,8 @@
 **Story:** [#195 — Audit Atlas route taxonomy and recommend canonical classifications](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/195)  
 **Follow-on:** [#196 — Approve route migration and compatibility contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/196)  
 **Baseline:** `main` at `dd062da3b5d3e94299f41afc548e94728b071594` (2026-10-02)  
-**Scope:** Audit and recommendations only. **No route behavior changes** in this story.
+**Scope:** Audit and recommendations only. **No route behavior changes** in this story.  
+**Retirement note (#504):** The `/ux-lab/**` persona prototype routes inventoried below were removed after this audit. Those sections describe the pre-retirement baseline. Direct requests now return 404, with no redirect and no prototype shell.
 
 ## Executive summary
 
