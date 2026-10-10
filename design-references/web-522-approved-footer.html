@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WEB #522 — approved professional footer visual contract</title>
+<style>
+:root{--navy:#103452;--background:#fff;--line:#dce4e9;--ink:#173147;--sidebar-width:248px; font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
+*{box-sizing:border-box}body{margin:0;background:#fff}a{color:inherit}.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-width);flex:none;background:#f8fafb;border-right:1px solid var(--line);padding:20px 12px}
+.sidebar h2{font-size:16px;margin:14px 10px 24px}.sidebar a{display:block;padding:12px;margin:3px 0;border-radius:6px;text-decoration:none;font-size:14px}.sidebar a.active{background:#d8edea}
+#collapse{margin:6px 10px;border:1px solid #b3c4d0;border-radius:6px;padding:9px;background:white;cursor:pointer}
+.app.collapsed .sidebar{width:65px}.app.collapsed .sidebar h2,.app.collapsed .sidebar a{display:none}
+.column{min-width:0;flex:1;display:flex;flex-direction:column}
+header{height:66px;border-bottom:1px solid var(--line);padding:20px 28px;font-size:14px;font-weight:600}
+main{flex:1;padding:30px 34px 90px;max-width:1100px;width:100%;margin:0 auto}
+main h1{font-size:30px;margin:0 0 8px}main .muted{color:#596f7c}.panel{background:#f2f7f8;border:1px solid #dee7e9;border-radius:12px;padding:24px;margin:24px 0}.placeholder{min-height:230px}.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tile{border:1px solid #cedbe0;padding:15px;border-radius:8px}
+.footer{background:var(--navy);color:#fff;min-height:62px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;padding:8px 24px;border-top:1px solid #254b68;gap:20px}
+.footer a{color:#fff;font-weight:500;font-size:13px;text-decoration:none;white-space:normal}
+.footer a:hover{text-decoration:underline}.footer a:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:2px}
+.footer-brand{grid-column:1;justify-self:start}.trust{grid-column:2;display:flex;justify-content:center;align-items:center;gap:22px;flex-wrap:wrap}
+@media(max-width:900px){.footer{grid-template-columns:1fr;justify-items:start;align-items:start;min-height:0;padding:18px 20px;gap:16px}.footer-brand{grid-column:1}.trust{grid-column:1;justify-content:flex-start;gap:12px 20px}.footer a{min-height:30px;display:inline-flex;align-items:center}.tiles{grid-template-columns:1fr 1fr}}
+@media(max-width:570px){.sidebar{width:58px;padding:10px 3px}.sidebar h2,.sidebar a{display:none}main{padding:20px 16px 90px}.tiles{grid-template-columns:1fr}header{padding:20px 16px}}
+</style></head>
+<body><div class="app" id="app">
+<aside class="sidebar"><button id="collapse" type="button" aria-label="Collapse or expand navigation" aria-expanded="true">☰</button><h2>One Health Atlas</h2><nav aria-label="Workspace"><a href="#review" class="active">Review</a><a href="#explore">Explore</a><a href="#investigate">Investigate</a><a href="#compare">Compare</a><a href="#action">Action</a><a href="#assistant">Assistant</a><a href="#settings">Settings</a></nav></aside>
+<div class="column"><header>Professional workspace <span style="float:right">Ask Atlas ✦</span></header>
+<main id="review"><p class="muted">Professional workspace / Review</p><h1>Review</h1><p class="muted">Review county surveillance evidence and follow-up priorities.</p>
+<section class="panel"><h2>Choose your review scope</h2><p>Select a location to investigate the One Health evidence available.</p><div class="tiles"><div class="tile">United States</div><div class="tile">Idaho</div><div class="tile">New York</div><div class="tile">Pennsylvania</div><div class="tile">Wisconsin</div><div class="tile">Minnesota</div></div></section>
+<section class="panel placeholder"><h2>Surveillance review</h2><p class="muted">Representative review-page content area. Footer is the fidelity target; do not copy these placeholders into production.</p></section>
+<section class="panel placeholder"><h2>County evidence and follow-up</h2><p class="muted">Scroll through the workspace to view the footer in its natural bottom-of-page position.</p></section>
+</main>
+<footer class="footer" aria-label="Workspace trust footer">
+<a class="footer-brand" href="/about/caraway-labs" target="_blank" rel="noopener noreferrer">One Health Atlas by Caraway Labs ↗</a>
+<nav class="trust" aria-label="Trust"><a href="/privacy">Privacy</a><a href="/app/ai-responsible-use">AI / Responsible Use</a><a href="/app/settings">Privacy settings</a></nav>
+</footer></div></div>
+<script>document.querySelector('#collapse').addEventListener('click',()=>{const app=document.querySelector('#app');app.classList.toggle('collapsed');document.querySelector('#collapse').setAttribute('aria-expanded',String(!app.classList.contains('collapsed')));});</script>
+</body></html>
