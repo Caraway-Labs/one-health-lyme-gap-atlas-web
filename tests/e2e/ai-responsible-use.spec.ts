@@ -1,6 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
+
 async function focusByTab(page: Page, control: Locator) {
   for (let step = 0; step < 80; step += 1) {
     if (

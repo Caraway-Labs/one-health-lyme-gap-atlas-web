@@ -11,6 +11,7 @@ import {
   exploreObservationsEnvelope,
   exploreScoresFixture,
 } from "../fixtures/explore-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 
 type ExploreRouteControls = {
   delayMeasureId: string | null;
@@ -55,6 +56,7 @@ async function installExploreApiMocks(
   delayedRequest: Promise<void>,
   requestedUrls: string[]
 ) {
+  await fulfillCompletedStartingView(page);
   await page.route("**/v1/atlas/metadata**", async (route) => {
     requestedUrls.push(route.request().url());
     await route.fulfill({ json: exploreMetadataFixture, status: 200 });

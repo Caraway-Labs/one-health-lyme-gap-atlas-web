@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const docsPages = [
   { path: "/docs", heading: "Start with Atlas Lyme" },
   { path: "/docs/what-is-atlas", heading: "What is Atlas Lyme?" },
@@ -165,6 +167,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   page,
 }, testInfo) => {
   const reviewPath = "/app/review?scope=NY&county=36061&sort=score";
+  await fulfillCompletedStartingView(page);
   await page.goto(reviewPath);
   await expect(
     page.getByRole("heading", { level: 1, name: "Review" })

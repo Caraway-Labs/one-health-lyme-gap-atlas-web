@@ -5,8 +5,13 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 
 const HISTORY_RELEASE_ID = "alpha-2026-08-06";
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
 
 async function installDeterministicWorkspaceMocks(page: Page) {
   const metadata = {

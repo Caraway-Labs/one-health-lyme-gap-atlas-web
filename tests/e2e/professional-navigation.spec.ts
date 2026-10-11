@@ -1,6 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
+
 const NAVY = "rgb(8, 42, 77)";
 const TEAL = "rgb(15, 119, 130)";
 const TEAL_DARK = "rgb(7, 87, 96)";

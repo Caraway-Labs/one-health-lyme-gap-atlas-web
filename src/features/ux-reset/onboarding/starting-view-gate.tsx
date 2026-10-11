@@ -20,8 +20,9 @@ const COPY = {
 } as const;
 
 /**
- * Incomplete accounts leave the workspace for setup. A failed profile read
- * stays recoverable and does not open setup.
+ * Incomplete accounts leave the workspace for setup. A read that is still in
+ * flight keeps the requested workspace. A failed profile read stays
+ * recoverable and does not open setup.
  */
 export function StartingViewGate({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -41,7 +42,7 @@ export function StartingViewGate({ children }: { children: ReactNode }) {
 
   if (profile.isError && !profile.sessionRejected) {
     return (
-      <main className="app-content ux-reset-pro-main">
+      <div className="app-content ux-reset-pro-main">
         <p role="alert">{COPY.unavailable}</p>
         <Button
           onClick={() => {
@@ -51,17 +52,19 @@ export function StartingViewGate({ children }: { children: ReactNode }) {
         >
           {COPY.retry}
         </Button>
-      </main>
+      </div>
     );
   }
 
-  if (!profile.data || !complete) {
+  // The shell already owns the main landmark. Keep an explicit destination
+  // usable until a read proves the account is incomplete.
+  if (profile.data && !complete) {
     return (
-      <main className="app-content ux-reset-pro-main">
+      <div className="app-content ux-reset-pro-main">
         <p aria-live="polite" role="status">
           {COPY.checking}
         </p>
-      </main>
+      </div>
     );
   }
 
