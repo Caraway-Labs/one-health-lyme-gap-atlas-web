@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -65,6 +66,9 @@ function SignInForm() {
     <main className="container py-12">
       <section className="mx-auto max-w-md space-y-6">
         <div>
+          <div className="atlas-sign-in-brand mb-4">
+            <BrandMark />
+          </div>
           <p className="eyebrow">Optional account</p>
           <h1 className="text-3xl font-semibold">Sign in to Atlas</h1>
           <p className="text-muted-foreground mt-2">

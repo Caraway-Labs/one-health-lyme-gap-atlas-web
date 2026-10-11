@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
+import "@/features/ux-reset/trust-footer.css";
 import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
 import { pageMetadataForRoute } from "@/lib/navigation";
 

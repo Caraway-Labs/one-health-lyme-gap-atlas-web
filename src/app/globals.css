@@ -526,6 +526,8 @@ body {
   flex: none;
 }
 .public-layout {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--background);
 }
@@ -534,36 +536,21 @@ body {
   min-height: var(--shell-utility-height);
   padding: var(--space-2) var(--layout-inline);
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   border-bottom: 1px solid var(--border);
   background: var(--card);
 }
 .public-brand {
   display: inline-flex;
+  min-width: 0;
   gap: var(--space-2);
   align-items: center;
   color: var(--navy);
   font-size: 0.82rem;
   font-weight: 750;
 }
-.public-brand .brand-mark {
-  display: inline-grid;
-  width: 1.8rem;
-  height: 1.8rem;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--navy);
-  color: var(--white);
-}
-.public-home-link {
-  color: var(--teal-dark);
-  font-size: 0.78rem;
-  font-weight: 750;
-}
-.public-home-link:hover,
-.public-home-link:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+.public-brand span:last-child {
+  min-width: 0;
 }
 .coming-soon-page {
   display: grid;
@@ -658,12 +645,6 @@ body {
   .public-header {
     padding-right: 1.2rem;
     padding-left: 1.2rem;
-  }
-  .public-brand span:last-child {
-    max-width: 12rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 .atlas-docs-root {
@@ -4963,32 +4944,6 @@ select:focus-visible {
   margin-top: var(--space-4);
   margin-bottom: 0;
 }
-.front-porch-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-8) var(--layout-inline);
-  background: var(--navy);
-  color: var(--white);
-}
-.front-porch-footer p {
-  margin: 0;
-  color: var(--white);
-}
-.front-porch-footer nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4) var(--space-6);
-  align-items: center;
-}
-.front-porch-footer a,
-.front-porch-footer .footer-link {
-  color: var(--atlas-action-primary);
-  font-size: var(--type-small-size);
-  font-weight: 650;
-}
 .front-porch a:focus-visible,
 .front-porch button:focus-visible {
   outline: var(--focus-ring-width) solid var(--ring);
@@ -4996,8 +4951,6 @@ select:focus-visible {
 }
 .front-porch-hero a:focus-visible,
 .front-porch-bar a:focus-visible,
-.front-porch-footer a:focus-visible,
-.front-porch-footer button:focus-visible,
 .front-porch-close a:focus-visible {
   outline-color: var(--white);
 }

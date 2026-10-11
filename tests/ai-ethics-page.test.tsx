@@ -39,9 +39,14 @@ describe("AI Ethics page", () => {
     screen.getByRole("link", { name: "Return to the Atlas" });
     screen.getByText(/does not provide diagnosis or treatment advice/i);
     screen.getByText(`Version ${aiEthicsContent.version}`);
-    expect(
-      screen.getByLabelText("AI Ethics document version").textContent
-    ).toContain("Last updated September 7, 2026");
+    const version = screen.getByLabelText("AI Ethics document version");
+    expect({
+      tag: version.tagName,
+      text: version.textContent,
+    }).toStrictEqual({
+      tag: "DIV",
+      text: expect.stringContaining("Last updated September 7, 2026"),
+    });
   });
 
   it("renders static disclosure content without an API request", () => {

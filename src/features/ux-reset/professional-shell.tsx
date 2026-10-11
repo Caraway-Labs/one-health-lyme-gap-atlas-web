@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type { MouseEvent, ReactNode } from "react";
 
+import { BrandMark } from "@/components/brand-mark";
 import {
   Sidebar,
   SidebarContent,
@@ -210,7 +211,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
             className="ux-reset-pro-brand"
             onClick={closeMobileNavigation}
           >
-            <span aria-hidden="true">+</span>
+            <BrandMark size={28} />
             <b>One Health Atlas</b>
           </Link>
           <SidebarTrigger
