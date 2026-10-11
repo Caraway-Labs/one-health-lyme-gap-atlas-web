@@ -5,6 +5,7 @@ import {
   buildCountyEvidenceBundle,
   evidenceFamilyForMeasure,
   investigateEvidenceConflicts,
+  investigateMultipleObservations,
   resolveCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
@@ -20,6 +21,7 @@ import {
   type CountyDetail,
   type EnvironmentalContext,
   type Measure,
+  type Observation,
 } from "@/generated/models";
 
 import {
@@ -50,6 +52,52 @@ function coverageContext(
     valid_area_m2: null,
     valid_fraction_of_supported_area: null,
     weight_version: "w1",
+  };
+}
+
+function casesBundle(observations: readonly Observation[]) {
+  const identity = resolveCountyIdentity(
+    investigateGeographyFixture("08001")!,
+    "08001"
+  );
+  return buildCountyEvidenceBundle({
+    domainsRequestFailed: false,
+    identity,
+    indicatorDomains: indicatorDomainsById(
+      investigateIndicatorsFixture,
+      INVESTIGATE_RELEASE_ID
+    ),
+    measures: yearMeasures,
+    outcomes: yearMeasures.map((measure) => ({
+      measureId: measure.measure_id,
+      observations:
+        measure.measure_id === "reported-cases" ? [...observations] : [],
+      status: "ready" as const,
+    })),
+    releaseId: INVESTIGATE_RELEASE_ID,
+  });
+}
+
+function caseObservation(
+  id: string,
+  value: number,
+  periodStart: string,
+  periodEnd: string
+): Observation {
+  const [base] = investigateObservationsFor({
+    fips: "08001",
+    measureId: "reported-cases",
+    scenario: "sparse",
+  });
+  if (!base) {
+    throw new Error("Reported-cases fixture is missing.");
+  }
+  return {
+    ...base,
+    observation_id: id,
+    period_end: periodEnd,
+    period_start: periodStart,
+    value,
   };
 }
 
@@ -182,20 +230,96 @@ describe("County Investigate evidence hierarchy", () => {
     });
   });
 
-  it("keeps disagreeing observations separate", () => {
-    const bundle = mixedBundle("ambiguous");
-    const conflicts = investigateEvidenceConflicts(bundle);
-    expect(conflicts).toStrictEqual([
-      {
-        measureId: "reported-cases",
-        measureLabel: "Reported Lyme cases",
-        observationCount: 2,
-      },
+  it("does not call a monthly series a conflict", () => {
+    const bundle = casesBundle([
+      caseObservation("jan", 1, "2023-01-01", "2023-01-31"),
+      caseObservation("feb", 4, "2023-02-01", "2023-02-28"),
+      caseObservation("mar", 2, "2023-03-01", "2023-03-31"),
     ]);
     render(<InvestigateEvidenceHierarchy bundle={bundle} />);
-    expect(screen.getByTestId("investigate-conflicts").textContent).toContain(
-      "not combined"
+    expect({
+      conflicts: investigateEvidenceConflicts(bundle),
+      multiple: screen
+        .getByTestId("investigate-multiple-observations")
+        .textContent?.includes("multiple observations, not a conflict"),
+    }).toStrictEqual({
+      conflicts: [],
+      multiple: true,
+    });
+  });
+
+  it("flags same-period values that disagree", () => {
+    const bundle = casesBundle([
+      caseObservation("cdc", 12, "2023-01-01", "2023-12-31"),
+      caseObservation("state", 3, "2023-01-01", "2023-12-31"),
+    ]);
+    render(<InvestigateEvidenceHierarchy bundle={bundle} />);
+    expect({
+      conflicts: investigateEvidenceConflicts(bundle),
+      keptSeparate: screen
+        .getByTestId("investigate-conflicts")
+        .textContent?.includes("not combined"),
+      multiples: investigateMultipleObservations(bundle),
+    }).toStrictEqual({
+      conflicts: [
+        {
+          measureId: "reported-cases",
+          measureLabel: "Reported Lyme cases",
+          observationCount: 2,
+        },
+      ],
+      keptSeparate: true,
+      multiples: [],
+    });
+  });
+
+  it("leads with a published county row when observations have no finding", () => {
+    const bundle = casesBundle([]);
+    render(
+      <InvestigateEvidenceHierarchy
+        bundle={bundle}
+        countyRecord={publishedRecord}
+      />
     );
+    const text = screen.getByTestId("investigate-finding-text").textContent;
+    expect({
+      deniesFinding: text?.includes("No observed or limited finding") ?? false,
+      value: text?.includes("Established") ?? false,
+    }).toStrictEqual({
+      deniesFinding: false,
+      value: true,
+    });
+  });
+
+  it("keeps a suppressed published status limited", () => {
+    const hierarchy = publishedCountyHierarchy({
+      measures: [],
+      observedMeasureIds: [],
+      record: {
+        ...publishedRecord,
+        burgdorferiStatus: "No records",
+        pacificusStatus: null,
+        population: null,
+        rucc: null,
+        scapularisStatus: null,
+        sources: [],
+        sviPercentile: null,
+        tickStatus: "SUPPRESSED",
+        uninsuredPercent: null,
+      },
+    });
+    const row = hierarchy.rows.find(
+      (entry) => entry.measureId === "tick_status"
+    );
+    expect({
+      availability: row?.evidence.availability,
+      display: row?.evidence.displayValue,
+      reason: row?.evidence.reasonCode,
+    }).toStrictEqual({
+      availability: "limited",
+      display: "Suppressed",
+      reason: "SUPPRESSED",
+    });
   });
 
   it("does not copy the review score into the published county record", () => {

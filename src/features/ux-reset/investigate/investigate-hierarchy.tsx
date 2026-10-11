@@ -8,6 +8,7 @@ import { EvidenceObject } from "@/features/ux-reset/evidence";
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import {
   investigateEvidenceConflicts,
+  investigateMultipleObservations,
   investigateFamilyPublication,
   type CountyEvidenceBundle,
   type CountyEvidenceFamilySection,
@@ -28,6 +29,7 @@ import {
 import type { Measure } from "@/generated/models";
 
 const EMPTY_MEASURES: readonly Measure[] = [];
+const NO_PUBLISHED_FINDINGS: readonly PublishedHierarchyRow[] = [];
 
 function observationAnchor(observationId: string): string {
   return `investigate-observation-${observationId}`;
@@ -275,7 +277,6 @@ export function InvestigateEvidenceHierarchy({
 }) {
   const finding = bundle.leadFinding;
   const limitation = bundle.leadLimitation;
-  const findingSummary = investigateFindingSummary(bundle);
   const limitationSummary = investigateLimitationSummary(bundle);
   const failedMeasureIds = new Set(
     bundle.measureFailures.map((failure) => failure.measureId)
@@ -291,14 +292,20 @@ export function InvestigateEvidenceHierarchy({
         record: countyRecord,
       })
     : null;
+  const findingSummary = investigateFindingSummary(
+    bundle,
+    published?.rows ?? NO_PUBLISHED_FINDINGS
+  );
   const coverage = environmentalCoverageRows({
     contexts: coverageContexts(bundle),
   });
   const conflicts = investigateEvidenceConflicts(bundle);
+  const multipleObservations = investigateMultipleObservations(bundle);
   const limitations = limitationLines(bundle);
   const publishedGaps = published?.gaps ?? [];
   const hasGapContent =
     conflicts.length > 0 ||
+    multipleObservations.length > 0 ||
     bundle.measureFailures.length > 0 ||
     bundle.unsupportedPeriodMeasureIds.length > 0 ||
     limitations.length > 0 ||
@@ -445,7 +452,16 @@ export function InvestigateEvidenceHierarchy({
           <ul data-testid="investigate-conflicts">
             {conflicts.map((conflict) => (
               <li key={conflict.measureId}>
-                {`${conflict.measureLabel} returned ${conflict.observationCount} observations with different values, periods, or sources. They stay separate and are not combined.`}
+                {`${conflict.measureLabel} returned ${conflict.observationCount} observations for the same period with different values. They stay separate and are not combined.`}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {multipleObservations.length > 0 ? (
+          <ul data-testid="investigate-multiple-observations">
+            {multipleObservations.map((group) => (
+              <li key={group.measureId}>
+                {`${group.measureLabel} returned ${group.observationCount} observations. These are multiple observations, not a conflict.`}
               </li>
             ))}
           </ul>

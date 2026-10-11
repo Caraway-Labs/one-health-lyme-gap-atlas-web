@@ -1,3 +1,4 @@
+import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import {
   countyEvidenceGap,
@@ -5,6 +6,7 @@ import {
   type CountyEvidenceGap,
   type CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
+import type { PublishedHierarchyRow } from "@/features/ux-reset/investigate/published-county-hierarchy";
 
 export type InvestigateVisibleSummary = {
   text: string;
@@ -76,20 +78,47 @@ function summaryForGap(
   };
 }
 
+const NO_PUBLISHED_ROWS: readonly PublishedHierarchyRow[] = [];
+
+function publishedLeadRow(
+  rows: readonly PublishedHierarchyRow[]
+): PublishedHierarchyRow | null {
+  const available = rows.find(
+    (row) => row.evidence.availability === evidenceAvailabilityValues.available
+  );
+  if (available) {
+    return available;
+  }
+  return (
+    rows.find(
+      (row) => row.evidence.availability === evidenceAvailabilityValues.limited
+    ) ?? null
+  );
+}
+
 /**
  * The finding sentence Investigate shows for a loaded county bundle.
  * Action repeats this sentence so the handoff does not rewrite the summary.
+ * Published county rows fill the sentence when the observation series has none.
  */
 export function investigateFindingSummary(
-  bundle: CountyEvidenceBundle
+  bundle: CountyEvidenceBundle,
+  publishedRows: readonly PublishedHierarchyRow[] = NO_PUBLISHED_ROWS
 ): InvestigateVisibleSummary {
   const finding = bundle.leadFinding;
-  if (!finding) {
+  if (finding) {
+    return {
+      text: `${finding.measureLabel}: ${finding.evidence.displayValue}. ${evidenceAvailabilityLabel(finding.evidence.availability)}. Period ${finding.evidence.provenance.observationPeriod}. Source ${finding.evidence.provenance.sourceFamily}.`,
+      title: finding.measureLabel,
+    };
+  }
+  const published = publishedLeadRow(publishedRows);
+  if (!published) {
     return summaryForGap(bundle, "finding");
   }
   return {
-    text: `${finding.measureLabel}: ${finding.evidence.displayValue}. ${evidenceAvailabilityLabel(finding.evidence.availability)}. Period ${finding.evidence.provenance.observationPeriod}. Source ${finding.evidence.provenance.sourceFamily}.`,
-    title: finding.measureLabel,
+    text: `${published.evidence.claimLabel}: ${published.evidence.displayValue}. ${evidenceAvailabilityLabel(published.evidence.availability)}. Period ${published.evidence.provenance.observationPeriod}. Source ${published.evidence.provenance.sourceFamily}.`,
+    title: published.evidence.claimLabel,
   };
 }
 

@@ -121,6 +121,9 @@ function statusValueState(status: string): ValueState {
   if (normalized === "missing") {
     return ValueState.MISSING;
   }
+  if (normalized === ValueState.SUPPRESSED.toLowerCase()) {
+    return ValueState.SUPPRESSED;
+  }
   if (ABSENT_PUBLISHED_STATUSES.has(normalized)) {
     return ValueState.UNAVAILABLE;
   }

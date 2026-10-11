@@ -552,13 +552,9 @@ function visibleBundleRecords(
   return records;
 }
 
-/**
- * Same measure, with different values, periods, or sources. The rows stay
- * separate. This does not choose or average them.
- */
-export function investigateEvidenceConflicts(
+function observationsByMeasure(
   bundle: Pick<CountyEvidenceBundle, "families" | "unassigned">
-): InvestigateEvidenceConflict[] {
+): Map<string, CountyEvidenceObservation[]> {
   const grouped = new Map<string, CountyEvidenceObservation[]>();
   for (const record of visibleBundleRecords(bundle)) {
     const existing = grouped.get(record.measureId);
@@ -568,41 +564,95 @@ export function investigateEvidenceConflicts(
     }
     grouped.set(record.measureId, [record]);
   }
-  const conflicts: InvestigateEvidenceConflict[] = [];
-  for (const [measureId, records] of grouped) {
-    if (records.length < 2) {
+  return grouped;
+}
+
+function periodBasis(record: CountyEvidenceObservation): string {
+  return `${record.observation.period_start}..${record.observation.period_end}`;
+}
+
+/** Rows that share a measure and period and do not share a display value. */
+function disagreeingObservationCount(
+  records: readonly CountyEvidenceObservation[]
+): number {
+  const byPeriod = new Map<string, CountyEvidenceObservation[]>();
+  for (const record of records) {
+    const key = periodBasis(record);
+    const existing = byPeriod.get(key);
+    if (existing) {
+      existing.push(record);
       continue;
     }
+    byPeriod.set(key, [record]);
+  }
+  let count = 0;
+  for (const periodRecords of byPeriod.values()) {
     const values = new Set(
-      records.map((record) => record.evidence.displayValue)
+      periodRecords.map((record) => record.evidence.displayValue)
     );
-    const periods = new Set(
-      records.map(
-        (record) =>
-          `${record.observation.period_start}..${record.observation.period_end}`
-      )
-    );
-    const sources = new Set(
-      records.map((record) => record.observation.source_id)
-    );
-    if (values.size < 2 && periods.size < 2 && sources.size < 2) {
-      continue;
+    if (periodRecords.length > 1 && values.size > 1) {
+      count += periodRecords.length;
     }
+  }
+  return count;
+}
+
+function byMeasureLabel(
+  left: InvestigateEvidenceConflict,
+  right: InvestigateEvidenceConflict
+): number {
+  return (
+    left.measureLabel.localeCompare(right.measureLabel, "en") ||
+    left.measureId.localeCompare(right.measureId)
+  );
+}
+
+/**
+ * Same measure and period, with different values. A series across periods is
+ * not a conflict. This does not choose or average the rows.
+ */
+export function investigateEvidenceConflicts(
+  bundle: Pick<CountyEvidenceBundle, "families" | "unassigned">
+): InvestigateEvidenceConflict[] {
+  const conflicts: InvestigateEvidenceConflict[] = [];
+  for (const [measureId, records] of observationsByMeasure(bundle)) {
+    const observationCount = disagreeingObservationCount(records);
     const [first] = records;
-    if (!first) {
+    if (observationCount < 2 || !first) {
       continue;
     }
     conflicts.push({
       measureId,
       measureLabel: first.measureLabel,
+      observationCount,
+    });
+  }
+  return conflicts.toSorted(byMeasureLabel);
+}
+
+/**
+ * More than one observation for a measure, without a same-period disagreement.
+ * These stay separate and are not called conflicts.
+ */
+export function investigateMultipleObservations(
+  bundle: Pick<CountyEvidenceBundle, "families" | "unassigned">
+): InvestigateEvidenceConflict[] {
+  const conflictIds = new Set(
+    investigateEvidenceConflicts(bundle).map((conflict) => conflict.measureId)
+  );
+  const multiples: InvestigateEvidenceConflict[] = [];
+  for (const [measureId, records] of observationsByMeasure(bundle)) {
+    const [first] = records;
+    if (records.length < 2 || !first || conflictIds.has(measureId)) {
+      continue;
+    }
+    multiples.push({
+      measureId,
+      measureLabel: first.measureLabel,
       observationCount: records.length,
     });
   }
-  return conflicts.toSorted(
-    (left, right) =>
-      left.measureLabel.localeCompare(right.measureLabel, "en") ||
-      left.measureId.localeCompare(right.measureId)
-  );
+  return multiples.toSorted(byMeasureLabel);
 }
 
 export function selectLeadLimitation(
