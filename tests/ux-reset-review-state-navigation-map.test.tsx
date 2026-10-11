@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type MapLibreModule = typeof import("maplibre-gl");
 
+import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { ReviewStateFeatureCollection } from "@/features/ux-reset/review/review-state-navigation";
 import {
   ReviewStateNavigationMap,
@@ -38,6 +39,8 @@ const engine = vi.hoisted(() => {
     >();
     setFeatureState = vi.fn<(target: unknown, state: unknown) => void>();
     resize = vi.fn<() => void>();
+    jumpTo =
+      vi.fn<(options: { center: [number, number]; zoom: number }) => void>();
     canvas: {
       getContext?: (kind: string) => object | null;
       style: { cursor: string };
@@ -161,6 +164,33 @@ function features(): ReviewStateFeatureCollection {
     ],
     type: "FeatureCollection",
   };
+}
+
+type RecordedResizeObserver = {
+  disconnect: () => void;
+  disconnected: boolean;
+  observe: (target: Element) => void;
+  onResize: () => void;
+  target: Element | null;
+};
+
+function recordedResizeObserver(instances: RecordedResizeObserver[]) {
+  function ResizeObserver(onResize: () => void) {
+    const record: RecordedResizeObserver = {
+      disconnect() {
+        record.disconnected = true;
+      },
+      disconnected: false,
+      observe(target: Element) {
+        record.target = target;
+      },
+      onResize,
+      target: null,
+    };
+    instances.push(record);
+    return record;
+  }
+  return ResizeObserver;
 }
 
 function renderNavigationMap(
@@ -400,5 +430,130 @@ describe("Review state navigation map lifecycle", () => {
       instances: 0,
       loadFailed: 1,
     });
+  });
+
+  it("fits the lower 48 and DC to the container and refits on resize", () => {
+    const observers: RecordedResizeObserver[] = [];
+    vi.stubGlobal("ResizeObserver", recordedResizeObserver(observers));
+    const width = vi
+      .spyOn(HTMLElement.prototype, "clientWidth", "get")
+      .mockReturnValue(390);
+    const height = vi
+      .spyOn(HTMLElement.prototype, "clientHeight", "get")
+      .mockReturnValue(256);
+    try {
+      const view = renderNavigationMap();
+      const map = engine.instances[0];
+      const observer = observers[0];
+      if (!(map && observer)) {
+        throw new Error("expected a map and a resize observer");
+      }
+      map.emit("load");
+      width.mockReturnValue(1440);
+      height.mockReturnValue(448);
+      observer.onResize();
+      view.unmount();
+      observer.onResize();
+      const narrow = reviewNationalNavigationCamera(390, 256);
+      const wide = reviewNationalNavigationCamera(1440, 448);
+      expect({
+        cameras: map.jumpTo.mock.calls,
+        disconnected: observer.disconnected,
+        removed: map.removed,
+      }).toStrictEqual({
+        cameras: [
+          [{ center: narrow?.center, zoom: narrow?.zoom }],
+          [{ center: wide?.center, zoom: wide?.zoom }],
+        ],
+        disconnected: true,
+        removed: true,
+      });
+    } finally {
+      width.mockRestore();
+      height.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("removes the window resize listener when ResizeObserver is unavailable", () => {
+    vi.stubGlobal("ResizeObserver");
+    const width = vi
+      .spyOn(HTMLElement.prototype, "clientWidth", "get")
+      .mockReturnValue(390);
+    const height = vi
+      .spyOn(HTMLElement.prototype, "clientHeight", "get")
+      .mockReturnValue(256);
+    const addListener = vi.spyOn(window, "addEventListener");
+    const removeListener = vi.spyOn(window, "removeEventListener");
+    try {
+      const view = renderNavigationMap();
+      const map = engine.instances[0];
+      if (!map) {
+        throw new Error("expected a map instance");
+      }
+      map.emit("load");
+      const registration = addListener.mock.calls.find(
+        (call) => call[0] === "resize"
+      );
+      const listener = registration?.[1];
+      if (typeof listener !== "function") {
+        throw new TypeError("expected a window resize listener");
+      }
+      width.mockReturnValue(1440);
+      height.mockReturnValue(448);
+      listener();
+      view.unmount();
+      listener();
+      const narrow = reviewNationalNavigationCamera(390, 256);
+      const wide = reviewNationalNavigationCamera(1440, 448);
+      expect({
+        cameras: map.jumpTo.mock.calls,
+        removedListener: removeListener.mock.calls.some(
+          (call) => call[0] === "resize" && call[1] === listener
+        ),
+      }).toStrictEqual({
+        cameras: [
+          [{ center: narrow?.center, zoom: narrow?.zoom }],
+          [{ center: wide?.center, zoom: wide?.zoom }],
+        ],
+        removedListener: true,
+      });
+    } finally {
+      addListener.mockRestore();
+      removeListener.mockRestore();
+      width.mockRestore();
+      height.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("activates coastal states and DC from the map", () => {
+    const view = renderNavigationMap({
+      features: {
+        features: ["CA", "NY", "DC"].map((code) => ({
+          geometry: { coordinates: [], type: "MultiPolygon" as const },
+          id: code,
+          properties: {
+            availability: "supported" as const,
+            code,
+            name: code,
+          },
+          type: "Feature" as const,
+        })),
+        type: "FeatureCollection",
+      },
+    });
+    const map = engine.instances[0];
+    map?.emit("load");
+    for (const code of ["CA", "NY", "DC"]) {
+      map?.emit("click:review-states-fill", {
+        features: [{ properties: { availability: "supported", code } }],
+      });
+    }
+    expect(view.handleActivate.mock.calls).toStrictEqual([
+      ["CA"],
+      ["NY"],
+      ["DC"],
+    ]);
   });
 });

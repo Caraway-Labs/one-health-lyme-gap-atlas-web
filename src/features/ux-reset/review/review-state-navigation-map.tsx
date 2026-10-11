@@ -11,6 +11,7 @@ import { useEffect, useRef } from "react";
 import { CONTIGUOUS_US_INITIAL_VIEW } from "@/lib/atlas-geometry";
 import { cn } from "@/lib/utils";
 
+import { reviewNationalNavigationCamera } from "./review-national-camera";
 import {
   reviewMapErrorFailure,
   reviewStateAvailabilityValues,
@@ -207,6 +208,23 @@ function webglUnavailable(map: MapLibreMap): boolean {
   return !canvas.getContext("webgl2");
 }
 
+function applyReviewNationalCamera(
+  map: MapLibreMap,
+  element: HTMLElement
+): void {
+  const camera = reviewNationalNavigationCamera(
+    element.clientWidth,
+    element.clientHeight
+  );
+  if (!camera) {
+    return;
+  }
+  map.jumpTo({ center: camera.center, zoom: camera.zoom });
+  element.dataset.reviewCameraLat = String(camera.center[1]);
+  element.dataset.reviewCameraLng = String(camera.center[0]);
+  element.dataset.reviewCameraZoom = String(camera.zoom);
+}
+
 function browserCanStartWebgl(): boolean {
   const probe = document.createElement("canvas");
   if (typeof probe.getContext !== "function") {
@@ -301,11 +319,16 @@ export function ReviewStateNavigationMap({
     disposedRef.current = false;
     readyRef.current = false;
     setWorkerUrl(MAP_WORKER_URL);
+    const initialCamera = reviewNationalNavigationCamera(
+      element.clientWidth,
+      element.clientHeight
+    );
     let instance: MapLibreMap;
     try {
       instance = new MapLibre({
         attributionControl: false,
         boxZoom: false,
+        center: initialCamera?.center ?? CONTIGUOUS_US_INITIAL_VIEW.center,
         container: element,
         doubleClickZoom: false,
         dragPan: false,
@@ -315,7 +338,7 @@ export function ReviewStateNavigationMap({
         style: { layers: [], sources: {}, version: 8 },
         touchPitch: false,
         touchZoomRotate: false,
-        ...CONTIGUOUS_US_INITIAL_VIEW,
+        zoom: initialCamera?.zoom ?? CONTIGUOUS_US_INITIAL_VIEW.zoom,
       });
     } catch {
       onWebglUnavailableRef.current();
@@ -419,24 +442,35 @@ export function ReviewStateNavigationMap({
       });
       readyRef.current = true;
       instance.resize();
+      applyReviewNationalCamera(instance, element);
       applyInteractionRef.current(instance);
       onReadyRef.current();
     });
 
+    const fitToContainer = () => {
+      if (disposedRef.current) {
+        return;
+      }
+      instance.resize();
+      applyReviewNationalCamera(instance, element);
+    };
     const observer =
       typeof ResizeObserver === "undefined"
         ? null
-        : new ResizeObserver(() => {
-            if (!disposedRef.current) {
-              instance.resize();
-            }
-          });
-    observer?.observe(element);
+        : new ResizeObserver(fitToContainer);
+    if (observer) {
+      observer.observe(element);
+    } else {
+      window.addEventListener("resize", fitToContainer);
+    }
 
     return () => {
       disposedRef.current = true;
       readyRef.current = false;
       observer?.disconnect();
+      if (!observer) {
+        window.removeEventListener("resize", fitToContainer);
+      }
       removeInstance();
     };
     // The map is created once. Feature and interaction updates use the effects below.

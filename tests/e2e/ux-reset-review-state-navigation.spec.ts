@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  reviewNationalCameraContains,
+  reviewNationalCameraPoint,
+  type ReviewNationalCamera,
+} from "../../src/features/ux-reset/review/review-national-camera";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 
@@ -43,7 +48,8 @@ async function installReviewApi(
   geometry: { status: number; body: unknown } | undefined = {
     body: navigationGeometry,
     status: 200,
-  }
+  },
+  metadata: typeof reviewScopeMetadataFixture = reviewScopeMetadataFixture
 ) {
   const profileMethods: string[] = [];
   await page.route("**/v1/me/profile", async (route) => {
@@ -54,7 +60,7 @@ async function installReviewApi(
     });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
-    await route.fulfill({ json: reviewScopeMetadataFixture, status: 200 });
+    await route.fulfill({ json: metadata, status: 200 });
   });
   await page.route("**/v1/states/*/review**", async (route) => {
     await route.fulfill({
@@ -77,6 +83,111 @@ async function expectNoHorizontalOverflow(page: Page) {
       document.documentElement.clientWidth
   );
   expect(overflow).toBeLessThanOrEqual(1);
+}
+
+const coastalNavigationGeometry = {
+  features: [
+    box("06037", -124.4, 32.5, -114.1, 42),
+    box("36001", -79.8, 40.5, -71.8, 45.1),
+    box("11001", -77.6, 38.3, -76.4, 39.3),
+  ],
+  type: "FeatureCollection" as const,
+};
+
+const coastalRelease = {
+  ...reviewScopeMetadataFixture,
+  states: [
+    { code: "CA", name: "California" },
+    { code: "DC", name: "District of Columbia" },
+    { code: "NY", name: "New York" },
+  ],
+};
+
+const coastalPlaces = [
+  {
+    code: "CA",
+    label: "CA, California",
+    latitude: 37,
+    longitude: -120,
+  },
+  {
+    code: "NY",
+    label: "NY, New York",
+    latitude: 43,
+    longitude: -75,
+  },
+  {
+    code: "DC",
+    label: "DC, District of Columbia",
+    latitude: 38.8,
+    longitude: -77,
+  },
+] as const;
+
+async function readNationalCamera(page: Page) {
+  return page
+    .getByTestId("review-state-navigation-map-canvas")
+    .evaluate((element) => ({
+      height: element.clientHeight,
+      latitude: Number(element.dataset.reviewCameraLat),
+      longitude: Number(element.dataset.reviewCameraLng),
+      width: element.clientWidth,
+      zoom: Number(element.dataset.reviewCameraZoom),
+    }));
+}
+
+function cameraFromReading(reading: {
+  latitude: number;
+  longitude: number;
+  zoom: number;
+}): ReviewNationalCamera {
+  return {
+    center: [reading.longitude, reading.latitude],
+    zoom: reading.zoom,
+  };
+}
+
+function coastalPlacesAreFramed(reading: {
+  height: number;
+  latitude: number;
+  longitude: number;
+  width: number;
+  zoom: number;
+}) {
+  const camera = cameraFromReading(reading);
+  return Object.fromEntries(
+    coastalPlaces.map((place) => [
+      place.code,
+      reviewNationalCameraContains(
+        camera,
+        reading.width,
+        reading.height,
+        place.longitude,
+        place.latitude
+      ),
+    ])
+  );
+}
+
+async function clickMappedState(
+  page: Page,
+  longitude: number,
+  latitude: number
+) {
+  const canvas = page.getByTestId("review-state-navigation-map-canvas");
+  const box = await canvas.boundingBox();
+  const reading = await readNationalCamera(page);
+  const point = reviewNationalCameraPoint(
+    cameraFromReading(reading),
+    reading.width,
+    reading.height,
+    longitude,
+    latitude
+  );
+  if (!(box && point)) {
+    throw new Error("The national map did not report a camera point.");
+  }
+  await page.mouse.click(box.x + point.x, box.y + point.y);
 }
 
 test.describe("Review national geographic navigation", () => {
@@ -189,6 +300,63 @@ test.describe("Review national geographic navigation", () => {
     await search.press("Enter");
     await expect(page).toHaveURL(/scope=CO/);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
+  });
+
+  test("frames coastal states on a wide map, refits when narrowed, and opens them from the map", async ({
+    page,
+  }, testInfo) => {
+    await installReviewApi(
+      page,
+      { body: coastalNavigationGeometry, status: 200 },
+      coastalRelease
+    );
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/app/review?scope=ALL");
+    await expect(
+      page.getByTestId("review-state-navigation-status")
+    ).toContainText("The map is ready.");
+    for (const place of coastalPlaces) {
+      await expect(
+        page.getByRole("button", { name: place.label })
+      ).toBeEnabled();
+    }
+    const wide = await readNationalCamera(page);
+    expect(coastalPlacesAreFramed(wide)).toStrictEqual({
+      CA: true,
+      DC: true,
+      NY: true,
+    });
+    await page.setViewportSize({ height: 844, width: 390 });
+    await expect
+      .poll(async () => (await readNationalCamera(page)).zoom)
+      .toBeLessThan(wide.zoom);
+    const narrow = await readNationalCamera(page);
+    expect(coastalPlacesAreFramed(narrow)).toStrictEqual({
+      CA: true,
+      DC: true,
+      NY: true,
+    });
+    await page.screenshot({
+      fullPage: true,
+      path: `/opt/cursor/artifacts/review-national-390-webgl-${testInfo.project.name}.png`,
+    });
+    for (const place of coastalPlaces) {
+      await clickMappedState(page, place.longitude, place.latitude);
+      await expect(page).toHaveURL(new RegExp(`scope=${place.code}`));
+      await expect(page.getByTestId("review-national-orientation")).toHaveCount(
+        0
+      );
+      await expect(page.getByTestId("review-scope-status")).toContainText(
+        place.label.split(", ")[1] ?? place.code
+      );
+      if (place.code !== "DC") {
+        await page.goBack({ waitUntil: "commit" });
+        await expect(page).toHaveURL(/scope=ALL/);
+        await expect(
+          page.getByTestId("review-state-navigation-status")
+        ).toContainText("The map is ready.");
+      }
+    }
   });
 
   test("fits the national map at tablet width", async ({ page }, testInfo) => {
