@@ -14,16 +14,8 @@ import {
   CountyUncertaintyPanel,
 } from "@/components/county-evidence-panel";
 import { PdfExportButton } from "@/components/pdf-export-button";
-import { ResultsTable } from "@/components/results-table";
 import { ScoringCalculationPreview } from "@/components/scoring-calculation-preview";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   countyV1CountiesFipsGet,
   metadataV1AtlasMetadataGet,
@@ -60,54 +52,17 @@ import {
   fetchCountyDisplayGeometry,
 } from "@/lib/county-geography";
 
-export type ExperimentVariant =
-  | "decision"
-  | "guided"
-  | "workbench"
-  | "explain"
-  | "compare"
-  | "wide-workbench";
+/** The only remaining experiment layout. It powers `/investigate`. */
+export type ExperimentVariant = "wide-workbench";
 
 interface ExperimentProps {
   variant: ExperimentVariant;
 }
 
-const copy = {
-  compare: {
-    description:
-      "Compare the selected county with another county already in the same governed release.",
-    eyebrow: "One Health Lyme Gap Atlas",
-    title: "Compare county evidence before deciding",
-  },
-  decision: {
-    description:
-      "See the selected county, the evidence behind it, and the guardrails before opening the full Atlas.",
-    eyebrow: "One Health Lyme Gap Atlas",
-    title: "A clear starting point for county review",
-  },
-  explain: {
-    description:
-      "Plain-language definitions, sources, and limitations sit beside the county result.",
-    eyebrow: "One Health Lyme Gap Atlas",
-    title: "Understand what the score means",
-  },
-  guided: {
-    description:
-      "Choose a place, read the evidence, then decide what question to investigate next.",
-    eyebrow: "One Health Lyme Gap Atlas",
-    title: "Explore a county, one step at a time",
-  },
-  "wide-workbench": {
-    description:
-      "Use the expanded workspace to keep county selection, the map, and evidence in view while you investigate.",
-    title: "Explore county evidence in one place",
-  },
-  workbench: {
-    description:
-      "Keep the county list, map, and selected county together while you investigate.",
-    eyebrow: "One Health Lyme Gap Atlas",
-    title: "Explore county evidence in one place",
-  },
+const wideWorkbenchCopy = {
+  description:
+    "Use the expanded workspace to keep county selection, the map, and evidence in view while you investigate.",
+  title: "Explore county evidence in one place",
 } as const;
 
 function useDebounced<T>(value: T, delay = 180) {
@@ -126,7 +81,6 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
     shallow: true,
   });
   const {
-    compare: comparisonFips = "",
     county: selectedFips,
     evidence,
     q: query,
@@ -146,9 +100,6 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
       eco: next.ecological_share,
       missing: next.missing_human_weakness,
     });
-  const setComparisonFips = (compare: string) => setUrlState({ compare });
-  const [showTable, setShowTable] = useState(false);
-  const [step, setStep] = useState(0);
   const debouncedSettings = useDebounced(settings);
 
   const metadataQuery = useQuery({
@@ -220,16 +171,6 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
       }),
     [scoresQuery.data, stateFilter, query, evidence]
   );
-  const comparison = useMemo(
-    () =>
-      scoresQuery.data?.counties.find(
-        (county) => county.fips === comparisonFips
-      ) ??
-      filtered.find((county) => county.fips !== selectedFips) ??
-      null,
-    [scoresQuery.data, comparisonFips, filtered, selectedFips]
-  );
-
   useEffect(() => {
     if (metadataQuery.data?.release_id) {
       synchronizeGovernedDataset(metadataQuery.data.release_id);
@@ -267,17 +208,12 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   }
 
   const detail = detailQuery.data;
-  const title = copy[variant];
-  const isWideWorkbench = variant === "wide-workbench";
   return (
     <main className={`experiment experiment-${variant}`}>
       <header className="experiment-header">
         <div>
-          {"eyebrow" in title && (
-            <span className="eyebrow">{title.eyebrow}</span>
-          )}
-          <h1>{title.title}</h1>
-          <p>{title.description}</p>
+          <h1>{wideWorkbenchCopy.title}</h1>
+          <p>{wideWorkbenchCopy.description}</p>
         </div>
       </header>
       <section id="atlas">
@@ -319,16 +255,13 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
           </section>
         ) : detail ? (
           <>
-            {isWideWorkbench && (
-              <ScoringAssumptions
-                detail={detail}
-                settings={settings}
-                onChange={setSettings}
-                collapsible
-              />
-            )}
-            <VariantBody
-              variant={variant}
+            <ScoringAssumptions
+              detail={detail}
+              settings={settings}
+              onChange={setSettings}
+              collapsible
+            />
+            <Workbench
               detail={detail}
               counties={filtered}
               geometry={geometryQuery.data}
@@ -336,21 +269,8 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
               selectedFips={selectedFips}
               datasetVersion={metadataQuery.data.release_id}
               settings={settings}
-              comparison={comparison}
-              step={step}
-              showTable={showTable}
-              onStep={setStep}
               onSelect={setSelectedFips}
-              onComparison={setComparisonFips}
-              onToggleTable={() => setShowTable((open) => !open)}
             />
-            {!isWideWorkbench && (
-              <ScoringAssumptions
-                detail={detail}
-                settings={settings}
-                onChange={setSettings}
-              />
-            )}
           </>
         ) : (
           <section className="experiment-card">
@@ -367,282 +287,6 @@ function ExperimentFilters(
   props: Omit<Parameters<typeof AtlasFilters>[0], "onDownload">
 ) {
   return <AtlasFilters {...props} onDownload={() => {}} />;
-}
-
-function VariantBody({
-  variant,
-  detail,
-  counties,
-  geometry,
-  geometryError,
-  selectedFips,
-  datasetVersion,
-  settings,
-  comparison,
-  step,
-  showTable,
-  onStep,
-  onSelect,
-  onComparison,
-  onToggleTable,
-}: {
-  variant: ExperimentVariant;
-  detail: CountyDetail;
-  counties: CountyScoreSummary[];
-  geometry?: GeoJSON.FeatureCollection;
-  geometryError: boolean;
-  selectedFips: string;
-  datasetVersion: string;
-  settings: ScoreSettings;
-  comparison: CountyScoreSummary | null;
-  step: number;
-  showTable: boolean;
-  onStep: (step: number) => void;
-  onSelect: (fips: string) => void;
-  onComparison: (fips: string) => void;
-  onToggleTable: () => void;
-}) {
-  if (variant === "guided") {
-    return (
-      <Guided
-        detail={detail}
-        counties={counties}
-        geometry={geometry}
-        geometryError={geometryError}
-        selectedFips={selectedFips}
-        datasetVersion={datasetVersion}
-        settings={settings}
-        step={step}
-        onStep={onStep}
-        onSelect={onSelect}
-      />
-    );
-  }
-  if (variant === "workbench" || variant === "wide-workbench") {
-    return (
-      <Workbench
-        detail={detail}
-        counties={counties}
-        geometry={geometry}
-        geometryError={geometryError}
-        selectedFips={selectedFips}
-        datasetVersion={datasetVersion}
-        settings={settings}
-        onSelect={onSelect}
-      />
-    );
-  }
-  if (variant === "explain") {
-    return (
-      <Explain
-        detail={detail}
-        counties={counties}
-        geometry={geometry}
-        geometryError={geometryError}
-        selectedFips={selectedFips}
-        datasetVersion={datasetVersion}
-        settings={settings}
-        onSelect={onSelect}
-      />
-    );
-  }
-  if (variant === "compare") {
-    return (
-      <Compare
-        detail={detail}
-        counties={counties}
-        datasetVersion={datasetVersion}
-        settings={settings}
-        comparison={comparison}
-        onComparison={onComparison}
-      />
-    );
-  }
-  return (
-    <Decision
-      detail={detail}
-      counties={counties}
-      geometry={geometry}
-      geometryError={geometryError}
-      selectedFips={selectedFips}
-      datasetVersion={datasetVersion}
-      settings={settings}
-      showTable={showTable}
-      onSelect={onSelect}
-      onToggleTable={onToggleTable}
-    />
-  );
-}
-
-function Decision({
-  detail,
-  counties,
-  geometry,
-  geometryError,
-  selectedFips,
-  datasetVersion,
-  settings,
-  showTable,
-  onSelect,
-  onToggleTable,
-}: {
-  detail: CountyDetail;
-  counties: CountyScoreSummary[];
-  geometry?: GeoJSON.FeatureCollection;
-  geometryError: boolean;
-  selectedFips: string;
-  datasetVersion: string;
-  settings: ScoreSettings;
-  showTable: boolean;
-  onSelect: (fips: string) => void;
-  onToggleTable: () => void;
-}) {
-  return (
-    <>
-      <section className="decision-brief experiment-card">
-        <DecisionSummary
-          detail={detail}
-          datasetVersion={datasetVersion}
-          settings={settings}
-        />
-        <WhyPanel detail={detail} />
-        <div className="next-action">
-          <span className="eyebrow">Next useful question</span>
-          <p>
-            Which local surveillance partner can help validate the pattern
-            before resources are moved?
-          </p>
-        </div>
-      </section>
-      <section className="experiment-data-grid">
-        <MapPanel
-          geometry={geometry}
-          geometryError={geometryError}
-          counties={counties}
-          selectedFips={selectedFips}
-          onSelect={onSelect}
-        />
-        <CountyList
-          counties={counties}
-          selectedFips={selectedFips}
-          onSelect={onSelect}
-        />
-      </section>
-      <Button
-        className="table-toggle experiment-table-toggle"
-        onClick={onToggleTable}
-        aria-expanded={showTable}
-        variant="outline"
-        {...analyticsControlAttributes("experiment_table_toggle")}
-      >
-        {showTable
-          ? "Hide accessible county table"
-          : "View accessible county table"}
-      </Button>
-      {showTable && <ResultsTable counties={counties} onSelect={onSelect} />}
-    </>
-  );
-}
-
-function Guided({
-  detail,
-  counties,
-  geometry,
-  geometryError,
-  selectedFips,
-  datasetVersion,
-  settings,
-  step,
-  onStep,
-  onSelect,
-}: {
-  detail: CountyDetail;
-  counties: CountyScoreSummary[];
-  geometry?: GeoJSON.FeatureCollection;
-  geometryError: boolean;
-  selectedFips: string;
-  datasetVersion: string;
-  settings: ScoreSettings;
-  step: number;
-  onStep: (step: number) => void;
-  onSelect: (fips: string) => void;
-}) {
-  const steps = ["Choose a county", "Understand why", "Decide what to do next"];
-  return (
-    <section className="guided-layout">
-      <div
-        className="guided-steps"
-        role="tablist"
-        aria-label="Explore this county in steps"
-      >
-        {steps.map((label, index) => (
-          <button
-            key={label}
-            role="tab"
-            aria-selected={step === index}
-            onClick={() => onStep(index)}
-            {...analyticsControlAttributes("experiment_step_select")}
-          >
-            <span>{index + 1}</span>
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="guided-stage experiment-card">
-        {step === 0 && (
-          <>
-            <DecisionSummary
-              detail={detail}
-              datasetVersion={datasetVersion}
-              settings={settings}
-            />
-            <h2>Choose a county to review</h2>
-            <p>
-              Start with the ranked list or select a county on the map. The
-              selected county stays in view as you learn more.
-            </p>
-            <section className="guided-map">
-              <MapPanel
-                geometry={geometry}
-                geometryError={geometryError}
-                counties={counties}
-                selectedFips={selectedFips}
-                onSelect={onSelect}
-              />
-            </section>
-          </>
-        )}
-        {step === 1 && (
-          <>
-            <h2>Why {detail.county} surfaced</h2>
-            <p>
-              Read these as reasons to investigate, not conclusions about
-              disease risk.
-            </p>
-            <WhyPanel detail={detail} />
-            <DefinitionCards />
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <h2>Turn evidence into a follow-up question</h2>
-            <DecisionSummary
-              detail={detail}
-              datasetVersion={datasetVersion}
-              settings={settings}
-            />
-            <div className="next-action">
-              <strong>Suggested next step</strong>
-              <p>
-                Ask whether local case reporting, tick sampling, testing access,
-                or a data-publication limit could explain this pattern.
-              </p>
-            </div>
-          </>
-        )}
-      </div>
-    </section>
-  );
 }
 
 function Workbench({
@@ -705,198 +349,6 @@ function Workbench({
         </details>
       </aside>
     </section>
-  );
-}
-
-function Explain({
-  detail,
-  counties,
-  geometry,
-  geometryError,
-  selectedFips,
-  datasetVersion,
-  settings,
-  onSelect,
-}: {
-  detail: CountyDetail;
-  counties: CountyScoreSummary[];
-  geometry?: GeoJSON.FeatureCollection;
-  geometryError: boolean;
-  selectedFips: string;
-  datasetVersion: string;
-  settings: ScoreSettings;
-  onSelect: (fips: string) => void;
-}) {
-  return (
-    <>
-      <section className="explain-hero experiment-card">
-        <div>
-          <span className="eyebrow">Plain-language county readout</span>
-          <h2>{detail.county} needs a closer surveillance look.</h2>
-          <p>
-            Its score is driven by a combination of lower published human
-            surveillance signals, tick and pathogen evidence, and community
-            context. That combination is a prompt to validate—not proof of
-            disease burden.
-          </p>
-        </div>
-        <DecisionSummary
-          detail={detail}
-          datasetVersion={datasetVersion}
-          settings={settings}
-        />
-      </section>
-      <section className="explain-grid">
-        <section className="experiment-card">
-          <h2>What the score is built from</h2>
-          <DefinitionCards detail={detail} />
-        </section>
-        <section className="experiment-card">
-          <h2>Evidence for this county</h2>
-          <WhyPanel detail={detail} />
-          <p className="definition-note">
-            Missing published records are not zero cases. They can reflect
-            sampling, testing, reporting, suppression, or publication limits.
-          </p>
-        </section>
-      </section>
-      <section className="experiment-data-grid explain-map">
-        <MapPanel
-          geometry={geometry}
-          geometryError={geometryError}
-          counties={counties}
-          selectedFips={selectedFips}
-          onSelect={onSelect}
-        />
-        <CountyList
-          counties={counties}
-          selectedFips={selectedFips}
-          onSelect={onSelect}
-        />
-      </section>
-    </>
-  );
-}
-
-function Compare({
-  detail,
-  counties,
-  datasetVersion,
-  settings,
-  comparison,
-  onComparison,
-}: {
-  detail: CountyDetail;
-  counties: CountyScoreSummary[];
-  datasetVersion: string;
-  settings: ScoreSettings;
-  comparison: CountyScoreSummary | null;
-  onComparison: (fips: string) => void;
-}) {
-  return (
-    <>
-      <section className="compare-grid">
-        <section className="experiment-card">
-          <span className="eyebrow">Selected county</span>
-          <DecisionSummary
-            detail={detail}
-            datasetVersion={datasetVersion}
-            settings={settings}
-          />
-        </section>
-        <section className="experiment-card">
-          <label className="comparison-select">
-            <span>Compare with</span>
-            <Select
-              value={comparison?.fips}
-              onValueChange={(value) => {
-                if (value) {
-                  onComparison(value);
-                }
-              }}
-            >
-              <SelectTrigger aria-label="Compare with" className="h-11 w-full">
-                <SelectValue placeholder="Choose another county">
-                  {(value: string | null) => {
-                    const selected =
-                      comparison?.fips === value
-                        ? comparison
-                        : counties.find((county) => county.fips === value);
-                    return selected
-                      ? `${selected.county}, ${selected.state} · ${selected.score.score}`
-                      : "Choose another county";
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {counties
-                  .filter((county) => county.fips !== detail.fips)
-                  .slice(0, 40)
-                  .map((county) => {
-                    const label = `${county.county}, ${county.state} · ${county.score.score}`;
-                    return (
-                      <SelectItem
-                        key={county.fips}
-                        label={label}
-                        value={county.fips}
-                      >
-                        {label}
-                      </SelectItem>
-                    );
-                  })}
-              </SelectContent>
-            </Select>
-          </label>
-          {comparison ? (
-            <>
-              <h2>
-                {comparison.county}, {comparison.state}
-              </h2>
-              <p className="comparison-score">
-                {comparison.score.score}
-                <small>/ 100</small>
-              </p>
-              <p>{comparison.priority}</p>
-            </>
-          ) : (
-            <p>Choose another county to compare.</p>
-          )}
-        </section>
-      </section>
-      <section className="experiment-card comparison-takeaway">
-        <h2>What is different?</h2>
-        {comparison ? (
-          <ul>
-            <li>
-              <strong>Priority score:</strong>{" "}
-              {scoreDifference(detail.score.score, comparison.score.score)}
-            </li>
-            <li>
-              <strong>Published human surveillance signal:</strong>{" "}
-              {scoreDifference(
-                detail.score.human_weakness,
-                comparison.score.human_weakness
-              )}
-            </li>
-            <li>
-              <strong>Tick and pathogen evidence:</strong>{" "}
-              {scoreDifference(
-                detail.score.ecological,
-                comparison.score.ecological
-              )}
-            </li>
-          </ul>
-        ) : null}
-        <p>
-          Use comparison to frame follow-up questions. It does not establish
-          which county has more Lyme disease or where exposure occurred.
-        </p>
-      </section>
-      <section className="experiment-card">
-        <h2>Why the selected county surfaced</h2>
-        <WhyPanel detail={detail} />
-      </section>
-    </>
   );
 }
 
@@ -1082,13 +534,6 @@ function ReleaseStamp({ metadata }: { metadata: AtlasMetadata }) {
     </footer>
   );
 }
-function scoreDifference(a: number, b: number) {
-  const difference = Math.round((a - b) * 10) / 10;
-  return difference === 0
-    ? "The same in this release."
-    : `${Math.abs(difference)} points ${difference > 0 ? "higher" : "lower"} for the selected county.`;
-}
-
 export function ScoringAssumptions({
   detail,
   settings,

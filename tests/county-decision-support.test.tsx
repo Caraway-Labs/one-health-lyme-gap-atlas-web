@@ -65,7 +65,7 @@ const detail: CountyDetail = {
   uninsured_percentile: 0.6742,
 };
 
-describe("Variant 6 county decision support", () => {
+describe("Investigation Workspace county decision support", () => {
   afterEach(cleanup);
 
   it("keeps missing evidence distinct from observed values and exposes provenance", () => {

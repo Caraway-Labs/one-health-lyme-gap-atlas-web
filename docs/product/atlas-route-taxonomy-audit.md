@@ -7,6 +7,8 @@
 **Scope:** Audit and recommendations only. **No route behavior changes** in this story.  
 **Retirement note (#504):** The `/ux-lab/**` persona prototype routes inventoried below were removed after this audit. Those sections describe the pre-retirement baseline. Direct requests now return 404, with no redirect and no prototype shell.
 
+**Retirement note (#550):** `/variant_1` through `/variant_7` were removed after this audit, including the `/variant_6` permanent redirect to `/investigate`. Sections below that describe those URLs as routable, experimental, or aliased are the pre-retirement baseline. Direct requests, including query strings, now return HTTP 404. `/investigate` still uses `ExperimentAtlas` (`wide-workbench`). `/geographic_explorer` still uses `GeographicExplorer`. `investigationWorkspaceHref` was removed with the redirect because nothing else called it.
+
 ## Executive summary
 
 The production user-facing Atlas taxonomy is already encoded in `src/lib/navigation.ts` (`ATLAS_ROUTES`) and summarized in [navigation.md](../navigation.md). This audit inventories every App Router surface under `src/app`, reconciles it with `ATLAS_ROUTES`, and classifies each route family for epic #194.

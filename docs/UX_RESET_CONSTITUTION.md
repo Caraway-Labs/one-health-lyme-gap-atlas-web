@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Accepted for UX Reset Phase 1 encoding ([issue #407](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/407)) |
 | Parent epic | [#394 — Establish the UX Reset professional workspace foundation](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394) |
-| Last updated | 2026-10-04 |
+| Last updated | 2026-10-11 |
 | Companion docs | [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) (tokens and primitives), [helpdocs-phase1-content-contract.md](./helpdocs-phase1-content-contract.md) (public HelpDocs interpretation), [assistant-entry-points.md](./assistant-entry-points.md) (legacy assistant surfaces) |
 
 ## Sources and gaps
@@ -31,7 +31,7 @@ Coding agents and contributors **must not reopen settled UX Reset product decisi
 - Coercing **missing, suppressed, or unavailable** governed evidence into **zero**.
 - Turning **Review, Explore, Investigate, Compare, Action, Feed, or Assistant** into catch-all screens that duplicate other destinations.
 - Adding **saved-work libraries**, artifact history, or **autonomous assistant** scope to Reset V1 unless explicitly approved.
-- **Deleting or redirecting legacy routes** as part of Reset work (legacy stays available until a later cutover decision).
+- **Deleting or redirecting legacy routes** as part of Reset work (legacy stays available until a later cutover decision). The numbered experiment URLs `/variant_1` through `/variant_7` are the only exception, retired by [#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550): they return HTTP 404 and must not be restored. That decision does not approve removing any other legacy route.
 - Introducing a **second design system** or chrome color scheme instead of [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives.
 
 When implementation detail is unspecified, prefer **lean delivery**: smallest change that satisfies the story, reuse tokens and patterns first, and defer scope that epic #394 lists as out of scope.
@@ -49,7 +49,7 @@ Reset V1 is governed by **lean development**:
 
 | Phase | In scope | Out of scope (unless a new approved story says otherwise) |
 | --- | --- | --- |
-| **UX Reset Phase 1** | Authenticated professional workspace shell; **Review, Explore, Investigate, Compare, Action, Assistant, Feed**, Settings, and Docs destinations ([#394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394), [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406)); bounded context handoff; shared evidence/provenance presentation ([#409](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/409)); constitution encoded in repo guidance | Public scrollytelling front porch; new-user onboarding; saved-work library; general contextual-help system; legacy route removal |
+| **UX Reset Phase 1** | Authenticated professional workspace shell; **Review, Explore, Investigate, Compare, Action, Assistant, Feed**, Settings, and Docs destinations ([#394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394), [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406)); bounded context handoff; shared evidence/provenance presentation ([#409](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/409)); constitution encoded in repo guidance | Public scrollytelling front porch; new-user onboarding; saved-work library; general contextual-help system; legacy route removal except `/variant_1`–`/variant_7` ([#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550)) |
 | **Phase 2 (planned)** | Public front porch and onboarding per epic #394 | — |
 
 **Reset V1 product posture:** professional workspace **requires authentication**. Unauthenticated users use existing sign-in and return to the intended destination. Geography is **national → state → county** as one hierarchy; default jurisdiction is **starting context**, not an access gate.
@@ -177,6 +177,7 @@ Before new Reset UI:
 - **Legacy** production routes (for example `/`, `/geographic_explorer`, `/investigate`) remain available as reference until an explicit cutover.
 - **Reset** professional routes live under the agreed namespace (for example `/app/*`) and follow this constitution even when legacy behavior differs.
 - Do not delete or redirect legacy URLs as part of constitution or Phase 1 shell work.
+- **[#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550)** retired only `/variant_1`–`/variant_7`. Those URLs return HTTP 404, including query strings. `/investigate` and `/geographic_explorer` stay. Do not treat that retirement as approval to remove other legacy pages.
 
 ## Checklist for new Reset stories
 

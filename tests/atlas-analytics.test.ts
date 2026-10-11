@@ -55,11 +55,13 @@ describe("Atlas Amplitude boundary", () => {
       known: routeIds.includes("front_porch"),
       overview: routeIdForPathname("/overview"),
       privacy: routeIdForPathname("/privacy"),
+      retiredVariant: routeIdForPathname("/variant_1"),
     }).toStrictEqual({
       frontPorch: "front_porch",
       known: true,
       overview: "atlas_home",
       privacy: "privacy",
+      retiredVariant: "atlas_variant",
     });
   });
 
@@ -82,8 +84,6 @@ describe("Atlas Amplitude boundary", () => {
         "geo_add_comparison",
         "geo_pagination_next",
         "experiment_retry",
-        "experiment_table_toggle",
-        "experiment_step_select",
         "experiment_county_select",
         "evidence_chat_history_clear",
         "evidence_chat_history_select",

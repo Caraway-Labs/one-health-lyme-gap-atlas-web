@@ -456,10 +456,10 @@ test("ranked county selection keeps the shareable URL and profile in sync", asyn
   expect(results.violations).toEqual([]);
 });
 
-test("variant county list selection keeps the shareable URL and profile in sync", async ({
+test("Investigation Workspace county list selection keeps the shareable URL and profile in sync", async ({
   page,
 }) => {
-  await page.goto("/variant_1");
+  await page.goto("/investigate");
   await expect(
     page.getByRole("heading", { name: "Los Angeles, California" })
   ).toBeVisible();
@@ -637,30 +637,6 @@ test("keeps filters and score settings in the shareable URL", async ({
   ).toBeVisible();
 });
 
-test("persists an explicit comparison county in the compare variant URL", async ({
-  page,
-}) => {
-  await page.goto("/variant_5?county=08001");
-  await page.getByRole("combobox", { name: "Compare with" }).click();
-  await page.getByRole("option", { name: /Los Angeles, CA/ }).click();
-  await expect(page).toHaveURL(/compare=06037/);
-  await expect(
-    page.getByRole("heading", { name: "Los Angeles, CA" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("combobox", { name: "Compare with" })
-  ).toContainText("Los Angeles, CA");
-
-  await page.reload();
-  await expect(page).toHaveURL(/compare=06037/);
-  await expect(
-    page.getByRole("heading", { name: "Los Angeles, CA" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("combobox", { name: "Compare with" })
-  ).toContainText("Los Angeles, CA");
-});
-
 test("shows a recoverable status when the governed API release is unavailable", async ({
   page,
 }) => {
@@ -684,31 +660,20 @@ test("shows a recoverable status when the governed API release is unavailable", 
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 });
 
-test("renders every interview variant with selected county evidence in the first experience", async ({
+test("renders the Investigation Workspace with selected county evidence in the first experience", async ({
   page,
 }) => {
-  const variants = [
-    ["/variant_1?county=08001", "A clear starting point for county review"],
-    ["/variant_2?county=08001", "Explore a county, one step at a time"],
-    ["/variant_3?county=08001", "Explore county evidence in one place"],
-    ["/variant_4?county=08001", "Understand what the score means"],
-    ["/variant_5?county=08001", "Compare county evidence before deciding"],
-    ["/investigate?county=08001", "Explore county evidence in one place"],
-  ] as const;
-
-  for (const [path, heading] of variants) {
-    await page.goto(path);
-    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.getByText("Adams, Colorado").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(
-      1
-    );
-    await expect(
-      page.getByText("For surveillance follow-up—not personal risk.")
-    ).toBeVisible();
-    await expect(page.getByText("Current governed snapshot")).toBeVisible();
-    await expect(page.getByText(/Variant \d/)).toHaveCount(0);
-  }
+  await page.goto("/investigate?county=08001");
+  await expect(
+    page.getByRole("heading", { name: "Explore county evidence in one place" })
+  ).toBeVisible();
+  await expect(page.getByText("Adams, Colorado").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(1);
+  await expect(
+    page.getByText("For surveillance follow-up—not personal risk.")
+  ).toBeVisible();
+  await expect(page.getByText("Current governed snapshot")).toBeVisible();
+  await expect(page.getByText(/Variant \d/)).toHaveCount(0);
 });
 
 test("offers route-aware sidebar navigation, early-access status, and a shared data dictionary", async ({
@@ -826,12 +791,6 @@ test("keeps the shared shell responsive and preserves deep links during keyboard
     ).toBe(true);
   }
 
-  await page.goto("/variant_1?county=08001");
-  await expect(page.locator(".app-shell")).toHaveCount(0);
-  await expect(
-    page.getByRole("navigation", { name: "Primary navigation" })
-  ).toHaveCount(0);
-
   await page.goto("/overview?county=08001");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
@@ -921,7 +880,7 @@ test("keeps the collapsed scoring accordion accessible via keyboard and axe", as
   expect(results.violations).toEqual([]);
 });
 
-test("guides Variant 6 from review rationale through evidence, uncertainty, action, and resources", async ({
+test("guides the Investigation Workspace from review rationale through evidence, uncertainty, action, and resources", async ({
   page,
 }) => {
   await page.goto("/investigate?county=08001");
@@ -1063,29 +1022,6 @@ test("opens the Investigation Workspace from shared navigation and keeps it curr
   expect(results.violations).toEqual([]);
 });
 
-test("redirects the legacy wide workspace to the Investigation Workspace without a loop", async ({
-  page,
-}) => {
-  const legacyUrl = investigationDeepLink.replace("/investigate", "/variant_6");
-  const response = await page.goto(legacyUrl);
-  const redirectedFrom = response?.request().redirectedFrom();
-
-  expect(redirectedFrom?.url()).toContain("/variant_6?");
-  expect(redirectedFrom?.redirectedFrom()).toBeNull();
-  expectInvestigationDeepLink(page.url());
-  await expect(
-    page.getByRole("heading", { name: "Adams, Colorado" })
-  ).toBeVisible();
-  const summary = page.locator("#scoring > summary");
-  await expect(summary.getByText("70%", { exact: true })).toBeVisible();
-  await expect(summary.getByText("15 per 100,000")).toBeVisible();
-  await expect(summary.getByText("80", { exact: true })).toBeVisible();
-
-  await page.reload();
-  expectInvestigationDeepLink(page.url());
-  await expect(summary.getByText("70%", { exact: true })).toBeVisible();
-});
-
 test("initializes Investigation Workspace query state on the canonical route", async ({
   page,
 }) => {
@@ -1106,35 +1042,4 @@ test("initializes Investigation Workspace query state on the canonical route", a
   await expect(
     page.getByRole("heading", { name: "Adams, Colorado" })
   ).toBeVisible();
-});
-
-test("keeps definitions close to the evidence in the explain-the-score variant", async ({
-  page,
-}) => {
-  await page.goto("/variant_4?county=08001");
-  await expect(
-    page.getByText("Published human surveillance signal").first()
-  ).toBeVisible();
-  await expect(
-    page
-      .locator(".explain-grid .definition-cards")
-      .getByText("Tick and pathogen evidence", { exact: true })
-  ).toBeVisible();
-  await expect(
-    page.getByText("Missing published records are not zero cases.")
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", {
-      name: "How this follow-up priority score is calculated",
-    })
-  ).toBeVisible();
-  await expect(page.getByLabel("Tick and pathogen share")).toBeVisible();
-  await page
-    .getByText("See this county’s score components and source values")
-    .click();
-  await expect(page.getByText("Rurality (RUCC)")).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .exclude(".maplibre-atlas")
-    .analyze();
-  expect(results.violations).toEqual([]);
 });

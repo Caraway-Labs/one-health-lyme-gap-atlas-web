@@ -7,7 +7,9 @@ import {
 
 describe("safe return path", () => {
   it("keeps an internal path and query string", () => {
-    expect(safeReturnPath("/variant_6?state=CO")).toBe("/variant_6?state=CO");
+    expect(safeReturnPath("/investigate?state=CO")).toBe(
+      "/investigate?state=CO"
+    );
   });
 
   it("sends an account-free exit away from a protected workspace path", () => {

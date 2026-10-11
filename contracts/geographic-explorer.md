@@ -1,12 +1,12 @@
 # Geographic explorer view contract
 
-Route: `/geographic_explorer`. Entry: **Explore → Geographic Explorer**. The legacy `/variant_7` route permanently redirects while preserving URL query state. Epic: [web #51](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/51).
+Route: `/geographic_explorer`. Entry: **Explore → Geographic Explorer**. The former duplicate `/variant_7` URL was retired in [#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550) and returns HTTP 404. Epic: [web #51](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/51).
 
 ## User outcome
 
 Explore county surveillance evidence through geographic tiles, geographic small multiples, an evidence matrix, ranked dots, synchronized maps, a map-linked scatterplot, and up to five county comparison profiles. A release-trends view explicitly reports the absence of comparable historical data.
 
-The primary county map and variants 1–6 retain their existing behavior. New code lives in `src/features/geographic-explorer`; it adds no visualization dependencies or alternate backend.
+The primary county map on `/overview` and the Investigation Workspace on `/investigate` retain their existing behavior. New code lives in `src/features/geographic-explorer`; it adds no visualization dependencies or alternate backend.
 
 ## Data and interpretation
 

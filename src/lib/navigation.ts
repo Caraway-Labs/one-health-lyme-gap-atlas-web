@@ -11,17 +11,8 @@ import {
 import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
 
 export type NavigationGroupId = "explore" | "research" | "reference";
-export type NavigationStatus =
-  | "available"
-  | "inDevelopment"
-  | "experimental"
-  | "hidden";
-export type NavigationPlacement =
-  | "sidebar"
-  | "utility"
-  | "footer"
-  | "direct"
-  | "none";
+export type NavigationStatus = "available" | "inDevelopment" | "hidden";
+export type NavigationPlacement = "sidebar" | "utility" | "footer" | "none";
 export type RouteShell = "analytical" | "public" | "docs" | "none";
 export type NavigationMatch = "exact" | "prefix" | "dynamic" | "none";
 export type NavigationCapability = "assistantDemo" | "knowledgeGraph";
@@ -49,7 +40,6 @@ export const ATLAS_OVERVIEW_PATH = "/overview" as const;
 
 export const NAVIGATION_STATUS_LABELS: Record<NavigationStatus, string> = {
   available: "Available",
-  experimental: "Experimental",
   hidden: "Hidden",
   inDevelopment: "Coming Soon",
 };
@@ -159,18 +149,6 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     status: "hidden",
   },
   {
-    description: "Legacy wide-workbench deep link.",
-    href: "/variant_6",
-    id: "variant-6-legacy",
-    label: "Investigation Workspace redirect",
-    match: "exact",
-    pageDescription: "Redirects to the Investigation Workspace.",
-    pageTitle: "Investigation Workspace | One Health Lyme Gap Atlas",
-    placement: "none",
-    shell: "analytical",
-    status: "hidden",
-  },
-  {
     description: "Open the canonical Atlas documentation center.",
     external: true,
     group: "reference",
@@ -240,31 +218,6 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     shell: "public",
     status: "available",
   },
-  // Experimental routes remain routable by direct URL, but are intentionally
-  // isolated from the production shell and normal navigation.
-  ...(
-    [
-      ["variant-1", "/variant_1", "County review"],
-      ["variant-2", "/variant_2", "Guided review"],
-      ["variant-3", "/variant_3", "Evidence workspace"],
-      ["variant-4", "/variant_4", "Score explained"],
-      ["variant-5", "/variant_5", "County comparison"],
-      ["variant-7", "/variant_7", "Geographic explorer legacy route"],
-    ] as const
-  ).map(([id, href, label]) => ({
-    description:
-      "Experimental Atlas workflow retained for direct-link evaluation.",
-    href,
-    id,
-    label,
-    match: "exact" as const,
-    pageDescription:
-      "An experimental One Health Lyme Gap Atlas workflow retained for direct-link evaluation.",
-    pageTitle: `${label} | One Health Lyme Gap Atlas`,
-    placement: "direct" as const,
-    shell: "none" as const,
-    status: "experimental" as const,
-  })),
   {
     description:
       "Authentication entry point for the optional account experience.",
@@ -449,7 +402,6 @@ export function navigationItemsForGroup(
     (item) =>
       item.group === group &&
       item.status !== "hidden" &&
-      item.status !== "experimental" &&
       (!item.requiresFeature || features[item.requiresFeature] === true) &&
       (showAssistantInPrimaryNavigation || item.id !== "assistant")
   );
