@@ -1,6 +1,8 @@
 import { evidenceTypeFromGovernedMetadata } from "@/features/ux-reset/evidence/evidence-type";
-import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
-import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
+import type {
+  EvidenceObjectModel,
+  EvidenceProvenanceModel,
+} from "@/features/ux-reset/evidence/types";
 import {
   availabilityFromGovernedValueState,
   evidenceReasonLabel,
@@ -56,10 +58,8 @@ export type EnvironmentalCoverageContext = {
   measureId: string;
   measureLabel: string;
   observationId: string;
-  periodEnd: string;
-  periodStart: string;
-  releaseId: string;
-  temporalGrain: string | null;
+  /** Governed provenance from the parent observation. Coverage does not replace it. */
+  provenance: EvidenceProvenanceModel;
 };
 
 export type EnvironmentalCoverageRow = {
@@ -524,11 +524,12 @@ export function environmentalCoverageRows(input: {
       valueState,
     });
     const label = COVERAGE_STATUS_LABELS[entry.context.coverage_status];
-    const observationPeriod = formatObservationPeriod(
-      entry.periodStart,
-      entry.periodEnd,
-      entry.temporalGrain
+    const source = entry.provenance;
+    const observationSummary = source.inspectSummary.trim();
+    const coverageLimitations = presentation.limitations.filter(
+      (line) => !source.limitations.includes(line)
     );
+    const rowLimitations = [...source.limitations, ...coverageLimitations];
     return {
       coverageStatus: entry.context.coverage_status,
       evidence: {
@@ -536,24 +537,23 @@ export function environmentalCoverageRows(input: {
         claimLabel: `${entry.measureLabel} coverage`,
         displayValue: label,
         provenance: {
-          datasetVintage: null,
-          evidenceType: "Unavailable",
+          ...source,
           inspectSummary: [
             `${entry.measureLabel} coverage is ${label}.`,
-            observationPeriod === "Unavailable"
-              ? null
-              : `Period ${observationPeriod}.`,
+            "Environmental context.",
+            observationSummary || null,
             fractionNote,
           ]
             .filter((part) => part !== null)
             .join(" "),
-          limitations,
-          materialCaveat: materialCaveatShort(limitations),
-          observationPeriod,
-          sourceFamily: "Environmental context",
+          limitations: rowLimitations,
+          materialCaveat:
+            materialCaveatShort(presentation.limitations) ||
+            source.materialCaveat,
           technical: {
+            ...source.technical,
             observationId: entry.observationId,
-            releaseId: entry.releaseId,
+            releaseId: source.technical?.releaseId ?? null,
           },
         },
         reasonCode,

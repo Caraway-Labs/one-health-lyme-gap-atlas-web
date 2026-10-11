@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import {
   buildCountyEvidenceBundle,
   evidenceFamilyForMeasure,
@@ -42,15 +43,36 @@ function coverageEntry(
   periodStart = "2023-01-01",
   periodEnd = "2023-12-31"
 ) {
+  const observationPeriod = formatObservationPeriod(
+    periodStart,
+    periodEnd,
+    "YEAR"
+  );
   return {
     context: coverageContext(status, fraction),
     measureId: "precip",
     measureLabel: "Precipitation",
     observationId,
-    periodEnd,
-    periodStart,
-    releaseId: INVESTIGATE_RELEASE_ID,
-    temporalGrain: "YEAR" as string | null,
+    provenance: {
+      datasetVintage: "2026.1",
+      evidenceType: "Observed",
+      inspectSummary: "CDC surveillance covering the observation period.",
+      limitations: [],
+      materialCaveat: null,
+      methodLabel: "County precipitation extract",
+      methodVersion: "1.0.0",
+      observationPeriod,
+      sourceFamily: "CDC surveillance",
+      sourcePublishedAt: "Jan 2, 2026, 12:00 AM",
+      sourceUrl: "https://www.cdc.gov/example",
+      technical: {
+        methodologyVersion: "1.0.0",
+        observationId,
+        provenanceRef: `prov/${observationId}`,
+        releaseId: INVESTIGATE_RELEASE_ID,
+        sourceId: "cdc-surveillance",
+      },
+    },
   };
 }
 
@@ -338,6 +360,75 @@ describe("County Investigate evidence hierarchy", () => {
     });
   });
 
+  it("holds the empty finding until the county record settles", () => {
+    const bundle = casesBundle([]);
+    const view = render(
+      <InvestigateEvidenceHierarchy bundle={bundle} countyRecordLoading />
+    );
+    const pending =
+      screen.getByTestId("investigate-finding-text").textContent ?? "";
+    const pendingGaps =
+      screen.queryByText(
+        "No conflict, gap, or extra limitation was returned for this county."
+      ) !== null;
+    const pendingFamilies = screen.queryAllByTestId(
+      "investigate-family-empty"
+    ).length;
+    view.rerender(
+      <InvestigateEvidenceHierarchy
+        bundle={bundle}
+        countyRecord={publishedRecord}
+      />
+    );
+    const settled =
+      screen.getByTestId("investigate-finding-text").textContent ?? "";
+    view.rerender(
+      <InvestigateEvidenceHierarchy
+        bundle={bundle}
+        countyRecordError="The published county record could not be loaded. That is a request failure, not missing evidence."
+      />
+    );
+    const errored =
+      screen.getByTestId("investigate-finding-text").textContent ?? "";
+    expect({
+      erroredEmpty: errored.includes("No observed or limited finding"),
+      pendingEmpty: pending.includes("No observed or limited finding"),
+      pendingFamilies,
+      pendingGaps,
+      pendingLoading: pending.includes("still loading"),
+      settledEmpty: settled.includes("No observed or limited finding"),
+      settledValue: settled.includes("Established"),
+    }).toStrictEqual({
+      erroredEmpty: true,
+      pendingEmpty: false,
+      pendingFamilies: 0,
+      pendingGaps: false,
+      pendingLoading: true,
+      settledEmpty: false,
+      settledValue: true,
+    });
+  });
+
+  it("shows an observation finding while the county record is still loading", () => {
+    render(
+      <InvestigateEvidenceHierarchy
+        bundle={casesBundle([
+          caseObservation("a", 12, "2023-01-01", "2023-12-31"),
+        ])}
+        countyRecordLoading
+      />
+    );
+    const text =
+      screen.getByTestId("investigate-finding-text").textContent ?? "";
+    expect({
+      held: text.includes("still loading"),
+      value: text.includes("12"),
+    }).toStrictEqual({
+      held: false,
+      value: true,
+    });
+  });
+
   it("leads with a published county row when observations have no finding", () => {
     const bundle = casesBundle([]);
     render(
@@ -483,7 +574,7 @@ describe("County Investigate evidence hierarchy", () => {
       availability: "limited",
       display: "Partial coverage",
       fraction:
-        "Precipitation coverage is Partial coverage. Period 2023. Source coverage fraction 0.50.",
+        "Precipitation coverage is Partial coverage. Environmental context. CDC surveillance covering the observation period. Source coverage fraction 0.50.",
       limitations: ["Partial coverage."],
     });
   });
@@ -504,9 +595,67 @@ describe("County Investigate evidence hierarchy", () => {
       availability: "available",
       display: "Complete",
       fraction:
-        "Precipitation coverage is Complete. Period 2023. Source coverage fraction 1.0.",
+        "Precipitation coverage is Complete. Environmental context. CDC surveillance covering the observation period. Source coverage fraction 1.0.",
       limitations: [],
       reason: "OBSERVED",
+    });
+  });
+
+  it("keeps the observation source on a coverage row", () => {
+    const [row] = environmentalCoverageRows({
+      contexts: [
+        {
+          ...coverageEntry(
+            EnvironmentalContextCoverageStatus.COMPLETE,
+            "1.0",
+            "obs-prism"
+          ),
+          provenance: {
+            ...coverageEntry(
+              EnvironmentalContextCoverageStatus.COMPLETE,
+              "1.0",
+              "obs-prism"
+            ).provenance,
+            datasetVintage: "PRISM 2023",
+            inspectSummary: "PRISM precipitation covering 2023.",
+            methodLabel: "PRISM county extract",
+            sourceFamily: "PRISM precipitation",
+            sourcePublishedAt: "Mar 1, 2024, 12:00 AM",
+            sourceUrl: "https://prism.oregonstate.edu/",
+            technical: {
+              methodologyVersion: "prism-1",
+              observationId: "obs-prism",
+              provenanceRef: "prov/obs-prism",
+              releaseId: INVESTIGATE_RELEASE_ID,
+              sourceId: "prism",
+            },
+          },
+        },
+      ],
+    });
+    expect({
+      method: row?.evidence.provenance.methodLabel ?? null,
+      period: row?.evidence.provenance.observationPeriod,
+      provenanceRef: row?.evidence.provenance.technical?.provenanceRef ?? null,
+      published: row?.evidence.provenance.sourcePublishedAt ?? null,
+      release: row?.evidence.provenance.technical?.releaseId ?? null,
+      source: row?.evidence.provenance.sourceFamily,
+      sourceId: row?.evidence.provenance.technical?.sourceId ?? null,
+      summary: row?.evidence.provenance.inspectSummary,
+      url: row?.evidence.provenance.sourceUrl ?? null,
+      vintage: row?.evidence.provenance.datasetVintage ?? null,
+    }).toStrictEqual({
+      method: "PRISM county extract",
+      period: "2023",
+      provenanceRef: "prov/obs-prism",
+      published: "Mar 1, 2024, 12:00 AM",
+      release: INVESTIGATE_RELEASE_ID,
+      source: "PRISM precipitation",
+      sourceId: "prism",
+      summary:
+        "Precipitation coverage is Complete. Environmental context. PRISM precipitation covering 2023. Source coverage fraction 1.0.",
+      url: "https://prism.oregonstate.edu/",
+      vintage: "PRISM 2023",
     });
   });
 

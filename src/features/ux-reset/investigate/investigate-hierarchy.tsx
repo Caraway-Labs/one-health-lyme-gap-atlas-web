@@ -101,6 +101,7 @@ function publicationCopy(publication: FamilyPublication): string | null {
 
 function FamilySection({
   countyFips,
+  countyRecordLoading,
   domainsRequestFailed,
   failedMeasureIds,
   hasUnclassifiedMeasures,
@@ -109,6 +110,7 @@ function FamilySection({
   unsupportedMeasureIds,
 }: {
   countyFips: string;
+  countyRecordLoading: boolean;
   domainsRequestFailed: boolean;
   failedMeasureIds: ReadonlySet<string>;
   hasUnclassifiedMeasures: boolean;
@@ -125,7 +127,13 @@ function FamilySection({
     unsupportedMeasureIds,
   });
   const copy = publicationCopy(publication);
-  const showPublicationCopy = supplementalRows.length === 0;
+  const holdAbsence =
+    countyRecordLoading &&
+    supplementalRows.length === 0 &&
+    (publication === "empty" ||
+      publication === "not_in_release" ||
+      publication === "classification_unknown");
+  const showPublicationCopy = supplementalRows.length === 0 && !holdAbsence;
   return (
     <section
       aria-label={section.label}
@@ -146,6 +154,11 @@ function FamilySection({
         title={section.label}
       />
       <p className="type-body">{section.contextNote}</p>
+      {holdAbsence ? (
+        <p className="type-body" data-testid="investigate-family-pending">
+          Published county rows for this family are still loading.
+        </p>
+      ) : null}
       {showPublicationCopy && copy ? <p className="type-body">{copy}</p> : null}
       {showPublicationCopy && publication === "empty" ? (
         <p className="type-body" data-testid="investigate-family-empty">
@@ -243,10 +256,7 @@ function coverageContexts(
       measureId: record.measureId,
       measureLabel: record.measureLabel,
       observationId: record.observation.observation_id,
-      periodEnd: record.observation.period_end,
-      periodStart: record.observation.period_start,
-      releaseId: record.observation.release_id,
-      temporalGrain: record.observation.temporal_grain,
+      provenance: record.evidence.provenance,
     });
   }
   return contexts;
@@ -288,10 +298,16 @@ export function InvestigateEvidenceHierarchy({
         record: countyRecord,
       })
     : null;
-  const findingSummary = investigateFindingSummary(
-    bundle,
-    published?.rows ?? NO_PUBLISHED_FINDINGS
-  );
+  const holdEmptyFinding = countyRecordLoading && !bundle.leadFinding;
+  const findingSummary = holdEmptyFinding
+    ? {
+        text: "The published county record is still loading, so an empty finding is not shown yet.",
+        title: "Published county record loading",
+      }
+    : investigateFindingSummary(
+        bundle,
+        published?.rows ?? NO_PUBLISHED_FINDINGS
+      );
   const coverage = environmentalCoverageRows({
     contexts: coverageContexts(bundle),
   });
@@ -367,6 +383,7 @@ export function InvestigateEvidenceHierarchy({
         <div key={section.id}>
           <FamilySection
             countyFips={bundle.county.fips}
+            countyRecordLoading={countyRecordLoading}
             domainsRequestFailed={bundle.domainsRequestFailed}
             failedMeasureIds={failedMeasureIds}
             hasUnclassifiedMeasures={bundle.unclassifiedMeasureIds.length > 0}
@@ -552,7 +569,12 @@ export function InvestigateEvidenceHierarchy({
             <FamilyObservations observations={bundle.unassigned} />
           </section>
         ) : null}
-        {hasGapContent ? null : (
+        {countyRecordLoading && !hasGapContent ? (
+          <p className="type-body" data-testid="investigate-gaps-pending">
+            Published county gaps are still loading.
+          </p>
+        ) : null}
+        {hasGapContent || countyRecordLoading ? null : (
           <p className="type-body">
             No conflict, gap, or extra limitation was returned for this county.
           </p>
