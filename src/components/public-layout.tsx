@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand-mark";
-import { SiteFooter } from "@/components/site-footer";
-import { ATLAS_OVERVIEW_PATH } from "@/lib/navigation";
+import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,12 +15,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <BrandMark size={28} />
           <span>One Health Lyme Gap Atlas</span>
         </Link>
-        <Link className="public-home-link" href={ATLAS_OVERVIEW_PATH}>
-          Back to Atlas
-        </Link>
       </header>
       {children}
-      <SiteFooter />
+      <FrontPorchTrustFooter />
     </div>
   );
 }

@@ -1,34 +1,51 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-test("offers an accessible AI Ethics link from public footers", async ({
+const PUBLIC_TRUST_ROUTES = ["/about/caraway-labs", "/ai-ethics", "/privacy"];
+
+test("public trust pages share the unauthenticated footer", async ({
   page,
 }) => {
-  for (const route of ["/privacy", "/ai-ethics"]) {
+  for (const route of PUBLIC_TRUST_ROUTES) {
     await page.goto(route);
+    await expect(page).not.toHaveURL(/sign-in/);
     await expect(
-      page.getByRole("link", { name: "AI Ethics", exact: true })
+      page.getByRole("link", { exact: true, name: "Back to Atlas" })
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Back to Atlas ↑" })
+    ).toHaveCount(0);
+
+    const identity = page.getByRole("banner").getByRole("link", {
+      name: "One Health Lyme Gap Atlas home",
+    });
+    await expect(identity).toBeVisible();
+    await expect(identity.locator("img.atlas-brand-mark")).toHaveCount(1);
+
+    const footer = page.locator("footer.ux-reset-trust-footer");
+    await expect(footer).toBeVisible();
+    await expect(
+      footer.getByRole("link", { name: "Privacy", exact: true })
+    ).toHaveAttribute("href", "/privacy");
+    const ethics = footer.getByRole("link", { name: "AI / Responsible Use" });
+    await expect(ethics).toHaveAttribute("href", "/ai-ethics");
+    await expect(ethics).not.toHaveAttribute("target", "_blank");
+    await expect(
+      footer.getByRole("button", { name: "Privacy settings" })
     ).toBeVisible();
+    await expect(footer.locator("img.atlas-brand-mark")).toHaveCount(0);
   }
 
   await page.goto("/privacy");
-  const ethicsLink = page.getByRole("link", {
-    name: "AI Ethics",
-    exact: true,
-  });
-  await expect(ethicsLink).toHaveAttribute("href", "/ai-ethics");
-  await expect(ethicsLink).toHaveAttribute("target", "_blank");
-  await expect(ethicsLink).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(ethicsLink).not.toHaveAttribute("data-atlas-analytics-control");
-
+  const ethicsLink = page
+    .locator("footer.ux-reset-trust-footer")
+    .getByRole("link", { name: "AI / Responsible Use" });
   await ethicsLink.focus();
   await expect(ethicsLink).toBeFocused();
-  const newTab = page.waitForEvent("popup");
   await page.keyboard.press("Enter");
-  const ethicsPage = await newTab;
-  await expect(ethicsPage).toHaveURL(/\/ai-ethics$/);
+  await expect(page).toHaveURL(/\/ai-ethics$/);
   await expect(
-    ethicsPage.getByRole("heading", { name: "How Atlas approaches AI" })
+    page.getByRole("heading", { name: "How Atlas approaches AI" })
   ).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();

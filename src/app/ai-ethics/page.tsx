@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
+
+import "@/features/ux-reset/trust-footer.css";
 import { buttonVariants } from "@/components/ui/button";
 import {
   aiEthicsContent,

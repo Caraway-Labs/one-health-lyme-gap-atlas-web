@@ -11,7 +11,10 @@ test("About inherits shared branding without changing its content", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: "About Caraway Labs" })
   ).toBeVisible();
-  await checkMarks(page, ".public-brand, .footer-brand");
+  await expect(
+    page.getByRole("link", { exact: true, name: "Back to Atlas" })
+  ).toHaveCount(0);
+  await checkMarks(page, ".public-brand");
   await expect(
     page.getByRole("link", { name: "Return to One Health Atlas" })
   ).toHaveAttribute("href", "/");
@@ -50,7 +53,7 @@ test("shared brand placements preserve public and access surfaces", async ({
 }, testInfo) => {
   const phase = baseline ? "before" : "after";
   for (const [name, path, selector] of [
-    ["public", "/privacy", ".public-brand, .footer-brand"],
+    ["public", "/privacy", ".public-brand"],
     ["docs", "/docs", ".atlas-docs-brand, .footer-brand"],
     ["sign-in", "/auth/sign-in", ".atlas-sign-in-brand"],
   ]) {
