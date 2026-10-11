@@ -250,35 +250,61 @@ export function combineCaveatText(
   return sentences.length > 0 ? sentences.join(" ") : null;
 }
 
+/**
+ * Informational states stay in provenance. Uncertainty states also open the
+ * uncertainty summary. Published zero is informational: it is a governed
+ * value, not a caveat.
+ */
+export type PublishedValueStateRole = "informational" | "uncertainty";
+
+export function publishedValueStateRole(
+  valueState: ValueState
+): PublishedValueStateRole {
+  switch (valueState) {
+    case ValueState.OBSERVED: {
+      return "informational";
+    }
+    case ValueState.ZERO: {
+      return "informational";
+    }
+    case ValueState.MISSING: {
+      return "uncertainty";
+    }
+    case ValueState.NO_COUNTY_LINKED_RECORD: {
+      return "uncertainty";
+    }
+    case ValueState.SUPPRESSED: {
+      return "uncertainty";
+    }
+    case ValueState.UNAVAILABLE: {
+      return "uncertainty";
+    }
+    default: {
+      const exhaustive: never = valueState;
+      return exhaustive;
+    }
+  }
+}
+
 function statusCaveatSentence(
   valueState: ValueState,
   reasonCode: EvidenceReasonCode
 ): string | null {
-  switch (valueState) {
-    case ValueState.SUPPRESSED: {
-      return evidenceReasonLabel(ValueState.SUPPRESSED);
-    }
-    case ValueState.ZERO: {
-      return evidenceReasonLabel(ValueState.ZERO);
-    }
-    case ValueState.MISSING: {
-      return evidenceReasonLabel(ValueState.MISSING);
-    }
-    case ValueState.NO_COUNTY_LINKED_RECORD: {
-      return evidenceReasonLabel(ValueState.NO_COUNTY_LINKED_RECORD);
-    }
-    case ValueState.UNAVAILABLE: {
-      return evidenceReasonLabel(
-        reasonCode === "ENVIRONMENTAL_SOURCE_MISSING"
-          ? "ENVIRONMENTAL_SOURCE_MISSING"
-          : ValueState.UNAVAILABLE
-      );
-    }
-    case ValueState.OBSERVED: {
+  const role = publishedValueStateRole(valueState);
+  switch (role) {
+    case "informational": {
       return null;
     }
+    case "uncertainty": {
+      return evidenceReasonLabel(
+        valueState === ValueState.UNAVAILABLE &&
+          reasonCode === "ENVIRONMENTAL_SOURCE_MISSING"
+          ? "ENVIRONMENTAL_SOURCE_MISSING"
+          : valueState
+      );
+    }
     default: {
-      const exhaustive: never = valueState;
+      const exhaustive: never = role;
       return exhaustive;
     }
   }

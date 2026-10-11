@@ -42,6 +42,7 @@ const controls: {
   countyDetail: CountyDetail | null;
   delayFips: string | null;
   failCatalog: boolean;
+  failCountyRecord: boolean;
   failMeasureId: string | null;
   geographyStatus: "identity" | "ok";
   holdMetadata: boolean;
@@ -57,6 +58,7 @@ const controls: {
   countyDetail: null,
   delayFips: null,
   failCatalog: false,
+  failCountyRecord: false,
   failMeasureId: null,
   geographyStatus: "ok",
   holdMetadata: false,
@@ -337,6 +339,14 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     countyV1CountiesFipsGet: vi.fn<
       typeof import("@/generated/atlas").countyV1CountiesFipsGet
     >(async (fips) => {
+      if (controls.failCountyRecord) {
+        throw new AtlasApiError(
+          "county refresh failed",
+          `/v1/counties/${fips}`,
+          500,
+          null
+        );
+      }
       const detail = controls.countyDetail;
       if (detail?.fips === fips) {
         return {
@@ -461,6 +471,7 @@ describe("County Investigate workspace", () => {
     controls.countyDetail = null;
     controls.delayFips = null;
     controls.failCatalog = false;
+    controls.failCountyRecord = false;
     controls.failMeasureId = null;
     controls.geographyStatus = "ok";
     controls.holdMetadata = false;
@@ -1549,6 +1560,83 @@ describe("County Investigate workspace", () => {
       low: false,
       state: "release-unaligned",
       tier: undefined,
+    });
+  });
+
+  it("keeps cached county evidence when a stale refetch fails", async () => {
+    controls.countyDetail = catalogFailureCounty("08001");
+    controls.scenario = "mixed";
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = renderInvestigate("?county=08001&scope=CO", { client });
+    await waitFor(() => {
+      const evidence =
+        screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+      if (!evidence.includes("Established") || !evidence.includes("12 cases")) {
+        throw new Error("Cached county evidence has not rendered.");
+      }
+    });
+    const requestsBeforeRefresh = observationRequests.length;
+    controls.failCountyRecord = true;
+    controls.failCatalog = true;
+    await act(async () => {
+      await client.refetchQueries(
+        { queryKey: ["ux-reset-investigate-county-record"] },
+        { throwOnError: false }
+      );
+      await client.refetchQueries(
+        { queryKey: ["ux-reset-investigate-measures"] },
+        { throwOnError: false }
+      );
+    });
+    await waitFor(() => {
+      const text = document.body.textContent ?? "";
+      if (
+        !text.includes("published county record refresh failed") ||
+        !text.includes("measure catalog refresh failed")
+      ) {
+        throw new Error("Refresh failure notes have not rendered.");
+      }
+    });
+    const refreshed =
+      screen.getByTestId("investigate-evidence").textContent ?? "";
+    await view.rerenderSearch("?county=08001&scope=CO&period=2024-06-01");
+    await waitFor(() => {
+      if (observationRequests.length <= requestsBeforeRefresh) {
+        throw new Error("The new period did not request observations.");
+      }
+      if (!screen.queryByTestId("investigate-evidence")) {
+        throw new Error("Evidence has not rendered for the new period.");
+      }
+    });
+    const pageText = document.body.textContent ?? "";
+    const nextEvidence =
+      screen.getByTestId("investigate-evidence").textContent ?? "";
+    expect({
+      cases: refreshed.includes("12 cases"),
+      catalogInitial: pageText.includes(
+        "Governed measures could not be loaded."
+      ),
+      countyInitial: pageText.includes(
+        "could not be loaded, so findings may be incomplete"
+      ),
+      established: refreshed.includes("Established"),
+      nextCatalogFailure: nextEvidence.includes(
+        "no observation finding was requested"
+      ),
+      nextRequests: observationRequests.length > requestsBeforeRefresh,
+      refreshNotes:
+        pageText.includes("published county record refresh failed") &&
+        pageText.includes("measure catalog refresh failed"),
+    }).toStrictEqual({
+      cases: true,
+      catalogInitial: false,
+      countyInitial: false,
+      established: true,
+      nextCatalogFailure: false,
+      nextRequests: true,
+      refreshNotes: true,
     });
   });
 

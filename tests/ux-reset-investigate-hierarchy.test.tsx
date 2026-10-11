@@ -17,6 +17,7 @@ import {
   environmentalCoverageRows,
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
+  publishedValueStateRole,
   type PublishedCountyRecord,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import {
@@ -345,7 +346,7 @@ const CAVEAT_ROW_STATUSES: readonly CaveatRowStatus[] = [
     id: "zero",
     measureId: "uninsured_percent_2022",
     sourceKey: "context_svi",
-    statusParts: ["Published zero"],
+    statusParts: [],
     value: 0,
   },
   {
@@ -641,10 +642,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "available",
     display: "0%",
     gapLine: null,
-    href: "#investigate-published-uninsured_percent_2022",
+    href: null,
     id: "numeric-zero",
     kind: "uninsured",
-    limitation: "Published zero",
+    limitation: NO_MATERIAL_LIMITATION,
     provenance: "Available. Published zero.",
     reasonCode: ValueState.ZERO,
     value: 0,
@@ -655,10 +656,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "available",
     display: "0th percentile",
     gapLine: null,
-    href: "#investigate-published-svi_percentile_2022",
+    href: null,
     id: "svi-zero",
     kind: "svi",
-    limitation: "Published zero",
+    limitation: NO_MATERIAL_LIMITATION,
     provenance: "Available. Published zero.",
     reasonCode: ValueState.ZERO,
     value: 0,
@@ -1731,7 +1732,31 @@ describe("County Investigate evidence hierarchy", () => {
         );
       }
     }
-    expect(rows).toStrictEqual(expected);
+    expect({
+      roles: {
+        [ValueState.MISSING]: publishedValueStateRole(ValueState.MISSING),
+        [ValueState.NO_COUNTY_LINKED_RECORD]: publishedValueStateRole(
+          ValueState.NO_COUNTY_LINKED_RECORD
+        ),
+        [ValueState.OBSERVED]: publishedValueStateRole(ValueState.OBSERVED),
+        [ValueState.SUPPRESSED]: publishedValueStateRole(ValueState.SUPPRESSED),
+        [ValueState.UNAVAILABLE]: publishedValueStateRole(
+          ValueState.UNAVAILABLE
+        ),
+        [ValueState.ZERO]: publishedValueStateRole(ValueState.ZERO),
+      },
+      rows,
+    }).toStrictEqual({
+      roles: {
+        [ValueState.MISSING]: "uncertainty",
+        [ValueState.NO_COUNTY_LINKED_RECORD]: "uncertainty",
+        [ValueState.OBSERVED]: "informational",
+        [ValueState.SUPPRESSED]: "uncertainty",
+        [ValueState.UNAVAILABLE]: "uncertainty",
+        [ValueState.ZERO]: "informational",
+      },
+      rows: expected,
+    });
   });
 
   it("keeps complete coverage available when the fraction is 1.0", () => {

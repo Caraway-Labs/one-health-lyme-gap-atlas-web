@@ -297,6 +297,11 @@ function InvestigateExperienceInner() {
           {workspace.catalogError}
         </AtlasStatusMessage>
       ) : null}
+      {workspace.catalogRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.catalogRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
       {workspace.evidenceLoading ? (
         <AtlasStatusMessage tone="loading">
           Loading county evidence…

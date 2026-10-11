@@ -57,6 +57,7 @@ export type InvestigateRecovery =
 export type InvestigateWorkspace = {
   bundle: CountyEvidenceBundle | null;
   catalogError: string | null;
+  catalogRefreshError: string | null;
   compare: readonly string[];
   countyRecord: PublishedCountyRecord | null;
   /** Successful county read that returned no record (HTTP 404). */
@@ -142,7 +143,20 @@ function metadataErrorMessage(
   return "Unable to load governed release metadata.";
 }
 
-function countyRecordErrorMessage(error: unknown): string {
+const COUNTY_RECORD_REFRESH_FAILURE =
+  "The published county record refresh failed. The last governed result is still shown.";
+const CATALOG_REFRESH_FAILURE =
+  "The measure catalog refresh failed. The last governed catalog is still shown.";
+const EVIDENCE_REFRESH_FAILURE =
+  "County evidence refresh failed. The last governed result is still shown.";
+
+function countyRecordErrorMessage(
+  error: unknown,
+  hasCachedRecord: boolean
+): string {
+  if (hasCachedRecord) {
+    return COUNTY_RECORD_REFRESH_FAILURE;
+  }
   if (error instanceof InvestigateContractError) {
     return "The published county record did not match this county and release, so it was not shown.";
   }
@@ -318,21 +332,23 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
   const measureKey = (measuresQuery.data ?? [])
     .map((measure) => measure.measure_id)
     .join("|");
-  const indicatorKey = indicatorsQuery.isError
-    ? "domains-failed"
-    : (indicatorsQuery.data ?? [])
-        .map(
-          (indicator) =>
-            `${indicator.indicator_id}:${indicator.domain ?? ""}:${indicator.release_version ?? ""}`
-        )
-        .join("|");
+  const catalogHasData = measuresQuery.data !== undefined;
+  const indicatorKey =
+    indicatorsQuery.isError && indicatorsQuery.data === undefined
+      ? "domains-failed"
+      : (indicatorsQuery.data ?? [])
+          .map(
+            (indicator) =>
+              `${indicator.indicator_id}:${indicator.domain ?? ""}:${indicator.release_version ?? ""}`
+          )
+          .join("|");
   const evidenceQuery = useQuery({
     enabled: Boolean(
       releaseId &&
       requestedFips &&
       identity &&
       inRelease &&
-      measuresQuery.isSuccess &&
+      (measuresQuery.isSuccess || catalogHasData) &&
       indicatorsQuery.isFetched &&
       !indicatorsQuery.isFetching
     ),
@@ -361,7 +377,8 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
           fips: requestedFips,
           releaseId,
         }),
-        domainsRequestFailed: indicatorsQuery.isError,
+        domainsRequestFailed:
+          indicatorsQuery.isError && indicatorsQuery.data === undefined,
         fips: requestedFips,
         identity,
         indicators: indicatorsQuery.data ?? [],
@@ -430,18 +447,20 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
           fips: requestedFips,
           releaseId,
         }),
-    catalogError: measuresQuery.isError
-      ? "Governed measures could not be loaded."
-      : null,
-    compare: urlState.compare,
-    countyRecord:
-      countyRecordQuery.isSuccess && countyRecordQuery.data
-        ? countyRecordQuery.data
+    catalogError:
+      measuresQuery.isError && !catalogHasData
+        ? "Governed measures could not be loaded."
         : null,
-    countyRecordAbsent:
-      countyRecordQuery.isSuccess && countyRecordQuery.data === null,
+    catalogRefreshError:
+      measuresQuery.isError && catalogHasData ? CATALOG_REFRESH_FAILURE : null,
+    compare: urlState.compare,
+    countyRecord: countyRecordQuery.data ?? null,
+    countyRecordAbsent: countyRecordQuery.data === null,
     countyRecordError: countyRecordQuery.isError
-      ? countyRecordErrorMessage(countyRecordQuery.error)
+      ? countyRecordErrorMessage(
+          countyRecordQuery.error,
+          countyRecordQuery.data != null
+        )
       : null,
     countyRecordLoading:
       !recovery &&
@@ -458,7 +477,9 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       directoryQuery.isLoading &&
       !directoryQuery.isError,
     evidenceError: evidenceQuery.isError
-      ? "County evidence did not load for the requested county."
+      ? evidenceQuery.data === undefined
+        ? "County evidence did not load for the requested county."
+        : EVIDENCE_REFRESH_FAILURE
       : null,
     evidenceFetching:
       !recovery &&
