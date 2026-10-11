@@ -36,6 +36,8 @@ export type PublishedCountyRecord = {
   burgdorferiStatus: string;
   evidenceCompleteness: number;
   fips: string;
+  /** Trimmed `release.methodology_version`. Null when that version is absent. */
+  methodologyVersion: string | null;
   pacificusStatus: string | null;
   population: number | null;
   releaseId: string;
@@ -124,14 +126,45 @@ type PublishedField = {
   value: number | string | null;
 };
 
+/**
+ * County payloads can omit `methodology_version`, send null, or send blank
+ * text even though the generated contract types it as a string. Those are
+ * not a governed version.
+ */
+type CountyReleaseMethodology = Omit<
+  CountyDetail["release"],
+  "methodology_version"
+> & {
+  methodology_version?: string | null;
+};
+
+/**
+ * A present version is the trimmed release text. Omission, null, and blank
+ * text stay unset so Inspect does not show them as a governed method.
+ */
+function governedMethodologyVersion(
+  version: string | null | undefined
+): string | null {
+  const trimmed = version?.trim() ?? "";
+  if (trimmed.length === 0) {
+    return null;
+  }
+  return trimmed;
+}
+
 /** Drops score, priority, and color. Those are not Investigate evidence. */
 export function publishedCountyRecordFromDetail(
-  detail: CountyDetail
+  detail: Omit<CountyDetail, "release"> & {
+    release: CountyReleaseMethodology;
+  }
 ): PublishedCountyRecord {
   return {
     burgdorferiStatus: detail.burgdorferi_status,
     evidenceCompleteness: detail.evidence_completeness,
     fips: detail.fips,
+    methodologyVersion: governedMethodologyVersion(
+      detail.release.methodology_version
+    ),
     pacificusStatus: detail.pacificus_status,
     population: detail.population,
     releaseId: detail.release.release_id,
@@ -501,6 +534,7 @@ export function mapPublishedRow(input: {
 function evidenceFromPublishedField(input: {
   claimLabel: string;
   measure: Measure | undefined;
+  methodologyVersion: string | null;
   releaseId: string;
   source: SourceMetadata | null;
   state: GovernedPublishedState;
@@ -544,10 +578,12 @@ function evidenceFromPublishedField(input: {
         .join(" "),
       limitations: [...input.state.limitations],
       materialCaveat,
+      methodVersion: input.methodologyVersion,
       observationPeriod: "Unavailable",
       sourceFamily,
       sourceUrl: input.source?.url.trim() || null,
       technical: {
+        methodologyVersion: input.methodologyVersion,
         releaseId: input.releaseId,
         sourceId: input.source?.key ?? null,
       },
@@ -760,6 +796,7 @@ function rowFromField(input: {
     evidence: evidenceFromPublishedField({
       claimLabel,
       measure,
+      methodologyVersion: input.record.methodologyVersion,
       releaseId: input.record.releaseId,
       source,
       state,
