@@ -1,6 +1,6 @@
 # WEB #549 implementation acceptance record
 
-Date: 2026-10-11. Branch: `codex/web-549-storybook-pages`. Base: `origin/main` at `1b23d7f35d6d7e29617206536362b42dc7683024`. Owning repo: Atlas Web. Scope: independent developer/reviewer tooling only. Affected decisions: [design system](../DESIGN_SYSTEM.md), [proposed ADR 0021](../adr/0021-storybook-component-explorer.md).
+Date: 2026-10-11. Branch: `codex/web-549-storybook-pages`. Initial base: `1b23d7f35d6d7e29617206536362b42dc7683024`. Rebased without conflicts onto `origin/main` at `4c85d536eade2e7228e9fe042df1a26f42e3a271` before submission. Owning repo: Atlas Web. Scope: independent developer/reviewer tooling only. Affected decisions: [design system](../DESIGN_SYSTEM.md), [proposed ADR 0021](../adr/0021-storybook-component-explorer.md).
 
 ## Acceptance matrix
 
@@ -9,10 +9,10 @@ Date: 2026-10-11. Branch: `codex/web-549-storybook-pages`. Base: `origin/main` a
 | At least five existing components | Six production components; static index contains 17 stories. Button, Card, Input, AtlasPriorityBadge, AtlasStatusMessage, AtlasDataStamp. |
 | Theme, typography, no live services | Production `globals.css`, system sans/Georgia stacks, existing Base UI primitives and Lucide icon. All six canvases checked against the Atlas teal token, zero external requests and zero browser errors. Synthetic provenance disclosed. |
 | Navigable static project site | `npm run build-storybook` passed; relative Vite base. Browser server mounts only artifact at `/one-health-lyme-gap-atlas-web/`. Direct story/canvas URLs and refresh passed. |
-| Controls and accessibility | `npm run test:storybook`: 18 passed, desktop and Pixel 7 mobile. Text and variant controls update Button; keyboard Input editing/focus ring, disabled button, invalid input, loading/error roles verified. All six components pass axe in both viewports with no horizontal overflow. |
+| Controls and accessibility | `npm run test:storybook`: 20 passed after rebase, desktop and Pixel 7 mobile. Text and variant controls update Button; keyboard Input editing/focus ring, disabled button, invalid input, loading/error roles and Autodocs rendering verified. All six components pass axe in both viewports with no horizontal overflow. |
 | Representative visual review | Inspected desktop/mobile Card and mobile Input, DataStamp and Storybook shell screenshots. Production typography, semantic/domain colors and wrapping retained. Chromium mobile emulation; no claim of physical-device or macOS testing. |
 | Local usage and adding stories | Dev server starts at port 6006 and returns catalog index; [operations guide](../storybook.md) covers usage, story authoring, components, troubleshooting and public limitations. |
-| Application remains intact | No diff in `src`, generated API/contracts, existing production workflow or DigitalOcean spec. Production build passed; 24 existing Playwright checks passed on desktop/mobile (design-system, Front Porch, docs). |
+| Application remains intact | No diff in `src`, generated API/contracts, existing production workflow or DigitalOcean spec. Post-rebase production build passed; 24 existing Playwright checks passed initially (design-system, Front Porch, docs), then 12 design-system/Front Porch checks passed again after rebase on desktop/mobile. |
 | Permissions and public contents | YAML parsed; builds `contents: read`, deploy only `pages: write`/`id-token: write`, main-only deploy guard. No secrets, production env or application assets passed; `staticDirs: []`. Only `storybook-static` uploaded. |
 | Automatic public deployment | Configuration implemented; **not yet accepted**. Repo metadata confirms `has_pages: false`. Owner activation, review/merge, successful deployment and public verification required. |
 
@@ -24,11 +24,12 @@ Date: 2026-10-11. Branch: `codex/web-549-storybook-pages`. Base: `origin/main` a
 - `npm run generate:api` plus `git diff --exit-code -- contracts src/generated`: passed, no generated diff.
 - `npm run build`: passed, all 46 static pages generated. Existing middleware deprecation warning remains outside scope.
 - `npm run build-storybook`: passed. Vite reports expected ignored `use client` directives and large Storybook/docs chunks; no build error.
-- `npm run test:storybook`: 18 passed.
+- `npm run test:storybook`: 20 passed after rebase.
 - `npm run test:e2e -- tests/e2e/design-system.spec.ts tests/e2e/front-porch.spec.ts tests/e2e/docs.spec.ts`: 24 passed.
+- Post-rebase `npm run test:e2e -- tests/e2e/design-system.spec.ts tests/e2e/front-porch.spec.ts`: 12 passed. Typecheck, lint, both governance guards, API regeneration, production build and static Storybook build also passed again after rebase.
 - `npm audit --audit-level=moderate`: passed, zero vulnerabilities.
 - `npm ci`: passed from the submitted lockfile; 975 packages installed, zero vulnerabilities, docs generation passed.
-- `npm test`: 1,029 passed / 18 failed during concurrent builds. Full rerun with `--maxWorkers=2`: 1,042 passed / 5 failed (four async UI failures in unchanged Compare/Review tests, plus the existing Windows `spawnSync("npx", ..., shell: false)` check returning null). Direct `npx shadcn --help` passed. Isolated UI recheck results and hosted Linux quality status are recorded in the PR.
+- Final integrated `npm test -- --maxWorkers=2`: **1,055 passed / 1 failed** across 126 files. The sole failure is the unchanged Windows `spawnSync("npx", ..., shell: false)` check returning null; direct `npx shadcn --help` passed. All prior async UI failures passed in this integrated standalone run. Earlier runs and rechecks remain in ignored local logs. The initial base's [hosted Linux quality run](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/actions/runs/38162793409) passed; no local failure is represented as a pass. Hosted quality must pass before merge.
 - Local Docker validation is unavailable: Docker Desktop Linux engine pipe `dockerDesktopLinuxEngine` is absent. Existing hosted Docker gate is unchanged.
 
 ## Release gate

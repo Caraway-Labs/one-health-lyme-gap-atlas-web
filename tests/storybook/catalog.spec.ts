@@ -59,8 +59,9 @@ for (const example of examples) {
 
 test("keyboard editing, focus and disabled variants work", async ({ page }) => {
   await page.goto("iframe.html?id=primitives-input--editable&viewMode=story");
-  await page.keyboard.press("Tab");
   const input = page.getByRole("textbox", { name: "Geography" });
+  await expect(input).toBeVisible();
+  await page.keyboard.press("Tab");
   await expect(input).toBeFocused();
   await page.keyboard.type("Example county");
   await expect(input).toHaveValue("Example county");
@@ -69,6 +70,20 @@ test("keyboard editing, focus and disabled variants work", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Review evidence" })
   ).toBeDisabled();
+});
+
+test("generated documentation renders without duplicate page landmarks", async ({
+  page,
+}) => {
+  await page.goto("iframe.html?id=primitives-button--docs&viewMode=docs");
+  await expect(
+    page.getByRole("heading", { name: "Button", exact: true })
+  ).toBeVisible();
+  expect(await page.getByRole("main").count()).toBeLessThanOrEqual(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(
+    page.getByText("Canonical Base UI action.", { exact: false })
+  ).toBeVisible();
 });
 
 test("domain and validation variants preserve semantics", async ({ page }) => {
