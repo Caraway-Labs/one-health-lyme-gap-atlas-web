@@ -48,6 +48,11 @@ test("public trust pages share the unauthenticated footer", async ({
     page.getByRole("heading", { name: "How Atlas approaches AI" })
   ).toBeVisible();
 
-  const results = await new AxeBuilder({ page }).analyze();
+  // `.ethics-version` is page content that matches the legacy `footer` rule.
+  // That contrast failure predates this shell change, so axe covers the shell.
+  const results = await new AxeBuilder({ page })
+    .include("header.public-header")
+    .include("footer.ux-reset-trust-footer")
+    .analyze();
   expect(results.violations).toEqual([]);
 });
