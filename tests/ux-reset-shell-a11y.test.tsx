@@ -170,6 +170,43 @@ describe("UX Reset shell accessibility", () => {
     expect(document.activeElement).toBe(openButton);
   });
 
+  it("reclaims Open navigation when closing moves focus to the body", async () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      (onFrame: FrameRequestCallback): number => {
+        frames.push(onFrame);
+        return frames.length;
+      }
+    );
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    mockMobileViewport(true);
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+
+    const openButton = screen.getByRole("button", { name: "Open navigation" });
+    openButton.focus();
+    fireEvent.click(openButton);
+    const staleOpenReclaim = frames.at(-1);
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => {
+      expect(
+        document
+          .querySelector("#ux-reset-pro-navigation")
+          ?.hasAttribute("inert")
+      ).toBeTruthy();
+    });
+    staleOpenReclaim?.(0);
+    expect(document.activeElement).toBe(openButton);
+    openButton.blur();
+    expect(document.activeElement).not.toBe(openButton);
+    frames.at(-1)?.(0);
+    expect(document.activeElement).toBe(openButton);
+  });
+
   it("clears mobile modal state when the viewport grows past the drawer breakpoint", async () => {
     const viewport = createResponsiveMatchMedia(true);
     render(
