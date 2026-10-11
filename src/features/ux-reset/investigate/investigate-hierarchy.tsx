@@ -45,6 +45,10 @@ function publishedRowAnchor(measureId: string): string {
   return `investigate-published-${measureId}`;
 }
 
+function coverageRowAnchor(observationId: string): string {
+  return `investigate-coverage-${observationId}`;
+}
+
 function FamilyObservations({
   observations,
 }: {
@@ -294,6 +298,15 @@ function coverageCaveatLines(
       seen.add(line);
       lines.push(line);
     }
+    if (
+      row.evidence.availability === evidenceAvailabilityValues.unavailable &&
+      !seen.has(row.observationId)
+    ) {
+      seen.add(row.observationId);
+      lines.push(
+        `${row.evidence.claimLabel} is unavailable for this county. That is not zero.`
+      );
+    }
   }
   return lines;
 }
@@ -527,7 +540,7 @@ export function InvestigateEvidenceHierarchy({
             </a>
           ) : null}
           {coverageCaveat ? (
-            <a href={`#${observationAnchor(coverageCaveat.observationId)}`}>
+            <a href={`#${coverageRowAnchor(coverageCaveat.observationId)}`}>
               Inspect this limitation
             </a>
           ) : null}
@@ -594,6 +607,7 @@ export function InvestigateEvidenceHierarchy({
                     <div
                       data-coverage={row.coverageStatus}
                       data-observation-id={row.observationId}
+                      id={coverageRowAnchor(row.observationId)}
                       key={row.observationId}
                     >
                       <EvidenceObject

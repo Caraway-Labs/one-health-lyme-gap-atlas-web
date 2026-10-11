@@ -807,6 +807,172 @@ describe("County Investigate evidence hierarchy", () => {
     });
   });
 
+  it("keeps every coverage status consistent on the card, gaps, and inspect link", () => {
+    const statuses: Record<EnvironmentalContextCoverageStatus, true> = {
+      [EnvironmentalContextCoverageStatus.COMPLETE]: true,
+      [EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE]: true,
+      [EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE]: true,
+      [EnvironmentalContextCoverageStatus.SOURCE_MISSING]: true,
+    };
+    const claim = "Reported Lyme cases coverage";
+    const unavailableGap = `${claim} is unavailable for this county. That is not zero.`;
+    const rows = (
+      Object.keys(statuses) as EnvironmentalContextCoverageStatus[]
+    ).map((status) => {
+      cleanup();
+      const observationId = `obs-${status}`;
+      const observation = {
+        ...caseObservation(observationId, 4, "2023-01-01", "2023-12-31"),
+        environmental_context: coverageContext(
+          status,
+          status === EnvironmentalContextCoverageStatus.COMPLETE ? "1.0" : "0.5"
+        ),
+        limitations: [],
+      };
+      render(
+        <InvestigateEvidenceHierarchy bundle={casesBundle([observation])} />
+      );
+      const card = document.querySelector<HTMLElement>(
+        `#investigate-coverage-${observationId}`
+      );
+      const link = screen.queryByRole("link", {
+        name: "Inspect this limitation",
+      });
+      const href = link?.getAttribute("href") ?? null;
+      const target = href ? document.querySelector<HTMLElement>(href) : null;
+      const gaps =
+        screen.queryByTestId("investigate-gap-list")?.textContent ?? "";
+      const summary =
+        screen.getByTestId("investigate-limitation-text").textContent ?? "";
+      return coverageStatusRow({
+        availability:
+          card?.querySelector<HTMLElement>("[data-evidence-availability]")
+            ?.dataset.evidenceAvailability ?? null,
+        deniesGap:
+          screen.queryByText(
+            "No conflict, gap, or extra limitation was returned for this county."
+          ) !== null,
+        display:
+          card?.querySelector("[data-testid='evidence-display-value']")
+            ?.textContent ?? null,
+        gap: gaps,
+        href,
+        linkStatus: target?.dataset.coverage ?? null,
+        status,
+        summary,
+      });
+    });
+
+    function coverageStatusRow(input: {
+      availability: string | null;
+      deniesGap: boolean;
+      display: string | null;
+      gap: string;
+      href: string | null;
+      linkStatus: string | null;
+      status: EnvironmentalContextCoverageStatus;
+      summary: string;
+    }) {
+      switch (input.status) {
+        case EnvironmentalContextCoverageStatus.COMPLETE: {
+          return {
+            availability: input.availability,
+            deniesGap: input.deniesGap,
+            display: input.display,
+            gap: input.gap.includes(unavailableGap),
+            href: input.href,
+            limitation: input.summary.includes("No material limitation"),
+            linkStatus: input.linkStatus,
+            status: input.status,
+          };
+        }
+        case EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE: {
+          return {
+            availability: input.availability,
+            deniesGap: input.deniesGap,
+            display: input.display,
+            gap: input.gap.includes(`${claim}: Partial coverage.`),
+            href: input.href,
+            limitation: input.summary.includes("Partial coverage."),
+            linkStatus: input.linkStatus,
+            status: input.status,
+          };
+        }
+        case EnvironmentalContextCoverageStatus.SOURCE_MISSING: {
+          return {
+            availability: input.availability,
+            deniesGap: input.deniesGap,
+            display: input.display,
+            gap: input.gap.includes(unavailableGap),
+            href: input.href,
+            limitation: input.summary.includes("Partial coverage."),
+            linkStatus: input.linkStatus,
+            status: input.status,
+          };
+        }
+        case EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE: {
+          return {
+            availability: input.availability,
+            deniesGap: input.deniesGap,
+            display: input.display,
+            gap: input.gap.includes(unavailableGap),
+            href: input.href,
+            limitation: input.summary.includes("Partial coverage."),
+            linkStatus: input.linkStatus,
+            status: input.status,
+          };
+        }
+        default: {
+          const exhaustive: never = input.status;
+          return exhaustive;
+        }
+      }
+    }
+
+    expect(rows).toStrictEqual([
+      {
+        availability: "available",
+        deniesGap: true,
+        display: "Complete",
+        gap: false,
+        href: null,
+        limitation: true,
+        linkStatus: null,
+        status: EnvironmentalContextCoverageStatus.COMPLETE,
+      },
+      {
+        availability: "unavailable",
+        deniesGap: false,
+        display: "Out of source coverage",
+        gap: true,
+        href: null,
+        limitation: false,
+        linkStatus: null,
+        status: EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE,
+      },
+      {
+        availability: "limited",
+        deniesGap: false,
+        display: "Partial coverage",
+        gap: true,
+        href: "#investigate-coverage-obs-PARTIAL_COVERAGE",
+        limitation: true,
+        linkStatus: EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+        status: EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+      },
+      {
+        availability: "unavailable",
+        deniesGap: false,
+        display: "Source missing",
+        gap: true,
+        href: null,
+        limitation: false,
+        linkStatus: null,
+        status: EnvironmentalContextCoverageStatus.SOURCE_MISSING,
+      },
+    ]);
+  });
+
   it("keeps complete coverage available when the fraction is 1.0", () => {
     const [row] = environmentalCoverageRows({
       contexts: [
