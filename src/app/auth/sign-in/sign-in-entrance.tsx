@@ -16,6 +16,7 @@ import {
   googleCallbackRedirect,
   signInCallbackErrorMessage,
   signInDeliveryErrorMessage,
+  signInEmailValidationMessage,
   type AuthProviderFailure,
 } from "@/lib/auth/sign-in-recovery";
 import { getDocsUrl } from "@/lib/docs-config";
@@ -51,7 +52,7 @@ export function SignInEntrance() {
   const emailFieldId = useId();
   const explanationId = useId();
   const hintId = useId();
-  const requestErrorId = useId();
+  const emailValidationId = useId();
   const emailRef = useRef<HTMLInputElement>(null);
   const confirmationHeadingRef = useRef<HTMLHeadingElement>(null);
   const returnFocusToEmail = useRef(false);
@@ -59,6 +60,9 @@ export function SignInEntrance() {
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [view, setView] = useState<AuthView>("request");
   const [busy, setBusy] = useState(false);
+  const [emailValidationMessage, setEmailValidationMessage] = useState<
+    string | null
+  >(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [confirmationError, setConfirmationError] = useState<string | null>(
     null
@@ -100,8 +104,15 @@ export function SignInEntrance() {
   async function sendMagicLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const address = email.trim();
-    setBusy(true);
+    const validationMessage = signInEmailValidationMessage(address);
     setRequestError(null);
+    if (validationMessage) {
+      setEmailValidationMessage(validationMessage);
+      emailRef.current?.focus();
+      return;
+    }
+    setEmailValidationMessage(null);
+    setBusy(true);
     try {
       const sent = await requestSignInLink("request", address);
       if (!sent) return;
@@ -170,7 +181,7 @@ export function SignInEntrance() {
   const describedBy = [
     explanationId,
     hintId,
-    requestError ? requestErrorId : "",
+    emailValidationMessage ? emailValidationId : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -180,7 +191,11 @@ export function SignInEntrance() {
       <SignInIdentity />
       <main className="auth-entrance-main">
         {view === "request" ? (
-          <form className="auth-entrance-form" onSubmit={sendMagicLink}>
+          <form
+            className="auth-entrance-form"
+            noValidate
+            onSubmit={sendMagicLink}
+          >
             <h1>{SIGN_IN_COPY.heading}</h1>
             <p className="auth-entrance-subtle">{SIGN_IN_COPY.purpose}</p>
             <label className="auth-entrance-label" htmlFor={emailFieldId}>
@@ -188,7 +203,7 @@ export function SignInEntrance() {
             </label>
             <Input
               aria-describedby={describedBy}
-              aria-invalid={requestError ? true : undefined}
+              aria-invalid={emailValidationMessage ? true : undefined}
               autoComplete="email"
               className="auth-entrance-input"
               id={emailFieldId}
@@ -196,6 +211,7 @@ export function SignInEntrance() {
               disabled={busy}
               onChange={(event) => {
                 if (busy) return;
+                setEmailValidationMessage(null);
                 setEmail(event.target.value);
               }}
               placeholder={SIGN_IN_COPY.emailPlaceholder}
@@ -218,12 +234,17 @@ export function SignInEntrance() {
             <p className="auth-entrance-hint" id={hintId}>
               {SIGN_IN_COPY.passwordHint}
             </p>
-            {requestError ? (
+            {emailValidationMessage ? (
               <p
                 className="auth-entrance-error"
-                id={requestErrorId}
+                id={emailValidationId}
                 role="alert"
               >
+                {emailValidationMessage}
+              </p>
+            ) : null}
+            {requestError ? (
+              <p className="auth-entrance-error" role="alert">
                 {requestError}
               </p>
             ) : null}

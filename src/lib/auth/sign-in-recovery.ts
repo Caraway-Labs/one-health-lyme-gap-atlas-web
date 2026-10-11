@@ -16,6 +16,7 @@ export const SIGN_IN_COPY = {
   purpose: "Sign in to use the Atlas workspace and keep your starting view.",
   resend: "Resend link",
   sending: "Sending…",
+  invalidEmail: "Enter a valid email address.",
   separator: "or",
   submit: "Email me a sign-in link",
   throttle: "We could not send another link yet. Wait and try again.",
@@ -32,6 +33,13 @@ const THROTTLE_CODES = new Set([
   "over_email_send_rate_limit",
   "over_request_rate_limit",
 ]);
+
+const EMAIL_ADDRESS = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function signInEmailValidationMessage(address: string): string | null {
+  if (EMAIL_ADDRESS.test(address)) return null;
+  return SIGN_IN_COPY.invalidEmail;
+}
 
 export function emailConfirmRedirect(origin: string, nextPath: string): string {
   return `${origin}/auth/confirm?next=${encodeURIComponent(nextPath)}`;

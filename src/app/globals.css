@@ -5101,6 +5101,12 @@ select:focus-visible {
   font: inherit;
 }
 
+/* Invalid email keeps the approved border; the shared input ring is for workspace fields. */
+.auth-entrance-input[aria-invalid="true"] {
+  border-color: var(--entrance-border);
+  box-shadow: none;
+}
+
 .auth-entrance-primary,
 .auth-entrance-secondary,
 .auth-entrance-google,

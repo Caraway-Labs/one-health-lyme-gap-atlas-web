@@ -219,3 +219,241 @@ describe("email-first sign-in entrance", () => {
     expect(returnedField.value).toBe("first@example.org");
   });
 });
+
+type LiveRegion = {
+  ariaLive: string | null;
+  associatedWithEmail: boolean;
+  text: string;
+};
+
+type Announcement = {
+  alerts: LiveRegion[];
+  email:
+    | {
+        explanation: boolean;
+        focused: boolean;
+        hint: boolean;
+        invalid: string | null;
+        present: true;
+      }
+    | { present: false };
+  statuses: LiveRegion[];
+};
+
+function readAnnouncement(): Announcement {
+  const email = screen.queryByRole("textbox", { name: "Email" });
+  const describedIds = (email?.getAttribute("aria-describedby") ?? "")
+    .split(/\s+/)
+    .filter(Boolean);
+  const describes = (fragment: string) =>
+    describedIds.some((id) =>
+      document.querySelector(`#${id}`)?.textContent?.includes(fragment)
+    );
+  const regions = (role: "alert" | "status"): LiveRegion[] =>
+    screen.queryAllByRole(role).map((element) => {
+      const id = element.getAttribute("id");
+      return {
+        ariaLive: element.getAttribute("aria-live"),
+        associatedWithEmail: id !== null && describedIds.includes(id),
+        text: element.textContent ?? "",
+      };
+    });
+  const alerts = regions("alert");
+  const statuses = regions("status");
+  if (!email) return { alerts, email: { present: false }, statuses };
+  return {
+    alerts,
+    email: {
+      explanation: describes("email you a link"),
+      focused: document.activeElement === email,
+      hint: describes("No password needed."),
+      invalid: email.getAttribute("aria-invalid"),
+      present: true,
+    },
+    statuses,
+  };
+}
+
+const validEmail = {
+  explanation: true,
+  focused: false,
+  hint: true,
+  invalid: null,
+  present: true as const,
+};
+
+const absentEmail = { present: false as const };
+
+function separateAlert(text: string): Announcement {
+  return {
+    alerts: [{ ariaLive: null, associatedWithEmail: false, text }],
+    email: validEmail,
+    statuses: [],
+  };
+}
+
+async function submitAddress(address: string) {
+  fireEvent.change(screen.getByLabelText("Email"), {
+    target: { value: address },
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: "Email me a sign-in link" })
+  );
+}
+
+async function showConfirmation() {
+  signInWithOtp.mockResolvedValueOnce({ error: null });
+  render(<SignInPage />);
+  await submitAddress("person@example.org");
+  await screen.findByRole("heading", { name: "Check your email" });
+}
+
+describe("sign-in error announcements", () => {
+  afterEach(() => {
+    cleanup();
+    search = "next=/app/review";
+    signInWithOAuth.mockReset();
+    signInWithOtp.mockReset();
+  });
+
+  const callbackMessage = {
+    expired_or_invalid:
+      "That sign-in link is no longer valid. Request a new one.",
+    missing_code: "Google sign-in did not finish. Try again or use email.",
+    missing_link: "That sign-in link is incomplete. Request a new one.",
+  } as const;
+
+  it.each([
+    {
+      expected: {
+        alerts: [
+          {
+            ariaLive: null,
+            associatedWithEmail: true,
+            text: "Enter a valid email address.",
+          },
+        ],
+        email: {
+          explanation: true,
+          focused: true,
+          hint: true,
+          invalid: "true",
+          present: true as const,
+        },
+        statuses: [],
+      },
+      name: "validation error",
+      prepare: () => {
+        render(<SignInPage />);
+        return submitAddress("not-an-email");
+      },
+    },
+    {
+      expected: separateAlert(
+        "We could not send a sign-in link. Please try again."
+      ),
+      name: "send failure",
+      prepare: async () => {
+        signInWithOtp.mockResolvedValueOnce({
+          error: { message: "smtp down", status: 500 },
+        });
+        render(<SignInPage />);
+        await submitAddress("person@example.org");
+        await screen.findByRole("alert");
+      },
+    },
+    {
+      expected: separateAlert(
+        "We could not send another link yet. Wait and try again."
+      ),
+      name: "throttled send",
+      prepare: async () => {
+        signInWithOtp.mockResolvedValueOnce({
+          error: {
+            code: "over_email_send_rate_limit",
+            message: "rate limit",
+            status: 429,
+          },
+        });
+        render(<SignInPage />);
+        await submitAddress("person@example.org");
+        await screen.findByRole("alert");
+      },
+    },
+    {
+      expected: {
+        alerts: [
+          {
+            ariaLive: null,
+            associatedWithEmail: false,
+            text: "We could not send another link yet. Wait and try again.",
+          },
+        ],
+        email: absentEmail,
+        statuses: [],
+      },
+      name: "throttled resend",
+      prepare: async () => {
+        await showConfirmation();
+        signInWithOtp.mockResolvedValueOnce({
+          error: {
+            code: "over_email_send_rate_limit",
+            message: "rate limit",
+            status: 429,
+          },
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Resend link" }));
+        await screen.findByRole("alert");
+      },
+    },
+    {
+      expected: separateAlert(
+        "Google sign-in is unavailable. Please try again."
+      ),
+      name: "Google failure",
+      prepare: async () => {
+        signInWithOAuth.mockResolvedValueOnce({
+          error: { message: "oauth down" },
+        });
+        render(<SignInPage />);
+        fireEvent.click(
+          screen.getByRole("button", { name: "Continue with Google" })
+        );
+        await screen.findByRole("alert");
+      },
+    },
+    ...(["missing_code", "missing_link", "expired_or_invalid"] as const).map(
+      (code) => ({
+        expected: separateAlert(callbackMessage[code]),
+        name: `callback ${code}`,
+        prepare: () => {
+          search = `error=${code}&next=/account`;
+          render(<SignInPage />);
+        },
+      })
+    ),
+    {
+      expected: {
+        alerts: [],
+        email: absentEmail,
+        statuses: [
+          {
+            ariaLive: "polite",
+            associatedWithEmail: false,
+            text: "Check your email for your Atlas sign-in link.",
+          },
+        ],
+      },
+      name: "resend success",
+      prepare: async () => {
+        await showConfirmation();
+        signInWithOtp.mockResolvedValueOnce({ error: null });
+        fireEvent.click(screen.getByRole("button", { name: "Resend link" }));
+        await screen.findByRole("status");
+      },
+    },
+  ])("$name", async ({ expected, prepare }) => {
+    await prepare();
+    expect(readAnnouncement()).toStrictEqual(expected);
+  });
+});

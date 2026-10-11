@@ -5,6 +5,7 @@ import {
   googleCallbackRedirect,
   signInCallbackErrorMessage,
   signInDeliveryErrorMessage,
+  signInEmailValidationMessage,
 } from "@/lib/auth/sign-in-recovery";
 
 describe("sign-in recovery", () => {
@@ -29,6 +30,16 @@ describe("sign-in recovery", () => {
     expect(
       signInDeliveryErrorMessage({ message: "smtp down", status: 500 })
     ).toBe("We could not send a sign-in link. Please try again.");
+  });
+
+  it("accepts a usable address and rejects an invalid one", () => {
+    expect(signInEmailValidationMessage("person@example.org")).toBeNull();
+    expect(signInEmailValidationMessage("not-an-email")).toBe(
+      "Enter a valid email address."
+    );
+    expect(signInEmailValidationMessage("")).toBe(
+      "Enter a valid email address."
+    );
   });
 
   it("maps the existing callback error codes", () => {
