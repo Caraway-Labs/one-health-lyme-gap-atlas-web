@@ -1511,7 +1511,8 @@ describe("County Investigate evidence hierarchy", () => {
     const catalogs = ["ok", "failed"] as const;
     const counties = ["found", "absent", "error"] as const;
     const observationModes = ["present", "absent"] as const;
-    const rows = catalogs.flatMap((catalog) =>
+    const caveats = ["present", "absent"] as const;
+    const settled = catalogs.flatMap((catalog) =>
       counties.flatMap((county) =>
         observationModes.map((observations) => {
           cleanup();
@@ -1519,15 +1520,38 @@ describe("County Investigate evidence hierarchy", () => {
         })
       )
     );
-    expect(rows).toStrictEqual(
-      catalogs.flatMap((catalog) =>
+    const loading = catalogs.flatMap((catalog) =>
+      observationModes.flatMap((observations) =>
+        caveats.map((coverageCaveat) => {
+          cleanup();
+          return readLoadingInvestigateState({
+            catalog,
+            coverageCaveat,
+            observations,
+          });
+        })
+      )
+    );
+    expect({ loading, settled }).toStrictEqual({
+      loading: catalogs.flatMap((catalog) =>
+        observationModes.flatMap((observations) =>
+          caveats.map((coverageCaveat) =>
+            expectedLoadingInvestigateState({
+              catalog,
+              coverageCaveat,
+              observations,
+            })
+          )
+        )
+      ),
+      settled: catalogs.flatMap((catalog) =>
         counties.flatMap((county) =>
           observationModes.map((observations) =>
             expectedSettledInvestigateState({ catalog, county, observations })
           )
         )
-      )
-    );
+      ),
+    });
   });
 });
 
@@ -1637,5 +1661,97 @@ function expectedSettledInvestigateState(input: {
     observations: input.observations,
     publishedFinding: observationsAbsent && input.county === "found",
     withheld: false,
+  };
+}
+
+function readLoadingInvestigateState(input: {
+  catalog: "failed" | "ok";
+  coverageCaveat: "absent" | "present";
+  observations: "absent" | "present";
+}) {
+  const coverageStatus =
+    input.coverageCaveat === "present"
+      ? EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE
+      : EnvironmentalContextCoverageStatus.COMPLETE;
+  const observationBundle =
+    input.observations === "present"
+      ? casesBundle([
+          plainObservation(
+            coverageContext(coverageStatus, "0.5"),
+            "obs-loading"
+          ),
+        ])
+      : casesBundle([]);
+  const catalogError =
+    input.catalog === "failed"
+      ? "Governed measures could not be loaded."
+      : null;
+  const view = settledInvestigateHierarchy({
+    bundle:
+      input.catalog === "failed" && input.observations === "absent"
+        ? null
+        : observationBundle,
+    catalogError,
+    countyRecord: null,
+    countyRecordAbsent: false,
+    countyRecordError: null,
+    countyRecordLoading: true,
+    identity: observationBundle.county,
+    releaseId: observationBundle.releaseId,
+  });
+  render(
+    <>
+      {catalogError ? <p data-testid="catalog-banner">{catalogError}</p> : null}
+      {view ? (
+        <InvestigateEvidenceHierarchy
+          bundle={view.bundle}
+          catalogFailed={view.catalogFailed}
+          countyRecord={view.countyRecord}
+          countyRecordError={view.countyRecordError}
+          countyRecordLoading={view.countyRecordLoading}
+        />
+      ) : (
+        <p data-testid="hierarchy-withheld">withheld</p>
+      )}
+    </>
+  );
+  const finding =
+    screen.queryByTestId("investigate-finding-text")?.textContent ?? "";
+  const limitation =
+    screen.queryByTestId("investigate-limitation-text")?.textContent ?? "";
+  return {
+    catalog: input.catalog,
+    catalogBanner: screen.queryByTestId("catalog-banner") !== null,
+    coverageCaveat: input.coverageCaveat,
+    findingLoading: finding.includes("still loading"),
+    limitationCoverage: limitation.includes("Partial coverage."),
+    limitationLoading: limitation.includes("still loading"),
+    observationFinding: finding.includes("4"),
+    observations: input.observations,
+    withheld: screen.queryByTestId("hierarchy-withheld") !== null,
+  };
+}
+
+function expectedLoadingInvestigateState(input: {
+  catalog: "failed" | "ok";
+  coverageCaveat: "absent" | "present";
+  observations: "absent" | "present";
+}) {
+  const withheld =
+    input.catalog === "failed" && input.observations === "absent";
+  const caveatShown =
+    !withheld &&
+    input.observations === "present" &&
+    input.coverageCaveat === "present";
+  return {
+    catalog: input.catalog,
+    catalogBanner: input.catalog === "failed",
+    coverageCaveat: input.coverageCaveat,
+    findingLoading: !withheld && input.observations === "absent",
+    limitationCoverage: caveatShown,
+    limitationLoading: !withheld && !caveatShown,
+    observationFinding: !withheld && input.observations === "present",
+    observations: input.observations,
+    withheld,
   };
 }

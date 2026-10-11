@@ -384,19 +384,19 @@ export function InvestigateEvidenceHierarchy({
       ? null
       : publishedCaveatRow(publishedRows);
   const coverageCaveat =
-    limitation || publishedCaveat || holdEmptyLimitation
+    limitation || publishedCaveat
       ? null
       : (coverage.find((row) => row.state.limitationText) ?? null);
   const releaseLimitation = published?.releaseLimitation.trim() ?? "";
-  const limitationSummary = holdEmptyLimitation
+  const limitationSummary = coverageCaveat?.state.limitationText
     ? {
-        text: "The published county record is still loading, so an empty limitation is not shown yet.",
-        title: "Published county record loading",
+        text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`,
+        title: coverageCaveat.evidence.claimLabel,
       }
-    : coverageCaveat?.state.limitationText
+    : holdEmptyLimitation
       ? {
-          text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`,
-          title: coverageCaveat.evidence.claimLabel,
+          text: "The published county record is still loading, so an empty limitation is not shown yet.",
+          title: "Published county record loading",
         }
       : countyLimitationFailed
         ? {
