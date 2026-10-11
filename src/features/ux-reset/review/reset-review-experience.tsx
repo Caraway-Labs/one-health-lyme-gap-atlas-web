@@ -18,6 +18,7 @@ import { inheritedContextFromReview } from "@/features/ux-reset/ask-atlas/inheri
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import {
+  hasExplicitReviewLocation,
   hasExplicitReviewScopeParam,
   isReviewStartingScopeUnresolved,
   reviewScopeQueryCanonicalRewrite,
@@ -65,6 +66,9 @@ function ResetReviewExperienceInner() {
   const searchParams = useSearchParams();
   const [arrivalExplicitScope] = useState(() =>
     hasExplicitReviewScopeParam(searchParams)
+  );
+  const [arrivalExplicitLocation] = useState(() =>
+    hasExplicitReviewLocation(searchParams)
   );
   const userChoseScopeRef = useRef(false);
   const [userChoseScope, setUserChoseScope] = useState(false);
@@ -165,13 +169,15 @@ function ResetReviewExperienceInner() {
   }, []);
 
   // Startup runs once. Once it settles, the URL has an explicit scope that
-  // reproduces the screen. A choice made while the profile read is in flight
-  // stays on its own history entry. Review never writes Settings.
+  // reproduces the screen. A county already in the arrival URL is an explicit
+  // location, so Review can show it before the profile read and does not
+  // replace it. A choice made while the profile read is in flight stays on
+  // its own history entry. Review never writes Settings.
   const startupSettled = useApplyProfileStartingScope({
     activeScope: scope,
     profileReady:
       !userChoseScope &&
-      !arrivalExplicitScope &&
+      !arrivalExplicitLocation &&
       profileQuery.isFetched &&
       (Boolean(presentationQuery.metadata) || presentationQuery.isError),
     profileStateCode: profileQuery.data?.stateCode,
@@ -243,7 +249,7 @@ function ResetReviewExperienceInner() {
     reviewRecord.result_state === "candidates_found"
   );
   const startingScopePending = isReviewStartingScopeUnresolved({
-    arrivalExplicitScope,
+    arrivalExplicitScope: arrivalExplicitLocation,
     metadataError: presentationQuery.metadataIsError,
     metadataReady: Boolean(presentationQuery.metadata),
     profileFetched: profileQuery.isFetched,

@@ -1567,6 +1567,35 @@ describe("Reset Review scope UI", () => {
     );
   });
 
+  it("keeps a county URL when the saved starting view is a state", async () => {
+    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    const updates: string[] = [];
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    } as never);
+    window.history.replaceState(null, "", "/app/review?county=08001");
+    renderReview("?county=08001", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      if (screen.queryByText("Loading review scope…")) {
+        throw new Error("startup still pending");
+      }
+    });
+    expect({
+      countyKept: updates.every((query) => query.includes("county=08001")),
+      rendered: renderedReviewScope(),
+      stateWrite: updates.some((query) => query.includes("scope=CO")),
+    }).toStrictEqual({
+      countyKept: true,
+      rendered: "ALL",
+      stateWrite: false,
+    });
+  });
+
   it("keeps explicit national scope when profile default is a state", async () => {
     const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
     vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({

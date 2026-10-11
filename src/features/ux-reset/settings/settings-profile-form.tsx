@@ -537,9 +537,6 @@ export function SettingsProfileForm() {
                   className="accent-primary size-4 shrink-0"
                   name="starting-view"
                   onChange={() => {
-                    if (typeof currentDraft.jurisdiction === "object") {
-                      return;
-                    }
                     updateDraft({
                       ...draft,
                       jurisdiction: {
