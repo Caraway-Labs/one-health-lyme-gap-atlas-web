@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   reviewNationalCameraContains,
-  reviewNationalCameraPoint,
   type ReviewNationalCamera,
 } from "../../src/features/ux-reset/review/review-national-camera";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
@@ -171,23 +170,50 @@ function coastalPlacesAreFramed(reading: {
 
 async function clickMappedState(
   page: Page,
+  code: string,
   longitude: number,
   latitude: number
 ) {
   const canvas = page.getByTestId("review-state-navigation-map-canvas");
-  const box = await canvas.boundingBox();
-  const reading = await readNationalCamera(page);
-  const point = reviewNationalCameraPoint(
-    cameraFromReading(reading),
-    reading.width,
-    reading.height,
-    longitude,
-    latitude
+  const point = await canvas.evaluate(
+    (element, place) => {
+      const map = Reflect.get(element, "reviewNavigationMap") as
+        | {
+            project: (lngLat: [number, number]) => { x: number; y: number };
+            queryRenderedFeatures: (
+              geometry: [number, number],
+              options: { layers: string[] }
+            ) => { properties?: { code?: unknown } }[];
+          }
+        | undefined;
+      if (!map) {
+        return null;
+      }
+      const projected = map.project([place.longitude, place.latitude]);
+      const rendered = (x: number, y: number) =>
+        map
+          .queryRenderedFeatures([x, y], { layers: ["review-states-fill"] })
+          .some((feature) => feature.properties?.code === place.code);
+      if (rendered(projected.x, projected.y)) {
+        return { x: projected.x, y: projected.y };
+      }
+      for (let y = 4; y < element.clientHeight; y += 6) {
+        for (let x = 4; x < element.clientWidth; x += 6) {
+          if (rendered(x, y)) {
+            return { x, y };
+          }
+        }
+      }
+      return null;
+    },
+    { code, latitude, longitude }
   );
-  if (!(box && point)) {
-    throw new Error("The national map did not report a camera point.");
+  if (!point) {
+    throw new Error(`No rendered ${code} feature is available to click.`);
   }
-  await page.mouse.click(box.x + point.x, box.y + point.y);
+  await canvas.locator("canvas").click({
+    position: { x: point.x, y: point.y },
+  });
 }
 
 test.describe("Review national geographic navigation", () => {
@@ -341,7 +367,7 @@ test.describe("Review national geographic navigation", () => {
       path: `/opt/cursor/artifacts/review-national-390-webgl-${testInfo.project.name}.png`,
     });
     for (const place of coastalPlaces) {
-      await clickMappedState(page, place.longitude, place.latitude);
+      await clickMappedState(page, place.code, place.longitude, place.latitude);
       await expect(page).toHaveURL(new RegExp(`scope=${place.code}`));
       await expect(page.getByTestId("review-national-orientation")).toHaveCount(
         0

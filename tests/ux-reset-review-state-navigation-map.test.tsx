@@ -449,6 +449,8 @@ describe("Review state navigation map lifecycle", () => {
         throw new Error("expected a map and a resize observer");
       }
       map.emit("load");
+      const element = view.getByTestId("review-state-navigation-map-canvas");
+      const published = Reflect.get(element, "reviewNavigationMap") === map;
       width.mockReturnValue(1440);
       height.mockReturnValue(448);
       observer.onResize();
@@ -458,14 +460,18 @@ describe("Review state navigation map lifecycle", () => {
       const wide = reviewNationalNavigationCamera(1440, 448);
       expect({
         cameras: map.jumpTo.mock.calls,
+        cleared: Reflect.get(element, "reviewNavigationMap") ?? null,
         disconnected: observer.disconnected,
+        published,
         removed: map.removed,
       }).toStrictEqual({
         cameras: [
           [{ center: narrow?.center, zoom: narrow?.zoom }],
           [{ center: wide?.center, zoom: wide?.zoom }],
         ],
+        cleared: null,
         disconnected: true,
+        published: true,
         removed: true,
       });
     } finally {

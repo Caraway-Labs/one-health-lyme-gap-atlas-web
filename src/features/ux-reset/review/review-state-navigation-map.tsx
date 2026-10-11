@@ -21,6 +21,7 @@ import {
 export const REVIEW_STATE_NAVIGATION_SOURCE_ID = "review-states";
 
 const FILL_LAYER_ID = "review-states-fill";
+const REVIEW_NAVIGATION_MAP_KEY = "reviewNavigationMap";
 const LINE_LAYER_ID = "review-states-line";
 const BACKGROUND_LAYER_ID = "review-nav-background";
 const MAP_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
@@ -208,6 +209,14 @@ function webglUnavailable(map: MapLibreMap): boolean {
   return !canvas.getContext("webgl2");
 }
 
+function publishReviewMap(element: HTMLElement, map: MapLibreMap | null): void {
+  if (map) {
+    Reflect.set(element, REVIEW_NAVIGATION_MAP_KEY, map);
+    return;
+  }
+  Reflect.deleteProperty(element, REVIEW_NAVIGATION_MAP_KEY);
+}
+
 function applyReviewNationalCamera(
   map: MapLibreMap,
   element: HTMLElement
@@ -345,12 +354,14 @@ export function ReviewStateNavigationMap({
       return;
     }
     mapRef.current = instance;
+    publishReviewMap(element, instance);
     let removed = false;
     const removeInstance = () => {
       if (removed) {
         return;
       }
       removed = true;
+      publishReviewMap(element, null);
       try {
         instance.remove();
       } catch {
