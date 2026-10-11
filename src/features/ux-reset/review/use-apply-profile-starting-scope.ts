@@ -20,10 +20,11 @@ type ApplyProfileStartingScopeArgs = {
 };
 
 /**
- * Startup runs once. Once it settles, the URL has an explicit scope that
- * reproduces the screen, including a national fallback. A county already in
- * the history entry is an explicit location, so the saved starting view does
- * not replace it.
+ * Startup runs once per unresolved history entry. Once it settles, that entry
+ * has an explicit scope that reproduces the screen, including a national
+ * fallback. A county already in the history entry is an explicit location, so
+ * the saved starting view does not replace it. A later restore that drops the
+ * written scope from a scope-less entry is written again.
  */
 export function useApplyProfileStartingScope({
   activeScope,
@@ -34,19 +35,42 @@ export function useApplyProfileStartingScope({
 }: ApplyProfileStartingScopeArgs): boolean {
   const searchParams = useSearchParams();
   const resolvedScopeRef = useRef<ReviewScope | null>(null);
+  const historyKeyRef = useRef<string | null>(null);
   const settledRef = useRef(false);
   const [startupSettled, setStartupSettled] = useState(false);
 
   useEffect(() => {
-    if (!profileReady || settledRef.current || stateOptions.length === 0) {
+    if (!profileReady || stateOptions.length === 0) {
+      return;
+    }
+    // A history entry that omits scope is unresolved even when the Next
+    // snapshot still shows a scope from an earlier shallow update.
+    const historyParams = new URLSearchParams(window.location.search);
+    const historyHasScope = hasExplicitReviewScopeParam(historyParams);
+    const historyHasCounty = historyParams.has("county");
+    const historySearch = historyParams.toString();
+    if (historyKeyRef.current !== historySearch) {
+      historyKeyRef.current = historySearch;
+      if (!historyHasScope && !historyHasCounty) {
+        resolvedScopeRef.current = null;
+        settledRef.current = false;
+      }
+    }
+    const unresolvedEntry = !historyHasScope && !historyHasCounty;
+    if (
+      settledRef.current &&
+      resolvedScopeRef.current !== null &&
+      activeScope !== resolvedScopeRef.current &&
+      unresolvedEntry
+    ) {
+      // The parser can return to the national default after Back, after
+      // startup already matched the saved state. Write that state again.
+      settledRef.current = false;
+    }
+    if (settledRef.current) {
       return;
     }
     if (resolvedScopeRef.current === null) {
-      // A history entry that omits scope is unresolved even when the Next
-      // snapshot still shows a scope from an earlier shallow update.
-      const historyParams = new URLSearchParams(window.location.search);
-      const historyHasScope = hasExplicitReviewScopeParam(historyParams);
-      const historyHasCounty = historyParams.has("county");
       const explicitScope =
         hasExplicitReviewScopeParam(searchParams) && historyHasScope;
       const parsedScope =

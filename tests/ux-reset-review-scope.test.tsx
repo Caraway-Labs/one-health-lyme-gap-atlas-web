@@ -19,6 +19,7 @@ import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-e
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
 import { ReviewStatePanel } from "@/features/ux-reset/review/review-state-panel";
+import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
 import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
 import type { Tier1CountyPriority } from "@/generated/models";
@@ -255,6 +256,25 @@ function scopeToken(query: string): string {
     return "";
   }
   return decodeURIComponent(scope);
+}
+
+function ProfileStartupHarness({
+  activeScope,
+  onSetScope,
+}: {
+  activeScope: "ALL" | string;
+  onSetScope: (scope: "ALL" | string) => void;
+}) {
+  const startupSettled = useApplyProfileStartingScope({
+    activeScope,
+    profileReady: true,
+    profileStateCode: "CO",
+    setScope: onSetScope,
+    stateOptions: [{ code: "CO", name: "Colorado" }],
+  });
+  return (
+    <div data-settled={String(startupSettled)} data-testid="startup-harness" />
+  );
 }
 
 function renderedReviewScope(): string {
@@ -1754,6 +1774,41 @@ describe("Reset Review scope UI", () => {
       saves: 0,
       write: { history: "push", query: expect.stringContaining("scope=ALL") },
     });
+  });
+
+  it("writes the saved state again when a scope-less entry reverts to national", async () => {
+    window.history.replaceState(null, "", "/app/review");
+    mockedSearch = "";
+    const writes: string[] = [];
+    const onSetScope = (scope: "ALL" | string) => {
+      writes.push(scope);
+    };
+    const view = render(
+      <ProfileStartupHarness activeScope="ALL" onSetScope={onSetScope} />
+    );
+    await waitFor(() => {
+      if (!writes.includes("CO")) {
+        throw new Error("saved state was not written");
+      }
+    });
+    view.rerender(
+      <ProfileStartupHarness activeScope="CO" onSetScope={onSetScope} />
+    );
+    await waitFor(() => {
+      if (screen.getByTestId("startup-harness").dataset.settled !== "true") {
+        throw new Error("startup did not settle");
+      }
+    });
+    const writesAfterSettle = writes.length;
+    view.rerender(
+      <ProfileStartupHarness activeScope="ALL" onSetScope={onSetScope} />
+    );
+    await waitFor(() => {
+      if (writes.length <= writesAfterSettle) {
+        throw new Error("saved state was not written again");
+      }
+    });
+    expect(writes.at(-1)).toBe("CO");
   });
 
   it("applies the saved state after Back from a scope chosen during profile load", async () => {
