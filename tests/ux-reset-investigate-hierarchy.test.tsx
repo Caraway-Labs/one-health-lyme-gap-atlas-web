@@ -249,6 +249,340 @@ function plainObservation(
   };
 }
 
+const INHERITED_SOURCE_NOTE = "Inherited source note.";
+const INHERITED_MEASURE_LIMITATION = "Inherited measure limitation.";
+const INHERITED_RELEASE_LIMITATION = "Inherited release limitation.";
+const EMPTY_LIMITATION_SUMMARY =
+  "No material limitation was returned on the observations for this county.";
+
+const INHERITED_CAVEAT_SOURCES = [
+  "none",
+  "source-note",
+  "measure-limitation",
+  "source-note-and-measure-limitation",
+  "release-limitation",
+] as const;
+
+type InheritedCaveatSource = (typeof INHERITED_CAVEAT_SOURCES)[number];
+
+type CaveatRowStatus = {
+  claim: string;
+  coverage: EnvironmentalContext["coverage_status"] | null;
+  id: string;
+  measureId: string;
+  sourceKey: string;
+  statusParts: readonly string[];
+  value: number | string | null;
+};
+
+const CAVEAT_ROW_STATUSES: readonly CaveatRowStatus[] = [
+  {
+    claim: "Tick surveillance status",
+    coverage: null,
+    id: "observed",
+    measureId: "tick_status",
+    sourceKey: "tick",
+    statusParts: [],
+    value: "Established",
+  },
+  {
+    claim: "Tick surveillance status",
+    coverage: null,
+    id: "suppressed",
+    measureId: "tick_status",
+    sourceKey: "tick",
+    statusParts: ["Suppressed or privacy-protected"],
+    value: "SUPPRESSED",
+  },
+  {
+    claim: "Borrelia burgdorferi status",
+    coverage: null,
+    id: "missing",
+    measureId: "burgdorferi_status",
+    sourceKey: "pathogen",
+    statusParts: ["No county record"],
+    value: "missing",
+  },
+  {
+    claim: "Borrelia burgdorferi status",
+    coverage: null,
+    id: "no-records",
+    measureId: "burgdorferi_status",
+    sourceKey: "pathogen",
+    statusParts: ["No county-linked record"],
+    value: "No records",
+  },
+  {
+    claim: "Borrelia burgdorferi status",
+    coverage: null,
+    id: "unavailable",
+    measureId: "burgdorferi_status",
+    sourceKey: "pathogen",
+    statusParts: ["Unavailable for this release"],
+    value: "unavailable",
+  },
+  {
+    claim: "Borrelia burgdorferi status",
+    coverage: null,
+    id: "unknown",
+    measureId: "burgdorferi_status",
+    sourceKey: "pathogen",
+    statusParts: ["Unavailable for this release"],
+    value: "unknown",
+  },
+  {
+    claim: "Borrelia burgdorferi status",
+    coverage: null,
+    id: "no-county-linked",
+    measureId: "burgdorferi_status",
+    sourceKey: "pathogen",
+    statusParts: ["No county-linked record"],
+    value: "no_county_linked_record",
+  },
+  {
+    claim: "Uninsured percent",
+    coverage: null,
+    id: "zero",
+    measureId: "uninsured_percent_2022",
+    sourceKey: "context_svi",
+    statusParts: ["Published zero"],
+    value: 0,
+  },
+  {
+    claim: "Uninsured percent",
+    coverage: null,
+    id: "numeric",
+    measureId: "uninsured_percent_2022",
+    sourceKey: "context_svi",
+    statusParts: [],
+    value: 9,
+  },
+  {
+    claim: "Reported Lyme cases coverage",
+    coverage: EnvironmentalContextCoverageStatus.COMPLETE,
+    id: "coverage-complete",
+    measureId: "reported-cases",
+    sourceKey: "coverage",
+    statusParts: [],
+    value: null,
+  },
+  {
+    claim: "Reported Lyme cases coverage",
+    coverage: EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+    id: "coverage-partial",
+    measureId: "reported-cases",
+    sourceKey: "coverage",
+    statusParts: ["Partial coverage."],
+    value: null,
+  },
+  {
+    claim: "Reported Lyme cases coverage",
+    coverage: EnvironmentalContextCoverageStatus.SOURCE_MISSING,
+    id: "coverage-source-missing",
+    measureId: "reported-cases",
+    sourceKey: "coverage",
+    statusParts: ["Environmental source missing"],
+    value: null,
+  },
+  {
+    claim: "Reported Lyme cases coverage",
+    coverage: EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE,
+    id: "coverage-out-of-source",
+    measureId: "reported-cases",
+    sourceKey: "coverage",
+    statusParts: ["Unavailable for this release"],
+    value: null,
+  },
+];
+
+function inheritedCaveatSelection(source: InheritedCaveatSource): {
+  measureLimitation: string | null;
+  release: string | null;
+  sourceNote: string | null;
+} {
+  switch (source) {
+    case "none": {
+      return { measureLimitation: null, release: null, sourceNote: null };
+    }
+    case "source-note": {
+      return {
+        measureLimitation: null,
+        release: null,
+        sourceNote: INHERITED_SOURCE_NOTE,
+      };
+    }
+    case "measure-limitation": {
+      return {
+        measureLimitation: INHERITED_MEASURE_LIMITATION,
+        release: null,
+        sourceNote: null,
+      };
+    }
+    case "source-note-and-measure-limitation": {
+      return {
+        measureLimitation: INHERITED_MEASURE_LIMITATION,
+        release: null,
+        sourceNote: INHERITED_SOURCE_NOTE,
+      };
+    }
+    case "release-limitation": {
+      return {
+        measureLimitation: null,
+        release: INHERITED_RELEASE_LIMITATION,
+        sourceNote: null,
+      };
+    }
+    default: {
+      const exhaustive: never = source;
+      return exhaustive;
+    }
+  }
+}
+
+function caveatSentence(text: string): string {
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function normalizeSummary(text: string | null): string {
+  return (text ?? "").replaceAll(/\s+/g, " ").trim();
+}
+
+function expectedCaveatSummary(
+  status: CaveatRowStatus,
+  source: InheritedCaveatSource
+): string {
+  const inherited = inheritedCaveatSelection(source);
+  const inheritedLines = [
+    inherited.sourceNote,
+    inherited.measureLimitation,
+  ].flatMap((line) => (line ? [caveatSentence(line)] : []));
+  const rowParts = [
+    ...status.statusParts.map((part) => caveatSentence(part)),
+    ...inheritedLines,
+  ];
+  const rowText =
+    rowParts.length > 0 ? `${status.claim}: ${rowParts.join(" ")}` : null;
+  const observationText =
+    status.coverage && inheritedLines.length > 0
+      ? `Reported Lyme cases: ${inheritedLines[0]}`
+      : null;
+  const releaseText = inherited.release
+    ? caveatSentence(inherited.release)
+    : null;
+  const combined = [observationText, rowText, releaseText]
+    .filter((part) => part !== null)
+    .join(" ");
+  return combined || EMPTY_LIMITATION_SUMMARY;
+}
+
+function blankCaveatRecord(
+  overrides: Partial<PublishedCountyRecord>
+): PublishedCountyRecord {
+  return {
+    burgdorferiStatus: "",
+    evidenceCompleteness: 100,
+    fips: "08001",
+    pacificusStatus: null,
+    population: null,
+    releaseId: INVESTIGATE_RELEASE_ID,
+    releaseLimitation: "",
+    rucc: null,
+    scapularisStatus: null,
+    sources: [],
+    stateUnallocatedRecords: null,
+    sviPercentile: null,
+    tickStatus: "",
+    uninsuredPercent: null,
+    ...overrides,
+  };
+}
+
+function caveatMeasure(
+  measureId: string,
+  label: string,
+  limitations: readonly string[]
+): Measure {
+  const base = yearMeasures[0];
+  if (!base) {
+    throw new Error("Measure fixture is missing.");
+  }
+  return {
+    ...base,
+    label,
+    limitations: [...limitations],
+    measure_id: measureId,
+  };
+}
+
+function renderCaveatSummaryCell(
+  status: CaveatRowStatus,
+  source: InheritedCaveatSource
+): void {
+  const inherited = inheritedCaveatSelection(source);
+  const inheritedLines = [
+    inherited.sourceNote,
+    inherited.measureLimitation,
+  ].flatMap((line) => (line ? [line] : []));
+  if (status.coverage) {
+    render(
+      <InvestigateEvidenceHierarchy
+        bundle={casesBundle([
+          {
+            ...plainObservation(
+              coverageContext(status.coverage, "0.5"),
+              `obs-${status.coverage}`
+            ),
+            limitations: inheritedLines,
+          },
+        ])}
+        countyRecord={blankCaveatRecord({
+          releaseLimitation: inherited.release ?? "",
+        })}
+      />
+    );
+    return;
+  }
+  const sourceNote = inherited.sourceNote;
+  const record = blankCaveatRecord({
+    releaseLimitation: inherited.release ?? "",
+    sources: sourceNote
+      ? [
+          {
+            key: status.sourceKey,
+            label: "Governed source",
+            note: sourceNote,
+            url: "https://example.com/source",
+            vintage: "2025",
+          },
+        ]
+      : [],
+    ...(status.measureId === "tick_status"
+      ? { tickStatus: String(status.value) }
+      : {}),
+    ...(status.measureId === "burgdorferi_status"
+      ? { burgdorferiStatus: String(status.value) }
+      : {}),
+    ...(status.measureId === "uninsured_percent_2022"
+      ? { uninsuredPercent: Number(status.value) }
+      : {}),
+  });
+  const measures =
+    inherited.measureLimitation === null
+      ? []
+      : [
+          caveatMeasure(status.measureId, status.claim, [
+            inherited.measureLimitation,
+          ]),
+        ];
+  render(
+    <InvestigateEvidenceHierarchy
+      bundle={casesBundle([plainObservation()])}
+      countyRecord={record}
+      measures={measures}
+    />
+  );
+}
+
 const PUBLISHED_STATUS_TOKENS = [
   "Established",
   "SUPPRESSED",
@@ -307,10 +641,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "available",
     display: "0%",
     gapLine: null,
-    href: null,
+    href: "#investigate-published-uninsured_percent_2022",
     id: "numeric-zero",
     kind: "uninsured",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "Published zero",
     provenance: "Available. Published zero.",
     reasonCode: ValueState.ZERO,
     value: 0,
@@ -321,10 +655,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "available",
     display: "0th percentile",
     gapLine: null,
-    href: null,
+    href: "#investigate-published-svi_percentile_2022",
     id: "svi-zero",
     kind: "svi",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "Published zero",
     provenance: "Available. Published zero.",
     reasonCode: ValueState.ZERO,
     value: 0,
@@ -363,10 +697,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "unavailable",
     display: "Unavailable",
     gapLine: unavailableCountyGap(pathogenClaim),
-    href: null,
+    href: "#investigate-published-burgdorferi_status",
     id: "status-no-records",
     kind: "pathogen",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "No county-linked record",
     provenance: "Unavailable. No county-linked record.",
     reasonCode: ValueState.NO_COUNTY_LINKED_RECORD,
     status: "No records",
@@ -377,10 +711,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "unavailable",
     display: "Unavailable",
     gapLine: unavailableCountyGap(pathogenClaim),
-    href: null,
+    href: "#investigate-published-burgdorferi_status",
     id: "status-no-county-linked",
     kind: "pathogen",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "No county-linked record",
     provenance: "Unavailable. No county-linked record.",
     reasonCode: ValueState.NO_COUNTY_LINKED_RECORD,
     status: "no_county_linked_record",
@@ -391,10 +725,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "unavailable",
     display: "Unavailable",
     gapLine: unavailableCountyGap(pathogenClaim),
-    href: null,
+    href: "#investigate-published-burgdorferi_status",
     id: "status-missing",
     kind: "pathogen",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "No county record",
     provenance: "Unavailable. No county record.",
     reasonCode: ValueState.MISSING,
     status: "missing",
@@ -405,10 +739,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "unavailable",
     display: "Unavailable",
     gapLine: unavailableCountyGap(pathogenClaim),
-    href: null,
+    href: "#investigate-published-burgdorferi_status",
     id: "status-unavailable",
     kind: "pathogen",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "Unavailable for this release",
     provenance: "Unavailable. Unavailable for this release.",
     reasonCode: ValueState.UNAVAILABLE,
     status: "unavailable",
@@ -419,10 +753,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "unavailable",
     display: "Unavailable",
     gapLine: unavailableCountyGap(pathogenClaim),
-    href: null,
+    href: "#investigate-published-burgdorferi_status",
     id: "status-unknown",
     kind: "pathogen",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "Unavailable for this release",
     provenance: "Unavailable. Unavailable for this release.",
     reasonCode: ValueState.UNAVAILABLE,
     status: "unknown",
@@ -461,10 +795,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "unavailable",
     display: "Source missing",
     gapLine: unavailableCountyGap(coverageClaim),
-    href: null,
+    href: `#investigate-coverage-obs-${EnvironmentalContextCoverageStatus.SOURCE_MISSING}`,
     id: "coverage-source-missing",
     kind: "coverage",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "Environmental source missing",
     provenance: "Unavailable. Environmental source missing.",
     reasonCode: "ENVIRONMENTAL_SOURCE_MISSING",
     status: EnvironmentalContextCoverageStatus.SOURCE_MISSING,
@@ -475,10 +809,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     availability: "unavailable",
     display: "Out of source coverage",
     gapLine: unavailableCountyGap(coverageClaim),
-    href: null,
+    href: `#investigate-coverage-obs-${EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE}`,
     id: "coverage-out-of-source",
     kind: "coverage",
-    limitation: NO_MATERIAL_LIMITATION,
+    limitation: "Unavailable for this release",
     provenance: "Unavailable. Unavailable for this release.",
     reasonCode: ValueState.UNAVAILABLE,
     status: EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE,
@@ -1311,6 +1645,29 @@ describe("County Investigate evidence hierarchy", () => {
         [ValueState.ZERO]: true,
       },
     });
+  });
+
+  it("keeps every status reason beside each inherited caveat in the uncertainty summary", () => {
+    const rows: Record<string, string> = {};
+    for (const status of CAVEAT_ROW_STATUSES) {
+      for (const inherited of INHERITED_CAVEAT_SOURCES) {
+        cleanup();
+        renderCaveatSummaryCell(status, inherited);
+        rows[`${status.id}|${inherited}`] = normalizeSummary(
+          screen.getByTestId("investigate-limitation-text").textContent
+        );
+      }
+    }
+    const expected: Record<string, string> = {};
+    for (const status of CAVEAT_ROW_STATUSES) {
+      for (const inherited of INHERITED_CAVEAT_SOURCES) {
+        expected[`${status.id}|${inherited}`] = expectedCaveatSummary(
+          status,
+          inherited
+        );
+      }
+    }
+    expect(rows).toStrictEqual(expected);
   });
 
   it("keeps complete coverage available when the fraction is 1.0", () => {

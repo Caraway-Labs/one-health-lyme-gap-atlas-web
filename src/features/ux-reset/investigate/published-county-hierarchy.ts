@@ -225,18 +225,78 @@ function mergedLimitations(
   return [...base, ...extra];
 }
 
+function caveatSentence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+/** Joins caveat sources in call order. An earlier source does not drop a later one. */
+export function combineCaveatText(
+  parts: readonly (string | null | undefined)[]
+): string | null {
+  const sentences: string[] = [];
+  const seen = new Set<string>();
+  for (const part of parts) {
+    const sentence = part ? caveatSentence(part) : "";
+    if (!sentence || seen.has(sentence)) {
+      continue;
+    }
+    seen.add(sentence);
+    sentences.push(sentence);
+  }
+  return sentences.length > 0 ? sentences.join(" ") : null;
+}
+
+function statusCaveatSentence(
+  valueState: ValueState,
+  reasonCode: EvidenceReasonCode
+): string | null {
+  switch (valueState) {
+    case ValueState.SUPPRESSED: {
+      return evidenceReasonLabel(ValueState.SUPPRESSED);
+    }
+    case ValueState.ZERO: {
+      return evidenceReasonLabel(ValueState.ZERO);
+    }
+    case ValueState.MISSING: {
+      return evidenceReasonLabel(ValueState.MISSING);
+    }
+    case ValueState.NO_COUNTY_LINKED_RECORD: {
+      return evidenceReasonLabel(ValueState.NO_COUNTY_LINKED_RECORD);
+    }
+    case ValueState.UNAVAILABLE: {
+      return evidenceReasonLabel(
+        reasonCode === "ENVIRONMENTAL_SOURCE_MISSING"
+          ? "ENVIRONMENTAL_SOURCE_MISSING"
+          : ValueState.UNAVAILABLE
+      );
+    }
+    case ValueState.OBSERVED: {
+      return null;
+    }
+    default: {
+      const exhaustive: never = valueState;
+      return exhaustive;
+    }
+  }
+}
+
 function limitationTextForRow(input: {
-  limitations: readonly string[];
+  measureLimitations: readonly string[];
   reasonCode: EvidenceReasonCode;
+  sourceNote: string | null;
+  statusLimitations: readonly string[];
+  valueState: ValueState;
 }): string | null {
-  const caveat = materialCaveatShort(input.limitations);
-  if (caveat) {
-    return caveat;
-  }
-  if (input.reasonCode === ValueState.SUPPRESSED) {
-    return evidenceReasonLabel(ValueState.SUPPRESSED);
-  }
-  return null;
+  return combineCaveatText([
+    statusCaveatSentence(input.valueState, input.reasonCode),
+    ...input.statusLimitations,
+    input.sourceNote,
+    ...input.measureLimitations,
+  ]);
 }
 
 function gapLinesForRow(input: {
@@ -249,7 +309,7 @@ function gapLinesForRow(input: {
     (text) => `${input.claimLabel}: ${text}`
   );
   const suppressedLine =
-    input.reasonCode === ValueState.SUPPRESSED && input.limitations.length === 0
+    input.reasonCode === ValueState.SUPPRESSED
       ? `${input.claimLabel}: ${evidenceReasonLabel(ValueState.SUPPRESSED)}.`
       : null;
   const unavailableLine =
@@ -273,13 +333,16 @@ function gapLinesForRow(input: {
  */
 export function mapPublishedRow(input: {
   claimLabel: string;
-  inheritedLimitations?: readonly string[];
   inspectAnchor: string;
+  measureLimitations?: readonly string[];
+  sourceNote?: string | null;
   subject: PublishedRowSubject;
 }): GovernedPublishedState {
   const seed = subjectSeed(input.subject);
+  const measureLimitations = input.measureLimitations ?? NO_ADDED_LIMITATIONS;
+  const sourceNote = input.sourceNote ?? null;
   const limitations = mergedLimitations(
-    input.inheritedLimitations ?? NO_ADDED_LIMITATIONS,
+    [...measureLimitations, sourceNote ?? ""],
     seed.limitations
   );
   const hasMaterialLimitations = hasGovernedMaterialLimitations(limitations);
@@ -297,7 +360,13 @@ export function mapPublishedRow(input: {
     input.subject.status === EnvironmentalContextCoverageStatus.SOURCE_MISSING
       ? "ENVIRONMENTAL_SOURCE_MISSING"
       : governedReason;
-  const limitationText = limitationTextForRow({ limitations, reasonCode });
+  const limitationText = limitationTextForRow({
+    measureLimitations,
+    reasonCode,
+    sourceNote,
+    statusLimitations: seed.limitations,
+    valueState,
+  });
   const gaps = gapLinesForRow({
     availability,
     claimLabel: input.claimLabel,
@@ -548,11 +617,9 @@ function rowFromField(input: {
   const source = sourceForKey(input.record.sources, input.field.sourceKey);
   const state = mapPublishedRow({
     claimLabel,
-    inheritedLimitations: [
-      ...(measure?.limitations ?? NO_ADDED_LIMITATIONS),
-      source?.note ?? "",
-    ],
     inspectAnchor: publishedRowAnchor(input.field.measureId),
+    measureLimitations: measure?.limitations ?? NO_ADDED_LIMITATIONS,
+    sourceNote: source?.note ?? null,
     subject: input.subject,
   });
   return {
@@ -697,8 +764,8 @@ export function environmentalCoverageRows(input: {
     const claimLabel = `${entry.measureLabel} coverage`;
     const state = mapPublishedRow({
       claimLabel,
-      inheritedLimitations: source.limitations,
       inspectAnchor: coverageRowAnchor(entry.observationId),
+      measureLimitations: source.limitations,
       subject: { kind: "coverage", status: entry.context.coverage_status },
     });
     const label = COVERAGE_STATUS_LABELS[entry.context.coverage_status];

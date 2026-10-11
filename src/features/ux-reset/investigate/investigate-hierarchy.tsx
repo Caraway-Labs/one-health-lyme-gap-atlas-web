@@ -25,6 +25,7 @@ import {
   publishedFindingRow,
 } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import {
+  combineCaveatText,
   coverageRowAnchor,
   environmentalCoverageRows,
   publishedCountyHierarchy,
@@ -404,20 +405,37 @@ export function InvestigateEvidenceHierarchy({
       ? null
       : publishedLead;
   const publishedCaveat =
-    limitation || holdEmptyLimitation || countyLimitationFailed
+    holdEmptyLimitation || countyLimitationFailed
       ? null
       : publishedCaveatRow(publishedRows);
   const coverageCaveat =
-    limitation || publishedCaveat
-      ? null
-      : (coverage.find((row) => row.state.limitationText) ?? null);
-  const releaseLimitation = published?.releaseLimitation.trim() ?? "";
+    coverage.find((row) => row.state.limitationText) ?? null;
+  const releaseLimitation =
+    holdEmptyLimitation || countyLimitationFailed
+      ? ""
+      : (published?.releaseLimitation.trim() ?? "");
+  const combinedCaveat = combineCaveatText([
+    limitation
+      ? `${limitation.observation.measureLabel}: ${limitation.text}`
+      : null,
+    publishedCaveat
+      ? `${publishedCaveat.row.evidence.claimLabel}: ${publishedCaveat.text}`
+      : null,
+    coverageCaveat?.state.limitationText
+      ? `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`
+      : null,
+    releaseLimitation || null,
+  ]);
   const catalogLimitationUnsent =
     catalogFailed && !limitation && !publishedCaveat && !coverageCaveat;
-  const limitationSummary = coverageCaveat?.state.limitationText
+  const limitationSummary = combinedCaveat
     ? {
-        text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`,
-        title: coverageCaveat.evidence.claimLabel,
+        text: combinedCaveat,
+        title:
+          limitation?.observation.measureLabel ??
+          publishedCaveat?.row.evidence.claimLabel ??
+          coverageCaveat?.evidence.claimLabel ??
+          "Release limitation",
       }
     : holdEmptyLimitation
       ? {
@@ -429,17 +447,12 @@ export function InvestigateEvidenceHierarchy({
             text: COUNTY_RECORD_LIMITATION_FAILURE,
             title: "Published county record did not load",
           }
-        : releaseLimitation && !limitation && !publishedCaveat
+        : catalogLimitationUnsent
           ? {
-              text: releaseLimitation,
-              title: "Release limitation",
+              text: CATALOG_LIMITATION_FAILURE,
+              title: "Measure catalog did not load",
             }
-          : catalogLimitationUnsent
-            ? {
-                text: CATALOG_LIMITATION_FAILURE,
-                title: "Measure catalog did not load",
-              }
-            : investigateLimitationSummary(bundle, publishedRows);
+          : investigateLimitationSummary(bundle, publishedRows);
   const conflicts = investigateEvidenceConflicts(bundle);
   const multipleObservations = investigateMultipleObservations(bundle);
   const limitations = uniqueLines([
