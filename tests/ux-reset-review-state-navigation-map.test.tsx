@@ -476,7 +476,8 @@ describe("Review state navigation map lifecycle", () => {
   });
 
   it("removes the window resize listener when ResizeObserver is unavailable", () => {
-    vi.stubGlobal("ResizeObserver");
+    const unavailableObserver = undefined;
+    vi.stubGlobal("ResizeObserver", unavailableObserver);
     const width = vi
       .spyOn(HTMLElement.prototype, "clientWidth", "get")
       .mockReturnValue(390);
@@ -501,9 +502,10 @@ describe("Review state navigation map lifecycle", () => {
       }
       width.mockReturnValue(1440);
       height.mockReturnValue(448);
-      listener();
+      const resizeEvent = new Event("resize");
+      listener(resizeEvent);
       view.unmount();
-      listener();
+      listener(resizeEvent);
       const narrow = reviewNationalNavigationCamera(390, 256);
       const wide = reviewNationalNavigationCamera(1440, 448);
       expect({
