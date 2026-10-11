@@ -28,8 +28,11 @@ async function installSettingsApi(page: Page) {
   let stored: StoredProfile = null;
   let failSaves = 0;
   let holdPut = false;
+  let holdGets = false;
   let commitBeforeHold = false;
+  let completedGets = 0;
   let releasePut: (() => void) | undefined;
+  const releaseGets: Array<() => void> = [];
   const writes: unknown[] = [];
 
   const fulfillGet = async (route: Route) => {
@@ -41,7 +44,13 @@ async function installSettingsApi(page: Page) {
   await page.route("**/v1/me/profile", async (route) => {
     const request = route.request();
     if (request.method() === "GET") {
+      if (holdGets) {
+        await new Promise<void>((resolve) => {
+          releaseGets.push(resolve);
+        });
+      }
       await fulfillGet(route);
+      completedGets += 1;
       return;
     }
     if (request.method() !== "PUT") {
@@ -111,6 +120,12 @@ async function installSettingsApi(page: Page) {
     failNextSaves(count: number) {
       failSaves = count;
     },
+    completedProfileGets() {
+      return completedGets;
+    },
+    holdProfileGets() {
+      holdGets = true;
+    },
     holdNextPut() {
       holdPut = true;
     },
@@ -121,6 +136,13 @@ async function installSettingsApi(page: Page) {
     releaseHeldPut() {
       holdPut = false;
       releasePut?.();
+    },
+    releaseProfileGets() {
+      holdGets = false;
+      const pending = releaseGets.splice(0);
+      for (const release of pending) {
+        release();
+      }
     },
     writes,
   };
@@ -250,6 +272,55 @@ test.describe("Settings profile and default jurisdiction", () => {
     await expect(
       page.getByRole("button", { name: /Albany, NY/ })
     ).toBeVisible();
+  });
+
+  test("keeps an explicit county URL when the saved state profile arrives late", async ({
+    page,
+  }) => {
+    const api = await installSettingsApi(page);
+    await page.goto("/app/settings");
+    await chooseJurisdiction(page, "New York (NY)");
+    await page.getByTestId("settings-save-profile").click();
+    await expect(
+      page.locator("[data-default-jurisdiction='NY']")
+    ).toBeVisible();
+
+    const reviewUrl =
+      "/app/review?county=08001&dataset=alpha-2026&period=2023-01-01";
+    const getsBeforeReview = api.completedProfileGets();
+    api.holdProfileGets();
+    await page.goto(reviewUrl);
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "ALL"
+    );
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).not.toHaveURL(/scope=NY/);
+
+    api.releaseProfileGets();
+    await expect
+      .poll(() => api.completedProfileGets())
+      .toBeGreaterThan(getsBeforeReview);
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "ALL"
+    );
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).not.toHaveURL(/scope=NY/);
+
+    await page.reload();
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "ALL"
+    );
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).not.toHaveURL(/scope=NY/);
   });
 
   test("keeps edits after a failed save and confirms them on retry", async ({
