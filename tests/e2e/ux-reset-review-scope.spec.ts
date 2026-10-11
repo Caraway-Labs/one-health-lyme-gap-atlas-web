@@ -253,7 +253,11 @@ test.describe("Review national and state scope controls", () => {
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
 
+    // Finish the held read before navigating Back. ALL is already rendered,
+    // so asserting it alone does not prove the profile response has arrived.
+    const profileResponse = page.waitForResponse("**/v1/me/profile");
     profileHeld.resolve();
+    await (await profileResponse).finished();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "ALL"

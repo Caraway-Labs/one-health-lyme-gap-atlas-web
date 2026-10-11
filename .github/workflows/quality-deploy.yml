@@ -202,7 +202,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Required E2E shard
         run: >-
-          npx playwright test --shard=${{ matrix.shard }}/3 --workers=2 --grep-invert "research and sign-in shells fail safely without authentication" --reporter=list,junit,html
+          npx playwright test --shard=${{ matrix.shard }}/3 --workers=1 --grep-invert "research and sign-in shells fail safely without authentication" --reporter=list,junit,html
         env:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/playwright-junit.xml
           PLAYWRIGHT_HTML_OPEN: never
