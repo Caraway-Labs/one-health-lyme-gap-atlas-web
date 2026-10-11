@@ -385,6 +385,41 @@ test.describe("Review national geographic navigation", () => {
     }
   });
 
+  test("announces the focused state as keyboard focus moves on the map and in the list", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/app/review?scope=ALL");
+    const live = page.getByTestId("review-state-navigation-live");
+    await expect(live).toContainText(
+      "Map status: The map is ready. Focused state: none."
+    );
+    const map = page.getByTestId("review-state-navigation-map");
+    await map.focus();
+    await map.press("ArrowRight");
+    await expect(live).toContainText(
+      "Focused state: Colorado (CO), available."
+    );
+    await map.press("ArrowRight");
+    await expect(live).toContainText(
+      "Focused state: New York (NY), available."
+    );
+    const colorado = page.getByRole("button", { name: "CO, Colorado" });
+    await colorado.focus();
+    await expect(live).toContainText(
+      "Focused state: Colorado (CO), available."
+    );
+    await colorado.press("ArrowDown");
+    await expect(live).toContainText(
+      "Focused state: New York (NY), available."
+    );
+    await expect(
+      page.getByRole("button", { name: "DC, not in this release" })
+    ).toBeDisabled();
+    await expect(page).toHaveURL(/scope=ALL/);
+  });
+
   test("fits the national map at tablet width", async ({ page }, testInfo) => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1024, width: 768 });

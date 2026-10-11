@@ -17,6 +17,7 @@ import { lower48ReviewPostalCodes } from "@/features/ux-reset/review/review-stat
 import {
   filterReviewStateNavigationEntries,
   reviewMapErrorFailure,
+  reviewNavigationFocusAnnouncement,
   reviewNavigationMapPhase,
   reviewNavigationMapRetryable,
   reviewNavigationMapStatus,
@@ -339,6 +340,22 @@ describe("Review state navigation model", () => {
     expect(reviewMapErrorFailure(message, ready)).toBe(failure);
   });
 
+  it("announces the focused state's name and availability", () => {
+    expect({
+      available: reviewNavigationFocusAnnouncement(
+        entry("CO", "supported", "Colorado")
+      ),
+      none: reviewNavigationFocusAnnouncement(null),
+      unavailable: reviewNavigationFocusAnnouncement(
+        entry("DC", "unavailable")
+      ),
+    }).toStrictEqual({
+      available: "Focused state: Colorado (CO), available.",
+      none: "Focused state: none.",
+      unavailable: "Focused state: DC, not in this release.",
+    });
+  });
+
   it("renders exact interaction text for highlight, focus, and selection", () => {
     expect(
       reviewNavigationStatusText({
@@ -502,6 +519,54 @@ describe("Review state navigation view", () => {
     expect(
       screen.getByTestId("review-state-navigation-status").textContent
     ).toContain("Focused state: New York (NY).");
+  });
+
+  it("announces each state as map and list focus move", () => {
+    render(
+      <OrientationHarness
+        initialFocus={null}
+        initialHover={null}
+        mapCodes={["CO", "NY"]}
+        phase="ready"
+        onActivate={vi.fn<(code: string) => void>()}
+      />
+    );
+    const live = screen.getByTestId("review-state-navigation-live");
+    const map = screen.getByTestId("review-state-navigation-map");
+    const announced = () => live.textContent;
+    fireEvent.keyDown(map, { key: "ArrowRight" });
+    const colorado = announced();
+    fireEvent.keyDown(map, { key: "ArrowRight" });
+    const newYork = announced();
+    const listColorado = screen.getByRole("button", { name: "CO, Colorado" });
+    fireEvent.focus(listColorado);
+    const listFocus = announced();
+    fireEvent.keyDown(listColorado, { key: "ArrowDown" });
+    const listNext = announced();
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "NY, New York" }));
+    expect({
+      atomic: live.getAttribute("aria-atomic"),
+      highlighted: screen.getByTestId("review-state-navigation-status")
+        .textContent,
+      listFocus,
+      listNext,
+      live: live.getAttribute("aria-live"),
+      mapColorado: colorado,
+      mapNewYork: newYork,
+    }).toStrictEqual({
+      atomic: "true",
+      highlighted:
+        "Map status: The map is ready. Highlighted state: New York (NY). Focused state: New York (NY). Selected state: none. Showing 4 of 4 states.",
+      listFocus:
+        "Map status: The map is ready. Focused state: Colorado (CO), available.",
+      listNext:
+        "Map status: The map is ready. Focused state: New York (NY), available.",
+      live: "polite",
+      mapColorado:
+        "Map status: The map is ready. Focused state: Colorado (CO), available.",
+      mapNewYork:
+        "Map status: The map is ready. Focused state: New York (NY), available.",
+    });
   });
 
   it("moves map focus with arrow keys and activates it with Enter", () => {

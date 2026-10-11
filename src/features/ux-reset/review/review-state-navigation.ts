@@ -233,6 +233,27 @@ export function reviewNavigationMapRetryable(
   }
 }
 
+export function reviewNavigationFocusAnnouncement(
+  entry: ReviewStateNavigationEntry | null
+): string {
+  if (!entry) {
+    return "Focused state: none.";
+  }
+  switch (entry.availability) {
+    case reviewStateAvailabilityValues.supported: {
+      const name = entry.name ? `${entry.name} (${entry.code})` : entry.code;
+      return `Focused state: ${name}, available.`;
+    }
+    case reviewStateAvailabilityValues.unavailable: {
+      return `Focused state: ${reviewStateNavigationLabel(entry)}.`;
+    }
+    default: {
+      const exhaustive: never = entry.availability;
+      return exhaustive;
+    }
+  }
+}
+
 export function reviewNavigationStateText(
   entry: ReviewStateNavigationEntry | null
 ): string {

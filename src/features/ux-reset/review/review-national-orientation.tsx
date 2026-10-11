@@ -22,6 +22,7 @@ import {
 import {
   filterReviewStateNavigationEntries,
   reviewNavigationEntryByCode,
+  reviewNavigationFocusAnnouncement,
   reviewNavigationMapPhase,
   reviewNavigationMapRetryable,
   reviewNavigationMapStatus,
@@ -371,8 +372,13 @@ export function ReviewNationalOrientationView({
             </div>
           )}
         </div>
-        <p className="sr-only" aria-live="polite">
-          {`Map status: ${reviewNavigationMapStatus(phase)}`}
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="sr-only"
+          data-testid="review-state-navigation-live"
+        >
+          {`Map status: ${reviewNavigationMapStatus(phase)} ${reviewNavigationFocusAnnouncement(focus)}`}
         </p>
         <p data-testid="review-state-navigation-status">{status}</p>
         {retryable ? (
