@@ -760,7 +760,8 @@ export const GetProfileV1MeProfileGetResponse = zod.object({
   "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
   "state_code": zod.union([zod.string().max(getProfileV1MeProfileGetResponseProfileOneStateCodeOneMax),zod.null()]).optional(),
   "organization": zod.union([zod.string().max(getProfileV1MeProfileGetResponseProfileOneOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(getProfileV1MeProfileGetResponseProfileOneJobTitleOneMax),zod.null()]).optional()
+  "job_title": zod.union([zod.string().max(getProfileV1MeProfileGetResponseProfileOneJobTitleOneMax),zod.null()]).optional(),
+  "starting_view_version": zod.union([zod.literal(1),zod.null()]).optional().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 }),zod.null()])
 })
 
@@ -784,7 +785,8 @@ export const SaveProfileV1MeProfilePutBody = zod.object({
   "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
   "state_code": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyStateCodeOneMax),zod.null()]).optional(),
   "organization": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyJobTitleOneMax),zod.null()]).optional()
+  "job_title": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyJobTitleOneMax),zod.null()]).optional(),
+  "complete_starting_view": zod.literal(true).optional().describe('Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version.')
 })
 
 export const saveProfileV1MeProfilePutResponseProfileOneStateCodeOneMax = 2;
@@ -800,7 +802,8 @@ export const SaveProfileV1MeProfilePutResponse = zod.object({
   "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
   "state_code": zod.union([zod.string().max(saveProfileV1MeProfilePutResponseProfileOneStateCodeOneMax),zod.null()]).optional(),
   "organization": zod.union([zod.string().max(saveProfileV1MeProfilePutResponseProfileOneOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(saveProfileV1MeProfilePutResponseProfileOneJobTitleOneMax),zod.null()]).optional()
+  "job_title": zod.union([zod.string().max(saveProfileV1MeProfilePutResponseProfileOneJobTitleOneMax),zod.null()]).optional(),
+  "starting_view_version": zod.union([zod.literal(1),zod.null()]).optional().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 }),zod.null()])
 })
 

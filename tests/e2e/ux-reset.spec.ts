@@ -18,7 +18,9 @@ async function installDeterministicWorkspaceMocks(page: Page) {
     release_id: HISTORY_RELEASE_ID,
   };
   await page.route("**/v1/me/profile", async (route) => {
-    await route.fulfill({ json: { profile: { state_code: "CO" } } });
+    await route.fulfill({
+      json: { profile: { starting_view_version: 1, state_code: "CO" } },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await route.fulfill({ json: metadata });

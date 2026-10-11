@@ -123,7 +123,7 @@ async function installPreviewMocks(
 
   await page.route("**/v1/me/profile", async (route) => {
     await route.fulfill({
-      json: { profile: { state_code: "CO" } },
+      json: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     });
   });

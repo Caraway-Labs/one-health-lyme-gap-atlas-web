@@ -22,7 +22,10 @@ async function installReviewApiMocks(
     options.profileMethods?.push(route.request().method());
     await route.fulfill({
       json: {
-        profile: profileState ? { state_code: profileState } : null,
+        profile: {
+          starting_view_version: 1,
+          state_code: profileState,
+        },
       },
       status: 200,
     });
@@ -229,7 +232,7 @@ test.describe("Review national and state scope controls", () => {
       profileMethods.push(route.request().method());
       await profileHeld.promise;
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });
@@ -294,7 +297,7 @@ test.describe("Review national and state scope controls", () => {
     await page.route("**/v1/me/profile", async (route) => {
       await profileHeld.promise;
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });
@@ -392,7 +395,7 @@ test.describe("Review national and state scope controls", () => {
     let releaseScores = 0;
     await page.route("**/v1/me/profile", async (route) => {
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });
@@ -437,7 +440,7 @@ test.describe("Review national and state scope controls", () => {
   }) => {
     await page.route("**/v1/me/profile", async (route) => {
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });

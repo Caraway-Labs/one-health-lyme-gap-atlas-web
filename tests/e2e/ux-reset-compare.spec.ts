@@ -25,7 +25,9 @@ async function installCompareMocks(page: Page, requested: string[]) {
     await route.fulfill({ json: body, status });
   };
   await page.route("**/v1/me/profile", async (route) => {
-    await fulfill(route, { profile: { state_code: "CO" } });
+    await fulfill(route, {
+      profile: { starting_view_version: 1, state_code: "CO" },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     requested.push(route.request().url());
