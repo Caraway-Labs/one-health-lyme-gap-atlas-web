@@ -125,9 +125,10 @@ export function AiEthicsPage() {
           </div>
         </section>
 
-        <footer
-          className="ethics-version"
+        <div
           aria-label="AI Ethics document version"
+          className="ethics-version"
+          role="group"
         >
           <p>
             <strong>Version {aiEthicsContent.version}</strong>
@@ -138,7 +139,7 @@ export function AiEthicsPage() {
           </p>
           <p>{aiEthicsContent.maintenance.review}</p>
           <p>{aiEthicsContent.maintenance.updateRule}</p>
-        </footer>
+        </div>
       </section>
     </main>
   );
