@@ -288,10 +288,15 @@ export function mapPublishedRow(input: {
     hasMaterialLimitations,
     valueState,
   });
-  const reasonCode = reasonCodeForEvidence({
+  const governedReason = reasonCodeForEvidence({
     hasMaterialLimitations,
     valueState,
   });
+  const reasonCode =
+    input.subject.kind === "coverage" &&
+    input.subject.status === EnvironmentalContextCoverageStatus.SOURCE_MISSING
+      ? "ENVIRONMENTAL_SOURCE_MISSING"
+      : governedReason;
   const limitationText = limitationTextForRow({ limitations, reasonCode });
   const gaps = gapLinesForRow({
     availability,
@@ -657,7 +662,7 @@ function coveragePresentation(
       };
     }
     case EnvironmentalContextCoverageStatus.SOURCE_MISSING: {
-      return { limitations: [], valueState: ValueState.MISSING };
+      return { limitations: [], valueState: ValueState.UNAVAILABLE };
     }
     case EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE: {
       return { limitations: [], valueState: ValueState.UNAVAILABLE };

@@ -11,6 +11,7 @@ import {
   resolveCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
+import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/investigate-settled-view";
 import { indicatorDomainsById } from "@/features/ux-reset/investigate/load-county-evidence";
 import {
   environmentalCoverageRows,
@@ -464,10 +465,10 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     id: "coverage-source-missing",
     kind: "coverage",
     limitation: NO_MATERIAL_LIMITATION,
-    provenance: "Unavailable. No county record.",
-    reasonCode: ValueState.MISSING,
+    provenance: "Unavailable. Environmental source missing.",
+    reasonCode: "ENVIRONMENTAL_SOURCE_MISSING",
     status: EnvironmentalContextCoverageStatus.SOURCE_MISSING,
-    valueState: ValueState.MISSING,
+    valueState: ValueState.UNAVAILABLE,
   },
   {
     anchor: `investigate-coverage-obs-${EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE}`,
@@ -1256,7 +1257,7 @@ describe("County Investigate evidence hierarchy", () => {
       limitedReason: "MATERIAL_LIMITATION",
       missingAvailability: "unavailable",
       missingLimitations: ["Source gap."],
-      missingReason: "MISSING",
+      missingReason: "ENVIRONMENTAL_SOURCE_MISSING",
     });
   });
 
@@ -1505,4 +1506,136 @@ describe("County Investigate evidence hierarchy", () => {
       uninsured: "9%",
     });
   });
+
+  it("renders every settled catalog, county, and observation state", () => {
+    const catalogs = ["ok", "failed"] as const;
+    const counties = ["found", "absent", "error"] as const;
+    const observationModes = ["present", "absent"] as const;
+    const rows = catalogs.flatMap((catalog) =>
+      counties.flatMap((county) =>
+        observationModes.map((observations) => {
+          cleanup();
+          return readSettledInvestigateState({ catalog, county, observations });
+        })
+      )
+    );
+    expect(rows).toStrictEqual(
+      catalogs.flatMap((catalog) =>
+        counties.flatMap((county) =>
+          observationModes.map((observations) =>
+            expectedSettledInvestigateState({ catalog, county, observations })
+          )
+        )
+      )
+    );
+  });
 });
+
+const SETTLED_COUNTY_ERROR =
+  "The published county record could not be loaded. That is a request failure, not missing evidence.";
+
+function readSettledInvestigateState(input: {
+  catalog: "failed" | "ok";
+  county: "absent" | "error" | "found";
+  observations: "absent" | "present";
+}) {
+  const observationBundle =
+    input.observations === "present"
+      ? casesBundle([
+          plainObservation(
+            coverageContext(
+              EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+              "0.5"
+            ),
+            "obs-partial"
+          ),
+        ])
+      : casesBundle([]);
+  const catalogError =
+    input.catalog === "failed"
+      ? "Governed measures could not be loaded."
+      : null;
+  const view = settledInvestigateHierarchy({
+    bundle:
+      input.catalog === "failed" && input.observations === "absent"
+        ? null
+        : observationBundle,
+    catalogError,
+    countyRecord: input.county === "found" ? quietRecord({}) : null,
+    countyRecordAbsent: input.county === "absent",
+    countyRecordError: input.county === "error" ? SETTLED_COUNTY_ERROR : null,
+    countyRecordLoading: false,
+    identity: observationBundle.county,
+    releaseId: observationBundle.releaseId,
+  });
+  render(
+    <>
+      {catalogError ? <p data-testid="catalog-banner">{catalogError}</p> : null}
+      {view ? (
+        <InvestigateEvidenceHierarchy
+          bundle={view.bundle}
+          catalogFailed={view.catalogFailed}
+          countyRecord={view.countyRecord}
+          countyRecordError={view.countyRecordError}
+          countyRecordLoading={view.countyRecordLoading}
+        />
+      ) : (
+        <p data-testid="hierarchy-withheld">withheld</p>
+      )}
+    </>
+  );
+  const evidence =
+    screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+  const finding =
+    screen.queryByTestId("investigate-finding-text")?.textContent ?? "";
+  const limitation =
+    screen.queryByTestId("investigate-limitation-text")?.textContent ?? "";
+  return {
+    catalog: input.catalog,
+    catalogBanner: screen.queryByTestId("catalog-banner") !== null,
+    catalogOnly: evidence.includes("measure catalog could not be loaded"),
+    county: input.county,
+    countyFailure: evidence
+      .toLowerCase()
+      .includes("published county record could not be loaded"),
+    coverageAbsent: evidence.includes(
+      "Published input coverage was not returned"
+    ),
+    coverageKnown: evidence.includes("Published input coverage is 100%"),
+    emptyFinding: finding.includes("No observed or limited finding"),
+    findingFailure: finding.includes("could not be loaded"),
+    limitationCoverage: limitation.includes("Partial coverage."),
+    limitationFailure: limitation.includes("could not be loaded"),
+    limitationNone: limitation.includes("No material limitation"),
+    observationFinding: finding.includes("4"),
+    observations: input.observations,
+    publishedFinding: finding.includes("Established"),
+    withheld: screen.queryByTestId("hierarchy-withheld") !== null,
+  };
+}
+
+function expectedSettledInvestigateState(input: {
+  catalog: "failed" | "ok";
+  county: "absent" | "error" | "found";
+  observations: "absent" | "present";
+}) {
+  const observationsAbsent = input.observations === "absent";
+  return {
+    catalog: input.catalog,
+    catalogBanner: input.catalog === "failed",
+    catalogOnly: input.catalog === "failed" && observationsAbsent,
+    county: input.county,
+    countyFailure: input.county === "error",
+    coverageAbsent: input.county === "absent",
+    coverageKnown: input.county === "found",
+    emptyFinding: observationsAbsent && input.county === "absent",
+    findingFailure: observationsAbsent && input.county === "error",
+    limitationCoverage: input.observations === "present",
+    limitationFailure: observationsAbsent && input.county === "error",
+    limitationNone: observationsAbsent && input.county !== "error",
+    observationFinding: input.observations === "present",
+    observations: input.observations,
+    publishedFinding: observationsAbsent && input.county === "found",
+    withheld: false,
+  };
+}

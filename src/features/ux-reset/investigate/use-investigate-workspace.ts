@@ -59,6 +59,8 @@ export type InvestigateWorkspace = {
   catalogError: string | null;
   compare: readonly string[];
   countyRecord: PublishedCountyRecord | null;
+  /** Successful county read that returned no record (HTTP 404). */
+  countyRecordAbsent: boolean;
   countyRecordError: string | null;
   countyRecordLoading: boolean;
   directory: readonly ExploreCountyIdentity[];
@@ -436,6 +438,8 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       countyRecordQuery.isSuccess && countyRecordQuery.data
         ? countyRecordQuery.data
         : null,
+    countyRecordAbsent:
+      countyRecordQuery.isSuccess && countyRecordQuery.data === null,
     countyRecordError: countyRecordQuery.isError
       ? countyRecordErrorMessage(countyRecordQuery.error)
       : null,

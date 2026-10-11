@@ -384,10 +384,7 @@ export function InvestigateEvidenceHierarchy({
       ? null
       : publishedCaveatRow(publishedRows);
   const coverageCaveat =
-    limitation ||
-    publishedCaveat ||
-    holdEmptyLimitation ||
-    countyLimitationFailed
+    limitation || publishedCaveat || holdEmptyLimitation
       ? null
       : (coverage.find((row) => row.state.limitationText) ?? null);
   const releaseLimitation = published?.releaseLimitation.trim() ?? "";
@@ -396,15 +393,15 @@ export function InvestigateEvidenceHierarchy({
         text: "The published county record is still loading, so an empty limitation is not shown yet.",
         title: "Published county record loading",
       }
-    : countyLimitationFailed
+    : coverageCaveat?.state.limitationText
       ? {
-          text: "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.",
-          title: "Published county record did not load",
+          text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`,
+          title: coverageCaveat.evidence.claimLabel,
         }
-      : coverageCaveat?.state.limitationText
+      : countyLimitationFailed
         ? {
-            text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`,
-            title: coverageCaveat.evidence.claimLabel,
+            text: "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.",
+            title: "Published county record did not load",
           }
         : releaseLimitation && !limitation && !publishedCaveat
           ? {

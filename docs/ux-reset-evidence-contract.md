@@ -34,6 +34,7 @@ API `value_state` is authoritative. The UI maps each code to an availability lab
 | Code | Availability | When |
 | --- | --- | --- |
 | `MATERIAL_LIMITATION` | Limited | `limitations[]` on the observation is non-empty while `value_state` is `OBSERVED` or `ZERO`. |
+| `ENVIRONMENTAL_SOURCE_MISSING` | Unavailable | Environmental context `SOURCE_MISSING`. The observation and county record can exist; only the environmental source is missing. This is not `MISSING` (“No county record”). |
 
 Future API reason/comparability metadata ([API #88](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api/issues/88)) may extend this table; Reset V1 must not invent browser-derived semantics when governed fields are missing.
 
