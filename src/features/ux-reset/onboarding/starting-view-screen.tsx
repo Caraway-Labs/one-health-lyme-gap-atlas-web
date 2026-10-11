@@ -18,6 +18,7 @@ import {
   profileSessionGeneration,
   sameProfileIdentity,
   useProfileSessionIdentity,
+  type ProfileSessionIdentity,
 } from "../profile/profile-session";
 import { writeSavedProfile } from "../profile/saved-profile-client";
 import { savedProfileQueryKey } from "../profile/use-saved-profile";
@@ -60,9 +61,37 @@ export function StartingViewScreen({
 }: {
   profile: SavedProfile | null;
 }) {
+  const identity = useProfileSessionIdentity();
+  if (!identity || identity.kind === "signed-out") {
+    return (
+      <div className={`${frontPorchHeroFont.variable} auth-entrance`}>
+        <SignInIdentity />
+        <main className="auth-entrance-main">
+          <p aria-live="polite" role="status">
+            {COPY.checking}
+          </p>
+        </main>
+      </div>
+    );
+  }
+  return (
+    <StartingViewForm
+      identity={identity}
+      key={profileIdentityKey(identity)}
+      profile={profile}
+    />
+  );
+}
+
+function StartingViewForm({
+  identity,
+  profile,
+}: {
+  identity: Exclude<ProfileSessionIdentity, { kind: "signed-out" }>;
+  profile: SavedProfile | null;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const identity = useProfileSessionIdentity();
   const states = useSettingsStateOptions();
   const explanationId = useId();
   const errorId = useId();
@@ -75,21 +104,17 @@ export function StartingViewScreen({
   const [pending, setPending] = useState(false);
   const identityRef = useRef(identity);
   const mountedRef = useRef(true);
-  identityRef.current = identity;
-  const identityKey = identity ? profileIdentityKey(identity) : "";
 
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
+    identityRef.current = identity;
+  }, [identity]);
+
+  useEffect(
+    () => () => {
       mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    setChoice(null);
-    setStateCode("");
-    setError(null);
-  }, [identityKey]);
+    },
+    []
+  );
 
   async function continueToReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -186,10 +211,7 @@ export function StartingViewScreen({
           <p className="auth-entrance-subtle" id={explanationId}>
             {COPY.explanation}
           </p>
-          <fieldset
-            aria-describedby={explanationId}
-            disabled={pending || !identity}
-          >
+          <fieldset aria-describedby={explanationId} disabled={pending}>
             <legend>{COPY.prompt}</legend>
             <label className="auth-entrance-choice">
               <input
