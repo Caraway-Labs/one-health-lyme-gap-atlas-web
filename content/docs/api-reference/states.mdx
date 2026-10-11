@@ -1,0 +1,534 @@
+---
+title: "States"
+description: "Existing state PDF reports."
+---
+Generated from the public OpenAPI contract.
+
+Existing state PDF reports.
+
+## Download a state report [#state_report_pdf_v1_states__state__report_pdf_get]
+
+`GET /v1/states/{state}/report.pdf`
+
+Operation ID: `state_report_pdf_v1_states__state__report_pdf_get`
+
+Tag: `states`
+
+PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+
+### Parameters
+
+#### state
+
+- Location: `path`
+- Required: yes
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "pattern": "^[A-Z]{2}$",
+  "title": "State"
+}
+```
+
+#### dataset_version
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "title": "Dataset Version"
+}
+```
+
+#### template
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "pattern": "^[a-z]+-v\\d+$",
+  "default": "state-v1",
+  "title": "Template"
+}
+```
+
+#### ecological_share
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "type": "integer",
+  "multipleOf": 5,
+  "maximum": 85,
+  "minimum": 40,
+  "default": 65,
+  "title": "Ecological Share"
+}
+```
+
+#### low_incidence_breakpoint
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "type": "integer",
+  "maximum": 25,
+  "minimum": 5,
+  "default": 10,
+  "title": "Low Incidence Breakpoint"
+}
+```
+
+#### missing_human_weakness
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "type": "integer",
+  "multipleOf": 5,
+  "maximum": 90,
+  "minimum": 40,
+  "default": 75,
+  "title": "Missing Human Weakness"
+}
+```
+
+
+### Responses
+
+#### 200
+
+PDF attachment.
+
+##### application/pdf
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "format": "binary"
+}
+```
+
+#### 304
+
+Matching If-None-Match; empty body.
+
+This response does not declare a body.
+
+#### 404
+
+County or dataset release not found.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "County or dataset release not found.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 413
+
+The report exceeds configured resource limits.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-413",
+  "title": "Request failed",
+  "status": 413,
+  "detail": "The report exceeds configured resource limits.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 422
+
+One or more request values are invalid.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-422",
+  "title": "Request failed",
+  "status": 422,
+  "detail": "One or more request values are invalid.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 429
+
+Rate limit exceeded.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limit exceeded.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 503
+
+Atlas data service is unavailable.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Atlas data service is unavailable.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+## Review a state's county evidence [#state_review_v1_states__state__review_get]
+
+`GET /v1/states/{state}/review`
+
+Operation ID: `state_review_v1_states__state__review_get`
+
+Tag: `states`
+
+Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
+
+### Parameters
+
+#### state
+
+- Location: `path`
+- Required: yes
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "pattern": "^[A-Z]{2}$",
+  "title": "State"
+}
+```
+
+#### observation_context
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string",
+      "maxLength": 80
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "title": "Observation Context"
+}
+```
+
+#### dataset_version
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "title": "Dataset Version"
+}
+```
+
+
+### Responses
+
+#### 200
+
+Successful Response
+
+##### application/json
+
+Schema: [StateReview](/docs/api-reference/schemas#schema-statereview) (`#/components/schemas/StateReview`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/StateReview"
+}
+```
+
+#### 404
+
+County or dataset release not found.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "County or dataset release not found.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 422
+
+One or more request values are invalid.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-422",
+  "title": "Request failed",
+  "status": 422,
+  "detail": "One or more request values are invalid.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 429
+
+Rate limit exceeded.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limit exceeded.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 503
+
+Atlas data service is unavailable.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Atlas data service is unavailable.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
