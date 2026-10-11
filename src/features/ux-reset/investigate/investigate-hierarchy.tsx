@@ -76,13 +76,33 @@ function FamilyObservations({
   );
 }
 
+function disagreementPhrase(
+  disagreement: InvestigatePeriodConflict["disagreement"]
+): string {
+  switch (disagreement) {
+    case "values": {
+      return "with different values";
+    }
+    case "states": {
+      return "with different evidence states";
+    }
+    case "both": {
+      return "with different values and evidence states";
+    }
+    default: {
+      const exhaustive: never = disagreement;
+      return exhaustive;
+    }
+  }
+}
+
 function conflictCopy(conflict: InvestigatePeriodConflict): string {
   const period = formatObservationPeriod(
     conflict.periodStart,
     conflict.periodEnd,
     conflict.temporalGrain
   );
-  return `${conflict.measureLabel} returned ${conflict.observationCount} observations for the same period (${period}) with different values. They stay separate and are not combined.`;
+  return `${conflict.measureLabel} returned ${conflict.observationCount} observations for the same period (${period}) ${disagreementPhrase(conflict.disagreement)}. They stay separate and are not combined.`;
 }
 
 const COUNTY_RECORD_LOADING_FINDING =

@@ -488,12 +488,33 @@ function numericField(input: {
   };
 }
 
+/** English ordinal suffix. 11, 12, and 13 stay "th", including 111–113. */
+function ordinalSuffix(rank: number): "nd" | "rd" | "st" | "th" {
+  const absolute = Math.abs(Math.trunc(rank));
+  const hundred = absolute % 100;
+  if (hundred >= 11 && hundred <= 13) {
+    return "th";
+  }
+  const ten = absolute % 10;
+  if (ten === 1) {
+    return "st";
+  }
+  if (ten === 2) {
+    return "nd";
+  }
+  if (ten === 3) {
+    return "rd";
+  }
+  return "th";
+}
+
 /** CountyDetail.svi_percentile is a 0–1 fraction, same as the county panel. */
 function socialVulnerabilityLabel(fraction: number): string | null {
   if (!Number.isFinite(fraction)) {
     return null;
   }
-  return `${Math.round(fraction * 100)}th percentile`;
+  const percentile = Math.round(fraction * 100);
+  return `${percentile}${ordinalSuffix(percentile)} percentile`;
 }
 
 /**

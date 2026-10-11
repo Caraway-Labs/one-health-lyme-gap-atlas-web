@@ -1149,16 +1149,14 @@ describe("County Investigate evidence hierarchy", () => {
     const displays = close.families.flatMap((family) =>
       family.observations.map((record) => record.evidence.displayValue)
     );
-    const conflict = [
-      {
-        measureId: "reported-cases",
-        measureLabel: "Reported Lyme cases",
-        observationCount: 2,
-        periodEnd: "2023-12-31",
-        periodStart: "2023-01-01",
-        temporalGrain: "YEAR",
-      },
-    ];
+    const period = {
+      measureId: "reported-cases",
+      measureLabel: "Reported Lyme cases",
+      observationCount: 2,
+      periodEnd: "2023-12-31",
+      periodStart: "2023-01-01",
+      temporalGrain: "YEAR",
+    };
     expect({
       closeConflict: investigateEvidenceConflicts(close),
       displays,
@@ -1166,11 +1164,74 @@ describe("County Investigate evidence hierarchy", () => {
       periodConflict: investigateEvidenceConflicts(periods),
       stateConflict: investigateEvidenceConflicts(states),
     }).toStrictEqual({
-      closeConflict: conflict,
+      closeConflict: [{ ...period, disagreement: "values" }],
       displays: ["1 cases", "1 cases"],
       equalConflict: [],
       periodConflict: [],
-      stateConflict: conflict,
+      stateConflict: [{ ...period, disagreement: "states" }],
+    });
+  });
+
+  it("names value and evidence-state disagreements separately", () => {
+    const sentence = (observations: readonly Observation[]) => {
+      cleanup();
+      render(
+        <InvestigateEvidenceHierarchy bundle={casesBundle(observations)} />
+      );
+      return screen.getByTestId("investigate-conflicts").textContent ?? "";
+    };
+    const samePeriod = "2023-01-01";
+    const yearEnd = "2023-12-31";
+    expect({
+      both: sentence([
+        caseObservation("observed", 12, samePeriod, yearEnd),
+        {
+          ...caseObservation("zero", 0, samePeriod, yearEnd),
+          value_state: ValueState.ZERO,
+        },
+      ]),
+      mixed: sentence([
+        caseObservation("low", 4, samePeriod, yearEnd),
+        caseObservation("high", 9, samePeriod, yearEnd),
+        {
+          ...caseObservation("missing", 0, samePeriod, yearEnd),
+          value: null,
+          value_state: ValueState.MISSING,
+        },
+      ]),
+      states: sentence([
+        {
+          ...caseObservation("missing", 0, samePeriod, yearEnd),
+          value: null,
+          value_state: ValueState.MISSING,
+        },
+        {
+          ...caseObservation("unavailable", 0, samePeriod, yearEnd),
+          value: null,
+          value_state: ValueState.UNAVAILABLE,
+        },
+      ]),
+      values: sentence([
+        caseObservation("cdc", 12, samePeriod, yearEnd),
+        caseObservation("state", 3, samePeriod, yearEnd),
+      ]),
+      zeroState: sentence([
+        caseObservation("observed-zero", 0, samePeriod, yearEnd),
+        {
+          ...caseObservation("published-zero", 0, samePeriod, yearEnd),
+          value_state: ValueState.ZERO,
+        },
+      ]),
+    }).toStrictEqual({
+      both: "Reported Lyme cases returned 2 observations for the same period (2023) with different values and evidence states. They stay separate and are not combined.",
+      mixed:
+        "Reported Lyme cases returned 3 observations for the same period (2023) with different values and evidence states. They stay separate and are not combined.",
+      states:
+        "Reported Lyme cases returned 2 observations for the same period (2023) with different evidence states. They stay separate and are not combined.",
+      values:
+        "Reported Lyme cases returned 2 observations for the same period (2023) with different values. They stay separate and are not combined.",
+      zeroState:
+        "Reported Lyme cases returned 2 observations for the same period (2023) with different evidence states. They stay separate and are not combined.",
     });
   });
 
@@ -1189,6 +1250,7 @@ describe("County Investigate evidence hierarchy", () => {
     }).toStrictEqual({
       conflicts: [
         {
+          disagreement: "values",
           measureId: "reported-cases",
           measureLabel: "Reported Lyme cases",
           observationCount: 2,
@@ -1288,6 +1350,7 @@ describe("County Investigate evidence hierarchy", () => {
     }).toStrictEqual({
       conflicts: [
         {
+          disagreement: "values",
           measureId: "reported-cases",
           measureLabel: "Reported Lyme cases",
           observationCount: 2,
@@ -1296,6 +1359,7 @@ describe("County Investigate evidence hierarchy", () => {
           temporalGrain: "YEAR",
         },
         {
+          disagreement: "values",
           measureId: "reported-cases",
           measureLabel: "Reported Lyme cases",
           observationCount: 2,
@@ -1816,6 +1880,70 @@ describe("County Investigate evidence hierarchy", () => {
     }).toStrictEqual({
       pacificusRelease: INVESTIGATE_RELEASE_ID,
       populationRelease: INVESTIGATE_RELEASE_ID,
+    });
+  });
+
+  it("uses an ordinal suffix for every social vulnerability percentile", () => {
+    const ordinal = (percentile: number) => {
+      const hundred = percentile % 100;
+      if (hundred >= 11 && hundred <= 13) {
+        return `${percentile}th percentile`;
+      }
+      const ten = percentile % 10;
+      if (ten === 1) {
+        return `${percentile}st percentile`;
+      }
+      if (ten === 2) {
+        return `${percentile}nd percentile`;
+      }
+      if (ten === 3) {
+        return `${percentile}rd percentile`;
+      }
+      return `${percentile}th percentile`;
+    };
+    const labels = Array.from({ length: 101 }, (_, percentile) => {
+      const hierarchy = publishedCountyHierarchy({
+        measures: [],
+        observedMeasureIds: [],
+        record: quietRecord({ sviPercentile: percentile / 100 }),
+      });
+      return (
+        hierarchy.rows.find((row) => row.measureId === "svi_percentile_2022")
+          ?.evidence.displayValue ?? null
+      );
+    });
+    expect({
+      labels,
+      samples: {
+        eleventh: labels[11],
+        first: labels[1],
+        hundredth: labels[100],
+        second: labels[2],
+        third: labels[3],
+        thirteenth: labels[13],
+        twelfth: labels[12],
+        twentyFirst: labels[21],
+        twentySecond: labels[22],
+        twentyThird: labels[23],
+        zeroth: labels[0],
+      },
+    }).toStrictEqual({
+      labels: Array.from({ length: 101 }, (_, percentile) =>
+        ordinal(percentile)
+      ),
+      samples: {
+        eleventh: "11th percentile",
+        first: "1st percentile",
+        hundredth: "100th percentile",
+        second: "2nd percentile",
+        third: "3rd percentile",
+        thirteenth: "13th percentile",
+        twelfth: "12th percentile",
+        twentyFirst: "21st percentile",
+        twentySecond: "22nd percentile",
+        twentyThird: "23rd percentile",
+        zeroth: "0th percentile",
+      },
     });
   });
 

@@ -144,8 +144,12 @@ export type InvestigateEvidenceConflict = {
   observationCount: number;
 };
 
+/** What disagrees inside one period. Non-value states do not count as values. */
+export type PeriodDisagreement = "both" | "states" | "values";
+
 /** One same-period disagreement. Counts do not span periods. */
 export type InvestigatePeriodConflict = InvestigateEvidenceConflict & {
+  disagreement: PeriodDisagreement;
   periodEnd: string;
   periodStart: string;
   temporalGrain: string | null;
@@ -645,23 +649,49 @@ const VALUE_BEARING_STATES: ReadonlySet<ValueState> = new Set([
 ]);
 
 /**
- * Raw value plus value state for states that publish a value. Unavailable
- * and suppressed states may carry either a placeholder or null; the formatter
- * does not use that payload, so only the value state is compared.
+ * Raw payload for states that publish a value. Missing, unavailable, and
+ * suppressed rows may carry a placeholder; that payload is not a value.
  */
-function governedValueKey(record: CountyEvidenceObservation): string {
-  const state = record.observation.value_state;
-  if (!VALUE_BEARING_STATES.has(state)) {
-    return state;
+function valueBearingKey(record: CountyEvidenceObservation): string | null {
+  if (!VALUE_BEARING_STATES.has(record.observation.value_state)) {
+    return null;
   }
   const value = record.observation.value;
-  const valueKey =
-    value === null
-      ? "null"
-      : typeof value === "number"
-        ? `number:${value}`
-        : `string:${value}`;
-  return `${valueKey}|${state}`;
+  if (value === null) {
+    return "null";
+  }
+  return typeof value === "number" ? `number:${value}` : `string:${value}`;
+}
+
+/**
+ * Values differ only among observed and zero rows. States differ whenever
+ * the period mixes value states, including missing versus unavailable.
+ */
+function classifyPeriodDisagreement(
+  records: readonly CountyEvidenceObservation[]
+): PeriodDisagreement | null {
+  const states = new Set(
+    records.map((record) => record.observation.value_state)
+  );
+  const values = new Set<string>();
+  for (const record of records) {
+    const key = valueBearingKey(record);
+    if (key !== null) {
+      values.add(key);
+    }
+  }
+  const valuesDiffer = values.size > 1;
+  const statesDiffer = states.size > 1;
+  if (valuesDiffer && statesDiffer) {
+    return "both";
+  }
+  if (valuesDiffer) {
+    return "values";
+  }
+  if (statesDiffer) {
+    return "states";
+  }
+  return null;
 }
 
 /**
@@ -688,11 +718,12 @@ function periodDisagreements(
     if (!first || periodRecords.length < 2) {
       continue;
     }
-    const values = new Set(periodRecords.map(governedValueKey));
-    if (values.size < 2) {
+    const disagreement = classifyPeriodDisagreement(periodRecords);
+    if (!disagreement) {
       continue;
     }
     conflicts.push({
+      disagreement,
       measureId: first.measureId,
       measureLabel: first.measureLabel,
       observationCount: periodRecords.length,
