@@ -1,9 +1,8 @@
 "use client";
 
 import type {
-  FillLayerSpecification,
+  ExpressionSpecification,
   GeoJSONSource,
-  LineLayerSpecification,
   Map as MapLibreMap,
 } from "maplibre-gl";
 import { Map as MapLibre, setWorkerUrl } from "maplibre-gl";
@@ -41,9 +40,11 @@ export type ReviewNavigationColors = {
   [Key in keyof typeof NAVIGATION_COLOR_TOKENS]: string;
 };
 
-type FillColor = NonNullable<FillLayerSpecification["paint"]>["fill-color"];
-type LineColor = NonNullable<LineLayerSpecification["paint"]>["line-color"];
-type LineWidth = NonNullable<LineLayerSpecification["paint"]>["line-width"];
+function paintExpression(
+  expression: ExpressionSpecification
+): ExpressionSpecification {
+  return expression;
+}
 
 function isResolvedColor(value: string): boolean {
   const normalized = value.trim().toLowerCase();
@@ -123,49 +124,66 @@ export function readReviewNavigationColors(
   };
 }
 
-function fillColorExpression(colors: ReviewNavigationColors): FillColor {
-  const supported: FillColor = ["==", ["get", "availability"], "supported"];
-  const hovered: FillColor = ["boolean", ["feature-state", "hover"], false];
-  return [
+function availabilityEquals(
+  availability: "supported" | "unavailable"
+): ExpressionSpecification {
+  return paintExpression(["==", ["get", "availability"], availability]);
+}
+
+function featureStateFlag(
+  flag: "focus" | "hover" | "selected"
+): ExpressionSpecification {
+  return paintExpression(["boolean", ["feature-state", flag], false]);
+}
+
+function fillColorExpression(
+  colors: ReviewNavigationColors
+): ExpressionSpecification {
+  const supported = availabilityEquals("supported");
+  const unavailable = availabilityEquals("unavailable");
+  const hovered = featureStateFlag("hover");
+  return paintExpression([
     "case",
-    ["all", supported, ["boolean", ["feature-state", "selected"], false]],
+    ["all", supported, featureStateFlag("selected")],
     colors.selected,
-    ["all", supported, ["boolean", ["feature-state", "focus"], false]],
+    ["all", supported, featureStateFlag("focus")],
     colors.focus,
     ["all", supported, hovered],
     colors.hover,
-    ["all", ["==", ["get", "availability"], "unavailable"], hovered],
+    ["all", unavailable, hovered],
     colors.unavailableHover,
-    ["==", ["get", "availability"], "unavailable"],
+    unavailable,
     colors.unavailable,
     colors.fill,
-  ];
+  ]);
 }
 
-function lineColorExpression(colors: ReviewNavigationColors): LineColor {
-  return [
+function lineColorExpression(
+  colors: ReviewNavigationColors
+): ExpressionSpecification {
+  return paintExpression([
     "case",
-    ["boolean", ["feature-state", "selected"], false],
+    featureStateFlag("selected"),
     colors.outlineActive,
-    ["boolean", ["feature-state", "focus"], false],
+    featureStateFlag("focus"),
     colors.outlineActive,
-    ["boolean", ["feature-state", "hover"], false],
+    featureStateFlag("hover"),
     colors.outlineActive,
     colors.outline,
-  ];
+  ]);
 }
 
-function lineWidthExpression(): LineWidth {
-  return [
+function lineWidthExpression(): ExpressionSpecification {
+  return paintExpression([
     "case",
-    ["boolean", ["feature-state", "selected"], false],
+    featureStateFlag("selected"),
     2.5,
-    ["boolean", ["feature-state", "focus"], false],
+    featureStateFlag("focus"),
     2.5,
-    ["boolean", ["feature-state", "hover"], false],
+    featureStateFlag("hover"),
     2,
     1.25,
-  ];
+  ]);
 }
 
 function featureCode(

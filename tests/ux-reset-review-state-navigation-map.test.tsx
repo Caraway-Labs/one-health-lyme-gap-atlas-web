@@ -1,5 +1,7 @@
 import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+type MapLibreModule = typeof import("maplibre-gl");
 
 import type { ReviewStateFeatureCollection } from "@/features/ux-reset/review/review-state-navigation";
 import {
@@ -115,14 +117,19 @@ const engine = vi.hoisted(() => {
 
 const setWorkerUrl = vi.hoisted(() => vi.fn<(url: string) => void>());
 
-vi.mock(
-  import("maplibre-gl"),
-  () =>
-    ({
-      Map: engine.FakeMap,
-      setWorkerUrl,
-    }) as unknown as Partial<typeof import("maplibre-gl")>
-);
+function mapConstructor(): MapLibreModule["Map"] {
+  // MapLibre's Map declares private members, so a test double cannot be assigned directly.
+  return engine.FakeMap as unknown as MapLibreModule["Map"];
+}
+
+function reviewMapLibreMock(): Pick<MapLibreModule, "Map" | "setWorkerUrl"> {
+  return {
+    Map: mapConstructor(),
+    setWorkerUrl,
+  };
+}
+
+vi.mock(import("maplibre-gl"), reviewMapLibreMock);
 
 const colors: ReviewNavigationColors = {
   canvas: "rgb(1, 1, 1)",
@@ -190,18 +197,24 @@ function renderNavigationMap(
 }
 
 describe("Review state navigation map lifecycle", () => {
-  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+  let getContext: ReturnType<typeof vi.spyOn> | undefined;
 
   beforeEach(() => {
-    HTMLCanvasElement.prototype.getContext = (() =>
-      ({}) as WebGL2RenderingContext) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockImplementation((contextId: string) => {
+        if (contextId === "webgl2") {
+          return {} as WebGL2RenderingContext;
+        }
+        return null;
+      });
   });
 
   afterEach(() => {
     cleanup();
     engine.reset();
     setWorkerUrl.mockClear();
-    HTMLCanvasElement.prototype.getContext = originalGetContext;
+    getContext?.mockRestore();
   });
 
   it("constructs one static map and registers its source and layers once", () => {
