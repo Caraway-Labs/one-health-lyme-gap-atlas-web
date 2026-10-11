@@ -182,12 +182,15 @@ describe("public trust page family", () => {
       "Return to the Atlas"
     );
     const statuses = [
-      ...(main?.querySelectorAll<HTMLElement>("[data-status]") ?? []),
+      ...(main?.querySelectorAll<HTMLElement>(
+        "[data-slot='badge'][data-status]"
+      ) ?? []),
     ];
     expect(main).toBeInstanceOf(HTMLElement);
     expect(compact(main as HTMLElement)).toBe(parts.join(" "));
     expect({
       labels: statuses.map((status) => status.textContent),
+      slots: statuses.map((status) => status.dataset.slot),
       statuses: statuses.map((status) => status.dataset.status),
       uniqueLabels: new Set(statuses.map((status) => status.textContent)).size,
     }).toStrictEqual({
@@ -196,6 +199,7 @@ describe("public trust page family", () => {
         STATUS_LABELS["approved-architecture"],
         STATUS_LABELS["pending-decision"],
       ],
+      slots: ["badge", "badge", "badge"],
       statuses: ["current", "approved-architecture", "pending-decision"],
       uniqueLabels: 3,
     });

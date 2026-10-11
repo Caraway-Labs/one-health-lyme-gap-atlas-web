@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   PublicTrustActions,
@@ -58,12 +59,13 @@ export function AiEthicsPage() {
             <article key={statement.title}>
               <Card className="overflow-visible">
                 <CardHeader>
-                  <p
-                    className="public-trust-status"
+                  <Badge
+                    className="public-trust-status h-auto max-w-full whitespace-normal"
                     data-status={statement.status}
+                    variant="outline"
                   >
                     {statusLabels[statement.status]}
-                  </p>
+                  </Badge>
                   <h3>{statement.title}</h3>
                 </CardHeader>
                 <CardContent>

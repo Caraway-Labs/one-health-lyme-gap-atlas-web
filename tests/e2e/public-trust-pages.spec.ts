@@ -110,15 +110,15 @@ test("AI Ethics status text and disclosures work from the keyboard", async ({
   page,
 }) => {
   await page.goto("/ai-ethics");
-  await expect(page.locator("[data-status='current']")).toHaveText(
-    "What Atlas does today"
-  );
   await expect(
-    page.locator("[data-status='approved-architecture']")
+    page.locator("[data-slot='badge'][data-status='current']")
+  ).toHaveText("What Atlas does today");
+  await expect(
+    page.locator("[data-slot='badge'][data-status='approved-architecture']")
   ).toHaveText("Approved direction; release pending");
-  await expect(page.locator("[data-status='pending-decision']")).toHaveText(
-    "Commitment in development"
-  );
+  await expect(
+    page.locator("[data-slot='badge'][data-status='pending-decision']")
+  ).toHaveText("Commitment in development");
 
   const summaries = page.locator("summary", {
     hasText: "Technical detail and source",
