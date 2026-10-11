@@ -1,5 +1,11 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import { evidenceInspectState } from "@/features/ux-reset/evidence/from-observation";
@@ -14,7 +20,10 @@ import {
 } from "@/features/ux-reset/investigate/county-evidence";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/investigate-settled-view";
-import { indicatorDomainsById } from "@/features/ux-reset/investigate/load-county-evidence";
+import {
+  indicatorDomainsById,
+  loadInvestigateCountyRecord,
+} from "@/features/ux-reset/investigate/load-county-evidence";
 import {
   environmentalCoverageRows,
   mapPublishedRow,
@@ -31,6 +40,7 @@ import {
   type Measure,
   type Observation,
 } from "@/generated/models";
+import { ApiResponseValidationError } from "@/lib/api-response-validation";
 
 import {
   INVESTIGATE_RELEASE_ID,
@@ -179,6 +189,7 @@ const publishedRecord: PublishedCountyRecord = {
   burgdorferiStatus: "No records",
   evidenceCompleteness: 50,
   fips: "08001",
+  methodologyVersion: null,
   pacificusStatus: "Established",
   population: null,
   releaseId: INVESTIGATE_RELEASE_ID,
@@ -227,6 +238,7 @@ function quietRecord(
     burgdorferiStatus: "Present",
     evidenceCompleteness: 100,
     fips: "08001",
+    methodologyVersion: null,
     pacificusStatus: null,
     population: 1000,
     releaseId: INVESTIGATE_RELEASE_ID,
@@ -486,6 +498,7 @@ function blankCaveatRecord(
     burgdorferiStatus: "",
     evidenceCompleteness: 100,
     fips: "08001",
+    methodologyVersion: null,
     pacificusStatus: null,
     population: null,
     releaseId: INVESTIGATE_RELEASE_ID,
@@ -1001,9 +1014,234 @@ function statusTokenSeen(
   }
 }
 
+const COUNTY_DETAIL_VALIDATION_FAILURE =
+  "County detail could not be verified. Please try again later.";
+
+type AcceptedMethodologyVersion = {
+  governed: string | null;
+  method: string;
+  name: string;
+  outcome: "accepted";
+  raw: string;
+};
+
+type RejectedMethodologyVersion = {
+  name: string;
+  outcome: "rejected";
+  raw: "null" | "omitted";
+};
+
+/**
+ * The county contract requires methodology_version to be a string.
+ * Empty and whitespace-only strings validate and stay unset. Null and
+ * omission fail CountyV1CountiesFipsGetResponse before row mapping.
+ */
+const METHODOLOGY_VERSION_CASES = [
+  {
+    governed: "semantic-1.0.0",
+    method: "Version semantic-1.0.0",
+    name: "present",
+    outcome: "accepted",
+    raw: "semantic-1.0.0",
+  },
+  {
+    governed: "semantic-1.0.0",
+    method: "Version semantic-1.0.0",
+    name: "whitespace-padded",
+    outcome: "accepted",
+    raw: "  semantic-1.0.0  ",
+  },
+  {
+    governed: null,
+    method: "Unavailable",
+    name: "empty string",
+    outcome: "accepted",
+    raw: "",
+  },
+  {
+    governed: null,
+    method: "Unavailable",
+    name: "whitespace-only",
+    outcome: "accepted",
+    raw: " \n\t ",
+  },
+  {
+    name: "null",
+    outcome: "rejected",
+    raw: "null",
+  },
+  {
+    name: "omitted",
+    outcome: "rejected",
+    raw: "omitted",
+  },
+];
+
+const COUNTY_RECORD_ONLY_ROWS = [
+  {
+    freshness: "Dataset vintage 2025.",
+    measureId: "tick_status",
+    source: "CDC ArboNET county tick status",
+    state: "Available. Observed or published.",
+  },
+  {
+    freshness: "Unavailable",
+    measureId: "burgdorferi_status",
+    source: "Unavailable",
+    state: "Unavailable. No county record.",
+  },
+  {
+    freshness: "Unavailable",
+    measureId: "population_2022",
+    source: "Unavailable",
+    state: "Available. Published zero.",
+  },
+  {
+    freshness: "Unavailable",
+    measureId: "svi_percentile_2022",
+    source: "Unavailable",
+    state: "Available. Observed or published.",
+  },
+  {
+    freshness: "Unavailable",
+    measureId: "uninsured_percent_2022",
+    source: "Unavailable",
+    state: "Available. Published zero.",
+  },
+  {
+    freshness: "Unavailable",
+    measureId: "rucc_2023",
+    source: "Unavailable",
+    state: "Available. Observed or published.",
+  },
+] as const;
+
+function disclosureValue(root: ParentNode, testId: string): string {
+  return root.querySelector(`[data-testid='${testId}'] dd`)?.textContent ?? "";
+}
+
+function labeledValue(root: ParentNode, label: string): string | null {
+  for (const term of root.querySelectorAll("dt")) {
+    if (term.textContent !== label) {
+      continue;
+    }
+    return term.nextElementSibling?.textContent ?? null;
+  }
+  return null;
+}
+
+function inspectProvenanceText(root: ParentNode): string {
+  const lines = [
+    `Source: ${disclosureValue(root, "evidence-provenance-source")}`,
+    `Period: ${disclosureValue(root, "evidence-provenance-period")}`,
+    `Availability / freshness: ${disclosureValue(root, "evidence-provenance-freshness")}`,
+    `Method: ${disclosureValue(root, "evidence-provenance-method")}`,
+    `Evidence state: ${disclosureValue(root, "evidence-provenance-state")}`,
+    `Governed limitations: ${
+      root.querySelector(
+        "[data-testid='evidence-provenance-limitations'] p:last-of-type"
+      )?.textContent ?? ""
+    }`,
+    `Release ID: ${labeledValue(root, "Release ID") ?? ""}`,
+  ];
+  const methodology = labeledValue(root, "Methodology version");
+  if (methodology !== null) {
+    lines.push(`Methodology version: ${methodology}`);
+  }
+  return lines.join("\n");
+}
+
+function countyRecordPayload(
+  methodologyVersion: string | "null" | "omitted"
+): unknown {
+  const release: Record<string, unknown> = {
+    bundle_sha256: "abc",
+    generated_at: "2026-09-18T00:50:00-07:00",
+    limitations: "",
+    loaded_at: "2026-09-18T00:50:00-07:00",
+    methodology_version: "semantic-1.0.0",
+    release_id: INVESTIGATE_RELEASE_ID,
+    schema_version: "1",
+    scope: "US_COUNTIES",
+    score_defaults: {},
+    sources: [
+      {
+        key: "tick",
+        label: "CDC ArboNET county tick status",
+        note: "",
+        url: "",
+        vintage: "2025",
+      },
+    ],
+    states: [],
+  };
+  if (methodologyVersion === "omitted") {
+    delete release.methodology_version;
+  } else if (methodologyVersion === "null") {
+    release.methodology_version = null;
+  } else {
+    release.methodology_version = methodologyVersion;
+  }
+  return {
+    burgdorferi_status: "missing",
+    case_count_floor_2023: null,
+    color: "#e9602b",
+    county: "Denver",
+    evidence_completeness: 50,
+    fips: "08001",
+    human_status: "missing",
+    in_contiguous_tick_scope: true,
+    incidence_floor_2023: null,
+    pacificus_status: null,
+    population: 0,
+    priority: "not evidence",
+    release,
+    rucc_2023: 1,
+    scapularis_status: null,
+    score: {
+      access_signal: 0,
+      community: 0,
+      ecological: 0,
+      human_weakness: 0,
+      pathogen_signal: 0,
+      rural_signal: 0,
+      score: 0,
+      svi_signal: 0,
+      tick_signal: 0,
+    },
+    state: "CO",
+    state_name: "Colorado",
+    state_unallocated_records_2023: null,
+    svi_percentile: 0.5,
+    tick_status: "Established",
+    uninsured_percent: 0,
+    uninsured_percentile: null,
+  };
+}
+
+function expectedInspectProvenance(
+  row: (typeof COUNTY_RECORD_ONLY_ROWS)[number],
+  versionCase: AcceptedMethodologyVersion
+): string {
+  const lines = [
+    `Source: ${row.source}`,
+    "Period: Unavailable",
+    `Availability / freshness: ${row.freshness}`,
+    `Method: ${versionCase.method}`,
+    `Evidence state: ${row.state}`,
+    "Governed limitations: No governed limitations were returned.",
+    `Release ID: ${INVESTIGATE_RELEASE_ID}`,
+  ];
+  if (versionCase.governed !== null) {
+    lines.push(`Methodology version: ${versionCase.governed}`);
+  }
+  return lines.join("\n");
+}
+
 describe("County Investigate evidence hierarchy", () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   it("places observed families before coverage, context, and explicit limits", () => {
@@ -1574,6 +1812,106 @@ describe("County Investigate evidence hierarchy", () => {
       })
     ).toBe("human");
   });
+
+  it.each(
+    METHODOLOGY_VERSION_CASES.filter(
+      (entry): entry is AcceptedMethodologyVersion =>
+        entry.outcome === "accepted"
+    )
+  )(
+    "keeps Inspect provenance exact for county-record-only rows when methodology_version is $name",
+    async (versionCase) => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        Response.json(countyRecordPayload(versionCase.raw))
+      );
+      const detail = await loadInvestigateCountyRecord({
+        fips: "08001",
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: new AbortController().signal,
+      });
+      if (!detail) {
+        throw new Error("The county record validator rejected a string.");
+      }
+      const geography = investigateGeographyFixture("08001");
+      if (!geography) {
+        throw new Error("Denver County fixture is missing.");
+      }
+      const record = publishedCountyRecordFromDetail(detail);
+      render(
+        <InvestigateEvidenceHierarchy
+          bundle={investigateBundleWithoutObservations({
+            county: resolveCountyIdentity(geography, "08001"),
+            releaseId: INVESTIGATE_RELEASE_ID,
+          })}
+          countyRecord={record}
+          measures={[]}
+        />
+      );
+      const measureIds: string[] = [];
+      for (const node of document.querySelectorAll("[data-measure-id]")) {
+        if (!(node instanceof HTMLElement)) {
+          continue;
+        }
+        const measureId = node.dataset.measureId;
+        if (measureId) {
+          measureIds.push(measureId);
+        }
+      }
+      expect({
+        methodologyVersion: record.methodologyVersion,
+        observationRows: document.querySelector("[data-observation-id]"),
+        rows: measureIds,
+      }).toStrictEqual({
+        methodologyVersion: versionCase.governed,
+        observationRows: null,
+        rows: COUNTY_RECORD_ONLY_ROWS.map((row) => row.measureId),
+      });
+      for (const row of COUNTY_RECORD_ONLY_ROWS) {
+        const rendered = document.querySelector(
+          `[data-measure-id='${row.measureId}']`
+        );
+        if (!(rendered instanceof HTMLElement)) {
+          throw new Error(`Missing county-record row ${row.measureId}.`);
+        }
+        fireEvent.click(within(rendered).getByText("Inspect provenance"));
+        expect(inspectProvenanceText(rendered)).toBe(
+          expectedInspectProvenance(row, versionCase)
+        );
+      }
+    }
+  );
+
+  it.each(
+    METHODOLOGY_VERSION_CASES.filter(
+      (entry): entry is RejectedMethodologyVersion =>
+        entry.outcome === "rejected"
+    )
+  )(
+    "rejects a contract-invalid methodology_version when it is $name",
+    async (versionCase) => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        Response.json(countyRecordPayload(versionCase.raw))
+      );
+      const error = await loadInvestigateCountyRecord({
+        fips: "08001",
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: new AbortController().signal,
+      }).then(
+        () => null,
+        (error: unknown) => error
+      );
+      if (!(error instanceof ApiResponseValidationError)) {
+        throw new Error("County detail validation did not fail.");
+      }
+      expect({
+        message: error.message,
+        name: error.name,
+      }).toStrictEqual({
+        message: COUNTY_DETAIL_VALIDATION_FAILURE,
+        name: "ApiResponseValidationError",
+      });
+    }
+  );
 
   it("shows partial environmental coverage as limited, not a score", () => {
     const [row] = environmentalCoverageRows({

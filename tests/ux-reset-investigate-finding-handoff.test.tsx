@@ -50,6 +50,7 @@ const publishedRecord: PublishedCountyRecord = {
   burgdorferiStatus: "No records",
   evidenceCompleteness: 40,
   fips: "08001",
+  methodologyVersion: null,
   pacificusStatus: null,
   population: null,
   releaseId: INVESTIGATE_RELEASE_ID,
