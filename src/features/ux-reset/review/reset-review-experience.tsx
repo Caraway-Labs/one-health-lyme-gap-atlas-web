@@ -99,10 +99,13 @@ function ResetReviewExperienceInner() {
     (nextScope: "ALL" | string) => {
       // Bare Review already parses as ALL. Choosing United States during
       // startup is still an explicit national choice and must be written.
+      const historyHasScope = hasExplicitReviewScopeParam(
+        new URLSearchParams(window.location.search)
+      );
       const confirmNationalChoice =
         nextScope === "ALL" &&
         scope === "ALL" &&
-        !(userChoseScopeRef.current || arrivalExplicitScope);
+        !(userChoseScopeRef.current || arrivalExplicitScope || historyHasScope);
       if (nextScope === scope && !confirmNationalChoice) {
         return;
       }
@@ -114,7 +117,15 @@ function ResetReviewExperienceInner() {
   );
   const replaceStartingScope = useCallback(
     (nextScope: "ALL" | string) => {
-      if (userChoseScopeRef.current || nextScope === scope) {
+      if (userChoseScopeRef.current) {
+        return;
+      }
+      const historyHasScope = hasExplicitReviewScopeParam(
+        new URLSearchParams(window.location.search)
+      );
+      // An omitted entry stays national in the parser. Write that fallback
+      // so a later reload cannot apply a different saved state.
+      if (historyHasScope && nextScope === scope) {
         return;
       }
       void setUrlState({ scope: nextScope }, { history: "replace" });
@@ -146,10 +157,9 @@ function ResetReviewExperienceInner() {
     };
   }, []);
 
-  // One resolution for an omitted-scope entry. A scope chosen while the
-  // profile read is in flight stays on its own history entry. The saved
-  // default is written with replace and is not rewritten when the profile
-  // later refetches. Review never writes Settings.
+  // Startup runs once. Once it settles, the URL has an explicit scope that
+  // reproduces the screen. A choice made while the profile read is in flight
+  // stays on its own history entry. Review never writes Settings.
   const startupSettled = useApplyProfileStartingScope({
     activeScope: scope,
     profileReady:

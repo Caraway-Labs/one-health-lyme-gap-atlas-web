@@ -241,6 +241,153 @@ function renderReview(
   };
 }
 
+type StartupProfile = { state_code: string | null } | null;
+
+function scopeToken(query: string): string {
+  const matched = /(?:^|[?&])scope=(?<scope>[^&]*)/.exec(query);
+  const scope = matched?.groups?.scope;
+  if (!scope) {
+    return "";
+  }
+  return decodeURIComponent(scope);
+}
+
+function renderedReviewScope(): string {
+  return (
+    screen.queryByTestId("review-scope-results")?.dataset.renderedScope ?? ""
+  );
+}
+
+async function chooseReviewScopeOption(name: string) {
+  fireEvent.click(screen.getByTestId("review-scope-select"));
+  const option = await screen.findByRole("option", { name });
+  fireEvent.pointerDown(option, { pointerType: "mouse" });
+  fireEvent.click(option);
+}
+
+async function waitForRenderedScope(scope: string) {
+  await waitFor(() => {
+    if (screen.queryByText("Loading review scope…")) {
+      throw new Error("startup still pending");
+    }
+    if (renderedReviewScope() !== scope) {
+      throw new Error(`rendered ${renderedReviewScope()} expected ${scope}`);
+    }
+  });
+}
+
+/**
+ * Once startup settles, the URL has an explicit scope that reproduces the
+ * screen, and startup does not run again. Each row is one path through that rule.
+ */
+async function observeSettledStartup(input: {
+  afterScope: string;
+  back: boolean;
+  error: boolean;
+  forwardScope: string;
+  pick: "United States" | "New York (NY)" | null;
+  profile: StartupProfile;
+  refetch: StartupProfile;
+  settledScope: string;
+}): Promise<{
+  kept: boolean;
+  history: string;
+  later: string;
+  laterRendered: string;
+  rendered: string;
+  saves: number;
+  scope: string;
+}> {
+  const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+    await import("@/generated/atlas");
+  const save = vi.mocked(saveProfileV1MeProfilePut);
+  save.mockClear();
+  const updates: { history: string; query: string }[] = [];
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  let failed = input.error;
+  let current = input.profile;
+  const held = input.pick
+    ? Promise.withResolvers<{
+        data: { profile: StartupProfile };
+        status: number;
+      }>()
+    : null;
+  vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    () =>
+      (held
+        ? held.promise
+        : failed
+          ? Promise.reject(new Error("profile unavailable"))
+          : Promise.resolve({
+              data: { profile: current },
+              status: 200,
+            })) as never
+  );
+  window.history.replaceState(null, "", "/app/review");
+  const view = renderReview("", {
+    client,
+    onUrlUpdate: (query, history) => {
+      updates.push({ history, query });
+    },
+  });
+  if (input.pick && !input.back) {
+    await chooseReviewScopeOption(input.pick);
+  }
+  if (input.pick && input.back) {
+    await chooseReviewScopeOption(input.pick);
+    window.history.replaceState(null, "", "/app/review");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+  held?.resolve({
+    data: { profile: input.profile },
+    status: 200,
+  });
+  await waitForRenderedScope(input.settledScope);
+  const establishedIndex = updates.findIndex((update, index) => {
+    if (scopeToken(update.query) !== input.settledScope) {
+      return false;
+    }
+    const previous = updates[index - 1];
+    return (
+      previous === undefined ||
+      scopeToken(previous.query) !== input.settledScope
+    );
+  });
+  const established =
+    establishedIndex === -1 ? undefined : updates[establishedIndex];
+  const kept =
+    establishedIndex !== -1 &&
+    updates
+      .slice(establishedIndex)
+      .every((update) => scopeToken(update.query) === input.settledScope);
+  const rendered = renderedReviewScope();
+  if (input.forwardScope) {
+    window.history.pushState(null, "", "/app/review?scope=NY");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    view.rerenderSearch("?scope=NY");
+    await waitForRenderedScope(input.forwardScope);
+  } else if (input.refetch) {
+    failed = false;
+    current = input.refetch;
+    await client.refetchQueries({ queryKey: ["ux-reset-saved-profile"] });
+    await waitForRenderedScope(input.afterScope);
+  }
+  const laterScope = input.forwardScope
+    ? scopeToken(window.location.search)
+    : scopeToken(updates.at(-1)?.query ?? "");
+  return {
+    kept,
+    history: established?.history ?? "",
+    later: laterScope,
+    laterRendered: renderedReviewScope(),
+    rendered,
+    saves: save.mock.calls.length,
+    scope: scopeToken(established?.query ?? ""),
+  };
+}
+
 describe("Reset Review scope UI", () => {
   beforeEach(() => {
     mockedSearch = "";
@@ -1628,6 +1775,135 @@ describe("Reset Review scope UI", () => {
       saves: 0,
       scopeWrites: false,
     });
+  });
+
+  it("writes an explicit scope once startup settles", async () => {
+    const rows = [
+      {
+        id: "state-default",
+        error: false,
+        pick: null,
+        profile: { state_code: "CO" },
+        refetch: { state_code: "NY" },
+        back: false,
+        settledScope: "CO",
+        afterScope: "CO",
+        forwardScope: "",
+        history: "replace",
+        later: "CO",
+      },
+      {
+        id: "no-default",
+        error: false,
+        pick: null,
+        profile: null,
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "national-default",
+        error: false,
+        pick: null,
+        profile: { state_code: null },
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "read-failure",
+        error: true,
+        pick: null,
+        profile: null,
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "invalid-state",
+        error: false,
+        pick: null,
+        profile: { state_code: "ZZ" },
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "pick-state",
+        error: false,
+        pick: "New York (NY)" as const,
+        profile: { state_code: "CO" },
+        refetch: null,
+        back: false,
+        settledScope: "NY",
+        afterScope: "NY",
+        forwardScope: "",
+        history: "push",
+        later: "NY",
+      },
+      {
+        id: "pick-national",
+        error: false,
+        pick: "United States" as const,
+        profile: { state_code: "CO" },
+        refetch: null,
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "push",
+        later: "ALL",
+      },
+      {
+        id: "back-then-forward",
+        error: false,
+        pick: "New York (NY)" as const,
+        profile: { state_code: "CO" },
+        refetch: null,
+        back: true,
+        settledScope: "CO",
+        afterScope: "CO",
+        forwardScope: "NY",
+        history: "replace",
+        later: "NY",
+      },
+    ];
+    const observed = [];
+    for (const row of rows) {
+      cleanup();
+      observed.push({
+        id: row.id,
+        ...(await observeSettledStartup(row)),
+      });
+    }
+    expect(observed).toStrictEqual(
+      rows.map((row) => ({
+        kept: true,
+        history: row.history,
+        id: row.id,
+        later: row.later,
+        laterRendered: row.forwardScope || row.afterScope,
+        rendered: row.settledScope,
+        saves: 0,
+        scope: row.settledScope,
+      }))
+    );
   });
 
   it("keeps the resolved state when a later profile refetch returns a different state", async () => {

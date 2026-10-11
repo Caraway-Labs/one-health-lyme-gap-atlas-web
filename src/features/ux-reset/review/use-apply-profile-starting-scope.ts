@@ -20,9 +20,8 @@ type ApplyProfileStartingScopeArgs = {
 };
 
 /**
- * Applies profile default jurisdiction once when the Review URL omits `scope`.
- * Returns whether that one-time resolution has settled. Later profile
- * refetches must not start a second resolution or reopen startup.
+ * Startup runs once. Once it settles, the URL has an explicit scope that
+ * reproduces the screen, including a national fallback.
  */
 export function useApplyProfileStartingScope({
   activeScope,
@@ -56,8 +55,11 @@ export function useApplyProfileStartingScope({
       );
     }
     const starting = resolvedScopeRef.current;
+    // Record the resolution even when the parsed scope is already that value.
+    // A scope-less URL would otherwise stay national while a reload applies
+    // a later saved state.
+    setScope(starting);
     if (starting !== activeScope) {
-      setScope(starting);
       return;
     }
     settledRef.current = true;
