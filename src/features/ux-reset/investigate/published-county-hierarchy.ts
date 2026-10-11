@@ -289,6 +289,76 @@ const UNAVAILABLE_GAP_SENTENCE =
   "is unavailable for this county. That is not zero.";
 
 /**
+ * Coverage statuses that share `UNAVAILABLE` still keep their own inspector
+ * reason. Other unavailable reasons stay on the release-level label.
+ */
+function unavailableStatusReason(
+  reasonCode: EvidenceReasonCode
+): EvidenceReasonCode {
+  switch (reasonCode) {
+    case "ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE": {
+      return "ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE";
+    }
+    case "ENVIRONMENTAL_SOURCE_MISSING": {
+      return "ENVIRONMENTAL_SOURCE_MISSING";
+    }
+    case "MATERIAL_LIMITATION": {
+      return ValueState.UNAVAILABLE;
+    }
+    case ValueState.MISSING: {
+      return ValueState.UNAVAILABLE;
+    }
+    case ValueState.NO_COUNTY_LINKED_RECORD: {
+      return ValueState.UNAVAILABLE;
+    }
+    case ValueState.OBSERVED: {
+      return ValueState.UNAVAILABLE;
+    }
+    case ValueState.SUPPRESSED: {
+      return ValueState.UNAVAILABLE;
+    }
+    case ValueState.UNAVAILABLE: {
+      return ValueState.UNAVAILABLE;
+    }
+    case ValueState.ZERO: {
+      return ValueState.UNAVAILABLE;
+    }
+    default: {
+      const exhaustive: never = reasonCode;
+      return exhaustive;
+    }
+  }
+}
+
+/**
+ * Derived reason for a coverage status whose value state alone would hide
+ * the governed condition. Complete and partial coverage keep the value-state
+ * reason (`OBSERVED`, or `MATERIAL_LIMITATION` when a caveat is present).
+ */
+function coverageDerivedReason(
+  status: EnvironmentalContext["coverage_status"]
+): EvidenceReasonCode | null {
+  switch (status) {
+    case EnvironmentalContextCoverageStatus.COMPLETE: {
+      return null;
+    }
+    case EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE: {
+      return "ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE";
+    }
+    case EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE: {
+      return null;
+    }
+    case EnvironmentalContextCoverageStatus.SOURCE_MISSING: {
+      return "ENVIRONMENTAL_SOURCE_MISSING";
+    }
+    default: {
+      const exhaustive: never = status;
+      return exhaustive;
+    }
+  }
+}
+
+/**
  * Uncertainty copy and gap lines for one governed state. Observation rows
  * and published rows both use this. Informational states stay in provenance.
  * Uncertainty states, including suppression, also produce a gap line.
@@ -333,9 +403,7 @@ export function governedStatusDisclosure(input: {
         }
         case ValueState.UNAVAILABLE: {
           statusText = evidenceReasonLabel(
-            input.reasonCode === "ENVIRONMENTAL_SOURCE_MISSING"
-              ? "ENVIRONMENTAL_SOURCE_MISSING"
-              : ValueState.UNAVAILABLE
+            unavailableStatusReason(input.reasonCode)
           );
           statusGap = `${input.claimLabel} ${UNAVAILABLE_GAP_SENTENCE}`;
           break;
@@ -398,11 +466,11 @@ export function mapPublishedRow(input: {
     hasMaterialLimitations,
     valueState,
   });
-  const reasonCode =
-    input.subject.kind === "coverage" &&
-    input.subject.status === EnvironmentalContextCoverageStatus.SOURCE_MISSING
-      ? "ENVIRONMENTAL_SOURCE_MISSING"
-      : governedReason;
+  const coverageReason =
+    input.subject.kind === "coverage"
+      ? coverageDerivedReason(input.subject.status)
+      : null;
+  const reasonCode = coverageReason ?? governedReason;
   const disclosure = governedStatusDisclosure({
     claimLabel: input.claimLabel,
     limitations: normalizeGovernedLimitations([

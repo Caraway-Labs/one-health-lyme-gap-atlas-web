@@ -59,6 +59,7 @@ const REASON_LABELS: Record<EvidenceReasonCode, string> = {
   [ValueState.SUPPRESSED]: "Suppressed or privacy-protected",
   [ValueState.UNAVAILABLE]: "Unavailable for this release",
   [ValueState.NO_COUNTY_LINKED_RECORD]: "No county-linked record",
+  ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE: "Outside environmental source coverage",
   ENVIRONMENTAL_SOURCE_MISSING: "Environmental source missing",
   MATERIAL_LIMITATION: "Coverage or methodology limits apply",
 };

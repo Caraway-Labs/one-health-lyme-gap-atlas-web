@@ -12,13 +12,16 @@ export type EvidenceAvailability =
 
 /**
  * Governed reason codes rendered behind the three availability states.
- * Primary codes come from API `value_state`. `MATERIAL_LIMITATION` is derived
- * from non-empty limitations when the value is otherwise available.
- * `ENVIRONMENTAL_SOURCE_MISSING` is the coverage status for a missing
- * environmental source when the observation and county can still exist.
+ * Primary codes come from API `value_state`. Derived codes name governed
+ * conditions that `value_state` alone does not distinguish:
+ * `MATERIAL_LIMITATION` when limitations are non-empty on an otherwise
+ * available value; `ENVIRONMENTAL_SOURCE_MISSING` for coverage
+ * `SOURCE_MISSING`; `ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE` for coverage
+ * `OUT_OF_SOURCE_COVERAGE`.
  */
 export type EvidenceReasonCode =
   | ValueState
+  | "ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE"
   | "ENVIRONMENTAL_SOURCE_MISSING"
   | "MATERIAL_LIMITATION";
 

@@ -2,6 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
+import { evidenceInspectState } from "@/features/ux-reset/evidence/from-observation";
+import { formatGovernedEvidenceValue } from "@/features/ux-reset/evidence/value-state-contract";
 import {
   buildCountyEvidenceBundle,
   evidenceFamilyForMeasure,
@@ -15,6 +17,7 @@ import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/inv
 import { indicatorDomainsById } from "@/features/ux-reset/investigate/load-county-evidence";
 import {
   environmentalCoverageRows,
+  mapPublishedRow,
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
   publishedValueStateRole,
@@ -391,7 +394,7 @@ const CAVEAT_ROW_STATUSES: readonly CaveatRowStatus[] = [
     id: "coverage-out-of-source",
     measureId: "reported-cases",
     sourceKey: "coverage",
-    statusParts: ["Unavailable for this release"],
+    statusParts: ["Outside environmental source coverage"],
     value: null,
   },
 ];
@@ -813,9 +816,9 @@ const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
     href: `#investigate-coverage-obs-${EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE}`,
     id: "coverage-out-of-source",
     kind: "coverage",
-    limitation: "Unavailable for this release",
-    provenance: "Unavailable. Unavailable for this release.",
-    reasonCode: ValueState.UNAVAILABLE,
+    limitation: "Outside environmental source coverage",
+    provenance: "Unavailable. Outside environmental source coverage.",
+    reasonCode: "ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE",
     status: EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE,
     valueState: ValueState.UNAVAILABLE,
   },
@@ -1709,6 +1712,248 @@ describe("County Investigate evidence hierarchy", () => {
         [ValueState.UNAVAILABLE]: true,
         [ValueState.ZERO]: true,
       },
+    });
+  });
+
+  it("states every contract coverage status and published status token", () => {
+    // EnvironmentalContext.coverage_status in contracts/openapi.json is
+    // COMPLETE, PARTIAL_COVERAGE, SOURCE_MISSING, OUT_OF_SOURCE_COVERAGE.
+    // CountyDetail status fields are unconstrained strings. The published
+    // rows are every statusValueState branch, including the empty string,
+    // plus the observed publisher labels the county payload carries.
+    const coverageClaimLabel = "Reported Lyme cases coverage";
+    const statusClaim = "Borrelia burgdorferi status";
+    const emptySummary =
+      "No material limitation was returned on the observations for this county.";
+    const unavailableGap = `${statusClaim} is unavailable for this county. That is not zero.`;
+    const coverageGap = `${coverageClaimLabel} is unavailable for this county. That is not zero.`;
+    const observed = {
+      availability: "available",
+      gapLine: null,
+      inspector: "Available. Observed or published.",
+      reasonCode: ValueState.OBSERVED,
+      summary: emptySummary,
+      valueState: ValueState.OBSERVED,
+    };
+    const coverageActual = Object.fromEntries(
+      Object.values(EnvironmentalContextCoverageStatus).map((status) => {
+        const [row] = environmentalCoverageRows({
+          contexts: [
+            {
+              ...coverageEntry(status, "0.5", `enum-${status}`),
+              measureLabel: "Reported Lyme cases",
+            },
+          ],
+        });
+        if (!row) {
+          throw new Error(`Missing coverage row for ${status}.`);
+        }
+        const summary = row.state.limitationText
+          ? `${coverageClaimLabel}: ${row.state.limitationText}`
+          : emptySummary;
+        return [
+          status,
+          {
+            availability: row.state.availability,
+            display: row.evidence.displayValue,
+            gapLine: row.state.gapLine,
+            inspector: evidenceInspectState(
+              row.state.availability,
+              row.state.reasonCode
+            ),
+            reasonCode: row.state.reasonCode,
+            summary,
+            valueState: row.state.valueState,
+          },
+        ];
+      })
+    );
+    const publishedTokens = [
+      "",
+      "Established",
+      "Present",
+      "Reported",
+      "SUPPRESSED",
+      "Unknown",
+      "missing",
+      "no_county_linked_record",
+      "published_count_floor",
+      "suppressed",
+      "unavailable",
+      "No records",
+    ] as const;
+    const publishedActual = publishedTokens.map((token) => {
+      const state = mapPublishedRow({
+        claimLabel: statusClaim,
+        inspectAnchor: "investigate-published-burgdorferi_status",
+        subject: { kind: "status", status: token },
+      });
+      const summary = state.limitationText
+        ? `${statusClaim}: ${state.limitationText}`
+        : emptySummary;
+      return {
+        availability: state.availability,
+        display: formatGovernedEvidenceValue({
+          unit: null,
+          value: token,
+          valueState: state.valueState,
+        }),
+        gapLine: state.gapLine,
+        inspector: evidenceInspectState(state.availability, state.reasonCode),
+        reasonCode: state.reasonCode,
+        summary,
+        token,
+        valueState: state.valueState,
+      };
+    });
+    expect({
+      coverage: coverageActual,
+      coverageStatuses: Object.values(
+        EnvironmentalContextCoverageStatus
+      ).sort(),
+      published: publishedActual,
+    }).toStrictEqual({
+      coverage: {
+        [EnvironmentalContextCoverageStatus.COMPLETE]: {
+          ...observed,
+          display: "Complete",
+        },
+        [EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE]: {
+          availability: "unavailable",
+          display: "Out of source coverage",
+          gapLine: coverageGap,
+          inspector: "Unavailable. Outside environmental source coverage.",
+          reasonCode: "ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE",
+          summary: `${coverageClaimLabel}: Outside environmental source coverage.`,
+          valueState: ValueState.UNAVAILABLE,
+        },
+        [EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE]: {
+          availability: "limited",
+          display: "Partial coverage",
+          gapLine: `${coverageClaimLabel}: Partial coverage.`,
+          inspector: "Limited. Coverage or methodology limits apply.",
+          reasonCode: "MATERIAL_LIMITATION",
+          summary: `${coverageClaimLabel}: Partial coverage.`,
+          valueState: ValueState.OBSERVED,
+        },
+        [EnvironmentalContextCoverageStatus.SOURCE_MISSING]: {
+          availability: "unavailable",
+          display: "Source missing",
+          gapLine: coverageGap,
+          inspector: "Unavailable. Environmental source missing.",
+          reasonCode: "ENVIRONMENTAL_SOURCE_MISSING",
+          summary: `${coverageClaimLabel}: Environmental source missing.`,
+          valueState: ValueState.UNAVAILABLE,
+        },
+      },
+      coverageStatuses: [
+        "COMPLETE",
+        "OUT_OF_SOURCE_COVERAGE",
+        "PARTIAL_COVERAGE",
+        "SOURCE_MISSING",
+      ],
+      published: [
+        {
+          availability: "unavailable",
+          display: "Unavailable",
+          gapLine: unavailableGap,
+          inspector: "Unavailable. Unavailable for this release.",
+          reasonCode: ValueState.UNAVAILABLE,
+          summary: `${statusClaim}: Unavailable for this release.`,
+          token: "",
+          valueState: ValueState.UNAVAILABLE,
+        },
+        {
+          ...observed,
+          display: "Established",
+          token: "Established",
+        },
+        {
+          ...observed,
+          display: "Present",
+          token: "Present",
+        },
+        {
+          ...observed,
+          display: "Reported",
+          token: "Reported",
+        },
+        {
+          availability: "limited",
+          display: "Suppressed",
+          gapLine: `${statusClaim}: Suppressed or privacy-protected.`,
+          inspector: "Limited. Suppressed or privacy-protected.",
+          reasonCode: ValueState.SUPPRESSED,
+          summary: `${statusClaim}: Suppressed or privacy-protected.`,
+          token: "SUPPRESSED",
+          valueState: ValueState.SUPPRESSED,
+        },
+        {
+          availability: "unavailable",
+          display: "Unavailable",
+          gapLine: unavailableGap,
+          inspector: "Unavailable. Unavailable for this release.",
+          reasonCode: ValueState.UNAVAILABLE,
+          summary: `${statusClaim}: Unavailable for this release.`,
+          token: "Unknown",
+          valueState: ValueState.UNAVAILABLE,
+        },
+        {
+          availability: "unavailable",
+          display: "Unavailable",
+          gapLine: unavailableGap,
+          inspector: "Unavailable. No county record.",
+          reasonCode: ValueState.MISSING,
+          summary: `${statusClaim}: No county record.`,
+          token: "missing",
+          valueState: ValueState.MISSING,
+        },
+        {
+          availability: "unavailable",
+          display: "Unavailable",
+          gapLine: unavailableGap,
+          inspector: "Unavailable. No county-linked record.",
+          reasonCode: ValueState.NO_COUNTY_LINKED_RECORD,
+          summary: `${statusClaim}: No county-linked record.`,
+          token: "no_county_linked_record",
+          valueState: ValueState.NO_COUNTY_LINKED_RECORD,
+        },
+        {
+          ...observed,
+          display: "published_count_floor",
+          token: "published_count_floor",
+        },
+        {
+          availability: "limited",
+          display: "Suppressed",
+          gapLine: `${statusClaim}: Suppressed or privacy-protected.`,
+          inspector: "Limited. Suppressed or privacy-protected.",
+          reasonCode: ValueState.SUPPRESSED,
+          summary: `${statusClaim}: Suppressed or privacy-protected.`,
+          token: "suppressed",
+          valueState: ValueState.SUPPRESSED,
+        },
+        {
+          availability: "unavailable",
+          display: "Unavailable",
+          gapLine: unavailableGap,
+          inspector: "Unavailable. Unavailable for this release.",
+          reasonCode: ValueState.UNAVAILABLE,
+          summary: `${statusClaim}: Unavailable for this release.`,
+          token: "unavailable",
+          valueState: ValueState.UNAVAILABLE,
+        },
+        {
+          availability: "unavailable",
+          display: "Unavailable",
+          gapLine: unavailableGap,
+          inspector: "Unavailable. No county-linked record.",
+          reasonCode: ValueState.NO_COUNTY_LINKED_RECORD,
+          summary: `${statusClaim}: No county-linked record.`,
+          token: "No records",
+          valueState: ValueState.NO_COUNTY_LINKED_RECORD,
+        },
+      ],
     });
   });
 
