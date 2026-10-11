@@ -160,6 +160,7 @@ function InvestigateExperienceInner() {
     countyRecordAbsent: workspace.countyRecordAbsent,
     countyRecordError: workspace.countyRecordError,
     countyRecordLoading: workspace.countyRecordLoading,
+    countyRecordRefreshError: workspace.countyRecordRefreshError,
     identity: workspace.identity,
     releaseId: workspace.releaseId,
   });
@@ -302,6 +303,26 @@ function InvestigateExperienceInner() {
           {workspace.catalogRefreshError}
         </AtlasStatusMessage>
       ) : null}
+      {workspace.indicatorError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.indicatorRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.metadataRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.metadataRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.directoryRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.directoryRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
       {workspace.evidenceLoading ? (
         <AtlasStatusMessage tone="loading">
           Loading county evidence…
@@ -346,6 +367,7 @@ function InvestigateExperienceInner() {
           countyRecord={hierarchy.countyRecord}
           countyRecordError={hierarchy.countyRecordError}
           countyRecordLoading={hierarchy.countyRecordLoading}
+          countyRecordRefreshError={hierarchy.countyRecordRefreshError}
           measures={workspace.measures}
           modelAssisted={modelAssisted}
           retrying={workspace.evidenceFetching}

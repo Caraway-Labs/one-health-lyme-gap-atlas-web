@@ -232,6 +232,31 @@ function ActionExperienceInner() {
           {workspace.catalogError}
         </AtlasStatusMessage>
       ) : null}
+      {workspace.catalogRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.catalogRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.indicatorError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.indicatorRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.metadataRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.metadataRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.directoryRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.directoryRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
       {workspace.evidenceLoading ? (
         <AtlasStatusMessage tone="loading">
           Loading county evidence…

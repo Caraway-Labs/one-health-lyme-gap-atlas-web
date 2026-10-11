@@ -2519,6 +2519,7 @@ function readSettledInvestigateState(input: {
     countyRecordAbsent: input.county === "absent",
     countyRecordError: input.county === "error" ? SETTLED_COUNTY_ERROR : null,
     countyRecordLoading: false,
+    countyRecordRefreshError: null,
     identity: observationBundle.county,
     releaseId: observationBundle.releaseId,
   });
@@ -2532,6 +2533,7 @@ function readSettledInvestigateState(input: {
           countyRecord={view.countyRecord}
           countyRecordError={view.countyRecordError}
           countyRecordLoading={view.countyRecordLoading}
+          countyRecordRefreshError={view.countyRecordRefreshError}
         />
       ) : (
         <p data-testid="hierarchy-withheld">withheld</p>
@@ -2648,6 +2650,7 @@ function readLoadingInvestigateState(input: {
     countyRecordAbsent: false,
     countyRecordError: null,
     countyRecordLoading: true,
+    countyRecordRefreshError: null,
     identity: observationBundle.county,
     releaseId: observationBundle.releaseId,
   });
@@ -2661,6 +2664,7 @@ function readLoadingInvestigateState(input: {
           countyRecord={view.countyRecord}
           countyRecordError={view.countyRecordError}
           countyRecordLoading={view.countyRecordLoading}
+          countyRecordRefreshError={view.countyRecordRefreshError}
         />
       ) : (
         <p data-testid="hierarchy-withheld">withheld</p>

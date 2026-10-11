@@ -11,6 +11,7 @@ export type SettledInvestigateHierarchy = {
   countyRecord: PublishedCountyRecord | null;
   countyRecordError: string | null;
   countyRecordLoading: boolean;
+  countyRecordRefreshError: string | null;
 };
 
 /**
@@ -25,6 +26,7 @@ export function settledInvestigateHierarchy(input: {
   countyRecordAbsent: boolean;
   countyRecordError: string | null;
   countyRecordLoading: boolean;
+  countyRecordRefreshError: string | null;
   identity: ResolvedCountyIdentity | null;
   releaseId: string | null;
 }): SettledInvestigateHierarchy | null {
@@ -35,6 +37,7 @@ export function settledInvestigateHierarchy(input: {
       countyRecord: input.countyRecord,
       countyRecordError: input.countyRecordError,
       countyRecordLoading: input.countyRecordLoading,
+      countyRecordRefreshError: input.countyRecordRefreshError,
     };
   }
   const countySettled =
@@ -59,5 +62,6 @@ export function settledInvestigateHierarchy(input: {
     countyRecord: input.countyRecord,
     countyRecordError: input.countyRecordError,
     countyRecordLoading: false,
+    countyRecordRefreshError: input.countyRecordRefreshError,
   };
 }

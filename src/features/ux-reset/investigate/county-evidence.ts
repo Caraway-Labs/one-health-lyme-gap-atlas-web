@@ -309,6 +309,8 @@ export function evidenceFamilyFromIndicatorId(
 /**
  * A non-empty domain wins, including unknown tokens that stay unclassified.
  * A blank domain, or a failed indicator request, uses the indicator id.
+ * That fallback still assigns allowlisted ids. The indicator request failure
+ * is disclosed on its own and does not depend on family publication.
  * Unresolved metadata (conflicting domains, or a release that was withheld)
  * stays unclassified and does not use that id fallback.
  */

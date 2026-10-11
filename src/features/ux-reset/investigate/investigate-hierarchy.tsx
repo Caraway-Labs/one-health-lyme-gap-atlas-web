@@ -378,6 +378,7 @@ export function InvestigateEvidenceHierarchy({
   countyRecord = null,
   countyRecordError = null,
   countyRecordLoading = false,
+  countyRecordRefreshError = null,
   measures = EMPTY_MEASURES,
   modelAssisted = null,
   onRetryFailures,
@@ -388,6 +389,8 @@ export function InvestigateEvidenceHierarchy({
   countyRecord?: PublishedCountyRecord | null;
   countyRecordError?: string | null;
   countyRecordLoading?: boolean;
+  /** Refresh failed after a resolved record or a resolved 404. */
+  countyRecordRefreshError?: string | null;
   measures?: readonly Measure[];
   modelAssisted?: ReactNode;
   onRetryFailures?: () => void;
@@ -621,6 +624,11 @@ export function InvestigateEvidenceHierarchy({
               {countyRecordError ? (
                 <AtlasStatusMessage tone="error">
                   {countyRecordError}
+                </AtlasStatusMessage>
+              ) : null}
+              {countyRecordRefreshError ? (
+                <AtlasStatusMessage tone="error">
+                  {countyRecordRefreshError}
                 </AtlasStatusMessage>
               ) : null}
               {published ? (

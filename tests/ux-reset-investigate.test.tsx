@@ -43,6 +43,7 @@ const controls: {
   delayFips: string | null;
   failCatalog: boolean;
   failCountyRecord: boolean;
+  failIndicators: boolean;
   failMeasureId: string | null;
   geographyStatus: "identity" | "ok";
   holdMetadata: boolean;
@@ -59,6 +60,7 @@ const controls: {
   delayFips: null,
   failCatalog: false,
   failCountyRecord: false,
+  failIndicators: false,
   failMeasureId: null,
   geographyStatus: "ok",
   holdMetadata: false,
@@ -178,6 +180,14 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     indicatorsV1IndicatorsGet: vi.fn<
       typeof import("@/generated/atlas").indicatorsV1IndicatorsGet
     >(async (params) => {
+      if (controls.failIndicators) {
+        throw new AtlasApiError(
+          "indicators unavailable",
+          "/v1/indicators",
+          500,
+          null
+        );
+      }
       if (params?.page_token === null) {
         return {
           data: { detail: "invalid indicators request" },
@@ -472,6 +482,7 @@ describe("County Investigate workspace", () => {
     controls.delayFips = null;
     controls.failCatalog = false;
     controls.failCountyRecord = false;
+    controls.failIndicators = false;
     controls.failMeasureId = null;
     controls.geographyStatus = "ok";
     controls.holdMetadata = false;
@@ -1637,6 +1648,70 @@ describe("County Investigate workspace", () => {
       nextCatalogFailure: false,
       nextRequests: true,
       refreshNotes: true,
+    });
+  });
+
+  it("shows an indicator failure while loaded observations stay on the page", async () => {
+    controls.failIndicators = true;
+    renderInvestigate("?county=08001&scope=CO");
+    await screen.findByText(
+      "Governed indicators could not be loaded. Observations stay grouped by the indicator id allowlist. That is a request failure, not a loaded indicator catalog."
+    );
+    const evidence = await screen.findByTestId("investigate-evidence");
+    const page = document.body.textContent ?? "";
+    expect({
+      cases: (evidence.textContent ?? "").includes("12 cases"),
+      notice: page.includes(
+        "Governed indicators could not be loaded. Observations stay grouped by the indicator id allowlist. That is a request failure, not a loaded indicator catalog."
+      ),
+    }).toStrictEqual({
+      cases: true,
+      notice: true,
+    });
+  });
+
+  it("keeps a settled county 404 when the record refresh fails", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderInvestigate("?county=08001&scope=CO", { client });
+    await waitFor(() => {
+      const coverage =
+        screen.queryByTestId("investigate-coverage-value")?.textContent ?? "";
+      if (!coverage.includes("Published input coverage was not returned")) {
+        throw new Error(
+          "The settled absent coverage sentence has not rendered."
+        );
+      }
+    });
+    controls.failCountyRecord = true;
+    await act(async () => {
+      await client.refetchQueries(
+        { queryKey: ["ux-reset-investigate-county-record"] },
+        { throwOnError: false }
+      );
+    });
+    await waitFor(() => {
+      const text = document.body.textContent ?? "";
+      if (!text.includes("published county record refresh failed")) {
+        throw new Error("The county refresh note has not rendered.");
+      }
+    });
+    const finding =
+      screen.getByTestId("investigate-finding-text").textContent ?? "";
+    const page = document.body.textContent ?? "";
+    expect({
+      absent: page.includes(
+        "Published input coverage was not returned for this county."
+      ),
+      firstLoadFinding: finding.includes("so findings may be incomplete"),
+      refresh: page.includes(
+        "The published county record refresh failed. The last governed result is still shown."
+      ),
+    }).toStrictEqual({
+      absent: true,
+      firstLoadFinding: false,
+      refresh: true,
     });
   });
 

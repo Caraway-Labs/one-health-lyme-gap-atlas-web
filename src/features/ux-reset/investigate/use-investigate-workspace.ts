@@ -22,6 +22,7 @@ import {
   type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
+import { investigateRequestDisclosure } from "@/features/ux-reset/investigate/investigate-request-state";
 import { investigateSearchParams } from "@/features/ux-reset/investigate/investigate-search-params";
 import {
   fetchInvestigateIndicators,
@@ -64,17 +65,22 @@ export type InvestigateWorkspace = {
   countyRecordAbsent: boolean;
   countyRecordError: string | null;
   countyRecordLoading: boolean;
+  countyRecordRefreshError: string | null;
   directory: readonly ExploreCountyIdentity[];
   directoryError: string | null;
   directoryLoading: boolean;
+  directoryRefreshError: string | null;
   evidenceError: string | null;
   evidenceFetching: boolean;
   evidenceLoading: boolean;
   identity: ResolvedCountyIdentity | null;
+  indicatorError: string | null;
+  indicatorRefreshError: string | null;
   measures: readonly Measure[];
   metadata: AtlasMetadata | null;
   metadataError: string | null;
   metadataLoading: boolean;
+  metadataRefreshError: string | null;
   period: string | null;
   recovery: InvestigateRecovery | null;
   releaseId: string | null;
@@ -125,42 +131,6 @@ function cooldownsForCachedBundle(input: {
     return [];
   }
   return retryCooldownsFromBundle(bundle);
-}
-
-function metadataErrorMessage(
-  error: unknown,
-  requestedDataset: string | null
-): string {
-  if (error instanceof InvestigateContractError) {
-    return "The release response did not match the requested dataset.";
-  }
-  if (error instanceof AtlasApiError && requestedDataset) {
-    return `The requested release "${requestedDataset}" is not available. ${error.message}`;
-  }
-  if (error instanceof AtlasApiError) {
-    return error.message;
-  }
-  return "Unable to load governed release metadata.";
-}
-
-const COUNTY_RECORD_REFRESH_FAILURE =
-  "The published county record refresh failed. The last governed result is still shown.";
-const CATALOG_REFRESH_FAILURE =
-  "The measure catalog refresh failed. The last governed catalog is still shown.";
-const EVIDENCE_REFRESH_FAILURE =
-  "County evidence refresh failed. The last governed result is still shown.";
-
-function countyRecordErrorMessage(
-  error: unknown,
-  hasCachedRecord: boolean
-): string {
-  if (hasCachedRecord) {
-    return COUNTY_RECORD_REFRESH_FAILURE;
-  }
-  if (error instanceof InvestigateContractError) {
-    return "The published county record did not match this county and release, so it was not shown.";
-  }
-  return "The published county record could not be loaded. That is a request failure, not missing evidence.";
 }
 
 function recoveryFromError(error: unknown): InvestigateRecovery | null {
@@ -279,7 +249,14 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     },
     queryKey: ["ux-reset-investigate-directory", releaseId],
   });
-  const directory = directoryQuery.data ?? [];
+  const directoryState = investigateRequestDisclosure({
+    data: directoryQuery.data,
+    error: directoryQuery.error,
+    isError: directoryQuery.isError,
+    request: "directory",
+  });
+  const directory =
+    directoryQuery.data === undefined ? [] : directoryQuery.data;
   const publishedCounty = directory.find(
     (county) => county.fips === requestedFips
   );
@@ -288,7 +265,9 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     : null;
   const inRelease = Boolean(identity);
   const unsupported =
-    selection.kind === "county" && directoryQuery.isSuccess && !inRelease;
+    selection.kind === "county" &&
+    directoryState.keepsResolvedResult &&
+    !inRelease;
 
   const countyRecordQuery = useQuery({
     enabled: Boolean(releaseId && requestedFips && inRelease),
@@ -329,14 +308,27 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       shouldRetryInvestigateRequest(failureCount, error, retrySetting),
   });
 
-  const measureKey = (measuresQuery.data ?? [])
+  const catalogState = investigateRequestDisclosure({
+    data: measuresQuery.data,
+    error: measuresQuery.error,
+    isError: measuresQuery.isError,
+    request: "catalog",
+  });
+  const indicatorState = investigateRequestDisclosure({
+    data: indicatorsQuery.data,
+    error: indicatorsQuery.error,
+    isError: indicatorsQuery.isError,
+    request: "indicators",
+  });
+  const measureKey = (
+    measuresQuery.data === undefined ? [] : measuresQuery.data
+  )
     .map((measure) => measure.measure_id)
     .join("|");
-  const catalogHasData = measuresQuery.data !== undefined;
   const indicatorKey =
-    indicatorsQuery.isError && indicatorsQuery.data === undefined
+    indicatorState.outcome === "failed-first-load"
       ? "domains-failed"
-      : (indicatorsQuery.data ?? [])
+      : (indicatorsQuery.data === undefined ? [] : indicatorsQuery.data)
           .map(
             (indicator) =>
               `${indicator.indicator_id}:${indicator.domain ?? ""}:${indicator.release_version ?? ""}`
@@ -348,7 +340,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       requestedFips &&
       identity &&
       inRelease &&
-      (measuresQuery.isSuccess || catalogHasData) &&
+      catalogState.keepsResolvedResult &&
       indicatorsQuery.isFetched &&
       !indicatorsQuery.isFetching
     ),
@@ -377,12 +369,12 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
           fips: requestedFips,
           releaseId,
         }),
-        domainsRequestFailed:
-          indicatorsQuery.isError && indicatorsQuery.data === undefined,
+        domainsRequestFailed: indicatorState.outcome === "failed-first-load",
         fips: requestedFips,
         identity,
-        indicators: indicatorsQuery.data ?? [],
-        measures: measuresQuery.data ?? [],
+        indicators:
+          indicatorsQuery.data === undefined ? [] : indicatorsQuery.data,
+        measures: measuresQuery.data === undefined ? [] : measuresQuery.data,
         period: urlState.period,
         preserve,
         releaseId,
@@ -427,14 +419,40 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     [setUrlState]
   );
 
+  const countyState = investigateRequestDisclosure({
+    data: countyRecordQuery.data,
+    error: countyRecordQuery.error,
+    isError: countyRecordQuery.isError,
+    request: "county-record",
+  });
+  const observationState = investigateRequestDisclosure({
+    data: evidenceQuery.data,
+    error: evidenceQuery.error,
+    isError: evidenceQuery.isError,
+    request: "observations",
+  });
+  const metadataState = investigateRequestDisclosure({
+    data: metadataQuery.data,
+    error: metadataQuery.error,
+    isError: metadataQuery.isError,
+    request: "metadata",
+    requestedDataset: urlState.dataset,
+  });
+
   let recovery: InvestigateRecovery | null = null;
   if (selection.kind === "missing") {
     recovery = "missing";
   } else if (selection.kind === "malformed") {
     recovery = "malformed";
-  } else if (recoveryFromError(metadataQuery.error)) {
+  } else if (
+    metadataState.outcome === "failed-first-load" &&
+    recoveryFromError(metadataQuery.error)
+  ) {
     recovery = recoveryFromError(metadataQuery.error);
-  } else if (selection.kind === "county" && directoryQuery.isError) {
+  } else if (
+    selection.kind === "county" &&
+    directoryState.outcome === "failed-first-load"
+  ) {
     recovery = "directory";
   } else if (unsupported) {
     recovery = "unsupported";
@@ -447,57 +465,46 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
           fips: requestedFips,
           releaseId,
         }),
-    catalogError:
-      measuresQuery.isError && !catalogHasData
-        ? "Governed measures could not be loaded."
-        : null,
-    catalogRefreshError:
-      measuresQuery.isError && catalogHasData ? CATALOG_REFRESH_FAILURE : null,
+    catalogError: catalogState.failure,
+    catalogRefreshError: catalogState.refreshFailure,
     compare: urlState.compare,
-    countyRecord: countyRecordQuery.data ?? null,
-    countyRecordAbsent: countyRecordQuery.data === null,
-    countyRecordError: countyRecordQuery.isError
-      ? countyRecordErrorMessage(
-          countyRecordQuery.error,
-          countyRecordQuery.data != null
-        )
-      : null,
+    countyRecord:
+      countyRecordQuery.data === undefined ? null : countyRecordQuery.data,
+    countyRecordAbsent: countyState.absent,
+    countyRecordError: countyState.failure,
     countyRecordLoading:
       !recovery &&
       selection.kind === "county" &&
       inRelease &&
       countyRecordQuery.isLoading &&
       !countyRecordQuery.isError,
+    countyRecordRefreshError: countyState.refreshFailure,
     directory,
-    directoryError: directoryQuery.isError
-      ? "The published county list for this release could not be loaded."
-      : null,
+    directoryError: directoryState.failure,
     directoryLoading:
       selection.kind === "county" &&
       directoryQuery.isLoading &&
       !directoryQuery.isError,
-    evidenceError: evidenceQuery.isError
-      ? evidenceQuery.data === undefined
-        ? "County evidence did not load for the requested county."
-        : EVIDENCE_REFRESH_FAILURE
-      : null,
+    directoryRefreshError: directoryState.refreshFailure,
+    evidenceError: observationState.failure ?? observationState.refreshFailure,
     evidenceFetching:
       !recovery &&
       selection.kind === "county" &&
       evidenceQuery.isFetching &&
-      Boolean(evidenceQuery.data),
+      observationState.keepsResolvedResult,
     evidenceLoading:
       !recovery &&
       selection.kind === "county" &&
       (evidenceQuery.isLoading ||
         (inRelease && (measuresQuery.isLoading || indicatorsQuery.isLoading))),
     identity,
-    measures: measuresQuery.data ?? [],
-    metadata: metadataQuery.data ?? null,
-    metadataError: metadataQuery.isError
-      ? metadataErrorMessage(metadataQuery.error, urlState.dataset)
-      : null,
+    indicatorError: indicatorState.failure,
+    indicatorRefreshError: indicatorState.refreshFailure,
+    measures: measuresQuery.data === undefined ? [] : measuresQuery.data,
+    metadata: metadataQuery.data === undefined ? null : metadataQuery.data,
+    metadataError: metadataState.failure,
     metadataLoading: metadataQuery.isLoading,
+    metadataRefreshError: metadataState.refreshFailure,
     period: urlState.period,
     recovery,
     releaseId,
