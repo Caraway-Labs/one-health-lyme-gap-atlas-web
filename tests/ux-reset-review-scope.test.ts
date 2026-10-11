@@ -6,6 +6,7 @@ import {
 } from "@/features/ux-reset/context-params";
 import { buildReviewScopePresentation } from "@/features/ux-reset/review/build-review-presentation";
 import {
+  hasExplicitReviewLocation,
   hasExplicitReviewScopeParam,
   isReviewStartingScopeUnresolved,
   resolveStartingReviewScope,
@@ -80,6 +81,27 @@ describe("Review scope resolution", () => {
       hasExplicitReviewScopeParam(new URLSearchParams("scope=ALL"))
     ).toBeTruthy();
     expect(hasExplicitReviewScopeParam(new URLSearchParams())).toBeFalsy();
+  });
+
+  it("treats a county in the URL as an explicit location", () => {
+    expect({
+      both: hasExplicitReviewLocation(
+        new URLSearchParams("scope=NY&county=36001")
+      ),
+      county: hasExplicitReviewLocation(new URLSearchParams("county=08001")),
+      empty: hasExplicitReviewLocation(new URLSearchParams()),
+      starting: resolveStartingReviewScope(
+        hasExplicitReviewLocation(new URLSearchParams("county=08001")),
+        "ALL",
+        "CO",
+        stateOptions
+      ),
+    }).toStrictEqual({
+      both: true,
+      county: true,
+      empty: false,
+      starting: "ALL",
+    });
   });
 
   it("rewrites malformed scope queries to the canonical token", () => {

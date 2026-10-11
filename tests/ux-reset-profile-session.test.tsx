@@ -400,7 +400,7 @@ describe("saved profile account isolation", () => {
         screen.getByTestId("settings-organization") as HTMLInputElement
       ).value,
     }).toStrictEqual({
-      notice: expect.stringContaining("Saved."),
+      notice: expect.stringContaining("Starting view saved."),
       organization: "Newer",
     });
     readIdentity.resolve(true);
@@ -420,7 +420,7 @@ describe("saved profile account isolation", () => {
       ).value,
     }).toStrictEqual({
       cache: "Newer",
-      notice: expect.stringContaining("Saved."),
+      notice: expect.stringContaining("Starting view saved."),
       organization: "Newer",
     });
   });
@@ -632,7 +632,7 @@ describe("saved profile account isolation", () => {
       expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
     );
     expect(screen.getByTestId("settings-save-profile").textContent).toBe(
-      "Saving profile…"
+      "Saving…"
     );
     refreshAccessToken("token-user-a-refreshed");
     gate.resolve(true);
@@ -647,7 +647,7 @@ describe("saved profile account isolation", () => {
         ).value,
       }).toStrictEqual({
         expired: null,
-        label: "Save profile",
+        label: "Save starting view",
         notice: null,
         organization: "SECRET",
       })
@@ -673,7 +673,7 @@ describe("saved profile account isolation", () => {
         screen.getByTestId("settings-organization") as HTMLInputElement
       ).value,
     }).toStrictEqual({
-      notice: expect.stringContaining("Saved."),
+      notice: expect.stringContaining("Starting view saved."),
       organization: "SECRET",
     });
   });
@@ -694,7 +694,7 @@ describe("saved profile account isolation", () => {
       expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
     );
     expect(screen.getByTestId("settings-save-profile").textContent).toBe(
-      "Saving profile…"
+      "Saving…"
     );
     refreshAccessToken("token-user-a-refreshed");
     gate.resolve(true);
@@ -707,7 +707,7 @@ describe("saved profile account isolation", () => {
         ).value,
       }).toStrictEqual({
         expired: null,
-        label: "Save profile",
+        label: "Save starting view",
         organization: "SECRET",
       })
     );
@@ -729,7 +729,7 @@ describe("saved profile account isolation", () => {
         ).value,
       }).toStrictEqual({
         calls: 2,
-        notice: expect.stringContaining("Saved."),
+        notice: expect.stringContaining("Starting view saved."),
         organization: "SECRET",
       })
     );

@@ -178,18 +178,6 @@ function draftFromSelection(
   };
 }
 
-function jurisdictionSelectValue(
-  jurisdiction: ProfileDraftInput["jurisdiction"]
-): string | null {
-  if (jurisdiction === "unset") {
-    return null;
-  }
-  if (jurisdiction === "national") {
-    return "ALL";
-  }
-  return jurisdiction.stateCode;
-}
-
 function jurisdictionLabel(
   jurisdiction: ProfileDraftInput["jurisdiction"],
   stateOptions: readonly AtlasStateOption[]
@@ -222,28 +210,11 @@ function roleLabel(role: UserProfileWriteRole | null): string {
   return match ? match.label : "Prefer not to say";
 }
 
-function successCopy(
-  profile: SavedProfile,
-  stateOptions: readonly AtlasStateOption[]
-): string {
-  const unchanged = "A Review page you already opened keeps its current scope.";
-  switch (profile.selection.kind) {
-    case "state": {
-      return `Saved. New Review sessions will start with ${reviewScopeLabel(profile.selection.stateCode, stateOptions)}. ${unchanged}`;
-    }
-    case "national": {
-      return `Saved. New Review sessions will start with the United States. ${unchanged}`;
-    }
-    case "unselected":
-    case "unrecognized": {
-      return `Saved. ${unchanged}`;
-    }
-    default: {
-      const exhaustive: never = profile.selection;
-      return exhaustive;
-    }
-  }
-}
+const STARTING_VIEW_SAVED =
+  "Starting view saved. It will apply the next time you open Review without a specific view.";
+
+const STARTING_VIEW_OPTION_CLASS =
+  "border-input has-[:checked]:border-ring has-[:checked]:bg-accent flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 text-sm font-medium";
 
 export function SettingsProfileForm() {
   const profileQuery = useSavedProfile();
@@ -270,9 +241,11 @@ export function SettingsProfileForm() {
     null
   );
   const requestIdRef = useRef(0);
+  const [rememberedStateCode, setRememberedStateCode] = useState("");
   const [draftIdentityKey, setDraftIdentityKey] = useState<string | null>(null);
 
   if (identityKey && identityKey !== boundKey) {
+    setRememberedStateCode("");
     setBoundKey(identityKey);
     setDraft(null);
     setDirty(false);
@@ -305,7 +278,8 @@ export function SettingsProfileForm() {
   }
 
   if (profileQuery.sessionRejected || sessionExpired) {
-    if (draft || dirty) {
+    if (draft || dirty || rememberedStateCode) {
+      setRememberedStateCode("");
       setDraft(null);
       setDirty(false);
       setSynced(null);
@@ -348,6 +322,21 @@ export function SettingsProfileForm() {
   const stateOptions = metadataQuery.stateOptions;
   const selectOptions = stateOptions;
 
+  function listedStateCode(code: string): string {
+    return selectOptions.some((state) => state.code === code) ? code : "";
+  }
+
+  function stateCodeForOneStateChoice(): string {
+    const remembered = listedStateCode(rememberedStateCode);
+    if (remembered) {
+      return remembered;
+    }
+    if (confirmed.selection.kind === "state") {
+      return listedStateCode(confirmed.selection.stateCode);
+    }
+    return "";
+  }
+
   function updateDraft(next: ProfileDraftInput) {
     setDirty(true);
     if (!unresolvedSave) {
@@ -370,7 +359,12 @@ export function SettingsProfileForm() {
     }
     const built = buildProfileWrite(currentDraft, stateOptions);
     if (!built.ok) {
-      setJurisdictionInvalid(currentDraft.jurisdiction === "unset");
+      const missingState =
+        typeof currentDraft.jurisdiction === "object" &&
+        currentDraft.jurisdiction.stateCode.trim() === "";
+      setJurisdictionInvalid(
+        currentDraft.jurisdiction === "unset" || missingState
+      );
       setNotice({ text: built.message, tone: "error" });
       return;
     }
@@ -421,7 +415,7 @@ export function SettingsProfileForm() {
           outcome.profile
         );
         setNotice({
-          text: successCopy(outcome.profile, selectOptions),
+          text: STARTING_VIEW_SAVED,
           tone: "success",
         });
         break;
@@ -512,48 +506,105 @@ export function SettingsProfileForm() {
               returns.
             </p>
           ) : null}
-          <label
-            className="grid gap-2 text-sm font-medium"
-            htmlFor="default-jurisdiction"
+          <fieldset
+            aria-describedby="starting-view-hint"
+            aria-invalid={
+              jurisdictionInvalid && currentDraft.jurisdiction === "unset"
+                ? true
+                : undefined
+            }
+            className="grid gap-3"
+            disabled={saving}
           >
-            Default jurisdiction
-            <Select
-              disabled={saving}
-              value={jurisdictionSelectValue(draft.jurisdiction)}
-              onValueChange={(value) => {
-                if (!value) {
-                  return;
-                }
-                updateDraft({
-                  ...draft,
-                  jurisdiction: jurisdictionFromSelectValue(value),
-                });
-              }}
-            >
-              <SelectTrigger
-                aria-invalid={jurisdictionInvalid}
-                aria-label="Default jurisdiction"
-                className="h-11 w-full"
-                data-testid="settings-jurisdiction-select"
-                id="default-jurisdiction"
+            <legend className="text-sm font-medium">Starting view</legend>
+            <div className="grid gap-2">
+              <label className={STARTING_VIEW_OPTION_CLASS}>
+                <input
+                  checked={currentDraft.jurisdiction === "national"}
+                  className="accent-primary size-4 shrink-0"
+                  name="starting-view"
+                  onChange={() => {
+                    updateDraft({ ...draft, jurisdiction: "national" });
+                  }}
+                  type="radio"
+                  value="national"
+                />
+                United States
+              </label>
+              <label className={STARTING_VIEW_OPTION_CLASS}>
+                <input
+                  checked={typeof currentDraft.jurisdiction === "object"}
+                  className="accent-primary size-4 shrink-0"
+                  name="starting-view"
+                  onChange={() => {
+                    if (typeof currentDraft.jurisdiction === "object") {
+                      return;
+                    }
+                    updateDraft({
+                      ...draft,
+                      jurisdiction: {
+                        stateCode: stateCodeForOneStateChoice(),
+                      },
+                    });
+                  }}
+                  type="radio"
+                  value="state"
+                />
+                One state
+              </label>
+            </div>
+            {typeof currentDraft.jurisdiction === "object" ? (
+              <label
+                className="grid gap-2 text-sm font-medium"
+                htmlFor="starting-view-state"
               >
-                <SelectValue placeholder="Choose United States or a state">
-                  {jurisdictionLabel(currentDraft.jurisdiction, selectOptions)}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">United States</SelectItem>
-                {selectOptions.map((state) => (
-                  <SelectItem key={state.code} value={state.code}>
-                    {state.name} ({state.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-          <p className="type-small text-muted-foreground">
-            Saved defaults apply the next time Review opens without a scope in
-            the URL.
+                State
+                <Select
+                  disabled={saving}
+                  value={currentDraft.jurisdiction.stateCode || null}
+                  onValueChange={(value) => {
+                    if (!value) {
+                      return;
+                    }
+                    setRememberedStateCode(value);
+                    updateDraft({
+                      ...draft,
+                      jurisdiction: jurisdictionFromSelectValue(value),
+                    });
+                  }}
+                >
+                  <SelectTrigger
+                    aria-invalid={jurisdictionInvalid || undefined}
+                    aria-label="State"
+                    className="h-11 w-full"
+                    data-testid="settings-jurisdiction-select"
+                    id="starting-view-state"
+                  >
+                    <SelectValue placeholder="Select a state">
+                      {currentDraft.jurisdiction.stateCode
+                        ? jurisdictionLabel(
+                            currentDraft.jurisdiction,
+                            selectOptions
+                          )
+                        : null}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectOptions.map((state) => (
+                      <SelectItem key={state.code} value={state.code}>
+                        {state.name} ({state.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+            ) : null}
+          </fieldset>
+          <p
+            className="type-small text-muted-foreground"
+            id="starting-view-hint"
+          >
+            This applies the next time you open Review without a specific view.
           </p>
           <label
             className="grid gap-2 text-sm font-medium"
@@ -624,7 +675,7 @@ export function SettingsProfileForm() {
             disabled={saving}
             type="submit"
           >
-            {saving ? "Saving profile…" : "Save profile"}
+            {saving ? "Saving…" : "Save starting view"}
           </Button>
           {notice ? (
             <p
