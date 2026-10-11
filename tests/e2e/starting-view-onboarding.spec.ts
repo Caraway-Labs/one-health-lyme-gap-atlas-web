@@ -36,16 +36,29 @@ const legacyProfile: StoredProfile = {
 async function installOnboardingApi(
   page: Page,
   initial: StoredProfile | null,
-  options: { failReads?: number; uncertainSaves?: number } = {}
+  options: {
+    committedUncertainSaves?: number;
+    failMetadata?: number;
+    failReads?: number;
+    unauthorized?: boolean;
+    uncertainSaves?: number;
+  } = {}
 ) {
   let stored = initial;
   let failReads = options.failReads ?? 0;
   let uncertainSaves = options.uncertainSaves ?? 0;
+  let committedUncertainSaves = options.committedUncertainSaves ?? 0;
+  let failMetadata = options.failMetadata ?? 0;
+  const unauthorized = options.unauthorized === true;
   const writes: unknown[] = [];
 
   await page.route("**/v1/me/profile", async (route: Route) => {
     const request = route.request();
     if (request.method() === "GET") {
+      if (unauthorized) {
+        await route.fulfill({ json: { detail: "Unauthorized." }, status: 401 });
+        return;
+      }
       if (failReads > 0) {
         failReads -= 1;
         await route.fulfill({
@@ -84,14 +97,6 @@ async function installOnboardingApi(
       });
       return;
     }
-    if (uncertainSaves > 0) {
-      uncertainSaves -= 1;
-      await route.fulfill({
-        json: { detail: "Profile save was not confirmed." },
-        status: 503,
-      });
-      return;
-    }
     const next: StoredProfile = {
       job_title: (record.job_title as string | null) ?? null,
       organization: (record.organization as string | null) ?? null,
@@ -101,13 +106,36 @@ async function installOnboardingApi(
         : (stored?.starting_view_version ?? null),
       state_code: (record.state_code as string | null) ?? null,
     };
-    const payload = { profile: next };
-    UserProfileResponseSchema.parse(payload);
+    UserProfileResponseSchema.parse({ profile: next });
+    if (uncertainSaves > 0) {
+      uncertainSaves -= 1;
+      await route.fulfill({
+        json: { detail: "Profile save was not confirmed." },
+        status: 503,
+      });
+      return;
+    }
     stored = next;
-    await route.fulfill({ json: payload, status: 200 });
+    if (committedUncertainSaves > 0) {
+      committedUncertainSaves -= 1;
+      await route.fulfill({
+        json: { detail: "Profile save was not confirmed." },
+        status: 503,
+      });
+      return;
+    }
+    await route.fulfill({ json: { profile: next }, status: 200 });
   });
 
   await page.route("**/v1/atlas/metadata**", async (route) => {
+    if (failMetadata > 0) {
+      failMetadata -= 1;
+      await route.fulfill({
+        json: { detail: "Metadata unavailable." },
+        status: 503,
+      });
+      return;
+    }
     await route.fulfill({ json: reviewScopeMetadataFixture, status: 200 });
   });
   await page.route("**/v1/atlas/scores**", async (route) => {
@@ -268,6 +296,62 @@ test.describe("Starting view onboarding", () => {
     await expect(page.getByTestId("review-national-orientation")).toBeVisible({
       timeout: 20_000,
     });
+  });
+
+  test("recovers a committed uncertain save from the following read", async ({
+    page,
+  }) => {
+    const api = await installOnboardingApi(page, legacyProfile, {
+      committedUncertainSaves: 1,
+    });
+    await page.goto("/auth/starting-view");
+    await page.getByRole("radio", { name: "One state" }).check();
+    await page
+      .getByRole("combobox", { exact: true, name: "State" })
+      .selectOption("CO");
+    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await expect(page.getByTestId("review-state-panel")).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page).toHaveURL(/scope=CO/);
+    expect(api.writes).toHaveLength(1);
+    expect(api.writes[0]).toMatchObject({
+      complete_starting_view: true,
+      state_code: "CO",
+    });
+  });
+
+  test("retries a failed state list without losing the choice", async ({
+    page,
+  }) => {
+    await installOnboardingApi(page, null, { failMetadata: 1 });
+    await page.goto("/auth/starting-view");
+    await page.getByRole("radio", { name: "One state" }).check();
+    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await expect(
+      page.getByText("We couldn’t load the state list.")
+    ).toBeVisible();
+    await expect(page.getByText("Select a state to continue.")).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Try loading states again" })
+      .click();
+    await page
+      .getByRole("combobox", { exact: true, name: "State" })
+      .selectOption("CO");
+    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await expect(page).toHaveURL(/scope=CO/, { timeout: 20_000 });
+  });
+
+  test("sends a rejected session to sign in", async ({ page }) => {
+    await installOnboardingApi(page, null, { unauthorized: true });
+    await page.goto("/auth/continue?next=%2Fapp%2Freview%3Fscope%3DNY");
+    const signIn = page.getByRole("link", { name: "Sign in" });
+    await expect(signIn).toBeVisible();
+    await expect(signIn).toHaveAttribute("href", /\/auth\/sign-in\?next=/);
+    await expect(
+      page.getByRole("radio", { name: "United States" })
+    ).toHaveCount(0);
+    await expect(page.getByText("Checking your starting view…")).toHaveCount(0);
   });
 
   test("Settings save keeps completion and optional profile fields", async ({

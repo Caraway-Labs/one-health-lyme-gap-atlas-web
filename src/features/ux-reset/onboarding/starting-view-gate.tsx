@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,34 +16,50 @@ import {
 const COPY = {
   checking: "Checking your starting view…",
   retry: "Try again",
+  signIn: "Sign in",
   unavailable:
     "We couldn’t load your starting view. Nothing was changed. Try again.",
+  unsigned:
+    "Your session expired. Sign in again before continuing. Nothing was changed.",
 } as const;
 
 /**
- * Incomplete accounts leave the workspace for setup. A read that is still in
- * flight keeps the requested workspace. A failed profile read stays
- * recoverable and does not open setup.
+ * The requested URL stays in place until a profile read classifies the
+ * account. Workspace actions render only after that read proves completion.
+ * An incomplete account is sent to setup. A failed read stays recoverable.
+ * A rejected session gets sign-in rather than the workspace.
  */
 export function StartingViewGate({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const profile = useSavedProfile();
   const complete = isStartingViewComplete(profile.data);
+  const search = searchParams.toString();
+  const returnPath = search ? `${pathname}?${search}` : pathname;
 
   useEffect(() => {
     if (profile.identity?.kind === "signed-out") {
-      const next = `${window.location.pathname}${window.location.search}`;
-      router.replace(signInHrefForReturnPath(next));
+      router.replace(signInHrefForReturnPath(returnPath));
       return;
     }
     if (profile.data && !complete) {
       router.replace(STARTING_VIEW_PATH);
     }
-  }, [complete, profile.data, profile.identity, router]);
+  }, [complete, profile.data, profile.identity, returnPath, router]);
 
-  if (profile.isError && !profile.sessionRejected) {
+  if (profile.sessionRejected) {
     return (
-      <div className="app-content ux-reset-pro-main">
+      <main className="app-content ux-reset-pro-main">
+        <p role="alert">{COPY.unsigned}</p>
+        <Link href={signInHrefForReturnPath(returnPath)}>{COPY.signIn}</Link>
+      </main>
+    );
+  }
+
+  if (profile.isError) {
+    return (
+      <main className="app-content ux-reset-pro-main">
         <p role="alert">{COPY.unavailable}</p>
         <Button
           onClick={() => {
@@ -52,19 +69,17 @@ export function StartingViewGate({ children }: { children: ReactNode }) {
         >
           {COPY.retry}
         </Button>
-      </div>
+      </main>
     );
   }
 
-  // The shell already owns the main landmark. Keep an explicit destination
-  // usable until a read proves the account is incomplete.
-  if (profile.data && !complete) {
+  if (!profile.data || !complete) {
     return (
-      <div className="app-content ux-reset-pro-main">
+      <main className="app-content ux-reset-pro-main">
         <p aria-live="polite" role="status">
           {COPY.checking}
         </p>
-      </div>
+      </main>
     );
   }
 

@@ -43,6 +43,7 @@ vi.mock(
           ],
           status: "ready",
         },
+        refetch: () => Promise.resolve(),
         stateOptions: [
           { code: "CO", name: "Colorado" },
           { code: "NY", name: "New York" },
@@ -144,7 +145,7 @@ describe("Choose your starting view", () => {
         role: "state_level_epidemiologist",
         state_code: "NY",
       },
-      undefined,
+      { kind: "unconfigured" },
       incomplete
     );
     expect(replace).toHaveBeenCalledWith("/app/review");

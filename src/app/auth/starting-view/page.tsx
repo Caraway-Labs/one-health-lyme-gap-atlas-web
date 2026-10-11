@@ -28,7 +28,24 @@ export default function StartingViewPage() {
     }
   }, [profile.data, profile.identity, router]);
 
-  if (profile.isError && !profile.sessionRejected) {
+  if (profile.sessionRejected) {
+    return (
+      <EntranceStatus
+        action={
+          <a
+            className="auth-entrance-primary"
+            href={signInHrefForReturnPath(STARTING_VIEW_PATH)}
+          >
+            Sign in
+          </a>
+        }
+        message="Your session expired. Sign in again before continuing. Nothing was changed."
+        tone="alert"
+      />
+    );
+  }
+
+  if (profile.isError) {
     return (
       <EntranceStatus
         action={

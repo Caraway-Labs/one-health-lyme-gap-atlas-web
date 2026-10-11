@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const baseline = process.env.ATLAS_BRAND_BASELINE === "1";
 const asset = "/android-chrome-192x192.png";
 
@@ -80,6 +82,7 @@ test("professional brand placements preserve independent navigation controls", a
   page,
 }, testInfo) => {
   const phase = baseline ? "before" : "after";
+  await fulfillCompletedStartingView(page);
   await page.goto("/app/review");
   const mobile = testInfo.project.name === "mobile";
   if (mobile)

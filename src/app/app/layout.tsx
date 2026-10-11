@@ -19,9 +19,9 @@ export default function ResetAppLayout({ children }: { children: ReactNode }) {
         </main>
       }
     >
-      <ResetProfessionalShell>
-        <StartingViewGate>{children}</StartingViewGate>
-      </ResetProfessionalShell>
+      <StartingViewGate>
+        <ResetProfessionalShell>{children}</ResetProfessionalShell>
+      </StartingViewGate>
     </Suspense>
   );
 }

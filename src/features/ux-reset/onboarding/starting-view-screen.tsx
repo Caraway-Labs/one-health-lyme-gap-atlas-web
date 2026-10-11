@@ -3,22 +3,29 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useId, useRef, useState } from "react";
+import { FormEvent, useEffect, useId, useRef, useState } from "react";
 
 import { SignInIdentity } from "@/app/auth/sign-in/sign-in-entrance";
 import { Button } from "@/components/ui/button";
 import { frontPorchHeroFont } from "@/features/front-porch/front-porch-font";
+import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { SIGN_IN_COPY } from "@/lib/auth/sign-in-recovery";
 import { getDocsUrl } from "@/lib/docs-config";
 
 import type { SavedProfile } from "../profile/default-jurisdiction-contract";
-import { useProfileSessionIdentity } from "../profile/profile-session";
+import {
+  profileIdentityKey,
+  profileSessionGeneration,
+  sameProfileIdentity,
+  useProfileSessionIdentity,
+} from "../profile/profile-session";
 import { writeSavedProfile } from "../profile/saved-profile-client";
 import { savedProfileQueryKey } from "../profile/use-saved-profile";
 import { useSettingsStateOptions } from "../settings/use-settings-state-options";
 import {
   buildStartingViewCompletionWrite,
   destinationAfterStartingView,
+  STARTING_VIEW_PATH,
   startingViewCompletionConfirmed,
 } from "./starting-view-completion";
 
@@ -32,13 +39,16 @@ const COPY = {
   heading: "Choose your starting view",
   missingChoice: "Choose United States or one state to continue.",
   missingState: "Select a state to continue.",
+  loadingStates: "Loading the state list…",
   national: "United States",
+  noStates: "No supported states are available. Nothing was saved.",
   prompt: "Where would you like Review to start?",
   saving: "Saving…",
   savingStatus: "Saving your starting view…",
   state: "One state",
   stateLabel: "State",
   statePlaceholder: "Select a state",
+  retryStates: "Try loading states again",
   statesUnavailable:
     "We couldn’t load the state list. Your selection is still here. Try again.",
 } as const;
@@ -63,6 +73,23 @@ export function StartingViewScreen({
   const [stateCode, setStateCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const identityRef = useRef(identity);
+  const mountedRef = useRef(true);
+  identityRef.current = identity;
+  const identityKey = identity ? profileIdentityKey(identity) : "";
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setChoice(null);
+    setStateCode("");
+    setError(null);
+  }, [identityKey]);
 
   async function continueToReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,13 +101,25 @@ export function StartingViewScreen({
       nationalRef.current?.focus();
       return;
     }
+    if (choice === "state" && states.stateList.status === "loading") {
+      setError(COPY.loadingStates);
+      return;
+    }
+    if (choice === "state" && states.stateList.status === "unavailable") {
+      setError(COPY.statesUnavailable);
+      return;
+    }
+    if (
+      choice === "state" &&
+      states.stateList.status === "ready" &&
+      states.stateOptions.length === 0
+    ) {
+      setError(COPY.noStates);
+      return;
+    }
     if (choice === "state" && !stateCode) {
       setError(COPY.missingState);
       stateSelectRef.current?.focus();
-      return;
-    }
-    if (choice === "state" && states.stateList.status !== "ready") {
-      setError(COPY.statesUnavailable);
       return;
     }
     const jurisdiction = choice === "national" ? "national" : { stateCode };
@@ -94,21 +133,41 @@ export function StartingViewScreen({
       stateSelectRef.current?.focus();
       return;
     }
+    if (!identity || identity.kind === "signed-out") {
+      router.replace(signInHrefForReturnPath(STARTING_VIEW_PATH));
+      return;
+    }
     setError(null);
     setPending(true);
     const requestedState = built.body.state_code ?? null;
+    const boundIdentity = identity;
+    const generation = profileSessionGeneration();
     try {
-      const outcome = await writeSavedProfile(built.body, undefined, profile);
+      const outcome = await writeSavedProfile(
+        built.body,
+        boundIdentity,
+        profile
+      );
+      const sameAccount =
+        mountedRef.current &&
+        profileSessionGeneration() === generation &&
+        identityRef.current !== null &&
+        sameProfileIdentity(boundIdentity, identityRef.current);
+      if (!sameAccount || outcome.status === "superseded") {
+        return;
+      }
+      if (outcome.status === "unauthorized") {
+        router.replace(signInHrefForReturnPath(STARTING_VIEW_PATH));
+        return;
+      }
       if (
         outcome.status === "confirmed" &&
         startingViewCompletionConfirmed(outcome.profile, requestedState)
       ) {
-        if (identity) {
-          queryClient.setQueryData(
-            savedProfileQueryKey(identity),
-            outcome.profile
-          );
-        }
+        queryClient.setQueryData(
+          savedProfileQueryKey(boundIdentity),
+          outcome.profile
+        );
         router.replace(destinationAfterStartingView(outcome.profile, null));
         return;
       }
@@ -127,7 +186,10 @@ export function StartingViewScreen({
           <p className="auth-entrance-subtle" id={explanationId}>
             {COPY.explanation}
           </p>
-          <fieldset aria-describedby={explanationId} disabled={pending}>
+          <fieldset
+            aria-describedby={explanationId}
+            disabled={pending || !identity}
+          >
             <legend>{COPY.prompt}</legend>
             <label className="auth-entrance-choice">
               <input
@@ -181,6 +243,17 @@ export function StartingViewScreen({
                 ))}
               </select>
             </div>
+          ) : null}
+          {choice === "state" && states.stateList.status === "unavailable" ? (
+            <Button
+              className="auth-entrance-secondary"
+              onClick={() => {
+                void states.refetch();
+              }}
+              type="button"
+            >
+              {COPY.retryStates}
+            </Button>
           ) : null}
           {error ? (
             <p className="auth-entrance-error" id={errorId} role="alert">

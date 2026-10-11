@@ -22,8 +22,11 @@ import {
 const COPY = {
   checking: "Checking your starting view…",
   retry: "Try again",
+  signIn: "Sign in",
   unavailable:
     "We couldn’t load your starting view. Nothing was changed. Try again.",
+  unsigned:
+    "Your session expired. Sign in again before continuing. Nothing was changed.",
 } as const;
 
 export function EntranceStatus({
@@ -84,7 +87,27 @@ export function StartingViewContinuation({
     router.replace(destinationAfterStartingView(profile.data, requested));
   }, [profile.data, profile.identity, requested, router]);
 
-  if (profile.isError && !profile.sessionRejected) {
+  if (profile.sessionRejected) {
+    const next = requested
+      ? `${STARTING_VIEW_CONTINUE_PATH}?next=${encodeURIComponent(requested)}`
+      : STARTING_VIEW_CONTINUE_PATH;
+    return (
+      <EntranceStatus
+        action={
+          <Link
+            className="auth-entrance-primary"
+            href={signInHrefForReturnPath(next)}
+          >
+            {COPY.signIn}
+          </Link>
+        }
+        message={COPY.unsigned}
+        tone="alert"
+      />
+    );
+  }
+
+  if (profile.isError) {
     return (
       <EntranceStatus
         action={
