@@ -97,14 +97,20 @@ function ResetReviewExperienceInner() {
 
   const setScope = useCallback(
     (nextScope: "ALL" | string) => {
-      if (nextScope === scope) {
+      // Bare Review already parses as ALL. Choosing United States during
+      // startup is still an explicit national choice and must be written.
+      const confirmNationalChoice =
+        nextScope === "ALL" &&
+        scope === "ALL" &&
+        !(userChoseScopeRef.current || arrivalExplicitScope);
+      if (nextScope === scope && !confirmNationalChoice) {
         return;
       }
       userChoseScopeRef.current = true;
       setUserChoseScope(true);
       void setUrlState({ scope: nextScope });
     },
-    [scope, setUrlState]
+    [arrivalExplicitScope, scope, setUrlState]
   );
   const replaceStartingScope = useCallback(
     (nextScope: "ALL" | string) => {

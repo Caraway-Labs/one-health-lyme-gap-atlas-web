@@ -1474,6 +1474,61 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("keeps an explicit United States choice made while the profile is loading", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    const updates: { history: string; query: string }[] = [];
+    renderReview("", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Loading review scope…")).toBeTruthy()
+    );
+    fireEvent.click(screen.getByTestId("review-scope-select"));
+    const unitedStates = await screen.findByRole("option", {
+      name: "United States",
+    });
+    fireEvent.pointerDown(unitedStates, { pointerType: "mouse" });
+    fireEvent.click(unitedStates);
+    await waitFor(() =>
+      expect(
+        updates.some((update) => update.query.includes("scope=ALL"))
+      ).toBeTruthy()
+    );
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
+    );
+    expect({
+      denver: screen.queryByText("Denver"),
+      loading: screen.queryByText("Loading review scope…"),
+      panel: screen.queryByTestId("review-state-panel"),
+      rendered: screen.getByTestId("review-scope-results").dataset
+        .renderedScope,
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      write: updates.find((update) => update.query.includes("scope=ALL")),
+    }).toStrictEqual({
+      denver: null,
+      loading: null,
+      panel: null,
+      rendered: "ALL",
+      saves: 0,
+      write: { history: "push", query: expect.stringContaining("scope=ALL") },
+    });
+  });
+
   it("applies the saved state after Back from a scope chosen during profile load", async () => {
     const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
       await import("@/generated/atlas");

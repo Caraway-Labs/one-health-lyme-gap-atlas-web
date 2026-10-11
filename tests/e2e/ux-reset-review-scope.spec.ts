@@ -220,6 +220,69 @@ test.describe("Review national and state scope controls", () => {
     );
   });
 
+  test("keeps United States when it is chosen while the profile is loading", async ({
+    page,
+  }) => {
+    const profileMethods: string[] = [];
+    const profileHeld = Promise.withResolvers<void>();
+    await page.route("**/v1/me/profile", async (route) => {
+      profileMethods.push(route.request().method());
+      await profileHeld.promise;
+      await route.fulfill({
+        json: { profile: { state_code: "CO" } },
+        status: 200,
+      });
+    });
+    await page.route("**/v1/atlas/metadata**", async (route) => {
+      await route.fulfill({ json: reviewScopeMetadataFixture, status: 200 });
+    });
+    await page.route("**/v1/atlas/scores**", async (route) => {
+      await route.fulfill({ json: reviewScopeScoresFixture, status: 200 });
+    });
+    await page.route("**/v1/states/*/review**", async (route) => {
+      await route.fulfill({
+        json: stateReviewResponseForUrl(route.request().url()),
+        status: 200,
+      });
+    });
+
+    await page.goto("/app/review");
+    await expect(page.getByText("Loading review scope…")).toBeVisible();
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "United States" }).click();
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+
+    profileHeld.resolve();
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "ALL"
+    );
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page.getByTestId("review-state-panel")).toHaveCount(0);
+    expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
+      []
+    );
+
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "CO"
+    );
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
+      0
+    );
+
+    await page.goForward({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "ALL"
+    );
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+  });
+
   test("applies the saved state after Back from a scope chosen during profile load", async ({
     page,
   }) => {
