@@ -158,10 +158,6 @@ function StartingViewForm({
       stateSelectRef.current?.focus();
       return;
     }
-    if (!identity || identity.kind === "signed-out") {
-      router.replace(signInHrefForReturnPath(STARTING_VIEW_PATH));
-      return;
-    }
     setError(null);
     setPending(true);
     const requestedState = built.body.state_code ?? null;
