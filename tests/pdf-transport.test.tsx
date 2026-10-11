@@ -126,13 +126,16 @@ let blobs: Blob[] = [];
 let clicks: string[] = [];
 
 function isBlobLike(value: unknown): value is Blob {
-  if (typeof value !== "object" || value === null || !("size" in value)) {
+  if (value instanceof Blob) {
+    return true;
+  }
+  if (typeof value !== "object" || value === null) {
     return false;
   }
-  if (typeof value.size !== "number") {
+  if (!("size" in value) || typeof value.size !== "number") {
     return false;
   }
-  return value instanceof Blob || typeof value.arrayBuffer === "function";
+  return "arrayBuffer" in value && typeof value.arrayBuffer === "function";
 }
 
 const realmBytes = new WeakMap<Blob, Uint8Array>();
@@ -262,8 +265,10 @@ function headersFor(transport: ResponseTransport): Headers {
   return headers;
 }
 
-function copyBytes(bytes: Uint8Array): Uint8Array {
-  return Uint8Array.from(bytes);
+function copyBytes(bytes: Uint8Array): ArrayBuffer {
+  const copy = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(copy).set(bytes);
+  return copy;
 }
 
 function bodyFor(body: ReportBody): BodyInit {
@@ -275,7 +280,7 @@ function bodyFor(body: ReportBody): BodyInit {
       return copyBytes(boulderCountyPdfFixture);
     }
     case "empty": {
-      return new Uint8Array();
+      return new ArrayBuffer(0);
     }
     case "json": {
       return JSON.stringify({ detail: "not a pdf" });
@@ -815,10 +820,10 @@ async function expectMutator(transportCase: MutatorCase): Promise<void> {
   }
 }
 
-function legacyBody(body: LegacyCase["body"]): Uint8Array {
+function legacyBody(body: LegacyCase["body"]): ArrayBuffer {
   switch (body) {
     case "empty": {
-      return new Uint8Array();
+      return new ArrayBuffer(0);
     }
     case "colorado-pdf": {
       return copyBytes(coloradoStatePdf);
