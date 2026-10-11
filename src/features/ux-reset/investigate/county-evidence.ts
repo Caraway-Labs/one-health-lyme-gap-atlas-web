@@ -2,7 +2,12 @@ import { evidenceObjectFromObservation } from "@/features/ux-reset/evidence/from
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import type { ExploreTimeBound } from "@/features/ux-reset/explore/explore-model";
-import type { Geography, Measure, Observation } from "@/generated/models";
+import {
+  ValueState,
+  type Geography,
+  type Measure,
+  type Observation,
+} from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
 
 /**
@@ -634,8 +639,21 @@ function periodBasis(record: CountyEvidenceObservation): string {
   return `${record.observation.period_start}..${record.observation.period_end}`;
 }
 
-/** Governed value plus value state. Display text is not part of this key. */
+const VALUE_BEARING_STATES: ReadonlySet<ValueState> = new Set([
+  ValueState.OBSERVED,
+  ValueState.ZERO,
+]);
+
+/**
+ * Raw value plus value state for states that publish a value. Unavailable
+ * and suppressed states may carry either a placeholder or null; the formatter
+ * does not use that payload, so only the value state is compared.
+ */
 function governedValueKey(record: CountyEvidenceObservation): string {
+  const state = record.observation.value_state;
+  if (!VALUE_BEARING_STATES.has(state)) {
+    return state;
+  }
   const value = record.observation.value;
   const valueKey =
     value === null
@@ -643,7 +661,7 @@ function governedValueKey(record: CountyEvidenceObservation): string {
       : typeof value === "number"
         ? `number:${value}`
         : `string:${value}`;
-  return `${valueKey}|${record.observation.value_state}`;
+  return `${valueKey}|${state}`;
 }
 
 /**

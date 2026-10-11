@@ -291,6 +291,53 @@ describe("County Investigate evidence hierarchy", () => {
     });
   });
 
+  it("ignores placeholder payloads on unavailable observations", () => {
+    const missing = casesBundle([
+      {
+        ...caseObservation("a", 0, "2023-01-01", "2023-12-31"),
+        value_state: ValueState.MISSING,
+      },
+      {
+        ...caseObservation("b", 0, "2023-01-01", "2023-12-31"),
+        value: null,
+        value_state: ValueState.MISSING,
+      },
+    ]);
+    const states = casesBundle([
+      {
+        ...caseObservation("a", 0, "2023-01-01", "2023-12-31"),
+        value: null,
+        value_state: ValueState.MISSING,
+      },
+      {
+        ...caseObservation("b", 0, "2023-01-01", "2023-12-31"),
+        value: null,
+        value_state: ValueState.UNAVAILABLE,
+      },
+    ]);
+    const suppressed = casesBundle([
+      {
+        ...caseObservation("a", 0, "2023-01-01", "2023-12-31"),
+        value_state: ValueState.SUPPRESSED,
+      },
+      {
+        ...caseObservation("b", 1, "2023-01-01", "2023-12-31"),
+        value_state: ValueState.SUPPRESSED,
+      },
+    ]);
+    expect({
+      missing: investigateEvidenceConflicts(missing),
+      states: investigateEvidenceConflicts(states).map(
+        (conflict) => conflict.observationCount
+      ),
+      suppressed: investigateEvidenceConflicts(suppressed),
+    }).toStrictEqual({
+      missing: [],
+      states: [2],
+      suppressed: [],
+    });
+  });
+
   it("flags different raw values that share display text", () => {
     const close = casesBundle([
       caseObservation("a", 1.0000001, "2023-01-01", "2023-12-31"),
@@ -374,6 +421,8 @@ describe("County Investigate evidence hierarchy", () => {
     );
     const pending =
       screen.getByTestId("investigate-finding-text").textContent ?? "";
+    const pendingLimitation =
+      screen.getByTestId("investigate-limitation-text").textContent ?? "";
     const pendingGaps =
       screen.queryByText(
         "No conflict, gap, or extra limitation was returned for this county."
@@ -389,6 +438,8 @@ describe("County Investigate evidence hierarchy", () => {
     );
     const settled =
       screen.getByTestId("investigate-finding-text").textContent ?? "";
+    const settledLimitation =
+      screen.getByTestId("investigate-limitation-text").textContent ?? "";
     view.rerender(
       <InvestigateEvidenceHierarchy
         bundle={bundle}
@@ -397,6 +448,8 @@ describe("County Investigate evidence hierarchy", () => {
     );
     const errored =
       screen.getByTestId("investigate-finding-text").textContent ?? "";
+    const erroredLimitation =
+      screen.getByTestId("investigate-limitation-text").textContent ?? "";
     const erroredGaps =
       screen.queryByText(
         "No conflict, gap, or extra limitation was returned for this county."
@@ -405,20 +458,26 @@ describe("County Investigate evidence hierarchy", () => {
       erroredEmpty: errored.includes("No observed or limited finding"),
       erroredFailure: errored.includes("could not be loaded"),
       erroredGaps,
+      erroredLimitation: erroredLimitation.includes("may be incomplete"),
       pendingEmpty: pending.includes("No observed or limited finding"),
       pendingFamilies,
       pendingGaps,
+      pendingLimitation: pendingLimitation.includes("still loading"),
       pendingLoading: pending.includes("still loading"),
+      settledCaveat: settledLimitation.includes("No records is not absence."),
       settledEmpty: settled.includes("No observed or limited finding"),
       settledValue: settled.includes("Established"),
     }).toStrictEqual({
       erroredEmpty: false,
       erroredFailure: true,
       erroredGaps: false,
+      erroredLimitation: erroredLimitation.includes("may be incomplete"),
       pendingEmpty: false,
       pendingFamilies: 0,
       pendingGaps: false,
+      pendingLimitation: true,
       pendingLoading: true,
+      settledCaveat: true,
       settledEmpty: false,
       settledValue: true,
     });
@@ -482,14 +541,20 @@ describe("County Investigate evidence hierarchy", () => {
       screen.getByTestId("investigate-evidence").textContent ?? "";
     const human =
       screen.getByTestId("investigate-family-human").textContent ?? "";
+    const limitation =
+      screen.getByTestId("investigate-limitation-text").textContent ?? "";
     expect({
       catalog: evidence.includes("measure catalog could not be loaded"),
+      caveat: limitation.includes("No records is not absence."),
+      deniesLimitation: limitation.includes("No returned limitation"),
       established: evidence.includes("Established"),
       falseAbsence: evidence.includes("does not publish measures"),
       humanHeld: human.includes("measure catalog failed"),
       negativeFinding: evidence.includes("No observed or limited finding"),
     }).toStrictEqual({
       catalog: true,
+      caveat: true,
+      deniesLimitation: false,
       established: true,
       falseAbsence: false,
       humanHeld: true,
@@ -526,11 +591,21 @@ describe("County Investigate evidence hierarchy", () => {
       />
     );
     const text = screen.getByTestId("investigate-finding-text").textContent;
+    const limitation =
+      screen.getByTestId("investigate-limitation-text").textContent ?? "";
     expect({
+      caveat: limitation.includes("No records is not absence."),
       deniesFinding: text?.includes("No observed or limited finding") ?? false,
+      deniesLimitation: limitation.includes("No returned limitation"),
+      findingHref: screen
+        .getByRole("link", { name: "Inspect this finding" })
+        .getAttribute("href"),
       value: text?.includes("Established") ?? false,
     }).toStrictEqual({
+      caveat: true,
       deniesFinding: false,
+      deniesLimitation: false,
+      findingHref: "#investigate-published-pacificus_status",
       value: true,
     });
   });

@@ -96,6 +96,30 @@ function publishedLeadRow(
   );
 }
 
+export function publishedFindingRow(
+  rows: readonly PublishedHierarchyRow[]
+): PublishedHierarchyRow | null {
+  return publishedLeadRow(rows);
+}
+
+/** First published row whose provenance lists a material caveat. */
+export function publishedCaveatRow(
+  rows: readonly PublishedHierarchyRow[]
+): { row: PublishedHierarchyRow; text: string } | null {
+  for (const row of rows) {
+    const caveat = row.evidence.provenance.materialCaveat?.trim() ?? "";
+    const listed =
+      row.evidence.provenance.limitations
+        .map((entry) => entry.trim())
+        .find((entry) => entry.length > 0) ?? "";
+    const text = caveat || listed;
+    if (text) {
+      return { row, text };
+    }
+  }
+  return null;
+}
+
 /**
  * The finding sentence Investigate shows for a loaded county bundle.
  * Action repeats this sentence so the handoff does not rewrite the summary.
@@ -124,17 +148,27 @@ export function investigateFindingSummary(
 
 /**
  * The limitation sentence Investigate shows for a loaded county bundle.
+ * Published county caveats fill the sentence when the observation series
+ * has none. Action's one-argument call stays observation-scoped.
  */
 export function investigateLimitationSummary(
-  bundle: CountyEvidenceBundle
+  bundle: CountyEvidenceBundle,
+  publishedRows: readonly PublishedHierarchyRow[] = NO_PUBLISHED_ROWS
 ): InvestigateVisibleSummary {
   const limitation = bundle.leadLimitation;
-  if (!limitation) {
+  if (limitation) {
+    return {
+      text: `${limitation.observation.measureLabel}: ${limitation.text}`,
+      title: limitation.observation.measureLabel,
+    };
+  }
+  const published = publishedCaveatRow(publishedRows);
+  if (!published) {
     return summaryForGap(bundle, "limitation");
   }
   return {
-    text: `${limitation.observation.measureLabel}: ${limitation.text}`,
-    title: limitation.observation.measureLabel,
+    text: `${published.row.evidence.claimLabel}: ${published.text}`,
+    title: published.row.evidence.claimLabel,
   };
 }
 

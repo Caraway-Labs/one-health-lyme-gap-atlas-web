@@ -88,7 +88,15 @@ function catalogFailureCounty(fips: string): CountyDetail {
       ...investigateMetadataFixture,
       limitations: "Not a diagnosis.",
       release_id: INVESTIGATE_RELEASE_ID,
-      sources: [],
+      sources: [
+        {
+          key: "tick",
+          label: "CDC ArboNET county tick status",
+          note: "No records is not absence.",
+          url: "https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html",
+          vintage: "through 2025-12-31",
+        },
+      ],
     },
     rucc_2023: 2,
     scapularis_status: "No records",
@@ -1552,16 +1560,22 @@ describe("County Investigate workspace", () => {
     await screen.findByText("Governed measures could not be loaded.");
     const evidence = await screen.findByTestId("investigate-evidence");
     const text = evidence.textContent ?? "";
+    const limitation =
+      screen.getByTestId("investigate-limitation-text").textContent ?? "";
     expect({
       catalog: text.includes(
         "Published county rows are shown without an observation series."
       ),
+      caveat: limitation.includes("No records is not absence."),
+      deniesLimitation: limitation.includes("No returned limitation"),
       established: text.includes("Established"),
       falseAbsence: text.includes("No observed or limited finding"),
       observations: observationRequests.length,
       score: text.includes("84.6"),
     }).toStrictEqual({
       catalog: true,
+      caveat: true,
+      deniesLimitation: false,
       established: true,
       falseAbsence: false,
       observations: 0,

@@ -21,11 +21,14 @@ import {
 import {
   investigateFindingSummary,
   investigateLimitationSummary,
+  publishedCaveatRow,
+  publishedFindingRow,
 } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import {
   environmentalCoverageRows,
   publishedCountyHierarchy,
   type EnvironmentalCoverageContext,
+  type EnvironmentalCoverageRow,
   type PublishedCountyRecord,
   type PublishedHierarchyRow,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
@@ -36,6 +39,10 @@ const NO_PUBLISHED_FINDINGS: readonly PublishedHierarchyRow[] = [];
 
 function observationAnchor(observationId: string): string {
   return `investigate-observation-${observationId}`;
+}
+
+function publishedRowAnchor(measureId: string): string {
+  return `investigate-published-${measureId}`;
 }
 
 function FamilyObservations({
@@ -193,6 +200,7 @@ function FamilySection({
             <div
               data-evidence-class={section.evidenceClass}
               data-measure-id={row.measureId}
+              id={publishedRowAnchor(row.measureId)}
               key={row.measureId}
             >
               <EvidenceObject claimHeadingLevel="h4" model={row.evidence} />
@@ -253,6 +261,65 @@ function limitationLines(bundle: CountyEvidenceBundle): string[] {
   return lines;
 }
 
+function uniqueLines(groups: readonly (readonly string[])[]): string[] {
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const group of groups) {
+    for (const line of group) {
+      if (seen.has(line)) {
+        continue;
+      }
+      seen.add(line);
+      lines.push(line);
+    }
+  }
+  return lines;
+}
+
+function coverageCaveatLines(
+  rows: readonly EnvironmentalCoverageRow[]
+): string[] {
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    for (const limitation of row.evidence.provenance.limitations) {
+      const text = limitation.trim();
+      if (!text) {
+        continue;
+      }
+      const line = `${row.evidence.claimLabel}: ${text}`;
+      if (seen.has(line)) {
+        continue;
+      }
+      seen.add(line);
+      lines.push(line);
+    }
+  }
+  return lines;
+}
+
+function publishedCaveatLines(
+  rows: readonly PublishedHierarchyRow[]
+): string[] {
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    for (const limitation of row.evidence.provenance.limitations) {
+      const text = limitation.trim();
+      if (!text) {
+        continue;
+      }
+      const line = `${row.evidence.claimLabel}: ${text}`;
+      if (seen.has(line)) {
+        continue;
+      }
+      seen.add(line);
+      lines.push(line);
+    }
+  }
+  return lines;
+}
+
 function coverageContexts(
   bundle: CountyEvidenceBundle
 ): EnvironmentalCoverageContext[] {
@@ -300,7 +367,6 @@ export function InvestigateEvidenceHierarchy({
 }) {
   const finding = bundle.leadFinding;
   const limitation = bundle.leadLimitation;
-  const limitationSummary = investigateLimitationSummary(bundle);
   const failedMeasureIds = new Set(
     bundle.measureFailures.map((failure) => failure.measureId)
   );
@@ -315,9 +381,16 @@ export function InvestigateEvidenceHierarchy({
         record: countyRecord,
       })
     : null;
+  const publishedRows = published?.rows ?? NO_PUBLISHED_FINDINGS;
+  const coverage = environmentalCoverageRows({
+    contexts: coverageContexts(bundle),
+  });
   const holdEmptyFinding = countyRecordLoading && !finding;
+  const holdEmptyLimitation = countyRecordLoading && !limitation;
   const countyRecordFailed =
     Boolean(countyRecordError) && !finding && !published;
+  const countyLimitationFailed =
+    Boolean(countyRecordError) && !limitation && !published;
   const findingSummary = holdEmptyFinding
     ? {
         text: "The published county record is still loading, so an empty finding is not shown yet.",
@@ -328,16 +401,53 @@ export function InvestigateEvidenceHierarchy({
           text: "The published county record could not be loaded, so findings may be incomplete. That is a request failure, not a statement that no finding was returned.",
           title: "Published county record did not load",
         }
-      : investigateFindingSummary(
-          bundle,
-          published?.rows ?? NO_PUBLISHED_FINDINGS
-        );
-  const coverage = environmentalCoverageRows({
-    contexts: coverageContexts(bundle),
-  });
+      : investigateFindingSummary(bundle, publishedRows);
+  const publishedFinding =
+    finding || holdEmptyFinding || countyRecordFailed
+      ? null
+      : publishedFindingRow(publishedRows);
+  const publishedCaveat =
+    limitation || holdEmptyLimitation || countyLimitationFailed
+      ? null
+      : publishedCaveatRow(publishedRows);
+  const coverageCaveat =
+    limitation ||
+    publishedCaveat ||
+    holdEmptyLimitation ||
+    countyLimitationFailed
+      ? null
+      : (coverage.find((row) =>
+          row.evidence.provenance.materialCaveat?.trim()
+        ) ?? null);
+  const releaseLimitation = published?.releaseLimitation.trim() ?? "";
+  const limitationSummary = holdEmptyLimitation
+    ? {
+        text: "The published county record is still loading, so an empty limitation is not shown yet.",
+        title: "Published county record loading",
+      }
+    : countyLimitationFailed
+      ? {
+          text: "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.",
+          title: "Published county record did not load",
+        }
+      : coverageCaveat?.evidence.provenance.materialCaveat
+        ? {
+            text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.evidence.provenance.materialCaveat}`,
+            title: coverageCaveat.evidence.claimLabel,
+          }
+        : releaseLimitation && !limitation && !publishedCaveat
+          ? {
+              text: releaseLimitation,
+              title: "Release limitation",
+            }
+          : investigateLimitationSummary(bundle, publishedRows);
   const conflicts = investigateEvidenceConflicts(bundle);
   const multipleObservations = investigateMultipleObservations(bundle);
-  const limitations = limitationLines(bundle);
+  const limitations = uniqueLines([
+    limitationLines(bundle),
+    publishedCaveatLines(publishedRows),
+    coverageCaveatLines(coverage),
+  ]);
   const publishedGaps = published?.gaps ?? [];
   const hasGapContent =
     conflicts.length > 0 ||
@@ -382,6 +492,11 @@ export function InvestigateEvidenceHierarchy({
               Inspect this finding
             </a>
           ) : null}
+          {publishedFinding ? (
+            <a href={`#${publishedRowAnchor(publishedFinding.measureId)}`}>
+              Inspect this finding
+            </a>
+          ) : null}
         </Card>
       </section>
 
@@ -403,6 +518,16 @@ export function InvestigateEvidenceHierarchy({
             <a
               href={`#${observationAnchor(limitation.observation.observation.observation_id)}`}
             >
+              Inspect this limitation
+            </a>
+          ) : null}
+          {publishedCaveat ? (
+            <a href={`#${publishedRowAnchor(publishedCaveat.row.measureId)}`}>
+              Inspect this limitation
+            </a>
+          ) : null}
+          {coverageCaveat ? (
+            <a href={`#${observationAnchor(coverageCaveat.observationId)}`}>
               Inspect this limitation
             </a>
           ) : null}
