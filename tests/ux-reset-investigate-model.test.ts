@@ -126,6 +126,80 @@ describe("evidence families", () => {
       unknownDomain: null,
     });
   });
+
+  it("keeps conflicting indicator domains unclassified", () => {
+    const base = investigateIndicatorsFixture[0];
+    if (!base) {
+      throw new Error("Indicator fixture is missing.");
+    }
+    const indicator = (domain: string | null) => ({
+      ...base,
+      domain,
+      indicator_id: "tick_surveillance",
+    });
+    const family = (
+      index: ReturnType<typeof indicatorDomainsById>,
+      indicatorId: string
+    ) =>
+      evidenceFamilyForMeasure({
+        domain: index.domains.get(indicatorId) ?? null,
+        domainUnresolved: index.unresolvedIds.has(indicatorId),
+        domainsRequestFailed: false,
+        indicatorId,
+      });
+    const blank = indicatorDomainsById(
+      [indicator(null)],
+      INVESTIGATE_RELEASE_ID
+    );
+    const conflict = indicatorDomainsById(
+      [indicator("vector"), indicator("human")],
+      INVESTIGATE_RELEASE_ID
+    );
+    expect({
+      blank: family(blank, "tick_surveillance"),
+      conflict: family(conflict, "tick_surveillance"),
+      unresolved: conflict.unresolvedIds.has("tick_surveillance"),
+    }).toStrictEqual({
+      blank: "vector_pathogen",
+      conflict: null,
+      unresolved: true,
+    });
+  });
+
+  it("withholds an indicator published only for another release", () => {
+    const base = investigateIndicatorsFixture[0];
+    if (!base) {
+      throw new Error("Indicator fixture is missing.");
+    }
+    const indicator = (releaseVersion: string) => ({
+      ...base,
+      domain: "vector",
+      indicator_id: "tick_surveillance",
+      release_version: releaseVersion,
+    });
+    const family = (index: ReturnType<typeof indicatorDomainsById>) =>
+      evidenceFamilyForMeasure({
+        domain: index.domains.get("tick_surveillance") ?? null,
+        domainUnresolved: index.unresolvedIds.has("tick_surveillance"),
+        domainsRequestFailed: false,
+        indicatorId: "tick_surveillance",
+      });
+    const withheld = indicatorDomainsById(
+      [indicator("other-release")],
+      INVESTIGATE_RELEASE_ID
+    );
+    const current = indicatorDomainsById(
+      [indicator("other-release"), indicator(INVESTIGATE_RELEASE_ID)],
+      INVESTIGATE_RELEASE_ID
+    );
+    expect({
+      current: family(current),
+      withheld: family(withheld),
+    }).toStrictEqual({
+      current: "vector_pathogen",
+      withheld: null,
+    });
+  });
 });
 
 describe(resolveCountyIdentity, () => {
@@ -334,11 +408,14 @@ describe(buildCountyEvidenceBundle, () => {
   });
 
   it("keeps a null domain unclassified instead of calling the family unpublished", () => {
-    const nullDomains = new Map<string, string | null>([
-      ["human-cases", null],
-      ["tick-pathogen", "climate"],
-      ["canopy", null],
-    ]);
+    const nullDomains = {
+      domains: new Map<string, string | null>([
+        ["human-cases", null],
+        ["tick-pathogen", "climate"],
+        ["canopy", null],
+      ]),
+      unresolvedIds: new Set<string>(),
+    };
     const bundle = buildCountyEvidenceBundle({
       domainsRequestFailed: false,
       identity,

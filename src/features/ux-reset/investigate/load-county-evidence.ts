@@ -12,6 +12,7 @@ import {
   buildCountyEvidenceBundle,
   InvestigateContractError,
   type CountyEvidenceBundle,
+  type IndicatorDomainIndex,
   type MeasureObservationOutcome,
   type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
@@ -374,20 +375,25 @@ export async function fetchInvestigateIndicators(
 }
 
 /**
- * Indicator domains for family assignment. A release mismatch or two
- * conflicting domains for one indicator leave that indicator unassigned.
+ * Indicator domains for family assignment. A blank domain stays blank so the
+ * indicator-id allowlist can run. Conflicting nonempty domains, and an
+ * indicator that appears only under another release, are unresolved and must
+ * not use that allowlist.
  */
 export function indicatorDomainsById(
   indicators: readonly Indicator[],
   releaseId: string
-): Map<string, string | null> {
+): IndicatorDomainIndex {
   const domains = new Map<string, string | null>();
   const ambiguous = new Set<string>();
+  const withheldForRelease = new Set<string>();
   for (const indicator of indicators) {
     const version = indicator.release_version?.trim() ?? "";
     if (version && version !== releaseId) {
+      withheldForRelease.add(indicator.indicator_id);
       continue;
     }
+    withheldForRelease.delete(indicator.indicator_id);
     const domain = indicator.domain?.trim() || null;
     if (!domains.has(indicator.indicator_id)) {
       domains.set(indicator.indicator_id, domain);
@@ -397,10 +403,16 @@ export function indicatorDomainsById(
       ambiguous.add(indicator.indicator_id);
     }
   }
+  const unresolvedIds = new Set<string>(ambiguous);
   for (const indicatorId of ambiguous) {
     domains.set(indicatorId, null);
   }
-  return domains;
+  for (const indicatorId of withheldForRelease) {
+    if (!domains.has(indicatorId)) {
+      unresolvedIds.add(indicatorId);
+    }
+  }
+  return { domains, unresolvedIds };
 }
 
 async function fetchMeasureObservations(input: {

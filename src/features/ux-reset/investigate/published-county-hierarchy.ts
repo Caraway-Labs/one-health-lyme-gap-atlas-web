@@ -78,6 +78,8 @@ export type PublishedCountyHierarchy = {
 
 type PublishedField = {
   claimLabel: string;
+  /** Preformatted display. When set, the measure unit is not appended. */
+  displayValue: string | null;
   familyId: InvestigateEvidenceFamilyId;
   gapLabel: string;
   measureId: string;
@@ -232,6 +234,7 @@ function statusField(input: {
 }): PublishedField {
   return {
     ...input,
+    displayValue: null,
     unit: null,
     value: input.status,
   };
@@ -239,6 +242,7 @@ function statusField(input: {
 
 function numericField(input: {
   claimLabel: string;
+  displayValue?: string | null;
   familyId: InvestigateEvidenceFamilyId;
   gapLabel: string;
   measureId: string;
@@ -247,6 +251,7 @@ function numericField(input: {
 }): PublishedField {
   return {
     claimLabel: input.claimLabel,
+    displayValue: input.displayValue ?? null,
     familyId: input.familyId,
     gapLabel: input.gapLabel,
     measureId: input.measureId,
@@ -255,6 +260,30 @@ function numericField(input: {
     unit: null,
     value: input.value,
   };
+}
+
+/** CountyDetail.svi_percentile is a 0–1 fraction, same as the county panel. */
+function socialVulnerabilityLabel(fraction: number): string | null {
+  if (!Number.isFinite(fraction)) {
+    return null;
+  }
+  return `${Math.round(fraction * 100)}th percentile`;
+}
+
+/**
+ * CountyDetail.uninsured_percent is already a percent. Do not scale it.
+ * uninsured_percentile is a separate fraction and is not shown here.
+ */
+function uninsuredPercentLabel(percent: number): string | null {
+  const rendered = formatGovernedEvidenceValue({
+    unit: null,
+    value: percent,
+    valueState: ValueState.OBSERVED,
+  });
+  if (rendered === "Unavailable") {
+    return null;
+  }
+  return `${rendered}%`;
 }
 
 function fieldsForRecord(record: PublishedCountyRecord): PublishedField[] {
@@ -309,6 +338,10 @@ function fieldsForRecord(record: PublishedCountyRecord): PublishedField[] {
     }),
     numericField({
       claimLabel: "Social vulnerability percentile",
+      displayValue:
+        record.sviPercentile === null
+          ? null
+          : socialVulnerabilityLabel(record.sviPercentile),
       familyId: "environmental_population",
       gapLabel: "Social vulnerability",
       measureId: "svi_percentile_2022",
@@ -317,6 +350,10 @@ function fieldsForRecord(record: PublishedCountyRecord): PublishedField[] {
     }),
     numericField({
       claimLabel: "Uninsured percent",
+      displayValue:
+        record.uninsuredPercent === null
+          ? null
+          : uninsuredPercentLabel(record.uninsuredPercent),
       familyId: "environmental_population",
       gapLabel: "Uninsured percent",
       measureId: "uninsured_percent_2022",
@@ -359,15 +396,22 @@ export function publishedCountyHierarchy(input: {
       continue;
     }
     if (typeof field.value === "number") {
+      if (!Number.isFinite(field.value)) {
+        gaps.push(
+          `${field.gapLabel} was not returned for this county. That is not zero.`
+        );
+        continue;
+      }
       const measure = measureForId(input.measures, field.measureId);
+      const displayValue = field.displayValue;
       rows.push({
         evidence: evidenceFromPublishedField({
           claimLabel: measure?.label ?? field.claimLabel,
           measure,
           releaseId: input.record.releaseId,
           source: sourceForKey(input.record.sources, field.sourceKey),
-          unit: measure?.unit ?? null,
-          value: field.value,
+          unit: displayValue ? null : (measure?.unit ?? null),
+          value: displayValue ?? field.value,
           valueState: ValueState.OBSERVED,
         }),
         familyId: field.familyId,

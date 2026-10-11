@@ -532,4 +532,49 @@ describe("County Investigate evidence hierarchy", () => {
       populationRelease: INVESTIGATE_RELEASE_ID,
     });
   });
+
+  it("converts the SVI fraction to a percentile and keeps neighboring units", () => {
+    const measure = yearMeasures[0];
+    if (!measure) {
+      throw new Error("Measure fixture is missing.");
+    }
+    const hierarchy = publishedCountyHierarchy({
+      measures: [
+        {
+          ...measure,
+          label: "Social vulnerability percentile",
+          measure_id: "svi_percentile_2022",
+          unit: "fraction",
+        },
+        {
+          ...measure,
+          label: "Uninsured percent",
+          measure_id: "uninsured_percent_2022",
+          unit: "fraction",
+        },
+      ],
+      observedMeasureIds: [],
+      record: {
+        ...publishedRecord,
+        population: 1000,
+        rucc: 2,
+        sviPercentile: 0.8629,
+        uninsuredPercent: 9,
+      },
+    });
+    const display = (measureId: string) =>
+      hierarchy.rows.find((row) => row.measureId === measureId)?.evidence
+        .displayValue ?? null;
+    expect({
+      population: display("population_2022"),
+      rucc: display("rucc_2023"),
+      svi: display("svi_percentile_2022"),
+      uninsured: display("uninsured_percent_2022"),
+    }).toStrictEqual({
+      population: "1,000",
+      rucc: "2",
+      svi: "86th percentile",
+      uninsured: "9%",
+    });
+  });
 });

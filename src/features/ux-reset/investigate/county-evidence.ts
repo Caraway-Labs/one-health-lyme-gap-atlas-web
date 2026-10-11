@@ -8,7 +8,9 @@ import { isCountyFips } from "@/lib/county-geography";
 /**
  * Explicit family allowlist. A non-empty `domain` is authoritative. Unknown
  * domain tokens such as `climate` stay unclassified. A blank domain uses the
- * governed indicator id allowlist below. Do not infer a family from a label.
+ * governed indicator id allowlist below. Conflicting domains, and an indicator
+ * seen only on another release, stay unclassified. Do not infer a family from
+ * a label.
  */
 export const INVESTIGATE_DOMAIN_HUMAN = "human" as const;
 export const INVESTIGATE_DOMAIN_VECTOR = "vector" as const;
@@ -32,6 +34,12 @@ export const investigateEvidenceFamilyIds = [
 
 export type InvestigateEvidenceFamilyId =
   (typeof investigateEvidenceFamilyIds)[number];
+
+/** Domains used for family assignment. Unresolved ids must not use the id allowlist. */
+export type IndicatorDomainIndex = {
+  domains: ReadonlyMap<string, string | null>;
+  unresolvedIds: ReadonlySet<string>;
+};
 
 export const investigateEvidenceClassValues = {
   contextual: "contextual",
@@ -258,12 +266,18 @@ export function evidenceFamilyFromIndicatorId(
 /**
  * A non-empty domain wins, including unknown tokens that stay unclassified.
  * A blank domain, or a failed indicator request, uses the indicator id.
+ * Unresolved metadata (conflicting domains, or a release that was withheld)
+ * stays unclassified and does not use that id fallback.
  */
 export function evidenceFamilyForMeasure(input: {
   domain: string | null | undefined;
+  domainUnresolved?: boolean;
   domainsRequestFailed: boolean;
   indicatorId: string;
 }): InvestigateEvidenceFamilyId | null {
+  if (input.domainUnresolved && !input.domainsRequestFailed) {
+    return null;
+  }
   if (!input.domainsRequestFailed) {
     const domain = input.domain?.trim() ?? "";
     if (domain) {
@@ -271,6 +285,21 @@ export function evidenceFamilyForMeasure(input: {
     }
   }
   return evidenceFamilyFromIndicatorId(input.indicatorId);
+}
+
+function familyForIndicator(input: {
+  domainsRequestFailed: boolean;
+  indicatorDomains: IndicatorDomainIndex;
+  indicatorId: string;
+}): InvestigateEvidenceFamilyId | null {
+  return evidenceFamilyForMeasure({
+    domain: input.indicatorDomains.domains.get(input.indicatorId) ?? null,
+    domainUnresolved: input.indicatorDomains.unresolvedIds.has(
+      input.indicatorId
+    ),
+    domainsRequestFailed: input.domainsRequestFailed,
+    indicatorId: input.indicatorId,
+  });
 }
 
 export function resolveCountyIdentity(
@@ -735,7 +764,7 @@ export function reusableMeasureOutcomes(
 export function buildCountyEvidenceBundle(input: {
   domainsRequestFailed: boolean;
   identity: ResolvedCountyIdentity;
-  indicatorDomains: ReadonlyMap<string, string | null>;
+  indicatorDomains: IndicatorDomainIndex;
   measures: readonly Measure[];
   outcomes: readonly MeasureObservationOutcome[];
   releaseId: string;
@@ -748,9 +777,9 @@ export function buildCountyEvidenceBundle(input: {
     familyMeasures.set(family.id, []);
   }
   for (const measure of input.measures) {
-    const familyId = evidenceFamilyForMeasure({
-      domain: input.indicatorDomains.get(measure.indicator_id) ?? null,
+    const familyId = familyForIndicator({
       domainsRequestFailed: input.domainsRequestFailed,
+      indicatorDomains: input.indicatorDomains,
       indicatorId: measure.indicator_id,
     });
     if (!familyId) {
@@ -768,9 +797,9 @@ export function buildCountyEvidenceBundle(input: {
   }
   const unclassifiedMeasureIds: string[] = [];
   for (const measure of input.measures) {
-    const familyId = evidenceFamilyForMeasure({
-      domain: input.indicatorDomains.get(measure.indicator_id) ?? null,
+    const familyId = familyForIndicator({
       domainsRequestFailed: input.domainsRequestFailed,
+      indicatorDomains: input.indicatorDomains,
       indicatorId: measure.indicator_id,
     });
     if (!familyId) {
@@ -803,11 +832,11 @@ export function buildCountyEvidenceBundle(input: {
         const indicatorId = measure?.indicator_id ?? "";
         const indicatorDomain = input.domainsRequestFailed
           ? null
-          : (input.indicatorDomains.get(indicatorId) ?? null);
+          : (input.indicatorDomains.domains.get(indicatorId) ?? null);
         const familyId = measure
-          ? evidenceFamilyForMeasure({
-              domain: indicatorDomain,
+          ? familyForIndicator({
               domainsRequestFailed: input.domainsRequestFailed,
+              indicatorDomains: input.indicatorDomains,
               indicatorId,
             })
           : null;
