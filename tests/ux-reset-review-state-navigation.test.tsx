@@ -77,14 +77,13 @@ const EMPTY_MAP_CODES: readonly string[] = [];
 const releaseStates = [
   { code: "CO", name: "Colorado" },
   { code: "NY", name: "New York" },
-  { code: "PR", name: "Puerto Rico" },
 ] as const;
 
 const catalog = reviewStateNavigationEntries(releaseStates);
 const viewCatalog: ReviewStateNavigationEntry[] = [
   entry("CO", "supported", "Colorado"),
   entry("NY", "supported", "New York"),
-  entry("PR", "unsupported", "Puerto Rico"),
+  entry("DC", "unavailable"),
   entry("WY", "unavailable"),
 ];
 
@@ -207,7 +206,7 @@ describe("Review state navigation model", () => {
   it("classifies release rows and keeps navigation properties free of scores", () => {
     const supported = catalog.find((item) => item.code === "CO");
     const unavailable = catalog.find((item) => item.code === "WY");
-    const unsupported = catalog.find((item) => item.code === "PR");
+    const district = catalog.find((item) => item.code === "DC");
     const features = reviewStateNavigationFeatures(
       navigationGeometry(),
       catalog
@@ -226,9 +225,9 @@ describe("Review state navigation model", () => {
         )
       ),
       labels: {
+        district: district ? reviewStateNavigationLabel(district) : "",
         supported: supported ? reviewStateNavigationLabel(supported) : "",
         unavailable: unavailable ? reviewStateNavigationLabel(unavailable) : "",
-        unsupported: unsupported ? reviewStateNavigationLabel(unsupported) : "",
       },
       properties: features.features.map((feature) => feature.properties),
     }).toStrictEqual({
@@ -237,9 +236,9 @@ describe("Review state navigation model", () => {
       coordinateRings: 2,
       hasScoreLanguage: false,
       labels: {
+        district: "DC, not in this release",
         supported: "CO, Colorado",
         unavailable: "WY, not in this release",
-        unsupported: "PR, not supported — lower 48 only",
       },
       properties: [
         { availability: "supported", code: "CO", name: "Colorado" },
@@ -253,7 +252,7 @@ describe("Review state navigation model", () => {
     ["colo", ["CO"]],
     ["new york", ["NY"]],
     ["wy", ["WY"]],
-    ["puerto", ["PR"]],
+    ["dc", ["DC"]],
     ["zzzz", []],
   ] as const)("filters %s to %j", (query, codes) => {
     expect(
@@ -405,9 +404,8 @@ describe("Review state navigation view", () => {
         screen.getByRole("button", { name: "CO, Colorado" }).textContent,
         screen.getByRole("button", { name: "WY, not in this release" })
           .textContent,
-        screen.getByRole("button", {
-          name: "PR, not supported — lower 48 only",
-        }).textContent,
+        screen.getByRole("button", { name: "DC, not in this release" })
+          .textContent,
       ],
       retry: screen.queryByRole("button", { name: "Retry map" }) !== null,
       status: screen.getByTestId("review-state-navigation-status").textContent,
@@ -418,7 +416,7 @@ describe("Review state navigation view", () => {
       labels: [
         "CO, Colorado",
         "WY, not in this release",
-        "PR, not supported — lower 48 only",
+        "DC, not in this release",
       ],
       retry: reviewNavigationMapRetryable(phase),
       status: statusFor({ phase }),
@@ -439,7 +437,7 @@ describe("Review state navigation view", () => {
       screen.getByRole("button", { name: "WY, not in this release" })
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "PR, not supported — lower 48 only" })
+      screen.getByRole("button", { name: "DC, not in this release" })
     );
     const ignoredCalls = onActivate.mock.calls.length;
     fireEvent.change(screen.getByTestId("review-state-search"), {

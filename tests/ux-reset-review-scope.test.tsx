@@ -587,8 +587,8 @@ describe("Reset Review scope UI", () => {
         offeredHawaii: false,
         picture: false,
         unsupported: "",
-        unsupportedAlaska: true,
-        unsupportedHawaii: true,
+        unsupportedAlaska: false,
+        unsupportedHawaii: false,
       },
     });
   });

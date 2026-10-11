@@ -98,8 +98,6 @@ test.describe("Review national geographic navigation", () => {
     await expect(
       page.getByRole("button", { name: "DC, not in this release" })
     ).toBeDisabled();
-    await expect(page.getByRole("button", { name: /^AK,/ })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^HI,/ })).toHaveCount(0);
     await page.getByTestId("review-state-search").fill("Colorado");
     await expect(
       page.getByRole("button", { name: "NY, New York" })

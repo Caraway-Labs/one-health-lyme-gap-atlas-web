@@ -2,7 +2,6 @@ import { contiguousUsGeometry } from "@/lib/atlas-geometry";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
 
-import { isUnsupportedReviewScope } from "./review-operating-state";
 import {
   lower48ReviewPostalCodes,
   postalCodeForStateFips,
@@ -12,9 +11,8 @@ import {
 
 /**
  * National Review navigation is geographic selection, not a scored map.
- * Availability comes from the Review scope contract and the release state list.
- * Contiguous display geometry supplies boundaries. Counties outside that
- * geometry are not drawn and are not given insets.
+ * Entries are the lower 48 and DC from the Review scope contract.
+ * A state named by the release is supported. Every other contract state is unavailable.
  */
 export const reviewStateNavigationCopy = {
   description:
@@ -45,7 +43,6 @@ export type ReviewNavigationMapPhase =
 export const reviewStateAvailabilityValues = {
   supported: "supported",
   unavailable: "unavailable",
-  unsupported: "unsupported",
 } as const;
 
 export type ReviewStateAvailability =
@@ -91,16 +88,6 @@ export function reviewStateNavigationEntries(
       };
     }
   );
-  for (const state of releaseStates) {
-    if (!isUnsupportedReviewScope(state.code)) {
-      continue;
-    }
-    entries.push({
-      availability: reviewStateAvailabilityValues.unsupported,
-      code: state.code,
-      name: state.name,
-    });
-  }
   return entries.toSorted((left, right) => left.code.localeCompare(right.code));
 }
 
@@ -110,9 +97,6 @@ export function reviewStateNavigationLabel(
   switch (entry.availability) {
     case reviewStateAvailabilityValues.supported: {
       return `${entry.code}, ${entry.name ?? entry.code}`;
-    }
-    case reviewStateAvailabilityValues.unsupported: {
-      return `${entry.code}, not supported — lower 48 only`;
     }
     case reviewStateAvailabilityValues.unavailable: {
       return `${entry.code}, not in this release`;
@@ -259,9 +243,6 @@ export function reviewNavigationStateText(
     case reviewStateAvailabilityValues.supported: {
       return entry.name ? `${entry.name} (${entry.code})` : entry.code;
     }
-    case reviewStateAvailabilityValues.unsupported: {
-      return reviewStateNavigationLabel(entry);
-    }
     case reviewStateAvailabilityValues.unavailable: {
       return reviewStateNavigationLabel(entry);
     }
@@ -373,7 +354,7 @@ export function reviewStateNavigationFeatures(
     if (!postal || stateFipsPrefix(postal) === null) {
       continue;
     }
-    if (!isSupportedOrUnavailable(postal, entries)) {
+    if (!isContractState(postal, entries)) {
       continue;
     }
     const polygons = polygonsFromGeometry(feature.geometry);
@@ -414,28 +395,11 @@ export function reviewStateNavigationFeatures(
   return { features, type: "FeatureCollection" };
 }
 
-function isSupportedOrUnavailable(
+function isContractState(
   code: ReviewStatePostal,
   entries: readonly ReviewStateNavigationEntry[]
 ): boolean {
-  const entry = entries.find((item) => item.code === code);
-  if (!entry) {
-    return false;
-  }
-  switch (entry.availability) {
-    case reviewStateAvailabilityValues.supported:
-    case reviewStateAvailabilityValues.unavailable: {
-      return true;
-    }
-    case reviewStateAvailabilityValues.unsupported: {
-      return false;
-    }
-    default: {
-      const exhaustive: never = entry.availability;
-      void exhaustive;
-      return false;
-    }
-  }
+  return entries.some((entry) => entry.code === code);
 }
 
 export function reviewNavigationEntryByCode(
