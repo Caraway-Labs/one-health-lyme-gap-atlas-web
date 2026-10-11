@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -8,6 +9,8 @@ import {
 } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+type MapLibreModule = typeof import("maplibre-gl");
 
 import {
   ReviewNationalOrientation,
@@ -30,26 +33,141 @@ import {
   type ReviewNavigationMapPhase,
   type ReviewStateNavigationEntry,
 } from "@/features/ux-reset/review/review-state-navigation";
-import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
+import {
+  countyDisplayGeometryQueryKey,
+  type CountyDisplayGeometryFeatureCollection,
+} from "@/lib/county-geography";
 
 const geometryControls = vi.hoisted(() => ({
   mode: "polygons" as "empty" | "error" | "pending" | "polygons",
+  releasePromises: new Map<
+    string,
+    Promise<CountyDisplayGeometryFeatureCollection>
+  >(),
 }));
 
-vi.mock(import("maplibre-gl"), () => ({
-  Map: vi.fn<() => never>(() => {
-    throw new Error("MapLibre construct is covered in the map lifecycle test.");
-  }),
-  setWorkerUrl: vi.fn<(url: string) => void>(),
-}));
+const mapEngine = vi.hoisted(() => {
+  type Handler = (event?: unknown) => void;
+  let construct: "manual" | "throw" = "throw";
+
+  class FakeMap {
+    canvas = { style: { cursor: "" } };
+    dataUpdates = 0;
+    handlers = new Map<string, Handler[]>();
+    jumped = false;
+    layers = 0;
+    removed = false;
+    resized = false;
+    sources = new Set<string>();
+    states = 0;
+
+    constructor() {
+      if (construct === "throw") {
+        throw new Error(
+          "MapLibre construct is covered in the map lifecycle test."
+        );
+      }
+      instances.push(this);
+    }
+
+    on(event: string, layerOrHandler: string | Handler, handler?: Handler) {
+      const key =
+        typeof layerOrHandler === "string"
+          ? `${event}:${layerOrHandler}`
+          : event;
+      const callback =
+        typeof layerOrHandler === "string" ? handler : layerOrHandler;
+      if (!callback) {
+        return;
+      }
+      this.handlers.set(key, [...(this.handlers.get(key) ?? []), callback]);
+    }
+
+    emit(event: string, payload?: unknown) {
+      for (const handler of this.handlers.get(event) ?? []) {
+        handler(payload);
+      }
+    }
+
+    addSource(id: string) {
+      this.sources.add(id);
+    }
+
+    addLayer() {
+      this.layers += 1;
+    }
+
+    getSource(id: string) {
+      if (!this.sources.has(id)) {
+        return;
+      }
+      return {
+        setData: () => {
+          this.dataUpdates += 1;
+        },
+      };
+    }
+
+    getCanvas() {
+      return this.canvas;
+    }
+
+    resize() {
+      this.resized = true;
+    }
+
+    jumpTo() {
+      this.jumped = true;
+    }
+
+    setFeatureState() {
+      this.states += 1;
+    }
+
+    remove() {
+      this.removed = true;
+    }
+  }
+
+  const instances: FakeMap[] = [];
+
+  return {
+    FakeMap,
+    instances,
+    reset() {
+      instances.length = 0;
+      construct = "throw";
+    },
+    setConstruct(value: "manual" | "throw") {
+      construct = value;
+    },
+    setWorkerUrl: vi.fn<(url: string) => void>(),
+  };
+});
+
+function orientationMapLibreMock(): Pick<
+  MapLibreModule,
+  "Map" | "setWorkerUrl"
+> {
+  return {
+    Map: mapEngine.FakeMap as unknown as MapLibreModule["Map"],
+    setWorkerUrl: mapEngine.setWorkerUrl,
+  };
+}
+
+vi.mock(import("maplibre-gl"), orientationMapLibreMock);
 
 vi.mock(import("@/lib/county-geography"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
     fetchCountyDisplayGeometry: vi.fn<
-      () => Promise<CountyDisplayGeometryFeatureCollection>
-    >(async () => {
+      (releaseId: string) => Promise<CountyDisplayGeometryFeatureCollection>
+    >(async (releaseId) => {
+      const specific = geometryControls.releasePromises.get(releaseId);
+      if (specific) {
+        return await specific;
+      }
       switch (geometryControls.mode) {
         case "pending": {
           return Promise.withResolvers<CountyDisplayGeometryFeatureCollection>()
@@ -178,6 +296,8 @@ describe("Review state navigation model", () => {
   afterEach(() => {
     cleanup();
     geometryControls.mode = "polygons";
+    geometryControls.releasePromises.clear();
+    mapEngine.reset();
   });
 
   it("lists lower-48 and DC from the scope contract", () => {
@@ -334,8 +454,13 @@ describe("Review state navigation model", () => {
     ["Failed to load style", false, "load"],
     ["WebGL context lost", true, "webgl"],
     ["Source review-states not found", false, "load"],
+    ["Missing layer review-states-fill", false, "load"],
     ["tile not found", true, "ignore"],
     ["style image missing", true, "ignore"],
+    ["Failed to fetch dynamically imported module", false, "load"],
+    ["Failed to fetch dynamically imported module", true, "ignore"],
+    ["404 /maplibre/maplibre-gl-worker.mjs", false, "load"],
+    ["404 /maplibre/maplibre-gl-worker.mjs", true, "ignore"],
   ] as const)("classifies map error %s as %s", (message, ready, failure) => {
     expect(reviewMapErrorFailure(message, ready)).toBe(failure);
   });
@@ -758,10 +883,103 @@ describe("Review state navigation view", () => {
   });
 });
 
+function installResolvedMap() {
+  mapEngine.setConstruct("manual");
+  const readStyle = window.getComputedStyle.bind(window);
+  const computed = vi
+    .spyOn(window, "getComputedStyle")
+    .mockImplementation((element: Element) => {
+      const style = readStyle(element);
+      return new Proxy(style, {
+        get(target, property, receiver) {
+          if (property === "color") {
+            return "rgb(12, 34, 56)";
+          }
+          const value = Reflect.get(target, property, receiver);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+    });
+  const context = vi
+    .spyOn(HTMLCanvasElement.prototype, "getContext")
+    .mockImplementation((contextId: string) => {
+      if (contextId === "webgl2") {
+        return {} as WebGL2RenderingContext;
+      }
+      return null;
+    });
+  return () => {
+    computed.mockRestore();
+    context.mockRestore();
+    mapEngine.setConstruct("throw");
+  };
+}
+
+function cachedGeometryClient(releaseIds: readonly string[]) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  for (const releaseId of releaseIds) {
+    client.setQueryData(
+      countyDisplayGeometryQueryKey("ux-reset-review", releaseId),
+      navigationGeometry()
+    );
+  }
+  return client;
+}
+
+function nationalOrientation(
+  client: QueryClient,
+  releaseId: string,
+  onOpenState: (code: string) => void
+) {
+  return (
+    <QueryClientProvider client={client}>
+      <ReviewNationalOrientation
+        releaseId={releaseId}
+        releaseStates={[
+          { code: "CO", name: "Colorado" },
+          { code: "NY", name: "New York" },
+        ]}
+        onOpenState={onOpenState}
+      />
+    </QueryClientProvider>
+  );
+}
+
+function mapFrame() {
+  return screen.getByTestId("review-state-navigation-map");
+}
+
+async function waitForMapCount(count: number) {
+  await waitFor(() => {
+    if (mapEngine.instances.length !== count) {
+      throw new Error(`expected ${count} map instances`);
+    }
+  });
+  const map = mapEngine.instances[count - 1];
+  if (!map) {
+    throw new Error("expected a map instance");
+  }
+  return map;
+}
+
+function emitMap(
+  map: { emit: (event: string, payload?: unknown) => void },
+  event: string,
+  payload?: unknown
+) {
+  act(() => {
+    map.emit(event, payload);
+  });
+}
+
 describe("Review state navigation requests", () => {
   afterEach(() => {
     cleanup();
     geometryControls.mode = "polygons";
+    geometryControls.releasePromises.clear();
+    mapEngine.reset();
   });
 
   it.each([
@@ -848,6 +1066,175 @@ describe("Review state navigation requests", () => {
       coloradoDisabled: true,
       supportedColorado: null,
     });
+  });
+
+  it("remounts a cached release and restores the keyboard target", async () => {
+    const restore = installResolvedMap();
+    try {
+      const onOpenState = vi.fn<(code: string) => void>();
+      const client = cachedGeometryClient(["alpha-2026", "beta-2026"]);
+      const view = render(
+        nationalOrientation(client, "alpha-2026", onOpenState)
+      );
+      const first = await waitForMapCount(1);
+      emitMap(first, "load");
+      const initialPhase = mapFrame().dataset.mapPhase;
+      const initialTab = mapFrame().getAttribute("tabindex");
+      view.rerender(nationalOrientation(client, "beta-2026", onOpenState));
+      const second = await waitForMapCount(2);
+      const loading = {
+        phase: mapFrame().dataset.mapPhase,
+        removed: first.removed,
+        retry: screen.queryByRole("button", { name: "Retry map" }) !== null,
+        tab: mapFrame().getAttribute("tabindex"),
+      };
+      emitMap(second, "load");
+      fireEvent.keyDown(mapFrame(), { key: "ArrowRight" });
+      const status = screen.getByTestId(
+        "review-state-navigation-status"
+      ).textContent;
+      const restored = {
+        focused: status?.includes("Focused state: Colorado (CO).") ?? false,
+        phase: mapFrame().dataset.mapPhase,
+        tab: mapFrame().getAttribute("tabindex"),
+      };
+      view.unmount();
+      emitMap(second, "load");
+      emitMap(second, "error", {
+        error: new Error("Failed to fetch dynamically imported module"),
+      });
+      expect({
+        initialPhase,
+        initialTab,
+        loading,
+        removed: second.removed,
+        restored,
+      }).toStrictEqual({
+        initialPhase: "ready",
+        initialTab: "0",
+        loading: {
+          phase: "map-loading",
+          removed: true,
+          retry: false,
+          tab: null,
+        },
+        removed: true,
+        restored: {
+          focused: true,
+          phase: "ready",
+          tab: "0",
+        },
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("loads an uncached release after boundaries arrive", async () => {
+    const restore = installResolvedMap();
+    try {
+      const deferred =
+        Promise.withResolvers<CountyDisplayGeometryFeatureCollection>();
+      geometryControls.releasePromises.set("beta-2026", deferred.promise);
+      const onOpenState = vi.fn<(code: string) => void>();
+      const client = cachedGeometryClient(["alpha-2026"]);
+      const view = render(
+        nationalOrientation(client, "alpha-2026", onOpenState)
+      );
+      const first = await waitForMapCount(1);
+      emitMap(first, "load");
+      view.rerender(nationalOrientation(client, "beta-2026", onOpenState));
+      await waitFor(() => {
+        if (mapFrame().dataset.mapPhase !== "boundary-loading") {
+          throw new Error("expected boundary loading");
+        }
+      });
+      const loading = {
+        phase: mapFrame().dataset.mapPhase,
+        removed: first.removed,
+        retry: screen.queryByRole("button", { name: "Retry map" }) !== null,
+        tab: mapFrame().getAttribute("tabindex"),
+      };
+      deferred.resolve(navigationGeometry());
+      const second = await waitForMapCount(2);
+      const beforeLoad = mapFrame().dataset.mapPhase;
+      emitMap(second, "load");
+      expect({
+        beforeLoad,
+        loading,
+        ready: mapFrame().dataset.mapPhase,
+        tab: mapFrame().getAttribute("tabindex"),
+      }).toStrictEqual({
+        beforeLoad: "map-loading",
+        loading: {
+          phase: "boundary-loading",
+          removed: true,
+          retry: false,
+          tab: null,
+        },
+        ready: "ready",
+        tab: "0",
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("retries an unknown startup error and ignores that error after ready", async () => {
+    const restore = installResolvedMap();
+    try {
+      const onOpenState = vi.fn<(code: string) => void>();
+      const client = cachedGeometryClient(["alpha-2026"]);
+      const view = render(
+        nationalOrientation(client, "alpha-2026", onOpenState)
+      );
+      const first = await waitForMapCount(1);
+      emitMap(first, "error", {
+        error: new Error("Failed to fetch dynamically imported module"),
+      });
+      const failed = {
+        phase: mapFrame().dataset.mapPhase,
+        removed: first.removed,
+        retry: screen.queryByRole("button", { name: "Retry map" }) !== null,
+        tab: mapFrame().getAttribute("tabindex"),
+      };
+      fireEvent.click(screen.getByRole("button", { name: "Retry map" }));
+      const second = await waitForMapCount(2);
+      emitMap(second, "load");
+      emitMap(second, "error", {
+        error: new Error("404 /maplibre/maplibre-gl-worker.mjs"),
+      });
+      const restored = {
+        phase: mapFrame().dataset.mapPhase,
+        retry: screen.queryByRole("button", { name: "Retry map" }) !== null,
+        tab: mapFrame().getAttribute("tabindex"),
+      };
+      view.unmount();
+      emitMap(second, "load");
+      emitMap(second, "error", {
+        error: new Error("Failed to fetch dynamically imported module"),
+      });
+      expect({
+        failed,
+        removed: second.removed,
+        restored,
+      }).toStrictEqual({
+        failed: {
+          phase: "map-load-failed",
+          removed: true,
+          retry: true,
+          tab: null,
+        },
+        removed: true,
+        restored: {
+          phase: "ready",
+          retry: false,
+          tab: "0",
+        },
+      });
+    } finally {
+      restore();
+    }
   });
 });
 

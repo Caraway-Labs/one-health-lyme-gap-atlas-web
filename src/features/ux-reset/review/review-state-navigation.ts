@@ -307,12 +307,12 @@ export function reviewMapErrorFailure(
   if (normalized.includes("webgl")) {
     return "webgl";
   }
-  const sourceOrStyle =
+  const namesMapResource =
     normalized.includes("style") ||
     normalized.includes("source") ||
     normalized.includes("layer");
-  if (!sourceOrStyle) {
-    return "ignore";
+  if (!namesMapResource) {
+    return sourceReady ? "ignore" : "load";
   }
   if (sourceReady && !normalized.includes("failed")) {
     return "ignore";

@@ -398,6 +398,34 @@ describe("Review state navigation map lifecycle", () => {
     });
   });
 
+  it("reports an unknown startup error before load and ignores it after ready", () => {
+    const view = renderNavigationMap();
+    const map = engine.instances[0];
+    if (!map) {
+      throw new Error("expected a map instance");
+    }
+    map.emit("error", {
+      error: new Error("Failed to fetch dynamically imported module"),
+    });
+    map.emit("error", { error: "404 /maplibre/maplibre-gl-worker.mjs" });
+    const beforeReady = view.handleLoadFailed.mock.calls.length;
+    map.emit("load");
+    map.emit("error", {
+      error: new Error("Failed to fetch dynamically imported module"),
+    });
+    expect({
+      beforeReady,
+      loadFailed: view.handleLoadFailed.mock.calls.length,
+      ready: view.handleReady.mock.calls.length,
+      webgl: view.handleWebglUnavailable.mock.calls.length,
+    }).toStrictEqual({
+      beforeReady: 2,
+      loadFailed: 2,
+      ready: 1,
+      webgl: 0,
+    });
+  });
+
   it("ignores a tile error after the source is ready and drops a late load after unmount", () => {
     const view = renderNavigationMap();
     const map = engine.instances[0];

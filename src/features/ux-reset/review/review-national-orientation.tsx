@@ -174,6 +174,7 @@ export function ReviewNationalOrientation({
     setTrackedReleaseId(releaseId);
     setMapFailure(null);
     setMapReady(false);
+    setMapAttempt((value) => value + 1);
   }
   if (focusCode && !visible.some((entry) => entry.code === focusCode)) {
     setFocusCode(null);
