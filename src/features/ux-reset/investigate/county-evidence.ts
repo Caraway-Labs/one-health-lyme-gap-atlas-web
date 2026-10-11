@@ -600,7 +600,23 @@ function periodBasis(record: CountyEvidenceObservation): string {
   return `${record.observation.period_start}..${record.observation.period_end}`;
 }
 
-/** Rows that share a measure and period and do not share a display value. */
+/** Governed value plus value state. Display text is not part of this key. */
+function governedValueKey(record: CountyEvidenceObservation): string {
+  const value = record.observation.value;
+  const valueKey =
+    value === null
+      ? "null"
+      : typeof value === "number"
+        ? `number:${value}`
+        : `string:${value}`;
+  return `${valueKey}|${record.observation.value_state}`;
+}
+
+/**
+ * Rows that share a measure and period and do not share a raw value and
+ * value state. Display text is not the comparison: formatting can hide a
+ * real difference.
+ */
 function disagreeingObservationCount(
   records: readonly CountyEvidenceObservation[]
 ): number {
@@ -616,9 +632,7 @@ function disagreeingObservationCount(
   }
   let count = 0;
   for (const periodRecords of byPeriod.values()) {
-    const values = new Set(
-      periodRecords.map((record) => record.evidence.displayValue)
-    );
+    const values = new Set(periodRecords.map(governedValueKey));
     if (periodRecords.length > 1 && values.size > 1) {
       count += periodRecords.length;
     }
@@ -637,8 +651,10 @@ function byMeasureLabel(
 }
 
 /**
- * Same measure and period, with different values. A series across periods is
- * not a conflict. This does not choose or average the rows.
+ * Same measure and period, with a different raw value or value state. A
+ * series across periods is not a conflict, and equal raw values in the same
+ * state are not a conflict. Display formatting stays on the card. This does
+ * not choose or average the rows.
  */
 export function investigateEvidenceConflicts(
   bundle: Pick<CountyEvidenceBundle, "families" | "unassigned">

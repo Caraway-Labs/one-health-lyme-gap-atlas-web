@@ -18,6 +18,7 @@ import {
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import {
   EnvironmentalContextCoverageStatus,
+  ValueState,
   type CountyDetail,
   type EnvironmentalContext,
   type Measure,
@@ -264,6 +265,51 @@ describe("County Investigate evidence hierarchy", () => {
     }).toStrictEqual({
       conflicts: [],
       multiple: true,
+    });
+  });
+
+  it("flags different raw values that share display text", () => {
+    const close = casesBundle([
+      caseObservation("a", 1.0000001, "2023-01-01", "2023-12-31"),
+      caseObservation("b", 1.0000002, "2023-01-01", "2023-12-31"),
+    ]);
+    const equal = casesBundle([
+      caseObservation("a", 1.0000001, "2023-01-01", "2023-12-31"),
+      caseObservation("b", 1.0000001, "2023-01-01", "2023-12-31"),
+    ]);
+    const periods = casesBundle([
+      caseObservation("a", 1.0000001, "2023-01-01", "2023-01-31"),
+      caseObservation("b", 1.0000002, "2023-02-01", "2023-02-28"),
+    ]);
+    const states = casesBundle([
+      caseObservation("a", 1.0000001, "2023-01-01", "2023-12-31"),
+      {
+        ...caseObservation("b", 1.0000001, "2023-01-01", "2023-12-31"),
+        value_state: ValueState.SUPPRESSED,
+      },
+    ]);
+    const displays = close.families.flatMap((family) =>
+      family.observations.map((record) => record.evidence.displayValue)
+    );
+    const conflict = [
+      {
+        measureId: "reported-cases",
+        measureLabel: "Reported Lyme cases",
+        observationCount: 2,
+      },
+    ];
+    expect({
+      closeConflict: investigateEvidenceConflicts(close),
+      displays,
+      equalConflict: investigateEvidenceConflicts(equal),
+      periodConflict: investigateEvidenceConflicts(periods),
+      stateConflict: investigateEvidenceConflicts(states),
+    }).toStrictEqual({
+      closeConflict: conflict,
+      displays: ["1 cases", "1 cases"],
+      equalConflict: [],
+      periodConflict: [],
+      stateConflict: conflict,
     });
   });
 
