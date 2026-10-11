@@ -75,7 +75,7 @@ const casesMeasure = investigateMeasuresFixture.find(
 ) as Measure;
 
 const publishedRecord: PublishedCountyRecord = {
-  burgdorferiStatus: null,
+  burgdorferiStatus: "",
   evidenceCompleteness: 40,
   fips: "08001",
   pacificusStatus: null,
