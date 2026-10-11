@@ -56,3 +56,51 @@ export function reviewScopeMatchesPresentation(
 ): boolean {
   return presentationScope !== undefined && presentationScope === activeScope;
 }
+
+/**
+ * Scope token to write when the raw query is not already canonical.
+ * Uses the shared parser. Null means the URL already matches that parse.
+ */
+export function reviewScopeQueryCanonicalRewrite(
+  searchParams: ScopeSearchParams
+): ReviewScope | null {
+  if (!searchParams.has("scope")) {
+    return null;
+  }
+  const rawValues = searchParams.getAll("scope");
+  const canonical = parsedReviewScopeFromUrl(searchParams);
+  if (rawValues.length === 1 && rawValues[0] === canonical) {
+    return null;
+  }
+  return canonical;
+}
+
+/**
+ * True until the one-time Review startup resolution has settled.
+ * An explicit arrival URL, or a scope chosen on the current history entry, is ready.
+ * After startup settles, a later profile refetch must not reopen this gate.
+ */
+export function isReviewStartingScopeUnresolved(input: {
+  arrivalExplicitScope: boolean;
+  metadataError: boolean;
+  metadataReady: boolean;
+  profileFetched: boolean;
+  startupSettled: boolean;
+  stateOptions: readonly AtlasStateOption[];
+  userChoseScope: boolean;
+}): boolean {
+  if (
+    input.arrivalExplicitScope ||
+    input.userChoseScope ||
+    input.startupSettled
+  ) {
+    return false;
+  }
+  if (!(input.profileFetched && (input.metadataReady || input.metadataError))) {
+    return true;
+  }
+  if (input.stateOptions.length === 0) {
+    return false;
+  }
+  return true;
+}

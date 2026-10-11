@@ -2,7 +2,12 @@ import type { CompareAlignment } from "@/features/ux-reset/compare/compare-align
 import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import type { ExploreCommittedSelection } from "@/features/ux-reset/explore/explore-model";
-import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  countyObservationsLoaded,
+  type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
+} from "@/features/ux-reset/investigate/county-evidence";
+import type { ResolvedInvestigateFinding } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import { REVIEW_FIELD_UNAVAILABLE } from "@/features/ux-reset/review/review-governed-values";
 import type { Observation } from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
@@ -304,7 +309,15 @@ export function inheritedContextFromExplore(input: {
 
 export function inheritedContextFromInvestigate(input: {
   bundle: CountyEvidenceBundle | null;
+  /**
+   * Resolved Investigate finding. When observations have loaded, measure and
+   * source come from it, including a published row that is not an observation
+   * lead. Omit it only for callers that have not resolved a county record.
+   * A withheld catalog does not publish this finding into Ask Atlas.
+   */
+  finding?: ResolvedInvestigateFinding | null;
   identity: { fips: string; label: string } | null;
+  observationsLoaded: CountyEvidenceLoadState;
   releaseId: string | null;
   releaseMismatch: boolean;
   requestedFips: string | null;
@@ -314,6 +327,7 @@ export function inheritedContextFromInvestigate(input: {
   );
   const releaseReady = Boolean(input.releaseId) && !input.releaseMismatch;
   const bundleReady = Boolean(
+    countyObservationsLoaded(input.observationsLoaded) &&
     geographyReady &&
     !input.releaseMismatch &&
     input.bundle &&
@@ -321,15 +335,27 @@ export function inheritedContextFromInvestigate(input: {
     input.bundle.releaseId === input.releaseId
   );
   const lead = bundleReady ? (input.bundle?.leadFinding ?? null) : null;
+  const usesResolvedFinding = input.finding !== undefined;
+  const resolved = bundleReady ? (input.finding ?? null) : null;
+  const measureId = usesResolvedFinding
+    ? (resolved?.measureId ?? null)
+    : (lead?.measureId ?? null);
+  const measureLabel = usesResolvedFinding
+    ? (resolved?.measureLabel ?? null)
+    : (lead?.measureLabel ?? null);
+  const sourceEvidence = usesResolvedFinding
+    ? (resolved?.evidence ?? null)
+    : (lead?.evidence ?? null);
   return finalizeInheritedContext({
     fields: {
       geography:
         geographyReady && input.identity
           ? validatedInheritedField(input.identity.fips, input.identity.label)
           : absentInheritedField(),
-      measure: lead
-        ? validatedInheritedField(lead.measureId, lead.measureLabel)
-        : absentInheritedField(),
+      measure:
+        measureId && measureLabel
+          ? validatedInheritedField(measureId, measureLabel)
+          : absentInheritedField(),
       period: inheritedPeriodField(
         bundleReady && input.bundle
           ? investigateAcceptedObservations(input.bundle)
@@ -339,7 +365,7 @@ export function inheritedContextFromInvestigate(input: {
         releaseReady && input.releaseId
           ? validatedInheritedField(input.releaseId, input.releaseId)
           : absentInheritedField(),
-      source: sourceFieldFromEvidence(lead?.evidence ?? null),
+      source: sourceFieldFromEvidence(sourceEvidence),
     },
     surface: "investigate",
   });

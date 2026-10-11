@@ -33,6 +33,7 @@ export function ReviewScopeSelector({
           if (!next) {
             return;
           }
+          // Item press reports the selected value even when it already matches.
           onScopeChange(next === "ALL" ? "ALL" : next);
         }}
       >

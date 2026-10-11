@@ -17,6 +17,16 @@ let searchParams = new URLSearchParams(
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => pathname,
+  useRouter: () =>
+    ({
+      back: vi.fn<() => void>(),
+      bfcacheId: "test",
+      forward: vi.fn<() => void>(),
+      prefetch: vi.fn<() => void>(),
+      push: vi.fn<(href: string) => void>(),
+      refresh: vi.fn<() => void>(),
+      replace: vi.fn<(href: string) => void>(),
+    }) as ReturnType<typeof import("next/navigation").useRouter>,
   useSearchParams: () => searchParams as ReadonlyURLSearchParams,
 }));
 

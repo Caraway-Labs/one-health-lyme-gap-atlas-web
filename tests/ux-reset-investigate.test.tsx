@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ResetInvestigateExperience } from "@/features/ux-reset/investigate/reset-investigate-experience";
-import type { Tier1CountyPriority } from "@/generated/models";
+import type { CountyDetail, Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
@@ -39,7 +39,11 @@ import {
 } from "./fixtures/tier1-surveillance-priority";
 
 const controls: {
+  countyDetail: CountyDetail | null;
   delayFips: string | null;
+  failCatalog: boolean;
+  failCountyRecord: boolean;
+  failIndicators: boolean;
   failMeasureId: string | null;
   geographyStatus: "identity" | "ok";
   holdMetadata: boolean;
@@ -52,7 +56,11 @@ const controls: {
   scoresReleaseId: string | null;
   transientStatus: number;
 } = {
+  countyDetail: null,
   delayFips: null,
+  failCatalog: false,
+  failCountyRecord: false,
+  failIndicators: false,
   failMeasureId: null,
   geographyStatus: "ok",
   holdMetadata: false,
@@ -65,6 +73,57 @@ const controls: {
   scoresReleaseId: null,
   transientStatus: 429,
 };
+
+function catalogFailureCounty(fips: string): CountyDetail {
+  return {
+    burgdorferi_status: "Present",
+    case_count_floor_2023: 4,
+    color: "#e9602b",
+    county: "Denver",
+    evidence_completeness: 40,
+    fips,
+    human_status: "published_count_floor",
+    in_contiguous_tick_scope: true,
+    incidence_floor_2023: 0.1,
+    pacificus_status: "Established",
+    population: 1000,
+    priority: "Priority 1 — Investigate",
+    release: {
+      ...investigateMetadataFixture,
+      limitations: "Not a diagnosis.",
+      release_id: INVESTIGATE_RELEASE_ID,
+      sources: [
+        {
+          key: "tick",
+          label: "CDC ArboNET county tick status",
+          note: "No records is not absence.",
+          url: "https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html",
+          vintage: "through 2025-12-31",
+        },
+      ],
+    },
+    rucc_2023: 2,
+    scapularis_status: "No records",
+    score: {
+      access_signal: 10,
+      community: 10,
+      ecological: 10,
+      human_weakness: 10,
+      pathogen_signal: 10,
+      rural_signal: 10,
+      score: 84.6,
+      svi_signal: 10,
+      tick_signal: 10,
+    },
+    state: "CO",
+    state_name: "Colorado",
+    state_unallocated_records_2023: 0,
+    svi_percentile: null,
+    tick_status: "Established",
+    uninsured_percent: null,
+    uninsured_percentile: null,
+  };
+}
 
 let metadataGate = Promise.withResolvers<boolean>();
 let releaseDelayed = () => {};
@@ -121,6 +180,14 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     indicatorsV1IndicatorsGet: vi.fn<
       typeof import("@/generated/atlas").indicatorsV1IndicatorsGet
     >(async (params) => {
+      if (controls.failIndicators) {
+        throw new AtlasApiError(
+          "indicators unavailable",
+          "/v1/indicators",
+          500,
+          null
+        );
+      }
       if (params?.page_token === null) {
         return {
           data: { detail: "invalid indicators request" },
@@ -141,6 +208,13 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     measuresV1MeasuresGet: vi.fn<
       typeof import("@/generated/atlas").measuresV1MeasuresGet
     >(async (params) => {
+      if (controls.failCatalog) {
+        return {
+          data: { detail: "measures unavailable" },
+          headers: new Headers(),
+          status: 500,
+        } as never;
+      }
       if (params?.page_token === null || params?.geography_type === "county") {
         return {
           data: { detail: "invalid catalog request" },
@@ -272,6 +346,31 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       };
     }),
+    countyV1CountiesFipsGet: vi.fn<
+      typeof import("@/generated/atlas").countyV1CountiesFipsGet
+    >(async (fips) => {
+      if (controls.failCountyRecord) {
+        throw new AtlasApiError(
+          "county refresh failed",
+          `/v1/counties/${fips}`,
+          500,
+          null
+        );
+      }
+      const detail = controls.countyDetail;
+      if (detail?.fips === fips) {
+        return {
+          data: detail,
+          headers: new Headers(),
+          status: 200,
+        } as never;
+      }
+      return {
+        data: { detail: "not found" },
+        headers: new Headers(),
+        status: 404,
+      } as never;
+    }),
   };
 });
 
@@ -379,7 +478,11 @@ function pageSnapshot() {
 describe("County Investigate workspace", () => {
   afterEach(() => {
     cleanup();
+    controls.countyDetail = null;
     controls.delayFips = null;
+    controls.failCatalog = false;
+    controls.failCountyRecord = false;
+    controls.failIndicators = false;
     controls.failMeasureId = null;
     controls.geographyStatus = "ok";
     controls.holdMetadata = false;
@@ -1468,6 +1571,195 @@ describe("County Investigate workspace", () => {
       low: false,
       state: "release-unaligned",
       tier: undefined,
+    });
+  });
+
+  it("keeps cached county evidence when a stale refetch fails", async () => {
+    controls.countyDetail = catalogFailureCounty("08001");
+    controls.scenario = "mixed";
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = renderInvestigate("?county=08001&scope=CO", { client });
+    await waitFor(() => {
+      const evidence =
+        screen.queryByTestId("investigate-evidence")?.textContent ?? "";
+      if (!evidence.includes("Established") || !evidence.includes("12 cases")) {
+        throw new Error("Cached county evidence has not rendered.");
+      }
+    });
+    const requestsBeforeRefresh = observationRequests.length;
+    controls.failCountyRecord = true;
+    controls.failCatalog = true;
+    await act(async () => {
+      await client.refetchQueries(
+        { queryKey: ["ux-reset-investigate-county-record"] },
+        { throwOnError: false }
+      );
+      await client.refetchQueries(
+        { queryKey: ["ux-reset-investigate-measures"] },
+        { throwOnError: false }
+      );
+    });
+    await waitFor(() => {
+      const text = document.body.textContent ?? "";
+      if (
+        !text.includes("published county record refresh failed") ||
+        !text.includes("measure catalog refresh failed")
+      ) {
+        throw new Error("Refresh failure notes have not rendered.");
+      }
+    });
+    const refreshed =
+      screen.getByTestId("investigate-evidence").textContent ?? "";
+    await view.rerenderSearch("?county=08001&scope=CO&period=2024-06-01");
+    await waitFor(() => {
+      if (observationRequests.length <= requestsBeforeRefresh) {
+        throw new Error("The new period did not request observations.");
+      }
+      if (!screen.queryByTestId("investigate-evidence")) {
+        throw new Error("Evidence has not rendered for the new period.");
+      }
+    });
+    const pageText = document.body.textContent ?? "";
+    const nextEvidence =
+      screen.getByTestId("investigate-evidence").textContent ?? "";
+    expect({
+      cases: refreshed.includes("12 cases"),
+      catalogInitial: pageText.includes(
+        "Governed measures could not be loaded."
+      ),
+      countyInitial: pageText.includes(
+        "could not be loaded, so findings may be incomplete"
+      ),
+      established: refreshed.includes("Established"),
+      nextCatalogFailure: nextEvidence.includes(
+        "no observation finding was requested"
+      ),
+      nextRequests: observationRequests.length > requestsBeforeRefresh,
+      refreshNotes:
+        pageText.includes("published county record refresh failed") &&
+        pageText.includes("measure catalog refresh failed"),
+    }).toStrictEqual({
+      cases: true,
+      catalogInitial: false,
+      countyInitial: false,
+      established: true,
+      nextCatalogFailure: false,
+      nextRequests: true,
+      refreshNotes: true,
+    });
+  });
+
+  it("shows an indicator failure while loaded observations stay on the page", async () => {
+    controls.failIndicators = true;
+    renderInvestigate("?county=08001&scope=CO");
+    await screen.findByText(
+      "Governed indicators could not be loaded. Observations stay grouped by the indicator id allowlist. That is a request failure, not a loaded indicator catalog."
+    );
+    const evidence = await screen.findByTestId("investigate-evidence");
+    const page = document.body.textContent ?? "";
+    expect({
+      cases: (evidence.textContent ?? "").includes("12 cases"),
+      notice: page.includes(
+        "Governed indicators could not be loaded. Observations stay grouped by the indicator id allowlist. That is a request failure, not a loaded indicator catalog."
+      ),
+    }).toStrictEqual({
+      cases: true,
+      notice: true,
+    });
+  });
+
+  it("keeps a settled county 404 when the record refresh fails", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderInvestigate("?county=08001&scope=CO", { client });
+    await waitFor(() => {
+      const coverage =
+        screen.queryByTestId("investigate-coverage-value")?.textContent ?? "";
+      if (!coverage.includes("Published input coverage was not returned")) {
+        throw new Error(
+          "The settled absent coverage sentence has not rendered."
+        );
+      }
+    });
+    controls.failCountyRecord = true;
+    await act(async () => {
+      await client.refetchQueries(
+        { queryKey: ["ux-reset-investigate-county-record"] },
+        { throwOnError: false }
+      );
+    });
+    await waitFor(() => {
+      const text = document.body.textContent ?? "";
+      if (!text.includes("published county record refresh failed")) {
+        throw new Error("The county refresh note has not rendered.");
+      }
+    });
+    const finding =
+      screen.getByTestId("investigate-finding-text").textContent ?? "";
+    const page = document.body.textContent ?? "";
+    expect({
+      absent: page.includes(
+        "Published input coverage was not returned for this county."
+      ),
+      firstLoadFinding: finding.includes("so findings may be incomplete"),
+      refresh: page.includes(
+        "The published county record refresh failed. The last governed result is still shown."
+      ),
+    }).toStrictEqual({
+      absent: true,
+      firstLoadFinding: false,
+      refresh: true,
+    });
+  });
+
+  it("shows published county rows when the measure catalog fails", async () => {
+    controls.failCatalog = true;
+    controls.countyDetail = catalogFailureCounty("08001");
+    renderInvestigate("?county=08001&scope=CO");
+    await waitForCounty("08001");
+    await screen.findByText("Governed measures could not be loaded.");
+    const evidence = await screen.findByTestId("investigate-evidence");
+    const text = evidence.textContent ?? "";
+    const limitation =
+      screen.getByTestId("investigate-limitation-text").textContent ?? "";
+    expect({
+      action: screen.queryByTestId("investigate-action"),
+      catalog: text.includes(
+        "Published county rows are shown without an observation series."
+      ),
+      caveat: limitation.includes("No records is not absence."),
+      deniesLimitation: limitation.includes("No returned limitation"),
+      established: text.includes("Established"),
+      falseAbsence: text.includes("No observed or limited finding"),
+      observations: observationRequests.length,
+      pdf: screen.queryByTestId("investigate-export-context"),
+      score: text.includes("84.6"),
+    }).toStrictEqual({
+      action: null,
+      catalog: true,
+      caveat: true,
+      deniesLimitation: false,
+      established: true,
+      falseAbsence: false,
+      observations: 0,
+      pdf: null,
+      score: false,
+    });
+  });
+
+  it("does not offer Action when the catalog fails and the county is absent", async () => {
+    controls.failCatalog = true;
+    renderInvestigate("?county=08001&scope=CO");
+    await screen.findByText(/no observation finding was requested/);
+    expect({
+      action: screen.queryByTestId("investigate-action"),
+      pdf: screen.queryByTestId("investigate-export-context"),
+    }).toStrictEqual({
+      action: null,
+      pdf: null,
     });
   });
 });

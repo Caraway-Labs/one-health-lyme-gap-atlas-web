@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { countyEvidenceLoadStates } from "@/features/ux-reset/investigate/county-evidence";
 import {
   investigateActionOffer,
   investigateCompareOffer,
@@ -28,25 +29,33 @@ describe("Investigate continue destination", () => {
     ).toBe("compare");
   });
 
-  it("offers Action only after a county evidence bundle exists", () => {
+  it("offers Action only after the observation bundle has loaded", () => {
+    const county = {
+      county: { fips: "08001", label: "Denver", stateCode: "CO" },
+      releaseId: "alpha-2026",
+    };
     expect({
-      empty: investigateActionOffer({ bundle: null }),
+      empty: investigateActionOffer({
+        bundle: null,
+        observationsLoaded: countyEvidenceLoadStates.loaded,
+      }),
       loaded: investigateActionOffer({
-        bundle: {
-          county: { fips: "08001", label: "Denver", stateCode: "CO" },
-          releaseId: "alpha-2026",
-        },
+        bundle: county,
+        observationsLoaded: countyEvidenceLoadStates.loaded,
       }),
       missingRelease: investigateActionOffer({
-        bundle: {
-          county: { fips: "08001", label: "Denver", stateCode: "CO" },
-          releaseId: "",
-        },
+        bundle: { ...county, releaseId: "" },
+        observationsLoaded: countyEvidenceLoadStates.loaded,
+      }),
+      withheld: investigateActionOffer({
+        bundle: county,
+        observationsLoaded: countyEvidenceLoadStates.withheld,
       }),
     }).toStrictEqual({
       empty: null,
       loaded: { label: "Continue to Action" },
       missingRelease: null,
+      withheld: null,
     });
   });
 

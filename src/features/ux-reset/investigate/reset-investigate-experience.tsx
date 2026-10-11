@@ -22,9 +22,15 @@ import {
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { countyEvidenceLoadStates } from "@/features/ux-reset/investigate/county-evidence";
 import { CountyIntelligenceHeader } from "@/features/ux-reset/investigate/county-intelligence-header";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import { InvestigateNextSteps } from "@/features/ux-reset/investigate/investigate-next-steps";
+import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/investigate-settled-view";
+import {
+  publishedRowsForCounty,
+  resolveInvestigateFinding,
+} from "@/features/ux-reset/investigate/investigate-visible-summary";
 import {
   useInvestigateWorkspace,
   type InvestigateRecovery,
@@ -152,6 +158,37 @@ function InvestigateExperienceInner() {
       ? releaseEvidenceLoadStateValues.error
       : releaseEvidenceLoadStateValues.loading;
   const bundle = workspace.bundle;
+  const hierarchy = settledInvestigateHierarchy({
+    bundle,
+    catalogError: workspace.catalogError,
+    countyRecord: workspace.countyRecord,
+    countyRecordAbsent: workspace.countyRecordAbsent,
+    countyRecordError: workspace.countyRecordError,
+    countyRecordLoading: workspace.countyRecordLoading,
+    countyRecordRefreshError: workspace.countyRecordRefreshError,
+    identity: workspace.identity,
+    releaseId: workspace.releaseId,
+  });
+  const visibleBundle = hierarchy?.bundle ?? null;
+  const observationsLoaded =
+    hierarchy?.observationsLoaded ?? countyEvidenceLoadStates.withheld;
+  const publishedRows = visibleBundle
+    ? publishedRowsForCounty({
+        bundle: visibleBundle,
+        countyRecord: hierarchy?.countyRecord ?? null,
+        measures: workspace.measures,
+      })
+    : [];
+  const carriedFinding = visibleBundle
+    ? resolveInvestigateFinding({
+        bundle: visibleBundle,
+        catalogFailed: hierarchy?.catalogFailed,
+        countyRecordError: hierarchy?.countyRecordError,
+        countyRecordLoading: hierarchy?.countyRecordLoading,
+        countyRecordPresent: hierarchy?.countyRecord !== null,
+        publishedRows,
+      })
+    : null;
   const nextCounty = bundle?.county.fips ?? workspace.requestedFips ?? "";
   const resolvedCounty =
     bundle?.county.fips ?? workspace.identity?.fips ?? null;
@@ -167,6 +204,8 @@ function InvestigateExperienceInner() {
   usePublishAskAtlasInheritedContext(
     inheritedContextFromInvestigate({
       bundle,
+      finding: carriedFinding,
+      observationsLoaded,
       identity: workspace.identity,
       releaseId: workspace.releaseId,
       releaseMismatch: workspace.recovery === "release_mismatch",
@@ -182,6 +221,23 @@ function InvestigateExperienceInner() {
     requestedFips: workspace.requestedFips,
     selectedInRelease,
   });
+  const showModelAssisted =
+    Boolean(workspace.requestedFips) &&
+    COUNTY_FIPS.test(workspace.requestedFips ?? "") &&
+    (workspace.recovery === null || workspace.recovery === "release_mismatch");
+  const modelAssisted = showModelAssisted ? (
+    <Tier1SurveillancePriority
+      fips={workspace.requestedFips ?? ""}
+      headingLevel={visibleBundle ? "h3" : "h2"}
+      release={tier1ReleaseFromMetadata({
+        isError:
+          Boolean(workspace.metadataError) ||
+          workspace.recovery === "release_mismatch",
+        isLoading: workspace.metadataLoading,
+        releaseId: workspace.releaseId,
+      })}
+    />
+  ) : null;
 
   return (
     <div
@@ -268,6 +324,31 @@ function InvestigateExperienceInner() {
           {workspace.catalogError}
         </AtlasStatusMessage>
       ) : null}
+      {workspace.catalogRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.catalogRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.indicatorError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.indicatorRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.metadataRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.metadataRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.directoryRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.directoryRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
       {workspace.evidenceLoading ? (
         <AtlasStatusMessage tone="loading">
           Loading county evidence…
@@ -303,29 +384,21 @@ function InvestigateExperienceInner() {
         </div>
       ) : null}
 
-      {workspace.requestedFips &&
-      COUNTY_FIPS.test(workspace.requestedFips) &&
-      (workspace.recovery === null ||
-        workspace.recovery === "release_mismatch") ? (
-        <Tier1SurveillancePriority
-          fips={workspace.requestedFips}
-          headingLevel="h2"
-          release={tier1ReleaseFromMetadata({
-            isError:
-              Boolean(workspace.metadataError) ||
-              workspace.recovery === "release_mismatch",
-            isLoading: workspace.metadataLoading,
-            releaseId: workspace.releaseId,
-          })}
-        />
-      ) : null}
+      {visibleBundle ? null : modelAssisted}
 
-      {bundle ? (
+      {hierarchy ? (
         <InvestigateEvidenceHierarchy
-          bundle={bundle}
+          bundle={hierarchy.bundle}
+          catalogFailed={hierarchy.catalogFailed}
+          countyRecord={hierarchy.countyRecord}
+          countyRecordError={hierarchy.countyRecordError}
+          countyRecordLoading={hierarchy.countyRecordLoading}
+          countyRecordRefreshError={hierarchy.countyRecordRefreshError}
+          measures={workspace.measures}
+          modelAssisted={modelAssisted}
           retrying={workspace.evidenceFetching}
           onRetryFailures={
-            bundle.measureFailures.length > 0
+            bundle && bundle.measureFailures.length > 0
               ? workspace.retryEvidence
               : undefined
           }
@@ -335,9 +408,14 @@ function InvestigateExperienceInner() {
       <InvestigateNextSteps
         actionHref={actionHref}
         bundle={bundle}
+        observationsLoaded={observationsLoaded}
         compare={workspace.compare}
         compareHref={compareHref}
         countyFips={nextCounty}
+        finding={carriedFinding}
+        findingCountyLabel={
+          visibleBundle?.county.label ?? workspace.identity?.label ?? nextCounty
+        }
         requestedPeriod={workspace.period}
         resolvedCounty={resolvedCounty}
       />

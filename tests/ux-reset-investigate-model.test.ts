@@ -5,6 +5,7 @@ import {
   buildCountyEvidenceBundle,
   classifyInvestigateCountySelection,
   countyEvidenceForRequest,
+  evidenceFamilyForMeasure,
   evidenceFamilyFromIndicatorDomain,
   InvestigateContractError,
   countyEvidenceGap,
@@ -81,6 +82,214 @@ describe("evidence families", () => {
       unknown: null,
       climate: null,
       vector: "vector_pathogen",
+    });
+  });
+
+  it("uses a blank domain's indicator id and keeps an unknown domain unclassified", () => {
+    expect({
+      blankHuman: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "human_disease_burden",
+      }),
+      blankPathogenWhenDomainsFail: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: true,
+        indicatorId: "pathogen_surveillance",
+      }),
+      blankPopulation: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "population_context",
+      }),
+      blankTick: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "tick_surveillance",
+      }),
+      countyReference: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "county_reference",
+      }),
+      unknownDomain: evidenceFamilyForMeasure({
+        domain: "climate",
+        domainsRequestFailed: false,
+        indicatorId: "tick_surveillance",
+      }),
+    }).toStrictEqual({
+      blankHuman: "human",
+      blankPathogenWhenDomainsFail: "vector_pathogen",
+      blankPopulation: "environmental_population",
+      blankTick: "vector_pathogen",
+      countyReference: null,
+      unknownDomain: null,
+    });
+  });
+
+  it("keeps an omitted indicator unclassified and a blank domain on the id allowlist", () => {
+    const identity = resolveCountyIdentity(
+      investigateGeographyFixture("08001")!,
+      "08001"
+    );
+    const measure = {
+      ...(investigateMeasuresFixture[1] as Measure),
+      indicator_id: "tick_surveillance",
+    };
+    const bundleFor = (input: {
+      domain: string | null;
+      domainsRequestFailed: boolean;
+      omit: boolean;
+    }) => {
+      const domains = new Map<string, string | null>();
+      if (!input.omit) {
+        domains.set(measure.indicator_id, input.domain);
+      }
+      return buildCountyEvidenceBundle({
+        domainsRequestFailed: input.domainsRequestFailed,
+        identity,
+        indicatorDomains: {
+          domains,
+          unresolvedIds: new Set<string>(),
+        },
+        measures: [measure],
+        outcomes: [
+          {
+            measureId: measure.measure_id,
+            observations: investigateObservationsFor({
+              fips: "08001",
+              measureId: measure.measure_id,
+              scenario: "mixed",
+            }),
+            status: "ready" as const,
+          },
+        ],
+        releaseId: INVESTIGATE_RELEASE_ID,
+      });
+    };
+    const placed = (bundle: ReturnType<typeof buildCountyEvidenceBundle>) => ({
+      human:
+        bundle.families.find((family) => family.id === "human")?.observations
+          .length ?? 0,
+      unclassified: bundle.unclassifiedMeasureIds,
+      unassigned: bundle.unassigned.length,
+      vector:
+        bundle.families.find((family) => family.id === "vector_pathogen")
+          ?.observations.length ?? 0,
+    });
+    expect({
+      blank: placed(
+        bundleFor({
+          domain: null,
+          domainsRequestFailed: false,
+          omit: false,
+        })
+      ),
+      failed: placed(
+        bundleFor({
+          domain: null,
+          domainsRequestFailed: true,
+          omit: true,
+        })
+      ),
+      missing: placed(
+        bundleFor({
+          domain: null,
+          domainsRequestFailed: false,
+          omit: true,
+        })
+      ),
+      present: placed(
+        bundleFor({
+          domain: "human",
+          domainsRequestFailed: false,
+          omit: false,
+        })
+      ),
+    }).toStrictEqual({
+      blank: { human: 0, unclassified: [], unassigned: 0, vector: 1 },
+      failed: { human: 0, unclassified: [], unassigned: 0, vector: 1 },
+      missing: {
+        human: 0,
+        unclassified: [INVESTIGATE_TICK_MEASURE_ID],
+        unassigned: 1,
+        vector: 0,
+      },
+      present: { human: 1, unclassified: [], unassigned: 0, vector: 0 },
+    });
+  });
+
+  it("keeps conflicting indicator domains unclassified", () => {
+    const base = investigateIndicatorsFixture[0];
+    if (!base) {
+      throw new Error("Indicator fixture is missing.");
+    }
+    const indicator = (domain: string | null) => ({
+      ...base,
+      domain,
+      indicator_id: "tick_surveillance",
+    });
+    const family = (
+      index: ReturnType<typeof indicatorDomainsById>,
+      indicatorId: string
+    ) =>
+      evidenceFamilyForMeasure({
+        domain: index.domains.get(indicatorId) ?? null,
+        domainUnresolved: index.unresolvedIds.has(indicatorId),
+        domainsRequestFailed: false,
+        indicatorId,
+      });
+    const blank = indicatorDomainsById(
+      [indicator(null)],
+      INVESTIGATE_RELEASE_ID
+    );
+    const conflict = indicatorDomainsById(
+      [indicator("vector"), indicator("human")],
+      INVESTIGATE_RELEASE_ID
+    );
+    expect({
+      blank: family(blank, "tick_surveillance"),
+      conflict: family(conflict, "tick_surveillance"),
+      unresolved: conflict.unresolvedIds.has("tick_surveillance"),
+    }).toStrictEqual({
+      blank: "vector_pathogen",
+      conflict: null,
+      unresolved: true,
+    });
+  });
+
+  it("withholds an indicator published only for another release", () => {
+    const base = investigateIndicatorsFixture[0];
+    if (!base) {
+      throw new Error("Indicator fixture is missing.");
+    }
+    const indicator = (releaseVersion: string) => ({
+      ...base,
+      domain: "vector",
+      indicator_id: "tick_surveillance",
+      release_version: releaseVersion,
+    });
+    const family = (index: ReturnType<typeof indicatorDomainsById>) =>
+      evidenceFamilyForMeasure({
+        domain: index.domains.get("tick_surveillance") ?? null,
+        domainUnresolved: index.unresolvedIds.has("tick_surveillance"),
+        domainsRequestFailed: false,
+        indicatorId: "tick_surveillance",
+      });
+    const withheld = indicatorDomainsById(
+      [indicator("other-release")],
+      INVESTIGATE_RELEASE_ID
+    );
+    const current = indicatorDomainsById(
+      [indicator("other-release"), indicator(INVESTIGATE_RELEASE_ID)],
+      INVESTIGATE_RELEASE_ID
+    );
+    expect({
+      current: family(current),
+      withheld: family(withheld),
+    }).toStrictEqual({
+      current: "vector_pathogen",
+      withheld: null,
     });
   });
 });
@@ -291,11 +500,14 @@ describe(buildCountyEvidenceBundle, () => {
   });
 
   it("keeps a null domain unclassified instead of calling the family unpublished", () => {
-    const nullDomains = new Map<string, string | null>([
-      ["human-cases", null],
-      ["tick-pathogen", "climate"],
-      ["canopy", null],
-    ]);
+    const nullDomains = {
+      domains: new Map<string, string | null>([
+        ["human-cases", null],
+        ["tick-pathogen", "climate"],
+        ["canopy", null],
+      ]),
+      unresolvedIds: new Set<string>(),
+    };
     const bundle = buildCountyEvidenceBundle({
       domainsRequestFailed: false,
       identity,
