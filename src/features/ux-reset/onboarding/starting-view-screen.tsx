@@ -109,12 +109,12 @@ function StartingViewForm({
     identityRef.current = identity;
   }, [identity]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
       mountedRef.current = false;
-    },
-    []
-  );
+    };
+  }, []);
 
   async function continueToReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
