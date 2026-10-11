@@ -88,17 +88,19 @@ describe("Action evidence context", () => {
     });
   });
 
-  it("treats surveillance as unavailable and any other plan as unsupported", () => {
+  it("recognizes the evidence brief and leaves other plans unsupported", () => {
     expect({
       blank: actionPlanPosture([""]),
       brief: actionPlanPosture(["brief"]),
       duplicate: actionPlanPosture(["surveillance", "brief"]),
+      evidenceBrief: actionPlanPosture([" evidence-brief "]),
       none: actionPlanPosture([]),
       surveillance: actionPlanPosture(["surveillance"]),
     }).toStrictEqual({
       blank: { kind: "none" },
       brief: { kind: "unsupported", plan: "brief" },
       duplicate: { kind: "unsupported", plan: "surveillance,brief" },
+      evidenceBrief: { kind: "evidence_brief" },
       none: { kind: "none" },
       surveillance: { kind: "surveillance_unavailable" },
     });

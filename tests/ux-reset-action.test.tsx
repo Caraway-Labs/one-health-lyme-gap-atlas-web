@@ -1,9 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import {
+  EVIDENCE_BRIEF_CATALOG_WITHHELD,
+  EVIDENCE_BRIEF_LOCAL_CONTEXT_NOTE,
+  EVIDENCE_BRIEF_NOT_LOADED,
+} from "@/features/ux-reset/action/evidence-brief";
 import { ResetActionExperience } from "@/features/ux-reset/action/reset-action-experience";
 import {
   AskAtlasInheritedContextProvider,
@@ -359,11 +370,14 @@ describe("Action evidence handoff", () => {
       returnPath: returnHref.includes("/app/investigate"),
       returnPeriod: returnHref.includes("period=2023-01-01"),
       returnPlan: returnHref.includes("plan="),
+      briefOffer: screen
+        .queryByRole("button", { name: "Evidence brief" })
+        ?.getAttribute("aria-pressed"),
+      surveillanceButton: screen.queryByRole("button", {
+        name: "Surveillance Planning",
+      }),
       surveillanceLink: screen.queryByRole("link", {
         name: /Surveillance Planning/,
-      }),
-      workflowButton: screen.queryByRole("button", {
-        name: /Surveillance Planning|Evidence Brief/,
       }),
     }).toStrictEqual({
       availability: true,
@@ -374,14 +388,15 @@ describe("Action evidence handoff", () => {
       limitation: true,
       period: true,
       periodState: "matched",
+      briefOffer: "false",
       release: INVESTIGATE_RELEASE_ID,
       returnCompare: true,
       returnCounty: true,
       returnPath: true,
       returnPeriod: true,
       returnPlan: false,
+      surveillanceButton: null,
       surveillanceLink: null,
-      workflowButton: null,
     });
     expect(screen.getByTestId("action-surveillance").textContent).toContain(
       "not available"
@@ -738,20 +753,110 @@ describe("Action evidence handoff", () => {
     await screen.findByText(CATALOG_FINDING_FAILURE);
     const failedContext = screen.getByTestId("ask-atlas-inherited-context");
     expect({
+      brief: screen.queryByRole("button", { name: "Evidence brief" }),
       evidence: screen.getByTestId("action-finding-text").textContent,
       evidenceState:
         screen.getByTestId("action-evidence").dataset.evidenceState,
       geography: inheritedFieldValue(failedContext, "geography", "fieldId"),
       identity: screen.getByTestId("action-county-identity").textContent,
       none: screen.queryByTestId("ask-atlas-no-context"),
+      pdf: screen.queryByTestId("investigate-export-context"),
       release: inheritedFieldValue(failedContext, "release", "fieldId"),
     }).toStrictEqual({
+      brief: null,
       evidence: CATALOG_FINDING_FAILURE,
       evidenceState: "",
       geography: "08001",
       identity: "FIPS 08001 · Colorado (CO).",
       none: null,
+      pdf: null,
       release: INVESTIGATE_RELEASE_ID,
+    });
+  });
+
+  it("builds the evidence brief from the loaded bundle and keeps a local note separate", async () => {
+    const note = "The clinic holds Tuesday office hours.";
+    renderAction("?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01");
+    await waitForEvidence("08001");
+    expect(screen.queryByTestId("action-evidence-brief")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Evidence brief" }));
+    const brief = await screen.findByTestId("action-evidence-brief");
+    expect(brief.dataset.state).toBe("ready");
+    fireEvent.change(screen.getByLabelText("Local context"), {
+      target: { value: note },
+    });
+    expect({
+      export: screen.getByTestId("investigate-export-context").textContent,
+      finding: screen.getByTestId("action-brief-finding").textContent,
+      findingNote: (
+        screen.getByTestId("action-brief-finding").textContent ?? ""
+      ).includes(note),
+      governed: screen.getByTestId("action-brief-governed").dataset.governed,
+      local: screen.getByTestId("action-brief-local").dataset.governed,
+      note: screen.getByTestId("action-brief-local-note").textContent,
+      pageFinding: screen.getByTestId("action-finding-text").textContent,
+      pressed: screen
+        .getByRole("button", { name: "Evidence brief" })
+        .getAttribute("aria-pressed"),
+      returnPlan: (
+        screen.getByTestId("action-return").getAttribute("href") ?? ""
+      ).includes("plan="),
+      summary: screen.getByTestId("action-finding-text").textContent,
+    }).toStrictEqual({
+      export: expect.not.stringContaining(note),
+      finding: expect.stringContaining("12 cases"),
+      findingNote: false,
+      governed: "true",
+      local: "false",
+      note: EVIDENCE_BRIEF_LOCAL_CONTEXT_NOTE,
+      pageFinding: expect.not.stringContaining(note),
+      pressed: "true",
+      returnPlan: false,
+      summary: expect.stringContaining("12 cases"),
+    });
+  });
+
+  it("withholds the brief while evidence is loading and when the catalog stand-in is all that settled", async () => {
+    controls.holdObservations = true;
+    renderAction(
+      "?county=08001&scope=CO&dataset=alpha-2026&plan=evidence-brief"
+    );
+    const loadingBlocker = await screen.findByTestId("action-brief-blocker");
+    expect({
+      blocker: loadingBlocker.textContent,
+      empty: screen.queryByText(
+        "No observed or limited finding was returned for this county."
+      ),
+      pdf: screen.queryByTestId("investigate-export-context"),
+    }).toStrictEqual({
+      blocker: EVIDENCE_BRIEF_NOT_LOADED,
+      empty: null,
+      pdf: null,
+    });
+    cleanup();
+
+    controls.holdObservations = false;
+    controls.failMeasures = true;
+    renderAction(
+      "?county=08001&scope=CO&dataset=alpha-2026&plan=evidence-brief"
+    );
+    const catalogBlocker = await screen.findByText(
+      EVIDENCE_BRIEF_CATALOG_WITHHELD
+    );
+    expect({
+      blocker: catalogBlocker.textContent,
+      button: screen.queryByRole("button", { name: "Evidence brief" }),
+      empty: screen.queryByText(
+        "No observed or limited finding was returned for this county."
+      ),
+      finding: screen.getByTestId("action-finding-text").textContent,
+      pdf: screen.queryByTestId("investigate-export-context"),
+    }).toStrictEqual({
+      blocker: EVIDENCE_BRIEF_CATALOG_WITHHELD,
+      button: null,
+      empty: null,
+      finding: CATALOG_FINDING_FAILURE,
+      pdf: null,
     });
   });
 });
