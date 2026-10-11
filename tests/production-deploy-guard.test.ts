@@ -208,11 +208,30 @@ describe("quality and deploy workflow", () => {
   it("does not serialize CI with the production concurrency group", () => {
     expect(workflow).not.toMatch(/^concurrency:/m);
     const qualityJob = workflow.slice(
-      workflow.indexOf("\n  quality:"),
+      workflow.indexOf("\n  quality-gates:"),
       workflow.indexOf("\n  deploy-guard:")
     );
     expect(qualityJob).not.toContain("concurrency:");
     expect(qualityJob).toContain("CI_MAX_PARALLEL");
+  });
+
+  it("requires all shards and general gates before opening production", () => {
+    const aggregate = workflow.slice(
+      workflow.indexOf("\n  quality:"),
+      workflow.indexOf("\n  deploy-guard:")
+    );
+    expect(
+      missingLines(aggregate, [
+        "needs: [quality-gates, playwright]",
+        "if: always()",
+        'test "$QUALITY_RESULT" = success',
+        'test "$PLAYWRIGHT_RESULT" = success',
+      ])
+    ).toStrictEqual([]);
+    expect(workflow).toContain("needs: [quality, quality-gates, playwright]");
+    expect(workflow).toContain("shard: [1, 2, 3]");
+    expect(workflow).toContain("fail-fast: false");
+    expect(workflow).toContain("max-parallel: 3");
   });
 
   it("serializes production deploys and cancels superseded deploy work", () => {
@@ -221,7 +240,7 @@ describe("quality and deploy workflow", () => {
       missingLines(deployJob, [
         "vars.WEB_PRODUCTION_CONCURRENCY_GROUP || 'atlas-web-production'",
         "cancel-in-progress: true",
-        "needs: [quality, deploy-guard]",
+        "needs: [quality, quality-gates, playwright, deploy-guard]",
         "digitalocean/app_action/deploy@v2",
       ])
     ).toStrictEqual([]);
