@@ -72,7 +72,8 @@
 
 /* Public consent stays a dialog trigger until Settings exposes it (issues 427 and 527). */
 .front-porch .ux-reset-trust-footer .footer-link,
-.public-layout .ux-reset-trust-footer .footer-link {
+.public-layout .ux-reset-trust-footer .footer-link,
+.public-layout .ux-reset-trust-footer .footer-feedback {
   height: auto;
   min-height: 1.5rem;
   padding: var(--space-1) 0;
@@ -89,11 +90,16 @@
 }
 
 .front-porch .ux-reset-trust-footer .footer-link:hover,
-.public-layout .ux-reset-trust-footer .footer-link:hover {
+.public-layout .ux-reset-trust-footer .footer-link:hover,
+.public-layout .ux-reset-trust-footer .footer-feedback:hover {
   background: transparent;
   color: var(--white);
   text-decoration: underline;
   text-underline-offset: 0.15em;
+}
+
+.public-layout .ux-reset-trust-footer .footer-feedback {
+  font-family: inherit;
 }
 
 .ux-reset-pro-app .ux-reset-trust-footer a:focus-visible,
@@ -181,7 +187,8 @@
   .front-porch .ux-reset-trust-footer a,
   .front-porch .ux-reset-trust-footer .footer-link,
   .public-layout .ux-reset-trust-footer a,
-  .public-layout .ux-reset-trust-footer .footer-link {
+  .public-layout .ux-reset-trust-footer .footer-link,
+  .public-layout .ux-reset-trust-footer .footer-feedback {
     min-height: var(--control-height);
   }
 }

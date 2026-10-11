@@ -5,7 +5,7 @@ const PUBLIC_TRUST_ROUTES = ["/about/caraway-labs", "/ai-ethics", "/privacy"];
 
 test("public trust pages share the unauthenticated footer", async ({
   page,
-}) => {
+}, testInfo) => {
   for (const route of PUBLIC_TRUST_ROUTES) {
     await page.goto(route);
     await expect(page).not.toHaveURL(/sign-in/);
@@ -34,6 +34,37 @@ test("public trust pages share the unauthenticated footer", async ({
       footer.getByRole("button", { name: "Privacy settings" })
     ).toBeVisible();
     await expect(footer.locator("img.atlas-brand-mark")).toHaveCount(0);
+
+    const feedback = footer.getByRole("button", {
+      name: "Feedback",
+      exact: true,
+    });
+    if (route === "/about/caraway-labs") {
+      await expect(feedback).toHaveCount(0);
+    } else {
+      await feedback.scrollIntoViewIfNeeded();
+      await expect(feedback).toBeVisible();
+      await expect(feedback).toHaveAttribute(
+        "data-atlas-analytics-control",
+        "feedback_footer_open"
+      );
+      const box = await feedback.boundingBox();
+      const viewport = page.viewportSize();
+      expect(box).not.toBeNull();
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(
+        (viewport?.height ?? 0) + 1
+      );
+      if (testInfo.project.name === "mobile") {
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+      }
+      await feedback.click();
+      await expect(
+        page.getByRole("dialog", { name: "Send feedback" })
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    }
   }
 
   await page.goto("/privacy");
