@@ -172,7 +172,7 @@ describe("Settings profile form", () => {
         confirmed: true,
         role: "status",
         text: expect.stringContaining(
-          "New Review sessions will start with the United States."
+          "Starting view saved. It will apply the next time you open Review without a specific view."
         ),
       });
     });
@@ -340,13 +340,25 @@ describe("Settings profile form", () => {
       })
     );
     const { client } = renderSettings();
-    expect(
-      ((await screen.findByTestId("settings-organization")) as HTMLInputElement)
-        .value
-    ).toBe("CDPHE");
-    expect(
-      screen.getByTestId("settings-jurisdiction-select").textContent
-    ).toContain("Choose United States or a state");
+    expect({
+      oneState: (
+        (await screen.findByRole("radio", {
+          name: "One state",
+        })) as HTMLInputElement
+      ).checked,
+      organization: (
+        screen.getByTestId("settings-organization") as HTMLInputElement
+      ).value,
+      select: screen.queryByTestId("settings-jurisdiction-select"),
+      unitedStates: (
+        screen.getByRole("radio", { name: "United States" }) as HTMLInputElement
+      ).checked,
+    }).toStrictEqual({
+      oneState: false,
+      organization: "CDPHE",
+      select: null,
+      unitedStates: false,
+    });
     vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
@@ -431,4 +443,244 @@ describe("Settings profile form", () => {
       (screen.getByTestId("settings-organization") as HTMLInputElement).value
     ).toBe("Edited");
   });
+
+  it("shows United States or One state, and reveals the state list only for one state", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({ data: { profile: null }, status: 200 })
+    );
+    renderSettings();
+    await screen.findByTestId("settings-profile-form");
+    const national = screen.getByRole("radio", {
+      name: "United States",
+    }) as HTMLInputElement;
+    const oneState = screen.getByRole("radio", {
+      name: "One state",
+    }) as HTMLInputElement;
+    expect({
+      national: national.checked,
+      oneState: oneState.checked,
+      select: screen.queryByTestId("settings-jurisdiction-select"),
+    }).toStrictEqual({
+      national: false,
+      oneState: false,
+      select: null,
+    });
+
+    fireEvent.click(oneState);
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    expect({
+      alert: screen.getByRole("alert").textContent,
+      called: saveProfile.mock.calls.length,
+      select: screen.getByTestId("settings-jurisdiction-select").textContent,
+    }).toStrictEqual({
+      alert: expect.stringContaining("Nothing was saved"),
+      called: 0,
+      select: expect.stringContaining("Select a state"),
+    });
+
+    fireEvent.click(national);
+    expect({
+      national: national.checked,
+      select: screen.queryByTestId("settings-jurisdiction-select"),
+    }).toStrictEqual({
+      national: true,
+      select: null,
+    });
+  });
+
+  it("prefills One state when the saved default is a listed state", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: null,
+            role: null,
+            state_code: "NY",
+          },
+        },
+        status: 200,
+      })
+    );
+    renderSettings();
+    await screen.findByRole("radio", { name: "One state" });
+    await waitFor(() =>
+      expect({
+        oneState: (
+          screen.getByRole("radio", { name: "One state" }) as HTMLInputElement
+        ).checked,
+        select: screen.getByTestId("settings-jurisdiction-select").textContent,
+        unitedStates: (
+          screen.getByRole("radio", {
+            name: "United States",
+          }) as HTMLInputElement
+        ).checked,
+      }).toStrictEqual({
+        oneState: true,
+        select: expect.stringContaining("New York (NY)"),
+        unitedStates: false,
+      })
+    );
+  });
+
+  it("saves a state chosen from the starting-view list", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({ data: { profile: null }, status: 200 })
+    );
+    saveProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: null,
+            role: null,
+            state_code: "CO",
+          },
+        },
+        status: 200,
+      })
+    );
+    renderSettings();
+    await screen.findByRole("radio", { name: "One state" });
+    fireEvent.click(screen.getByRole("radio", { name: "One state" }));
+    await chooseStartingViewState("Colorado (CO)");
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    await waitFor(() =>
+      expect({
+        called: (
+          saveProfile.mock.calls.at(-1) as [Record<string, unknown>] | undefined
+        )?.[0],
+        select: screen.getByTestId("settings-jurisdiction-select").textContent,
+      }).toStrictEqual({
+        called: expect.objectContaining({ state_code: "CO" }),
+        select: expect.stringContaining("Colorado (CO)"),
+      })
+    );
+  });
+
+  it("keeps the chosen state when the select reports an empty value", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({ data: { profile: null }, status: 200 })
+    );
+    renderSettings();
+    await screen.findByRole("radio", { name: "One state" });
+    fireEvent.click(screen.getByRole("radio", { name: "One state" }));
+    await chooseStartingViewState("Colorado (CO)");
+    startingViewValueChange(screen.getByTestId("settings-jurisdiction-select"))(
+      null
+    );
+    expect(
+      screen.getByTestId("settings-jurisdiction-select").textContent
+    ).toContain("Colorado (CO)");
+  });
+
+  it("restores the remembered state after switching back to One state", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({ data: { profile: null }, status: 200 })
+    );
+    renderSettings();
+    const oneState = (await screen.findByRole("radio", {
+      name: "One state",
+    })) as HTMLInputElement;
+    fireEvent.click(oneState);
+    await chooseStartingViewState("New York (NY)");
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("settings-jurisdiction-select").textContent
+      ).toContain("New York (NY)")
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "United States" }));
+    fireEvent.click(oneState);
+    expect({
+      oneState: oneState.checked,
+      select: screen.getByTestId("settings-jurisdiction-select").textContent,
+      unitedStates: (
+        screen.getByRole("radio", { name: "United States" }) as HTMLInputElement
+      ).checked,
+    }).toStrictEqual({
+      oneState: true,
+      select: expect.stringContaining("New York (NY)"),
+      unitedStates: false,
+    });
+  });
+
+  it("falls back to the confirmed saved state when One state is chosen again", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: null,
+            role: null,
+            state_code: "NY",
+          },
+        },
+        status: 200,
+      })
+    );
+    renderSettings();
+    const oneState = (await screen.findByRole("radio", {
+      name: "One state",
+    })) as HTMLInputElement;
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("settings-jurisdiction-select").textContent
+      ).toContain("New York (NY)")
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "United States" }));
+    fireEvent.click(oneState);
+    expect({
+      oneState: oneState.checked,
+      select: screen.getByTestId("settings-jurisdiction-select").textContent,
+    }).toStrictEqual({
+      oneState: true,
+      select: expect.stringContaining("New York (NY)"),
+    });
+  });
 });
+
+type SelectFiber = {
+  memoizedProps?: { onValueChange?: (value: string | null) => void };
+  return: SelectFiber | null;
+};
+
+function startingViewValueChange(
+  trigger: HTMLElement
+): (value: string | null) => void {
+  const fiberKey = Object.keys(trigger).find((key) =>
+    key.startsWith("__reactFiber$")
+  );
+  let fiber = fiberKey
+    ? (trigger as unknown as Record<string, SelectFiber>)[fiberKey]
+    : null;
+  while (fiber) {
+    const change = fiber.memoizedProps?.onValueChange;
+    if (change) {
+      return change;
+    }
+    fiber = fiber.return;
+  }
+  throw new Error("Starting view select did not expose a value change handler");
+}
+
+async function chooseStartingViewState(name: string) {
+  const trigger = screen.getByTestId("settings-jurisdiction-select");
+  fireEvent.click(trigger);
+  const option = await screen.findByRole("option", { name });
+  fireEvent.pointerDown(option, {
+    button: 0,
+    pointerId: 1,
+    pointerType: "mouse",
+  });
+  fireEvent.pointerUp(option, {
+    button: 0,
+    pointerId: 1,
+    pointerType: "mouse",
+  });
+  fireEvent.click(option, {
+    button: 0,
+    detail: 1,
+    pointerId: 1,
+    pointerType: "mouse",
+  });
+}

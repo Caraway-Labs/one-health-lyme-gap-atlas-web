@@ -12,6 +12,13 @@ export function hasExplicitReviewScopeParam(
   return searchParams.has("scope");
 }
 
+/** A state scope or county in the URL is an explicit location. Profile defaults do not replace it. */
+export function hasExplicitReviewLocation(
+  searchParams: ScopeSearchParams
+): boolean {
+  return searchParams.has("scope") || searchParams.has("county");
+}
+
 export function parsedReviewScopeFromUrl(
   searchParams: ScopeSearchParams
 ): ReviewScope {
@@ -19,8 +26,10 @@ export function parsedReviewScopeFromUrl(
 }
 
 /**
- * Profile default jurisdiction applies only when the URL omits `scope`. A present
- * `scope` param (including invalid values canonicalized to ALL) wins over profile.
+ * The saved starting view applies only when the URL has neither `scope` nor
+ * `county`. A present `scope` param, including an invalid value canonicalized
+ * to ALL, wins. A `county` param is an explicit location even when `scope` is
+ * omitted, so the profile default does not replace it.
  */
 export function resolveStartingReviewScope(
   hasExplicitScopeParam: boolean,
