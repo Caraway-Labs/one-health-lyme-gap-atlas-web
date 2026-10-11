@@ -179,4 +179,43 @@ describe("email-first sign-in entrance", () => {
     );
     expect(screen.getByLabelText("Email")).toBeTruthy();
   });
+
+  it("resends the submitted address after the field is locked", async () => {
+    const pending = Promise.withResolvers<{ error: null }>();
+    signInWithOtp.mockReturnValue(pending.promise);
+    render(<SignInPage />);
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "first@example.org" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Email me a sign-in link" })
+    );
+
+    const pendingField = screen.getByLabelText("Email") as HTMLInputElement;
+    expect(pendingField.disabled).toBeTruthy();
+    fireEvent.change(pendingField, {
+      target: { value: "second@example.org" },
+    });
+    pending.resolve({ error: null });
+
+    await screen.findByRole("heading", { name: "Check your email" });
+    expect(signInWithOtp).toHaveBeenLastCalledWith(
+      expect.objectContaining({ email: "first@example.org" })
+    );
+
+    signInWithOtp.mockResolvedValue({ error: null });
+    fireEvent.click(screen.getByRole("button", { name: "Resend link" }));
+    await waitFor(() => {
+      expect(signInWithOtp).toHaveBeenLastCalledWith(
+        expect.objectContaining({ email: "first@example.org" })
+      );
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use a different email" })
+    );
+    const returnedField = screen.getByLabelText("Email") as HTMLInputElement;
+    expect(returnedField.disabled).toBeFalsy();
+    expect(returnedField.value).toBe("first@example.org");
+  });
 });

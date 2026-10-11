@@ -44,6 +44,7 @@ export function SignInEntrance() {
   const confirmationHeadingRef = useRef<HTMLHeadingElement>(null);
   const returnFocusToEmail = useRef(false);
   const [email, setEmail] = useState("");
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [view, setView] = useState<AuthView>("request");
   const [busy, setBusy] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -65,9 +66,12 @@ export function SignInEntrance() {
     emailRef.current?.focus();
   }, [view]);
 
-  async function requestSignInLink(target: AuthView): Promise<boolean> {
+  async function requestSignInLink(
+    target: AuthView,
+    address: string
+  ): Promise<boolean> {
     const { error } = await createClient().auth.signInWithOtp({
-      email,
+      email: address,
       options: {
         emailRedirectTo: emailConfirmRedirect(window.location.origin, next),
       },
@@ -83,11 +87,14 @@ export function SignInEntrance() {
 
   async function sendMagicLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const address = email.trim();
     setBusy(true);
     setRequestError(null);
     try {
-      const sent = await requestSignInLink("request");
+      const sent = await requestSignInLink("request", address);
       if (!sent) return;
+      setSubmittedEmail(address);
+      setEmail(address);
       setConfirmationError(null);
       setConfirmationStatus(null);
       setView("confirmation");
@@ -99,11 +106,12 @@ export function SignInEntrance() {
   }
 
   async function resendLink() {
+    if (!submittedEmail) return;
     setBusy(true);
     setConfirmationError(null);
     setConfirmationStatus(null);
     try {
-      const sent = await requestSignInLink("confirmation");
+      const sent = await requestSignInLink("confirmation", submittedEmail);
       if (!sent) return;
       setConfirmationStatus(SIGN_IN_COPY.confirmationBody);
       setStatusVersion((version) => version + 1);
@@ -140,6 +148,7 @@ export function SignInEntrance() {
   }
 
   function useDifferentEmail() {
+    if (submittedEmail) setEmail(submittedEmail);
     returnFocusToEmail.current = true;
     setConfirmationError(null);
     setConfirmationStatus(null);
@@ -174,7 +183,11 @@ export function SignInEntrance() {
               className="auth-entrance-input"
               id={emailFieldId}
               name="email"
-              onChange={(event) => setEmail(event.target.value)}
+              disabled={busy}
+              onChange={(event) => {
+                if (busy) return;
+                setEmail(event.target.value);
+              }}
               placeholder={SIGN_IN_COPY.emailPlaceholder}
               ref={emailRef}
               required

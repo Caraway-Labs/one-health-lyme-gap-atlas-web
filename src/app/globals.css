@@ -5062,13 +5062,13 @@ select:focus-visible {
   color: var(--auth-entrance-on-primary);
 }
 
-.auth-entrance-hint {
+.auth-entrance p.auth-entrance-hint {
   margin: 8px 0 0;
   color: var(--auth-entrance-muted);
   text-align: center;
 }
 
-.auth-entrance-error {
+.auth-entrance p.auth-entrance-error {
   margin: 14px 0 0;
   color: var(--auth-entrance-error);
 }
@@ -5136,8 +5136,8 @@ select:focus-visible {
   padding: 8px;
 }
 
-.auth-entrance-status {
-  margin-top: 18px;
+.auth-entrance p.auth-entrance-status {
+  margin: 18px 0 0;
 }
 
 .auth-entrance .auth-entrance-footer {
