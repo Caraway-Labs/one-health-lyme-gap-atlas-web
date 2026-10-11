@@ -145,6 +145,12 @@ vi.mock(import("@/generated/atlas"), () => ({
     data: reviewScopeScoresFixture,
     status: 200,
   })),
+  saveProfileV1MeProfilePut: vi.fn<
+    () => Promise<{ data: { profile: null }; status: number }>
+  >(async () => ({
+    data: { profile: null },
+    status: 200,
+  })),
   stateReviewV1StatesStateReviewGet: vi.fn<
     (
       state: string,
@@ -195,7 +201,7 @@ function renderReview(
   search = "",
   options: {
     client?: QueryClient;
-    onUrlUpdate?: (queryString: string) => void;
+    onUrlUpdate?: (queryString: string, history: "push" | "replace") => void;
   } = {}
 ) {
   mockedSearch = search.startsWith("?") ? search.slice(1) : search;
@@ -208,7 +214,9 @@ function renderReview(
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter
         hasMemory
-        onUrlUpdate={({ queryString }) => options.onUrlUpdate?.(queryString)}
+        onUrlUpdate={({ options: updateOptions, queryString }) =>
+          options.onUrlUpdate?.(queryString, updateOptions.history)
+        }
         searchParams={new URL(`http://localhost/app/review${search}`).search}
       >
         <ResetReviewExperience />
@@ -230,6 +238,153 @@ function renderReview(
         </QueryClientProvider>
       );
     },
+  };
+}
+
+type StartupProfile = { state_code: string | null } | null;
+
+function scopeToken(query: string): string {
+  const matched = /(?:^|[?&])scope=(?<scope>[^&]*)/.exec(query);
+  const scope = matched?.groups?.scope;
+  if (!scope) {
+    return "";
+  }
+  return decodeURIComponent(scope);
+}
+
+function renderedReviewScope(): string {
+  return (
+    screen.queryByTestId("review-scope-results")?.dataset.renderedScope ?? ""
+  );
+}
+
+async function chooseReviewScopeOption(name: string) {
+  fireEvent.click(screen.getByTestId("review-scope-select"));
+  const option = await screen.findByRole("option", { name });
+  fireEvent.pointerDown(option, { pointerType: "mouse" });
+  fireEvent.click(option);
+}
+
+async function waitForRenderedScope(scope: string) {
+  await waitFor(() => {
+    if (screen.queryByText("Loading review scope…")) {
+      throw new Error("startup still pending");
+    }
+    if (renderedReviewScope() !== scope) {
+      throw new Error(`rendered ${renderedReviewScope()} expected ${scope}`);
+    }
+  });
+}
+
+/**
+ * Once startup settles, the URL has an explicit scope that reproduces the
+ * screen, and startup does not run again. Each row is one path through that rule.
+ */
+async function observeSettledStartup(input: {
+  afterScope: string;
+  back: boolean;
+  error: boolean;
+  forwardScope: string;
+  pick: "United States" | "New York (NY)" | null;
+  profile: StartupProfile;
+  refetch: StartupProfile;
+  settledScope: string;
+}): Promise<{
+  kept: boolean;
+  history: string;
+  later: string;
+  laterRendered: string;
+  rendered: string;
+  saves: number;
+  scope: string;
+}> {
+  const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+    await import("@/generated/atlas");
+  const save = vi.mocked(saveProfileV1MeProfilePut);
+  save.mockClear();
+  const updates: { history: string; query: string }[] = [];
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  let failed = input.error;
+  let current = input.profile;
+  const held = input.pick
+    ? Promise.withResolvers<{
+        data: { profile: StartupProfile };
+        status: number;
+      }>()
+    : null;
+  vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    () =>
+      (held
+        ? held.promise
+        : failed
+          ? Promise.reject(new Error("profile unavailable"))
+          : Promise.resolve({
+              data: { profile: current },
+              status: 200,
+            })) as never
+  );
+  window.history.replaceState(null, "", "/app/review");
+  const view = renderReview("", {
+    client,
+    onUrlUpdate: (query, history) => {
+      updates.push({ history, query });
+    },
+  });
+  if (input.pick && !input.back) {
+    await chooseReviewScopeOption(input.pick);
+  }
+  if (input.pick && input.back) {
+    await chooseReviewScopeOption(input.pick);
+    window.history.replaceState(null, "", "/app/review");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+  held?.resolve({
+    data: { profile: input.profile },
+    status: 200,
+  });
+  await waitForRenderedScope(input.settledScope);
+  const establishedIndex = updates.findIndex((update, index) => {
+    if (scopeToken(update.query) !== input.settledScope) {
+      return false;
+    }
+    const previous = updates[index - 1];
+    return (
+      previous === undefined ||
+      scopeToken(previous.query) !== input.settledScope
+    );
+  });
+  const established =
+    establishedIndex === -1 ? undefined : updates[establishedIndex];
+  const kept =
+    establishedIndex !== -1 &&
+    updates
+      .slice(establishedIndex)
+      .every((update) => scopeToken(update.query) === input.settledScope);
+  const rendered = renderedReviewScope();
+  if (input.forwardScope) {
+    window.history.pushState(null, "", "/app/review?scope=NY");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    view.rerenderSearch("?scope=NY");
+    await waitForRenderedScope(input.forwardScope);
+  } else if (input.refetch) {
+    failed = false;
+    current = input.refetch;
+    await client.refetchQueries({ queryKey: ["ux-reset-saved-profile"] });
+    await waitForRenderedScope(input.afterScope);
+  }
+  const laterScope = input.forwardScope
+    ? scopeToken(window.location.search)
+    : scopeToken(updates.at(-1)?.query ?? "");
+  return {
+    kept,
+    history: established?.history ?? "",
+    later: laterScope,
+    laterRendered: renderedReviewScope(),
+    rendered,
+    saves: save.mock.calls.length,
+    scope: scopeToken(established?.query ?? ""),
   };
 }
 
@@ -1374,6 +1529,625 @@ describe("Reset Review scope UI", () => {
     expect(screen.getByTestId("review-scope-status").dataset.requestScope).toBe(
       "ALL"
     );
+  });
+
+  it("applies a state profile default with replace and without a national flash", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const updates: { history: string; query: string }[] = [];
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    renderReview("", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Loading review scope…")).toBeTruthy()
+    );
+    expect(screen.queryByTestId("review-national-orientation")).toBeNull();
+    expect(screen.queryByTestId("review-scope-status")).toBeNull();
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("CO")
+    );
+    expect({
+      history: updates[0]?.history ?? "",
+      national: screen.queryByTestId("review-national-orientation"),
+      query: updates[0]?.query ?? "",
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      status: screen.getByTestId("review-scope-status").textContent,
+    }).toStrictEqual({
+      history: "replace",
+      national: null,
+      query: expect.stringContaining("scope=CO"),
+      saves: 0,
+      status: expect.stringContaining("Colorado"),
+    });
+  });
+
+  it("keeps a scope chosen before the profile default arrives", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    renderReview("");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-scope-select")).toBeTruthy()
+    );
+    fireEvent.click(screen.getByTestId("review-scope-select"));
+    const newYork = await screen.findByRole("option", {
+      name: "New York (NY)",
+    });
+    fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+    fireEvent.click(newYork);
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("NY")
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("review-candidate").textContent).toContain(
+        "Albany"
+      )
+    );
+    expect({
+      denver: screen.queryByText("Denver"),
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      scope: screen.getByTestId("review-scope-status").textContent,
+    }).toStrictEqual({
+      denver: null,
+      saves: 0,
+      scope: expect.stringContaining("New York"),
+    });
+  });
+
+  it("keeps an explicit United States choice made while the profile is loading", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    const updates: { history: string; query: string }[] = [];
+    renderReview("", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Loading review scope…")).toBeTruthy()
+    );
+    fireEvent.click(screen.getByTestId("review-scope-select"));
+    const unitedStates = await screen.findByRole("option", {
+      name: "United States",
+    });
+    fireEvent.pointerDown(unitedStates, { pointerType: "mouse" });
+    fireEvent.click(unitedStates);
+    await waitFor(() =>
+      expect(
+        updates.some((update) => update.query.includes("scope=ALL"))
+      ).toBeTruthy()
+    );
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
+    );
+    expect({
+      denver: screen.queryByText("Denver"),
+      loading: screen.queryByText("Loading review scope…"),
+      panel: screen.queryByTestId("review-state-panel"),
+      rendered: screen.getByTestId("review-scope-results").dataset
+        .renderedScope,
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      write: updates.find((update) => update.query.includes("scope=ALL")),
+    }).toStrictEqual({
+      denver: null,
+      loading: null,
+      panel: null,
+      rendered: "ALL",
+      saves: 0,
+      write: { history: "push", query: expect.stringContaining("scope=ALL") },
+    });
+  });
+
+  it("applies the saved state after Back from a scope chosen during profile load", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    const updates: { history: string; query: string }[] = [];
+    renderReview("", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    fireEvent.click(screen.getByTestId("review-scope-select"));
+    const newYork = await screen.findByRole("option", {
+      name: "New York (NY)",
+    });
+    fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+    fireEvent.click(newYork);
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("NY")
+    );
+    window.history.replaceState(null, "", "/app/review");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("CO")
+    );
+    expect({
+      loading: screen.queryByText("Loading review scope…"),
+      national: screen.queryByTestId("review-national-orientation"),
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      status: screen.getByTestId("review-scope-status").textContent,
+      write: updates.at(-1),
+    }).toStrictEqual({
+      loading: null,
+      national: null,
+      saves: 0,
+      status: expect.stringContaining("Colorado"),
+      write: { history: "replace", query: expect.stringContaining("scope=CO") },
+    });
+  });
+
+  it("keeps the national fallback when a failed profile read later returns a state", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    let failProfile = true;
+    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+      () =>
+        (failProfile
+          ? Promise.reject(new Error("profile unavailable"))
+          : Promise.resolve({
+              data: { profile: { state_code: "CO" } },
+              status: 200,
+            })) as never
+    );
+    const updates: string[] = [];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderReview("", {
+      client,
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
+    );
+    failProfile = false;
+    await client.refetchQueries({ queryKey: ["ux-reset-saved-profile"] });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("ALL")
+    );
+    expect({
+      loading: screen.queryByText("Loading review scope…"),
+      national: Boolean(screen.queryByTestId("review-national-orientation")),
+      panel: screen.queryByTestId("review-state-panel"),
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      scopeWrites: updates.some((query) => query.includes("scope=CO")),
+    }).toStrictEqual({
+      loading: null,
+      national: true,
+      panel: null,
+      saves: 0,
+      scopeWrites: false,
+    });
+  });
+
+  it("writes an explicit scope once startup settles", async () => {
+    const rows = [
+      {
+        id: "state-default",
+        error: false,
+        pick: null,
+        profile: { state_code: "CO" },
+        refetch: { state_code: "NY" },
+        back: false,
+        settledScope: "CO",
+        afterScope: "CO",
+        forwardScope: "",
+        history: "replace",
+        later: "CO",
+      },
+      {
+        id: "no-default",
+        error: false,
+        pick: null,
+        profile: null,
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "national-default",
+        error: false,
+        pick: null,
+        profile: { state_code: null },
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "read-failure",
+        error: true,
+        pick: null,
+        profile: null,
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "invalid-state",
+        error: false,
+        pick: null,
+        profile: { state_code: "ZZ" },
+        refetch: { state_code: "CO" },
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "replace",
+        later: "ALL",
+      },
+      {
+        id: "pick-state",
+        error: false,
+        pick: "New York (NY)" as const,
+        profile: { state_code: "CO" },
+        refetch: null,
+        back: false,
+        settledScope: "NY",
+        afterScope: "NY",
+        forwardScope: "",
+        history: "push",
+        later: "NY",
+      },
+      {
+        id: "pick-national",
+        error: false,
+        pick: "United States" as const,
+        profile: { state_code: "CO" },
+        refetch: null,
+        back: false,
+        settledScope: "ALL",
+        afterScope: "ALL",
+        forwardScope: "",
+        history: "push",
+        later: "ALL",
+      },
+      {
+        id: "back-then-forward",
+        error: false,
+        pick: "New York (NY)" as const,
+        profile: { state_code: "CO" },
+        refetch: null,
+        back: true,
+        settledScope: "CO",
+        afterScope: "CO",
+        forwardScope: "NY",
+        history: "replace",
+        later: "NY",
+      },
+    ];
+    const observed = [];
+    for (const row of rows) {
+      cleanup();
+      observed.push({
+        id: row.id,
+        ...(await observeSettledStartup(row)),
+      });
+    }
+    expect(observed).toStrictEqual(
+      rows.map((row) => ({
+        kept: true,
+        history: row.history,
+        id: row.id,
+        later: row.later,
+        laterRendered: row.forwardScope || row.afterScope,
+        rendered: row.settledScope,
+        saves: 0,
+        scope: row.settledScope,
+      }))
+    );
+  });
+
+  it("keeps the resolved state when a later profile refetch returns a different state", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const geometry = vi.mocked(fetchCountyDisplayGeometry);
+    geometry.mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    let profileState = "CO";
+    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+      () =>
+        Promise.resolve({
+          data: { profile: { state_code: profileState } },
+          status: 200,
+        }) as never
+    );
+    const updates: string[] = [];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      renderReview("", {
+        client,
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      await waitFor(() =>
+        expect(
+          screen.getByTestId("review-scope-results").dataset.renderedScope
+        ).toBe("CO")
+      );
+      const candidateText = () =>
+        screen
+          .getAllByTestId("review-candidate")
+          .map((candidate) => candidate.textContent ?? "")
+          .join(" ");
+      await waitFor(() => expect(candidateText()).toContain("Denver"));
+      profileState = "NY";
+      await client.refetchQueries({ queryKey: ["ux-reset-saved-profile"] });
+      await waitFor(() =>
+        expect(screen.getByTestId("mock-atlas-map").dataset.mapScoreFips).toBe(
+          "08001"
+        )
+      );
+      expect({
+        albany: screen.queryByText("Albany"),
+        handoff: screen.getByTestId("review-investigate").getAttribute("href"),
+        list: candidateText(),
+        loading: screen.queryByText("Loading review scope…"),
+        rendered: screen.getByTestId("review-scope-results").dataset
+          .renderedScope,
+        saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+        url: updates.at(-1) ?? "",
+      }).toStrictEqual({
+        albany: null,
+        handoff: expect.stringContaining("scope=CO"),
+        list: expect.stringContaining("Denver"),
+        loading: null,
+        rendered: "CO",
+        saves: 0,
+        url: expect.stringContaining("scope=CO"),
+      });
+    } finally {
+      geometry.mockResolvedValue({
+        features: [],
+        type: "FeatureCollection",
+      });
+    }
+  });
+
+  it("rewrites an invalid scope to national without applying the profile state", async () => {
+    const {
+      getProfileV1MeProfileGet,
+      saveProfileV1MeProfilePut,
+      stateReviewV1StatesStateReviewGet,
+    } = await import("@/generated/atlas");
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    } as never);
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    const updates: string[] = [];
+    renderReview("?scope=NOT", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
+    );
+    expect({
+      panel: screen.queryByTestId("review-state-panel"),
+      reviewCalls: vi.mocked(stateReviewV1StatesStateReviewGet).mock.calls
+        .length,
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      status: screen.getByTestId("review-scope-status").textContent,
+      updates,
+    }).toStrictEqual({
+      panel: null,
+      reviewCalls: 0,
+      saves: 0,
+      status: expect.stringContaining("United States"),
+      updates: [expect.stringContaining("scope=ALL")],
+    });
+  });
+
+  it("does not request a review for an unrecognized state code", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    renderReview("?scope=ZZ");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-scope-unsupported").textContent).toBe(
+        "ZZ is not supported — lower 48 only."
+      )
+    );
+    expect({
+      national: screen.queryByTestId("review-national-orientation"),
+      requestScope: screen.getByTestId("review-scope-status").dataset
+        .requestScope,
+      reviewCalls: vi.mocked(stateReviewV1StatesStateReviewGet).mock.calls
+        .length,
+    }).toStrictEqual({
+      national: null,
+      requestScope: "ZZ",
+      reviewCalls: 0,
+    });
+  });
+
+  it("keeps URL, list, map, and handoff on the new scope when a prior review arrives late", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const pending: { resolve: () => void; state: string }[] = [];
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string }
+    ) => {
+      const held = Promise.withResolvers<{
+        data: ReturnType<typeof defaultReviewForState>;
+        status: 200;
+      }>();
+      pending.push({
+        resolve: () => {
+          held.resolve(defaultStateReviewResponse(state, params));
+        },
+        state,
+      });
+      return held.promise;
+    }) as never);
+    const updates: string[] = [];
+    try {
+      renderReview("?scope=CO", {
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      await waitFor(() =>
+        expect(pending.some((entry) => entry.state === "CO")).toBeTruthy()
+      );
+      fireEvent.click(screen.getByTestId("review-scope-select"));
+      const newYork = await screen.findByRole("option", {
+        name: "New York (NY)",
+      });
+      fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+      fireEvent.click(newYork);
+      await waitFor(() =>
+        expect(pending.some((entry) => entry.state === "NY")).toBeTruthy()
+      );
+      pending.find((entry) => entry.state === "NY")?.resolve();
+      await waitFor(() =>
+        expect(screen.getByTestId("review-candidate").textContent).toContain(
+          "Albany"
+        )
+      );
+      pending.find((entry) => entry.state === "CO")?.resolve();
+      await waitFor(() =>
+        expect(
+          screen.getByTestId("review-investigate").getAttribute("href")
+        ).toContain("scope=NY")
+      );
+      expect({
+        denver: screen.queryByText("Denver"),
+        handoff: screen.getByTestId("review-investigate").getAttribute("href"),
+        list: screen.getByTestId("review-candidate").textContent,
+        map: screen.getByTestId("mock-atlas-map").dataset.mapScoreFips,
+        rendered: screen.getByTestId("review-scope-results").dataset
+          .renderedScope,
+        status: screen.getByTestId("review-scope-status").textContent,
+        url: updates.at(-1) ?? "",
+      }).toStrictEqual({
+        denver: null,
+        handoff: expect.stringContaining("scope=NY"),
+        list: expect.stringContaining("Albany"),
+        map: "36001",
+        rendered: "NY",
+        status: expect.stringContaining("New York"),
+        url: expect.stringContaining("scope=NY"),
+      });
+      expect(
+        screen.getByTestId("review-investigate").getAttribute("href")
+      ).toContain("county=36001");
+      expect(
+        screen.getByTestId("mock-atlas-map").dataset.mapScoreFips
+      ).not.toContain("08001");
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
   });
 
   it("requests metadata for a supplied dataset query param", async () => {

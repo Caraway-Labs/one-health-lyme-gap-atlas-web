@@ -7,8 +7,10 @@ import {
 import { buildReviewScopePresentation } from "@/features/ux-reset/review/build-review-presentation";
 import {
   hasExplicitReviewScopeParam,
+  isReviewStartingScopeUnresolved,
   resolveStartingReviewScope,
   reviewScopeMatchesPresentation,
+  reviewScopeQueryCanonicalRewrite,
 } from "@/features/ux-reset/review/resolve-review-scope";
 import type { CountyScoreSummary } from "@/generated/models";
 
@@ -78,6 +80,76 @@ describe("Review scope resolution", () => {
       hasExplicitReviewScopeParam(new URLSearchParams("scope=ALL"))
     ).toBeTruthy();
     expect(hasExplicitReviewScopeParam(new URLSearchParams())).toBeFalsy();
+  });
+
+  it("rewrites malformed scope queries to the canonical token", () => {
+    expect({
+      conflict: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=CO&scope=NY")
+      ),
+      explicit: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=CO")
+      ),
+      malformed: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=NOT")
+      ),
+      national: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=ALL")
+      ),
+      omitted: reviewScopeQueryCanonicalRewrite(new URLSearchParams()),
+      padded: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=%20CO%20")
+      ),
+    }).toStrictEqual({
+      conflict: "ALL",
+      explicit: null,
+      malformed: "ALL",
+      national: null,
+      omitted: null,
+      padded: "CO",
+    });
+  });
+
+  it("keeps startup readiness on the one-time resolution", () => {
+    const awaitingCommit = {
+      arrivalExplicitScope: false,
+      metadataError: false,
+      metadataReady: true,
+      profileFetched: true,
+      startupSettled: false,
+      stateOptions,
+      userChoseScope: false,
+    };
+    expect({
+      awaitingCommit: isReviewStartingScopeUnresolved(awaitingCommit),
+      emptyStates: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        stateOptions: [],
+      }),
+      explicitArrival: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        arrivalExplicitScope: true,
+      }),
+      loadingProfile: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        profileFetched: false,
+      }),
+      settled: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        startupSettled: true,
+      }),
+      userChoice: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        userChoseScope: true,
+      }),
+    }).toStrictEqual({
+      awaitingCommit: true,
+      emptyStates: false,
+      explicitArrival: false,
+      loadingProfile: true,
+      settled: false,
+      userChoice: false,
+    });
   });
 
   it("round-trips explicit national scope in shared URL context", () => {
