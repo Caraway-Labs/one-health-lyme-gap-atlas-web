@@ -22,6 +22,7 @@ import {
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { investigateBundleWithoutObservations } from "@/features/ux-reset/investigate/county-evidence";
 import { CountyIntelligenceHeader } from "@/features/ux-reset/investigate/county-intelligence-header";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import { InvestigateNextSteps } from "@/features/ux-reset/investigate/investigate-next-steps";
@@ -152,6 +153,19 @@ function InvestigateExperienceInner() {
       ? releaseEvidenceLoadStateValues.error
       : releaseEvidenceLoadStateValues.loading;
   const bundle = workspace.bundle;
+  const catalogOnlyBundle =
+    bundle ||
+    !workspace.catalogError ||
+    !workspace.identity ||
+    !workspace.releaseId ||
+    workspace.countyRecordLoading ||
+    !(workspace.countyRecord || workspace.countyRecordError)
+      ? null
+      : investigateBundleWithoutObservations({
+          county: workspace.identity,
+          releaseId: workspace.releaseId,
+        });
+  const visibleBundle = bundle ?? catalogOnlyBundle;
   const nextCounty = bundle?.county.fips ?? workspace.requestedFips ?? "";
   const resolvedCounty =
     bundle?.county.fips ?? workspace.identity?.fips ?? null;
@@ -189,7 +203,7 @@ function InvestigateExperienceInner() {
   const modelAssisted = showModelAssisted ? (
     <Tier1SurveillancePriority
       fips={workspace.requestedFips ?? ""}
-      headingLevel={bundle ? "h3" : "h2"}
+      headingLevel={visibleBundle ? "h3" : "h2"}
       release={tier1ReleaseFromMetadata({
         isError:
           Boolean(workspace.metadataError) ||
@@ -320,11 +334,12 @@ function InvestigateExperienceInner() {
         </div>
       ) : null}
 
-      {bundle ? null : modelAssisted}
+      {visibleBundle ? null : modelAssisted}
 
-      {bundle ? (
+      {visibleBundle ? (
         <InvestigateEvidenceHierarchy
-          bundle={bundle}
+          bundle={visibleBundle}
+          catalogFailed={catalogOnlyBundle !== null}
           countyRecord={workspace.countyRecord}
           countyRecordError={workspace.countyRecordError}
           countyRecordLoading={workspace.countyRecordLoading}
@@ -332,7 +347,7 @@ function InvestigateExperienceInner() {
           modelAssisted={modelAssisted}
           retrying={workspace.evidenceFetching}
           onRetryFailures={
-            bundle.measureFailures.length > 0
+            bundle && bundle.measureFailures.length > 0
               ? workspace.retryEvidence
               : undefined
           }

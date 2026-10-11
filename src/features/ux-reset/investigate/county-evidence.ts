@@ -139,6 +139,13 @@ export type InvestigateEvidenceConflict = {
   observationCount: number;
 };
 
+/** One same-period disagreement. Counts do not span periods. */
+export type InvestigatePeriodConflict = InvestigateEvidenceConflict & {
+  periodEnd: string;
+  periodStart: string;
+  temporalGrain: string | null;
+};
+
 /**
  * Governed county evidence bundle shared by Investigate and later Reset
  * handoffs. Each observation keeps its own identity, period, availability,
@@ -160,6 +167,33 @@ export type CountyEvidenceBundle = {
   unclassifiedMeasureIds: readonly string[];
   unsupportedPeriodMeasureIds: readonly string[];
 };
+
+/** Observation series was not requested because the measure catalog failed. */
+export function investigateBundleWithoutObservations(input: {
+  county: ResolvedCountyIdentity;
+  releaseId: string;
+}): CountyEvidenceBundle {
+  return {
+    county: input.county,
+    domainsRequestFailed: false,
+    families: INVESTIGATE_EVIDENCE_FAMILIES.map((family) => ({
+      contextNote: family.contextNote,
+      evidenceClass: family.evidenceClass,
+      id: family.id,
+      label: family.label,
+      measureIds: [],
+      observations: [],
+    })),
+    leadFinding: null,
+    leadLimitation: null,
+    measureFailures: [],
+    readyMeasureIds: [],
+    releaseId: input.releaseId,
+    unassigned: [],
+    unclassifiedMeasureIds: [],
+    unsupportedPeriodMeasureIds: [],
+  };
+}
 
 export type MeasureObservationOutcome =
   | {
@@ -613,13 +647,13 @@ function governedValueKey(record: CountyEvidenceObservation): string {
 }
 
 /**
- * Rows that share a measure and period and do not share a raw value and
- * value state. Display text is not the comparison: formatting can hide a
- * real difference.
+ * One entry per period whose rows do not share a raw value and value state.
+ * Display text is not the comparison: formatting can hide a real difference.
+ * A later period is a separate entry, not an addition to this count.
  */
-function disagreeingObservationCount(
+function periodDisagreements(
   records: readonly CountyEvidenceObservation[]
-): number {
+): InvestigatePeriodConflict[] {
   const byPeriod = new Map<string, CountyEvidenceObservation[]>();
   for (const record of records) {
     const key = periodBasis(record);
@@ -630,14 +664,26 @@ function disagreeingObservationCount(
     }
     byPeriod.set(key, [record]);
   }
-  let count = 0;
+  const conflicts: InvestigatePeriodConflict[] = [];
   for (const periodRecords of byPeriod.values()) {
-    const values = new Set(periodRecords.map(governedValueKey));
-    if (periodRecords.length > 1 && values.size > 1) {
-      count += periodRecords.length;
+    const [first] = periodRecords;
+    if (!first || periodRecords.length < 2) {
+      continue;
     }
+    const values = new Set(periodRecords.map(governedValueKey));
+    if (values.size < 2) {
+      continue;
+    }
+    conflicts.push({
+      measureId: first.measureId,
+      measureLabel: first.measureLabel,
+      observationCount: periodRecords.length,
+      periodEnd: first.observation.period_end,
+      periodStart: first.observation.period_start,
+      temporalGrain: first.observation.temporal_grain,
+    });
   }
-  return count;
+  return conflicts;
 }
 
 function byMeasureLabel(
@@ -650,29 +696,32 @@ function byMeasureLabel(
   );
 }
 
+function byPeriodConflict(
+  left: InvestigatePeriodConflict,
+  right: InvestigatePeriodConflict
+): number {
+  return (
+    byMeasureLabel(left, right) ||
+    left.periodStart.localeCompare(right.periodStart) ||
+    left.periodEnd.localeCompare(right.periodEnd)
+  );
+}
+
 /**
- * Same measure and period, with a different raw value or value state. A
- * series across periods is not a conflict, and equal raw values in the same
- * state are not a conflict. Display formatting stays on the card. This does
- * not choose or average the rows.
+ * Same measure and period, with a different raw value or value state. Each
+ * disagreeing period is its own count. A series across periods is not a
+ * conflict, and equal raw values in the same state are not a conflict.
+ * Display formatting stays on the card. This does not choose or average the
+ * rows.
  */
 export function investigateEvidenceConflicts(
   bundle: Pick<CountyEvidenceBundle, "families" | "unassigned">
-): InvestigateEvidenceConflict[] {
-  const conflicts: InvestigateEvidenceConflict[] = [];
-  for (const [measureId, records] of observationsByMeasure(bundle)) {
-    const observationCount = disagreeingObservationCount(records);
-    const [first] = records;
-    if (observationCount < 2 || !first) {
-      continue;
-    }
-    conflicts.push({
-      measureId,
-      measureLabel: first.measureLabel,
-      observationCount,
-    });
+): InvestigatePeriodConflict[] {
+  const conflicts: InvestigatePeriodConflict[] = [];
+  for (const records of observationsByMeasure(bundle).values()) {
+    conflicts.push(...periodDisagreements(records));
   }
-  return conflicts.toSorted(byMeasureLabel);
+  return conflicts.toSorted(byPeriodConflict);
 }
 
 /**

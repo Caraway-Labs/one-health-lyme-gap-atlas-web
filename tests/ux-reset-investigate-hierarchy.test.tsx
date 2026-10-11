@@ -5,6 +5,7 @@ import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-per
 import {
   buildCountyEvidenceBundle,
   evidenceFamilyForMeasure,
+  investigateBundleWithoutObservations,
   investigateEvidenceConflicts,
   investigateMultipleObservations,
   resolveCountyIdentity,
@@ -318,6 +319,9 @@ describe("County Investigate evidence hierarchy", () => {
         measureId: "reported-cases",
         measureLabel: "Reported Lyme cases",
         observationCount: 2,
+        periodEnd: "2023-12-31",
+        periodStart: "2023-01-01",
+        temporalGrain: "YEAR",
       },
     ];
     expect({
@@ -353,6 +357,9 @@ describe("County Investigate evidence hierarchy", () => {
           measureId: "reported-cases",
           measureLabel: "Reported Lyme cases",
           observationCount: 2,
+          periodEnd: "2023-12-31",
+          periodStart: "2023-01-01",
+          temporalGrain: "YEAR",
         },
       ],
       keptSeparate: true,
@@ -390,8 +397,14 @@ describe("County Investigate evidence hierarchy", () => {
     );
     const errored =
       screen.getByTestId("investigate-finding-text").textContent ?? "";
+    const erroredGaps =
+      screen.queryByText(
+        "No conflict, gap, or extra limitation was returned for this county."
+      ) !== null;
     expect({
       erroredEmpty: errored.includes("No observed or limited finding"),
+      erroredFailure: errored.includes("could not be loaded"),
+      erroredGaps,
       pendingEmpty: pending.includes("No observed or limited finding"),
       pendingFamilies,
       pendingGaps,
@@ -399,13 +412,88 @@ describe("County Investigate evidence hierarchy", () => {
       settledEmpty: settled.includes("No observed or limited finding"),
       settledValue: settled.includes("Established"),
     }).toStrictEqual({
-      erroredEmpty: true,
+      erroredEmpty: false,
+      erroredFailure: true,
+      erroredGaps: false,
       pendingEmpty: false,
       pendingFamilies: 0,
       pendingGaps: false,
       pendingLoading: true,
       settledEmpty: false,
       settledValue: true,
+    });
+  });
+
+  it("keeps each disagreeing period as its own conflict count", () => {
+    const bundle = casesBundle([
+      caseObservation("jan-a", 12, "2023-01-01", "2023-01-31"),
+      caseObservation("jan-b", 3, "2023-01-01", "2023-01-31"),
+      caseObservation("feb-a", 8, "2023-02-01", "2023-02-28"),
+      caseObservation("feb-b", 1, "2023-02-01", "2023-02-28"),
+    ]);
+    render(<InvestigateEvidenceHierarchy bundle={bundle} />);
+    const text = screen.getByTestId("investigate-conflicts").textContent ?? "";
+    expect({
+      conflicts: investigateEvidenceConflicts(bundle),
+      namesFebruary: text.includes("February 1, 2023"),
+      namesJanuary: text.includes("January 1, 2023"),
+      spansPeriods: text.includes("4 observations"),
+    }).toStrictEqual({
+      conflicts: [
+        {
+          measureId: "reported-cases",
+          measureLabel: "Reported Lyme cases",
+          observationCount: 2,
+          periodEnd: "2023-01-31",
+          periodStart: "2023-01-01",
+          temporalGrain: "YEAR",
+        },
+        {
+          measureId: "reported-cases",
+          measureLabel: "Reported Lyme cases",
+          observationCount: 2,
+          periodEnd: "2023-02-28",
+          periodStart: "2023-02-01",
+          temporalGrain: "YEAR",
+        },
+      ],
+      namesFebruary: true,
+      namesJanuary: true,
+      spansPeriods: false,
+    });
+  });
+
+  it("shows published county rows when the measure catalog failed", () => {
+    const identity = resolveCountyIdentity(
+      investigateGeographyFixture("08001")!,
+      "08001"
+    );
+    render(
+      <InvestigateEvidenceHierarchy
+        bundle={investigateBundleWithoutObservations({
+          county: identity,
+          releaseId: INVESTIGATE_RELEASE_ID,
+        })}
+        catalogFailed
+        countyRecord={publishedRecord}
+      />
+    );
+    const evidence =
+      screen.getByTestId("investigate-evidence").textContent ?? "";
+    const human =
+      screen.getByTestId("investigate-family-human").textContent ?? "";
+    expect({
+      catalog: evidence.includes("measure catalog could not be loaded"),
+      established: evidence.includes("Established"),
+      falseAbsence: evidence.includes("does not publish measures"),
+      humanHeld: human.includes("measure catalog failed"),
+      negativeFinding: evidence.includes("No observed or limited finding"),
+    }).toStrictEqual({
+      catalog: true,
+      established: true,
+      falseAbsence: false,
+      humanHeld: true,
+      negativeFinding: false,
     });
   });
 
@@ -576,6 +664,71 @@ describe("County Investigate evidence hierarchy", () => {
       fraction:
         "Precipitation coverage is Partial coverage. Environmental context. CDC surveillance covering the observation period. Source coverage fraction 0.50.",
       limitations: ["Partial coverage."],
+    });
+  });
+
+  it("limits complete coverage when the observation already has limitations", () => {
+    const complete = coverageEntry(
+      EnvironmentalContextCoverageStatus.COMPLETE,
+      "1.0",
+      "obs-limited"
+    );
+    const blank = coverageEntry(
+      EnvironmentalContextCoverageStatus.COMPLETE,
+      "1.0",
+      "obs-blank"
+    );
+    const missing = coverageEntry(
+      EnvironmentalContextCoverageStatus.SOURCE_MISSING,
+      "0",
+      "obs-missing"
+    );
+    const [limited, whitespace, unavailable] = environmentalCoverageRows({
+      contexts: [
+        {
+          ...complete,
+          provenance: {
+            ...complete.provenance,
+            limitations: ["Provisional extract."],
+            materialCaveat: "Provisional extract.",
+          },
+        },
+        {
+          ...blank,
+          provenance: {
+            ...blank.provenance,
+            limitations: ["  "],
+          },
+        },
+        {
+          ...missing,
+          provenance: {
+            ...missing.provenance,
+            limitations: ["Source gap."],
+          },
+        },
+      ],
+    });
+    expect({
+      blankAvailability: whitespace?.evidence.availability,
+      blankReason: whitespace?.evidence.reasonCode,
+      limitedAvailability: limited?.evidence.availability,
+      limitedCaveat: limited?.evidence.provenance.materialCaveat,
+      limitedLimitations: limited?.evidence.provenance.limitations,
+      limitedReason: limited?.evidence.reasonCode,
+      missingAvailability: unavailable?.evidence.availability,
+      missingLimitations: unavailable?.evidence.provenance.limitations,
+      missingReason: unavailable?.evidence.reasonCode,
+    }).toStrictEqual({
+      blankAvailability: "available",
+      blankReason: "OBSERVED",
+      limitedAvailability: "limited",
+      limitedCaveat: "Provisional extract.",
+      limitedLimitations: ["Provisional extract."],
+      limitedReason: "MATERIAL_LIMITATION",
+      missingAvailability: "unavailable",
+      missingLimitations: ["Source gap."],
+      missingReason: "MISSING",
     });
   });
 

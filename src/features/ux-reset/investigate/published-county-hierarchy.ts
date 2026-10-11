@@ -513,8 +513,16 @@ export function environmentalCoverageRows(input: {
     const presentation = coveragePresentation(entry.context.coverage_status);
     const valueState = presentation.valueState;
     const fractionNote = coverageFractionNote(entry.context);
-    const limitations = presentation.limitations;
-    const hasMaterialLimitations = hasGovernedMaterialLimitations(limitations);
+    const source = entry.provenance;
+    const inheritedLimitations = normalizeGovernedLimitations(
+      source.limitations
+    );
+    const coverageLimitations = normalizeGovernedLimitations(
+      presentation.limitations
+    ).filter((line) => !inheritedLimitations.includes(line));
+    const rowLimitations = [...inheritedLimitations, ...coverageLimitations];
+    const hasMaterialLimitations =
+      hasGovernedMaterialLimitations(rowLimitations);
     const availability = availabilityFromGovernedValueState({
       hasMaterialLimitations,
       valueState,
@@ -524,12 +532,7 @@ export function environmentalCoverageRows(input: {
       valueState,
     });
     const label = COVERAGE_STATUS_LABELS[entry.context.coverage_status];
-    const source = entry.provenance;
     const observationSummary = source.inspectSummary.trim();
-    const coverageLimitations = presentation.limitations.filter(
-      (line) => !source.limitations.includes(line)
-    );
-    const rowLimitations = [...source.limitations, ...coverageLimitations];
     return {
       coverageStatus: entry.context.coverage_status,
       evidence: {
@@ -547,9 +550,7 @@ export function environmentalCoverageRows(input: {
             .filter((part) => part !== null)
             .join(" "),
           limitations: rowLimitations,
-          materialCaveat:
-            materialCaveatShort(presentation.limitations) ||
-            source.materialCaveat,
+          materialCaveat: materialCaveatShort(rowLimitations),
           technical: {
             ...source.technical,
             observationId: entry.observationId,

@@ -5,16 +5,18 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceObject } from "@/features/ux-reset/evidence";
+import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import {
   investigateEvidenceConflicts,
-  investigateMultipleObservations,
   investigateFamilyPublication,
+  investigateMultipleObservations,
   type CountyEvidenceBundle,
   type CountyEvidenceFamilySection,
   type CountyEvidenceObservation,
   type FamilyPublication,
   type InvestigateEvidenceFamilyId,
+  type InvestigatePeriodConflict,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
   investigateFindingSummary,
@@ -68,6 +70,15 @@ function FamilyObservations({
   );
 }
 
+function conflictCopy(conflict: InvestigatePeriodConflict): string {
+  const period = formatObservationPeriod(
+    conflict.periodStart,
+    conflict.periodEnd,
+    conflict.temporalGrain
+  );
+  return `${conflict.measureLabel} returned ${conflict.observationCount} observations for the same period (${period}) with different values. They stay separate and are not combined.`;
+}
+
 function publicationCopy(publication: FamilyPublication): string | null {
   switch (publication) {
     case "assigned":
@@ -100,6 +111,7 @@ function publicationCopy(publication: FamilyPublication): string | null {
 }
 
 function FamilySection({
+  catalogFailed,
   countyFips,
   countyRecordLoading,
   domainsRequestFailed,
@@ -109,6 +121,7 @@ function FamilySection({
   supplementalRows,
   unsupportedMeasureIds,
 }: {
+  catalogFailed: boolean;
   countyFips: string;
   countyRecordLoading: boolean;
   domainsRequestFailed: boolean;
@@ -128,7 +141,7 @@ function FamilySection({
   });
   const copy = publicationCopy(publication);
   const holdAbsence =
-    countyRecordLoading &&
+    (countyRecordLoading || catalogFailed) &&
     supplementalRows.length === 0 &&
     (publication === "empty" ||
       publication === "not_in_release" ||
@@ -156,7 +169,9 @@ function FamilySection({
       <p className="type-body">{section.contextNote}</p>
       {holdAbsence ? (
         <p className="type-body" data-testid="investigate-family-pending">
-          Published county rows for this family are still loading.
+          {catalogFailed
+            ? "Observation measures were not loaded because the measure catalog failed."
+            : "Published county rows for this family are still loading."}
         </p>
       ) : null}
       {showPublicationCopy && copy ? <p className="type-body">{copy}</p> : null}
@@ -264,6 +279,7 @@ function coverageContexts(
 
 export function InvestigateEvidenceHierarchy({
   bundle,
+  catalogFailed = false,
   countyRecord = null,
   countyRecordError = null,
   countyRecordLoading = false,
@@ -273,6 +289,7 @@ export function InvestigateEvidenceHierarchy({
   retrying = false,
 }: {
   bundle: CountyEvidenceBundle;
+  catalogFailed?: boolean;
   countyRecord?: PublishedCountyRecord | null;
   countyRecordError?: string | null;
   countyRecordLoading?: boolean;
@@ -298,16 +315,23 @@ export function InvestigateEvidenceHierarchy({
         record: countyRecord,
       })
     : null;
-  const holdEmptyFinding = countyRecordLoading && !bundle.leadFinding;
+  const holdEmptyFinding = countyRecordLoading && !finding;
+  const countyRecordFailed =
+    Boolean(countyRecordError) && !finding && !published;
   const findingSummary = holdEmptyFinding
     ? {
         text: "The published county record is still loading, so an empty finding is not shown yet.",
         title: "Published county record loading",
       }
-    : investigateFindingSummary(
-        bundle,
-        published?.rows ?? NO_PUBLISHED_FINDINGS
-      );
+    : countyRecordFailed
+      ? {
+          text: "The published county record could not be loaded, so findings may be incomplete. That is a request failure, not a statement that no finding was returned.",
+          title: "Published county record did not load",
+        }
+      : investigateFindingSummary(
+          bundle,
+          published?.rows ?? NO_PUBLISHED_FINDINGS
+        );
   const coverage = environmentalCoverageRows({
     contexts: coverageContexts(bundle),
   });
@@ -331,6 +355,12 @@ export function InvestigateEvidenceHierarchy({
       data-release={bundle.releaseId}
       data-testid="investigate-evidence"
     >
+      {catalogFailed ? (
+        <AtlasStatusMessage tone="error">
+          The measure catalog could not be loaded. Published county rows are
+          shown without an observation series.
+        </AtlasStatusMessage>
+      ) : null}
       <section
         className="ux-reset-investigate-summary"
         data-county={bundle.county.fips}
@@ -382,6 +412,7 @@ export function InvestigateEvidenceHierarchy({
       {bundle.families.map((section) => (
         <div key={section.id}>
           <FamilySection
+            catalogFailed={catalogFailed}
             countyFips={bundle.county.fips}
             countyRecordLoading={countyRecordLoading}
             domainsRequestFailed={bundle.domainsRequestFailed}
@@ -468,8 +499,10 @@ export function InvestigateEvidenceHierarchy({
         {conflicts.length > 0 ? (
           <ul data-testid="investigate-conflicts">
             {conflicts.map((conflict) => (
-              <li key={conflict.measureId}>
-                {`${conflict.measureLabel} returned ${conflict.observationCount} observations for the same period with different values. They stay separate and are not combined.`}
+              <li
+                key={`${conflict.measureId}:${conflict.periodStart}:${conflict.periodEnd}`}
+              >
+                {conflictCopy(conflict)}
               </li>
             ))}
           </ul>
@@ -574,7 +607,7 @@ export function InvestigateEvidenceHierarchy({
             Published county gaps are still loading.
           </p>
         ) : null}
-        {hasGapContent || countyRecordLoading ? null : (
+        {hasGapContent || countyRecordLoading || countyRecordError ? null : (
           <p className="type-body">
             No conflict, gap, or extra limitation was returned for this county.
           </p>

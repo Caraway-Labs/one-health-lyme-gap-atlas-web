@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ResetInvestigateExperience } from "@/features/ux-reset/investigate/reset-investigate-experience";
-import type { Tier1CountyPriority } from "@/generated/models";
+import type { CountyDetail, Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
@@ -39,7 +39,9 @@ import {
 } from "./fixtures/tier1-surveillance-priority";
 
 const controls: {
+  countyDetail: CountyDetail | null;
   delayFips: string | null;
+  failCatalog: boolean;
   failMeasureId: string | null;
   geographyStatus: "identity" | "ok";
   holdMetadata: boolean;
@@ -52,7 +54,9 @@ const controls: {
   scoresReleaseId: string | null;
   transientStatus: number;
 } = {
+  countyDetail: null,
   delayFips: null,
+  failCatalog: false,
   failMeasureId: null,
   geographyStatus: "ok",
   holdMetadata: false,
@@ -65,6 +69,49 @@ const controls: {
   scoresReleaseId: null,
   transientStatus: 429,
 };
+
+function catalogFailureCounty(fips: string): CountyDetail {
+  return {
+    burgdorferi_status: "Present",
+    case_count_floor_2023: 4,
+    color: "#e9602b",
+    county: "Denver",
+    evidence_completeness: 40,
+    fips,
+    human_status: "published_count_floor",
+    in_contiguous_tick_scope: true,
+    incidence_floor_2023: 0.1,
+    pacificus_status: "Established",
+    population: 1000,
+    priority: "Priority 1 — Investigate",
+    release: {
+      ...investigateMetadataFixture,
+      limitations: "Not a diagnosis.",
+      release_id: INVESTIGATE_RELEASE_ID,
+      sources: [],
+    },
+    rucc_2023: 2,
+    scapularis_status: "No records",
+    score: {
+      access_signal: 10,
+      community: 10,
+      ecological: 10,
+      human_weakness: 10,
+      pathogen_signal: 10,
+      rural_signal: 10,
+      score: 84.6,
+      svi_signal: 10,
+      tick_signal: 10,
+    },
+    state: "CO",
+    state_name: "Colorado",
+    state_unallocated_records_2023: 0,
+    svi_percentile: null,
+    tick_status: "Established",
+    uninsured_percent: null,
+    uninsured_percentile: null,
+  };
+}
 
 let metadataGate = Promise.withResolvers<boolean>();
 let releaseDelayed = () => {};
@@ -141,6 +188,13 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     measuresV1MeasuresGet: vi.fn<
       typeof import("@/generated/atlas").measuresV1MeasuresGet
     >(async (params) => {
+      if (controls.failCatalog) {
+        return {
+          data: { detail: "measures unavailable" },
+          headers: new Headers(),
+          status: 500,
+        } as never;
+      }
       if (params?.page_token === null || params?.geography_type === "county") {
         return {
           data: { detail: "invalid catalog request" },
@@ -274,14 +328,21 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     }),
     countyV1CountiesFipsGet: vi.fn<
       typeof import("@/generated/atlas").countyV1CountiesFipsGet
-    >(
-      async () =>
-        ({
-          data: { detail: "not found" },
+    >(async (fips) => {
+      const detail = controls.countyDetail;
+      if (detail?.fips === fips) {
+        return {
+          data: detail,
           headers: new Headers(),
-          status: 404,
-        }) as never
-    ),
+          status: 200,
+        } as never;
+      }
+      return {
+        data: { detail: "not found" },
+        headers: new Headers(),
+        status: 404,
+      } as never;
+    }),
   };
 });
 
@@ -389,7 +450,9 @@ function pageSnapshot() {
 describe("County Investigate workspace", () => {
   afterEach(() => {
     cleanup();
+    controls.countyDetail = null;
     controls.delayFips = null;
+    controls.failCatalog = false;
     controls.failMeasureId = null;
     controls.geographyStatus = "ok";
     controls.holdMetadata = false;
@@ -1478,6 +1541,31 @@ describe("County Investigate workspace", () => {
       low: false,
       state: "release-unaligned",
       tier: undefined,
+    });
+  });
+
+  it("shows published county rows when the measure catalog fails", async () => {
+    controls.failCatalog = true;
+    controls.countyDetail = catalogFailureCounty("08001");
+    renderInvestigate("?county=08001&scope=CO");
+    await waitForCounty("08001");
+    await screen.findByText("Governed measures could not be loaded.");
+    const evidence = await screen.findByTestId("investigate-evidence");
+    const text = evidence.textContent ?? "";
+    expect({
+      catalog: text.includes(
+        "Published county rows are shown without an observation series."
+      ),
+      established: text.includes("Established"),
+      falseAbsence: text.includes("No observed or limited finding"),
+      observations: observationRequests.length,
+      score: text.includes("84.6"),
+    }).toStrictEqual({
+      catalog: true,
+      established: true,
+      falseAbsence: false,
+      observations: 0,
+      score: false,
     });
   });
 });
