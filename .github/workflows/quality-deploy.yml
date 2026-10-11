@@ -18,8 +18,8 @@ permissions:
   pull-requests: write
 
 # CI_MAX_PARALLEL=4 is intent, not a semaphore. A GitHub concurrency group runs
-# one member at a time, so it cannot cap CI at four slots. This workflow has no
-# matrix, so strategy.max-parallel does not apply. Independent pull requests and
+# one member at a time, so it cannot cap CI at four slots. There is no
+# workflow-wide semaphore. Independent pull requests and
 # main pushes stay concurrent up to the GitHub-hosted runner limit. Do not add a
 # workflow-level concurrency group; that would serialize quality behind deploys.
 # WEB_PRODUCTION_CONCURRENCY_GROUP and LATEST_MAIN_WINS are repository or
@@ -28,7 +28,7 @@ env:
   CI_MAX_PARALLEL: ${{ vars.CI_MAX_PARALLEL || '4' }}
 
 jobs:
-  quality:
+  quality-gates:
     runs-on: ubuntu-latest
     steps:
       - name: Record CI parallelism intent
@@ -84,13 +84,6 @@ jobs:
         env:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/playwright-auth-junit.xml
 
-      - name: E2E tests (Playwright) with JUnit
-        run: |
-          mkdir -p test-results
-          npx playwright test --grep-invert "research and sign-in shells fail safely without authentication" --reporter=list --reporter=junit
-        env:
-          PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/playwright-junit.xml
-
       - name: Front Porch production visual comparisons
         run: npx playwright test tests/e2e/front-porch-visual.spec.ts --reporter=list --reporter=junit
         env:
@@ -111,7 +104,6 @@ jobs:
         with:
           name: playwright-results
           path: |
-            test-results/playwright-junit.xml
             playwright-report/
             test-results/playwright/
             test-results/front-porch-visual/
@@ -146,16 +138,6 @@ jobs:
         with:
           name: Vitest Auth Results
           path: test-results/vitest-auth-junit.xml
-          reporter: java-junit
-          fail-on-error: false
-          fail-on-empty: false
-
-      - name: Publish e2e test results (PR check)
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Playwright Results
-          path: test-results/playwright-junit.xml
           reporter: java-junit
           fail-on-error: false
           fail-on-empty: false
@@ -204,9 +186,65 @@ jobs:
       - name: Scan Git history for secrets
         run: >-
           docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f git /repo --redact --no-banner
+  playwright:
+    name: Playwright shard ${{ matrix.shard }}/3
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Required E2E shard
+        run: >-
+          npx playwright test --shard=${{ matrix.shard }}/3 --workers=2
+          --grep-invert "research and sign-in shells fail safely without authentication"
+          --reporter=list,junit,html
+        env:
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/playwright-junit.xml
+          PLAYWRIGHT_HTML_OPEN: never
+      - name: Upload shard reports and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-shard-${{ matrix.shard }}
+          path: |
+            test-results/playwright-junit.xml
+            playwright-report/
+            test-results/playwright/
+          if-no-files-found: warn
+      - name: Publish shard results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Playwright Results ${{ matrix.shard }}/3
+          path: test-results/playwright-junit.xml
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
+
+  # Keep the protected check name stable and reject failed/cancelled/skipped jobs.
+  quality:
+    needs: [quality-gates, playwright]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every quality gate and shard
+        env:
+          QUALITY_RESULT: ${{ needs.quality-gates.result }}
+          PLAYWRIGHT_RESULT: ${{ needs.playwright.result }}
+        run: |
+          test "$QUALITY_RESULT" = success
+          test "$PLAYWRIGHT_RESULT" = success
+
   deploy-guard:
     name: production deploy guard
-    needs: quality
+    needs: [quality, quality-gates, playwright]
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.deploy_production)
     runs-on: ubuntu-latest
@@ -234,7 +272,7 @@ jobs:
           export MAIN_SHA
           node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/production-deploy-guard.ts guard
   deploy:
-    needs: [quality, deploy-guard]
+    needs: [quality, quality-gates, playwright, deploy-guard]
     if: needs.deploy-guard.outputs.decision == 'proceed'
     runs-on: ubuntu-latest
     environment:
