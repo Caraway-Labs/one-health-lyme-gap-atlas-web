@@ -132,15 +132,22 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
   await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview$/);
   await expectNoCountyPreselection(page);
   await expect(
-    page.getByRole("heading", { name: "Sign in to Atlas" })
+    page.getByRole("heading", { name: "Sign in or create an account" })
   ).toBeVisible();
 });
 
-test("account-free sign-in exit does not reload the protected Review path", async ({
+test("sign-in stays on the approved screen and public overview stays open", async ({
   page,
 }) => {
   await page.goto("/auth/sign-in?next=%2Fapp%2Freview");
-  await page.getByRole("link", { name: "Continue without an account" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Sign in or create an account" })
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview$/);
+  await expect(
+    page.getByRole("link", { name: "Continue without an account" })
+  ).toHaveCount(0);
+  await page.goto("/overview");
   await expect(page).toHaveURL(/\/overview\/?$/);
   await expect(page).not.toHaveURL(/sign-in/);
   await expectNoCountyPreselection(page);

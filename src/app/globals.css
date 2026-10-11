@@ -4960,3 +4960,218 @@ select:focus-visible {
     white-space: nowrap;
   }
 }
+
+/* Approved light entrance for /auth/sign-in (#482). Scoped so workspace tokens stay unchanged. */
+.auth-entrance {
+  --auth-entrance-bg: #f6f8f7;
+  --auth-entrance-surface: #ffffff;
+  --auth-entrance-text: #15383b;
+  --auth-entrance-muted: #496567;
+  --auth-entrance-border: #b9ceca;
+  --auth-entrance-primary: #185e5e;
+  --auth-entrance-on-primary: #ffffff;
+  --auth-entrance-error: #973d32;
+  --auth-google-bg: #ffffff;
+  --auth-google-text: #1f1f1f;
+  --auth-google-border: #747775;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--auth-entrance-bg);
+  color: var(--auth-entrance-text);
+  font-family: var(--font-front-porch-hero), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.auth-entrance-header {
+  display: flex;
+  align-items: center;
+  padding: 20px 28px;
+  background: var(--auth-entrance-surface);
+  border-bottom: 1px solid var(--auth-entrance-border);
+}
+
+.auth-entrance-brand {
+  font-weight: 500;
+}
+
+.auth-entrance-main {
+  flex: 1;
+  padding: 52px 28px 40px;
+}
+
+.auth-entrance-form {
+  max-width: 456px;
+  margin: auto;
+}
+
+.auth-entrance h1 {
+  margin: 0 0 16px;
+  color: var(--auth-entrance-text);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.auth-entrance p {
+  margin: 0 0 22px;
+}
+
+.auth-entrance-subtle {
+  color: var(--auth-entrance-muted);
+}
+
+.auth-entrance-label {
+  display: block;
+  margin: 20px 0 8px;
+  font-weight: 500;
+}
+
+.auth-entrance-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--auth-entrance-border);
+  border-radius: 6px;
+  background: var(--auth-entrance-surface);
+  color: var(--auth-entrance-text);
+  padding: 10px 14px;
+  font: inherit;
+}
+
+.auth-entrance-primary,
+.auth-entrance-secondary,
+.auth-entrance-google,
+.auth-entrance-quiet {
+  min-height: 44px;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+}
+
+.auth-entrance-primary {
+  width: 100%;
+  margin-top: 20px;
+  background: var(--auth-entrance-primary);
+  color: var(--auth-entrance-on-primary);
+  border: 1px solid var(--auth-entrance-primary);
+}
+
+.auth-entrance-primary:hover {
+  background: var(--auth-entrance-primary);
+  color: var(--auth-entrance-on-primary);
+}
+
+.auth-entrance-hint {
+  margin: 8px 0 0;
+  color: var(--auth-entrance-muted);
+  text-align: center;
+}
+
+.auth-entrance-error {
+  margin: 14px 0 0;
+  color: var(--auth-entrance-error);
+}
+
+.auth-entrance-separator {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 20px 0;
+  color: var(--auth-entrance-muted);
+}
+
+.auth-entrance-separator::before,
+.auth-entrance-separator::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--auth-entrance-border);
+}
+
+.auth-entrance-google {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--auth-google-bg);
+  color: var(--auth-google-text);
+  border: 1px solid var(--auth-google-border);
+}
+
+.auth-entrance-google:hover {
+  background: var(--auth-google-bg);
+  color: var(--auth-google-text);
+}
+
+.auth-entrance-google-logo {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: var(--auth-google-bg);
+}
+
+.auth-entrance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.auth-entrance-secondary {
+  border: 1px solid var(--auth-entrance-border);
+  background: var(--auth-entrance-surface);
+  color: var(--auth-entrance-text);
+  padding: 10px 14px;
+}
+
+.auth-entrance-quiet {
+  border: none;
+  background: transparent;
+  color: var(--auth-entrance-text);
+  padding: 8px;
+}
+
+.auth-entrance-status {
+  margin-top: 18px;
+}
+
+.auth-entrance .auth-entrance-footer {
+  display: flex;
+  grid-template-columns: none;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+  background: var(--auth-entrance-bg);
+  color: var(--auth-entrance-muted);
+}
+
+.auth-entrance .auth-entrance-footer a {
+  color: var(--auth-entrance-muted);
+  font-size: 16px;
+  font-weight: 400;
+  text-underline-offset: 4px;
+}
+
+.auth-entrance button:disabled {
+  opacity: 0.65;
+}
+
+@media (max-width: 500px) {
+  .auth-entrance-header {
+    padding: 16px 20px;
+  }
+
+  .auth-entrance-main {
+    padding: 32px 20px;
+  }
+
+  .auth-entrance h1 {
+    font-size: 26px;
+  }
+}

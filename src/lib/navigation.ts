@@ -258,8 +258,8 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     label: "Sign in",
     match: "prefix",
     pageDescription:
-      "Sign in to manage your optional One Health Lyme Gap Atlas profile.",
-    pageTitle: "Sign in | One Health Lyme Gap Atlas",
+      "Sign in to use the Atlas workspace and keep your starting view.",
+    pageTitle: "Sign in or create an account | One Health Lyme Gap Atlas",
     placement: "none",
     shell: "analytical",
     status: "hidden",

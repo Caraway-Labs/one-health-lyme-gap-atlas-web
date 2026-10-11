@@ -730,7 +730,7 @@ test.describe("Ask Atlas contextual sidecar", () => {
 
     await page.goto("/auth/sign-in");
     await expect(
-      page.getByRole("heading", { name: "Sign in to Atlas" })
+      page.getByRole("heading", { name: "Sign in or create an account" })
     ).toBeVisible();
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await expect(page.locator("[inert]")).toHaveCount(0);
