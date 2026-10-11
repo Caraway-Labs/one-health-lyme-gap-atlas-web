@@ -24,14 +24,14 @@ import {
   ReleaseEvidenceStateStrip,
   releaseEvidenceContextFromMetadata,
 } from "@/features/ux-reset/evidence";
-import {
-  evidenceAvailabilityValues,
-  releaseEvidenceLoadStateValues,
-} from "@/features/ux-reset/evidence/types";
+import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
+import { countyEvidenceLoadStates } from "@/features/ux-reset/investigate/county-evidence";
+import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/investigate-settled-view";
 import {
-  investigateFindingSummary,
-  investigateLimitationSummary,
+  investigateHandoffLimitation,
+  publishedRowsForCounty,
+  resolveInvestigateFinding,
 } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import type { InvestigateRecovery } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import { useInvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
@@ -114,25 +114,61 @@ function ActionExperienceInner() {
     handoffParams
   );
   const bundle = workspace.bundle;
-  const findingSummary = bundle ? investigateFindingSummary(bundle) : null;
-  const limitationSummary = bundle
-    ? investigateLimitationSummary(bundle)
+  const hierarchy = settledInvestigateHierarchy({
+    bundle,
+    catalogError: workspace.catalogError,
+    countyRecord: workspace.countyRecord,
+    countyRecordAbsent: workspace.countyRecordAbsent,
+    countyRecordError: workspace.countyRecordError,
+    countyRecordLoading: workspace.countyRecordLoading,
+    countyRecordRefreshError: workspace.countyRecordRefreshError,
+    identity: workspace.identity,
+    releaseId: workspace.releaseId,
+  });
+  const carriedBundle = hierarchy?.bundle ?? null;
+  const publishedRows = carriedBundle
+    ? publishedRowsForCounty({
+        bundle: carriedBundle,
+        countyRecord: hierarchy?.countyRecord ?? null,
+        measures: workspace.measures,
+      })
+    : [];
+  const findingSummary = carriedBundle
+    ? resolveInvestigateFinding({
+        bundle: carriedBundle,
+        catalogFailed: hierarchy?.catalogFailed,
+        countyRecordError: hierarchy?.countyRecordError,
+        countyRecordLoading: hierarchy?.countyRecordLoading,
+        countyRecordPresent: hierarchy?.countyRecord !== null,
+        publishedRows,
+      })
     : null;
+  const limitationSummary = carriedBundle
+    ? investigateHandoffLimitation({
+        bundle: carriedBundle,
+        catalogFailed: hierarchy?.catalogFailed,
+        countyRecordError: hierarchy?.countyRecordError,
+        countyRecordLoading: hierarchy?.countyRecordLoading,
+        countyRecordPresent: hierarchy?.countyRecord !== null,
+        publishedReleaseLimitation: hierarchy?.countyRecord?.releaseLimitation,
+        publishedRows,
+      })
+    : null;
+  const observationsLoaded =
+    hierarchy?.observationsLoaded ?? countyEvidenceLoadStates.withheld;
   const periodState = actionBundlePeriodState({
     bundle,
+    observationsLoaded,
     requestedPeriod: workspace.period,
   });
   const planPosture = actionPlanPosture(searchParams.getAll("plan"));
-  const unavailableRecords = bundle
-    ? actionGovernedUnavailableRecords(bundle)
+  const unavailableRecords = carriedBundle
+    ? actionGovernedUnavailableRecords(carriedBundle, findingSummary)
     : [];
-  const evidenceState = bundle?.leadFinding
-    ? bundle.leadFinding.evidence.availability
-    : unavailableRecords.length > 0
-      ? evidenceAvailabilityValues.unavailable
-      : "";
-  const limitations = bundle?.leadLimitation?.text ?? "";
-  const staleRecord = bundle?.leadFinding ?? unavailableRecords[0] ?? null;
+  const evidenceState = findingSummary?.availability ?? "";
+  const limitations = carriedBundle?.leadLimitation?.text ?? "";
+  const staleEvidence =
+    findingSummary?.evidence ?? unavailableRecords[0]?.evidence ?? null;
   const releaseLoadState = workspace.metadata
     ? releaseEvidenceLoadStateValues.ready
     : workspace.metadataError
@@ -153,6 +189,8 @@ function ActionExperienceInner() {
   usePublishAskAtlasInheritedContext(
     inheritedContextFromAction({
       bundle,
+      finding: findingSummary,
+      observationsLoaded,
       identity: workspace.identity,
       releaseId: workspace.releaseId,
       releaseMismatch: workspace.recovery === "release_mismatch",
@@ -232,6 +270,31 @@ function ActionExperienceInner() {
           {workspace.catalogError}
         </AtlasStatusMessage>
       ) : null}
+      {workspace.catalogRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.catalogRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.indicatorError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.indicatorRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.indicatorRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.metadataRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.metadataRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
+      {workspace.directoryRefreshError ? (
+        <AtlasStatusMessage tone="error">
+          {workspace.directoryRefreshError}
+        </AtlasStatusMessage>
+      ) : null}
       {workspace.evidenceLoading ? (
         <AtlasStatusMessage tone="loading">
           Loading county evidence…
@@ -301,15 +364,24 @@ function ActionExperienceInner() {
         </div>
       ) : null}
 
-      {bundle && findingSummary && limitationSummary ? (
+      {carriedBundle && findingSummary && limitationSummary ? (
         <section
           aria-label="Evidence carried from Investigate"
           className="ux-reset-action-summary"
-          data-county={bundle.county.fips}
+          data-county={carriedBundle.county.fips}
+          data-county-record={
+            hierarchy?.countyRecordLoading
+              ? "loading"
+              : hierarchy?.countyRecordError
+                ? "error"
+                : hierarchy?.countyRecord
+                  ? "ready"
+                  : "absent"
+          }
           data-evidence-state={evidenceState}
           data-limitations={limitations}
           data-period-state={periodState}
-          data-release={bundle.releaseId}
+          data-release={carriedBundle.releaseId}
           data-requested-period={workspace.period ?? ""}
           data-testid="action-evidence"
         >
@@ -333,10 +405,10 @@ function ActionExperienceInner() {
               {limitationSummary.text}
             </p>
           </Card>
-          {bundle.leadFinding ? (
+          {findingSummary.evidence ? (
             <EvidenceObject
               claimHeadingLevel="h3"
-              model={bundle.leadFinding.evidence}
+              model={findingSummary.evidence}
             />
           ) : (
             unavailableRecords.map((record) => (
@@ -347,13 +419,13 @@ function ActionExperienceInner() {
               />
             ))
           )}
-          {showSeparateLimitation && bundle.leadLimitation ? (
+          {showSeparateLimitation && carriedBundle.leadLimitation ? (
             <EvidenceObject
               claimHeadingLevel="h3"
-              model={bundle.leadLimitation.observation.evidence}
+              model={carriedBundle.leadLimitation.observation.evidence}
             />
           ) : null}
-          {periodState === actionPeriodStates.stale && staleRecord ? (
+          {periodState === actionPeriodStates.stale && staleEvidence ? (
             <AtlasStatusMessage
               title="Period in this link is stale"
               titleAs="h2"
@@ -362,9 +434,8 @@ function ActionExperienceInner() {
               <p data-testid="action-stale-period">
                 The period in this link does not fall inside the observations
                 for this county. The summary keeps the evidence period{" "}
-                {staleRecord.evidence.provenance.observationPeriod} (
-                {evidenceAvailabilityLabel(staleRecord.evidence.availability)}
-                ).
+                {staleEvidence.provenance.observationPeriod} (
+                {evidenceAvailabilityLabel(staleEvidence.availability)}).
               </p>
             </AtlasStatusMessage>
           ) : null}

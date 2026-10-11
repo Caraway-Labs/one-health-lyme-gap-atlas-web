@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import {
   Suspense,
@@ -22,6 +22,10 @@ import {
   isReviewStartingScopeUnresolved,
   reviewScopeQueryCanonicalRewrite,
 } from "@/features/ux-reset/review/resolve-review-scope";
+import {
+  leavingReviewDestination,
+  settleReviewCanonicalRewrite,
+} from "@/features/ux-reset/review/review-canonical-navigation";
 import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
@@ -51,6 +55,7 @@ import {
 
 function ResetReviewExperienceInner() {
   const route = resetRouteById("review");
+  const router = useRouter();
   const [urlState, setUrlState] = useQueryStates(reviewSearchParams, {
     history: "push",
     scroll: false,
@@ -64,6 +69,8 @@ function ResetReviewExperienceInner() {
   const userChoseScopeRef = useRef(false);
   const [userChoseScope, setUserChoseScope] = useState(false);
   const rewrittenScopeKey = useRef<string | null>(null);
+  const pendingLeaveRef = useRef<string | null>(null);
+  const rewriteGenerationRef = useRef(0);
   const rawScopeKey = searchParams.getAll("scope").join("\u0000");
   const reviewCounty = normalizeReviewCounty(scope, urlState.county);
   const profileQuery = useProfileDefaultJurisdiction();
@@ -180,8 +187,45 @@ function ResetReviewExperienceInner() {
     if (canonical === null) {
       return;
     }
-    void setUrlState({ scope: canonical }, { history: "replace" });
-  }, [rawScopeKey, searchParams, setUrlState]);
+    const generation = rewriteGenerationRef.current + 1;
+    rewriteGenerationRef.current = generation;
+    const reviewPath = route.href;
+    const onClick = (event: MouseEvent) => {
+      const next = leavingReviewDestination(
+        event.target,
+        reviewPath,
+        window.location.href,
+        {
+          altKey: event.altKey,
+          button: event.button,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+        }
+      );
+      if (next) {
+        pendingLeaveRef.current = next;
+      }
+    };
+    document.addEventListener("click", onClick, true);
+    const rewrite = setUrlState({ scope: canonical }, { history: "replace" });
+    void settleReviewCanonicalRewrite({
+      clearDestination: () => {
+        pendingLeaveRef.current = null;
+      },
+      generation,
+      isCurrentGeneration: (token) => rewriteGenerationRef.current === token,
+      push: (href) => {
+        router.push(href);
+      },
+      readDestination: () => pendingLeaveRef.current,
+      removeListener: () => {
+        document.removeEventListener("click", onClick, true);
+      },
+      reviewPath,
+      rewrite,
+    });
+  }, [rawScopeKey, route.href, router, searchParams, setUrlState]);
 
   const reviewReady = Boolean(
     !scopeUnsupported &&

@@ -3,7 +3,11 @@
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
-import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  countyObservationsLoaded,
+  type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
+} from "@/features/ux-reset/investigate/county-evidence";
 import {
   investigateActionOffer,
   investigateCompareOffer,
@@ -11,6 +15,7 @@ import {
   type InvestigateCompareOfferKind,
 } from "@/features/ux-reset/investigate/investigate-next-step";
 import { InvestigatePdfExport } from "@/features/ux-reset/investigate/investigate-pdf-export";
+import type { ResolvedInvestigateFinding } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import { cn } from "@/lib/utils";
 
 function investigateCompareTestId(kind: InvestigateCompareOfferKind): string {
@@ -34,14 +39,24 @@ export function InvestigateNextSteps({
   compare,
   compareHref,
   countyFips,
+  finding,
+  findingCountyLabel,
+  observationsLoaded,
   requestedPeriod,
   resolvedCounty,
 }: {
   actionHref: string;
+  /**
+   * Real observation bundle. A synthetic catalog-failure bundle must not be
+   * passed here. Handoffs also require `observationsLoaded`.
+   */
   bundle: CountyEvidenceBundle | null;
   compare: readonly string[];
   compareHref: string;
   countyFips: string;
+  finding: ResolvedInvestigateFinding | null;
+  findingCountyLabel: string;
+  observationsLoaded: CountyEvidenceLoadState;
   requestedPeriod: string | null;
   resolvedCounty: string | null;
 }) {
@@ -49,10 +64,15 @@ export function InvestigateNextSteps({
     compare,
     resolvedCounty,
   });
-  const actionOffer = investigateActionOffer({ bundle });
-  const pdfContext = bundle
-    ? investigatePdfContext(bundle, requestedPeriod)
-    : null;
+  const observationsReady = countyObservationsLoaded(observationsLoaded);
+  const actionOffer = investigateActionOffer({
+    bundle,
+    observationsLoaded,
+  });
+  const pdfContext =
+    observationsReady && bundle
+      ? investigatePdfContext(bundle, requestedPeriod)
+      : null;
 
   return (
     <section
@@ -91,16 +111,16 @@ export function InvestigateNextSteps({
           {actionOffer.label}
         </Link>
       ) : null}
-      {bundle?.leadFinding ? (
+      {finding?.inspectHref ? (
         <a
-          data-county={bundle.county.fips}
+          data-county={countyFips}
           data-testid="investigate-next-finding"
-          href={`#investigate-observation-${bundle.leadFinding.observation.observation_id}`}
+          href={finding.inspectHref}
         >
-          Inspect the finding for {bundle.county.label}
+          Inspect the finding for {findingCountyLabel}
         </a>
       ) : null}
-      {bundle?.leadLimitation ? (
+      {observationsReady && bundle?.leadLimitation ? (
         <a
           data-county={bundle.county.fips}
           data-testid="investigate-next-limitation"

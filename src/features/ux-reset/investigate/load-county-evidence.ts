@@ -12,21 +12,25 @@ import {
   buildCountyEvidenceBundle,
   InvestigateContractError,
   type CountyEvidenceBundle,
+  type IndicatorDomainIndex,
   type MeasureObservationOutcome,
   type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
+  countyV1CountiesFipsGet,
   indicatorsV1IndicatorsGet,
   observationsV1ObservationsGet,
 } from "@/generated/atlas";
 import type {
+  CountyDetail,
   Indicator,
   Measure,
   Observation,
   ObservationsV1ObservationsGetParams,
 } from "@/generated/models";
 import {
+  CountyV1CountiesFipsGetResponse,
   IndicatorsV1IndicatorsGetResponse,
   ObservationsV1ObservationsGetResponse,
   indicatorsV1IndicatorsGetQueryPageSizeOneMax,
@@ -371,20 +375,25 @@ export async function fetchInvestigateIndicators(
 }
 
 /**
- * Indicator domains for family assignment. A release mismatch or two
- * conflicting domains for one indicator leave that indicator unassigned.
+ * Indicator domains for family assignment. A blank domain stays blank so the
+ * indicator-id allowlist can run. Conflicting nonempty domains, and an
+ * indicator that appears only under another release, are unresolved and must
+ * not use that allowlist.
  */
 export function indicatorDomainsById(
   indicators: readonly Indicator[],
   releaseId: string
-): Map<string, string | null> {
+): IndicatorDomainIndex {
   const domains = new Map<string, string | null>();
   const ambiguous = new Set<string>();
+  const withheldForRelease = new Set<string>();
   for (const indicator of indicators) {
     const version = indicator.release_version?.trim() ?? "";
     if (version && version !== releaseId) {
+      withheldForRelease.add(indicator.indicator_id);
       continue;
     }
+    withheldForRelease.delete(indicator.indicator_id);
     const domain = indicator.domain?.trim() || null;
     if (!domains.has(indicator.indicator_id)) {
       domains.set(indicator.indicator_id, domain);
@@ -394,10 +403,16 @@ export function indicatorDomainsById(
       ambiguous.add(indicator.indicator_id);
     }
   }
+  const unresolvedIds = new Set<string>(ambiguous);
   for (const indicatorId of ambiguous) {
     domains.set(indicatorId, null);
   }
-  return domains;
+  for (const indicatorId of withheldForRelease) {
+    if (!domains.has(indicatorId)) {
+      unresolvedIds.add(indicatorId);
+    }
+  }
+  return { domains, unresolvedIds };
 }
 
 async function fetchMeasureObservations(input: {
@@ -654,4 +669,60 @@ export async function loadCountyEvidenceBundle(input: {
     outcomes: [...preserved, ...fetched],
     releaseId: input.releaseId,
   });
+}
+
+/**
+ * Published county record for fields the observation series does not carry.
+ * A 404 is an absent record, not a transport failure. Score settings stay at
+ * the API default and the caller must not render the score.
+ */
+export async function loadInvestigateCountyRecord(input: {
+  fips: string;
+  releaseId: string;
+  signal: AbortSignal;
+}): Promise<CountyDetail | null> {
+  let response: Awaited<ReturnType<typeof countyV1CountiesFipsGet>>;
+  try {
+    response = await countyV1CountiesFipsGet(
+      input.fips,
+      { dataset_version: input.releaseId },
+      { signal: input.signal }
+    );
+  } catch (error) {
+    // The generated client throws on every non-2xx response, so a missing
+    // county record never arrives as status 404.
+    if (error instanceof AtlasApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+  if (response.status === 404) {
+    return null;
+  }
+  if (response.status !== 200) {
+    throw new AtlasApiError(
+      "The published county record could not be loaded.",
+      `/v1/counties/${input.fips}`,
+      response.status,
+      null
+    );
+  }
+  const detail = validateApiResponse(
+    "County detail",
+    CountyV1CountiesFipsGetResponse,
+    response.data
+  );
+  if (detail.fips !== input.fips) {
+    throw new InvestigateContractError(
+      "County record does not match the requested county.",
+      "identity_mismatch"
+    );
+  }
+  if (detail.release.release_id !== input.releaseId) {
+    throw new InvestigateContractError(
+      "County record release does not match the requested release.",
+      "release_mismatch"
+    );
+  }
+  return detail;
 }

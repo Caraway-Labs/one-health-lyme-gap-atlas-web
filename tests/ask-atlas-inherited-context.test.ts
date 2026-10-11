@@ -166,6 +166,7 @@ describe("Ask Atlas inherited context allowlist", () => {
       inheritedContextFromInvestigate({
         bundle: null,
         identity: null,
+        observationsLoaded: "withheld",
         releaseId: "alpha-2026",
         releaseMismatch: true,
         requestedFips: "08001",
@@ -174,6 +175,7 @@ describe("Ask Atlas inherited context allowlist", () => {
     const releaseOnly = inheritedContextFromInvestigate({
       bundle: null,
       identity: null,
+      observationsLoaded: "withheld",
       releaseId: "alpha-2026",
       releaseMismatch: false,
       requestedFips: null,
@@ -191,6 +193,7 @@ describe("Ask Atlas inherited context allowlist", () => {
         ["2023-01-01", "2023-12-31"],
       ]),
       identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      observationsLoaded: "loaded",
       releaseId: "alpha-2026",
       releaseMismatch: false,
       requestedFips: "08001",
@@ -203,6 +206,7 @@ describe("Ask Atlas inherited context allowlist", () => {
     const mismatchedRelease = inheritedContextFromInvestigate({
       bundle: investigateBundle([["2023-01-01", "2023-12-31"]]),
       identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      observationsLoaded: "loaded",
       releaseId: "alpha-2026",
       releaseMismatch: true,
       requestedFips: "08001",
@@ -219,6 +223,7 @@ describe("Ask Atlas inherited context allowlist", () => {
         ["2022-01-01", "2022-12-31"],
       ]),
       identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      observationsLoaded: "loaded",
       releaseId: "alpha-2026",
       releaseMismatch: false,
       requestedFips: "08001",
@@ -226,6 +231,7 @@ describe("Ask Atlas inherited context allowlist", () => {
     const unsupported = inheritedContextFromInvestigate({
       bundle: investigateBundle([]),
       identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      observationsLoaded: "loaded",
       releaseId: "alpha-2026",
       releaseMismatch: false,
       requestedFips: "08001",
@@ -244,6 +250,7 @@ describe("Ask Atlas inherited context allowlist", () => {
         failedMeasureId: "tick-pathogen",
       }),
       identity: { fips: "08001", label: "Denver County, Colorado (08001)" },
+      observationsLoaded: "loaded",
       releaseId: "alpha-2026",
       releaseMismatch: false,
       requestedFips: "08001",
@@ -255,6 +262,56 @@ describe("Ask Atlas inherited context allowlist", () => {
     });
     expect(field(partial, "measure")).toMatchObject({
       state: "validated",
+    });
+  });
+
+  it("does not inherit measure, period, or source from a withheld bundle", () => {
+    const bundle = investigateBundle([["2023-01-01", "2023-12-31"]]);
+    const identity = {
+      fips: "08001",
+      label: "Denver County, Colorado (08001)",
+    };
+    const withheld = inheritedContextFromInvestigate({
+      bundle,
+      finding: {
+        availability: "available",
+        evidence: evidence("tick", "CDC ArboNET"),
+        inspectHref: "#investigate-published-tick_status",
+        measureId: "tick_status",
+        measureLabel: "Tick surveillance status",
+        text: "Tick surveillance status: Established.",
+        title: "Finding",
+      },
+      identity,
+      observationsLoaded: "withheld",
+      releaseId: "alpha-2026",
+      releaseMismatch: false,
+      requestedFips: "08001",
+    });
+    const loaded = inheritedContextFromInvestigate({
+      bundle,
+      identity,
+      observationsLoaded: "loaded",
+      releaseId: "alpha-2026",
+      releaseMismatch: false,
+      requestedFips: "08001",
+    });
+    expect({
+      loadedMeasure: field(loaded, "measure")?.state,
+      loadedPeriod: field(loaded, "period")?.state,
+      withheldGeography: field(withheld, "geography")?.state,
+      withheldMeasure: field(withheld, "measure"),
+      withheldPeriod: field(withheld, "period"),
+      withheldRelease: field(withheld, "release")?.state,
+      withheldSource: field(withheld, "source"),
+    }).toStrictEqual({
+      loadedMeasure: "validated",
+      loadedPeriod: "validated",
+      withheldGeography: "validated",
+      withheldMeasure: { state: "absent" },
+      withheldPeriod: { state: "absent" },
+      withheldRelease: "validated",
+      withheldSource: { state: "absent" },
     });
   });
 

@@ -41,6 +41,46 @@ import {
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 
+const MOBILE_TRIGGER_RESTORE_FRAMES = 12;
+
+function focusWasDisplacedByInertClose(
+  active: Element | null,
+  sidebar: HTMLElement | null
+): boolean {
+  if (!(active instanceof HTMLElement)) return true;
+  if (active === document.body || active === document.documentElement) {
+    return true;
+  }
+  return Boolean(sidebar?.contains(active));
+}
+
+function restoreMobileNavigationTrigger(
+  trigger: HTMLElement,
+  sidebar: HTMLElement | null
+): () => void {
+  let frame = 0;
+  let frames = 0;
+  let restoring = true;
+  const restore = () => {
+    if (!restoring) return;
+    if (
+      focusWasDisplacedByInertClose(document.activeElement, sidebar) &&
+      trigger.isConnected
+    ) {
+      trigger.focus({ preventScroll: true });
+    }
+    frames += 1;
+    if (restoring && frames < MOBILE_TRIGGER_RESTORE_FRAMES) {
+      frame = window.requestAnimationFrame(restore);
+    }
+  };
+  restore();
+  return () => {
+    restoring = false;
+    window.cancelAnimationFrame(frame);
+  };
+}
+
 export function ResetProfessionalShell({ children }: { children: ReactNode }) {
   return (
     <ExploreCommittedNavigationProvider>
@@ -105,9 +145,14 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!mobileOpen) {
-      previousFocusRef.current?.focus({ preventScroll: true });
+      const trigger = previousFocusRef.current;
       previousFocusRef.current = null;
-      return;
+      if (!(trigger instanceof HTMLElement) || !trigger.isConnected) {
+        return;
+      }
+      // Closing makes the focused close control inert. Chromium can then move
+      // focus to the body after this effect's first focus(), without focusin.
+      return restoreMobileNavigationTrigger(trigger, sidebarRef.current);
     }
     if (!isMobileViewport) {
       return;
@@ -124,7 +169,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     // Chromium often moves focus to the body when the open trigger becomes
     // inert. That can happen after the first animation frames, and it does
     // not always emit focusin, so reclaim until focus is inside the drawer.
+    let reclaiming = true;
     const focusCloseNavigationIfNeeded = () => {
+      if (!reclaiming) return;
       const active = document.activeElement;
       if (active instanceof Node && sidebar.contains(active)) {
         return;
@@ -135,7 +182,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     focusCloseNavigationIfNeeded();
     let frame = 0;
     const reclaimFocus = () => {
+      if (!reclaiming) return;
       focusCloseNavigationIfNeeded();
+      if (!reclaiming) return;
       frame = window.requestAnimationFrame(reclaimFocus);
     };
     frame = window.requestAnimationFrame(reclaimFocus);
@@ -178,6 +227,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
+      reclaiming = false;
       window.cancelAnimationFrame(frame);
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("keydown", handleKeyDown);
