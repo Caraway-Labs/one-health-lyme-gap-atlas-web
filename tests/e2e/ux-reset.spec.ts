@@ -229,7 +229,7 @@ test("preserves reset deep links through sign-in when auth is configured", async
     /\/auth\/sign-in\?next=%2Fapp%2Finvestigate%3Fcounty%3D08001%26scope%3Dstate%26tab%3Dmap/
   );
   await expect(
-    page.getByRole("heading", { name: "Sign in to Atlas" })
+    page.getByRole("heading", { name: "Sign in or create an account" })
   ).toBeVisible();
 });
 

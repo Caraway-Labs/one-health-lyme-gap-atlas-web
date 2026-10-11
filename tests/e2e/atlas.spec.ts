@@ -256,7 +256,7 @@ test("TC06–TC08: research and sign-in shells fail safely without authenticatio
 
   await page.goto("/auth/sign-in");
   await expect(
-    page.getByRole("heading", { name: "Sign in to Atlas" })
+    page.getByRole("heading", { name: "Sign in or create an account" })
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Continue with Google" })
@@ -264,9 +264,8 @@ test("TC06–TC08: research and sign-in shells fail safely without authenticatio
   await expect(
     page.getByRole("button", { name: "Email me a sign-in link" })
   ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Continue without an account" })
-  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Help" })).toBeVisible();
 });
 
 test("TC22: approved favicon is shared by public and professional routes", async ({
