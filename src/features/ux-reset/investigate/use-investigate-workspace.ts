@@ -22,7 +22,10 @@ import {
   type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
-import { investigateRequestDisclosure } from "@/features/ux-reset/investigate/investigate-request-state";
+import {
+  investigateRequestDisclosure,
+  type InvestigateQueryOutcome,
+} from "@/features/ux-reset/investigate/investigate-request-state";
 import { investigateSearchParams } from "@/features/ux-reset/investigate/investigate-search-params";
 import {
   fetchInvestigateIndicators,
@@ -73,6 +76,8 @@ export type InvestigateWorkspace = {
   evidenceError: string | null;
   evidenceFetching: boolean;
   evidenceLoading: boolean;
+  /** Observation query outcome. `undefined` data is never-loaded or failed-first-load. `null` data is settled-absent. */
+  observationOutcome: InvestigateQueryOutcome;
   identity: ResolvedCountyIdentity | null;
   indicatorError: string | null;
   indicatorRefreshError: string | null;
@@ -497,6 +502,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       selection.kind === "county" &&
       (evidenceQuery.isLoading ||
         (inRelease && (measuresQuery.isLoading || indicatorsQuery.isLoading))),
+    observationOutcome: observationState.outcome,
     identity,
     indicatorError: indicatorState.failure,
     indicatorRefreshError: indicatorState.refreshFailure,

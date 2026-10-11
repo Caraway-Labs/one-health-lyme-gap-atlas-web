@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { actionPlanPosture } from "@/features/ux-reset/action/action-context";
@@ -355,6 +356,7 @@ function workspaceFor(
     evidenceError: null,
     evidenceFetching: false,
     evidenceLoading: false,
+    observationOutcome: bundle ? "loaded" : "never-loaded",
     identity: countyIdentity,
     indicatorError: null,
     indicatorRefreshError: null,
@@ -501,10 +503,12 @@ describe("Investigate finding handoff", () => {
 
       activeWorkspace = workspaceFor(scenario, bundle);
       render(
-        <AskAtlasInheritedContextProvider>
-          <ResetActionExperience />
-          <PublishedActionContext />
-        </AskAtlasInheritedContextProvider>
+        <NuqsTestingAdapter hasMemory searchParams="county=08001&scope=CO">
+          <AskAtlasInheritedContextProvider>
+            <ResetActionExperience />
+            <PublishedActionContext />
+          </AskAtlasInheritedContextProvider>
+        </NuqsTestingAdapter>
       );
       const action = screen.getByTestId("action-evidence");
       const actionText =
