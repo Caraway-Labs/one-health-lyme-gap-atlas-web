@@ -1557,6 +1557,43 @@ describe("County Investigate evidence hierarchy", () => {
 
 const SETTLED_COUNTY_ERROR =
   "The published county record could not be loaded. That is a request failure, not missing evidence.";
+const OBSERVATION_FINDING =
+  "Reported Lyme cases: 4 cases. Available. Period 2023. Source CDC surveillance.";
+const PUBLISHED_FINDING =
+  "Tick surveillance status: Established. Available. Period Unavailable. Source Unavailable.";
+const EMPTY_FINDING =
+  "No observed or limited finding was returned for this county.";
+const EMPTY_LIMITATION =
+  "No material limitation was returned on the observations for this county.";
+const COVERAGE_CAVEAT = "Reported Lyme cases coverage: Partial coverage.";
+const LOADING_FINDING =
+  "The published county record is still loading, so an empty finding is not shown yet.";
+const LOADING_LIMITATION =
+  "The published county record is still loading, so an empty limitation is not shown yet.";
+const LOADING_GAPS = "Published county gaps are still loading.";
+const COUNTY_FINDING_FAILURE =
+  "The published county record could not be loaded, so findings may be incomplete. That is a request failure, not a statement that no finding was returned.";
+const COUNTY_LIMITATION_FAILURE =
+  "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.";
+const CATALOG_FINDING =
+  "The measure catalog could not be loaded, so no observation finding was requested. That is a request failure, not a statement that no finding was returned.";
+const CATALOG_LIMITATION =
+  "The measure catalog could not be loaded, so no observation limitation was requested. That is a request failure, not a statement that no limitation was returned.";
+const CATALOG_GAPS =
+  "The measure catalog could not be loaded, so observation gaps were not requested. That is a request failure, not a statement that no gap was returned.";
+const EMPTY_GAPS =
+  "No conflict, gap, or extra limitation was returned for this county.";
+const CATALOG_NOTICE =
+  "The measure catalog could not be loaded. Published county rows are shown without an observation series.";
+const COVERAGE_ABSENT =
+  "Published input coverage was not returned for this county. That is not zero coverage.";
+const COVERAGE_KNOWN =
+  "Published input coverage is 100%. This is not a disease risk score. A lower number is not zero evidence.";
+
+function sentence(text: string | null | undefined): string | null {
+  const normalized = text?.replaceAll(/\s+/g, " ").trim() ?? "";
+  return normalized.length > 0 ? normalized : null;
+}
 
 function readSettledInvestigateState(input: {
   catalog: "failed" | "ok";
@@ -1608,34 +1645,34 @@ function readSettledInvestigateState(input: {
       )}
     </>
   );
-  const evidence =
-    screen.queryByTestId("investigate-evidence")?.textContent ?? "";
-  const finding =
-    screen.queryByTestId("investigate-finding-text")?.textContent ?? "";
-  const limitation =
-    screen.queryByTestId("investigate-limitation-text")?.textContent ?? "";
   return {
     catalog: input.catalog,
-    catalogBanner: screen.queryByTestId("catalog-banner") !== null,
-    catalogOnly: evidence.includes("measure catalog could not be loaded"),
-    county: input.county,
-    countyFailure: evidence
-      .toLowerCase()
-      .includes("published county record could not be loaded"),
-    coverageAbsent: evidence.includes(
-      "Published input coverage was not returned"
+    catalogNotice: sentence(
+      screen.queryByTestId("investigate-catalog-notice")?.textContent
     ),
-    coverageKnown: evidence.includes("Published input coverage is 100%"),
-    emptyFinding: finding.includes("No observed or limited finding"),
-    findingFailure: finding.includes("could not be loaded"),
-    limitationCoverage: limitation.includes("Partial coverage."),
-    limitationFailure: limitation.includes("could not be loaded"),
-    limitationNone: limitation.includes("No material limitation"),
-    observationFinding: finding.includes("4"),
+    county: input.county,
+    coverage: sentence(
+      screen.queryByTestId("investigate-coverage-value")?.textContent
+    ),
+    finding: sentence(
+      screen.queryByTestId("investigate-finding-text")?.textContent
+    ),
+    gaps: sentence(gapSentence()),
+    limitation: sentence(
+      screen.queryByTestId("investigate-limitation-text")?.textContent
+    ),
     observations: input.observations,
-    publishedFinding: finding.includes("Established"),
     withheld: screen.queryByTestId("hierarchy-withheld") !== null,
   };
+}
+
+function gapSentence(): string | null {
+  return (
+    screen.queryByTestId("investigate-gaps-pending")?.textContent ??
+    screen.queryByTestId("investigate-gaps-catalog")?.textContent ??
+    screen.queryByTestId("investigate-gaps-empty")?.textContent ??
+    null
+  );
 }
 
 function expectedSettledInvestigateState(input: {
@@ -1644,22 +1681,44 @@ function expectedSettledInvestigateState(input: {
   observations: "absent" | "present";
 }) {
   const observationsAbsent = input.observations === "absent";
+  const catalogOnly = input.catalog === "failed" && observationsAbsent;
+  const finding = observationsAbsent
+    ? input.county === "error"
+      ? COUNTY_FINDING_FAILURE
+      : input.county === "found"
+        ? PUBLISHED_FINDING
+        : catalogOnly
+          ? CATALOG_FINDING
+          : EMPTY_FINDING
+    : OBSERVATION_FINDING;
+  const limitation = observationsAbsent
+    ? input.county === "error"
+      ? COUNTY_LIMITATION_FAILURE
+      : catalogOnly
+        ? CATALOG_LIMITATION
+        : EMPTY_LIMITATION
+    : COVERAGE_CAVEAT;
+  const gaps =
+    observationsAbsent && input.county !== "error"
+      ? catalogOnly
+        ? CATALOG_GAPS
+        : EMPTY_GAPS
+      : null;
+  const coverage =
+    input.county === "found"
+      ? COVERAGE_KNOWN
+      : input.county === "absent"
+        ? COVERAGE_ABSENT
+        : null;
   return {
     catalog: input.catalog,
-    catalogBanner: input.catalog === "failed",
-    catalogOnly: input.catalog === "failed" && observationsAbsent,
+    catalogNotice: catalogOnly ? CATALOG_NOTICE : null,
     county: input.county,
-    countyFailure: input.county === "error",
-    coverageAbsent: input.county === "absent",
-    coverageKnown: input.county === "found",
-    emptyFinding: observationsAbsent && input.county === "absent",
-    findingFailure: observationsAbsent && input.county === "error",
-    limitationCoverage: input.observations === "present",
-    limitationFailure: observationsAbsent && input.county === "error",
-    limitationNone: observationsAbsent && input.county !== "error",
-    observationFinding: input.observations === "present",
+    coverage,
+    finding,
+    gaps,
+    limitation,
     observations: input.observations,
-    publishedFinding: observationsAbsent && input.county === "found",
     withheld: false,
   };
 }
@@ -1715,18 +1774,19 @@ function readLoadingInvestigateState(input: {
       )}
     </>
   );
-  const finding =
-    screen.queryByTestId("investigate-finding-text")?.textContent ?? "";
-  const limitation =
-    screen.queryByTestId("investigate-limitation-text")?.textContent ?? "";
   return {
     catalog: input.catalog,
-    catalogBanner: screen.queryByTestId("catalog-banner") !== null,
+    catalogNotice: sentence(
+      screen.queryByTestId("investigate-catalog-notice")?.textContent
+    ),
     coverageCaveat: input.coverageCaveat,
-    findingLoading: finding.includes("still loading"),
-    limitationCoverage: limitation.includes("Partial coverage."),
-    limitationLoading: limitation.includes("still loading"),
-    observationFinding: finding.includes("4"),
+    finding: sentence(
+      screen.queryByTestId("investigate-finding-text")?.textContent
+    ),
+    gaps: sentence(gapSentence()),
+    limitation: sentence(
+      screen.queryByTestId("investigate-limitation-text")?.textContent
+    ),
     observations: input.observations,
     withheld: screen.queryByTestId("hierarchy-withheld") !== null,
   };
@@ -1745,12 +1805,19 @@ function expectedLoadingInvestigateState(input: {
     input.coverageCaveat === "present";
   return {
     catalog: input.catalog,
-    catalogBanner: input.catalog === "failed",
+    catalogNotice: null,
     coverageCaveat: input.coverageCaveat,
-    findingLoading: !withheld && input.observations === "absent",
-    limitationCoverage: caveatShown,
-    limitationLoading: !withheld && !caveatShown,
-    observationFinding: !withheld && input.observations === "present",
+    finding: withheld
+      ? null
+      : input.observations === "present"
+        ? OBSERVATION_FINDING
+        : LOADING_FINDING,
+    gaps: withheld || caveatShown ? null : LOADING_GAPS,
+    limitation: withheld
+      ? null
+      : caveatShown
+        ? COVERAGE_CAVEAT
+        : LOADING_LIMITATION,
     observations: input.observations,
     withheld,
   };

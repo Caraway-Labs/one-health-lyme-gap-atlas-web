@@ -84,6 +84,23 @@ function conflictCopy(conflict: InvestigatePeriodConflict): string {
   return `${conflict.measureLabel} returned ${conflict.observationCount} observations for the same period (${period}) with different values. They stay separate and are not combined.`;
 }
 
+const COUNTY_RECORD_LOADING_FINDING =
+  "The published county record is still loading, so an empty finding is not shown yet.";
+const COUNTY_RECORD_LOADING_LIMITATION =
+  "The published county record is still loading, so an empty limitation is not shown yet.";
+const COUNTY_RECORD_FINDING_FAILURE =
+  "The published county record could not be loaded, so findings may be incomplete. That is a request failure, not a statement that no finding was returned.";
+const COUNTY_RECORD_LIMITATION_FAILURE =
+  "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.";
+const CATALOG_FINDING_FAILURE =
+  "The measure catalog could not be loaded, so no observation finding was requested. That is a request failure, not a statement that no finding was returned.";
+const CATALOG_LIMITATION_FAILURE =
+  "The measure catalog could not be loaded, so no observation limitation was requested. That is a request failure, not a statement that no limitation was returned.";
+const CATALOG_GAPS_FAILURE =
+  "The measure catalog could not be loaded, so observation gaps were not requested. That is a request failure, not a statement that no gap was returned.";
+const EMPTY_GAPS =
+  "No conflict, gap, or extra limitation was returned for this county.";
+
 function publicationCopy(publication: FamilyPublication): string | null {
   switch (publication) {
     case "assigned":
@@ -364,21 +381,28 @@ export function InvestigateEvidenceHierarchy({
     Boolean(countyRecordError) && !finding && !published;
   const countyLimitationFailed =
     Boolean(countyRecordError) && !limitation && !published;
+  const publishedLead = publishedFindingRow(publishedRows);
+  const catalogFindingUnsent = catalogFailed && !finding && !publishedLead;
   const findingSummary = holdEmptyFinding
     ? {
-        text: "The published county record is still loading, so an empty finding is not shown yet.",
+        text: COUNTY_RECORD_LOADING_FINDING,
         title: "Published county record loading",
       }
     : countyRecordFailed
       ? {
-          text: "The published county record could not be loaded, so findings may be incomplete. That is a request failure, not a statement that no finding was returned.",
+          text: COUNTY_RECORD_FINDING_FAILURE,
           title: "Published county record did not load",
         }
-      : investigateFindingSummary(bundle, publishedRows);
+      : catalogFindingUnsent
+        ? {
+            text: CATALOG_FINDING_FAILURE,
+            title: "Measure catalog did not load",
+          }
+        : investigateFindingSummary(bundle, publishedRows);
   const publishedFinding =
-    finding || holdEmptyFinding || countyRecordFailed
+    finding || holdEmptyFinding || countyRecordFailed || catalogFindingUnsent
       ? null
-      : publishedFindingRow(publishedRows);
+      : publishedLead;
   const publishedCaveat =
     limitation || holdEmptyLimitation || countyLimitationFailed
       ? null
@@ -388,6 +412,8 @@ export function InvestigateEvidenceHierarchy({
       ? null
       : (coverage.find((row) => row.state.limitationText) ?? null);
   const releaseLimitation = published?.releaseLimitation.trim() ?? "";
+  const catalogLimitationUnsent =
+    catalogFailed && !limitation && !publishedCaveat && !coverageCaveat;
   const limitationSummary = coverageCaveat?.state.limitationText
     ? {
         text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`,
@@ -395,12 +421,12 @@ export function InvestigateEvidenceHierarchy({
       }
     : holdEmptyLimitation
       ? {
-          text: "The published county record is still loading, so an empty limitation is not shown yet.",
+          text: COUNTY_RECORD_LOADING_LIMITATION,
           title: "Published county record loading",
         }
       : countyLimitationFailed
         ? {
-            text: "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.",
+            text: COUNTY_RECORD_LIMITATION_FAILURE,
             title: "Published county record did not load",
           }
         : releaseLimitation && !limitation && !publishedCaveat
@@ -408,7 +434,12 @@ export function InvestigateEvidenceHierarchy({
               text: releaseLimitation,
               title: "Release limitation",
             }
-          : investigateLimitationSummary(bundle, publishedRows);
+          : catalogLimitationUnsent
+            ? {
+                text: CATALOG_LIMITATION_FAILURE,
+                title: "Measure catalog did not load",
+              }
+            : investigateLimitationSummary(bundle, publishedRows);
   const conflicts = investigateEvidenceConflicts(bundle);
   const multipleObservations = investigateMultipleObservations(bundle);
   const limitations = uniqueLines([
@@ -434,10 +465,12 @@ export function InvestigateEvidenceHierarchy({
       data-testid="investigate-evidence"
     >
       {catalogFailed ? (
-        <AtlasStatusMessage tone="error">
-          The measure catalog could not be loaded. Published county rows are
-          shown without an observation series.
-        </AtlasStatusMessage>
+        <div data-testid="investigate-catalog-notice">
+          <AtlasStatusMessage tone="error">
+            The measure catalog could not be loaded. Published county rows are
+            shown without an observation series.
+          </AtlasStatusMessage>
+        </div>
       ) : null}
       <section
         className="ux-reset-investigate-summary"
@@ -703,9 +736,20 @@ export function InvestigateEvidenceHierarchy({
             Published county gaps are still loading.
           </p>
         ) : null}
-        {hasGapContent || countyRecordLoading || countyRecordError ? null : (
-          <p className="type-body">
-            No conflict, gap, or extra limitation was returned for this county.
+        {catalogFailed &&
+        !hasGapContent &&
+        !countyRecordLoading &&
+        !countyRecordError ? (
+          <p className="type-body" data-testid="investigate-gaps-catalog">
+            {CATALOG_GAPS_FAILURE}
+          </p>
+        ) : null}
+        {hasGapContent ||
+        countyRecordLoading ||
+        countyRecordError ||
+        catalogFailed ? null : (
+          <p className="type-body" data-testid="investigate-gaps-empty">
+            {EMPTY_GAPS}
           </p>
         )}
       </section>
