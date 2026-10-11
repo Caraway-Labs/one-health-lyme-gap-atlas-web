@@ -67,6 +67,17 @@ async function installActionMocks(
   await page.route("**/v1/geographies/**", async (route) => {
     await fulfillJson(route, { code: "CANONICAL_DATA_UNAVAILABLE" }, 503);
   });
+  await page.route("**/v1/counties/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (
+      pathname.includes("/report.pdf") ||
+      pathname.includes("/tier1-surveillance-priority")
+    ) {
+      await route.fallback();
+      return;
+    }
+    await fulfillJson(route, { detail: "not found" }, 404);
+  });
   await page.route("**/v1/observations**", async (route) => {
     const url = new URL(route.request().url());
     const fips = url.searchParams.get("geography_id") ?? "";

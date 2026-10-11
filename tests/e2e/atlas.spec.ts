@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
@@ -266,7 +268,7 @@ test("TC06–TC08: research and sign-in shells fail safely without authenticatio
   await expect(page.getByRole("link", { name: "Help" })).toBeVisible();
 });
 
-test("TC22: declared favicon and canonical fallback resolve without 404", async ({
+test("TC22: approved favicon is shared by public and professional routes", async ({
   page,
   request,
 }) => {
@@ -275,16 +277,84 @@ test("TC22: declared favicon and canonical fallback resolve without 404", async 
     if (response.url().includes("favicon") && response.status() === 404)
       failedFavicons.push(response.url());
   });
-  await page.goto("/overview");
-  const icon = page.locator('head link[rel="icon"]');
-  await expect(icon).toHaveAttribute("href", "/favicon.svg");
-  const declared = await request.get("/favicon.svg");
-  expect(declared.status()).toBe(200);
-  expect(declared.headers()["content-type"]).toContain("image/svg+xml");
-  expect((await declared.body()).byteLength).toBeGreaterThan(0);
-  const canonical = await request.get("/favicon.ico");
-  expect(canonical.status()).toBe(200);
-  expect(canonical.headers()["content-type"]).toContain("image/svg+xml");
+  const version = "?v=summit-compass-north-20261010";
+  const icons = [
+    { name: "favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+    { name: "favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    { name: "favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    { name: "favicon-48x48.png", sizes: "48x48", type: "image/png" },
+    { name: "apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+  ];
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    for (const path of ["/", "/app/review"]) {
+      await page.goto(path);
+      await expect(page).toHaveURL(new RegExp(`${path === "/" ? "/$" : path}`));
+      for (const refresh of [false, true]) {
+        if (refresh) await page.reload();
+        await expect(page.locator('head link[rel="icon"]')).toHaveCount(4);
+        await expect(
+          page.locator('head link[rel="apple-touch-icon"]')
+        ).toHaveCount(1);
+        for (const asset of icons) {
+          const rel =
+            asset.name === "apple-touch-icon.png" ? "apple-touch-icon" : "icon";
+          const link = page.locator(
+            `head link[rel="${rel}"][href="/${asset.name}${version}"]`
+          );
+          await expect(link).toHaveAttribute("sizes", asset.sizes);
+          await expect(link).toHaveAttribute("type", asset.type);
+        }
+        await expect(
+          page.locator('head link[href*="favicon.svg"]')
+        ).toHaveCount(0);
+      }
+    }
+  }
+  for (const name of [
+    ...icons.map((asset) => asset.name),
+    "android-chrome-192x192.png",
+    "android-chrome-512x512.png",
+  ]) {
+    for (const suffix of ["", version]) {
+      const response = await request.get(`/${name}${suffix}`, {
+        maxRedirects: 0,
+      });
+      expect(response.status()).toBe(200);
+      expect(response.headers()["content-type"]).toMatch(
+        name.endsWith(".ico")
+          ? /^image\/(x-icon|vnd\.microsoft\.icon)/
+          : /^image\/png/
+      );
+      const bytes = await response.body();
+      expect(bytes.equals(await readFile(`public/${name}`))).toBe(true);
+      if (name.endsWith(".png")) {
+        const size =
+          name === "apple-touch-icon.png"
+            ? 180
+            : Number(name.match(/(\d+)x\d+/)?.[1]);
+        expect(bytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+        expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([
+          size,
+          size,
+        ]);
+      } else {
+        expect(bytes.readUInt16LE(0)).toBe(0);
+        expect(bytes.readUInt16LE(2)).toBe(1);
+        expect(bytes.readUInt16LE(4)).toBe(3);
+        expect(
+          [0, 1, 2].map((index) => [
+            bytes[6 + index * 16],
+            bytes[7 + index * 16],
+          ])
+        ).toEqual([
+          [16, 16],
+          [32, 32],
+          [48, 48],
+        ]);
+      }
+    }
+  }
   expect(failedFavicons).toEqual([]);
 });
 

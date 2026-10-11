@@ -35,7 +35,7 @@ vi.mock(
     }) as never
 );
 
-import { middleware } from "@/middleware";
+import { config as middlewareConfig, middleware } from "@/middleware";
 
 const SESSION_REQUEST_HEADER = `x-middleware-request-${FRONT_PORCH_SESSION_HEADER}`;
 
@@ -138,6 +138,24 @@ describe("front porch session middleware", () => {
       "http://localhost/auth/sign-in?next=%2Fapp%2Freview"
     );
     expect(response.cookies.get("sb-access")?.value).toBe("refreshed");
+  });
+
+  it("serves the public About page without a sign-in redirect", async () => {
+    expect(middlewareConfig.matcher).toStrictEqual([
+      "/",
+      "/app",
+      "/app/:path*",
+    ]);
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubEnv("ATLAS_E2E", "0");
+    getUser.mockResolvedValue({ data: { user: null } });
+    createServerClient.mockReturnValue({ auth: { getUser } });
+
+    const response = await middleware(atlasRequest("/about/caraway-labs"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
   });
 
   it("serves the Front Porch without Supabase configuration", async () => {

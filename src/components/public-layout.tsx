@@ -1,9 +1,17 @@
-import Link from "next/link";
+"use client";
 
-import { SiteFooter } from "@/components/site-footer";
-import { ATLAS_OVERVIEW_PATH } from "@/lib/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { BrandMark } from "@/components/brand-mark";
+import { FeedbackTrigger } from "@/components/feedback-dialog";
+import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
+
+const FOOTER_FEEDBACK_ROUTES = new Set(["/privacy", "/ai-ethics"]);
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   return (
     <div className="public-layout">
       <header className="public-header">
@@ -12,17 +20,21 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           className="public-brand"
           href="/"
         >
-          <span aria-hidden="true" className="brand-mark">
-            +
-          </span>
+          <BrandMark size={28} />
           <span>One Health Lyme Gap Atlas</span>
-        </Link>
-        <Link className="public-home-link" href={ATLAS_OVERVIEW_PATH}>
-          Back to Atlas
         </Link>
       </header>
       {children}
-      <SiteFooter />
+      <FrontPorchTrustFooter
+        extraControls={
+          FOOTER_FEEDBACK_ROUTES.has(pathname) ? (
+            <FeedbackTrigger
+              controlId="feedback_footer_open"
+              label="Feedback"
+            />
+          ) : null
+        }
+      />
     </div>
   );
 }

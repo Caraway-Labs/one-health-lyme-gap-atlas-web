@@ -1,12 +1,13 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   hasExplicitReviewScopeParam,
   parsedReviewScopeFromUrl,
   resolveStartingReviewScope,
+  type ReviewScope,
 } from "@/features/ux-reset/review/resolve-review-scope";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 
@@ -19,7 +20,8 @@ type ApplyProfileStartingScopeArgs = {
 };
 
 /**
- * Applies profile default jurisdiction once when the Review URL omits `scope`.
+ * Startup runs once. Once it settles, the URL has an explicit scope that
+ * reproduces the screen, including a national fallback.
  */
 export function useApplyProfileStartingScope({
   activeScope,
@@ -27,26 +29,41 @@ export function useApplyProfileStartingScope({
   profileStateCode,
   setScope,
   stateOptions,
-}: ApplyProfileStartingScopeArgs) {
+}: ApplyProfileStartingScopeArgs): boolean {
   const searchParams = useSearchParams();
-  const appliedRef = useRef(false);
+  const resolvedScopeRef = useRef<ReviewScope | null>(null);
+  const settledRef = useRef(false);
+  const [startupSettled, setStartupSettled] = useState(false);
 
   useEffect(() => {
-    if (!profileReady || appliedRef.current || stateOptions.length === 0) {
+    if (!profileReady || settledRef.current || stateOptions.length === 0) {
       return;
     }
-    const explicit = hasExplicitReviewScopeParam(searchParams);
-    const parsed = parsedReviewScopeFromUrl(searchParams);
-    const starting = resolveStartingReviewScope(
-      explicit,
-      parsed,
-      profileStateCode,
-      stateOptions
-    );
-    appliedRef.current = true;
-    if (starting !== activeScope) {
-      setScope(starting);
+    if (resolvedScopeRef.current === null) {
+      // A history entry that omits scope is unresolved even when the Next
+      // snapshot still shows a scope from an earlier shallow update.
+      const historyHasScope = hasExplicitReviewScopeParam(
+        new URLSearchParams(window.location.search)
+      );
+      const explicit =
+        hasExplicitReviewScopeParam(searchParams) && historyHasScope;
+      resolvedScopeRef.current = resolveStartingReviewScope(
+        explicit,
+        parsedReviewScopeFromUrl(searchParams),
+        profileStateCode,
+        stateOptions
+      );
     }
+    const starting = resolvedScopeRef.current;
+    // Record the resolution even when the parsed scope is already that value.
+    // A scope-less URL would otherwise stay national while a reload applies
+    // a later saved state.
+    setScope(starting);
+    if (starting !== activeScope) {
+      return;
+    }
+    settledRef.current = true;
+    setStartupSettled(true);
   }, [
     activeScope,
     profileReady,
@@ -55,4 +72,6 @@ export function useApplyProfileStartingScope({
     setScope,
     stateOptions,
   ]);
+
+  return startupSettled;
 }

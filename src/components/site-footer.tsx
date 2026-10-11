@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
+import { BrandMark } from "@/components/brand-mark";
 import {
   FeedbackTrigger,
   useOptionalFeedbackController,
@@ -36,7 +37,7 @@ export function SiteFooter() {
   return (
     <footer>
       <div className="footer-brand">
-        <span className="brand-mark">+</span>
+        <BrandMark />
         <span>One Health Lyme Gap Atlas</span>
       </div>
       <p>

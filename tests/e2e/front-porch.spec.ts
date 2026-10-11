@@ -153,22 +153,37 @@ test("sign-in stays on the approved screen and public overview stays open", asyn
   await expectNoCountyPreselection(page);
 });
 
-test("public privacy shell returns to the analytical Atlas", async ({
+test("public privacy shell uses the shared unauthenticated chrome", async ({
   page,
 }) => {
   await page.goto("/privacy");
-  const backToAtlas = page.getByRole("link", {
-    exact: true,
-    name: "Back to Atlas",
-  });
-  await expect(backToAtlas).toHaveAttribute("href", "/overview");
-  await backToAtlas.click();
-  await expect(page).toHaveURL(/\/overview\/?$/);
+  await expect(page).not.toHaveURL(/sign-in/);
   await expect(
-    page.getByRole("heading", {
-      name: "The data is telling more than one story.",
-    })
+    page.getByRole("link", { exact: true, name: "Back to Atlas" })
   ).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Back to Atlas ↑" })).toHaveCount(
+    0
+  );
+  const identity = page.getByRole("link", {
+    name: "One Health Lyme Gap Atlas home",
+  });
+  await expect(identity).toBeVisible();
+  await expect(identity).toHaveAttribute("href", "/");
+  await expect(identity.locator("img.atlas-brand-mark")).toHaveAttribute(
+    "src",
+    "/android-chrome-192x192.png"
+  );
+  await expect(identity).toContainText("One Health Lyme Gap Atlas");
+  const footer = page.getByRole("contentinfo");
+  await expect(
+    footer.getByRole("link", { name: "Privacy", exact: true })
+  ).toHaveAttribute("href", "/privacy");
+  await expect(
+    footer.getByRole("link", { name: "AI / Responsible Use" })
+  ).toHaveAttribute("href", "/ai-ethics");
+  await expect(
+    footer.getByRole("button", { name: "Privacy settings" })
+  ).toBeVisible();
 });
 
 test("signed-in review entry does not preselect a county", async ({ page }) => {

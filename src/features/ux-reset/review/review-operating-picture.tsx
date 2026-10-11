@@ -132,6 +132,27 @@ function gapEvidenceModel(
   };
 }
 
+/**
+ * Coverage counts are completeness totals. A negative integer is not a total,
+ * so the whole count line is Unavailable instead of an impossible county number.
+ * Rule-coverage keys stay a separate list and are not part of this check.
+ */
+function reviewCoverageCountText(coverage: StateReview["coverage"]): string {
+  const counts = [
+    coverage.assessed_counties,
+    coverage.eligible_counties,
+    coverage.abstained_counties,
+    coverage.evaluated_counties,
+  ];
+  const countsAreNonnegative = counts.every(
+    (count) => Number.isInteger(count) && count >= 0
+  );
+  if (!countsAreNonnegative) {
+    return `Coverage ${REVIEW_FIELD_UNAVAILABLE}`;
+  }
+  return `${coverage.assessed_counties} assessed, ${coverage.eligible_counties} eligible, ${coverage.abstained_counties} abstained, ${coverage.evaluated_counties} evaluated`;
+}
+
 function reviewRuleCoverage(
   coverage: StateReview["coverage"]
 ): { rule: string; status: string }[] {
@@ -446,10 +467,7 @@ export function ReviewOperatingPicture({
           {authoritativeResultState
             ? reviewResultStateLabel(authoritativeResultState)
             : REVIEW_FIELD_UNAVAILABLE}
-          . {review.coverage.assessed_counties} assessed,{" "}
-          {review.coverage.eligible_counties} eligible,{" "}
-          {review.coverage.abstained_counties} abstained,{" "}
-          {review.coverage.evaluated_counties} evaluated.
+          . {reviewCoverageCountText(review.coverage)}.
         </p>
         {ruleCoverage.length > 0 ? (
           <section

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useId, useRef, useState } from "react";
 
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { frontPorchHeroFont } from "@/features/front-porch/front-porch-font";
@@ -30,6 +31,17 @@ function providerFailure(error: unknown): AuthProviderFailure {
     message: candidate.message,
     status: candidate.status,
   };
+}
+
+export function SignInIdentity() {
+  return (
+    <header className="auth-entrance-header">
+      <span className="auth-entrance-brand atlas-sign-in-brand">
+        <BrandMark size={28} />
+        <span>{SIGN_IN_COPY.brand}</span>
+      </span>
+    </header>
+  );
 }
 
 export function SignInEntrance() {
@@ -165,9 +177,7 @@ export function SignInEntrance() {
 
   return (
     <div className={`${frontPorchHeroFont.variable} auth-entrance`}>
-      <header className="auth-entrance-header">
-        <span className="auth-entrance-brand">{SIGN_IN_COPY.brand}</span>
-      </header>
+      <SignInIdentity />
       <main className="auth-entrance-main">
         {view === "request" ? (
           <form className="auth-entrance-form" onSubmit={sendMagicLink}>

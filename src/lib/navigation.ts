@@ -8,6 +8,8 @@ import {
   UserCircle,
 } from "lucide-react";
 
+import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
+
 export type NavigationGroupId = "explore" | "research" | "reference";
 export type NavigationStatus =
   | "available"
@@ -222,6 +224,19 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
       "How One Health Lyme Gap Atlas uses AI today, the evidence boundaries it follows, and the commitments still being decided.",
     pageTitle: "AI Ethics | One Health Lyme Gap Atlas",
     placement: "footer",
+    shell: "public",
+    status: "available",
+  },
+  {
+    description: "Read who builds One Health Atlas and why the project exists.",
+    href: ABOUT_CARAWAY_LABS_PATH,
+    id: "about-caraway-labs",
+    label: "About Caraway Labs",
+    match: "exact",
+    pageDescription:
+      "Caraway Labs develops software for informed decisions. One Health Atlas helps public-health professionals investigate vector-borne disease evidence, starting with Lyme disease.",
+    pageTitle: "About Caraway Labs | One Health Lyme Gap Atlas",
+    placement: "none",
     shell: "public",
     status: "available",
   },
