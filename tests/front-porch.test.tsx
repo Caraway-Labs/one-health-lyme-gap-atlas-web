@@ -190,6 +190,7 @@ describe("front porch view", () => {
         methodologyHref: screen
           .getByRole("link", { name: "Methodology" })
           .getAttribute("href"),
+        feedback: trust.queryByRole("button", { name: "Feedback" }),
         privacySettings: trust.getByRole("button", { name: "Privacy settings" })
           .textContent,
         trustLinks: trust.getAllByRole("link").map((link) => ({
@@ -207,6 +208,7 @@ describe("front porch view", () => {
         brandMark: null,
         evidenceHref: "/docs/evidence-and-uncertainty",
         methodologyHref: "/docs/releases-and-methodology",
+        feedback: null,
         privacySettings: "Privacy settings",
         trustLinks: [
           { href: "/privacy", target: null, text: "Privacy" },

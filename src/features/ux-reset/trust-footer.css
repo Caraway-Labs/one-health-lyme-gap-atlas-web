@@ -1,5 +1,6 @@
 .ux-reset-pro-app .ux-reset-trust-footer,
-.front-porch .ux-reset-trust-footer {
+.front-porch .ux-reset-trust-footer,
+.public-layout .ux-reset-trust-footer {
   display: block;
   flex: none;
   margin-top: auto;
@@ -48,7 +49,9 @@
 .ux-reset-pro-app .ux-reset-trust-footer a,
 .ux-reset-pro-app .ux-reset-trust-footer a:visited,
 .front-porch .ux-reset-trust-footer a,
-.front-porch .ux-reset-trust-footer a:visited {
+.front-porch .ux-reset-trust-footer a:visited,
+.public-layout .ux-reset-trust-footer a,
+.public-layout .ux-reset-trust-footer a:visited {
   display: inline-flex;
   align-items: center;
   min-height: 1.5rem;
@@ -61,13 +64,16 @@
 }
 
 .ux-reset-pro-app .ux-reset-trust-footer a:hover,
-.front-porch .ux-reset-trust-footer a:hover {
+.front-porch .ux-reset-trust-footer a:hover,
+.public-layout .ux-reset-trust-footer a:hover {
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 
 /* Public consent stays a dialog trigger until Settings exposes it (issues 427 and 527). */
-.front-porch .ux-reset-trust-footer .footer-link {
+.front-porch .ux-reset-trust-footer .footer-link,
+.public-layout .ux-reset-trust-footer .footer-link,
+.public-layout .ux-reset-trust-footer .footer-feedback {
   height: auto;
   min-height: 1.5rem;
   padding: var(--space-1) 0;
@@ -83,17 +89,25 @@
   cursor: pointer;
 }
 
-.front-porch .ux-reset-trust-footer .footer-link:hover {
+.front-porch .ux-reset-trust-footer .footer-link:hover,
+.public-layout .ux-reset-trust-footer .footer-link:hover,
+.public-layout .ux-reset-trust-footer .footer-feedback:hover {
   background: transparent;
   color: var(--white);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 
+.public-layout .ux-reset-trust-footer .footer-feedback {
+  font-family: inherit;
+}
+
 .ux-reset-pro-app .ux-reset-trust-footer a:focus-visible,
 .ux-reset-pro-app .ux-reset-trust-footer button:focus-visible,
 .front-porch .ux-reset-trust-footer a:focus-visible,
-.front-porch .ux-reset-trust-footer button:focus-visible {
+.front-porch .ux-reset-trust-footer button:focus-visible,
+.public-layout .ux-reset-trust-footer a:focus-visible,
+.public-layout .ux-reset-trust-footer button:focus-visible {
   /* --ring on --navy is 2.75:1. White on navy is 14.5:1 (WCAG 2.2 non-text). */
   border-color: transparent;
   outline: 2px solid var(--white);
@@ -135,10 +149,12 @@
   }
 }
 
-/* The public footer is the full viewport, so the centered group meets the
-   brand before the workspace sidebar breakpoint. Stack earlier on / only. */
+/* Full-viewport public pages have no sidebar, so the centered group meets
+   the brand before the workspace breakpoint. Stack earlier on / and the
+   public trust pages. */
 @container trust-footer (max-width: 72rem) {
-  .front-porch .ux-reset-trust-footer-bar {
+  .front-porch .ux-reset-trust-footer-bar,
+  .public-layout .ux-reset-trust-footer-bar {
     align-items: start;
     justify-items: start;
     min-height: 0;
@@ -147,25 +163,32 @@
   }
 
   .front-porch .ux-reset-trust-brand,
-  .front-porch .ux-reset-trust-links {
+  .front-porch .ux-reset-trust-links,
+  .public-layout .ux-reset-trust-brand,
+  .public-layout .ux-reset-trust-links {
     grid-row: auto;
     grid-column: 1;
     justify-self: start;
     max-width: 100%;
   }
 
-  .front-porch .ux-reset-trust-brand {
+  .front-porch .ux-reset-trust-brand,
+  .public-layout .ux-reset-trust-brand {
     white-space: normal;
   }
 
-  .front-porch .ux-reset-trust-links {
+  .front-porch .ux-reset-trust-links,
+  .public-layout .ux-reset-trust-links {
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: var(--space-3) var(--space-5);
   }
 
   .front-porch .ux-reset-trust-footer a,
-  .front-porch .ux-reset-trust-footer .footer-link {
+  .front-porch .ux-reset-trust-footer .footer-link,
+  .public-layout .ux-reset-trust-footer a,
+  .public-layout .ux-reset-trust-footer .footer-link,
+  .public-layout .ux-reset-trust-footer .footer-feedback {
     min-height: var(--control-height);
   }
 }

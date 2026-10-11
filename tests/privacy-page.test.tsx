@@ -75,6 +75,16 @@ describe("public privacy page", () => {
     expect(getRouteShell("/app")).toBe("none");
   });
 
+  it("keeps the privacy page footer in the feedback entry-point sentence", () => {
+    render(<PrivacyPage />);
+
+    expect(
+      screen.getByText(
+        /In-product feedback is available from the Atlas header, the geographic explorer, and this privacy page footer\./
+      )
+    ).toBeTruthy();
+  });
+
   it("does not describe the professional workspace as an unlaunched saved workspace", () => {
     render(<PrivacyPage />);
 
