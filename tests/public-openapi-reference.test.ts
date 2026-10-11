@@ -77,7 +77,17 @@ describe("public OpenAPI reference", () => {
       ])
     ).toStrictEqual([]);
     expect(headingCount(pages, "[#observations_v1_observations_get]")).toBe(1);
-    expect(requiredFile(pages, "schemas.mdx")).toContain("## ProblemDetails");
+    const schemaPage = requiredFile(pages, "schemas.mdx");
+    const schemaCount = schemaPage.match(/^## /gm)?.length ?? 0;
+    expect(
+      [
+        schemaPage.includes("## ProblemDetails"),
+        schemaCount > 0,
+        requiredFile(pages, "index.mdx").includes(
+          `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaCount}).`
+        ),
+      ].every(Boolean)
+    ).toBeTruthy();
     expect(requiredFile(pages, "discovery.mdx")).toContain(
       "This response does not declare a body."
     );

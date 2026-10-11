@@ -704,7 +704,7 @@ function renderIndex(
     lines.push("");
   }
   lines.push(
-    `Component schemas: [Schemas](/docs/api-reference/schemas) (${Object.keys(schemaAnchors).length}).`
+    `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaAnchors.size}).`
   );
   return `${lines.join("\n").trim()}\n`;
 }
