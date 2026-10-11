@@ -9,3 +9,4 @@ playwright-report/
 test-results/
 /public/maplibre/
 *.tsbuildinfo
+storybook-static/

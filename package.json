@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "storybook": "storybook dev -p 6006 --no-open --disable-telemetry",
+    "build-storybook": "storybook build --disable-telemetry",
+    "test:storybook": "playwright test --config playwright.storybook.config.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
@@ -53,6 +56,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.54.0",
+    "@storybook/addon-docs": "10.6.1",
+    "@storybook/nextjs-vite": "10.6.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
@@ -65,9 +70,11 @@
     "orval": "^8.2.0",
     "oxfmt": "0.72.0",
     "oxlint": "^1.80.0",
+    "storybook": "10.6.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",
     "ultracite": "7.10.7",
+    "vite": "7.3.7",
     "vitest": "^4.1.11"
   },
   "overrides": {

@@ -12,7 +12,7 @@ Recorded refinement decisions (issue #24, owner-authorized 2026-09-03):
 4. Use a 4px / Tailwind spacing scale; arbitrary spacing is for viz/layout.
 5. Semantic tokens for chrome; explicit domain/viz tokens for maps, evidence, rankings, and severity.
 6. No dark-mode product feature; token architecture remains remappable.
-7. Markdown docs plus an unlinked `/design-system` gallery; no Storybook.
+7. Markdown docs plus an unlinked `/design-system` gallery. WEB #549 supersedes the original no-Storybook tooling choice with an independent public [component explorer](storybook.md); see [ADR 0021](adr/0021-storybook-component-explorer.md). Production components and styling remain canonical.
 8. `AGENTS.md` + static checks + focused Playwright a11y coverage.
 9. Extract Atlas domain patterns only with genuine reuse.
 10. WCAG 2.2 AA for reusable UI and key flows.

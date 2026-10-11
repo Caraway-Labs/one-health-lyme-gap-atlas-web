@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Search `src/components/ui` and existing `atlas-*` domain patterns before creating a control or layout composition.
 - Shared reusable controls must come from `src/components/ui`. Do not create custom button, input, select, dialog, dropdown, card, badge, table, or tooltip primitives without a documented justification.
-- Do not introduce a second UI framework (Mantine, MUI, Chakra, Ant Design, Storybook, etc.).
+- Do not introduce a second UI framework (Mantine, MUI, Chakra, Ant Design, etc.). WEB #549 authorizes Storybook solely as an independent component explorer, reusing production components and CSS; see [docs/storybook.md](docs/storybook.md). Keep its fixtures free of live API/auth/analytics dependencies and protected data.
 - Use semantic Tailwind/shadcn tokens in `src/app/globals.css` for application chrome. Do not hardcode chrome colors when a semantic token exists.
 - Keep Atlas domain and visualization tokens (map ramps, evidence/risk colors, navy/teal brand values, `.priority-pill` severity colors) independent when their data meaning is important. Do not flatten them into `primary`.
 - Domain components compose UI primitives. Do not move scoring, filter, geography, or provenance logic into `src/components/ui`.
