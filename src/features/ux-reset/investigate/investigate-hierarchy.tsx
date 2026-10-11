@@ -25,10 +25,12 @@ import {
   publishedFindingRow,
 } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import {
+  coverageRowAnchor,
   environmentalCoverageRows,
   publishedCountyHierarchy,
+  publishedRowAnchor,
   type EnvironmentalCoverageContext,
-  type EnvironmentalCoverageRow,
+  type GovernedPublishedState,
   type PublishedCountyRecord,
   type PublishedHierarchyRow,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
@@ -39,14 +41,6 @@ const NO_PUBLISHED_FINDINGS: readonly PublishedHierarchyRow[] = [];
 
 function observationAnchor(observationId: string): string {
   return `investigate-observation-${observationId}`;
-}
-
-function publishedRowAnchor(measureId: string): string {
-  return `investigate-published-${measureId}`;
-}
-
-function coverageRowAnchor(observationId: string): string {
-  return `investigate-coverage-${observationId}`;
 }
 
 function FamilyObservations({
@@ -204,6 +198,8 @@ function FamilySection({
             <div
               data-evidence-class={section.evidenceClass}
               data-measure-id={row.measureId}
+              data-reason-code={row.state.reasonCode}
+              data-value-state={row.state.valueState}
               id={publishedRowAnchor(row.measureId)}
               key={row.measureId}
             >
@@ -280,49 +276,13 @@ function uniqueLines(groups: readonly (readonly string[])[]): string[] {
   return lines;
 }
 
-function coverageCaveatLines(
-  rows: readonly EnvironmentalCoverageRow[]
+function derivedGapLines(
+  rows: readonly { state: GovernedPublishedState }[]
 ): string[] {
   const lines: string[] = [];
   const seen = new Set<string>();
   for (const row of rows) {
-    for (const limitation of row.evidence.provenance.limitations) {
-      const text = limitation.trim();
-      if (!text) {
-        continue;
-      }
-      const line = `${row.evidence.claimLabel}: ${text}`;
-      if (seen.has(line)) {
-        continue;
-      }
-      seen.add(line);
-      lines.push(line);
-    }
-    if (
-      row.evidence.availability === evidenceAvailabilityValues.unavailable &&
-      !seen.has(row.observationId)
-    ) {
-      seen.add(row.observationId);
-      lines.push(
-        `${row.evidence.claimLabel} is unavailable for this county. That is not zero.`
-      );
-    }
-  }
-  return lines;
-}
-
-function publishedCaveatLines(
-  rows: readonly PublishedHierarchyRow[]
-): string[] {
-  const lines: string[] = [];
-  const seen = new Set<string>();
-  for (const row of rows) {
-    for (const limitation of row.evidence.provenance.limitations) {
-      const text = limitation.trim();
-      if (!text) {
-        continue;
-      }
-      const line = `${row.evidence.claimLabel}: ${text}`;
+    for (const line of row.state.gapLines) {
       if (seen.has(line)) {
         continue;
       }
@@ -429,9 +389,7 @@ export function InvestigateEvidenceHierarchy({
     holdEmptyLimitation ||
     countyLimitationFailed
       ? null
-      : (coverage.find((row) =>
-          row.evidence.provenance.materialCaveat?.trim()
-        ) ?? null);
+      : (coverage.find((row) => row.state.limitationText) ?? null);
   const releaseLimitation = published?.releaseLimitation.trim() ?? "";
   const limitationSummary = holdEmptyLimitation
     ? {
@@ -443,9 +401,9 @@ export function InvestigateEvidenceHierarchy({
           text: "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.",
           title: "Published county record did not load",
         }
-      : coverageCaveat?.evidence.provenance.materialCaveat
+      : coverageCaveat?.state.limitationText
         ? {
-            text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.evidence.provenance.materialCaveat}`,
+            text: `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`,
             title: coverageCaveat.evidence.claimLabel,
           }
         : releaseLimitation && !limitation && !publishedCaveat
@@ -458,8 +416,8 @@ export function InvestigateEvidenceHierarchy({
   const multipleObservations = investigateMultipleObservations(bundle);
   const limitations = uniqueLines([
     limitationLines(bundle),
-    publishedCaveatLines(publishedRows),
-    coverageCaveatLines(coverage),
+    derivedGapLines(publishedRows),
+    derivedGapLines(coverage),
   ]);
   const publishedGaps = published?.gaps ?? [];
   const hasGapContent =
@@ -534,13 +492,13 @@ export function InvestigateEvidenceHierarchy({
               Inspect this limitation
             </a>
           ) : null}
-          {publishedCaveat ? (
-            <a href={`#${publishedRowAnchor(publishedCaveat.row.measureId)}`}>
+          {publishedCaveat?.row.state.inspectTarget ? (
+            <a href={`#${publishedCaveat.row.state.inspectTarget}`}>
               Inspect this limitation
             </a>
           ) : null}
-          {coverageCaveat ? (
-            <a href={`#${coverageRowAnchor(coverageCaveat.observationId)}`}>
+          {coverageCaveat?.state.inspectTarget ? (
+            <a href={`#${coverageCaveat.state.inspectTarget}`}>
               Inspect this limitation
             </a>
           ) : null}
@@ -607,6 +565,8 @@ export function InvestigateEvidenceHierarchy({
                     <div
                       data-coverage={row.coverageStatus}
                       data-observation-id={row.observationId}
+                      data-reason-code={row.state.reasonCode}
+                      data-value-state={row.state.valueState}
                       id={coverageRowAnchor(row.observationId)}
                       key={row.observationId}
                     >

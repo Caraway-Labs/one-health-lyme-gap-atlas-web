@@ -209,6 +209,459 @@ const publishedRecord: PublishedCountyRecord = {
   uninsuredPercent: null,
 };
 
+const NO_MATERIAL_LIMITATION = "No material limitation";
+
+function unavailableCountyGap(claim: string): string {
+  return `${claim} is unavailable for this county. That is not zero.`;
+}
+
+function quietRecord(
+  overrides: Partial<PublishedCountyRecord>
+): PublishedCountyRecord {
+  return {
+    burgdorferiStatus: "Present",
+    evidenceCompleteness: 100,
+    fips: "08001",
+    pacificusStatus: null,
+    population: 1000,
+    releaseId: INVESTIGATE_RELEASE_ID,
+    releaseLimitation: "",
+    rucc: 1,
+    scapularisStatus: null,
+    sources: [],
+    stateUnallocatedRecords: null,
+    sviPercentile: 0.5,
+    tickStatus: "Established",
+    uninsuredPercent: 9,
+    ...overrides,
+  };
+}
+
+function plainObservation(
+  context: EnvironmentalContext | null = null,
+  observationId = "obs-plain"
+): Observation {
+  return {
+    ...caseObservation(observationId, 4, "2023-01-01", "2023-12-31"),
+    environmental_context: context,
+    limitations: [],
+  };
+}
+
+const PUBLISHED_STATUS_TOKENS = [
+  "Established",
+  "SUPPRESSED",
+  "No records",
+  "missing",
+  "unavailable",
+  "unknown",
+  "no_county_linked_record",
+] as const;
+
+type PublishedStatusToken = (typeof PUBLISHED_STATUS_TOKENS)[number];
+
+type GovernedStateCase = {
+  anchor: string;
+  availability: string;
+  display: string;
+  gapLine: string | null;
+  href: string | null;
+  id: string;
+  limitation: string;
+  provenance: string;
+  reasonCode: string;
+  valueState: ValueState;
+} & (
+  | {
+      kind: "coverage";
+      status: EnvironmentalContext["coverage_status"];
+    }
+  | { kind: "pathogen"; status: string }
+  | { kind: "svi"; value: number }
+  | { kind: "tick"; status: string }
+  | { kind: "uninsured"; value: number }
+);
+
+const tickClaim = "Tick surveillance status";
+const pathogenClaim = "Borrelia burgdorferi status";
+const coverageClaim = "Reported Lyme cases coverage";
+
+const GOVERNED_STATE_CASES: readonly GovernedStateCase[] = [
+  {
+    anchor: "investigate-published-uninsured_percent_2022",
+    availability: "available",
+    display: "9%",
+    gapLine: null,
+    href: null,
+    id: "numeric-observed",
+    kind: "uninsured",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Available. Observed or published.",
+    reasonCode: ValueState.OBSERVED,
+    value: 9,
+    valueState: ValueState.OBSERVED,
+  },
+  {
+    anchor: "investigate-published-uninsured_percent_2022",
+    availability: "available",
+    display: "0%",
+    gapLine: null,
+    href: null,
+    id: "numeric-zero",
+    kind: "uninsured",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Available. Published zero.",
+    reasonCode: ValueState.ZERO,
+    value: 0,
+    valueState: ValueState.ZERO,
+  },
+  {
+    anchor: "investigate-published-svi_percentile_2022",
+    availability: "available",
+    display: "0th percentile",
+    gapLine: null,
+    href: null,
+    id: "svi-zero",
+    kind: "svi",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Available. Published zero.",
+    reasonCode: ValueState.ZERO,
+    value: 0,
+    valueState: ValueState.ZERO,
+  },
+  {
+    anchor: "investigate-published-tick_status",
+    availability: "available",
+    display: "Established",
+    gapLine: null,
+    href: null,
+    id: "status-observed",
+    kind: "tick",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Available. Observed or published.",
+    reasonCode: ValueState.OBSERVED,
+    status: "Established",
+    valueState: ValueState.OBSERVED,
+  },
+  {
+    anchor: "investigate-published-tick_status",
+    availability: "limited",
+    display: "Suppressed",
+    gapLine: `${tickClaim}: Suppressed or privacy-protected.`,
+    href: "#investigate-published-tick_status",
+    id: "status-suppressed",
+    kind: "tick",
+    limitation: "Suppressed or privacy-protected",
+    provenance: "Limited. Suppressed or privacy-protected.",
+    reasonCode: ValueState.SUPPRESSED,
+    status: "SUPPRESSED",
+    valueState: ValueState.SUPPRESSED,
+  },
+  {
+    anchor: "investigate-published-burgdorferi_status",
+    availability: "unavailable",
+    display: "Unavailable",
+    gapLine: unavailableCountyGap(pathogenClaim),
+    href: null,
+    id: "status-no-records",
+    kind: "pathogen",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Unavailable. No county-linked record.",
+    reasonCode: ValueState.NO_COUNTY_LINKED_RECORD,
+    status: "No records",
+    valueState: ValueState.NO_COUNTY_LINKED_RECORD,
+  },
+  {
+    anchor: "investigate-published-burgdorferi_status",
+    availability: "unavailable",
+    display: "Unavailable",
+    gapLine: unavailableCountyGap(pathogenClaim),
+    href: null,
+    id: "status-no-county-linked",
+    kind: "pathogen",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Unavailable. No county-linked record.",
+    reasonCode: ValueState.NO_COUNTY_LINKED_RECORD,
+    status: "no_county_linked_record",
+    valueState: ValueState.NO_COUNTY_LINKED_RECORD,
+  },
+  {
+    anchor: "investigate-published-burgdorferi_status",
+    availability: "unavailable",
+    display: "Unavailable",
+    gapLine: unavailableCountyGap(pathogenClaim),
+    href: null,
+    id: "status-missing",
+    kind: "pathogen",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Unavailable. No county record.",
+    reasonCode: ValueState.MISSING,
+    status: "missing",
+    valueState: ValueState.MISSING,
+  },
+  {
+    anchor: "investigate-published-burgdorferi_status",
+    availability: "unavailable",
+    display: "Unavailable",
+    gapLine: unavailableCountyGap(pathogenClaim),
+    href: null,
+    id: "status-unavailable",
+    kind: "pathogen",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Unavailable. Unavailable for this release.",
+    reasonCode: ValueState.UNAVAILABLE,
+    status: "unavailable",
+    valueState: ValueState.UNAVAILABLE,
+  },
+  {
+    anchor: "investigate-published-burgdorferi_status",
+    availability: "unavailable",
+    display: "Unavailable",
+    gapLine: unavailableCountyGap(pathogenClaim),
+    href: null,
+    id: "status-unknown",
+    kind: "pathogen",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Unavailable. Unavailable for this release.",
+    reasonCode: ValueState.UNAVAILABLE,
+    status: "unknown",
+    valueState: ValueState.UNAVAILABLE,
+  },
+  {
+    anchor: `investigate-coverage-obs-${EnvironmentalContextCoverageStatus.COMPLETE}`,
+    availability: "available",
+    display: "Complete",
+    gapLine: null,
+    href: null,
+    id: "coverage-complete",
+    kind: "coverage",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Available. Observed or published.",
+    reasonCode: ValueState.OBSERVED,
+    status: EnvironmentalContextCoverageStatus.COMPLETE,
+    valueState: ValueState.OBSERVED,
+  },
+  {
+    anchor: `investigate-coverage-obs-${EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE}`,
+    availability: "limited",
+    display: "Partial coverage",
+    gapLine: `${coverageClaim}: Partial coverage.`,
+    href: `#investigate-coverage-obs-${EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE}`,
+    id: "coverage-partial",
+    kind: "coverage",
+    limitation: "Partial coverage.",
+    provenance: "Limited. Coverage or methodology limits apply.",
+    reasonCode: "MATERIAL_LIMITATION",
+    status: EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+    valueState: ValueState.OBSERVED,
+  },
+  {
+    anchor: `investigate-coverage-obs-${EnvironmentalContextCoverageStatus.SOURCE_MISSING}`,
+    availability: "unavailable",
+    display: "Source missing",
+    gapLine: unavailableCountyGap(coverageClaim),
+    href: null,
+    id: "coverage-source-missing",
+    kind: "coverage",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Unavailable. No county record.",
+    reasonCode: ValueState.MISSING,
+    status: EnvironmentalContextCoverageStatus.SOURCE_MISSING,
+    valueState: ValueState.MISSING,
+  },
+  {
+    anchor: `investigate-coverage-obs-${EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE}`,
+    availability: "unavailable",
+    display: "Out of source coverage",
+    gapLine: unavailableCountyGap(coverageClaim),
+    href: null,
+    id: "coverage-out-of-source",
+    kind: "coverage",
+    limitation: NO_MATERIAL_LIMITATION,
+    provenance: "Unavailable. Unavailable for this release.",
+    reasonCode: ValueState.UNAVAILABLE,
+    status: EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE,
+    valueState: ValueState.UNAVAILABLE,
+  },
+];
+
+function renderGovernedStateCase(entry: GovernedStateCase): void {
+  switch (entry.kind) {
+    case "uninsured": {
+      render(
+        <InvestigateEvidenceHierarchy
+          bundle={casesBundle([plainObservation()])}
+          countyRecord={quietRecord({ uninsuredPercent: entry.value })}
+        />
+      );
+      return;
+    }
+    case "svi": {
+      render(
+        <InvestigateEvidenceHierarchy
+          bundle={casesBundle([plainObservation()])}
+          countyRecord={quietRecord({ sviPercentile: entry.value })}
+        />
+      );
+      return;
+    }
+    case "tick": {
+      render(
+        <InvestigateEvidenceHierarchy
+          bundle={casesBundle([plainObservation()])}
+          countyRecord={quietRecord({ tickStatus: entry.status })}
+        />
+      );
+      return;
+    }
+    case "pathogen": {
+      render(
+        <InvestigateEvidenceHierarchy
+          bundle={casesBundle([plainObservation()])}
+          countyRecord={quietRecord({ burgdorferiStatus: entry.status })}
+        />
+      );
+      return;
+    }
+    case "coverage": {
+      render(
+        <InvestigateEvidenceHierarchy
+          bundle={casesBundle([
+            plainObservation(
+              coverageContext(
+                entry.status,
+                entry.status === EnvironmentalContextCoverageStatus.COMPLETE
+                  ? "1.0"
+                  : "0.5"
+              ),
+              `obs-${entry.status}`
+            ),
+          ])}
+          countyRecord={quietRecord({})}
+        />
+      );
+      return;
+    }
+    default: {
+      const exhaustive: never = entry;
+      return exhaustive;
+    }
+  }
+}
+
+function readGovernedState(entry: GovernedStateCase) {
+  const card = document.querySelector<HTMLElement>(`#${entry.anchor}`);
+  const link = screen.queryByRole("link", { name: "Inspect this limitation" });
+  const href = link?.getAttribute("href") ?? null;
+  const target = href ? document.querySelector<HTMLElement>(href) : null;
+  const gaps = screen.queryByTestId("investigate-gap-list")?.textContent ?? "";
+  const summary =
+    screen.getByTestId("investigate-limitation-text").textContent ?? "";
+  return {
+    availability:
+      card?.querySelector<HTMLElement>("[data-evidence-availability]")?.dataset
+        .evidenceAvailability ?? null,
+    coverage: card?.dataset.coverage ?? null,
+    deniesGap:
+      screen.queryByText(
+        "No conflict, gap, or extra limitation was returned for this county."
+      ) !== null,
+    display:
+      card?.querySelector("[data-testid='evidence-display-value']")
+        ?.textContent ?? null,
+    gap:
+      entry.gapLine === null ? gaps.length > 0 : gaps.includes(entry.gapLine),
+    href,
+    id: entry.id,
+    limitation: summary.includes(entry.limitation),
+    provenance:
+      card?.querySelector("[data-testid='evidence-provenance-state'] dd")
+        ?.textContent ?? null,
+    reasonCode: card?.dataset.reasonCode ?? null,
+    targetValueState: target?.dataset.valueState ?? null,
+    valueState: card?.dataset.valueState ?? null,
+  };
+}
+
+function valueStatesSeen(
+  rows: readonly { valueState: string | null }[]
+): Record<ValueState, boolean> {
+  const seen = new Set(rows.map((row) => row.valueState));
+  return {
+    [ValueState.MISSING]: seen.has(ValueState.MISSING),
+    [ValueState.NO_COUNTY_LINKED_RECORD]: seen.has(
+      ValueState.NO_COUNTY_LINKED_RECORD
+    ),
+    [ValueState.OBSERVED]: seen.has(ValueState.OBSERVED),
+    [ValueState.SUPPRESSED]: seen.has(ValueState.SUPPRESSED),
+    [ValueState.UNAVAILABLE]: seen.has(ValueState.UNAVAILABLE),
+    [ValueState.ZERO]: seen.has(ValueState.ZERO),
+  };
+}
+
+function coverageStatesSeen(
+  rows: readonly { coverage: string | null }[]
+): Record<EnvironmentalContextCoverageStatus, boolean> {
+  const seen = new Set(
+    rows.flatMap((row) => (row.coverage ? [row.coverage] : []))
+  );
+  return {
+    [EnvironmentalContextCoverageStatus.COMPLETE]: seen.has(
+      EnvironmentalContextCoverageStatus.COMPLETE
+    ),
+    [EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE]: seen.has(
+      EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE
+    ),
+    [EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE]: seen.has(
+      EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE
+    ),
+    [EnvironmentalContextCoverageStatus.SOURCE_MISSING]: seen.has(
+      EnvironmentalContextCoverageStatus.SOURCE_MISSING
+    ),
+  };
+}
+
+function publishedStatusTokensSeen(): Record<PublishedStatusToken, boolean> {
+  const statuses = new Set(
+    GOVERNED_STATE_CASES.flatMap((entry) =>
+      entry.kind === "tick" || entry.kind === "pathogen" ? [entry.status] : []
+    )
+  );
+  return {
+    Established: statusTokenSeen("Established", statuses),
+    "No records": statusTokenSeen("No records", statuses),
+    SUPPRESSED: statusTokenSeen("SUPPRESSED", statuses),
+    missing: statusTokenSeen("missing", statuses),
+    no_county_linked_record: statusTokenSeen(
+      "no_county_linked_record",
+      statuses
+    ),
+    unavailable: statusTokenSeen("unavailable", statuses),
+    unknown: statusTokenSeen("unknown", statuses),
+  };
+}
+
+function statusTokenSeen(
+  token: PublishedStatusToken,
+  statuses: ReadonlySet<string>
+): boolean {
+  switch (token) {
+    case "Established":
+    case "No records":
+    case "SUPPRESSED":
+    case "missing":
+    case "no_county_linked_record":
+    case "unavailable":
+    case "unknown": {
+      return statuses.has(token);
+    }
+    default: {
+      const exhaustive: never = token;
+      return exhaustive;
+    }
+  }
+}
+
 describe("County Investigate evidence hierarchy", () => {
   afterEach(() => {
     cleanup();
@@ -807,170 +1260,56 @@ describe("County Investigate evidence hierarchy", () => {
     });
   });
 
-  it("keeps every coverage status consistent on the card, gaps, and inspect link", () => {
-    const statuses: Record<EnvironmentalContextCoverageStatus, true> = {
-      [EnvironmentalContextCoverageStatus.COMPLETE]: true,
-      [EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE]: true,
-      [EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE]: true,
-      [EnvironmentalContextCoverageStatus.SOURCE_MISSING]: true,
-    };
-    const claim = "Reported Lyme cases coverage";
-    const unavailableGap = `${claim} is unavailable for this county. That is not zero.`;
-    const rows = (
-      Object.keys(statuses) as EnvironmentalContextCoverageStatus[]
-    ).map((status) => {
+  it("keeps every published and coverage state consistent on the card, gaps, and inspect link", () => {
+    const rows = GOVERNED_STATE_CASES.map((entry) => {
       cleanup();
-      const observationId = `obs-${status}`;
-      const observation = {
-        ...caseObservation(observationId, 4, "2023-01-01", "2023-12-31"),
-        environmental_context: coverageContext(
-          status,
-          status === EnvironmentalContextCoverageStatus.COMPLETE ? "1.0" : "0.5"
-        ),
-        limitations: [],
-      };
-      render(
-        <InvestigateEvidenceHierarchy bundle={casesBundle([observation])} />
-      );
-      const card = document.querySelector<HTMLElement>(
-        `#investigate-coverage-${observationId}`
-      );
-      const link = screen.queryByRole("link", {
-        name: "Inspect this limitation",
-      });
-      const href = link?.getAttribute("href") ?? null;
-      const target = href ? document.querySelector<HTMLElement>(href) : null;
-      const gaps =
-        screen.queryByTestId("investigate-gap-list")?.textContent ?? "";
-      const summary =
-        screen.getByTestId("investigate-limitation-text").textContent ?? "";
-      return coverageStatusRow({
-        availability:
-          card?.querySelector<HTMLElement>("[data-evidence-availability]")
-            ?.dataset.evidenceAvailability ?? null,
-        deniesGap:
-          screen.queryByText(
-            "No conflict, gap, or extra limitation was returned for this county."
-          ) !== null,
-        display:
-          card?.querySelector("[data-testid='evidence-display-value']")
-            ?.textContent ?? null,
-        gap: gaps,
-        href,
-        linkStatus: target?.dataset.coverage ?? null,
-        status,
-        summary,
-      });
+      renderGovernedStateCase(entry);
+      return readGovernedState(entry);
     });
-
-    function coverageStatusRow(input: {
-      availability: string | null;
-      deniesGap: boolean;
-      display: string | null;
-      gap: string;
-      href: string | null;
-      linkStatus: string | null;
-      status: EnvironmentalContextCoverageStatus;
-      summary: string;
-    }) {
-      switch (input.status) {
-        case EnvironmentalContextCoverageStatus.COMPLETE: {
-          return {
-            availability: input.availability,
-            deniesGap: input.deniesGap,
-            display: input.display,
-            gap: input.gap.includes(unavailableGap),
-            href: input.href,
-            limitation: input.summary.includes("No material limitation"),
-            linkStatus: input.linkStatus,
-            status: input.status,
-          };
-        }
-        case EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE: {
-          return {
-            availability: input.availability,
-            deniesGap: input.deniesGap,
-            display: input.display,
-            gap: input.gap.includes(`${claim}: Partial coverage.`),
-            href: input.href,
-            limitation: input.summary.includes("Partial coverage."),
-            linkStatus: input.linkStatus,
-            status: input.status,
-          };
-        }
-        case EnvironmentalContextCoverageStatus.SOURCE_MISSING: {
-          return {
-            availability: input.availability,
-            deniesGap: input.deniesGap,
-            display: input.display,
-            gap: input.gap.includes(unavailableGap),
-            href: input.href,
-            limitation: input.summary.includes("Partial coverage."),
-            linkStatus: input.linkStatus,
-            status: input.status,
-          };
-        }
-        case EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE: {
-          return {
-            availability: input.availability,
-            deniesGap: input.deniesGap,
-            display: input.display,
-            gap: input.gap.includes(unavailableGap),
-            href: input.href,
-            limitation: input.summary.includes("Partial coverage."),
-            linkStatus: input.linkStatus,
-            status: input.status,
-          };
-        }
-        default: {
-          const exhaustive: never = input.status;
-          return exhaustive;
-        }
-      }
-    }
-
-    expect(rows).toStrictEqual([
-      {
-        availability: "available",
-        deniesGap: true,
-        display: "Complete",
-        gap: false,
-        href: null,
+    expect({
+      coverage: coverageStatesSeen(rows),
+      rows,
+      tokens: publishedStatusTokensSeen(),
+      valueStates: valueStatesSeen(rows),
+    }).toStrictEqual({
+      coverage: {
+        [EnvironmentalContextCoverageStatus.COMPLETE]: true,
+        [EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE]: true,
+        [EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE]: true,
+        [EnvironmentalContextCoverageStatus.SOURCE_MISSING]: true,
+      },
+      rows: GOVERNED_STATE_CASES.map((entry) => ({
+        availability: entry.availability,
+        coverage: entry.kind === "coverage" ? entry.status : null,
+        deniesGap: entry.gapLine === null,
+        display: entry.display,
+        gap: entry.gapLine !== null,
+        href: entry.href,
+        id: entry.id,
         limitation: true,
-        linkStatus: null,
-        status: EnvironmentalContextCoverageStatus.COMPLETE,
+        provenance: entry.provenance,
+        reasonCode: entry.reasonCode,
+        targetValueState: entry.href ? entry.valueState : null,
+        valueState: entry.valueState,
+      })),
+      tokens: {
+        Established: true,
+        "No records": true,
+        SUPPRESSED: true,
+        missing: true,
+        no_county_linked_record: true,
+        unavailable: true,
+        unknown: true,
       },
-      {
-        availability: "unavailable",
-        deniesGap: false,
-        display: "Out of source coverage",
-        gap: true,
-        href: null,
-        limitation: false,
-        linkStatus: null,
-        status: EnvironmentalContextCoverageStatus.OUT_OF_SOURCE_COVERAGE,
+      valueStates: {
+        [ValueState.MISSING]: true,
+        [ValueState.NO_COUNTY_LINKED_RECORD]: true,
+        [ValueState.OBSERVED]: true,
+        [ValueState.SUPPRESSED]: true,
+        [ValueState.UNAVAILABLE]: true,
+        [ValueState.ZERO]: true,
       },
-      {
-        availability: "limited",
-        deniesGap: false,
-        display: "Partial coverage",
-        gap: true,
-        href: "#investigate-coverage-obs-PARTIAL_COVERAGE",
-        limitation: true,
-        linkStatus: EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
-        status: EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
-      },
-      {
-        availability: "unavailable",
-        deniesGap: false,
-        display: "Source missing",
-        gap: true,
-        href: null,
-        limitation: false,
-        linkStatus: null,
-        status: EnvironmentalContextCoverageStatus.SOURCE_MISSING,
-      },
-    ]);
+    });
   });
 
   it("keeps complete coverage available when the fraction is 1.0", () => {

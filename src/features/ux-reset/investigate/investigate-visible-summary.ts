@@ -102,17 +102,12 @@ export function publishedFindingRow(
   return publishedLeadRow(rows);
 }
 
-/** First published row whose provenance lists a material caveat. */
+/** First published row whose shared mapping has limitation text. */
 export function publishedCaveatRow(
   rows: readonly PublishedHierarchyRow[]
 ): { row: PublishedHierarchyRow; text: string } | null {
   for (const row of rows) {
-    const caveat = row.evidence.provenance.materialCaveat?.trim() ?? "";
-    const listed =
-      row.evidence.provenance.limitations
-        .map((entry) => entry.trim())
-        .find((entry) => entry.length > 0) ?? "";
-    const text = caveat || listed;
+    const text = row.state.limitationText;
     if (text) {
       return { row, text };
     }

@@ -1,7 +1,10 @@
 import { evidenceTypeFromGovernedMetadata } from "@/features/ux-reset/evidence/evidence-type";
-import type {
-  EvidenceObjectModel,
-  EvidenceProvenanceModel,
+import {
+  evidenceAvailabilityValues,
+  type EvidenceAvailability,
+  type EvidenceObjectModel,
+  type EvidenceProvenanceModel,
+  type EvidenceReasonCode,
 } from "@/features/ux-reset/evidence/types";
 import {
   availabilityFromGovernedValueState,
@@ -47,10 +50,34 @@ export type PublishedCountyRecord = {
   uninsuredPercent: number | null;
 };
 
+/**
+ * Derived state for one published or coverage row. The card, the uncertainty
+ * summary, and the gap list all read this instead of re-deciding from
+ * provenance text.
+ */
+export type GovernedPublishedState = {
+  availability: EvidenceAvailability;
+  /** Status gap the list must not drop: unavailable sentence, suppressed reason, or first caveat. */
+  gapLine: string | null;
+  /** Every gap line for this row, including source notes and the status gap. */
+  gapLines: readonly string[];
+  inspectTarget: string | null;
+  limitationText: string | null;
+  limitations: readonly string[];
+  reasonCode: EvidenceReasonCode;
+  valueState: ValueState;
+};
+
+export type PublishedRowSubject =
+  | { kind: "coverage"; status: EnvironmentalContext["coverage_status"] }
+  | { kind: "numeric"; value: number }
+  | { kind: "status"; status: string };
+
 export type PublishedHierarchyRow = {
   evidence: EvidenceObjectModel;
   familyId: InvestigateEvidenceFamilyId;
   measureId: string;
+  state: GovernedPublishedState;
 };
 
 export type EnvironmentalCoverageContext = {
@@ -67,7 +94,16 @@ export type EnvironmentalCoverageRow = {
   evidence: EvidenceObjectModel;
   measureId: string;
   observationId: string;
+  state: GovernedPublishedState;
 };
+
+export function publishedRowAnchor(measureId: string): string {
+  return `investigate-published-${measureId}`;
+}
+
+export function coverageRowAnchor(observationId: string): string {
+  return `investigate-coverage-${observationId}`;
+}
 
 export type PublishedCountyHierarchy = {
   completeness: number;
@@ -125,6 +161,8 @@ function measureForId(
   return measures.find((measure) => measure.measure_id === measureId);
 }
 
+const NO_ADDED_LIMITATIONS: readonly string[] = [];
+
 function statusValueState(status: string): ValueState {
   const normalized = status.trim().toLowerCase();
   if (normalized === "unknown") {
@@ -145,39 +183,153 @@ function statusValueState(status: string): ValueState {
   return ValueState.OBSERVED;
 }
 
+function numericValueState(value: number): ValueState {
+  return value === 0 ? ValueState.ZERO : ValueState.OBSERVED;
+}
+
+function subjectSeed(subject: PublishedRowSubject): {
+  limitations: readonly string[];
+  valueState: ValueState;
+} {
+  switch (subject.kind) {
+    case "numeric": {
+      return {
+        limitations: NO_ADDED_LIMITATIONS,
+        valueState: numericValueState(subject.value),
+      };
+    }
+    case "status": {
+      return {
+        limitations: NO_ADDED_LIMITATIONS,
+        valueState: statusValueState(subject.status),
+      };
+    }
+    case "coverage": {
+      return coveragePresentation(subject.status);
+    }
+    default: {
+      const exhaustive: never = subject;
+      return exhaustive;
+    }
+  }
+}
+
+function mergedLimitations(
+  inherited: readonly string[],
+  added: readonly string[]
+): string[] {
+  const base = normalizeGovernedLimitations(inherited);
+  const extra = normalizeGovernedLimitations(added).filter(
+    (line) => !base.includes(line)
+  );
+  return [...base, ...extra];
+}
+
+function limitationTextForRow(input: {
+  limitations: readonly string[];
+  reasonCode: EvidenceReasonCode;
+}): string | null {
+  const caveat = materialCaveatShort(input.limitations);
+  if (caveat) {
+    return caveat;
+  }
+  if (input.reasonCode === ValueState.SUPPRESSED) {
+    return evidenceReasonLabel(ValueState.SUPPRESSED);
+  }
+  return null;
+}
+
+function gapLinesForRow(input: {
+  availability: EvidenceAvailability;
+  claimLabel: string;
+  limitations: readonly string[];
+  reasonCode: EvidenceReasonCode;
+}): { gapLine: string | null; gapLines: string[] } {
+  const caveatLines = input.limitations.map(
+    (text) => `${input.claimLabel}: ${text}`
+  );
+  const suppressedLine =
+    input.reasonCode === ValueState.SUPPRESSED && input.limitations.length === 0
+      ? `${input.claimLabel}: ${evidenceReasonLabel(ValueState.SUPPRESSED)}.`
+      : null;
+  const unavailableLine =
+    input.availability === evidenceAvailabilityValues.unavailable
+      ? `${input.claimLabel} is unavailable for this county. That is not zero.`
+      : null;
+  const gapLines = [
+    ...caveatLines,
+    ...(suppressedLine ? [suppressedLine] : []),
+    ...(unavailableLine ? [unavailableLine] : []),
+  ];
+  return {
+    gapLine: unavailableLine ?? suppressedLine ?? caveatLines[0] ?? null,
+    gapLines,
+  };
+}
+
+/**
+ * One mapping from a published number, status token, or coverage status to
+ * the value state, reason, limitation text, gap line, and inspect target.
+ */
+export function mapPublishedRow(input: {
+  claimLabel: string;
+  inheritedLimitations?: readonly string[];
+  inspectAnchor: string;
+  subject: PublishedRowSubject;
+}): GovernedPublishedState {
+  const seed = subjectSeed(input.subject);
+  const limitations = mergedLimitations(
+    input.inheritedLimitations ?? NO_ADDED_LIMITATIONS,
+    seed.limitations
+  );
+  const hasMaterialLimitations = hasGovernedMaterialLimitations(limitations);
+  const valueState = seed.valueState;
+  const availability = availabilityFromGovernedValueState({
+    hasMaterialLimitations,
+    valueState,
+  });
+  const reasonCode = reasonCodeForEvidence({
+    hasMaterialLimitations,
+    valueState,
+  });
+  const limitationText = limitationTextForRow({ limitations, reasonCode });
+  const gaps = gapLinesForRow({
+    availability,
+    claimLabel: input.claimLabel,
+    limitations,
+    reasonCode,
+  });
+  return {
+    availability,
+    gapLine: gaps.gapLine,
+    gapLines: gaps.gapLines,
+    inspectTarget: limitationText ? input.inspectAnchor : null,
+    limitationText,
+    limitations,
+    reasonCode,
+    valueState,
+  };
+}
+
 function evidenceFromPublishedField(input: {
   claimLabel: string;
   measure: Measure | undefined;
   releaseId: string;
   source: SourceMetadata | null;
+  state: GovernedPublishedState;
   unit: string | null;
   value: number | string | null;
-  valueState: ValueState;
 }): EvidenceObjectModel {
-  const sourceLimitations = normalizeGovernedLimitations([
-    ...(input.measure?.limitations ?? []),
-    input.source?.note ?? "",
-  ]);
-  const hasMaterialLimitations =
-    hasGovernedMaterialLimitations(sourceLimitations);
-  const availability = availabilityFromGovernedValueState({
-    hasMaterialLimitations,
-    valueState: input.valueState,
-  });
-  const reasonCode = reasonCodeForEvidence({
-    hasMaterialLimitations,
-    valueState: input.valueState,
-  });
   const sourceFamily = input.source?.label.trim() || "Unavailable";
   const datasetVintage = input.source?.vintage.trim() || null;
   const evidenceType = evidenceTypeFromGovernedMetadata(
     input.measure?.measure_type
   );
-  const materialCaveat = materialCaveatShort(sourceLimitations);
+  const materialCaveat = materialCaveatShort(input.state.limitations);
   const displayValue = formatGovernedEvidenceValue({
     unit: input.unit,
     value: input.value,
-    valueState: input.valueState,
+    valueState: input.state.valueState,
   });
   const publishedStatus =
     displayValue === "Unavailable" &&
@@ -186,7 +338,7 @@ function evidenceFromPublishedField(input: {
       ? `Published status: ${input.value.trim().replaceAll("_", " ")}.`
       : null;
   return {
-    availability,
+    availability: input.state.availability,
     claimLabel: input.claimLabel,
     displayValue,
     provenance: {
@@ -198,12 +350,12 @@ function evidenceFromPublishedField(input: {
         evidenceType === "Unavailable"
           ? null
           : `Evidence type: ${evidenceType}.`,
-        `${evidenceReasonLabel(reasonCode)}.`,
+        `${evidenceReasonLabel(input.state.reasonCode)}.`,
         materialCaveat,
       ]
         .filter((part) => part !== null)
         .join(" "),
-      limitations: sourceLimitations,
+      limitations: [...input.state.limitations],
       materialCaveat,
       observationPeriod: "Unavailable",
       sourceFamily,
@@ -213,7 +365,7 @@ function evidenceFromPublishedField(input: {
         sourceId: input.source?.key ?? null,
       },
     },
-    reasonCode,
+    reasonCode: input.state.reasonCode,
     valueNote: publishedStatus,
   };
 }
@@ -278,7 +430,7 @@ function uninsuredPercentLabel(percent: number): string | null {
   const rendered = formatGovernedEvidenceValue({
     unit: null,
     value: percent,
-    valueState: ValueState.OBSERVED,
+    valueState: numericValueState(percent),
   });
   if (rendered === "Unavailable") {
     return null;
@@ -379,9 +531,45 @@ function unallocatedGap(count: number | null): string | null {
   return `${count} published human-surveillance ${noun} not allocated to a county in this release. That is not a county case count.`;
 }
 
+function rowFromField(input: {
+  field: PublishedField;
+  measures: readonly Measure[];
+  record: PublishedCountyRecord;
+  subject: PublishedRowSubject;
+  value: number | string;
+}): PublishedHierarchyRow {
+  const measure = measureForId(input.measures, input.field.measureId);
+  const claimLabel = measure?.label ?? input.field.claimLabel;
+  const source = sourceForKey(input.record.sources, input.field.sourceKey);
+  const state = mapPublishedRow({
+    claimLabel,
+    inheritedLimitations: [
+      ...(measure?.limitations ?? NO_ADDED_LIMITATIONS),
+      source?.note ?? "",
+    ],
+    inspectAnchor: publishedRowAnchor(input.field.measureId),
+    subject: input.subject,
+  });
+  return {
+    evidence: evidenceFromPublishedField({
+      claimLabel,
+      measure,
+      releaseId: input.record.releaseId,
+      source,
+      state,
+      unit: input.field.displayValue ? null : (measure?.unit ?? null),
+      value: input.value,
+    }),
+    familyId: input.field.familyId,
+    measureId: input.field.measureId,
+    state,
+  };
+}
+
 /**
  * Published county-record rows for measures that have no observation series.
- * Null context stays a gap. It is not rendered as zero.
+ * Null context stays a gap. It is not rendered as zero. Numeric zero is
+ * ValueState.ZERO.
  */
 export function publishedCountyHierarchy(input: {
   measures: readonly Measure[];
@@ -402,21 +590,15 @@ export function publishedCountyHierarchy(input: {
         );
         continue;
       }
-      const measure = measureForId(input.measures, field.measureId);
-      const displayValue = field.displayValue;
-      rows.push({
-        evidence: evidenceFromPublishedField({
-          claimLabel: measure?.label ?? field.claimLabel,
-          measure,
-          releaseId: input.record.releaseId,
-          source: sourceForKey(input.record.sources, field.sourceKey),
-          unit: displayValue ? null : (measure?.unit ?? null),
-          value: displayValue ?? field.value,
-          valueState: ValueState.OBSERVED,
-        }),
-        familyId: field.familyId,
-        measureId: field.measureId,
-      });
+      rows.push(
+        rowFromField({
+          field,
+          measures: input.measures,
+          record: input.record,
+          subject: { kind: "numeric", value: field.value },
+          value: field.displayValue ?? field.value,
+        })
+      );
       continue;
     }
     if (typeof field.value !== "string" || field.value.trim().length === 0) {
@@ -425,20 +607,15 @@ export function publishedCountyHierarchy(input: {
       );
       continue;
     }
-    const measure = measureForId(input.measures, field.measureId);
-    rows.push({
-      evidence: evidenceFromPublishedField({
-        claimLabel: measure?.label ?? field.claimLabel,
-        measure,
-        releaseId: input.record.releaseId,
-        source: sourceForKey(input.record.sources, field.sourceKey),
-        unit: measure?.unit ?? null,
+    rows.push(
+      rowFromField({
+        field,
+        measures: input.measures,
+        record: input.record,
+        subject: { kind: "status", status: field.value },
         value: field.value,
-        valueState: statusValueState(field.value),
-      }),
-      familyId: field.familyId,
-      measureId: field.measureId,
-    });
+      })
+    );
   }
   const unallocated = unallocatedGap(input.record.stateUnallocatedRecords);
   if (unallocated) {
@@ -510,34 +687,22 @@ export function environmentalCoverageRows(input: {
   contexts: readonly EnvironmentalCoverageContext[];
 }): EnvironmentalCoverageRow[] {
   return input.contexts.map((entry) => {
-    const presentation = coveragePresentation(entry.context.coverage_status);
-    const valueState = presentation.valueState;
     const fractionNote = coverageFractionNote(entry.context);
     const source = entry.provenance;
-    const inheritedLimitations = normalizeGovernedLimitations(
-      source.limitations
-    );
-    const coverageLimitations = normalizeGovernedLimitations(
-      presentation.limitations
-    ).filter((line) => !inheritedLimitations.includes(line));
-    const rowLimitations = [...inheritedLimitations, ...coverageLimitations];
-    const hasMaterialLimitations =
-      hasGovernedMaterialLimitations(rowLimitations);
-    const availability = availabilityFromGovernedValueState({
-      hasMaterialLimitations,
-      valueState,
-    });
-    const reasonCode = reasonCodeForEvidence({
-      hasMaterialLimitations,
-      valueState,
+    const claimLabel = `${entry.measureLabel} coverage`;
+    const state = mapPublishedRow({
+      claimLabel,
+      inheritedLimitations: source.limitations,
+      inspectAnchor: coverageRowAnchor(entry.observationId),
+      subject: { kind: "coverage", status: entry.context.coverage_status },
     });
     const label = COVERAGE_STATUS_LABELS[entry.context.coverage_status];
     const observationSummary = source.inspectSummary.trim();
     return {
       coverageStatus: entry.context.coverage_status,
       evidence: {
-        availability,
-        claimLabel: `${entry.measureLabel} coverage`,
+        availability: state.availability,
+        claimLabel,
         displayValue: label,
         provenance: {
           ...source,
@@ -549,19 +714,20 @@ export function environmentalCoverageRows(input: {
           ]
             .filter((part) => part !== null)
             .join(" "),
-          limitations: rowLimitations,
-          materialCaveat: materialCaveatShort(rowLimitations),
+          limitations: [...state.limitations],
+          materialCaveat: materialCaveatShort(state.limitations),
           technical: {
             ...source.technical,
             observationId: entry.observationId,
             releaseId: source.technical?.releaseId ?? null,
           },
         },
-        reasonCode,
+        reasonCode: state.reasonCode,
         valueNote: null,
       },
       measureId: entry.measureId,
       observationId: entry.observationId,
+      state,
     };
   });
 }
