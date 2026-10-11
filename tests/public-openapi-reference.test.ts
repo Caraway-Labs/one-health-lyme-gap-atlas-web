@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -231,6 +232,170 @@ describe("public OpenAPI reference", () => {
       failureCode(() => syncPublicApiReference({ check: true, root }))
     ).toBe("did-not-fail");
   });
+
+  it("renders inline responses and dereferenced reusable component responses", () => {
+    const pinned = pin(documentWithReusableComponents());
+    const page = requiredFile(
+      renderPublicApiReference(
+        loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+      ),
+      "discovery.mdx"
+    );
+    const referenced = between(page, "#### 200", "#### 304");
+    const empty = between(page, "#### 304", "## Submit an indicator");
+    const submitted = page.slice(page.indexOf("## Submit an indicator"));
+
+    expect(
+      missingPhrases(page, [
+        "Reusable indicators.",
+        "human_disease_burden",
+        "[Indicator](/docs/api-reference/schemas#schema-indicator)",
+        "county_fips",
+        "08001",
+        "Synthetic lower-48 indicator.",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      referenced.includes("This response does not declare a body.")
+    ).toBeFalsy();
+    expect(empty).toContain("This response does not declare a body.");
+    expect(
+      missingPhrases(submitted, [
+        "Inline indicators.",
+        "case_count_floor_2023",
+        "lower-48",
+        "Reusable body.",
+        "Required: yes",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      submitted.includes("This request body does not declare a media type.")
+    ).toBeFalsy();
+  });
+
+  it("fails the reference check for a missing or circular reusable component", () => {
+    expect(failureCode(() => checkDocument(missingResponseRef()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(circularResponseRefs()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(missingParameterRef()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(circularHeaderRefs()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(missingExampleRef()))).toBe(
+      "malformed"
+    );
+  });
+
+  it("fails the reference check for circular request bodies and examples", () => {
+    expect(failureCode(() => checkDocument(circularRequestBodyRefs()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(circularExampleRefs()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(nonObjectResponseRef()))).toBe(
+      "malformed"
+    );
+  });
+
+  it("rejects malformed contracts that cannot be rendered", () => {
+    expect(failureCode(() => checkDocument(openapi2Document()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(duplicateOperationIds()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(parameterWithoutName()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(headersNotAnObject()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(externalSchemaRef()))).toBe(
+      "malformed"
+    );
+  });
+
+  it("renders empty request bodies and colliding schema anchors", () => {
+    const pinned = pin(documentWithCollidingSchemas());
+    const pages = renderPublicApiReference(
+      loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+    );
+
+    expect(
+      missingPhrases(requiredFile(pages, "discovery-2.mdx"), [
+        "This request body does not declare a media type.",
+        "indicators_post",
+      ])
+    ).toStrictEqual([]);
+    expect(requiredFile(pages, "schemas.mdx")).toContain("[#schema-a-b-2]");
+  });
+
+  it("checks the pinned contract from the command line", () => {
+    const success = spawnSync(
+      process.execPath,
+      [
+        "--experimental-strip-types",
+        "--disable-warning=ExperimentalWarning",
+        "src/lib/public-openapi-reference.ts",
+        "--check",
+      ],
+      { cwd: process.cwd(), encoding: "utf-8" }
+    );
+    const root = makeRoot();
+    const failure = spawnSync(
+      process.execPath,
+      [
+        "--experimental-strip-types",
+        "--disable-warning=ExperimentalWarning",
+        path.join(process.cwd(), "src/lib/public-openapi-reference.ts"),
+        "--check",
+      ],
+      { cwd: root, encoding: "utf-8" }
+    );
+
+    expect(success.status).toBe(0);
+    expect(success.stdout).toContain("matches the pinned contract");
+    expect(failure.status).toBe(1);
+    expect(failure.stderr).toContain("unavailable");
+  });
+
+  it("treats a generated page that dropped a dereferenced response body as stale", () => {
+    const pinned = pin(documentWithReusableComponents());
+    const root = makeRoot();
+    writeFileSync(
+      path.join(root, PUBLIC_OPENAPI_RELATIVE_PATH),
+      pinned.specBytes
+    );
+    writeFileSync(
+      path.join(root, PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH),
+      pinned.manifestText
+    );
+    syncPublicApiReference({ check: false, root });
+    const pagePath = path.join(
+      root,
+      API_REFERENCE_RELATIVE_DIR,
+      "discovery.mdx"
+    );
+    const page = readFileSync(pagePath, "utf-8");
+
+    expect(page).toContain("Reusable indicators.");
+    writeFileSync(
+      pagePath,
+      page.replace(
+        "Reusable indicators.",
+        "This response does not declare a body."
+      )
+    );
+    expect(
+      failureCode(() => syncPublicApiReference({ check: true, root }))
+    ).toBe("stale_reference");
+  });
 });
 
 function failureCode(
@@ -331,6 +496,331 @@ function loadFirstPartyContract(): void {
     `"sha256": "${createHash("sha256").update(firstPartyBytes).digest("hex")}"`
   );
   loadPublicOpenApiContract(firstPartyBytes, manifestText);
+}
+
+function between(contents: string, start: string, end: string): string {
+  const startIndex = contents.indexOf(start);
+  if (startIndex === -1) return "";
+  const endIndex = contents.indexOf(end, startIndex + start.length);
+  return contents.slice(startIndex, endIndex === -1 ? undefined : endIndex);
+}
+
+function checkDocument(document: unknown): void {
+  const pinned = pin(document);
+  const root = makeRoot();
+  writeFileSync(
+    path.join(root, PUBLIC_OPENAPI_RELATIVE_PATH),
+    pinned.specBytes
+  );
+  writeFileSync(
+    path.join(root, PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH),
+    pinned.manifestText
+  );
+  syncPublicApiReference({ check: true, root });
+}
+
+function documentWithReusableComponents(): Record<string, unknown> {
+  return {
+    ...minimalDocument(),
+    components: {
+      examples: {
+        IndicatorSample: {
+          description: "Synthetic lower-48 indicator.",
+          summary: "Synthetic indicator",
+          value: { indicator_id: "human_disease_burden" },
+        },
+      },
+      headers: {
+        ETag: {
+          description: "Entity tag.",
+          schema: { type: "string" },
+        },
+      },
+      parameters: {
+        County: {
+          description: "Colorado county.",
+          in: "query",
+          name: "county_fips",
+          required: true,
+          schema: { example: "08001", type: "string" },
+        },
+      },
+      requestBodies: {
+        IndicatorBody: {
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Indicator" },
+            },
+          },
+          description: "Reusable body.",
+          required: true,
+        },
+      },
+      responses: {
+        IndicatorAlias: { $ref: "#/components/responses/IndicatorOk" },
+        IndicatorOk: {
+          content: {
+            "application/json": {
+              examples: {
+                sample: { $ref: "#/components/examples/IndicatorSample" },
+              },
+              schema: { $ref: "#/components/schemas/Indicator" },
+            },
+          },
+          description: "Reusable indicators.",
+        },
+      },
+      schemas: {
+        Indicator: {
+          properties: { indicator_id: { type: "string" } },
+          type: "object",
+        },
+      },
+    },
+    paths: {
+      "/v1/indicators": {
+        get: {
+          operationId: "indicators_v1_indicators_get",
+          parameters: [{ $ref: "#/components/parameters/County" }],
+          responses: {
+            "200": { $ref: "#/components/responses/IndicatorAlias" },
+            "304": {
+              description: "Not modified.",
+              headers: { ETag: { $ref: "#/components/headers/ETag" } },
+            },
+          },
+          summary: "Discover indicators",
+          tags: ["discovery"],
+        },
+        post: {
+          operationId: "indicators_post",
+          requestBody: { $ref: "#/components/requestBodies/IndicatorBody" },
+          responses: {
+            "200": {
+              content: {
+                "application/json": {
+                  example: { indicator_id: "case_count_floor_2023" },
+                  examples: { note: "lower-48" },
+                  schema: {
+                    items: { $ref: "#/components/schemas/Indicator" },
+                    type: "array",
+                  },
+                },
+              },
+              description: "Inline indicators.",
+            },
+          },
+          summary: "Submit an indicator",
+          tags: ["discovery"],
+        },
+      },
+    },
+  };
+}
+
+function missingResponseRef(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const paths = document.paths as {
+    "/v1/indicators": { get: { responses: Record<string, unknown> } };
+  };
+  paths["/v1/indicators"].get.responses["200"] = {
+    $ref: "#/components/responses/Missing",
+  };
+  return document;
+}
+
+function circularResponseRefs(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    responses: Record<string, unknown>;
+  };
+  components.responses = {
+    LoopA: { $ref: "#/components/responses/LoopB" },
+    LoopB: { $ref: "#/components/responses/LoopA" },
+  };
+  return document;
+}
+
+function missingParameterRef(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const paths = document.paths as {
+    "/v1/indicators": { get: { parameters: unknown[] } };
+  };
+  paths["/v1/indicators"].get.parameters = [
+    { $ref: "#/components/parameters/Missing" },
+  ];
+  return document;
+}
+
+function circularHeaderRefs(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    headers: Record<string, unknown>;
+  };
+  components.headers = {
+    LoopA: { $ref: "#/components/headers/LoopB" },
+    LoopB: { $ref: "#/components/headers/LoopA" },
+  };
+  const paths = document.paths as {
+    "/v1/indicators": {
+      get: { responses: { "304": { headers: Record<string, unknown> } } };
+    };
+  };
+  paths["/v1/indicators"].get.responses["304"].headers = {
+    ETag: { $ref: "#/components/headers/LoopA" },
+  };
+  return document;
+}
+
+function missingExampleRef(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    responses: {
+      IndicatorOk: {
+        content: {
+          "application/json": { examples: Record<string, unknown> };
+        };
+      };
+    };
+  };
+  components.responses.IndicatorOk.content["application/json"].examples = {
+    sample: { $ref: "#/components/examples/Missing" },
+  };
+  return document;
+}
+
+function circularRequestBodyRefs(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    requestBodies: Record<string, unknown>;
+  };
+  components.requestBodies = {
+    LoopA: { $ref: "#/components/requestBodies/LoopB" },
+    LoopB: { $ref: "#/components/requestBodies/LoopA" },
+  };
+  return document;
+}
+
+function circularExampleRefs(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    examples: Record<string, unknown>;
+  };
+  components.examples = {
+    LoopA: { $ref: "#/components/examples/LoopB" },
+    LoopB: { $ref: "#/components/examples/LoopA" },
+  };
+  return document;
+}
+
+function nonObjectResponseRef(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    responses: Record<string, unknown>;
+  };
+  components.responses.Broken = "not-an-object";
+  const paths = document.paths as {
+    "/v1/indicators": { get: { responses: Record<string, unknown> } };
+  };
+  paths["/v1/indicators"].get.responses["200"] = {
+    $ref: "#/components/responses/Broken",
+  };
+  return document;
+}
+
+function openapi2Document(): Record<string, unknown> {
+  return { ...minimalDocument(), openapi: "2.0" };
+}
+
+function duplicateOperationIds(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as Record<string, unknown>;
+  paths["/v1/measures"] = {
+    get: {
+      operationId: "indicators_v1_indicators_get",
+      responses: { "204": { description: "No content." } },
+      summary: "Discover measures",
+      tags: ["discovery"],
+    },
+  };
+  return document;
+}
+
+function parameterWithoutName(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": { get: { parameters?: unknown[] } };
+  };
+  paths["/v1/indicators"].get.parameters = [{ in: "query" }];
+  return document;
+}
+
+function headersNotAnObject(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": {
+      get: { responses: { "200": { headers?: unknown } } };
+    };
+  };
+  paths["/v1/indicators"].get.responses["200"].headers = [];
+  return document;
+}
+
+function externalSchemaRef(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": {
+      get: {
+        responses: {
+          "200": { content: { "application/json": { schema: unknown } } };
+        };
+      };
+    };
+  };
+  paths["/v1/indicators"].get.responses["200"].content[
+    "application/json"
+  ].schema = { $ref: "https://example.com/schemas/Indicator" };
+  return document;
+}
+
+function documentWithCollidingSchemas(): Record<string, unknown> {
+  return {
+    ...minimalDocument(),
+    components: {
+      schemas: {
+        "A B": { type: "object" },
+        "A-B": { type: "object" },
+      },
+    },
+    paths: {
+      "/v1/indicators": {
+        get: {
+          operationId: "indicators_v1_indicators_get",
+          responses: {
+            "200": {
+              content: {
+                "application/json": { schema: { type: "object" } },
+              },
+              description: "Indicators.",
+            },
+          },
+          summary: "Discover indicators",
+          tags: ["discovery"],
+        },
+        post: {
+          operationId: "indicators_post",
+          requestBody: { description: "Bare body." },
+          responses: { "204": { description: "No content." } },
+          summary: "Submit an indicator",
+          tags: ["Discovery"],
+        },
+      },
+    },
+    tags: [
+      { description: "Discovery.", name: "discovery" },
+      { description: "Also discovery.", name: "Discovery" },
+    ],
+  };
 }
 
 function documentWithRequestBody(): Record<string, unknown> {

@@ -448,7 +448,7 @@ function buildTags(document: JsonRecord): TagView[] {
           `${method.toUpperCase()} ${route} must be an object.`
         );
       }
-      const view = buildOperation(route, method, operation, pathItem);
+      const view = buildOperation(document, route, method, operation, pathItem);
       const tagName = view.tags[0] ?? "untagged";
       if (!grouped.has(tagName)) {
         grouped.set(tagName, []);
@@ -479,6 +479,7 @@ function buildTags(document: JsonRecord): TagView[] {
 }
 
 function buildOperation(
+  document: JsonRecord,
   route: string,
   method: string,
   operation: JsonRecord,
@@ -491,22 +492,23 @@ function buildOperation(
       `${method.toUpperCase()} ${route} is missing a stable operationId.`
     );
   }
-  const responses = buildResponses(operation.responses, operationId);
+  const requestBody = buildRequestBody(document, operation.requestBody);
+  const responses = buildResponses(document, operation.responses, operationId);
   const tags = stringList(operation.tags);
   return {
     deprecated: operation.deprecated === true,
     description: text(operation, "description"),
     method: method.toUpperCase(),
     operationId,
-    parameters: mergeParameters(pathItem.parameters, operation.parameters),
+    parameters: mergeParameters(
+      document,
+      pathItem.parameters,
+      operation.parameters
+    ),
     path: route,
-    requestBody: buildRequestBody(operation.requestBody),
-    requestBodyDescription: isRecord(operation.requestBody)
-      ? text(operation.requestBody, "description")
-      : "",
-    requestBodyRequired:
-      isRecord(operation.requestBody) &&
-      operation.requestBody.required === true,
+    requestBody: requestBody.media,
+    requestBodyDescription: requestBody.description,
+    requestBodyRequired: requestBody.required,
     responses,
     security: operation.security,
     summary: text(operation, "summary") || operationId,
@@ -514,7 +516,11 @@ function buildOperation(
   };
 }
 
-function buildResponses(value: unknown, operationId: string): ResponseView[] {
+function buildResponses(
+  document: JsonRecord,
+  value: unknown,
+  operationId: string
+): ResponseView[] {
   if (!isRecord(value) || Object.keys(value).length === 0) {
     throw new PublicOpenApiContractError(
       "malformed",
@@ -522,32 +528,62 @@ function buildResponses(value: unknown, operationId: string): ResponseView[] {
     );
   }
   return Object.entries(value).map(([status, response]) => {
-    if (!isRecord(response)) {
-      throw new PublicOpenApiContractError(
-        "malformed",
-        `Operation ${operationId} response ${status} must be an object.`
-      );
-    }
+    const resolved = reusableRecord(
+      document,
+      response,
+      `Operation ${operationId} response ${status} must be an object.`
+    );
+    resolveHeaders(document, resolved.headers, operationId, status);
     return {
-      description: text(response, "description"),
-      media: mediaViews(response.content),
+      description: text(resolved, "description"),
+      media: mediaViews(document, resolved.content),
       status,
     };
   });
 }
 
-function buildRequestBody(value: unknown): MediaView[] | undefined {
-  if (value === undefined) return undefined;
-  if (!isRecord(value)) {
+function resolveHeaders(
+  document: JsonRecord,
+  headers: unknown,
+  operationId: string,
+  status: string
+): void {
+  if (headers === undefined) return;
+  if (!isRecord(headers)) {
     throw new PublicOpenApiContractError(
       "malformed",
-      "Request body must be an object."
+      `Operation ${operationId} response ${status} headers must be an object.`
     );
   }
-  return mediaViews(value.content);
+  for (const [name, header] of Object.entries(headers)) {
+    reusableRecord(
+      document,
+      header,
+      `Operation ${operationId} response ${status} header ${name} must be an object.`
+    );
+  }
 }
 
-function mediaViews(value: unknown): MediaView[] {
+function buildRequestBody(
+  document: JsonRecord,
+  value: unknown
+): { description: string; media: MediaView[] | undefined; required: boolean } {
+  if (value === undefined) {
+    return { description: "", media: undefined, required: false };
+  }
+  const resolved = reusableRecord(
+    document,
+    value,
+    "Request body must be an object."
+  );
+  return {
+    description: text(resolved, "description"),
+    media: mediaViews(document, resolved.content),
+    required: resolved.required === true,
+  };
+}
+
+function mediaViews(document: JsonRecord, value: unknown): MediaView[] {
   if (value === undefined) return [];
   if (!isRecord(value)) {
     throw new PublicOpenApiContractError(
@@ -556,35 +592,35 @@ function mediaViews(value: unknown): MediaView[] {
     );
   }
   return Object.entries(value).map(([mediaType, media]) => {
-    if (!isRecord(media)) {
-      throw new PublicOpenApiContractError(
-        "malformed",
-        `Media type ${mediaType} must be an object.`
-      );
-    }
+    const resolved = reusableRecord(
+      document,
+      media,
+      `Media type ${mediaType} must be an object.`
+    );
     return {
-      examples: collectExamples(media),
+      examples: collectExamples(document, resolved),
       mediaType,
-      schema: media.schema,
+      schema: resolved.schema,
     };
   });
 }
 
 function mergeParameters(
+  document: JsonRecord,
   pathParameters: unknown,
   operationParameters: unknown
 ): ParameterView[] {
   const merged = new Map<string, ParameterView>();
-  for (const parameter of parameterList(pathParameters)) {
+  for (const parameter of parameterList(document, pathParameters)) {
     merged.set(`${parameter.location}:${parameter.name}`, parameter);
   }
-  for (const parameter of parameterList(operationParameters)) {
+  for (const parameter of parameterList(document, operationParameters)) {
     merged.set(`${parameter.location}:${parameter.name}`, parameter);
   }
   return [...merged.values()];
 }
 
-function parameterList(value: unknown): ParameterView[] {
+function parameterList(document: JsonRecord, value: unknown): ParameterView[] {
   if (value === undefined) return [];
   if (!Array.isArray(value)) {
     throw new PublicOpenApiContractError(
@@ -593,34 +629,38 @@ function parameterList(value: unknown): ParameterView[] {
     );
   }
   return value.map((parameter) => {
-    if (!isRecord(parameter)) {
-      throw new PublicOpenApiContractError(
-        "malformed",
-        "Each OpenAPI parameter must be an object."
-      );
-    }
-    const name = text(parameter, "name");
-    const location = text(parameter, "in");
+    const resolved = reusableRecord(
+      document,
+      parameter,
+      "Each OpenAPI parameter must be an object."
+    );
+    const name = text(resolved, "name");
+    const location = text(resolved, "in");
     if (!name || !location) {
       throw new PublicOpenApiContractError(
         "malformed",
         "Each OpenAPI parameter needs a name and location."
       );
     }
-    const schema = isRecord(parameter.schema) ? parameter.schema : undefined;
+    const schema = isRecord(resolved.schema) ? resolved.schema : undefined;
     return {
-      description:
-        text(parameter, "description") || text(schema, "description"),
-      examples: [...collectExamples(parameter), ...collectExamples(schema)],
+      description: text(resolved, "description") || text(schema, "description"),
+      examples: [
+        ...collectExamples(document, resolved),
+        ...collectExamples(document, schema),
+      ],
       location,
       name,
-      required: parameter.required === true,
-      schema: parameter.schema,
+      required: resolved.required === true,
+      schema: resolved.schema,
     };
   });
 }
 
-function collectExamples(source: JsonRecord | undefined): ExampleView[] {
+function collectExamples(
+  document: JsonRecord,
+  source: JsonRecord | undefined
+): ExampleView[] {
   if (!source) return [];
   const examples: ExampleView[] = [];
   if ("example" in source) examples.push({ value: source.example });
@@ -629,15 +669,16 @@ function collectExamples(source: JsonRecord | undefined): ExampleView[] {
     for (const value of named) examples.push({ value });
   } else if (isRecord(named)) {
     for (const [name, entry] of Object.entries(named)) {
-      if (isRecord(entry) && "value" in entry) {
+      const resolved = dereferenceReusable(document, entry);
+      if (isRecord(resolved) && "value" in resolved) {
         examples.push({
-          description: optionalText(entry, "description"),
+          description: optionalText(resolved, "description"),
           name,
-          summary: optionalText(entry, "summary"),
-          value: entry.value,
+          summary: optionalText(resolved, "summary"),
+          value: resolved.value,
         });
       } else {
-        examples.push({ name, value: entry });
+        examples.push({ name, value: resolved });
       }
     }
   }
@@ -935,25 +976,93 @@ function walkFiles(directory: string): string[] {
   return files;
 }
 
+const REUSABLE_COMPONENT_PREFIXES = [
+  "#/components/responses/",
+  "#/components/parameters/",
+  "#/components/headers/",
+  "#/components/examples/",
+  "#/components/requestBodies/",
+] as const;
+
+function isReusableComponentRef(ref: string): boolean {
+  return REUSABLE_COMPONENT_PREFIXES.some((prefix) => ref.startsWith(prefix));
+}
+
+function dereferenceReusable(document: JsonRecord, value: unknown): unknown {
+  let current = value;
+  const stack: string[] = [];
+  while (isRecord(current) && typeof current.$ref === "string") {
+    const ref = current.$ref;
+    if (!isReusableComponentRef(ref)) return current;
+    if (stack.includes(ref)) {
+      throw new PublicOpenApiContractError(
+        "malformed",
+        `Circular OpenAPI reference ${[...stack, ref].join(" -> ")}.`
+      );
+    }
+    stack.push(ref);
+    const target = resolveJsonPointer(document, ref);
+    if (!isRecord(target)) {
+      throw new PublicOpenApiContractError(
+        "malformed",
+        `OpenAPI reference ${ref} must point to an object.`
+      );
+    }
+    current = target;
+  }
+  return current;
+}
+
+function reusableRecord(
+  document: JsonRecord,
+  value: unknown,
+  message: string
+): JsonRecord {
+  const resolved = dereferenceReusable(document, value);
+  if (!isRecord(resolved)) {
+    throw new PublicOpenApiContractError("malformed", message);
+  }
+  return resolved;
+}
+
 function assertRefsResolve(
   document: unknown,
   node: unknown,
-  seen = new Set<string>()
+  stack: string[] = [],
+  completed = new Set<string>()
 ): void {
   if (Array.isArray(node)) {
-    for (const child of node) assertRefsResolve(document, child, seen);
+    for (const child of node) {
+      assertRefsResolve(document, child, stack, completed);
+    }
     return;
   }
   if (!isRecord(node)) return;
   const ref = node.$ref;
-  if (typeof ref === "string" && !seen.has(ref)) {
-    seen.add(ref);
-    const target = resolveJsonPointer(document, ref);
-    assertRefsResolve(document, target, seen);
+  if (typeof ref === "string" && !completed.has(ref)) {
+    if (stack.includes(ref)) {
+      if (isReusableComponentRef(ref)) {
+        throw new PublicOpenApiContractError(
+          "malformed",
+          `Circular OpenAPI reference ${[...stack, ref].join(" -> ")}.`
+        );
+      }
+    } else {
+      const target = resolveJsonPointer(document, ref);
+      if (isReusableComponentRef(ref) && !isRecord(target)) {
+        throw new PublicOpenApiContractError(
+          "malformed",
+          `OpenAPI reference ${ref} must point to an object.`
+        );
+      }
+      assertRefsResolve(document, target, [...stack, ref], completed);
+      completed.add(ref);
+    }
   }
   for (const value of Object.values(node)) {
-    if (value && typeof value === "object")
-      assertRefsResolve(document, value, seen);
+    if (value && typeof value === "object") {
+      assertRefsResolve(document, value, stack, completed);
+    }
   }
 }
 
