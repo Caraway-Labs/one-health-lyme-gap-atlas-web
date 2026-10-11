@@ -6,15 +6,23 @@ import type { Geography, Measure, Observation } from "@/generated/models";
 import { isCountyFips } from "@/lib/county-geography";
 
 /**
- * Explicit family allowlist. Current governed metadata projects `domain` as
- * NULL, and other reviewed values such as `climate` are not members of this
- * list. Those measures stay unclassified. Do not infer a family from a label.
+ * Explicit family allowlist. A non-empty `domain` is authoritative. Unknown
+ * domain tokens such as `climate` stay unclassified. A blank domain uses the
+ * governed indicator id allowlist below. Do not infer a family from a label.
  */
 export const INVESTIGATE_DOMAIN_HUMAN = "human" as const;
 export const INVESTIGATE_DOMAIN_VECTOR = "vector" as const;
 export const INVESTIGATE_DOMAIN_PATHOGEN = "pathogen" as const;
 export const INVESTIGATE_DOMAIN_ENVIRONMENTAL = "environmental" as const;
 export const INVESTIGATE_DOMAIN_POPULATION = "population" as const;
+
+const INVESTIGATE_INDICATOR_FAMILIES = {
+  human_disease_burden: "human",
+  pathogen_surveillance: "vector_pathogen",
+  population_context: "environmental_population",
+  rurality_context: "environmental_population",
+  tick_surveillance: "vector_pathogen",
+} as const;
 
 export const investigateEvidenceFamilyIds = [
   "human",
@@ -25,24 +33,38 @@ export const investigateEvidenceFamilyIds = [
 export type InvestigateEvidenceFamilyId =
   (typeof investigateEvidenceFamilyIds)[number];
 
+export const investigateEvidenceClassValues = {
+  contextual: "contextual",
+  observed: "observed",
+} as const;
+
+export type InvestigateEvidenceClass =
+  (typeof investigateEvidenceClassValues)[keyof typeof investigateEvidenceClassValues];
+
 export const INVESTIGATE_EVIDENCE_FAMILIES: readonly {
-  contextNote: string | null;
+  contextNote: string;
+  evidenceClass: InvestigateEvidenceClass;
   id: InvestigateEvidenceFamilyId;
   label: string;
 }[] = [
   {
-    contextNote: null,
+    contextNote:
+      "Observed or published human surveillance. Missing or unknown is not zero.",
+    evidenceClass: investigateEvidenceClassValues.observed,
     id: "human",
-    label: "Human",
+    label: "Human surveillance",
   },
   {
-    contextNote: null,
+    contextNote:
+      "Observed or published vector and pathogen evidence. No record is not absence.",
+    evidenceClass: investigateEvidenceClassValues.observed,
     id: "vector_pathogen",
     label: "Vector and pathogen",
   },
   {
     contextNote:
       "Environmental and population evidence is context for interpretation. It does not establish that those conditions caused disease.",
+    evidenceClass: investigateEvidenceClassValues.contextual,
     id: "environmental_population",
     label: "Environmental and population",
   },
@@ -94,12 +116,19 @@ export type CountyEvidenceMeasureFailure = {
 };
 
 export type CountyEvidenceFamilySection = {
-  contextNote: string | null;
+  contextNote: string;
+  evidenceClass: InvestigateEvidenceClass;
   id: InvestigateEvidenceFamilyId;
   label: string;
-  /** Measures in this release whose indicator domain maps to the family. */
+  /** Measures in this release whose governed family is this section. */
   measureIds: readonly string[];
   observations: readonly CountyEvidenceObservation[];
+};
+
+export type InvestigateEvidenceConflict = {
+  measureId: string;
+  measureLabel: string;
+  observationCount: number;
 };
 
 /**
@@ -205,6 +234,43 @@ export function evidenceFamilyFromIndicatorDomain(
       return null;
     }
   }
+}
+
+/** Blank domains use the governed indicator id. A label is never a family. */
+export function evidenceFamilyFromIndicatorId(
+  indicatorId: string | null | undefined
+): InvestigateEvidenceFamilyId | null {
+  const id = indicatorId?.trim() ?? "";
+  switch (id) {
+    case "human_disease_burden":
+    case "pathogen_surveillance":
+    case "population_context":
+    case "rurality_context":
+    case "tick_surveillance": {
+      return INVESTIGATE_INDICATOR_FAMILIES[id];
+    }
+    default: {
+      return null;
+    }
+  }
+}
+
+/**
+ * A non-empty domain wins, including unknown tokens that stay unclassified.
+ * A blank domain, or a failed indicator request, uses the indicator id.
+ */
+export function evidenceFamilyForMeasure(input: {
+  domain: string | null | undefined;
+  domainsRequestFailed: boolean;
+  indicatorId: string;
+}): InvestigateEvidenceFamilyId | null {
+  if (!input.domainsRequestFailed) {
+    const domain = input.domain?.trim() ?? "";
+    if (domain) {
+      return evidenceFamilyFromIndicatorDomain(domain);
+    }
+  }
+  return evidenceFamilyFromIndicatorId(input.indicatorId);
 }
 
 export function resolveCountyIdentity(
@@ -475,6 +541,70 @@ export function selectLeadFinding(
   );
 }
 
+function visibleBundleRecords(
+  bundle: Pick<CountyEvidenceBundle, "families" | "unassigned">
+): CountyEvidenceObservation[] {
+  const records: CountyEvidenceObservation[] = [];
+  for (const family of bundle.families) {
+    records.push(...family.observations);
+  }
+  records.push(...bundle.unassigned);
+  return records;
+}
+
+/**
+ * Same measure, with different values, periods, or sources. The rows stay
+ * separate. This does not choose or average them.
+ */
+export function investigateEvidenceConflicts(
+  bundle: Pick<CountyEvidenceBundle, "families" | "unassigned">
+): InvestigateEvidenceConflict[] {
+  const grouped = new Map<string, CountyEvidenceObservation[]>();
+  for (const record of visibleBundleRecords(bundle)) {
+    const existing = grouped.get(record.measureId);
+    if (existing) {
+      existing.push(record);
+      continue;
+    }
+    grouped.set(record.measureId, [record]);
+  }
+  const conflicts: InvestigateEvidenceConflict[] = [];
+  for (const [measureId, records] of grouped) {
+    if (records.length < 2) {
+      continue;
+    }
+    const values = new Set(
+      records.map((record) => record.evidence.displayValue)
+    );
+    const periods = new Set(
+      records.map(
+        (record) =>
+          `${record.observation.period_start}..${record.observation.period_end}`
+      )
+    );
+    const sources = new Set(
+      records.map((record) => record.observation.source_id)
+    );
+    if (values.size < 2 && periods.size < 2 && sources.size < 2) {
+      continue;
+    }
+    const [first] = records;
+    if (!first) {
+      continue;
+    }
+    conflicts.push({
+      measureId,
+      measureLabel: first.measureLabel,
+      observationCount: records.length,
+    });
+  }
+  return conflicts.toSorted(
+    (left, right) =>
+      left.measureLabel.localeCompare(right.measureLabel, "en") ||
+      left.measureId.localeCompare(right.measureId)
+  );
+}
+
 export function selectLeadLimitation(
   records: readonly CountyEvidenceObservation[]
 ): { observation: CountyEvidenceObservation; text: string } | null {
@@ -567,15 +697,16 @@ export function buildCountyEvidenceBundle(input: {
   for (const family of INVESTIGATE_EVIDENCE_FAMILIES) {
     familyMeasures.set(family.id, []);
   }
-  if (!input.domainsRequestFailed) {
-    for (const measure of input.measures) {
-      const domain = input.indicatorDomains.get(measure.indicator_id) ?? null;
-      const familyId = evidenceFamilyFromIndicatorDomain(domain);
-      if (!familyId) {
-        continue;
-      }
-      familyMeasures.get(familyId)?.push(measure.measure_id);
+  for (const measure of input.measures) {
+    const familyId = evidenceFamilyForMeasure({
+      domain: input.indicatorDomains.get(measure.indicator_id) ?? null,
+      domainsRequestFailed: input.domainsRequestFailed,
+      indicatorId: measure.indicator_id,
+    });
+    if (!familyId) {
+      continue;
     }
+    familyMeasures.get(familyId)?.push(measure.measure_id);
   }
 
   const byFamily = new Map<
@@ -586,12 +717,14 @@ export function buildCountyEvidenceBundle(input: {
     byFamily.set(family.id, []);
   }
   const unclassifiedMeasureIds: string[] = [];
-  if (!input.domainsRequestFailed) {
-    for (const measure of input.measures) {
-      const domain = input.indicatorDomains.get(measure.indicator_id) ?? null;
-      if (!evidenceFamilyFromIndicatorDomain(domain)) {
-        unclassifiedMeasureIds.push(measure.measure_id);
-      }
+  for (const measure of input.measures) {
+    const familyId = evidenceFamilyForMeasure({
+      domain: input.indicatorDomains.get(measure.indicator_id) ?? null,
+      domainsRequestFailed: input.domainsRequestFailed,
+      indicatorId: measure.indicator_id,
+    });
+    if (!familyId) {
+      unclassifiedMeasureIds.push(measure.measure_id);
     }
   }
   const unassigned: CountyEvidenceObservation[] = [];
@@ -621,9 +754,13 @@ export function buildCountyEvidenceBundle(input: {
         const indicatorDomain = input.domainsRequestFailed
           ? null
           : (input.indicatorDomains.get(indicatorId) ?? null);
-        const familyId = input.domainsRequestFailed
-          ? null
-          : evidenceFamilyFromIndicatorDomain(indicatorDomain);
+        const familyId = measure
+          ? evidenceFamilyForMeasure({
+              domain: indicatorDomain,
+              domainsRequestFailed: input.domainsRequestFailed,
+              indicatorId,
+            })
+          : null;
         for (const observation of outcome.observations) {
           if (observation.geography.geography_id !== input.identity.fips) {
             throw new InvestigateContractError(
@@ -663,6 +800,7 @@ export function buildCountyEvidenceBundle(input: {
   const families: CountyEvidenceFamilySection[] =
     INVESTIGATE_EVIDENCE_FAMILIES.map((family) => ({
       contextNote: family.contextNote,
+      evidenceClass: family.evidenceClass,
       id: family.id,
       label: family.label,
       measureIds: familyMeasures.get(family.id) ?? [],

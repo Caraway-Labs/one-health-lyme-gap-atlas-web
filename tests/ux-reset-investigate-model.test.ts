@@ -5,6 +5,7 @@ import {
   buildCountyEvidenceBundle,
   classifyInvestigateCountySelection,
   countyEvidenceForRequest,
+  evidenceFamilyForMeasure,
   evidenceFamilyFromIndicatorDomain,
   InvestigateContractError,
   countyEvidenceGap,
@@ -81,6 +82,48 @@ describe("evidence families", () => {
       unknown: null,
       climate: null,
       vector: "vector_pathogen",
+    });
+  });
+
+  it("uses a blank domain's indicator id and keeps an unknown domain unclassified", () => {
+    expect({
+      blankHuman: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "human_disease_burden",
+      }),
+      blankPathogenWhenDomainsFail: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: true,
+        indicatorId: "pathogen_surveillance",
+      }),
+      blankPopulation: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "population_context",
+      }),
+      blankTick: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "tick_surveillance",
+      }),
+      countyReference: evidenceFamilyForMeasure({
+        domain: null,
+        domainsRequestFailed: false,
+        indicatorId: "county_reference",
+      }),
+      unknownDomain: evidenceFamilyForMeasure({
+        domain: "climate",
+        domainsRequestFailed: false,
+        indicatorId: "tick_surveillance",
+      }),
+    }).toStrictEqual({
+      blankHuman: "human",
+      blankPathogenWhenDomainsFail: "vector_pathogen",
+      blankPopulation: "environmental_population",
+      blankTick: "vector_pathogen",
+      countyReference: null,
+      unknownDomain: null,
     });
   });
 });

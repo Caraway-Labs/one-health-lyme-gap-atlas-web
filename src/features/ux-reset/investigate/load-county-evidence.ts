@@ -17,16 +17,19 @@ import {
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
+  countyV1CountiesFipsGet,
   indicatorsV1IndicatorsGet,
   observationsV1ObservationsGet,
 } from "@/generated/atlas";
 import type {
+  CountyDetail,
   Indicator,
   Measure,
   Observation,
   ObservationsV1ObservationsGetParams,
 } from "@/generated/models";
 import {
+  CountyV1CountiesFipsGetResponse,
   IndicatorsV1IndicatorsGetResponse,
   ObservationsV1ObservationsGetResponse,
   indicatorsV1IndicatorsGetQueryPageSizeOneMax,
@@ -654,4 +657,50 @@ export async function loadCountyEvidenceBundle(input: {
     outcomes: [...preserved, ...fetched],
     releaseId: input.releaseId,
   });
+}
+
+/**
+ * Published county record for fields the observation series does not carry.
+ * A 404 is an absent record, not a transport failure. Score settings stay at
+ * the API default and the caller must not render the score.
+ */
+export async function loadInvestigateCountyRecord(input: {
+  fips: string;
+  releaseId: string;
+  signal: AbortSignal;
+}): Promise<CountyDetail | null> {
+  const response = await countyV1CountiesFipsGet(
+    input.fips,
+    { dataset_version: input.releaseId },
+    { signal: input.signal }
+  );
+  if (response.status === 404) {
+    return null;
+  }
+  if (response.status !== 200) {
+    throw new AtlasApiError(
+      "The published county record could not be loaded.",
+      `/v1/counties/${input.fips}`,
+      response.status,
+      null
+    );
+  }
+  const detail = validateApiResponse(
+    "County detail",
+    CountyV1CountiesFipsGetResponse,
+    response.data
+  );
+  if (detail.fips !== input.fips) {
+    throw new InvestigateContractError(
+      "County record does not match the requested county.",
+      "identity_mismatch"
+    );
+  }
+  if (detail.release.release_id !== input.releaseId) {
+    throw new InvestigateContractError(
+      "County record release does not match the requested release.",
+      "release_mismatch"
+    );
+  }
+  return detail;
 }

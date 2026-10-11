@@ -26,11 +26,14 @@ import { investigateSearchParams } from "@/features/ux-reset/investigate/investi
 import {
   fetchInvestigateIndicators,
   loadCountyEvidenceBundle,
+  loadInvestigateCountyRecord,
   shouldRetryInvestigateRequest,
   type PreservedCountyMeasures,
 } from "@/features/ux-reset/investigate/load-county-evidence";
+import { publishedCountyRecordFromDetail } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import type { PublishedCountyRecord } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
-import type { AtlasMetadata } from "@/generated/models";
+import type { AtlasMetadata, Measure } from "@/generated/models";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -55,6 +58,9 @@ export type InvestigateWorkspace = {
   bundle: CountyEvidenceBundle | null;
   catalogError: string | null;
   compare: readonly string[];
+  countyRecord: PublishedCountyRecord | null;
+  countyRecordError: string | null;
+  countyRecordLoading: boolean;
   directory: readonly ExploreCountyIdentity[];
   directoryError: string | null;
   directoryLoading: boolean;
@@ -62,6 +68,7 @@ export type InvestigateWorkspace = {
   evidenceFetching: boolean;
   evidenceLoading: boolean;
   identity: ResolvedCountyIdentity | null;
+  measures: readonly Measure[];
   metadata: AtlasMetadata | null;
   metadataError: string | null;
   metadataLoading: boolean;
@@ -131,6 +138,13 @@ function metadataErrorMessage(
     return error.message;
   }
   return "Unable to load governed release metadata.";
+}
+
+function countyRecordErrorMessage(error: unknown): string {
+  if (error instanceof InvestigateContractError) {
+    return "The published county record did not match this county and release, so it was not shown.";
+  }
+  return "The published county record could not be loaded. That is a request failure, not missing evidence.";
 }
 
 function recoveryFromError(error: unknown): InvestigateRecovery | null {
@@ -259,6 +273,27 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
   const inRelease = Boolean(identity);
   const unsupported =
     selection.kind === "county" && directoryQuery.isSuccess && !inRelease;
+
+  const countyRecordQuery = useQuery({
+    enabled: Boolean(releaseId && requestedFips && inRelease),
+    queryFn: async ({ signal }) => {
+      if (!(releaseId && requestedFips)) {
+        throw new InvestigateContractError(
+          "A published county record requires a county and release.",
+          "rejected"
+        );
+      }
+      const detail = await loadInvestigateCountyRecord({
+        fips: requestedFips,
+        releaseId,
+        signal,
+      });
+      return detail ? publishedCountyRecordFromDetail(detail) : null;
+    },
+    queryKey: ["ux-reset-investigate-county-record", releaseId, requestedFips],
+    retry: (failureCount, error) =>
+      shouldRetryInvestigateRequest(failureCount, error, retrySetting),
+  });
 
   const measuresQuery = useQuery({
     enabled: Boolean(releaseId) && inRelease,
@@ -397,6 +432,19 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       ? "Governed measures could not be loaded."
       : null,
     compare: urlState.compare,
+    countyRecord:
+      countyRecordQuery.isSuccess && countyRecordQuery.data
+        ? countyRecordQuery.data
+        : null,
+    countyRecordError: countyRecordQuery.isError
+      ? countyRecordErrorMessage(countyRecordQuery.error)
+      : null,
+    countyRecordLoading:
+      !recovery &&
+      selection.kind === "county" &&
+      inRelease &&
+      countyRecordQuery.isLoading &&
+      !countyRecordQuery.isError,
     directory,
     directoryError: directoryQuery.isError
       ? "The published county list for this release could not be loaded."
@@ -419,6 +467,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       (evidenceQuery.isLoading ||
         (inRelease && (measuresQuery.isLoading || indicatorsQuery.isLoading))),
     identity,
+    measures: measuresQuery.data ?? [],
     metadata: metadataQuery.data ?? null,
     metadataError: metadataQuery.isError
       ? metadataErrorMessage(metadataQuery.error, urlState.dataset)

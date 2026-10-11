@@ -182,6 +182,23 @@ function InvestigateExperienceInner() {
     requestedFips: workspace.requestedFips,
     selectedInRelease,
   });
+  const showModelAssisted =
+    Boolean(workspace.requestedFips) &&
+    COUNTY_FIPS.test(workspace.requestedFips ?? "") &&
+    (workspace.recovery === null || workspace.recovery === "release_mismatch");
+  const modelAssisted = showModelAssisted ? (
+    <Tier1SurveillancePriority
+      fips={workspace.requestedFips ?? ""}
+      headingLevel={bundle ? "h3" : "h2"}
+      release={tier1ReleaseFromMetadata({
+        isError:
+          Boolean(workspace.metadataError) ||
+          workspace.recovery === "release_mismatch",
+        isLoading: workspace.metadataLoading,
+        releaseId: workspace.releaseId,
+      })}
+    />
+  ) : null;
 
   return (
     <div
@@ -303,26 +320,16 @@ function InvestigateExperienceInner() {
         </div>
       ) : null}
 
-      {workspace.requestedFips &&
-      COUNTY_FIPS.test(workspace.requestedFips) &&
-      (workspace.recovery === null ||
-        workspace.recovery === "release_mismatch") ? (
-        <Tier1SurveillancePriority
-          fips={workspace.requestedFips}
-          headingLevel="h2"
-          release={tier1ReleaseFromMetadata({
-            isError:
-              Boolean(workspace.metadataError) ||
-              workspace.recovery === "release_mismatch",
-            isLoading: workspace.metadataLoading,
-            releaseId: workspace.releaseId,
-          })}
-        />
-      ) : null}
+      {bundle ? null : modelAssisted}
 
       {bundle ? (
         <InvestigateEvidenceHierarchy
           bundle={bundle}
+          countyRecord={workspace.countyRecord}
+          countyRecordError={workspace.countyRecordError}
+          countyRecordLoading={workspace.countyRecordLoading}
+          measures={workspace.measures}
+          modelAssisted={modelAssisted}
           retrying={workspace.evidenceFetching}
           onRetryFailures={
             bundle.measureFailures.length > 0

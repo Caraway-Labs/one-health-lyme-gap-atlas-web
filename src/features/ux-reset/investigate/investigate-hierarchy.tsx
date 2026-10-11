@@ -1,19 +1,33 @@
+import type { ReactNode } from "react";
+
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceObject } from "@/features/ux-reset/evidence";
+import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import {
+  investigateEvidenceConflicts,
   investigateFamilyPublication,
   type CountyEvidenceBundle,
   type CountyEvidenceFamilySection,
   type CountyEvidenceObservation,
   type FamilyPublication,
+  type InvestigateEvidenceFamilyId,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
   investigateFindingSummary,
   investigateLimitationSummary,
 } from "@/features/ux-reset/investigate/investigate-visible-summary";
+import {
+  environmentalCoverageRows,
+  publishedCountyHierarchy,
+  type PublishedCountyRecord,
+  type PublishedHierarchyRow,
+} from "@/features/ux-reset/investigate/published-county-hierarchy";
+import type { Measure } from "@/generated/models";
+
+const EMPTY_MEASURES: readonly Measure[] = [];
 
 function observationAnchor(observationId: string): string {
   return `investigate-observation-${observationId}`;
@@ -88,6 +102,7 @@ function FamilySection({
   failedMeasureIds,
   hasUnclassifiedMeasures,
   section,
+  supplementalRows,
   unsupportedMeasureIds,
 }: {
   countyFips: string;
@@ -95,6 +110,7 @@ function FamilySection({
   failedMeasureIds: ReadonlySet<string>;
   hasUnclassifiedMeasures: boolean;
   section: CountyEvidenceFamilySection;
+  supplementalRows: readonly PublishedHierarchyRow[];
   unsupportedMeasureIds: ReadonlySet<string>;
 }) {
   const publication = investigateFamilyPublication({
@@ -106,25 +122,29 @@ function FamilySection({
     unsupportedMeasureIds,
   });
   const copy = publicationCopy(publication);
+  const showPublicationCopy = supplementalRows.length === 0;
   return (
     <section
       aria-label={section.label}
       className="ux-reset-investigate-family"
       data-county={countyFips}
+      data-evidence-class={section.evidenceClass}
       data-family={section.id}
       data-publication={publication}
       data-testid={`investigate-family-${section.id}`}
     >
       <AtlasSectionHeader
-        eyebrow="Evidence family"
+        eyebrow={
+          section.evidenceClass === "observed"
+            ? "Observed evidence"
+            : "Contextual evidence"
+        }
         headingLevel="h3"
         title={section.label}
       />
-      {section.contextNote ? (
-        <p className="type-body">{section.contextNote}</p>
-      ) : null}
-      {copy ? <p className="type-body">{copy}</p> : null}
-      {publication === "empty" ? (
+      <p className="type-body">{section.contextNote}</p>
+      {showPublicationCopy && copy ? <p className="type-body">{copy}</p> : null}
+      {showPublicationCopy && publication === "empty" ? (
         <p className="type-body" data-testid="investigate-family-empty">
           No governed observations were returned for this family.
         </p>
@@ -132,16 +152,124 @@ function FamilySection({
       {publication === "assigned" ? (
         <FamilyObservations observations={section.observations} />
       ) : null}
+      {supplementalRows.length > 0 ? (
+        <div className="ux-reset-investigate-observations">
+          <p className="type-body">
+            These rows are the published county record. They are separate from
+            an observation series.
+          </p>
+          {supplementalRows.map((row) => (
+            <div
+              data-evidence-class={section.evidenceClass}
+              data-measure-id={row.measureId}
+              key={row.measureId}
+            >
+              <EvidenceObject claimHeadingLevel="h4" model={row.evidence} />
+            </div>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
 
+function observedMeasureIds(bundle: CountyEvidenceBundle): string[] {
+  const ids: string[] = [];
+  for (const family of bundle.families) {
+    for (const record of family.observations) {
+      ids.push(record.measureId);
+    }
+  }
+  for (const record of bundle.unassigned) {
+    ids.push(record.measureId);
+  }
+  return ids;
+}
+
+function rowsForFamily(
+  rows: readonly PublishedHierarchyRow[],
+  familyId: InvestigateEvidenceFamilyId
+): PublishedHierarchyRow[] {
+  return rows.filter((row) => row.familyId === familyId);
+}
+
+function limitationLines(bundle: CountyEvidenceBundle): string[] {
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  const records = [
+    ...bundle.families.flatMap((family) => [...family.observations]),
+    ...bundle.unassigned,
+  ];
+  for (const record of records) {
+    for (const limitation of record.evidence.provenance.limitations) {
+      const line = `${record.measureLabel}: ${limitation}`;
+      if (seen.has(line)) {
+        continue;
+      }
+      seen.add(line);
+      lines.push(line);
+    }
+    if (
+      record.evidence.availability === evidenceAvailabilityValues.unavailable &&
+      !seen.has(record.measureId)
+    ) {
+      seen.add(record.measureId);
+      lines.push(
+        `${record.measureLabel} is unavailable for this county. That is not zero.`
+      );
+    }
+  }
+  return lines;
+}
+
+function coverageContexts(bundle: CountyEvidenceBundle): {
+  context: NonNullable<
+    CountyEvidenceObservation["observation"]["environmental_context"]
+  >;
+  measureId: string;
+  measureLabel: string;
+}[] {
+  const contexts: {
+    context: NonNullable<
+      CountyEvidenceObservation["observation"]["environmental_context"]
+    >;
+    measureId: string;
+    measureLabel: string;
+  }[] = [];
+  const records = [
+    ...bundle.families.flatMap((family) => [...family.observations]),
+    ...bundle.unassigned,
+  ];
+  for (const record of records) {
+    const context = record.observation.environmental_context;
+    if (!context) {
+      continue;
+    }
+    contexts.push({
+      context,
+      measureId: record.measureId,
+      measureLabel: record.measureLabel,
+    });
+  }
+  return contexts;
+}
+
 export function InvestigateEvidenceHierarchy({
   bundle,
+  countyRecord = null,
+  countyRecordError = null,
+  countyRecordLoading = false,
+  measures = EMPTY_MEASURES,
+  modelAssisted = null,
   onRetryFailures,
   retrying = false,
 }: {
   bundle: CountyEvidenceBundle;
+  countyRecord?: PublishedCountyRecord | null;
+  countyRecordError?: string | null;
+  countyRecordLoading?: boolean;
+  measures?: readonly Measure[];
+  modelAssisted?: ReactNode;
   onRetryFailures?: () => void;
   retrying?: boolean;
 }) {
@@ -156,6 +284,27 @@ export function InvestigateEvidenceHierarchy({
   const handleRetryFailures = () => {
     onRetryFailures?.();
   };
+  const published = countyRecord
+    ? publishedCountyHierarchy({
+        measures,
+        observedMeasureIds: observedMeasureIds(bundle),
+        record: countyRecord,
+      })
+    : null;
+  const coverage = environmentalCoverageRows({
+    contexts: coverageContexts(bundle),
+  });
+  const conflicts = investigateEvidenceConflicts(bundle);
+  const limitations = limitationLines(bundle);
+  const publishedGaps = published?.gaps ?? [];
+  const hasGapContent =
+    conflicts.length > 0 ||
+    bundle.measureFailures.length > 0 ||
+    bundle.unsupportedPeriodMeasureIds.length > 0 ||
+    limitations.length > 0 ||
+    publishedGaps.length > 0 ||
+    Boolean(published?.releaseLimitation) ||
+    bundle.unassigned.length > 0;
 
   return (
     <div
@@ -211,102 +360,188 @@ export function InvestigateEvidenceHierarchy({
         </Card>
       </section>
 
-      <section
-        aria-label="What context matters"
-        className="ux-reset-investigate-summary"
-      >
-        <AtlasSectionHeader
-          eyebrow="What context matters"
-          headingLevel="h2"
-          title="Environmental and population context"
-        />
-      </section>
-
-      {bundle.measureFailures.length > 0 ? (
-        <div
-          data-county={bundle.county.fips}
-          data-testid="investigate-partial-failure"
-        >
-          <AtlasStatusMessage tone="error">
-            <p>
-              Some measures could not be loaded. Evidence that loaded stays on
-              this county and is not marked unavailable.
-            </p>
-            <ul>
-              {bundle.measureFailures.map((failure) => (
-                <li key={failure.measureId}>{failure.measureLabel}</li>
-              ))}
-            </ul>
-            {onRetryFailures ? (
-              <Button
-                aria-busy={retrying}
-                data-retrying={retrying ? "true" : "false"}
-                data-testid="investigate-retry-evidence"
-                disabled={retrying}
-                type="button"
-                variant="secondary"
-                onClick={handleRetryFailures}
-              >
-                {retrying
-                  ? "Retrying evidence…"
-                  : "Retry evidence that did not load"}
-              </Button>
-            ) : null}
-          </AtlasStatusMessage>
-        </div>
-      ) : null}
-
-      {bundle.unsupportedPeriodMeasureIds.length > 0 ? (
-        <div
-          data-county={bundle.county.fips}
-          data-testid="investigate-unsupported-period"
-        >
-          <AtlasStatusMessage tone="empty">
-            <p>
-              These measures were not queried. The selected period is not a
-              supported bound for their published grain.
-            </p>
-            <ul>
-              {bundle.unsupportedPeriodMeasureIds.map((measureId) => (
-                <li key={measureId}>{measureId}</li>
-              ))}
-            </ul>
-          </AtlasStatusMessage>
-        </div>
-      ) : null}
-
       {bundle.families.map((section) => (
-        <FamilySection
-          countyFips={bundle.county.fips}
-          domainsRequestFailed={bundle.domainsRequestFailed}
-          failedMeasureIds={failedMeasureIds}
-          hasUnclassifiedMeasures={bundle.unclassifiedMeasureIds.length > 0}
-          key={section.id}
-          section={section}
-          unsupportedMeasureIds={unsupportedMeasureIds}
-        />
+        <div key={section.id}>
+          <FamilySection
+            countyFips={bundle.county.fips}
+            domainsRequestFailed={bundle.domainsRequestFailed}
+            failedMeasureIds={failedMeasureIds}
+            hasUnclassifiedMeasures={bundle.unclassifiedMeasureIds.length > 0}
+            section={section}
+            supplementalRows={
+              published ? rowsForFamily(published.rows, section.id) : []
+            }
+            unsupportedMeasureIds={unsupportedMeasureIds}
+          />
+          {section.id === "vector_pathogen" ? (
+            <section
+              aria-label="Evidence sufficiency and coverage"
+              className="ux-reset-investigate-summary"
+              data-evidence-class="coverage"
+              data-testid="investigate-coverage"
+            >
+              <AtlasSectionHeader
+                eyebrow="Coverage"
+                headingLevel="h2"
+                title="Evidence sufficiency and coverage"
+              />
+              {countyRecordLoading ? (
+                <AtlasStatusMessage tone="loading">
+                  Loading published county coverage…
+                </AtlasStatusMessage>
+              ) : null}
+              {countyRecordError ? (
+                <AtlasStatusMessage tone="error">
+                  {countyRecordError}
+                </AtlasStatusMessage>
+              ) : null}
+              {published ? (
+                <p
+                  className="type-body"
+                  data-testid="investigate-coverage-value"
+                >
+                  {`Published input coverage is ${published.completeness}. This is not a disease risk score. A lower number is not zero evidence.`}
+                </p>
+              ) : null}
+              {!published && !countyRecordLoading && !countyRecordError ? (
+                <p
+                  className="type-body"
+                  data-testid="investigate-coverage-value"
+                >
+                  Published input coverage was not returned for this county.
+                  That is not zero coverage.
+                </p>
+              ) : null}
+              {coverage.length > 0 ? (
+                <div className="ux-reset-investigate-observations">
+                  {coverage.map((row) => (
+                    <div data-coverage={row.coverageStatus} key={row.measureId}>
+                      <EvidenceObject
+                        claimHeadingLevel="h4"
+                        model={row.evidence}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {modelAssisted}
+            </section>
+          ) : null}
+        </div>
       ))}
 
-      {bundle.unassigned.length > 0 ? (
-        <section
-          aria-label="Evidence without a family"
-          className="ux-reset-investigate-family"
-          data-county={bundle.county.fips}
-          data-testid="investigate-unassigned"
-        >
-          <AtlasSectionHeader
-            eyebrow="Evidence family"
-            headingLevel="h3"
-            title="Domain not assigned"
-          />
-          <p className="type-body">
-            These observations use a domain that is not on the family allowlist,
-            including a missing domain. That is unknown classification, not an
-            unpublished family.
+      <section
+        aria-label="Conflicts, gaps, and limitations"
+        className="ux-reset-investigate-summary"
+        data-evidence-class="limitation"
+        data-testid="investigate-gaps"
+      >
+        <AtlasSectionHeader
+          eyebrow="Limits"
+          headingLevel="h2"
+          title="Conflicts, gaps, and limitations"
+        />
+        {conflicts.length > 0 ? (
+          <ul data-testid="investigate-conflicts">
+            {conflicts.map((conflict) => (
+              <li key={conflict.measureId}>
+                {`${conflict.measureLabel} returned ${conflict.observationCount} observations with different values, periods, or sources. They stay separate and are not combined.`}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {bundle.measureFailures.length > 0 ? (
+          <div
+            data-county={bundle.county.fips}
+            data-testid="investigate-partial-failure"
+          >
+            <AtlasStatusMessage tone="error">
+              <p>
+                Some measures could not be loaded. Evidence that loaded stays on
+                this county and is not marked unavailable.
+              </p>
+              <ul>
+                {bundle.measureFailures.map((failure) => (
+                  <li key={failure.measureId}>{failure.measureLabel}</li>
+                ))}
+              </ul>
+              {onRetryFailures ? (
+                <Button
+                  aria-busy={retrying}
+                  data-retrying={retrying ? "true" : "false"}
+                  data-testid="investigate-retry-evidence"
+                  disabled={retrying}
+                  type="button"
+                  variant="secondary"
+                  onClick={handleRetryFailures}
+                >
+                  {retrying
+                    ? "Retrying evidence…"
+                    : "Retry evidence that did not load"}
+                </Button>
+              ) : null}
+            </AtlasStatusMessage>
+          </div>
+        ) : null}
+        {bundle.unsupportedPeriodMeasureIds.length > 0 ? (
+          <div
+            data-county={bundle.county.fips}
+            data-testid="investigate-unsupported-period"
+          >
+            <AtlasStatusMessage tone="empty">
+              <p>
+                These measures were not queried. The selected period is not a
+                supported bound for their published grain.
+              </p>
+              <ul>
+                {bundle.unsupportedPeriodMeasureIds.map((measureId) => (
+                  <li key={measureId}>{measureId}</li>
+                ))}
+              </ul>
+            </AtlasStatusMessage>
+          </div>
+        ) : null}
+        {limitations.length > 0 || publishedGaps.length > 0 ? (
+          <ul data-testid="investigate-gap-list">
+            {limitations.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+            {publishedGaps.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        ) : null}
+        {published?.releaseLimitation ? (
+          <p className="type-body" data-testid="investigate-release-limitation">
+            {published.releaseLimitation}
           </p>
-          <FamilyObservations observations={bundle.unassigned} />
-        </section>
-      ) : null}
+        ) : null}
+        {bundle.unassigned.length > 0 ? (
+          <section
+            aria-label="Evidence without a family"
+            className="ux-reset-investigate-family"
+            data-county={bundle.county.fips}
+            data-testid="investigate-unassigned"
+          >
+            <AtlasSectionHeader
+              eyebrow="Evidence family"
+              headingLevel="h3"
+              title="Domain not assigned"
+            />
+            <p className="type-body">
+              These observations use a domain or indicator that is not on the
+              family allowlist. That is unknown classification, not an
+              unpublished family.
+            </p>
+            <FamilyObservations observations={bundle.unassigned} />
+          </section>
+        ) : null}
+        {hasGapContent ? null : (
+          <p className="type-body">
+            No conflict, gap, or extra limitation was returned for this county.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

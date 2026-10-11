@@ -272,6 +272,16 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       };
     }),
+    countyV1CountiesFipsGet: vi.fn<
+      typeof import("@/generated/atlas").countyV1CountiesFipsGet
+    >(
+      async () =>
+        ({
+          data: { detail: "not found" },
+          headers: new Headers(),
+          status: 404,
+        }) as never
+    ),
   };
 });
 
