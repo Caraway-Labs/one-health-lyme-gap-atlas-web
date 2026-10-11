@@ -1,0 +1,319 @@
+/*
+ * Public trust page bodies only. Selectors stay under .public-trust-page so
+ * Front Porch, the professional workspace, and the shared header/footer are
+ * untouched.
+ *
+ * Informational differences that remain:
+ * - About has no eyebrow because its approved copy opens with a lede, not a kicker.
+ * - Privacy facts stay a definition list: each label is paired with a long
+ *   operational statement, which cards would chop up.
+ * - AI Ethics keeps text status labels, closed disclosures, and a version group
+ *   so capability state is readable without opening every card.
+ * Width: 70rem is the prior About page and Privacy content measure (1120px).
+ * Prose: 42rem is the prior About reading column.
+ */
+
+.public-trust-page {
+  --public-trust-measure: 42rem;
+  --public-trust-width: 70rem;
+
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--public-trust-width);
+  margin-inline: auto;
+  padding: var(--layout-section-block) var(--layout-inline) var(--space-12);
+  gap: var(--space-10);
+  background: var(--background);
+  color: var(--foreground);
+  overflow-wrap: break-word;
+}
+
+.public-trust-page h1,
+.public-trust-page h2,
+.public-trust-page h3 {
+  margin: 0;
+  color: var(--navy);
+}
+
+.public-trust-page h1 {
+  line-height: 1.15;
+}
+
+.public-trust-page h2 {
+  font-family: var(--font-display);
+  font-size: var(--type-card-size);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+
+.public-trust-page h3 {
+  font-family: var(--font-display);
+  font-size: var(--type-section-size);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.public-trust-page p,
+.public-trust-page li,
+.public-trust-page dd {
+  line-height: var(--leading-body);
+}
+
+.public-trust-page p {
+  margin: 0;
+}
+
+.public-trust-page a {
+  color: var(--teal-dark);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.public-trust-page a:hover {
+  color: var(--navy);
+}
+
+.public-trust-page :focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: var(--space-1);
+}
+
+.public-trust-intro,
+.public-trust-prose {
+  display: grid;
+  max-width: var(--public-trust-measure);
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+.public-trust-intro .eyebrow,
+.public-trust-section .eyebrow {
+  display: block;
+  margin: 0;
+}
+
+.public-trust-lede {
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: var(--type-section-size);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.public-trust-note {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.public-trust-section {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.public-trust-page > .public-trust-section + .public-trust-section,
+.public-trust-section .public-trust-section {
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border);
+}
+
+.public-trust-section-heading {
+  display: grid;
+  max-width: var(--public-trust-measure);
+  gap: var(--space-2);
+}
+
+.public-trust-section-heading h2 {
+  margin-top: var(--space-2);
+}
+
+.public-trust-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.public-trust-cards > li,
+.public-trust-cards > article {
+  display: flex;
+  min-width: 0;
+}
+
+.public-trust-cards > li > [data-slot="card"],
+.public-trust-cards > article > [data-slot="card"],
+.public-trust-cards > [data-slot="card"] {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+/* Status color only. Size, padding, border, and radius come from Badge. */
+.public-trust-status[data-status="current"] {
+  border-color: var(--teal);
+  background: var(--mint);
+  color: var(--teal-dark);
+}
+
+.public-trust-status[data-status="approved-architecture"] {
+  border-color: var(--teal-dark);
+  background: var(--card);
+  color: var(--navy);
+}
+
+.public-trust-status[data-status="pending-decision"] {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--navy);
+}
+
+.public-trust-page details {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.public-trust-page summary {
+  color: var(--teal-dark);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.public-trust-evidence {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.public-trust-prose > ul {
+  display: grid;
+  margin: 0;
+  padding-left: var(--space-5);
+  gap: var(--space-3);
+}
+
+.public-trust-split {
+  display: grid;
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.public-trust-split > p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.public-trust-facts {
+  display: grid;
+  margin: 0;
+  min-width: 0;
+}
+
+.public-trust-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  padding-block: var(--space-4);
+  gap: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+.public-trust-facts > div:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.public-trust-facts dt {
+  margin: 0;
+  color: var(--navy);
+  font-size: var(--type-small-size);
+  font-weight: 750;
+}
+
+.public-trust-facts dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.public-trust-definitions dt,
+.public-trust-definitions dd {
+  margin: 0;
+}
+
+.public-trust-definitions dt {
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: var(--type-section-size);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.public-trust-definitions > [data-slot="card"] {
+  padding: var(--space-4) var(--space-5);
+  gap: var(--space-2);
+}
+
+.public-trust-callout {
+  display: grid;
+  max-width: var(--public-trust-measure);
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--teal);
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+}
+
+.public-trust-version {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+
+.public-trust-version p {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.public-trust-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+}
+
+.public-trust-return {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .public-trust-cards--pair,
+  .public-trust-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-trust-facts > div {
+    /* Term column stays beside the definition from the tablet breakpoint up. */
+    grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .public-trust-cards--trio {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-trust-page {
+    scroll-behavior: auto;
+  }
+}

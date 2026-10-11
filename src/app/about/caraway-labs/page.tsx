@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  PublicTrustActions,
+  PublicTrustIntro,
+  PublicTrustPage,
+} from "@/features/public-trust/public-trust-page";
 
 import "@/features/ux-reset/trust-footer.css";
 import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
@@ -29,53 +34,54 @@ export const metadata: Metadata = {
 
 export default function AboutCarawayLabsPage() {
   return (
-    <main className="about-caraway">
-      <header className="about-caraway-header">
-        <h1 className="type-page">About Caraway Labs</h1>
-        <p className="about-caraway-lede">
+    <PublicTrustPage>
+      <PublicTrustIntro title="About Caraway Labs">
+        <p className="public-trust-lede">
           <strong>Building practical tools for better decisions.</strong>
         </p>
         <p>
           Caraway Labs develops software experiences that help people work with
           complex information and make more informed decisions.
         </p>
-      </header>
+      </PublicTrustIntro>
 
       <section
         aria-labelledby="about-one-health-atlas"
-        className="about-caraway-section"
+        className="public-trust-section"
       >
-        <h2 id="about-one-health-atlas">One Health Atlas</h2>
-        <p>
-          One Health Atlas is a Caraway Labs project focused on helping
-          public-health professionals investigate vector-borne disease evidence,
-          starting with Lyme disease.
-        </p>
-        <p>
-          The Atlas brings different evidence systems into a common workflow:
-          human surveillance, vectors and pathogens, environmental conditions,
-          and community context. Its aim is to make it easier to explore what
-          the available data shows, where important gaps remain, and what
-          deserves closer investigation.
-        </p>
+        <div className="public-trust-prose">
+          <h2 id="about-one-health-atlas">One Health Atlas</h2>
+          <p>
+            One Health Atlas is a Caraway Labs project focused on helping
+            public-health professionals investigate vector-borne disease
+            evidence, starting with Lyme disease.
+          </p>
+          <p>
+            The Atlas brings different evidence systems into a common workflow:
+            human surveillance, vectors and pathogens, environmental conditions,
+            and community context. Its aim is to make it easier to explore what
+            the available data shows, where important gaps remain, and what
+            deserves closer investigation.
+          </p>
+        </div>
       </section>
 
       <section
         aria-labelledby="about-approach"
-        className="about-caraway-approach"
+        className="public-trust-section"
       >
-        <div className="about-caraway-section">
+        <div className="public-trust-prose">
           <h2 id="about-approach">How we approach the work</h2>
         </div>
-        <ul className="about-caraway-principles">
+        <ul className="public-trust-cards public-trust-cards--trio">
           {APPROACH_PRINCIPLES.map((principle) => (
             <li key={principle.title}>
-              <Card>
+              <Card className="overflow-visible">
                 <CardHeader>
-                  <h3 className="type-card">{principle.title}</h3>
+                  <h3>{principle.title}</h3>
                 </CardHeader>
                 <CardContent>
-                  <p className="type-body">{principle.body}</p>
+                  <p>{principle.body}</p>
                 </CardContent>
               </Card>
             </li>
@@ -83,20 +89,20 @@ export default function AboutCarawayLabsPage() {
         </ul>
       </section>
 
-      <p className="about-caraway-disclosure">
+      <p className="public-trust-callout">
         One Health Atlas is an independent Caraway Labs project. It is not an
         official public-health agency service, and its information is not
         medical advice.
       </p>
 
-      <p className="about-caraway-actions">
-        <Link className="about-caraway-return" href="/">
+      <PublicTrustActions>
+        <Link className="public-trust-return" href="/">
           Return to One Health Atlas
         </Link>
-        <Link className="about-caraway-return" href="/privacy">
+        <Link className="public-trust-return" href="/privacy">
           Privacy
         </Link>
-      </p>
-    </main>
+      </PublicTrustActions>
+    </PublicTrustPage>
   );
 }
