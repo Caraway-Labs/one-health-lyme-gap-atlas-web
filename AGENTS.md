@@ -62,6 +62,15 @@ Before material work, read the workspace [AGENTS.md](../AGENTS.md), the [technol
 - Keep assistant sources structured and attributable, never render hidden reasoning or arbitrary model-provided UI, and use an explicit allowlist before adding generated Atlas UI.
 - The assistant demo is feature-gated and fixture-only until a governed backend adapter is approved; never add AI secrets to public configuration.
 
+### Branch freshness and integration
+
+- **Before implementation:** run `git fetch origin main`; inspect `git status --short --branch`, `git worktree list`, and `git rev-list --left-right --count HEAD...origin/main` (feature-only commits first, upstream-only commits second). Start new feature branches/worktrees from fetched `origin/main` whenever feasible, rather than stale local `main`.
+- **During development:** preserve isolated agent worktrees; never modify another agent's branch or worktree. Recheck upstream changes at natural development checkpoints or handoffs, especially when upstream touches relevant files; do not repeatedly auto-merge/rebase `main` on a timer.
+- **Before PR completion:** fetch again, check whether the branch is behind `origin/main`, and inspect upstream changes for relevant overlap/conflicts. Reconcile only when necessary and permitted, using a deliberate safe merge/rebase in your own worktree; rerun affected validations after integration. No branch-update commit is required when unnecessary.
+- **Conflict safety:** if the active worktree is dirty or conflicted, preserve it and report the blocker before integration. Never force-reset, discard uncommitted work, or force-push as a freshness shortcut.
+
+GitHub **Update branch** is an optional repository setting/action tracked separately in [#547](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/547); availability is not guaranteed, and GitHub does not automatically synchronize branches.
+
 Run the CI-equivalent checks before handoff:
 
 ```powershell
