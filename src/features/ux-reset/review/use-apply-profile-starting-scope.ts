@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import {
-  hasExplicitReviewScopeParam,
+  hasExplicitReviewLocation,
   parsedReviewScopeFromUrl,
   resolveStartingReviewScope,
 } from "@/features/ux-reset/review/resolve-review-scope";
@@ -19,7 +19,7 @@ type ApplyProfileStartingScopeArgs = {
 };
 
 /**
- * Applies profile default jurisdiction once when the Review URL omits `scope`.
+ * Applies the saved starting view once when Review has no explicit scope or county.
  */
 export function useApplyProfileStartingScope({
   activeScope,
@@ -35,7 +35,7 @@ export function useApplyProfileStartingScope({
     if (!profileReady || appliedRef.current || stateOptions.length === 0) {
       return;
     }
-    const explicit = hasExplicitReviewScopeParam(searchParams);
+    const explicit = hasExplicitReviewLocation(searchParams);
     const parsed = parsedReviewScopeFromUrl(searchParams);
     const starting = resolveStartingReviewScope(
       explicit,

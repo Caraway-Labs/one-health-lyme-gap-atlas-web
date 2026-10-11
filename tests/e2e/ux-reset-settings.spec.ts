@@ -127,6 +127,11 @@ async function installSettingsApi(page: Page) {
 }
 
 async function chooseJurisdiction(page: Page, name: string) {
+  if (name === "United States") {
+    await page.getByRole("radio", { name: "United States" }).check();
+    return;
+  }
+  await page.getByRole("radio", { name: "One state" }).check();
   await page.getByTestId("settings-jurisdiction-select").click();
   await page.getByRole("option", { name }).click();
 }
@@ -146,7 +151,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     await chooseJurisdiction(page, "United States");
     await page.getByTestId("settings-save-profile").click();
     await expect(page.getByTestId("settings-save-notice")).toContainText(
-      "United States"
+      "Starting view saved. It will apply the next time you open Review without a specific view."
     );
     await expect(
       page.locator("[data-default-jurisdiction='ALL']")
@@ -293,7 +298,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     await chooseJurisdiction(page, "Colorado (CO)");
     await page.getByTestId("settings-save-profile").click();
     await expect(page.getByTestId("settings-save-profile")).toContainText(
-      "Saving profile"
+      "Saving…"
     );
     await page.reload();
     await expect(
@@ -343,9 +348,11 @@ test.describe("Settings profile and default jurisdiction", () => {
   test("saves a state default from the keyboard", async ({ page }) => {
     await installSettingsApi(page);
     await page.goto("/app/settings");
+    const oneState = page.getByRole("radio", { name: "One state" });
+    await oneState.focus();
+    await page.keyboard.press("Space");
     const jurisdiction = page.getByTestId("settings-jurisdiction-select");
     await jurisdiction.focus();
-    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
     await expect(jurisdiction).toContainText("Colorado");

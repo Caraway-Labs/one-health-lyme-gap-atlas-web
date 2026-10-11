@@ -172,7 +172,7 @@ describe("Settings profile form", () => {
         confirmed: true,
         role: "status",
         text: expect.stringContaining(
-          "New Review sessions will start with the United States."
+          "Starting view saved. It will apply the next time you open Review without a specific view."
         ),
       });
     });
@@ -340,13 +340,25 @@ describe("Settings profile form", () => {
       })
     );
     const { client } = renderSettings();
-    expect(
-      ((await screen.findByTestId("settings-organization")) as HTMLInputElement)
-        .value
-    ).toBe("CDPHE");
-    expect(
-      screen.getByTestId("settings-jurisdiction-select").textContent
-    ).toContain("Choose United States or a state");
+    expect({
+      oneState: (
+        (await screen.findByRole("radio", {
+          name: "One state",
+        })) as HTMLInputElement
+      ).checked,
+      organization: (
+        screen.getByTestId("settings-organization") as HTMLInputElement
+      ).value,
+      select: screen.queryByTestId("settings-jurisdiction-select"),
+      unitedStates: (
+        screen.getByRole("radio", { name: "United States" }) as HTMLInputElement
+      ).checked,
+    }).toStrictEqual({
+      oneState: false,
+      organization: "CDPHE",
+      select: null,
+      unitedStates: false,
+    });
     vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
@@ -430,5 +442,84 @@ describe("Settings profile form", () => {
     expect(
       (screen.getByTestId("settings-organization") as HTMLInputElement).value
     ).toBe("Edited");
+  });
+
+  it("shows United States or One state, and reveals the state list only for one state", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({ data: { profile: null }, status: 200 })
+    );
+    renderSettings();
+    await screen.findByTestId("settings-profile-form");
+    const national = screen.getByRole("radio", {
+      name: "United States",
+    }) as HTMLInputElement;
+    const oneState = screen.getByRole("radio", {
+      name: "One state",
+    }) as HTMLInputElement;
+    expect({
+      national: national.checked,
+      oneState: oneState.checked,
+      select: screen.queryByTestId("settings-jurisdiction-select"),
+    }).toStrictEqual({
+      national: false,
+      oneState: false,
+      select: null,
+    });
+
+    fireEvent.click(oneState);
+    fireEvent.submit(screen.getByTestId("settings-profile-form"));
+    expect({
+      alert: screen.getByRole("alert").textContent,
+      called: saveProfile.mock.calls.length,
+      select: screen.getByTestId("settings-jurisdiction-select").textContent,
+    }).toStrictEqual({
+      alert: expect.stringContaining("Nothing was saved"),
+      called: 0,
+      select: expect.stringContaining("Select a state"),
+    });
+
+    fireEvent.click(national);
+    expect({
+      national: national.checked,
+      select: screen.queryByTestId("settings-jurisdiction-select"),
+    }).toStrictEqual({
+      national: true,
+      select: null,
+    });
+  });
+
+  it("prefills One state when the saved default is a listed state", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: null,
+            organization: null,
+            role: null,
+            state_code: "NY",
+          },
+        },
+        status: 200,
+      })
+    );
+    renderSettings();
+    await screen.findByRole("radio", { name: "One state" });
+    await waitFor(() =>
+      expect({
+        oneState: (
+          screen.getByRole("radio", { name: "One state" }) as HTMLInputElement
+        ).checked,
+        select: screen.getByTestId("settings-jurisdiction-select").textContent,
+        unitedStates: (
+          screen.getByRole("radio", {
+            name: "United States",
+          }) as HTMLInputElement
+        ).checked,
+      }).toStrictEqual({
+        oneState: true,
+        select: expect.stringContaining("New York (NY)"),
+        unitedStates: false,
+      })
+    );
   });
 });

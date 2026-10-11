@@ -6,6 +6,7 @@ import {
 } from "@/features/ux-reset/context-params";
 import { buildReviewScopePresentation } from "@/features/ux-reset/review/build-review-presentation";
 import {
+  hasExplicitReviewLocation,
   hasExplicitReviewScopeParam,
   resolveStartingReviewScope,
   reviewScopeMatchesPresentation,
@@ -78,6 +79,24 @@ describe("Review scope resolution", () => {
       hasExplicitReviewScopeParam(new URLSearchParams("scope=ALL"))
     ).toBeTruthy();
     expect(hasExplicitReviewScopeParam(new URLSearchParams())).toBeFalsy();
+  });
+
+  it("treats a county in the URL as an explicit location", () => {
+    expect(
+      hasExplicitReviewLocation(new URLSearchParams("county=08001"))
+    ).toBeTruthy();
+    expect(
+      hasExplicitReviewLocation(new URLSearchParams("scope=NY&county=36001"))
+    ).toBeTruthy();
+    expect(hasExplicitReviewLocation(new URLSearchParams())).toBeFalsy();
+    expect(
+      resolveStartingReviewScope(
+        hasExplicitReviewLocation(new URLSearchParams("county=08001")),
+        "ALL",
+        "CO",
+        stateOptions
+      )
+    ).toBe("ALL");
   });
 
   it("round-trips explicit national scope in shared URL context", () => {
