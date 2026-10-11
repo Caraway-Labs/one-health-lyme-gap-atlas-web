@@ -289,7 +289,7 @@ export function ReviewNationalOrientationView({
   );
 
   const focusListButton = (end: "first" | "last") => {
-    const list = document.getElementById(listId);
+    const list = document.querySelector(`#${listId}`);
     const buttons =
       list instanceof HTMLUListElement ? enabledButtons(list) : [];
     const button = end === "first" ? buttons[0] : buttons.at(-1);
