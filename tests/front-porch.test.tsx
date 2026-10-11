@@ -1,4 +1,10 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -16,7 +22,11 @@ import {
   frontPorchExploreHrefSelectsCounty,
 } from "@/features/front-porch/front-porch-copy";
 import { FrontPorchView } from "@/features/front-porch/front-porch-view";
-import { RESET_REVIEW_PATH } from "@/features/ux-reset/routes";
+import {
+  ABOUT_CARAWAY_LABS_PATH,
+  RESET_REVIEW_PATH,
+} from "@/features/ux-reset/routes";
+import { ANALYTICS_PREFERENCE_KEY } from "@/lib/analytics-consent";
 
 const FORBIDDEN_PUBLIC_COPY =
   /buncombe|alaska|hawaii|37021|data pending|underreported/i;
@@ -151,5 +161,109 @@ describe("front porch view", () => {
     expect(
       screen.getByRole("link", { name: "Open Review" }).getAttribute("href")
     ).toBe(RESET_REVIEW_PATH);
+  });
+
+  it("uses the approved trust footer for signed-out and signed-in visitors", () => {
+    for (const signedIn of [false, true]) {
+      cleanup();
+      render(<FrontPorchView signedIn={signedIn} />);
+
+      const footer = screen.getByRole("contentinfo");
+      const brand = within(footer).getByRole("link", {
+        name: "One Health Atlas by Caraway Labs (opens in a new tab)",
+      });
+      const trust = within(screen.getByRole("navigation", { name: "Trust" }));
+      expect({
+        blockedAppLinks: [
+          footer.querySelector('a[href="/app/settings"]'),
+          footer.querySelector('a[href="/app/ai-responsible-use"]'),
+        ],
+        brand: {
+          href: brand.getAttribute("href"),
+          rel: brand.getAttribute("rel"),
+          target: brand.getAttribute("target"),
+        },
+        brandMark: footer.querySelector("img.atlas-brand-mark"),
+        evidenceHref: screen
+          .getByRole("link", { name: "Evidence and uncertainty" })
+          .getAttribute("href"),
+        methodologyHref: screen
+          .getByRole("link", { name: "Methodology" })
+          .getAttribute("href"),
+        privacySettings: trust.getByRole("button", { name: "Privacy settings" })
+          .textContent,
+        trustLinks: trust.getAllByRole("link").map((link) => ({
+          href: link.getAttribute("href"),
+          target: link.getAttribute("target"),
+          text: link.textContent,
+        })),
+      }).toStrictEqual({
+        blockedAppLinks: [null, null],
+        brand: {
+          href: ABOUT_CARAWAY_LABS_PATH,
+          rel: "noopener noreferrer",
+          target: "_blank",
+        },
+        brandMark: null,
+        evidenceHref: "/docs/evidence-and-uncertainty",
+        methodologyHref: "/docs/releases-and-methodology",
+        privacySettings: "Privacy settings",
+        trustLinks: [
+          { href: "/privacy", target: null, text: "Privacy" },
+          {
+            href: "/ai-ethics",
+            target: null,
+            text: "AI / Responsible Use",
+          },
+        ],
+      });
+    }
+  });
+
+  it("keeps anonymous consent reachable from the public footer", () => {
+    localStorage.clear();
+    render(<FrontPorchView signedIn={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Keep optional analytics off" })
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Allow optional analytics" })
+    );
+
+    expect(
+      JSON.parse(localStorage.getItem(ANALYTICS_PREFERENCE_KEY) ?? "{}")
+        .decision
+    ).toBe("granted");
+    expect(
+      screen.getByRole("dialog", { name: "Privacy settings" })
+    ).toBeTruthy();
+  });
+
+  it("honors Do Not Track from the public privacy settings dialog", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(navigator, "doNotTrack");
+    Object.defineProperty(navigator, "doNotTrack", {
+      configurable: true,
+      get: () => "1",
+    });
+
+    try {
+      render(<FrontPorchView signedIn={false} />);
+      fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
+      const allow = screen.getByRole("button", {
+        name: "Allow optional analytics",
+      });
+      expect(
+        allow.hasAttribute("disabled") || allow.ariaDisabled === "true"
+      ).toBeTruthy();
+      expect(screen.getByText(/Do Not Track/)).toBeTruthy();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(navigator, "doNotTrack", descriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "doNotTrack");
+      }
+    }
   });
 });

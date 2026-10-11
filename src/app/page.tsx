@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { FrontPorchPage } from "@/features/front-porch/front-porch-page";
+
+import "@/features/ux-reset/trust-footer.css";
 import { legacyAnalyticalOverviewHref } from "@/lib/analytical-navigation-handoff";
 import { pageMetadataForRoute } from "@/lib/navigation";
 

@@ -24,9 +24,11 @@ test("About inherits shared branding without changing its content", async ({
 
 async function checkMarks(page: Page, selector: string) {
   if (baseline) return;
-  const marks = page.locator(selector).locator("img.atlas-brand-mark:visible");
-  expect(await marks.count()).toBeGreaterThan(0);
-  for (const mark of await marks.all()) {
+  const slots = page.locator(selector).filter({ visible: true });
+  expect(await slots.count()).toBeGreaterThan(0);
+  for (const slot of await slots.all()) {
+    const mark = slot.locator("img.atlas-brand-mark:visible");
+    await expect(mark).toHaveCount(1);
     await mark.scrollIntoViewIfNeeded();
     await expect(mark).toHaveAttribute("src", asset);
     await expect(mark).toHaveAttribute("alt", "");

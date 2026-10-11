@@ -50,4 +50,16 @@ These tests use local E2E fixtures and mocked providers. No live email/OAuth or 
 
 ## Release boundary
 
-Leave the PR open for product-owner review. No merge, deployment, issue closure, Project Done mutation, or worktree/branch deletion is authorized by this stage. After explicit approval, verify reviewed SHA, latest-main overlap, required checks, merged source and ACTIVE production SHA, then perform owner acceptance and the requested safe closure/cleanup.
+The product owner subsequently authorized merge and production deployment of reviewed head `1a53e8f2eb03cd837b0d51e55a4893c35ea49eae`, subject to current-main synchronization and exact-head CI. Issue closure, Project Done, and branch/worktree cleanup remain unauthorized until final human visual acceptance.
+
+## Authorized main synchronization
+
+While revalidating the reviewed head, PR #536 merged as `50813efac410497da88d08fe9d3e9f1e7171295b`. Its complete incoming diff was inspected before a normal merge in the dedicated worktree. It extracts the existing professional footer into shared `TrustFooterFrame` and `trust-footer.css`; conflicts affect only the professional footer and the moved CSS block.
+
+Preserve #536's shared frame, anonymous public trust controls, typography, geometry and responsive CSS. Pass the existing 24px mark through an optional frame identity slot from `ProfessionalTrustFooter` only. Scope the token gap to the professional wrapper. The new public Front Porch footer retains its approved text-only attribution; hero/header/art/copy and functional navigation icons receive no WEB #530 edits. A focused public-footer assertion protects that separation. Browser brand checks now require exactly one canonical image in each expected visible identity slot, addressing the non-blocking review coverage note.
+
+PR #533 remains open at inspected head `5305d43117676c5e1985f16168880132ae706eeb`. No unmerged auth code is incorporated. The requested [compatibility note](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/pull/533#issuecomment-6104714964) requires its eventual email-first identity slot and provider fixtures to retain `BrandMark`.
+
+Revalidation before the concurrent main update passed 37 focused tests, 15 selected browser checks with one viewport-specific skip, lint, typecheck, design/UX guards and production build. These results do not substitute for synchronized-head revalidation or required hosted CI. Final exact-head and deployment results are recorded in PR #535 and issue #530; keep the story open in Human Review pending owner acceptance.
+
+Synchronized local revalidation passed lint/format, typecheck/Docs check, design-system and UX Reset guards, **47 focused tests across ten files**, **15 desktop/mobile browser checks with one viewport-specific skip**, and production build. Browser captures were refreshed on the synchronized source. No live provider/email or authenticated production session is claimed by these fixtures.

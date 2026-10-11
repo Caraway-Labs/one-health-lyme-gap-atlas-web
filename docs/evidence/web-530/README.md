@@ -2,6 +2,8 @@
 
 Local development E2E mode; no real authenticated production session or live provider/email action. Desktop Chrome and Pixel 7 projects use the repository Playwright configuration. About captures use the later approved main commit `cb4ac32`; other before captures use initial base `f537ccd`.
 
+After captures were refreshed during the authorized synchronization with approved main `50813ef` (#536). Professional branding uses the new shared footer frame; its public Front Porch footer remains text-only. Before captures remain unchanged historical evidence.
+
 | Surface | Before | After |
 | --- | --- | --- |
 | Expanded professional sidebar | [Before](before-expanded.png) | [After](after-expanded.png) |
