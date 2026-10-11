@@ -22,11 +22,6 @@ const nextConfig: NextConfig = {
         source: "/:path*",
       })),
       {
-        destination: "/favicon.svg",
-        permanent: true,
-        source: "/favicon.ico",
-      },
-      {
         destination: "https://carawaylabs.com/:path*",
         has: [{ type: "host", value: "www.carawaylabs.com" }],
         permanent: true,

@@ -12,7 +12,37 @@ export const metadata: Metadata = {
   description:
     "A population-level hypothesis generator for Lyme surveillance review.",
   metadataBase: new URL("https://onehealthatlas.org"),
-  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }] },
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico?v=summit-compass-north-20261010",
+        sizes: "16x16 32x32 48x48",
+        type: "image/x-icon",
+      },
+      {
+        url: "/favicon-16x16.png?v=summit-compass-north-20261010",
+        sizes: "16x16",
+        type: "image/png",
+      },
+      {
+        url: "/favicon-32x32.png?v=summit-compass-north-20261010",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/favicon-48x48.png?v=summit-compass-north-20261010",
+        sizes: "48x48",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png?v=summit-compass-north-20261010",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+  },
   title: "One Health Lyme Gap Atlas",
 };
 
