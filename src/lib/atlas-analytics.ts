@@ -66,8 +66,6 @@ export const uiControlIds = [
   "evidence_chat_history_select",
   "evidence_chat_history_delete",
   "experiment_retry",
-  "experiment_table_toggle",
-  "experiment_step_select",
   "experiment_county_select",
   "assistant_demo_send",
   "assistant_demo_stop",
@@ -234,6 +232,8 @@ export function routeIdForPathname(pathname: string): RouteId {
   if (pathname === "/overview") return "atlas_home";
   if (pathname === "/privacy") return "privacy";
   if (pathname === "/knowledge-graph") return "knowledge_graph";
+  // Retired /variant_* URLs 404. If the analytical shell still records a view,
+  // keep them distinct from Overview instead of labeling the miss as atlas_home.
   if (pathname.startsWith("/variant_")) return "atlas_variant";
   if (pathname === "/account") return "account";
   if (pathname === "/assistant" || pathname.startsWith("/assistant/")) {
