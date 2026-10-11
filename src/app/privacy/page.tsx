@@ -111,12 +111,11 @@ export default function PrivacyPage() {
                 professional Settings. Profile details do not change Atlas
                 evidence or scores, and they do not change who can read public
                 Atlas results. In-product feedback is available from the Atlas
-                header, the geographic explorer, and this privacy page footer.
-                Optional contact email is only for follow-up on that report.
-                Account deletion removes feedback contact fields and account
-                linkage while retaining the submitted message text. The
-                professional workspace does not store saved views, saved
-                investigations, or an artifact library.
+                header and the geographic explorer. Optional contact email is
+                only for follow-up on that report. Account deletion removes
+                feedback contact fields and account linkage while retaining the
+                submitted message text. The professional workspace does not
+                store saved views, saved investigations, or an artifact library.
               </dd>
             </div>
           </dl>
