@@ -1,9 +1,14 @@
 import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  PublicTrustActions,
+  PublicTrustIntro,
+  PublicTrustPage,
+} from "@/features/public-trust/public-trust-page";
 
 import "@/features/ux-reset/trust-footer.css";
-import { buttonVariants } from "@/components/ui/button";
 import {
   aiEthicsContent,
   type AiEthicsStatementStatus,
@@ -29,68 +34,72 @@ function humanDate(isoDate: string) {
 
 export function AiEthicsPage() {
   return (
-    <main className="ethics-page">
-      <section className="ethics-hero">
-        <p className="eyebrow light">Trust, evidence, and accountability</p>
-        <h1>{aiEthicsContent.introduction.title}</h1>
+    <PublicTrustPage>
+      <PublicTrustIntro
+        eyebrow="Trust, evidence, and accountability"
+        title={aiEthicsContent.introduction.title}
+      >
         <p>{aiEthicsContent.introduction.summary}</p>
-        <p className="ethics-audience-note">
+        <p className="public-trust-note">
           {aiEthicsContent.introduction.audienceNote}
         </p>
-        <Link
-          className={buttonVariants({
-            className: "cta-on-dark",
-            variant: "ghost",
-          })}
-          href={`${ATLAS_OVERVIEW_PATH}#atlas`}
-        >
-          Return to the Atlas
-        </Link>
-      </section>
+      </PublicTrustIntro>
 
-      <section
-        className="ethics-content section"
-        aria-labelledby="ethics-status"
-      >
+      <section aria-labelledby="ethics-status" className="public-trust-section">
         <AtlasSectionHeader
+          className="public-trust-section-heading"
           eyebrow="Clear about the status of our work"
           title="What is true today, planned, and undecided"
           titleId="ethics-status"
         />
 
-        <div className="ethics-statements">
+        <div className="public-trust-cards public-trust-cards--trio">
           {aiEthicsContent.statements.map((statement) => (
-            <article key={statement.title} className="ethics-statement">
-              <p className={`ethics-status ethics-status-${statement.status}`}>
-                {statusLabels[statement.status]}
-              </p>
-              <h3>{statement.title}</h3>
-              <p>{statement.summary}</p>
-              <details>
-                <summary>Technical detail and source</summary>
-                <p>{statement.detail}</p>
-                <p className="ethics-evidence">
-                  <strong>Basis:</strong> {statement.evidence}
-                </p>
-              </details>
+            <article key={statement.title}>
+              <Card className="overflow-visible">
+                <CardHeader>
+                  <p
+                    className="public-trust-status"
+                    data-status={statement.status}
+                  >
+                    {statusLabels[statement.status]}
+                  </p>
+                  <h3>{statement.title}</h3>
+                </CardHeader>
+                <CardContent>
+                  <p>{statement.summary}</p>
+                  <details>
+                    <summary>Technical detail and source</summary>
+                    <p>{statement.detail}</p>
+                    <p className="public-trust-evidence">
+                      <strong>Basis:</strong> {statement.evidence}
+                    </p>
+                  </details>
+                </CardContent>
+              </Card>
             </article>
           ))}
         </div>
 
-        <section className="ethics-section" aria-labelledby="ethics-boundaries">
-          <h2 id="ethics-boundaries">What Atlas AI is not for</h2>
-          <ul>
-            {aiEthicsContent.boundaries.map((boundary) => (
-              <li key={boundary}>{boundary}</li>
-            ))}
-          </ul>
+        <section
+          aria-labelledby="ethics-boundaries"
+          className="public-trust-section"
+        >
+          <div className="public-trust-prose">
+            <h2 id="ethics-boundaries">What Atlas AI is not for</h2>
+            <ul>
+              {aiEthicsContent.boundaries.map((boundary) => (
+                <li key={boundary}>{boundary}</li>
+              ))}
+            </ul>
+          </div>
         </section>
 
         <section
-          className="ethics-section"
           aria-labelledby="ethics-open-questions"
+          className="public-trust-section"
         >
-          <div className="ethics-section-heading">
+          <div className="public-trust-split">
             <div>
               <p className="eyebrow">Open questions</p>
               <h2 id="ethics-open-questions">Commitments in development</h2>
@@ -100,26 +109,32 @@ export function AiEthicsPage() {
               promises until product decisions are reviewed and recorded.
             </p>
           </div>
-          <dl className="ethics-questions">
+          <dl className="public-trust-cards public-trust-cards--pair public-trust-definitions">
             {aiEthicsContent.openCommitments.map((commitment) => (
-              <div key={commitment.topic}>
+              <Card className="overflow-visible" key={commitment.topic}>
                 <dt>{commitment.topic}</dt>
                 <dd>{commitment.question}</dd>
-              </div>
+              </Card>
             ))}
           </dl>
         </section>
 
         <section
-          className="ethics-section ethics-related"
           aria-labelledby="ethics-related-work"
+          className="public-trust-section"
         >
           <h2 id="ethics-related-work">Related trust work</h2>
-          <div>
+          <div className="public-trust-cards public-trust-cards--pair">
             {aiEthicsContent.relatedWork.map((work) => (
               <article key={work.topic}>
-                <h3>{work.topic}</h3>
-                <p>{work.detail}</p>
+                <Card className="overflow-visible">
+                  <CardHeader>
+                    <h3>{work.topic}</h3>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{work.detail}</p>
+                  </CardContent>
+                </Card>
               </article>
             ))}
           </div>
@@ -127,7 +142,7 @@ export function AiEthicsPage() {
 
         <div
           aria-label="AI Ethics document version"
-          className="ethics-version"
+          className="public-trust-version"
           role="group"
         >
           <p>
@@ -141,7 +156,16 @@ export function AiEthicsPage() {
           <p>{aiEthicsContent.maintenance.updateRule}</p>
         </div>
       </section>
-    </main>
+
+      <PublicTrustActions>
+        <Link
+          className="public-trust-return"
+          href={`${ATLAS_OVERVIEW_PATH}#atlas`}
+        >
+          Return to the Atlas
+        </Link>
+      </PublicTrustActions>
+    </PublicTrustPage>
   );
 }
 
