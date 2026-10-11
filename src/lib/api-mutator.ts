@@ -15,6 +15,15 @@ function shouldAttachBearer(url: string): boolean {
   return url.startsWith("/v1/me/") || url.startsWith("/v1/feedback");
 }
 
+/**
+ * Exact `application/pdf` only. Letter case and parameters are ignored.
+ * Prefixed subtypes such as `application/pdf+json` are not PDFs.
+ */
+function isPdfContentType(contentType: string): boolean {
+  const [mediaType = ""] = contentType.split(";", 1);
+  return mediaType.trim().toLowerCase() === "application/pdf";
+}
+
 export class AtlasApiError extends Error {
   readonly endpoint: string;
   readonly status: number;
@@ -74,7 +83,7 @@ export async function apiMutator<T>(
     );
   }
   const contentType = response.headers.get("content-type") ?? "";
-  const data = contentType.includes("application/pdf")
+  const data = isPdfContentType(contentType)
     ? await response.blob()
     : contentType.includes("json") || contentType.includes("geo+json")
       ? await response.json()
