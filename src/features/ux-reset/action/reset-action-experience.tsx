@@ -26,6 +26,7 @@ import {
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
+import { countyEvidenceLoadStates } from "@/features/ux-reset/investigate/county-evidence";
 import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/investigate-settled-view";
 import {
   investigateHandoffLimitation,
@@ -153,8 +154,11 @@ function ActionExperienceInner() {
         publishedRows,
       })
     : null;
+  const observationsLoaded =
+    hierarchy?.observationsLoaded ?? countyEvidenceLoadStates.withheld;
   const periodState = actionBundlePeriodState({
-    bundle: carriedBundle,
+    bundle,
+    observationsLoaded,
     requestedPeriod: workspace.period,
   });
   const planPosture = actionPlanPosture(searchParams.getAll("plan"));
@@ -184,8 +188,9 @@ function ActionExperienceInner() {
   const resolvedStateLabel = resolvedIdentity ? workspace.stateLabel : null;
   usePublishAskAtlasInheritedContext(
     inheritedContextFromAction({
-      bundle: carriedBundle,
+      bundle,
       finding: findingSummary,
+      observationsLoaded,
       identity: workspace.identity,
       releaseId: workspace.releaseId,
       releaseMismatch: workspace.recovery === "release_mismatch",

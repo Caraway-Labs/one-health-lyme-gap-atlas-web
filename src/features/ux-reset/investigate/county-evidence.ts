@@ -13,10 +13,40 @@ import { isCountyFips } from "@/lib/county-geography";
 /**
  * Explicit family allowlist. A non-empty `domain` is authoritative. Unknown
  * domain tokens such as `climate` stay unclassified. A blank domain uses the
- * governed indicator id allowlist below. Conflicting domains, and an indicator
- * seen only on another release, stay unclassified. Do not infer a family from
- * a label.
+ * governed indicator id allowlist below. Conflicting domains, an indicator
+ * seen only on another release, and an indicator id omitted from a successful
+ * response stay unclassified. Do not infer a family from a label.
  */
+
+/**
+ * Whether the observation bundle was built from a loaded measure catalog.
+ * `withheld` is a failed catalog. A synthetic bundle may render a finding.
+ * It does not satisfy a handoff that requires loaded observations.
+ */
+export const countyEvidenceLoadStates = {
+  loaded: "loaded",
+  withheld: "withheld",
+} as const;
+
+export type CountyEvidenceLoadState =
+  (typeof countyEvidenceLoadStates)[keyof typeof countyEvidenceLoadStates];
+
+export function countyObservationsLoaded(
+  state: CountyEvidenceLoadState
+): boolean {
+  switch (state) {
+    case countyEvidenceLoadStates.loaded: {
+      return true;
+    }
+    case countyEvidenceLoadStates.withheld: {
+      return false;
+    }
+    default: {
+      const exhaustive: never = state;
+      return exhaustive;
+    }
+  }
+}
 export const INVESTIGATE_DOMAIN_HUMAN = "human" as const;
 export const INVESTIGATE_DOMAIN_VECTOR = "vector" as const;
 export const INVESTIGATE_DOMAIN_PATHOGEN = "pathogen" as const;
@@ -311,16 +341,22 @@ export function evidenceFamilyFromIndicatorId(
  * A blank domain, or a failed indicator request, uses the indicator id.
  * That fallback still assigns allowlisted ids. The indicator request failure
  * is disclosed on its own and does not depend on family publication.
- * Unresolved metadata (conflicting domains, or a release that was withheld)
- * stays unclassified and does not use that id fallback.
+ * Unresolved metadata stays unclassified and does not use that id fallback:
+ * conflicting domains, a release that was withheld, or an indicator id that
+ * a successful response omitted. An omitted id is not an explicit blank domain.
  */
 export function evidenceFamilyForMeasure(input: {
   domain: string | null | undefined;
   domainUnresolved?: boolean;
   domainsRequestFailed: boolean;
   indicatorId: string;
+  /** True when a successful indicator response has no record for this id. */
+  indicatorOmitted?: boolean;
 }): InvestigateEvidenceFamilyId | null {
-  if (input.domainUnresolved && !input.domainsRequestFailed) {
+  if (
+    (input.domainUnresolved || input.indicatorOmitted) &&
+    !input.domainsRequestFailed
+  ) {
     return null;
   }
   if (!input.domainsRequestFailed) {
@@ -337,13 +373,17 @@ function familyForIndicator(input: {
   indicatorDomains: IndicatorDomainIndex;
   indicatorId: string;
 }): InvestigateEvidenceFamilyId | null {
+  const recorded = input.indicatorDomains.domains.has(input.indicatorId);
   return evidenceFamilyForMeasure({
-    domain: input.indicatorDomains.domains.get(input.indicatorId) ?? null,
+    domain: recorded
+      ? input.indicatorDomains.domains.get(input.indicatorId)
+      : undefined,
     domainUnresolved: input.indicatorDomains.unresolvedIds.has(
       input.indicatorId
     ),
     domainsRequestFailed: input.domainsRequestFailed,
     indicatorId: input.indicatorId,
+    indicatorOmitted: !recorded,
   });
 }
 
@@ -946,9 +986,13 @@ export function buildCountyEvidenceBundle(input: {
         readyMeasureIds.push(outcome.measureId);
         const measure = measuresById.get(outcome.measureId);
         const indicatorId = measure?.indicator_id ?? "";
-        const indicatorDomain = input.domainsRequestFailed
-          ? null
-          : (input.indicatorDomains.domains.get(indicatorId) ?? null);
+        // A missing map entry is unresolved, not an explicit blank domain.
+        // Family assignment records that omission. This display field stays null.
+        const indicatorDomain =
+          input.domainsRequestFailed ||
+          !input.indicatorDomains.domains.has(indicatorId)
+            ? null
+            : (input.indicatorDomains.domains.get(indicatorId) ?? null);
         const familyId = measure
           ? familyForIndicator({
               domainsRequestFailed: input.domainsRequestFailed,

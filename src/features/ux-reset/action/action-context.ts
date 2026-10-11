@@ -1,7 +1,9 @@
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
-import type {
-  CountyEvidenceBundle,
-  CountyEvidenceObservation,
+import {
+  countyObservationsLoaded,
+  type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
+  type CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
   visibleCountyObservations,
@@ -83,15 +85,19 @@ export function actionGovernedUnavailableRecords(
 
 export function actionBundlePeriodState(input: {
   bundle: CountyEvidenceBundle | null;
+  observationsLoaded: CountyEvidenceLoadState;
   requestedPeriod: string | null;
 }): ActionPeriodState {
+  const loaded =
+    countyObservationsLoaded(input.observationsLoaded) && input.bundle !== null;
   return actionRequestedPeriodState({
-    loaded: Boolean(input.bundle),
-    observations: input.bundle
-      ? visibleCountyObservations(input.bundle).map(
-          (record) => record.observation
-        )
-      : [],
+    loaded,
+    observations:
+      loaded && input.bundle
+        ? visibleCountyObservations(input.bundle).map(
+            (record) => record.observation
+          )
+        : [],
     requestedPeriod: input.requestedPeriod,
   });
 }

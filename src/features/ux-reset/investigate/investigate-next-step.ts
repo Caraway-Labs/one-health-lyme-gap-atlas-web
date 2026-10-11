@@ -2,9 +2,11 @@ import {
   parseCompareFipsList,
   UX_RESET_COMPARE_COUNTY_LIMIT,
 } from "@/features/ux-reset/context-params";
-import type {
-  CountyEvidenceBundle,
-  CountyEvidenceObservation,
+import {
+  countyObservationsLoaded,
+  type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
+  type CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
   selectInvestigatePdfMeasures,
@@ -55,11 +57,16 @@ export type InvestigateActionOffer = {
 
 /**
  * Offer Action only after this county's evidence bundle has loaded.
- * A published identity alone is not the evidence context Action repeats.
+ * A published identity, or a synthetic bundle for a failed catalog, is not
+ * that prerequisite.
  */
 export function investigateActionOffer(input: {
   bundle: Pick<CountyEvidenceBundle, "county" | "releaseId"> | null;
+  observationsLoaded: CountyEvidenceLoadState;
 }): InvestigateActionOffer | null {
+  if (!countyObservationsLoaded(input.observationsLoaded)) {
+    return null;
+  }
   if (!input.bundle?.county.fips || !input.bundle.releaseId) {
     return null;
   }

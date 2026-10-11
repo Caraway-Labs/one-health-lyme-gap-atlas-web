@@ -1,6 +1,8 @@
 import {
+  countyEvidenceLoadStates,
   investigateBundleWithoutObservations,
   type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
 import type { PublishedCountyRecord } from "@/features/ux-reset/investigate/published-county-hierarchy";
@@ -12,6 +14,8 @@ export type SettledInvestigateHierarchy = {
   countyRecordError: string | null;
   countyRecordLoading: boolean;
   countyRecordRefreshError: string | null;
+  /** Loaded only when `bundle` came from the measure catalog, not a synthetic stand-in. */
+  observationsLoaded: CountyEvidenceLoadState;
 };
 
 /**
@@ -38,6 +42,7 @@ export function settledInvestigateHierarchy(input: {
       countyRecordError: input.countyRecordError,
       countyRecordLoading: input.countyRecordLoading,
       countyRecordRefreshError: input.countyRecordRefreshError,
+      observationsLoaded: countyEvidenceLoadStates.loaded,
     };
   }
   const countySettled =
@@ -63,5 +68,6 @@ export function settledInvestigateHierarchy(input: {
     countyRecordError: input.countyRecordError,
     countyRecordLoading: false,
     countyRecordRefreshError: input.countyRecordRefreshError,
+    observationsLoaded: countyEvidenceLoadStates.withheld,
   };
 }

@@ -1726,6 +1726,7 @@ describe("County Investigate workspace", () => {
     const limitation =
       screen.getByTestId("investigate-limitation-text").textContent ?? "";
     expect({
+      action: screen.queryByTestId("investigate-action"),
       catalog: text.includes(
         "Published county rows are shown without an observation series."
       ),
@@ -1734,15 +1735,31 @@ describe("County Investigate workspace", () => {
       established: text.includes("Established"),
       falseAbsence: text.includes("No observed or limited finding"),
       observations: observationRequests.length,
+      pdf: screen.queryByTestId("investigate-export-context"),
       score: text.includes("84.6"),
     }).toStrictEqual({
+      action: null,
       catalog: true,
       caveat: true,
       deniesLimitation: false,
       established: true,
       falseAbsence: false,
       observations: 0,
+      pdf: null,
       score: false,
+    });
+  });
+
+  it("does not offer Action when the catalog fails and the county is absent", async () => {
+    controls.failCatalog = true;
+    renderInvestigate("?county=08001&scope=CO");
+    await screen.findByText(/no observation finding was requested/);
+    expect({
+      action: screen.queryByTestId("investigate-action"),
+      pdf: screen.queryByTestId("investigate-export-context"),
+    }).toStrictEqual({
+      action: null,
+      pdf: null,
     });
   });
 });

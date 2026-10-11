@@ -2,7 +2,11 @@ import type { CompareAlignment } from "@/features/ux-reset/compare/compare-align
 import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import type { ExploreCommittedSelection } from "@/features/ux-reset/explore/explore-model";
-import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  countyObservationsLoaded,
+  type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
+} from "@/features/ux-reset/investigate/county-evidence";
 import type { ResolvedInvestigateFinding } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import { REVIEW_FIELD_UNAVAILABLE } from "@/features/ux-reset/review/review-governed-values";
 import type { Observation } from "@/generated/models";
@@ -306,12 +310,14 @@ export function inheritedContextFromExplore(input: {
 export function inheritedContextFromInvestigate(input: {
   bundle: CountyEvidenceBundle | null;
   /**
-   * Resolved Investigate finding. When passed, measure and source come from
-   * it, including a published row that is not an observation lead.
-   * Omit it only for callers that have not resolved a county record.
+   * Resolved Investigate finding. When observations have loaded, measure and
+   * source come from it, including a published row that is not an observation
+   * lead. Omit it only for callers that have not resolved a county record.
+   * A withheld catalog does not publish this finding into Ask Atlas.
    */
   finding?: ResolvedInvestigateFinding | null;
   identity: { fips: string; label: string } | null;
+  observationsLoaded: CountyEvidenceLoadState;
   releaseId: string | null;
   releaseMismatch: boolean;
   requestedFips: string | null;
@@ -321,6 +327,7 @@ export function inheritedContextFromInvestigate(input: {
   );
   const releaseReady = Boolean(input.releaseId) && !input.releaseMismatch;
   const bundleReady = Boolean(
+    countyObservationsLoaded(input.observationsLoaded) &&
     geographyReady &&
     !input.releaseMismatch &&
     input.bundle &&

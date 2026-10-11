@@ -3,7 +3,11 @@
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
-import type { CountyEvidenceBundle } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  countyObservationsLoaded,
+  type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
+} from "@/features/ux-reset/investigate/county-evidence";
 import {
   investigateActionOffer,
   investigateCompareOffer,
@@ -30,7 +34,6 @@ function investigateCompareTestId(kind: InvestigateCompareOfferKind): string {
 }
 
 export function InvestigateNextSteps({
-  actionBundle = null,
   actionHref,
   bundle,
   compare,
@@ -38,18 +41,22 @@ export function InvestigateNextSteps({
   countyFips,
   finding,
   findingCountyLabel,
+  observationsLoaded,
   requestedPeriod,
   resolvedCounty,
 }: {
-  actionBundle?: CountyEvidenceBundle | null;
   actionHref: string;
-  /** Observation bundle. The PDF export reads this and does not repeat the finding sentence. */
+  /**
+   * Real observation bundle. A synthetic catalog-failure bundle must not be
+   * passed here. Handoffs also require `observationsLoaded`.
+   */
   bundle: CountyEvidenceBundle | null;
   compare: readonly string[];
   compareHref: string;
   countyFips: string;
   finding: ResolvedInvestigateFinding | null;
   findingCountyLabel: string;
+  observationsLoaded: CountyEvidenceLoadState;
   requestedPeriod: string | null;
   resolvedCounty: string | null;
 }) {
@@ -57,12 +64,15 @@ export function InvestigateNextSteps({
     compare,
     resolvedCounty,
   });
+  const observationsReady = countyObservationsLoaded(observationsLoaded);
   const actionOffer = investigateActionOffer({
-    bundle: actionBundle ?? bundle,
+    bundle,
+    observationsLoaded,
   });
-  const pdfContext = bundle
-    ? investigatePdfContext(bundle, requestedPeriod)
-    : null;
+  const pdfContext =
+    observationsReady && bundle
+      ? investigatePdfContext(bundle, requestedPeriod)
+      : null;
 
   return (
     <section
@@ -110,7 +120,7 @@ export function InvestigateNextSteps({
           Inspect the finding for {findingCountyLabel}
         </a>
       ) : null}
-      {bundle?.leadLimitation ? (
+      {observationsReady && bundle?.leadLimitation ? (
         <a
           data-county={bundle.county.fips}
           data-testid="investigate-next-limitation"

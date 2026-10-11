@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  actionBundlePeriodState,
   actionPlanPosture,
   actionRequestedPeriodState,
 } from "@/features/ux-reset/action/action-context";
+import {
+  countyEvidenceLoadStates,
+  type CountyEvidenceBundle,
+} from "@/features/ux-reset/investigate/county-evidence";
 
 const year2023 = [{ period_end: "2023-12-31", period_start: "2023-01-01" }];
 
@@ -47,6 +52,39 @@ describe("Action evidence context", () => {
       outside: "stale",
       unloaded: "unspecified",
       empty: "unspecified",
+    });
+  });
+
+  it("does not treat a withheld bundle as loaded observations", () => {
+    const bundle = {
+      families: [
+        {
+          observations: [
+            {
+              observation: {
+                period_end: "2023-12-31",
+                period_start: "2023-01-01",
+              },
+            },
+          ],
+        },
+      ],
+      unassigned: [],
+    } as unknown as CountyEvidenceBundle;
+    expect({
+      loaded: actionBundlePeriodState({
+        bundle,
+        observationsLoaded: countyEvidenceLoadStates.loaded,
+        requestedPeriod: "2023-06-15",
+      }),
+      withheld: actionBundlePeriodState({
+        bundle,
+        observationsLoaded: countyEvidenceLoadStates.withheld,
+        requestedPeriod: "2023-06-15",
+      }),
+    }).toStrictEqual({
+      loaded: "matched",
+      withheld: "unspecified",
     });
   });
 

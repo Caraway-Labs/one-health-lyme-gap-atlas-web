@@ -22,6 +22,7 @@ import {
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { countyEvidenceLoadStates } from "@/features/ux-reset/investigate/county-evidence";
 import { CountyIntelligenceHeader } from "@/features/ux-reset/investigate/county-intelligence-header";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import { InvestigateNextSteps } from "@/features/ux-reset/investigate/investigate-next-steps";
@@ -169,6 +170,8 @@ function InvestigateExperienceInner() {
     releaseId: workspace.releaseId,
   });
   const visibleBundle = hierarchy?.bundle ?? null;
+  const observationsLoaded =
+    hierarchy?.observationsLoaded ?? countyEvidenceLoadStates.withheld;
   const publishedRows = visibleBundle
     ? publishedRowsForCounty({
         bundle: visibleBundle,
@@ -200,8 +203,9 @@ function InvestigateExperienceInner() {
   );
   usePublishAskAtlasInheritedContext(
     inheritedContextFromInvestigate({
-      bundle: visibleBundle,
+      bundle,
       finding: carriedFinding,
+      observationsLoaded,
       identity: workspace.identity,
       releaseId: workspace.releaseId,
       releaseMismatch: workspace.recovery === "release_mismatch",
@@ -402,9 +406,9 @@ function InvestigateExperienceInner() {
       ) : null}
 
       <InvestigateNextSteps
-        actionBundle={visibleBundle}
         actionHref={actionHref}
         bundle={bundle}
+        observationsLoaded={observationsLoaded}
         compare={workspace.compare}
         compareHref={compareHref}
         countyFips={nextCounty}

@@ -11,9 +11,11 @@ import {
 import { InheritedContextNotice } from "@/features/ux-reset/ask-atlas/inherited-context-notice";
 import {
   buildCountyEvidenceBundle,
+  countyEvidenceLoadStates,
   investigateBundleWithoutObservations,
   resolveCountyIdentity,
   type CountyEvidenceBundle,
+  type CountyEvidenceLoadState,
 } from "@/features/ux-reset/investigate/county-evidence";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import { investigatePdfContext } from "@/features/ux-reset/investigate/investigate-next-step";
@@ -74,11 +76,14 @@ const FINDING_SCENARIOS = [
   "both",
   "neither",
   "catalog-failed",
+  "catalog-failed-published",
 ] as const;
 
 type FindingScenario = (typeof FINDING_SCENARIOS)[number];
 
 type FindingExpectation = {
+  actionOffer: string | null;
+  askPeriod: string | null;
   availability: string;
   catalogFailure: boolean;
   emptySentence: boolean;
@@ -86,6 +91,7 @@ type FindingExpectation = {
   href: string | null;
   measure: string | null;
   observedCases: boolean;
+  pdfOffered: boolean;
   source: string | null;
 };
 
@@ -143,6 +149,8 @@ function emptyBundle(): CountyEvidenceBundle {
 
 function observedFindingExpectation(): FindingExpectation {
   return {
+    actionOffer: "Continue to Action",
+    askPeriod: "2023",
     availability: "available",
     catalogFailure: false,
     emptySentence: false,
@@ -150,8 +158,44 @@ function observedFindingExpectation(): FindingExpectation {
     href: "#investigate-observation-obs-cases-08001",
     measure: "Reported Lyme cases",
     observedCases: true,
+    pdfOffered: true,
     source: "cdc-cases",
   };
+}
+
+function catalogFailedScenario(scenario: FindingScenario): boolean {
+  switch (scenario) {
+    case "catalog-failed": {
+      return true;
+    }
+    case "catalog-failed-published": {
+      return true;
+    }
+    case "observation-only": {
+      return false;
+    }
+    case "published-only": {
+      return false;
+    }
+    case "both": {
+      return false;
+    }
+    case "neither": {
+      return false;
+    }
+    default: {
+      const exhaustive: never = scenario;
+      return exhaustive;
+    }
+  }
+}
+
+function observationsLoadedFor(
+  scenario: FindingScenario
+): CountyEvidenceLoadState {
+  return catalogFailedScenario(scenario)
+    ? countyEvidenceLoadStates.withheld
+    : countyEvidenceLoadStates.loaded;
 }
 
 function expectationFor(scenario: FindingScenario): FindingExpectation {
@@ -164,6 +208,8 @@ function expectationFor(scenario: FindingScenario): FindingExpectation {
     }
     case "published-only": {
       return {
+        actionOffer: "Continue to Action",
+        askPeriod: null,
         availability: "available",
         catalogFailure: false,
         emptySentence: false,
@@ -171,11 +217,14 @@ function expectationFor(scenario: FindingScenario): FindingExpectation {
         href: "#investigate-published-tick_status",
         measure: "Tick surveillance status",
         observedCases: false,
+        pdfOffered: true,
         source: "tick",
       };
     }
     case "neither": {
       return {
+        actionOffer: "Continue to Action",
+        askPeriod: null,
         availability: "",
         catalogFailure: false,
         emptySentence: true,
@@ -183,11 +232,14 @@ function expectationFor(scenario: FindingScenario): FindingExpectation {
         href: null,
         measure: null,
         observedCases: false,
+        pdfOffered: true,
         source: null,
       };
     }
     case "catalog-failed": {
       return {
+        actionOffer: null,
+        askPeriod: null,
         availability: "",
         catalogFailure: true,
         emptySentence: false,
@@ -195,6 +247,22 @@ function expectationFor(scenario: FindingScenario): FindingExpectation {
         href: null,
         measure: null,
         observedCases: false,
+        pdfOffered: false,
+        source: null,
+      };
+    }
+    case "catalog-failed-published": {
+      return {
+        actionOffer: null,
+        askPeriod: null,
+        availability: "available",
+        catalogFailure: false,
+        emptySentence: false,
+        established: true,
+        href: "#investigate-published-tick_status",
+        measure: null,
+        observedCases: false,
+        pdfOffered: false,
         source: null,
       };
     }
@@ -224,6 +292,9 @@ function scenarioBundle(
     case "catalog-failed": {
       return null;
     }
+    case "catalog-failed-published": {
+      return null;
+    }
     default: {
       const exhaustive: never = scenario;
       return exhaustive;
@@ -250,6 +321,9 @@ function scenarioRecord(
     case "catalog-failed": {
       return null;
     }
+    case "catalog-failed-published": {
+      return publishedRecord;
+    }
     default: {
       const exhaustive: never = scenario;
       return exhaustive;
@@ -264,10 +338,9 @@ function workspaceFor(
   const countyRecord = scenarioRecord(scenario);
   return {
     bundle,
-    catalogError:
-      scenario === "catalog-failed"
-        ? "Governed measures could not be loaded."
-        : null,
+    catalogError: catalogFailedScenario(scenario)
+      ? "Governed measures could not be loaded."
+      : null,
     catalogRefreshError: null,
     compare: [],
     countyRecord,
@@ -371,10 +444,12 @@ describe("Investigate finding handoff", () => {
     const rows = FINDING_SCENARIOS.map((scenario) => {
       const bundle = scenarioBundle(scenario);
       const countyRecord = scenarioRecord(scenario);
+      const catalogFailed = catalogFailedScenario(scenario);
+      const observationsLoaded = observationsLoadedFor(scenario);
       render(
         <InvestigateEvidenceHierarchy
           bundle={bundle ?? emptyBundle()}
-          catalogFailed={scenario === "catalog-failed"}
+          catalogFailed={catalogFailed}
           countyRecord={countyRecord}
         />
       );
@@ -392,7 +467,7 @@ describe("Investigate finding handoff", () => {
       const carriedBundle = bundle ?? emptyBundle();
       const carriedFinding = resolveInvestigateFinding({
         bundle: carriedBundle,
-        catalogFailed: scenario === "catalog-failed",
+        catalogFailed,
         countyRecordPresent: countyRecord !== null,
         publishedRows: publishedRowsForCounty({
           bundle: carriedBundle,
@@ -402,18 +477,22 @@ describe("Investigate finding handoff", () => {
       });
       render(
         <InvestigateNextSteps
-          actionBundle={scenario === "catalog-failed" ? carriedBundle : bundle}
           actionHref="/app/action?county=08001"
-          bundle={bundle}
+          bundle={catalogFailed ? emptyBundle() : bundle}
           compare={[]}
           compareHref="/app/compare"
           countyFips="08001"
           finding={carriedFinding}
           findingCountyLabel={countyIdentity.label}
+          observationsLoaded={observationsLoaded}
           requestedPeriod="2023-01-01"
           resolvedCounty="08001"
         />
       );
+      const actionOffer =
+        screen.queryByTestId("investigate-action")?.textContent ?? null;
+      const pdfOffered =
+        screen.queryByTestId("investigate-export-context") !== null;
       const nextHref =
         screen
           .queryByTestId("investigate-next-finding")
@@ -433,13 +512,17 @@ describe("Investigate finding handoff", () => {
       const actionLimitation =
         screen.getByTestId("action-limitation-text").textContent ?? "";
       const askMeasure = inheritedField("measure").label;
+      const askPeriod = inheritedField("period").label;
       const askSource = inheritedField("source").id;
       const row = {
         actionAvailability: action.dataset.evidenceState ?? null,
         actionLimitation,
+        actionOffer,
         actionText,
         askMeasure,
+        askPeriod,
         askSource,
+        pdfOffered,
         availability: investigate.dataset.evidenceState ?? null,
         catalogFailure: investigateText.includes(
           "measure catalog could not be loaded"
@@ -471,9 +554,12 @@ describe("Investigate finding handoff", () => {
         return {
           actionAvailability: expected.availability,
           actionLimitation: matched?.investigateLimitation,
+          actionOffer: expected.actionOffer,
           actionText: investigateText,
           askMeasure: expected.measure,
+          askPeriod: expected.askPeriod,
           askSource: expected.source,
+          pdfOffered: expected.pdfOffered,
           availability: expected.availability,
           catalogFailure: expected.catalogFailure,
           emptySentence: expected.emptySentence,
