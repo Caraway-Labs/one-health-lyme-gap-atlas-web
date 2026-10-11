@@ -35,6 +35,10 @@ Date: 2026-10-11. Branch: `codex/web-549-storybook-pages`. Initial base: `1b23d7
 - Latest-main affected unit rechecks: 36 route/navigation/analytics tests passed after `d04e27b`; 22 Action/evidence-brief/handoff tests passed after `f0ed601`.
 - Local Docker validation is unavailable: Docker Desktop Linux engine pipe `dockerDesktopLinuxEngine` is absent. Existing hosted Docker gate is unchanged.
 
+## PR review follow-up
+
+The late peer-review comment on Input Autodocs identified shared example IDs. The story renderer now uses per-instance React `useId` for input/label/help associations; production Input is unchanged. A focused desktop/mobile Autodocs regression checks unique IDs, each label target, per-example validation descriptions and label focus. Post-fix typecheck, lint and static build passed; `npm run test:storybook` passed **22 checks**. Hosted readiness is recorded on PR #554 for its exact reviewed head rather than conflated with public deployment.
+
 ## Release gate
 
 The issue stays open until final Pages verification. Administrator steps are in [storybook.md](../storybook.md). After merge, record the **Storybook Pages** run URL, deployed SHA and Pages `page_url`; verify public navigation, direct links, refresh, assets/fonts/styles, keyboard and mobile behavior. This PR does not merge, enable Pages, bypass environment reviewers, or deploy unreviewed branches.

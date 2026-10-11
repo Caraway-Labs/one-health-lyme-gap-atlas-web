@@ -1,6 +1,23 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { type ComponentProps, useId } from "react";
 
 import { Input } from "@/components/ui/input";
+
+function InputExample(args: ComponentProps<typeof Input>) {
+  const inputId = useId();
+  const helpId = `${inputId}-help`;
+  return (
+    <div className="grid gap-2">
+      <label htmlFor={inputId}>Geography</label>
+      <Input {...args} id={inputId} aria-describedby={helpId} />
+      <p id={helpId} className="text-muted-foreground text-sm">
+        {args["aria-invalid"]
+          ? "Enter a geography to continue (example validation)."
+          : "Local demonstration only; no data is submitted."}
+      </p>
+    </div>
+  );
+}
 
 const meta = {
   title: "Primitives/Input",
@@ -19,17 +36,7 @@ const meta = {
       },
     },
   },
-  render: (args) => (
-    <div className="grid gap-2">
-      <label htmlFor="geography">Geography</label>
-      <Input {...args} id="geography" aria-describedby="geography-help" />
-      <p id="geography-help" className="text-muted-foreground text-sm">
-        {args["aria-invalid"]
-          ? "Enter a geography to continue (example validation)."
-          : "Local demonstration only; no data is submitted."}
-      </p>
-    </div>
-  ),
+  render: (args) => <InputExample {...args} />,
 } satisfies Meta<typeof Input>;
 export default meta;
 type Story = StoryObj<typeof meta>;

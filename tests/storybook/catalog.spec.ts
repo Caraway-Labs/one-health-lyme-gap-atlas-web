@@ -86,6 +86,51 @@ test("generated documentation renders without duplicate page landmarks", async (
   ).toBeVisible();
 });
 
+test("Input Autodocs examples keep their own labels and descriptions", async ({
+  page,
+}) => {
+  await page.goto("iframe.html?id=primitives-input--docs&viewMode=docs");
+  await expect(page.locator('input[aria-invalid="true"]')).toBeVisible();
+  await expect(
+    page
+      .getByRole("textbox", { name: "Geography" })
+      .filter({ visible: true })
+      .first()
+  ).toBeVisible();
+  const inputs = page.getByRole("textbox", { name: "Geography" });
+  expect(await inputs.count()).toBeGreaterThanOrEqual(3);
+  const ids = await inputs.evaluateAll((elements) =>
+    elements.map((element) => element.id)
+  );
+  expect(new Set(ids).size).toBe(ids.length);
+  for (const input of await inputs.all()) {
+    const id = await input.getAttribute("id");
+    // Compare DOM associations directly so React's generated ID needs no CSS escaping.
+    const association = await input.evaluate((element) => {
+      const inputElement = element as HTMLInputElement;
+      return {
+        labels: [...(inputElement.labels ?? [])].map((item) => item.htmlFor),
+        help: document.getElementById(
+          inputElement.getAttribute("aria-describedby") ?? ""
+        )?.textContent,
+      };
+    });
+    expect(association.labels).toEqual([id]);
+    const invalid = await input.getAttribute("aria-invalid");
+    expect(association.help).toContain(
+      invalid === "true"
+        ? "Enter a geography to continue"
+        : "Local demonstration only"
+    );
+    if (!(await input.isDisabled())) {
+      await input.evaluate((element) =>
+        (element as HTMLInputElement).labels?.[0]?.click()
+      );
+      await expect(input).toBeFocused();
+    }
+  }
+});
+
 test("domain and validation variants preserve semantics", async ({ page }) => {
   await page.goto(
     "iframe.html?id=atlas-status-message--loading&viewMode=story"
