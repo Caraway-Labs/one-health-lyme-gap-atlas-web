@@ -32,6 +32,10 @@
   white-space: nowrap;
 }
 
+.ux-reset-pro-app .ux-reset-trust-brand {
+  gap: var(--space-2);
+}
+
 .ux-reset-trust-links {
   display: flex;
   flex-wrap: nowrap;

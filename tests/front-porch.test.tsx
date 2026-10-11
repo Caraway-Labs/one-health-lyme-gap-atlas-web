@@ -183,6 +183,7 @@ describe("front porch view", () => {
           rel: brand.getAttribute("rel"),
           target: brand.getAttribute("target"),
         },
+        brandMark: footer.querySelector("img.atlas-brand-mark"),
         evidenceHref: screen
           .getByRole("link", { name: "Evidence and uncertainty" })
           .getAttribute("href"),
@@ -203,6 +204,7 @@ describe("front porch view", () => {
           rel: "noopener noreferrer",
           target: "_blank",
         },
+        brandMark: null,
         evidenceHref: "/docs/evidence-and-uncertainty",
         methodologyHref: "/docs/releases-and-methodology",
         privacySettings: "Privacy settings",

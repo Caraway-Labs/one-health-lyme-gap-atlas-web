@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { BrandMark } from "@/components/brand-mark";
 import {
   RESET_AI_RESPONSIBLE_USE_PATH,
   RESET_SETTINGS_PATH,
@@ -17,7 +18,7 @@ import { TrustFooterFrame } from "@/features/ux-reset/trust-footer-frame";
  */
 export function ProfessionalTrustFooter() {
   return (
-    <TrustFooterFrame>
+    <TrustFooterFrame brandMark={<BrandMark size={24} />}>
       <Link href="/privacy">Privacy</Link>
       <Link href={RESET_AI_RESPONSIBLE_USE_PATH}>AI / Responsible Use</Link>
       <Link href={RESET_SETTINGS_PATH}>Privacy settings</Link>
