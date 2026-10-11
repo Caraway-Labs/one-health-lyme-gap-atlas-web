@@ -7,6 +7,7 @@ import {
   useId,
   useMemo,
   useState,
+  type FocusEvent,
   type KeyboardEvent,
 } from "react";
 
@@ -58,17 +59,39 @@ type ReviewNationalOrientationProps = {
   releaseStates: readonly AtlasStateOption[];
 };
 
-function cycleSupportedCode(
+type MapFocusMove = "first" | "last" | "next" | "previous";
+
+function moveSupportedCode(
   codes: readonly string[],
   current: string | null,
-  delta: number
+  move: MapFocusMove
 ): string | null {
   if (codes.length === 0) {
     return null;
   }
-  const index = current === null ? -1 : codes.indexOf(current);
-  const nextIndex = (index + delta + codes.length) % codes.length;
-  return codes[nextIndex] ?? null;
+  switch (move) {
+    case "first": {
+      return codes[0] ?? null;
+    }
+    case "last": {
+      return codes.at(-1) ?? null;
+    }
+    case "next":
+    case "previous": {
+      const index = current === null ? -1 : codes.indexOf(current);
+      if (index === -1) {
+        return move === "previous"
+          ? (codes.at(-1) ?? null)
+          : (codes[0] ?? null);
+      }
+      const delta = move === "next" ? 1 : -1;
+      return codes[(index + delta + codes.length) % codes.length] ?? null;
+    }
+    default: {
+      const exhaustive: never = move;
+      return exhaustive;
+    }
+  }
 }
 
 function enabledButtons(list: HTMLUListElement): HTMLButtonElement[] {
@@ -258,13 +281,25 @@ export function ReviewNationalOrientationView({
     (phase === "map-loading" || phase === "ready");
   const retryable = reviewNavigationMapRetryable(phase);
 
+  const keyboardCodes = entries.flatMap((entry) =>
+    entry.availability === reviewStateAvailabilityValues.supported &&
+    mapCodes.includes(entry.code)
+      ? [entry.code]
+      : []
+  );
+
+  const focusListButton = (end: "first" | "last") => {
+    const list = document.getElementById(listId);
+    const buttons =
+      list instanceof HTMLUListElement ? enabledButtons(list) : [];
+    const button = end === "first" ? buttons[0] : buttons.at(-1);
+    button?.focus();
+  };
+
   const onSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "ArrowDown") {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
-      const list = document.querySelector(`#${listId}`);
-      const button =
-        list instanceof HTMLUListElement ? enabledButtons(list)[0] : undefined;
-      button?.focus();
+      focusListButton(event.key === "ArrowDown" ? "first" : "last");
       return;
     }
     if (event.key !== "Enter") {
@@ -283,46 +318,98 @@ export function ReviewNationalOrientationView({
   };
 
   const onOptionKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-      return;
-    }
     const list = event.currentTarget.closest("ul");
     if (!(list instanceof HTMLUListElement)) {
       return;
     }
     const buttons = enabledButtons(list);
-    const index = buttons.indexOf(event.currentTarget);
-    if (index === -1) {
+    if (buttons.length === 0) {
       return;
     }
-    event.preventDefault();
-    const delta = event.key === "ArrowDown" ? 1 : -1;
-    const next = buttons[(index + delta + buttons.length) % buttons.length];
-    next?.focus();
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowUp": {
+        const index = buttons.indexOf(event.currentTarget);
+        if (index === -1) {
+          return;
+        }
+        event.preventDefault();
+        const delta = event.key === "ArrowDown" ? 1 : -1;
+        buttons[(index + delta + buttons.length) % buttons.length]?.focus();
+        return;
+      }
+      case "Home": {
+        event.preventDefault();
+        buttons[0]?.focus();
+        return;
+      }
+      case "End": {
+        event.preventDefault();
+        buttons.at(-1)?.focus();
+        return;
+      }
+      case "Escape": {
+        event.preventDefault();
+        event.currentTarget.blur();
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  };
+
+  const onMapBlur = (event: FocusEvent<HTMLDivElement>) => {
+    const next = event.relatedTarget;
+    if (next instanceof Node && event.currentTarget.contains(next)) {
+      return;
+    }
+    onFocusCode(null);
   };
 
   const onMapKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (phase !== "ready") {
       return;
     }
-    if (
-      event.key === "ArrowDown" ||
-      event.key === "ArrowRight" ||
-      event.key === "ArrowUp" ||
-      event.key === "ArrowLeft"
-    ) {
-      event.preventDefault();
-      const delta =
-        event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
-      onFocusCode(cycleSupportedCode(mapCodes, focusCode, delta));
-      return;
-    }
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
-    event.preventDefault();
-    if (focusCode) {
-      onActivate(focusCode);
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowRight": {
+        event.preventDefault();
+        onFocusCode(moveSupportedCode(keyboardCodes, focusCode, "next"));
+        return;
+      }
+      case "ArrowUp":
+      case "ArrowLeft": {
+        event.preventDefault();
+        onFocusCode(moveSupportedCode(keyboardCodes, focusCode, "previous"));
+        return;
+      }
+      case "Home": {
+        event.preventDefault();
+        onFocusCode(moveSupportedCode(keyboardCodes, focusCode, "first"));
+        return;
+      }
+      case "End": {
+        event.preventDefault();
+        onFocusCode(moveSupportedCode(keyboardCodes, focusCode, "last"));
+        return;
+      }
+      case "Escape": {
+        event.preventDefault();
+        onFocusCode(null);
+        return;
+      }
+      case "Enter":
+      case " ": {
+        event.preventDefault();
+        if (focusCode) {
+          onActivate(focusCode);
+        }
+        break;
+      }
+      default: {
+        break;
+      }
     }
   };
 
@@ -347,6 +434,7 @@ export function ReviewNationalOrientationView({
           role="region"
           // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
           tabIndex={phase === "ready" ? 0 : undefined}
+          onBlur={onMapBlur}
           onKeyDown={onMapKeyDown}
         >
           {showMap ? (

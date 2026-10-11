@@ -569,6 +569,174 @@ describe("Review state navigation view", () => {
     });
   });
 
+  it("starts reverse map navigation at the last state and clears focus on leave", () => {
+    const onActivate = vi.fn<(code: string) => void>();
+    render(
+      <OrientationHarness
+        initialFocus={null}
+        initialHover={null}
+        mapCodes={["CO", "NY"]}
+        phase="ready"
+        onActivate={onActivate}
+      />
+    );
+    const map = screen.getByTestId("review-state-navigation-map");
+    const search = screen.getByTestId("review-state-search");
+    const focused = () =>
+      screen.getByTestId("review-state-navigation-status").textContent;
+    const announced = () =>
+      screen.getByTestId("review-state-navigation-live").textContent;
+    map.focus();
+    fireEvent.keyDown(map, { key: "ArrowLeft" });
+    const reverseStart = focused();
+    fireEvent.keyDown(map, { key: "ArrowUp" });
+    const wrappedToFirst = focused();
+    fireEvent.keyDown(map, { key: "End" });
+    const end = focused();
+    fireEvent.keyDown(map, { key: "Home" });
+    const home = focused();
+    fireEvent.keyDown(map, { key: "Escape" });
+    const escaped = announced();
+    fireEvent.keyDown(map, { key: "Enter" });
+    fireEvent.keyDown(map, { key: "ArrowRight" });
+    fireEvent.blur(map, { relatedTarget: map });
+    const stayedInside = focused();
+    search.focus();
+    fireEvent.blur(map, { relatedTarget: search });
+    const includesFocus = (text: string | null, phrase: string) =>
+      text?.includes(phrase) ?? false;
+    const colorado = screen.getByRole("button", { name: "CO, Colorado" });
+    expect({
+      activated: onActivate.mock.calls,
+      end: includesFocus(end, "Focused state: New York (NY)."),
+      escaped,
+      home: includesFocus(home, "Focused state: Colorado (CO)."),
+      listCleared: colorado.dataset.focused,
+      liveAfterLeave: announced(),
+      reverseStart: includesFocus(
+        reverseStart,
+        "Focused state: New York (NY)."
+      ),
+      statusAfterLeave: includesFocus(focused(), "Focused state: none."),
+      stayedInside: includesFocus(
+        stayedInside,
+        "Focused state: Colorado (CO)."
+      ),
+      wrappedToFirst: includesFocus(
+        wrappedToFirst,
+        "Focused state: Colorado (CO)."
+      ),
+    }).toStrictEqual({
+      activated: [],
+      end: true,
+      escaped: "Map status: The map is ready. Focused state: none.",
+      home: true,
+      listCleared: "false",
+      liveAfterLeave: "Map status: The map is ready. Focused state: none.",
+      reverseStart: true,
+      statusAfterLeave: true,
+      stayedInside: true,
+      wrappedToFirst: true,
+    });
+    map.focus();
+    fireEvent.keyDown(map, { key: "ArrowLeft" });
+    expect(
+      includesFocus(focused(), "Focused state: New York (NY).")
+    ).toBeTruthy();
+  });
+
+  it("treats a missing map focus like nothing is focused", () => {
+    render(
+      <OrientationHarness
+        initialFocus="ZZ"
+        initialHover={null}
+        mapCodes={["CO", "NY"]}
+        phase="ready"
+        onActivate={vi.fn<(code: string) => void>()}
+      />
+    );
+    const map = screen.getByTestId("review-state-navigation-map");
+    const focused = () =>
+      screen.getByTestId("review-state-navigation-status").textContent ?? "";
+    fireEvent.keyDown(map, { key: "ArrowLeft" });
+    const previous = focused();
+    fireEvent.keyDown(map, { key: "ArrowRight" });
+    const wrappedToFirst = focused();
+    fireEvent.keyDown(map, { key: "ArrowLeft" });
+    const wrappedToLast = focused();
+    fireEvent.keyDown(map, { key: "Home" });
+    const home = focused();
+    fireEvent.keyDown(map, { key: "End" });
+    const end = focused();
+    fireEvent.keyDown(map, { key: "Escape" });
+    fireEvent.keyDown(map, { key: "ArrowDown" });
+    const next = focused();
+    expect({
+      end: end.includes("Focused state: New York (NY)."),
+      home: home.includes("Focused state: Colorado (CO)."),
+      next: next.includes("Focused state: Colorado (CO)."),
+      previous: previous.includes("Focused state: New York (NY)."),
+      wrappedToFirst: wrappedToFirst.includes("Focused state: Colorado (CO)."),
+      wrappedToLast: wrappedToLast.includes("Focused state: New York (NY)."),
+    }).toStrictEqual({
+      end: true,
+      home: true,
+      next: true,
+      previous: true,
+      wrappedToFirst: true,
+      wrappedToLast: true,
+    });
+  });
+
+  it("moves list and search focus to the ends and skips hidden map states", () => {
+    render(
+      <OrientationHarness
+        initialFocus={null}
+        initialHover={null}
+        mapCodes={["CO", "NY"]}
+        phase="ready"
+        onActivate={vi.fn<(code: string) => void>()}
+      />
+    );
+    const search = screen.getByTestId("review-state-search");
+    const map = screen.getByTestId("review-state-navigation-map");
+    const colorado = screen.getByRole("button", { name: "CO, Colorado" });
+    fireEvent.keyDown(search, { key: "ArrowUp" });
+    const searchUp = document.activeElement?.textContent;
+    fireEvent.keyDown(colorado, { key: "End" });
+    const listEnd = document.activeElement?.textContent;
+    fireEvent.keyDown(screen.getByRole("button", { name: "NY, New York" }), {
+      key: "Home",
+    });
+    const listHome = document.activeElement?.textContent;
+    fireEvent.keyDown(colorado, { key: "Escape" });
+    const releasedAnnouncement = screen.getByTestId(
+      "review-state-navigation-live"
+    ).textContent;
+    fireEvent.change(search, { target: { value: "New York" } });
+    fireEvent.keyDown(map, { key: "ArrowRight" });
+    const filtered = screen.getByTestId(
+      "review-state-navigation-status"
+    ).textContent;
+    expect({
+      listEnd,
+      listHome,
+      mapWhileFiltered:
+        filtered?.includes("Focused state: New York (NY).") ?? false,
+      released: document.activeElement,
+      releasedAnnouncement,
+      searchUp,
+    }).toStrictEqual({
+      listEnd: "NY, New York",
+      listHome: "CO, Colorado",
+      mapWhileFiltered: true,
+      released: document.body,
+      releasedAnnouncement:
+        "Map status: The map is ready. Focused state: none.",
+      searchUp: "NY, New York",
+    });
+  });
+
   it("moves map focus with arrow keys and activates it with Enter", () => {
     const onActivate = vi.fn<(code: string) => void>();
     render(

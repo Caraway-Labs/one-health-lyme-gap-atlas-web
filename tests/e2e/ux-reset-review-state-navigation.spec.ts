@@ -420,6 +420,41 @@ test.describe("Review national geographic navigation", () => {
     await expect(page).toHaveURL(/scope=ALL/);
   });
 
+  test("starts at the last state when reversing and clears focus after leaving the map", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/app/review?scope=ALL");
+    const live = page.getByTestId("review-state-navigation-live");
+    const status = page.getByTestId("review-state-navigation-status");
+    await expect(live).toContainText("The map is ready.");
+    const map = page.getByTestId("review-state-navigation-map");
+    await map.focus();
+    await map.press("ArrowLeft");
+    await expect(live).toContainText(
+      "Focused state: New York (NY), available."
+    );
+    await expect(status).toContainText("Focused state: New York (NY).");
+    await map.press("Home");
+    await expect(status).toContainText("Focused state: Colorado (CO).");
+    await map.press("End");
+    await expect(status).toContainText("Focused state: New York (NY).");
+    await map.press("Escape");
+    await expect(live).toContainText("Focused state: none.");
+    await map.press("ArrowRight");
+    await expect(status).toContainText("Focused state: Colorado (CO).");
+    await page.getByTestId("review-state-search").focus();
+    await expect(status).toContainText("Focused state: none.");
+    await expect(live).toContainText("Focused state: none.");
+    await map.focus();
+    await map.press("ArrowUp");
+    await expect(live).toContainText(
+      "Focused state: New York (NY), available."
+    );
+    await expect(page).toHaveURL(/scope=ALL/);
+  });
+
   test("fits the national map at tablet width", async ({ page }, testInfo) => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1024, width: 768 });
