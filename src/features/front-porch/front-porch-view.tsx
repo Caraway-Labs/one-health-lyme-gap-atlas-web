@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { PrivacyPreferences } from "@/components/privacy-preferences";
 import { buttonVariants } from "@/components/ui/button";
 import {
   FRONT_PORCH_BEATS,
@@ -9,7 +8,6 @@ import {
   FRONT_PORCH_EXPLORE_LABEL,
   FRONT_PORCH_EXPLORE_SUPPORT,
   FRONT_PORCH_FOLLOW_STORY_LABEL,
-  FRONT_PORCH_FOOTER_LINKS,
   FRONT_PORCH_GLASS_CALLOUT,
   FRONT_PORCH_HERO_HEADLINE,
   FRONT_PORCH_HERO_IMAGE,
@@ -18,6 +16,7 @@ import {
   FRONT_PORCH_STORY_ID,
   frontPorchExploreHref,
 } from "@/features/front-porch/front-porch-copy";
+import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
 import { cn } from "@/lib/utils";
 
 const SOURCES_BEAT_ID = "sources-limits";
@@ -154,17 +153,7 @@ export function FrontPorchView({
           ))}
         </div>
       </main>
-      <footer className="front-porch-footer">
-        <p>One Health Atlas</p>
-        <nav aria-label="Footer">
-          {FRONT_PORCH_FOOTER_LINKS.map((item) => (
-            <Link href={item.href} key={item.href}>
-              {item.label}
-            </Link>
-          ))}
-          <PrivacyPreferences />
-        </nav>
-      </footer>
+      <FrontPorchTrustFooter />
     </div>
   );
 }

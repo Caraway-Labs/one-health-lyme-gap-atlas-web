@@ -28,11 +28,17 @@ export const FRONT_PORCH_METHODOLOGY_HREF = "/docs/releases-and-methodology";
 
 export const FRONT_PORCH_EVIDENCE_HREF = "/docs/evidence-and-uncertainty";
 
+/**
+ * Anonymous-safe trust links for `/` (issue 534).
+ * Production returns 200 for `/privacy` and `/ai-ethics`.
+ * `/app/ai-responsible-use` and `/app/settings` return 307 to sign-in, and
+ * Settings has no analytics consent control until issues 427 and 527. Privacy settings
+ * stays the shared PrivacyPreferences dialog. Methodology and evidence stay
+ * in the story, not this footer.
+ */
 export const FRONT_PORCH_FOOTER_LINKS = [
   { href: "/privacy", label: "Privacy" },
-  { href: "/ai-ethics", label: "AI Ethics" },
-  { href: FRONT_PORCH_METHODOLOGY_HREF, label: "Methodology" },
-  { href: FRONT_PORCH_EVIDENCE_HREF, label: "Evidence and uncertainty" },
+  { href: "/ai-ethics", label: "AI / Responsible Use" },
 ] as const;
 
 export type FrontPorchBeat = {
