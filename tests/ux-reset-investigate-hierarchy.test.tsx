@@ -34,6 +34,25 @@ import {
 
 const yearMeasures = investigateMeasuresFixture as Measure[];
 
+function coverageEntry(
+  status: EnvironmentalContext["coverage_status"],
+  fraction: string,
+  observationId = "obs-precip",
+  periodStart = "2023-01-01",
+  periodEnd = "2023-12-31"
+) {
+  return {
+    context: coverageContext(status, fraction),
+    measureId: "precip",
+    measureLabel: "Precipitation",
+    observationId,
+    periodEnd,
+    periodStart,
+    releaseId: INVESTIGATE_RELEASE_ID,
+    temporalGrain: "YEAR" as string | null,
+  };
+}
+
 function coverageContext(
   status: EnvironmentalContext["coverage_status"],
   fraction: string
@@ -196,7 +215,7 @@ describe("County Investigate evidence hierarchy", () => {
       coverageAfterVector: follows(vector, coverage),
       coverageScore: coverage.textContent?.includes("84.6") ?? false,
       coverageText:
-        coverage.textContent?.includes("Published input coverage is 50") ??
+        coverage.textContent?.includes("Published input coverage is 50%.") ??
         false,
       environmentalClass: environmental.dataset.evidenceClass,
       gapsAfterContext: follows(environmental, gaps),
@@ -403,14 +422,10 @@ describe("County Investigate evidence hierarchy", () => {
   it("shows partial environmental coverage as limited, not a score", () => {
     const [row] = environmentalCoverageRows({
       contexts: [
-        {
-          context: coverageContext(
-            EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
-            "0.50"
-          ),
-          measureId: "precip",
-          measureLabel: "Precipitation",
-        },
+        coverageEntry(
+          EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+          "0.50"
+        ),
       ],
     });
     expect({
@@ -422,7 +437,7 @@ describe("County Investigate evidence hierarchy", () => {
       availability: "limited",
       display: "Partial coverage",
       fraction:
-        "Precipitation coverage is Partial coverage. Source coverage fraction 0.50.",
+        "Precipitation coverage is Partial coverage. Period 2023. Source coverage fraction 0.50.",
       limitations: ["Partial coverage."],
     });
   });
@@ -430,14 +445,7 @@ describe("County Investigate evidence hierarchy", () => {
   it("keeps complete coverage available when the fraction is 1.0", () => {
     const [row] = environmentalCoverageRows({
       contexts: [
-        {
-          context: coverageContext(
-            EnvironmentalContextCoverageStatus.COMPLETE,
-            "1.0"
-          ),
-          measureId: "precip",
-          measureLabel: "Precipitation",
-        },
+        coverageEntry(EnvironmentalContextCoverageStatus.COMPLETE, "1.0"),
       ],
     });
     expect({
@@ -450,9 +458,78 @@ describe("County Investigate evidence hierarchy", () => {
       availability: "available",
       display: "Complete",
       fraction:
-        "Precipitation coverage is Complete. Source coverage fraction 1.0.",
+        "Precipitation coverage is Complete. Period 2023. Source coverage fraction 1.0.",
       limitations: [],
       reason: "OBSERVED",
+    });
+  });
+
+  it("keeps each coverage observation's period and identity", () => {
+    const rows = environmentalCoverageRows({
+      contexts: [
+        coverageEntry(
+          EnvironmentalContextCoverageStatus.COMPLETE,
+          "1.0",
+          "obs-jan",
+          "2023-01-01",
+          "2023-01-31"
+        ),
+        coverageEntry(
+          EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+          "0.50",
+          "obs-feb",
+          "2023-02-01",
+          "2023-02-28"
+        ),
+      ],
+    });
+    expect({
+      identities: rows.map((row) => row.observationId),
+      periods: rows.map((row) => row.evidence.provenance.observationPeriod),
+      releases: rows.map(
+        (row) => row.evidence.provenance.technical?.releaseId ?? null
+      ),
+      statuses: rows.map((row) => row.coverageStatus),
+    }).toStrictEqual({
+      identities: ["obs-jan", "obs-feb"],
+      periods: [
+        "January 1, 2023 – January 31, 2023 (YEAR)",
+        "February 1, 2023 – February 28, 2023 (YEAR)",
+      ],
+      releases: [INVESTIGATE_RELEASE_ID, INVESTIGATE_RELEASE_ID],
+      statuses: [
+        EnvironmentalContextCoverageStatus.COMPLETE,
+        EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+      ],
+    });
+  });
+
+  it("carries the validated release into published row provenance", () => {
+    const hierarchy = publishedCountyHierarchy({
+      measures: [],
+      observedMeasureIds: [],
+      record: {
+        ...publishedRecord,
+        population: 100,
+        sources: publishedRecord.sources.filter(
+          (source) => source.key === "tick"
+        ),
+      },
+    });
+    const pacificus = hierarchy.rows.find(
+      (row) => row.measureId === "pacificus_status"
+    );
+    const population = hierarchy.rows.find(
+      (row) => row.measureId === "population_2022"
+    );
+    expect({
+      pacificusRelease:
+        pacificus?.evidence.provenance.technical?.releaseId ?? null,
+      populationRelease:
+        population?.evidence.provenance.technical?.releaseId ?? null,
+    }).toStrictEqual({
+      pacificusRelease: INVESTIGATE_RELEASE_ID,
+      populationRelease: INVESTIGATE_RELEASE_ID,
     });
   });
 });

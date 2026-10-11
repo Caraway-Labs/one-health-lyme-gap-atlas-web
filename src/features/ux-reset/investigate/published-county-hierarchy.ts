@@ -1,4 +1,5 @@
 import { evidenceTypeFromGovernedMetadata } from "@/features/ux-reset/evidence/evidence-type";
+import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import {
   availabilityFromGovernedValueState,
@@ -50,10 +51,22 @@ export type PublishedHierarchyRow = {
   measureId: string;
 };
 
+export type EnvironmentalCoverageContext = {
+  context: EnvironmentalContext;
+  measureId: string;
+  measureLabel: string;
+  observationId: string;
+  periodEnd: string;
+  periodStart: string;
+  releaseId: string;
+  temporalGrain: string | null;
+};
+
 export type EnvironmentalCoverageRow = {
   coverageStatus: EnvironmentalContext["coverage_status"];
   evidence: EvidenceObjectModel;
   measureId: string;
+  observationId: string;
 };
 
 export type PublishedCountyHierarchy = {
@@ -133,6 +146,7 @@ function statusValueState(status: string): ValueState {
 function evidenceFromPublishedField(input: {
   claimLabel: string;
   measure: Measure | undefined;
+  releaseId: string;
   source: SourceMetadata | null;
   unit: string | null;
   value: number | string | null;
@@ -192,9 +206,10 @@ function evidenceFromPublishedField(input: {
       observationPeriod: "Unavailable",
       sourceFamily,
       sourceUrl: input.source?.url.trim() || null,
-      technical: input.source
-        ? { releaseId: null, sourceId: input.source.key }
-        : null,
+      technical: {
+        releaseId: input.releaseId,
+        sourceId: input.source?.key ?? null,
+      },
     },
     reasonCode,
     valueNote: publishedStatus,
@@ -349,6 +364,7 @@ export function publishedCountyHierarchy(input: {
         evidence: evidenceFromPublishedField({
           claimLabel: measure?.label ?? field.claimLabel,
           measure,
+          releaseId: input.record.releaseId,
           source: sourceForKey(input.record.sources, field.sourceKey),
           unit: measure?.unit ?? null,
           value: field.value,
@@ -370,6 +386,7 @@ export function publishedCountyHierarchy(input: {
       evidence: evidenceFromPublishedField({
         claimLabel: measure?.label ?? field.claimLabel,
         measure,
+        releaseId: input.record.releaseId,
         source: sourceForKey(input.record.sources, field.sourceKey),
         unit: measure?.unit ?? null,
         value: field.value,
@@ -444,13 +461,9 @@ function coverageFractionNote(context: EnvironmentalContext): string | null {
   return `Source coverage fraction ${rendered}.`;
 }
 
-/** Governed environmental coverage. Partial coverage is limited, not a score. */
+/** Governed environmental coverage. One row per observation. Partial coverage is limited, not a score. */
 export function environmentalCoverageRows(input: {
-  contexts: readonly {
-    context: EnvironmentalContext;
-    measureId: string;
-    measureLabel: string;
-  }[];
+  contexts: readonly EnvironmentalCoverageContext[];
 }): EnvironmentalCoverageRow[] {
   return input.contexts.map((entry) => {
     const presentation = coveragePresentation(entry.context.coverage_status);
@@ -467,6 +480,11 @@ export function environmentalCoverageRows(input: {
       valueState,
     });
     const label = COVERAGE_STATUS_LABELS[entry.context.coverage_status];
+    const observationPeriod = formatObservationPeriod(
+      entry.periodStart,
+      entry.periodEnd,
+      entry.temporalGrain
+    );
     return {
       coverageStatus: entry.context.coverage_status,
       evidence: {
@@ -478,19 +496,27 @@ export function environmentalCoverageRows(input: {
           evidenceType: "Unavailable",
           inspectSummary: [
             `${entry.measureLabel} coverage is ${label}.`,
+            observationPeriod === "Unavailable"
+              ? null
+              : `Period ${observationPeriod}.`,
             fractionNote,
           ]
             .filter((part) => part !== null)
             .join(" "),
           limitations,
           materialCaveat: materialCaveatShort(limitations),
-          observationPeriod: "Unavailable",
+          observationPeriod,
           sourceFamily: "Environmental context",
+          technical: {
+            observationId: entry.observationId,
+            releaseId: entry.releaseId,
+          },
         },
         reasonCode,
         valueNote: null,
       },
       measureId: entry.measureId,
+      observationId: entry.observationId,
     };
   });
 }

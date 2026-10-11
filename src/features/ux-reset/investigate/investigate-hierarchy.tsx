@@ -23,6 +23,7 @@ import {
 import {
   environmentalCoverageRows,
   publishedCountyHierarchy,
+  type EnvironmentalCoverageContext,
   type PublishedCountyRecord,
   type PublishedHierarchyRow,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
@@ -224,20 +225,10 @@ function limitationLines(bundle: CountyEvidenceBundle): string[] {
   return lines;
 }
 
-function coverageContexts(bundle: CountyEvidenceBundle): {
-  context: NonNullable<
-    CountyEvidenceObservation["observation"]["environmental_context"]
-  >;
-  measureId: string;
-  measureLabel: string;
-}[] {
-  const contexts: {
-    context: NonNullable<
-      CountyEvidenceObservation["observation"]["environmental_context"]
-    >;
-    measureId: string;
-    measureLabel: string;
-  }[] = [];
+function coverageContexts(
+  bundle: CountyEvidenceBundle
+): EnvironmentalCoverageContext[] {
+  const contexts: EnvironmentalCoverageContext[] = [];
   const records = [
     ...bundle.families.flatMap((family) => [...family.observations]),
     ...bundle.unassigned,
@@ -251,6 +242,11 @@ function coverageContexts(bundle: CountyEvidenceBundle): {
       context,
       measureId: record.measureId,
       measureLabel: record.measureLabel,
+      observationId: record.observation.observation_id,
+      periodEnd: record.observation.period_end,
+      periodStart: record.observation.period_start,
+      releaseId: record.observation.release_id,
+      temporalGrain: record.observation.temporal_grain,
     });
   }
   return contexts;
@@ -407,7 +403,7 @@ export function InvestigateEvidenceHierarchy({
                   className="type-body"
                   data-testid="investigate-coverage-value"
                 >
-                  {`Published input coverage is ${published.completeness}. This is not a disease risk score. A lower number is not zero evidence.`}
+                  {`Published input coverage is ${published.completeness}%. This is not a disease risk score. A lower number is not zero evidence.`}
                 </p>
               ) : null}
               {!published && !countyRecordLoading && !countyRecordError ? (
@@ -422,7 +418,11 @@ export function InvestigateEvidenceHierarchy({
               {coverage.length > 0 ? (
                 <div className="ux-reset-investigate-observations">
                   {coverage.map((row) => (
-                    <div data-coverage={row.coverageStatus} key={row.measureId}>
+                    <div
+                      data-coverage={row.coverageStatus}
+                      data-observation-id={row.observationId}
+                      key={row.observationId}
+                    >
                       <EvidenceObject
                         claimHeadingLevel="h4"
                         model={row.evidence}
