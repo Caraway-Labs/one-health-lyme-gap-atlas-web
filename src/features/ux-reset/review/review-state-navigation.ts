@@ -4,6 +4,7 @@ import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geogra
 
 import {
   lower48ReviewPostalCodes,
+  lower48ReviewStateName,
   postalCodeForStateFips,
   stateFipsPrefix,
   type ReviewStatePostal,
@@ -12,7 +13,8 @@ import {
 /**
  * National Review navigation is geographic selection, not a scored map.
  * Entries are the lower 48 and DC from the Review scope contract.
- * A state named by the release is supported. Every other contract state is unavailable.
+ * A state named by the release is supported. Every other contract state is unavailable
+ * and keeps its geographic name so the list can be searched.
  */
 export const reviewStateNavigationCopy = {
   description:
@@ -74,17 +76,12 @@ export function reviewStateNavigationEntries(
   const entries: ReviewStateNavigationEntry[] = lower48ReviewPostalCodes().map(
     (code) => {
       const release = byCode.get(code);
-      if (release) {
-        return {
-          availability: reviewStateAvailabilityValues.supported,
-          code,
-          name: release.name,
-        };
-      }
       return {
-        availability: reviewStateAvailabilityValues.unavailable,
+        availability: release
+          ? reviewStateAvailabilityValues.supported
+          : reviewStateAvailabilityValues.unavailable,
         code,
-        name: null,
+        name: release?.name ?? lower48ReviewStateName(code),
       };
     }
   );
@@ -274,6 +271,17 @@ export function reviewNavigationStateText(
   }
 }
 
+export function reviewNavigationFilterStatus(input: {
+  totalCount: number;
+  visibleCount: number;
+}): string {
+  const summary = `Showing ${input.visibleCount} of ${input.totalCount} states.`;
+  if (input.visibleCount === 0) {
+    return `${summary} ${reviewStateNavigationCopy.noFilterMatches}`;
+  }
+  return summary;
+}
+
 export function reviewNavigationStatusText(input: {
   contractSummary: string | null;
   focus: ReviewStateNavigationEntry | null;
@@ -288,11 +296,11 @@ export function reviewNavigationStatusText(input: {
     `Highlighted state: ${reviewNavigationStateText(input.hover)}.`,
     `Focused state: ${reviewNavigationStateText(input.focus)}.`,
     `Selected state: ${reviewNavigationStateText(input.selected)}.`,
-    `Showing ${input.visibleCount} of ${input.totalCount} states.`,
+    reviewNavigationFilterStatus({
+      totalCount: input.totalCount,
+      visibleCount: input.visibleCount,
+    }),
   ];
-  if (input.visibleCount === 0) {
-    parts.push(reviewStateNavigationCopy.noFilterMatches);
-  }
   if (input.contractSummary) {
     parts.push(input.contractSummary);
   }

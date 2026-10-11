@@ -23,6 +23,7 @@ import {
 import {
   filterReviewStateNavigationEntries,
   reviewNavigationEntryByCode,
+  reviewNavigationFilterStatus,
   reviewNavigationFocusAnnouncement,
   reviewNavigationMapPhase,
   reviewNavigationMapRetryable,
@@ -491,6 +492,16 @@ export function ReviewNationalOrientationView({
             onKeyDown={onSearchKeyDown}
           />
         </label>
+        <p
+          className="sr-only"
+          data-testid="review-state-navigation-results"
+          role="status"
+        >
+          {reviewNavigationFilterStatus({
+            totalCount,
+            visibleCount: entries.length,
+          })}
+        </p>
         <ul
           aria-label={reviewStateNavigationCopy.listLabel}
           className="ux-reset-review-state-list"

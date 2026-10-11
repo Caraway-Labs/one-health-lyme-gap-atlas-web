@@ -363,9 +363,63 @@ describe("Review state navigation model", () => {
       },
       properties: [
         { availability: "supported", code: "CO", name: "Colorado" },
-        { availability: "unavailable", code: "DC", name: "" },
-        { availability: "unavailable", code: "WY", name: "" },
+        {
+          availability: "unavailable",
+          code: "DC",
+          name: "District of Columbia",
+        },
+        { availability: "unavailable", code: "WY", name: "Wyoming" },
       ],
+    });
+  });
+
+  it("keeps geographic names for omitted states and leaves Alaska and Hawaii out", () => {
+    const entries = reviewStateNavigationEntries([
+      { code: "AK", name: "Alaska" },
+      { code: "CO", name: "Colorado" },
+      { code: "HI", name: "Hawaii" },
+    ]);
+    const wyoming = entries.find((item) => item.code === "WY");
+    const colorado = entries.find((item) => item.code === "CO");
+    const named = entries.every(
+      (item) => item.name !== null && item.name.length > 0
+    );
+    expect({
+      alaska: filterReviewStateNavigationEntries(entries, "Alaska").map(
+        (item) => item.code
+      ),
+      colorado,
+      district: filterReviewStateNavigationEntries(
+        entries,
+        "District of Columbia"
+      ).map((item) => item.code),
+      hawaii: filterReviewStateNavigationEntries(entries, "Hawaii").map(
+        (item) => item.code
+      ),
+      length: entries.length,
+      named,
+      rhodeIsland: filterReviewStateNavigationEntries(
+        entries,
+        "Rhode Island"
+      ).map((item) => item.code),
+      wyoming,
+    }).toStrictEqual({
+      alaska: [],
+      colorado: {
+        availability: "supported",
+        code: "CO",
+        name: "Colorado",
+      },
+      district: ["DC"],
+      hawaii: [],
+      length: 49,
+      named: true,
+      rhodeIsland: ["RI"],
+      wyoming: {
+        availability: "unavailable",
+        code: "WY",
+        name: "Wyoming",
+      },
     });
   });
 
@@ -373,7 +427,9 @@ describe("Review state navigation model", () => {
     ["colo", ["CO"]],
     ["new york", ["NY"]],
     ["wy", ["WY"]],
+    ["wyoming", ["WY"]],
     ["dc", ["DC"]],
+    ["district of columbia", ["DC"]],
     ["zzzz", []],
   ] as const)("filters %s to %j", (query, codes) => {
     expect(
@@ -619,6 +675,43 @@ describe("Review state navigation view", () => {
         selected: entry("CO", "supported", "Colorado"),
         visible: 1,
       }),
+    });
+  });
+
+  it("announces filtered state-list results from a status region", () => {
+    render(
+      <OrientationHarness
+        initialFocus={null}
+        initialHover={null}
+        phase="ready"
+        onActivate={vi.fn<(code: string) => void>()}
+      />
+    );
+    const results = screen.getByRole("status");
+    const live = screen.getByTestId("review-state-navigation-live");
+    const before = results.textContent;
+    fireEvent.change(screen.getByTestId("review-state-search"), {
+      target: { value: "New York" },
+    });
+    const filtered = results.textContent;
+    fireEvent.change(screen.getByTestId("review-state-search"), {
+      target: { value: "zzzz" },
+    });
+    expect({
+      before,
+      filtered,
+      live: live.textContent,
+      none: results.textContent,
+      role: results.getAttribute("role"),
+      sameNode:
+        results === screen.getByTestId("review-state-navigation-results"),
+    }).toStrictEqual({
+      before: "Showing 4 of 4 states.",
+      filtered: "Showing 1 of 4 states.",
+      live: "Map status: The map is ready. Focused state: none.",
+      none: "Showing 0 of 4 states. No states match this search.",
+      role: "status",
+      sameNode: true,
     });
   });
 
@@ -1031,6 +1124,45 @@ describe("Review state navigation requests", () => {
       wyomingDisabled: wyoming.hasAttribute("disabled"),
     }).toStrictEqual({
       activated: [["CO"]],
+      wyomingDisabled: true,
+    });
+  });
+
+  it("finds omitted states by full name", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewNationalOrientation
+          releaseId="alpha-2026"
+          releaseStates={[
+            { code: "CO", name: "Colorado" },
+            { code: "NY", name: "New York" },
+          ]}
+          onOpenState={vi.fn<(code: string) => void>()}
+        />
+      </QueryClientProvider>
+    );
+    const search = screen.getByTestId("review-state-search");
+    const results = screen.getByRole("status");
+    fireEvent.change(search, { target: { value: "Wyoming" } });
+    const wyoming = screen.getByRole("button", {
+      name: "WY, not in this release",
+    });
+    fireEvent.change(search, { target: { value: "Rhode Island" } });
+    expect({
+      coloradoHidden:
+        screen.queryByRole("button", { name: "CO, Colorado" }) === null,
+      results: results.textContent,
+      rhodeIslandDisabled: screen
+        .getByRole("button", { name: "RI, not in this release" })
+        .hasAttribute("disabled"),
+      wyomingDisabled: wyoming.hasAttribute("disabled"),
+    }).toStrictEqual({
+      coloradoHidden: true,
+      results: "Showing 1 of 49 states.",
+      rhodeIslandDisabled: true,
       wyomingDisabled: true,
     });
   });
