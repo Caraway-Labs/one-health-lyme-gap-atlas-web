@@ -669,11 +669,21 @@ export async function loadInvestigateCountyRecord(input: {
   releaseId: string;
   signal: AbortSignal;
 }): Promise<CountyDetail | null> {
-  const response = await countyV1CountiesFipsGet(
-    input.fips,
-    { dataset_version: input.releaseId },
-    { signal: input.signal }
-  );
+  let response: Awaited<ReturnType<typeof countyV1CountiesFipsGet>>;
+  try {
+    response = await countyV1CountiesFipsGet(
+      input.fips,
+      { dataset_version: input.releaseId },
+      { signal: input.signal }
+    );
+  } catch (error) {
+    // The generated client throws on every non-2xx response, so a missing
+    // county record never arrives as status 404.
+    if (error instanceof AtlasApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
   if (response.status === 404) {
     return null;
   }

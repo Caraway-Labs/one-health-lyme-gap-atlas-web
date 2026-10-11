@@ -18,6 +18,7 @@ import {
 import {
   EnvironmentalContextCoverageStatus,
   type CountyDetail,
+  type EnvironmentalContext,
   type Measure,
 } from "@/generated/models";
 
@@ -30,6 +31,27 @@ import {
 } from "./fixtures/investigate-api-fixtures";
 
 const yearMeasures = investigateMeasuresFixture as Measure[];
+
+function coverageContext(
+  status: EnvironmentalContext["coverage_status"],
+  fraction: string
+): EnvironmentalContext {
+  return {
+    coverage_status: status,
+    day_convention: "labeled-24h",
+    expected_area_m2: null,
+    geometry_version: "g1",
+    intersected_area_m2: null,
+    metadata_revision_id: "m1",
+    source_coverage_fraction: fraction,
+    source_supported_area_m2: null,
+    source_time_present: true,
+    upstream_date_modified: null,
+    valid_area_m2: null,
+    valid_fraction_of_supported_area: null,
+    weight_version: "w1",
+  };
+}
 
 function mixedBundle(scenario: "ambiguous" | "mixed" = "mixed") {
   const identity = resolveCountyIdentity(
@@ -258,22 +280,10 @@ describe("County Investigate evidence hierarchy", () => {
     const [row] = environmentalCoverageRows({
       contexts: [
         {
-          context: {
-            coverage_status:
-              EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
-            day_convention: "labeled-24h",
-            expected_area_m2: null,
-            geometry_version: "g1",
-            intersected_area_m2: null,
-            metadata_revision_id: "m1",
-            source_coverage_fraction: "0.50",
-            source_supported_area_m2: null,
-            source_time_present: true,
-            upstream_date_modified: null,
-            valid_area_m2: null,
-            valid_fraction_of_supported_area: null,
-            weight_version: "w1",
-          },
+          context: coverageContext(
+            EnvironmentalContextCoverageStatus.PARTIAL_COVERAGE,
+            "0.50"
+          ),
           measureId: "precip",
           measureLabel: "Precipitation",
         },
@@ -282,11 +292,43 @@ describe("County Investigate evidence hierarchy", () => {
     expect({
       availability: row?.evidence.availability,
       display: row?.evidence.displayValue,
-      fraction: row?.evidence.provenance.limitations[1],
+      fraction: row?.evidence.provenance.inspectSummary,
+      limitations: row?.evidence.provenance.limitations,
     }).toStrictEqual({
       availability: "limited",
       display: "Partial coverage",
-      fraction: "Source coverage fraction 0.50.",
+      fraction:
+        "Precipitation coverage is Partial coverage. Source coverage fraction 0.50.",
+      limitations: ["Partial coverage."],
+    });
+  });
+
+  it("keeps complete coverage available when the fraction is 1.0", () => {
+    const [row] = environmentalCoverageRows({
+      contexts: [
+        {
+          context: coverageContext(
+            EnvironmentalContextCoverageStatus.COMPLETE,
+            "1.0"
+          ),
+          measureId: "precip",
+          measureLabel: "Precipitation",
+        },
+      ],
+    });
+    expect({
+      availability: row?.evidence.availability,
+      display: row?.evidence.displayValue,
+      fraction: row?.evidence.provenance.inspectSummary,
+      limitations: row?.evidence.provenance.limitations,
+      reason: row?.evidence.reasonCode,
+    }).toStrictEqual({
+      availability: "available",
+      display: "Complete",
+      fraction:
+        "Precipitation coverage is Complete. Source coverage fraction 1.0.",
+      limitations: [],
+      reason: "OBSERVED",
     });
   });
 });

@@ -453,10 +453,7 @@ export function environmentalCoverageRows(input: {
     const presentation = coveragePresentation(entry.context.coverage_status);
     const valueState = presentation.valueState;
     const fractionNote = coverageFractionNote(entry.context);
-    const limitations = [
-      ...presentation.limitations,
-      ...(fractionNote ? [fractionNote] : []),
-    ];
+    const limitations = presentation.limitations;
     const hasMaterialLimitations = hasGovernedMaterialLimitations(limitations);
     const availability = availabilityFromGovernedValueState({
       hasMaterialLimitations,
