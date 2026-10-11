@@ -2375,6 +2375,105 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("shows negative review coverage counts as unavailable", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const candidate = reviewCandidate({
+      caveat: "Collection dates are unavailable.",
+      countyName: "Adams",
+      fips: "08001",
+      reasonText: "Adams was returned by the method.",
+    });
+    const read = (
+      coverage?: Partial<StateReview["coverage"]>
+    ): {
+      backend: string;
+      county: string | null;
+      resultState: string | undefined;
+      rules: string[];
+    } => {
+      const review = buildStateReview({
+        candidates: [candidate],
+        resultState: "candidates_found",
+        state: "CO",
+      });
+      if (coverage) {
+        review.coverage = {
+          ...review.coverage,
+          ...coverage,
+        };
+      }
+      const view = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      const rules = [
+        ...screen.getByTestId("review-rule-coverage").querySelectorAll("li"),
+      ].map((item) => item.textContent ?? "");
+      const snapshot = {
+        backend: (screen.getByTestId("review-backend-result").textContent ?? "")
+          .replaceAll(/\s+/g, " ")
+          .trim(),
+        county: screen.getByTestId("review-candidate").dataset.fips ?? null,
+        resultState:
+          screen.getByTestId("review-state-panel").dataset.resultState,
+        rules,
+      };
+      view.unmount();
+      return snapshot;
+    };
+    const keptRules = [
+      "human_emerging: disabled",
+      "human_vector_discordance: disabled",
+      "pathogen_present_vector_reported: disabled",
+      "vector_transition: disabled",
+    ];
+    const unavailableCoverage = {
+      backend: "Backend result: Candidates found. Coverage Unavailable.",
+      county: "08001",
+      resultState: "candidates_found",
+      rules: keptRules,
+    };
+    expect({
+      abstained: read({ abstained_counties: -1 }),
+      assessed: read({ assessed_counties: -2 }),
+      eligible: read({ eligible_counties: -3 }),
+      evaluated: read({ evaluated_counties: -4 }),
+      valid: read(),
+      zeros: read({
+        abstained_counties: 0,
+        assessed_counties: 0,
+        eligible_counties: 0,
+        evaluated_counties: 0,
+      }),
+    }).toStrictEqual({
+      abstained: unavailableCoverage,
+      assessed: unavailableCoverage,
+      eligible: unavailableCoverage,
+      evaluated: unavailableCoverage,
+      valid: {
+        backend:
+          "Backend result: Candidates found. 1 assessed, 1 eligible, 0 abstained, 1 evaluated.",
+        county: "08001",
+        resultState: "candidates_found",
+        rules: keptRules,
+      },
+      zeros: {
+        backend:
+          "Backend result: Candidates found. 0 assessed, 0 eligible, 0 abstained, 0 evaluated.",
+        county: "08001",
+        resultState: "candidates_found",
+        rules: keptRules,
+      },
+    });
+  });
+
   it("shows returned rule coverage without turning rules into counties", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
