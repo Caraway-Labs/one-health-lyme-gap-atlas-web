@@ -30,6 +30,10 @@ import {
   tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
 
+const reviewRouter = vi.hoisted(() => ({
+  push: vi.fn<(href: string) => void>(),
+}));
+
 let mockedSearch = "";
 
 const reviewReleaseControls: {
@@ -45,6 +49,7 @@ const reviewReleaseControls: {
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => "/app/review",
+  useRouter: () => reviewRouter,
   useSearchParams: () =>
     new URLSearchParams(mockedSearch) as ReadonlyURLSearchParams,
 }));
@@ -392,17 +397,63 @@ describe("Reset Review scope UI", () => {
   beforeEach(() => {
     mockedSearch = "";
     lastMapScoreFips = "";
+    reviewRouter.push.mockClear();
     stubDesktopMatchMedia();
   });
 
   afterEach(() => {
     cleanup();
     sessionStorage.clear();
-    history.replaceState(null, "");
+    history.replaceState(null, "", "/");
     reviewReleaseControls.metadataReleaseId = null;
     reviewReleaseControls.metadataStatus = 200;
     reviewReleaseControls.tier1Result = null;
     vi.unstubAllGlobals();
+  });
+
+  it("follows Investigate when a malformed Review URL is still canonicalizing", async () => {
+    const search = "?scope=state&county=bad&period=2024&dataset=alpha";
+    window.history.pushState(null, "", `/app/review${search}`);
+    const destination = uxResetDestinationHref(
+      "investigate",
+      "/app/review",
+      new URLSearchParams(search.slice(1))
+    );
+    renderReview(search);
+    const anchor = document.createElement("a");
+    anchor.textContent = "Investigate";
+    anchor.href = destination;
+    document.body.append(anchor);
+    const stopNavigation = (event: Event) => {
+      event.preventDefault();
+    };
+    document.addEventListener("click", stopNavigation, true);
+    fireEvent.click(anchor);
+    try {
+      await waitFor(() => {
+        const href = reviewRouter.push.mock.calls[0]?.[0] ?? "";
+        const url = new URL(href, "http://localhost");
+        expect({
+          county: url.searchParams.get("county"),
+          dataset: url.searchParams.get("dataset"),
+          href,
+          pathname: url.pathname,
+          period: url.searchParams.get("period"),
+          scope: url.searchParams.get("scope"),
+        }).toStrictEqual({
+          county: null,
+          dataset: "alpha",
+          href: destination,
+          pathname: "/app/investigate",
+          period: null,
+          scope: "ALL",
+        });
+      });
+    } finally {
+      document.removeEventListener("click", stopNavigation, true);
+      anchor.remove();
+      window.history.replaceState(null, "", "/");
+    }
   });
 
   it("does not offer Alaska or Hawaii as Review scopes", async () => {
