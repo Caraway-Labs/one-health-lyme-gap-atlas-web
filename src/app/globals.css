@@ -5014,48 +5014,53 @@ select:focus-visible {
   }
 }
 
-/* Approved light entrance for /auth/sign-in (#482). Scoped so workspace tokens stay unchanged. */
+/* Approved /auth/sign-in entrance (#482). The finalized handoff requires this
+   palette and says not to substitute the workspace palette. Values that already
+   match semantic chrome reference those tokens. Every other entrance color is
+   declared once here because it differs from the shared token. */
 .auth-entrance {
-  --auth-entrance-bg: #f6f8f7;
-  --auth-entrance-surface: #ffffff;
-  --auth-entrance-text: #15383b;
-  --auth-entrance-muted: #496567;
-  --auth-entrance-border: #b9ceca;
-  --auth-entrance-primary: #185e5e;
-  --auth-entrance-on-primary: #ffffff;
-  --auth-entrance-error: #973d32;
-  --auth-google-bg: #ffffff;
-  --auth-google-text: #1f1f1f;
-  --auth-google-border: #747775;
+  --entrance-bg: #f6f8f7; /* not --background (#fbfcfb) */
+  --entrance-surface: var(--card);
+  --entrance-text: #15383b; /* not --foreground (#152c3b) */
+  --entrance-muted: #496567; /* not --muted-foreground (#506772) */
+  --entrance-border: #b9ceca; /* not --border (#d8e2df) */
+  --entrance-primary: #185e5e; /* not --primary (#0f7782) */
+  --entrance-on-primary: var(--primary-foreground);
+  --entrance-error: #973d32; /* not --destructive (#b63d26) */
+  /* Google Identity button chrome. The multicolor G stays in the logo SVG. */
+  --entrance-google-bg: var(--card);
+  --entrance-google-text: #1f1f1f;
+  --entrance-google-border: #747775;
+  --entrance-radius: 6px; /* approved corners; --radius is 8px */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--auth-entrance-bg);
-  color: var(--auth-entrance-text);
+  background: var(--entrance-bg);
+  color: var(--entrance-text);
   font-family: var(--font-front-porch-hero), system-ui, sans-serif;
-  font-size: 16px;
+  font-size: var(--type-body-size);
   line-height: 1.5;
 }
 
 .auth-entrance-header {
   display: flex;
   align-items: center;
-  padding: 20px 28px;
-  background: var(--auth-entrance-surface);
-  border-bottom: 1px solid var(--auth-entrance-border);
+  padding: var(--space-5) 28px;
+  background: var(--entrance-surface);
+  border-bottom: 1px solid var(--entrance-border);
 }
 
 .auth-entrance-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-width: 0;
   font-weight: 500;
 }
 
 .auth-entrance-main {
   flex: 1;
-  padding: 52px 28px 40px;
+  padding: 52px 28px var(--space-10);
 }
 
 .auth-entrance-form {
@@ -5064,8 +5069,8 @@ select:focus-visible {
 }
 
 .auth-entrance h1 {
-  margin: 0 0 16px;
-  color: var(--auth-entrance-text);
+  margin: 0 0 var(--space-4);
+  color: var(--entrance-text);
   font-size: 28px;
   font-weight: 500;
   line-height: 1.25;
@@ -5076,22 +5081,22 @@ select:focus-visible {
 }
 
 .auth-entrance-subtle {
-  color: var(--auth-entrance-muted);
+  color: var(--entrance-muted);
 }
 
 .auth-entrance-label {
   display: block;
-  margin: 20px 0 8px;
+  margin: var(--space-5) 0 var(--space-2);
   font-weight: 500;
 }
 
 .auth-entrance-input {
   width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--auth-entrance-border);
-  border-radius: 6px;
-  background: var(--auth-entrance-surface);
-  color: var(--auth-entrance-text);
+  min-height: var(--control-height);
+  border: 1px solid var(--entrance-border);
+  border-radius: var(--entrance-radius);
+  background: var(--entrance-surface);
+  color: var(--entrance-text);
   padding: 10px 14px;
   font: inherit;
 }
@@ -5100,42 +5105,42 @@ select:focus-visible {
 .auth-entrance-secondary,
 .auth-entrance-google,
 .auth-entrance-quiet {
-  min-height: 44px;
-  border-radius: 6px;
+  min-height: var(--control-height);
+  border-radius: var(--entrance-radius);
   font: inherit;
   font-weight: 500;
 }
 
 .auth-entrance-primary {
   width: 100%;
-  margin-top: 20px;
-  background: var(--auth-entrance-primary);
-  color: var(--auth-entrance-on-primary);
-  border: 1px solid var(--auth-entrance-primary);
+  margin-top: var(--space-5);
+  background: var(--entrance-primary);
+  color: var(--entrance-on-primary);
+  border: 1px solid var(--entrance-primary);
 }
 
 .auth-entrance-primary:hover {
-  background: var(--auth-entrance-primary);
-  color: var(--auth-entrance-on-primary);
+  background: var(--entrance-primary);
+  color: var(--entrance-on-primary);
 }
 
 .auth-entrance p.auth-entrance-hint {
-  margin: 8px 0 0;
-  color: var(--auth-entrance-muted);
+  margin: var(--space-2) 0 0;
+  color: var(--entrance-muted);
   text-align: center;
 }
 
 .auth-entrance p.auth-entrance-error {
   margin: 14px 0 0;
-  color: var(--auth-entrance-error);
+  color: var(--entrance-error);
 }
 
 .auth-entrance-separator {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin: 20px 0;
-  color: var(--auth-entrance-muted);
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+  color: var(--entrance-muted);
 }
 
 .auth-entrance-separator::before,
@@ -5143,7 +5148,7 @@ select:focus-visible {
   content: "";
   height: 1px;
   flex: 1;
-  background: var(--auth-entrance-border);
+  background: var(--entrance-border);
 }
 
 .auth-entrance-google {
@@ -5153,14 +5158,14 @@ select:focus-visible {
   justify-content: center;
   gap: 10px;
   padding: 10px 12px;
-  background: var(--auth-google-bg);
-  color: var(--auth-google-text);
-  border: 1px solid var(--auth-google-border);
+  background: var(--entrance-google-bg);
+  color: var(--entrance-google-text);
+  border: 1px solid var(--entrance-google-border);
 }
 
 .auth-entrance-google:hover {
-  background: var(--auth-google-bg);
-  color: var(--auth-google-text);
+  background: var(--entrance-google-bg);
+  color: var(--entrance-google-text);
 }
 
 .auth-entrance-google-logo {
@@ -5169,28 +5174,28 @@ select:focus-visible {
   height: 20px;
   flex-shrink: 0;
   object-fit: contain;
-  background: var(--auth-google-bg);
+  background: var(--entrance-google-bg);
 }
 
 .auth-entrance-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
   margin-top: 14px;
 }
 
 .auth-entrance-secondary {
-  border: 1px solid var(--auth-entrance-border);
-  background: var(--auth-entrance-surface);
-  color: var(--auth-entrance-text);
+  border: 1px solid var(--entrance-border);
+  background: var(--entrance-surface);
+  color: var(--entrance-text);
   padding: 10px 14px;
 }
 
 .auth-entrance-quiet {
   border: none;
   background: transparent;
-  color: var(--auth-entrance-text);
-  padding: 8px;
+  color: var(--entrance-text);
+  padding: var(--space-2);
 }
 
 .auth-entrance p.auth-entrance-status {
@@ -5202,17 +5207,17 @@ select:focus-visible {
   grid-template-columns: none;
   justify-content: center;
   align-items: center;
-  gap: 24px;
-  padding: 20px 24px;
-  background: var(--auth-entrance-bg);
-  color: var(--auth-entrance-muted);
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-6);
+  background: var(--entrance-bg);
+  color: var(--entrance-muted);
 }
 
 .auth-entrance .auth-entrance-footer a {
-  color: var(--auth-entrance-muted);
-  font-size: 16px;
+  color: var(--entrance-muted);
+  font-size: var(--type-body-size);
   font-weight: 400;
-  text-underline-offset: 4px;
+  text-underline-offset: var(--space-1);
 }
 
 .auth-entrance button:disabled {
@@ -5221,11 +5226,11 @@ select:focus-visible {
 
 @media (max-width: 500px) {
   .auth-entrance-header {
-    padding: 16px 20px;
+    padding: var(--space-4) var(--space-5);
   }
 
   .auth-entrance-main {
-    padding: 32px 20px;
+    padding: var(--space-8) var(--space-5);
   }
 
   .auth-entrance h1 {
