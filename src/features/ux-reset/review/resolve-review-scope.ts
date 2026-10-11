@@ -67,21 +67,24 @@ export function reviewScopeQueryCanonicalRewrite(
 }
 
 /**
- * True until an omitted Review scope can be shown.
- * An explicit arrival URL or a scope the user already chose is ready.
- * A saved state default stays pending so national orientation does not flash.
+ * True until the one-time Review startup resolution has settled.
+ * An explicit arrival URL, or a scope chosen on the current history entry, is ready.
+ * After startup settles, a later profile refetch must not reopen this gate.
  */
 export function isReviewStartingScopeUnresolved(input: {
   arrivalExplicitScope: boolean;
   metadataError: boolean;
   metadataReady: boolean;
   profileFetched: boolean;
-  profileStateCode: string | null | undefined;
-  scope: ReviewScope;
+  startupSettled: boolean;
   stateOptions: readonly AtlasStateOption[];
   userChoseScope: boolean;
 }): boolean {
-  if (input.arrivalExplicitScope || input.userChoseScope) {
+  if (
+    input.arrivalExplicitScope ||
+    input.userChoseScope ||
+    input.startupSettled
+  ) {
     return false;
   }
   if (!(input.profileFetched && (input.metadataReady || input.metadataError))) {
@@ -90,12 +93,5 @@ export function isReviewStartingScopeUnresolved(input: {
   if (input.stateOptions.length === 0) {
     return false;
   }
-  return (
-    resolveStartingReviewScope(
-      false,
-      input.scope,
-      input.profileStateCode,
-      input.stateOptions
-    ) !== input.scope
-  );
+  return true;
 }

@@ -5,6 +5,7 @@ import { useQueryStates } from "nuqs";
 import {
   Suspense,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -123,12 +124,31 @@ function ResetReviewExperienceInner() {
     [scope, setUrlState]
   );
 
-  // A scope chosen while the profile read is still in flight stays temporary.
-  // The saved default is written with replace so Back does not reopen national.
-  useApplyProfileStartingScope({
+  // Shallow scope updates do not emit popstate. Bind the in-session choice to
+  // the history entry that is current after Back/Forward, and only then.
+  useEffect(() => {
+    const syncChoiceWithHistory = () => {
+      const historyChoseScope = hasExplicitReviewScopeParam(
+        new URLSearchParams(window.location.search)
+      );
+      userChoseScopeRef.current = historyChoseScope;
+      setUserChoseScope(historyChoseScope);
+    };
+    window.addEventListener("popstate", syncChoiceWithHistory);
+    return () => {
+      window.removeEventListener("popstate", syncChoiceWithHistory);
+    };
+  }, []);
+
+  // One resolution for an omitted-scope entry. A scope chosen while the
+  // profile read is in flight stays on its own history entry. The saved
+  // default is written with replace and is not rewritten when the profile
+  // later refetches. Review never writes Settings.
+  const startupSettled = useApplyProfileStartingScope({
     activeScope: scope,
     profileReady:
       !userChoseScope &&
+      !arrivalExplicitScope &&
       profileQuery.isFetched &&
       (Boolean(presentationQuery.metadata) || presentationQuery.isError),
     profileStateCode: profileQuery.data?.stateCode,
@@ -167,8 +187,7 @@ function ResetReviewExperienceInner() {
     metadataError: presentationQuery.metadataIsError,
     metadataReady: Boolean(presentationQuery.metadata),
     profileFetched: profileQuery.isFetched,
-    profileStateCode: profileQuery.data?.stateCode,
-    scope,
+    startupSettled,
     stateOptions,
     userChoseScope,
   });

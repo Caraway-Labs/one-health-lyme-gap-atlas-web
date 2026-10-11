@@ -110,47 +110,44 @@ describe("Review scope resolution", () => {
     });
   });
 
-  it("holds national orientation until a saved state default is applied", () => {
-    const pending = {
+  it("keeps startup readiness on the one-time resolution", () => {
+    const awaitingCommit = {
       arrivalExplicitScope: false,
       metadataError: false,
       metadataReady: true,
-      profileFetched: false,
-      profileStateCode: "CO",
-      scope: "ALL",
+      profileFetched: true,
+      startupSettled: false,
       stateOptions,
       userChoseScope: false,
     };
     expect({
-      appliedState: isReviewStartingScopeUnresolved({
-        ...pending,
-        profileFetched: true,
-        scope: "CO",
+      awaitingCommit: isReviewStartingScopeUnresolved(awaitingCommit),
+      emptyStates: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        stateOptions: [],
       }),
       explicitArrival: isReviewStartingScopeUnresolved({
-        ...pending,
+        ...awaitingCommit,
         arrivalExplicitScope: true,
       }),
-      loadingProfile: isReviewStartingScopeUnresolved(pending),
-      profileReady: isReviewStartingScopeUnresolved({
-        ...pending,
-        profileFetched: true,
+      loadingProfile: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        profileFetched: false,
       }),
-      unselectedProfile: isReviewStartingScopeUnresolved({
-        ...pending,
-        profileFetched: true,
-        profileStateCode: null,
+      settled: isReviewStartingScopeUnresolved({
+        ...awaitingCommit,
+        startupSettled: true,
       }),
       userChoice: isReviewStartingScopeUnresolved({
-        ...pending,
+        ...awaitingCommit,
         userChoseScope: true,
       }),
     }).toStrictEqual({
-      appliedState: false,
+      awaitingCommit: true,
+      emptyStates: false,
       explicitArrival: false,
       loadingProfile: true,
-      profileReady: true,
-      unselectedProfile: false,
+      settled: false,
       userChoice: false,
     });
   });

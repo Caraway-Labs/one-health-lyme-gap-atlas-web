@@ -220,6 +220,59 @@ test.describe("Review national and state scope controls", () => {
     );
   });
 
+  test("applies the saved state after Back from a scope chosen during profile load", async ({
+    page,
+  }) => {
+    const profileHeld = Promise.withResolvers<void>();
+    await page.route("**/v1/me/profile", async (route) => {
+      await profileHeld.promise;
+      await route.fulfill({
+        json: { profile: { state_code: "CO" } },
+        status: 200,
+      });
+    });
+    await page.route("**/v1/atlas/metadata**", async (route) => {
+      await route.fulfill({ json: reviewScopeMetadataFixture, status: 200 });
+    });
+    await page.route("**/v1/atlas/scores**", async (route) => {
+      await route.fulfill({ json: reviewScopeScoresFixture, status: 200 });
+    });
+    await page.route("**/v1/states/*/review**", async (route) => {
+      await route.fulfill({
+        json: stateReviewResponseForUrl(route.request().url()),
+        status: 200,
+      });
+    });
+
+    await page.goto("/app/review");
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "New York (NY)" }).click();
+    await expect(page).toHaveURL(/scope=NY/);
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "NY"
+    );
+
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).not.toHaveURL(/[?&]scope=/);
+    profileHeld.resolve();
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "CO"
+    );
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
+      0
+    );
+
+    await page.goForward({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/scope=NY/);
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "NY"
+    );
+  });
+
   test("replaces a saved state scope so Back does not open national Review", async ({
     page,
   }) => {

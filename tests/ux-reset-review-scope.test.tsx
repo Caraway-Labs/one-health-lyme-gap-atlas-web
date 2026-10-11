@@ -1474,6 +1474,191 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("applies the saved state after Back from a scope chosen during profile load", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    const updates: { history: string; query: string }[] = [];
+    renderReview("", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    fireEvent.click(screen.getByTestId("review-scope-select"));
+    const newYork = await screen.findByRole("option", {
+      name: "New York (NY)",
+    });
+    fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+    fireEvent.click(newYork);
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("NY")
+    );
+    window.history.replaceState(null, "", "/app/review");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("CO")
+    );
+    expect({
+      loading: screen.queryByText("Loading review scope…"),
+      national: screen.queryByTestId("review-national-orientation"),
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      status: screen.getByTestId("review-scope-status").textContent,
+      write: updates.at(-1),
+    }).toStrictEqual({
+      loading: null,
+      national: null,
+      saves: 0,
+      status: expect.stringContaining("Colorado"),
+      write: { history: "replace", query: expect.stringContaining("scope=CO") },
+    });
+  });
+
+  it("keeps the national fallback when a failed profile read later returns a state", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    let failProfile = true;
+    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+      () =>
+        (failProfile
+          ? Promise.reject(new Error("profile unavailable"))
+          : Promise.resolve({
+              data: { profile: { state_code: "CO" } },
+              status: 200,
+            })) as never
+    );
+    const updates: string[] = [];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderReview("", {
+      client,
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
+    );
+    failProfile = false;
+    await client.refetchQueries({ queryKey: ["ux-reset-saved-profile"] });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("ALL")
+    );
+    expect({
+      loading: screen.queryByText("Loading review scope…"),
+      national: Boolean(screen.queryByTestId("review-national-orientation")),
+      panel: screen.queryByTestId("review-state-panel"),
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      scopeWrites: updates.some((query) => query.includes("scope=CO")),
+    }).toStrictEqual({
+      loading: null,
+      national: true,
+      panel: null,
+      saves: 0,
+      scopeWrites: false,
+    });
+  });
+
+  it("keeps the resolved state when a later profile refetch returns a different state", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const geometry = vi.mocked(fetchCountyDisplayGeometry);
+    geometry.mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    let profileState = "CO";
+    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+      () =>
+        Promise.resolve({
+          data: { profile: { state_code: profileState } },
+          status: 200,
+        }) as never
+    );
+    const updates: string[] = [];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      renderReview("", {
+        client,
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      await waitFor(() =>
+        expect(
+          screen.getByTestId("review-scope-results").dataset.renderedScope
+        ).toBe("CO")
+      );
+      const candidateText = () =>
+        screen
+          .getAllByTestId("review-candidate")
+          .map((candidate) => candidate.textContent ?? "")
+          .join(" ");
+      await waitFor(() => expect(candidateText()).toContain("Denver"));
+      profileState = "NY";
+      await client.refetchQueries({ queryKey: ["ux-reset-saved-profile"] });
+      await waitFor(() =>
+        expect(screen.getByTestId("mock-atlas-map").dataset.mapScoreFips).toBe(
+          "08001"
+        )
+      );
+      expect({
+        albany: screen.queryByText("Albany"),
+        handoff: screen.getByTestId("review-investigate").getAttribute("href"),
+        list: candidateText(),
+        loading: screen.queryByText("Loading review scope…"),
+        rendered: screen.getByTestId("review-scope-results").dataset
+          .renderedScope,
+        saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+        url: updates.at(-1) ?? "",
+      }).toStrictEqual({
+        albany: null,
+        handoff: expect.stringContaining("scope=CO"),
+        list: expect.stringContaining("Denver"),
+        loading: null,
+        rendered: "CO",
+        saves: 0,
+        url: expect.stringContaining("scope=CO"),
+      });
+    } finally {
+      geometry.mockResolvedValue({
+        features: [],
+        type: "FeatureCollection",
+      });
+    }
+  });
+
   it("rewrites an invalid scope to national without applying the profile state", async () => {
     const {
       getProfileV1MeProfileGet,
