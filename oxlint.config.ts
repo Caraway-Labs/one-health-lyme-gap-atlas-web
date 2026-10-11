@@ -9,12 +9,14 @@ export default defineConfig({
   ignorePatterns: [
     ...(core.ignorePatterns ?? []),
     ".next/**",
+    "storybook-static/**",
     "node_modules/**",
     "vendor/**",
     "node_modules.broken-*/**",
     "playwright-report/**",
     "src/generated/**",
     "tests/e2e/**",
+    "tests/storybook/**",
     "test-results/**",
   ],
   // The Atlas predates this standard. Keep correctness, framework, and

@@ -28,6 +28,8 @@ Pull requests and pushes to `main` run the `quality` check concurrently. A green
 
 ## Documentation
 
+The independent [Storybook component explorer](docs/storybook.md) provides public component review through GitHub Pages after activation. Run `npm run storybook` locally or `npm run build-storybook` for the static catalog.
+
 Canonical API migration for Atlas Web is tracked under epic [#283](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/283). The production browser → API dependency inventory lives in [docs/web-284-atlas-api-migration-inventory.md](docs/web-284-atlas-api-migration-inventory.md) (Web #284).
 
 The public help center is part of this Next.js application and is available at `/docs`. Fumadocs MDX content lives in `content/docs`; generated Fumadocs source files are created by `npm run docs:generate` and are intentionally ignored. `npm run docs:check` validates required page metadata, navigation references, and internal Atlas/docs links. The existing DigitalOcean App Platform service deploys the docs with the web app; no separate repository or infrastructure is required.
