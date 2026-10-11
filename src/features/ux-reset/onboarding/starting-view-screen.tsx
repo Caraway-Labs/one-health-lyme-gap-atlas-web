@@ -1,16 +1,20 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useId, useRef, useState } from "react";
 
 import { SignInIdentity } from "@/app/auth/sign-in/sign-in-entrance";
 import { Button } from "@/components/ui/button";
+import { frontPorchHeroFont } from "@/features/front-porch/front-porch-font";
 import { SIGN_IN_COPY } from "@/lib/auth/sign-in-recovery";
 import { getDocsUrl } from "@/lib/docs-config";
 
 import type { SavedProfile } from "../profile/default-jurisdiction-contract";
+import { useProfileSessionIdentity } from "../profile/profile-session";
 import { writeSavedProfile } from "../profile/saved-profile-client";
+import { savedProfileQueryKey } from "../profile/use-saved-profile";
 import { useSettingsStateOptions } from "../settings/use-settings-state-options";
 import {
   buildStartingViewCompletionWrite,
@@ -47,6 +51,8 @@ export function StartingViewScreen({
   profile: SavedProfile | null;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const identity = useProfileSessionIdentity();
   const states = useSettingsStateOptions();
   const explanationId = useId();
   const errorId = useId();
@@ -97,6 +103,12 @@ export function StartingViewScreen({
         outcome.status === "confirmed" &&
         startingViewCompletionConfirmed(outcome.profile, requestedState)
       ) {
+        if (identity) {
+          queryClient.setQueryData(
+            savedProfileQueryKey(identity),
+            outcome.profile
+          );
+        }
         router.replace(destinationAfterStartingView(outcome.profile, null));
         return;
       }
@@ -107,7 +119,7 @@ export function StartingViewScreen({
   }
 
   return (
-    <div className="auth-entrance">
+    <div className={`${frontPorchHeroFont.variable} auth-entrance`}>
       <SignInIdentity />
       <main className="auth-entrance-main">
         <form className="auth-entrance-form" onSubmit={continueToReview}>

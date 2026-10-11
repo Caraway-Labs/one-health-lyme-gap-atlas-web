@@ -43,6 +43,7 @@ export default function StartingViewPage() {
           </Button>
         }
         message="We couldn’t load your starting view. Nothing was changed. Try again."
+        tone="alert"
       />
     );
   }

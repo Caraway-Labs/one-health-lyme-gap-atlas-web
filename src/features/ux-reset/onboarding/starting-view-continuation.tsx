@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { SignInIdentity } from "@/app/auth/sign-in/sign-in-entrance";
 import { Button } from "@/components/ui/button";
+import { frontPorchHeroFont } from "@/features/front-porch/front-porch-font";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { SIGN_IN_COPY } from "@/lib/auth/sign-in-recovery";
 import { getDocsUrl } from "@/lib/docs-config";
@@ -28,17 +29,19 @@ const COPY = {
 export function EntranceStatus({
   action,
   message,
+  tone = "status",
 }: {
   action?: ReactNode;
   message: string;
+  tone?: "alert" | "status";
 }) {
   return (
-    <div className="auth-entrance">
+    <div className={`${frontPorchHeroFont.variable} auth-entrance`}>
       <SignInIdentity />
       <main className="auth-entrance-main">
         <section className="auth-entrance-form">
           <h1>Choose your starting view</h1>
-          <p aria-live="polite" role="status">
+          <p aria-live={tone === "alert" ? "assertive" : "polite"} role={tone}>
             {message}
           </p>
           {action}
@@ -96,6 +99,7 @@ export function StartingViewContinuation({
           </Button>
         }
         message={COPY.unavailable}
+        tone="alert"
       />
     );
   }

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -60,6 +61,17 @@ const incomplete = savedProfileFromUserProfile({
   state_code: null,
 });
 
+function renderScreen(profile: typeof incomplete) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <StartingViewScreen profile={profile} />
+    </QueryClientProvider>
+  );
+}
+
 describe("Choose your starting view", () => {
   afterEach(() => {
     cleanup();
@@ -68,7 +80,7 @@ describe("Choose your starting view", () => {
   });
 
   it("starts with neither choice selected and hides the state list", () => {
-    render(<StartingViewScreen profile={incomplete} />);
+    renderScreen(incomplete);
 
     expect(
       screen.getByRole("heading", { name: "Choose your starting view" })
@@ -85,7 +97,7 @@ describe("Choose your starting view", () => {
   });
 
   it("asks for a choice and then a state without saving", () => {
-    render(<StartingViewScreen profile={incomplete} />);
+    renderScreen(incomplete);
 
     fireEvent.click(screen.getByRole("button", { name: "Continue to Review" }));
     expect(screen.getByRole("alert").textContent).toBe(
@@ -113,7 +125,7 @@ describe("Choose your starting view", () => {
       }),
       status: "confirmed",
     });
-    render(<StartingViewScreen profile={incomplete} />);
+    renderScreen(incomplete);
 
     fireEvent.click(screen.getByRole("radio", { name: "One state" }));
     fireEvent.change(screen.getByLabelText("State"), {
@@ -143,7 +155,7 @@ describe("Choose your starting view", () => {
       message: "unconfirmed",
       status: "uncertain",
     });
-    render(<StartingViewScreen profile={incomplete} />);
+    renderScreen(incomplete);
 
     fireEvent.click(screen.getByRole("radio", { name: "United States" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue to Review" }));
