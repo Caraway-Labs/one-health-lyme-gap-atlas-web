@@ -6,6 +6,8 @@ Parent epic: [Web #283](https://github.com/Caraway-Labs/one-health-lyme-gap-atla
 
 **Scope of this document:** inventory and classification only. No runtime or contract changes are made in Web #284.
 
+**Retirement note (#550):** `/variant_1`–`/variant_7` are no longer routes. The live browser consumers of the same shared components are `/investigate` (`ExperimentAtlas`, wide-workbench) and `/geographic_explorer` (`GeographicExplorer`). Route lists below that include the numbered variants are the pre-retirement inventory.
+
 ## Summary
 
 | Metric | Count |
