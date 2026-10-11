@@ -36,6 +36,11 @@ export type PublishedCountyRecord = {
   burgdorferiStatus: string;
   evidenceCompleteness: number;
   fips: string;
+  /**
+   * Trimmed `release.methodology_version`. Null when that required string is
+   * empty or whitespace. The county validator rejects null and omission.
+   */
+  methodologyVersion: string | null;
   pacificusStatus: string | null;
   population: number | null;
   releaseId: string;
@@ -124,6 +129,20 @@ type PublishedField = {
   value: number | string | null;
 };
 
+/**
+ * `AtlasMetadata.methodology_version` is a required string. Empty and
+ * whitespace-only strings still validate, and they stay unset. A null or
+ * omitted version fails `CountyV1CountiesFipsGetResponse` in
+ * `loadInvestigateCountyRecord` before this mapper runs.
+ */
+function governedMethodologyVersion(version: string): string | null {
+  const trimmed = version.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  return trimmed;
+}
+
 /** Drops score, priority, and color. Those are not Investigate evidence. */
 export function publishedCountyRecordFromDetail(
   detail: CountyDetail
@@ -132,6 +151,9 @@ export function publishedCountyRecordFromDetail(
     burgdorferiStatus: detail.burgdorferi_status,
     evidenceCompleteness: detail.evidence_completeness,
     fips: detail.fips,
+    methodologyVersion: governedMethodologyVersion(
+      detail.release.methodology_version
+    ),
     pacificusStatus: detail.pacificus_status,
     population: detail.population,
     releaseId: detail.release.release_id,
@@ -501,6 +523,7 @@ export function mapPublishedRow(input: {
 function evidenceFromPublishedField(input: {
   claimLabel: string;
   measure: Measure | undefined;
+  methodologyVersion: string | null;
   releaseId: string;
   source: SourceMetadata | null;
   state: GovernedPublishedState;
@@ -544,10 +567,12 @@ function evidenceFromPublishedField(input: {
         .join(" "),
       limitations: [...input.state.limitations],
       materialCaveat,
+      methodVersion: input.methodologyVersion,
       observationPeriod: "Unavailable",
       sourceFamily,
       sourceUrl: input.source?.url.trim() || null,
       technical: {
+        methodologyVersion: input.methodologyVersion,
         releaseId: input.releaseId,
         sourceId: input.source?.key ?? null,
       },
@@ -760,6 +785,7 @@ function rowFromField(input: {
     evidence: evidenceFromPublishedField({
       claimLabel,
       measure,
+      methodologyVersion: input.record.methodologyVersion,
       releaseId: input.record.releaseId,
       source,
       state,
