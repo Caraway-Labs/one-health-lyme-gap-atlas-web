@@ -115,10 +115,14 @@ const engine = vi.hoisted(() => {
 
 const setWorkerUrl = vi.hoisted(() => vi.fn<(url: string) => void>());
 
-vi.mock(import("maplibre-gl"), () => ({
-  Map: engine.FakeMap,
-  setWorkerUrl,
-}));
+vi.mock(
+  import("maplibre-gl"),
+  () =>
+    ({
+      Map: engine.FakeMap,
+      setWorkerUrl,
+    }) as unknown as Partial<typeof import("maplibre-gl")>
+);
 
 const colors: ReviewNavigationColors = {
   canvas: "rgb(1, 1, 1)",

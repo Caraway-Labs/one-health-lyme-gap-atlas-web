@@ -59,27 +59,73 @@ function isResolvedColor(value: string): boolean {
   );
 }
 
+function readTokenColor(documentRef: Document, token: string): string | null {
+  const probe = documentRef.createElement("span");
+  probe.style.color = `var(${token}, transparent)`;
+  documentRef.body.append(probe);
+  const color = getComputedStyle(probe).color.trim();
+  probe.remove();
+  if (!isResolvedColor(color) || color === "rgba(0, 0, 0, 0)") {
+    return null;
+  }
+  return color;
+}
+
 export function readReviewNavigationColors(
   documentRef: Document = document
 ): ReviewNavigationColors | null {
-  const colors = {} as ReviewNavigationColors;
-  for (const [key, token] of Object.entries(NAVIGATION_COLOR_TOKENS)) {
-    const probe = documentRef.createElement("span");
-    probe.style.color = `var(${token}, transparent)`;
-    documentRef.body.append(probe);
-    const color = getComputedStyle(probe).color.trim();
-    probe.remove();
-    if (!isResolvedColor(color) || color === "rgba(0, 0, 0, 0)") {
-      return null;
-    }
-    colors[key as keyof ReviewNavigationColors] = color;
+  const canvas = readTokenColor(documentRef, NAVIGATION_COLOR_TOKENS.canvas);
+  const fill = readTokenColor(documentRef, NAVIGATION_COLOR_TOKENS.fill);
+  const focus = readTokenColor(documentRef, NAVIGATION_COLOR_TOKENS.focus);
+  const hover = readTokenColor(documentRef, NAVIGATION_COLOR_TOKENS.hover);
+  const outline = readTokenColor(documentRef, NAVIGATION_COLOR_TOKENS.outline);
+  const outlineActive = readTokenColor(
+    documentRef,
+    NAVIGATION_COLOR_TOKENS.outlineActive
+  );
+  const selected = readTokenColor(
+    documentRef,
+    NAVIGATION_COLOR_TOKENS.selected
+  );
+  const unavailable = readTokenColor(
+    documentRef,
+    NAVIGATION_COLOR_TOKENS.unavailable
+  );
+  const unavailableHover = readTokenColor(
+    documentRef,
+    NAVIGATION_COLOR_TOKENS.unavailableHover
+  );
+  if (
+    !(
+      canvas &&
+      fill &&
+      focus &&
+      hover &&
+      outline &&
+      outlineActive &&
+      selected &&
+      unavailable &&
+      unavailableHover
+    )
+  ) {
+    return null;
   }
-  return colors;
+  return {
+    canvas,
+    fill,
+    focus,
+    hover,
+    outline,
+    outlineActive,
+    selected,
+    unavailable,
+    unavailableHover,
+  };
 }
 
 function fillColorExpression(colors: ReviewNavigationColors): FillColor {
-  const supported = ["==", ["get", "availability"], "supported"] as const;
-  const hovered = ["boolean", ["feature-state", "hover"], false] as const;
+  const supported: FillColor = ["==", ["get", "availability"], "supported"];
+  const hovered: FillColor = ["boolean", ["feature-state", "hover"], false];
   return [
     "case",
     ["all", supported, ["boolean", ["feature-state", "selected"], false]],
