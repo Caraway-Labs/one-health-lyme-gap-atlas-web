@@ -75,3 +75,19 @@ export function isLower48ReviewScope(scopeCode: string): boolean {
     !OUTSIDE_LOWER_48_REVIEW.has(scopeCode as ReviewStatePostal)
   );
 }
+
+export function lower48ReviewPostalCodes(): ReviewStatePostal[] {
+  return (Object.keys(STATE_FIPS_PREFIX) as ReviewStatePostal[])
+    .filter((code) => isLower48ReviewScope(code))
+    .toSorted();
+}
+
+/** Postal code for a two-digit state FIPS prefix, when the prefix is known. */
+export function postalCodeForStateFips(
+  fipsPrefix: string
+): ReviewStatePostal | null {
+  const match = (Object.keys(STATE_FIPS_PREFIX) as ReviewStatePostal[]).find(
+    (postal) => STATE_FIPS_PREFIX[postal] === fipsPrefix
+  );
+  return match ?? null;
+}

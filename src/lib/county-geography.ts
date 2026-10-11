@@ -133,6 +133,7 @@ export type CountyDisplayGeometryQueryScope =
   | "atlas-home"
   | "explorer"
   | "ux-reset-explore"
+  | "ux-reset-review"
   | "variant";
 
 export function countyDisplayGeometryQueryKey(
