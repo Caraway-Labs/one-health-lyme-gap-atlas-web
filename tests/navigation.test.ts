@@ -138,6 +138,22 @@ describe("Atlas navigation contract", () => {
     expect(getRouteShell("/variant_1")).toBe("none");
   });
 
+  it("keeps About Caraway Labs on the public shell and out of footer navigation", () => {
+    expect({
+      footer: FOOTER_NAVIGATION_ITEMS.map((item) => item.href),
+      route: findRouteMetadata("/about/caraway-labs"),
+      shell: getRouteShell("/about/caraway-labs"),
+    }).toMatchObject({
+      footer: ["/privacy", "/ai-ethics"],
+      route: {
+        placement: "none",
+        shell: "public",
+        status: "available",
+      },
+      shell: "public",
+    });
+  });
+
   it("renders active development capabilities consistently without inventing a feature guard", () => {
     const research = navigationItemsForGroup("research");
     expect(research.map((item) => [item.href, item.status])).toStrictEqual([
