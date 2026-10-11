@@ -30,12 +30,11 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 | `/overview`, `/geographic_explorer`, `/investigate` | Primary sidebar | Available | Analytical | Released public Atlas workflows. The Investigation Workspace is the promoted wide-workbench county investigation experience. |
 | `/assistant` | Primary sidebar or launcher handoff | In development | Analytical | Literature-only chat is feature-gated. When enabled, the floating launcher is the primary entry on other analytical routes; the sidebar link appears on `/assistant` for wayfinding. See [Assistant entry points](./assistant-entry-points.md). |
 | `/knowledge-graph` | Legacy deep link | Hidden | Analytical | Redirects to `/assistant`, preserving the local conversation selector. |
-| `/variant_6` | Legacy deep link | Hidden | Analytical | Redirects to `/investigate`, preserving supported analytical query state. |
 | `/account` | Global utility | Available | Analytical | Optional account functionality is user-facing and usable. |
 | `/auth/sign-in` | Account-specific | Hidden from navigation | Analytical | User-facing sign-in adopts the shell without becoming primary navigation. |
 | `/privacy`, `/ai-ethics` | Footer/trust | Available | Lightweight public | Trust pages do not need the persistent analytical sidebar. |
 | `/docs` and nested docs routes | Sidebar destination / docs layout | Available | Docs | Sidebar selection opens the canonical docs site in a new tab; direct internal docs URLs remain available. |
-| `/variant_1`–`/variant_5`, `/variant_7` | Direct-link-only | Experimental | None | Remaining experimental workflows stay routable and isolated from production navigation and shell. |
+| Former `/variant_1`–`/variant_7` | Retired experiment URLs | Not registered | Unmatched | Requests return the app 404, including query strings. `/variant_6` no longer redirects to `/investigate` (#550). |
 | `/design-system` | Internal/developer | Hidden | None | Unlinked reference gallery. |
 | Former `/ux-lab/**` | Retired persona prototypes | Not registered | Unmatched | Requests return the app 404. No redirect and no prototype shell (#504). |
 | `/auth/callback`, `/auth/confirm` | Technical auth utility | Hidden | None | Route handlers, not human navigation surfaces. |
@@ -43,11 +42,10 @@ Future Surveillance, Intelligence, and Outputs destinations need product-owned r
 
 ## Status and visibility semantics
 
-The typed metadata model supports four explicit statuses:
+The typed metadata model supports three explicit statuses:
 
 - `available`: a released, usable destination that may render normally.
 - `inDevelopment`: a meaningful near-term capability that may be shown with a Coming Soon status treatment. Direct entry must use the same bounded Coming Soon page when the capability is not enabled.
-- `experimental`: a direct-link route retained for evaluation; it is absent from normal navigation and the production analytical shell.
 - `hidden`: an internal, technical, auth, or backlog-only route with no visible navigation item.
 
 The status is metadata, not a page-specific conditional. The sidebar renders the status badge in expanded mode and includes it in the accessible label and tooltip in collapsed mode.
@@ -57,7 +55,7 @@ The status is metadata, not a page-specific conditional. The sidebar renders the
 - Exact routes match only their own pathname. Query strings do not affect the result, so shareable analytical state remains intact.
 - Prefix routes match the route and nested paths. This keeps direct docs pages associated with their parent metadata.
 - Dynamic route patterns use bracketed segments such as `/reports/[id]` and match one non-empty path segment per bracket.
-- `none` never becomes active. Auth callbacks, APIs, internal routes, and experimental direct-link routes are not represented as active primary items.
+- `none` never becomes active. Auth callbacks, APIs, and internal routes are not represented as active primary items.
 - The longest matching route wins when nested prefixes exist.
 - External destinations such as Docs still use the same metadata for labels, status, and active-context rules while resolving their configured external URL from `src/lib/docs-config.ts`.
 

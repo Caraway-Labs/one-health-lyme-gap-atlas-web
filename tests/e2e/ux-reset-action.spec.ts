@@ -196,8 +196,11 @@ test.describe("Action evidence handoff", () => {
       page.getByRole("link", { name: "Surveillance Planning" })
     ).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: /Surveillance Planning|Evidence Brief/ })
+      page.getByRole("button", { name: "Surveillance Planning" })
     ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Evidence brief" })
+    ).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/app\/investigate/);
@@ -407,6 +410,95 @@ test.describe("Action evidence handoff", () => {
     await expect(
       page.getByRole("link", { name: /Evidence Brief/ })
     ).toHaveCount(0);
+    await expect(page.getByTestId("action-evidence-brief")).toHaveCount(0);
+  });
+
+  test("opens one evidence brief, keeps a local note off governed evidence, and exports the same county PDF", async ({
+    page,
+  }, testInfo) => {
+    const note = "The clinic holds Tuesday office hours.";
+    await installActionMocks(
+      page,
+      {
+        delayFips: null,
+        emptyObservations: false,
+        metadataStatus: 200,
+        scenario: "mixed",
+        unavailableOnly: false,
+      },
+      Promise.resolve()
+    );
+    const reports: string[] = [];
+    await page.route("**/v1/counties/**/report.pdf**", async (route) => {
+      reports.push(route.request().url());
+      await route.fulfill({
+        body: "%PDF-1.7 fixture",
+        contentType: "application/pdf",
+        headers: { "Cache-Control": "no-store" },
+      });
+    });
+    await page.goto(
+      "/app/action?county=08001&scope=CO&dataset=alpha-2026&period=2023-01-01"
+    );
+    await expect(page.getByTestId("action-finding-text")).toContainText(
+      "12 cases"
+    );
+    await page.getByRole("button", { name: "Evidence brief" }).click();
+    await expect(page).toHaveURL(/plan=evidence-brief/);
+    await expect(page.getByTestId("action-evidence-brief")).toHaveAttribute(
+      "data-state",
+      "ready"
+    );
+    await expect(page.getByTestId("action-brief-finding")).toContainText(
+      "12 cases"
+    );
+    await expect(page.getByTestId("action-brief-local-note")).toContainText(
+      "not governed evidence"
+    );
+    await page.getByLabel("Local context").fill(note);
+    await expect(page.getByTestId("action-brief-governed")).not.toContainText(
+      note
+    );
+    await expect(page.getByTestId("action-finding-text")).not.toContainText(
+      note
+    );
+    await expect(
+      page.getByTestId("investigate-export-context")
+    ).not.toContainText(note);
+    await expect(page.getByTestId("action-return")).not.toHaveAttribute(
+      "href",
+      /plan=/
+    );
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export PDF" }).click();
+    await download;
+    expect(reports).toHaveLength(1);
+    const reportUrl = new URL(reports[0] ?? "");
+    expect({
+      county: reportUrl.pathname,
+      note: reportUrl.search.includes("Tuesday"),
+      template: reportUrl.searchParams.get("template"),
+    }).toEqual({
+      county: "/v1/counties/08001/report.pdf",
+      note: false,
+      template: "county-v2",
+    });
+
+    const workspace = page.getByTestId("action-evidence-brief");
+    const box = await workspace.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(
+      (viewport?.width ?? 0) + 1
+    );
+
+    if (!testInfo.project.name.includes("mobile")) {
+      const results = await new AxeBuilder({ page })
+        .include('[data-testid="action-evidence-brief"]')
+        .analyze();
+      expect(results.violations).toEqual([]);
+    }
   });
 
   test("keeps unavailable-only evidence through handoff, reload, and a direct link", async ({

@@ -10,7 +10,6 @@ const ANALYTICAL_SHELL_HREFS = [
   "/investigate",
   "/assistant",
   "/knowledge-graph",
-  "/variant_6",
   "/account",
   "/auth/sign-in",
 ] as const;

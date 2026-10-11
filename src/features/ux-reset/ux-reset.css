@@ -509,7 +509,10 @@
 .ux-reset-action-header,
 .ux-reset-action-summary,
 .ux-reset-action-callout,
-.ux-reset-action-workflows {
+.ux-reset-action-workflows,
+.ux-reset-action-brief,
+.ux-reset-action-brief-governed,
+.ux-reset-action-brief-local {
   display: grid;
   gap: var(--space-2);
 }
@@ -563,6 +566,45 @@
   width: fit-content;
   text-decoration: none;
   color: var(--primary-foreground);
+}
+
+.ux-reset-action-brief {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-action-brief-local {
+  border-left: 4px solid var(--muted-foreground);
+}
+
+.ux-reset-action-brief-note {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.ux-reset-action-local-context {
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.ux-reset-action-local-context:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  border-color: var(--ring);
+}
+
+.ux-reset-action-local-context[aria-invalid="true"] {
+  border-color: var(--destructive);
 }
 
 .ux-reset-compare {

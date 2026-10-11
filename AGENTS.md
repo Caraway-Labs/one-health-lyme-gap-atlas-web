@@ -27,14 +27,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | --- | --- | --- |
 | Rank-row county buttons | `src/components/ranked-counties.tsx` | Domain list rows with score-color encoding, not generic actions |
 | Review candidate rows | `src/features/ux-reset/review/review-operating-picture.tsx` | Authoritative suggestion rows with reason text, not generic actions and not a score column |
-| Variant county-list rows | `src/components/experiment-atlas.tsx` | Same ranked-list semantics in interview variants |
-| Guided-step tabs | `src/components/experiment-atlas.tsx` | Native `role="tab"` stepper, not a shared Button |
+| Investigation Workspace county-list rows | `src/components/experiment-atlas.tsx` | Domain list rows with score-color encoding on `/investigate`, not generic actions |
 | Scoring range inputs | `src/components/experiment-atlas.tsx` | Native `input type="range"`; no shared Slider primitive |
 | Sidebar scrim | `src/components/app-shell.tsx` | Full-viewport dismiss hit target, not a chrome Button |
 | Chat launcher / close / history | `src/components/chat-launcher.tsx`, `src/components/evidence-chat.tsx` | Conversational UI chrome; class-only Button used only for shared actions (New chat, Ask) |
 | `.priority-pill` on `Badge` | `src/components/atlas-priority-badge.tsx` | Domain severity colors composed through Badge, not a second badge system |
 | MapLibre internals | `src/components/atlas-map.tsx` and map CSS | Geo renderer and ramps stay outside shadcn |
 | Assistant demo | `src/features/assistant` | Separate conversational product track |
+| Evidence brief local context | `src/features/ux-reset/action/evidence-brief-panel.tsx` | Native `textarea` for a user note. No shared Textarea primitive. The note is not governed evidence |
 
 - Editorial dark-hero CTAs may use `.hero-cta-primary` and `.cta-on-dark` on top of Button/`buttonVariants`. Do not reintroduce generic `.button` or `.card` classes.
 
@@ -42,7 +42,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## UX Reset constitution (coding agents)
 
-For **UX Reset Phase 1** work (authenticated professional workspace under `/app/*` and related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation) unless an owner-approved issue or ADR explicitly changes them.
+For **UX Reset Phase 1** work (authenticated professional workspace under `/app/*` and related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation except the numbered `/variant_1`–`/variant_7` URLs retired by #550) unless an owner-approved issue or ADR explicitly changes them.
 
 - Run `npm run check:ux-reset` with other quality gates when touching Reset UI or this guidance.
 - Use [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives first; do not invent a parallel Reset design system.

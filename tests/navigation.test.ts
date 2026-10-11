@@ -29,23 +29,41 @@ describe("Atlas navigation contract", () => {
     expect(hrefs).not.toContain("/ux-lab");
   });
 
-  it("keeps experimental routes out of the primary navigation", () => {
-    const hrefs = NAVIGATION_ITEMS.map((item) => item.href);
-
-    expect(hrefs).not.toContain("/variant_1");
-    expect(hrefs).not.toContain("/variant_7");
+  it("does not register retired numbered variant routes", () => {
+    const retired = [
+      "/variant_1",
+      "/variant_2",
+      "/variant_3",
+      "/variant_4",
+      "/variant_5",
+      "/variant_6",
+      "/variant_7",
+    ];
     expect(
-      NAVIGATION_ITEMS.filter((item) => item.status === "experimental")
-    ).toHaveLength(0);
+      ATLAS_ROUTES.filter((route) => retired.includes(route.href))
+    ).toStrictEqual([]);
+    expect(NAVIGATION_ITEMS.map((item) => item.href)).toStrictEqual(
+      expect.not.arrayContaining(retired)
+    );
+    expect(
+      Object.fromEntries(retired.map((href) => [href, findRouteMetadata(href)]))
+    ).toStrictEqual({
+      "/variant_1": undefined,
+      "/variant_2": undefined,
+      "/variant_3": undefined,
+      "/variant_4": undefined,
+      "/variant_5": undefined,
+      "/variant_6": undefined,
+      "/variant_7": undefined,
+    });
   });
 
-  it("classifies trust, utility, experimental, and technical routes explicitly", () => {
+  it("classifies trust, utility, and technical routes explicitly", () => {
     expect(FOOTER_NAVIGATION_ITEMS.map((item) => item.href)).toStrictEqual([
       "/privacy",
       "/ai-ethics",
     ]);
     expect(findRouteMetadata("/account/settings")?.placement).toBe("utility");
-    expect(findRouteMetadata("/variant_1")?.status).toBe("experimental");
     expect(findRouteMetadata("/design-system")?.shell).toBe("none");
     expect(findRouteMetadata("/auth/callback")?.shell).toBe("none");
   });
@@ -91,7 +109,9 @@ describe("Atlas navigation contract", () => {
 
     expect(isNavigationItemActive(overview, "/overview")).toBeTruthy();
     expect(isNavigationItemActive(overview, "/")).toBeFalsy();
-    expect(isNavigationItemActive(overview, "/variant_1")).toBeFalsy();
+    expect(
+      isNavigationItemActive(overview, "/not-a-registered-route")
+    ).toBeFalsy();
     expect(isNavigationItemActive(assistant, "/assistant")).toBeTruthy();
     expect(
       isNavigationItemActive(assistant, "/assistant?conversation=abc")
@@ -103,24 +123,24 @@ describe("Atlas navigation contract", () => {
       (item) => item.href === "/investigate"
     )!;
 
-    expect(investigate.group).toBe("explore");
-    expect(investigate.label).toBe("Investigation Workspace");
-    expect(isNavigationItemActive(investigate, "/investigate")).toBeTruthy();
-    expect(
-      isNavigationItemActive(investigate, "/investigate?county=08001&eco=70")
-    ).toBeTruthy();
-    expect(isNavigationItemActive(investigate, "/variant_6")).toBeFalsy();
-  });
-
-  it("keeps the legacy wide workspace routable but out of primary navigation", () => {
-    expect(findRouteMetadata("/variant_6")).toMatchObject({
-      placement: "none",
-      status: "hidden",
+    expect({
+      active: isNavigationItemActive(investigate, "/investigate"),
+      group: investigate.group,
+      label: investigate.label,
+      query: isNavigationItemActive(
+        investigate,
+        "/investigate?county=08001&eco=70"
+      ),
+      shell: getRouteShell("/investigate"),
+      unknown: isNavigationItemActive(investigate, "/not-a-registered-route"),
+    }).toStrictEqual({
+      active: true,
+      group: "explore",
+      label: "Investigation Workspace",
+      query: true,
+      shell: "analytical",
+      unknown: false,
     });
-    expect(getRouteShell("/investigate")).toBe("analytical");
-    expect(NAVIGATION_ITEMS.map((item) => item.href)).not.toContain(
-      "/variant_6"
-    );
   });
 
   it("matches dynamic route metadata by segment count", () => {
@@ -130,12 +150,12 @@ describe("Atlas navigation contract", () => {
     expect(isNavigationItemActive(dynamic, "/reports/abc/details")).toBeFalsy();
   });
 
-  it("assigns shells to public, docs, and direct-link routes", () => {
+  it("assigns shells to public, docs, and hidden routes", () => {
     expect(getRouteShell("/")).toBe("none");
     expect(getRouteShell("/overview")).toBe("analytical");
     expect(getRouteShell("/privacy")).toBe("public");
     expect(getRouteShell("/docs/evidence-and-uncertainty")).toBe("docs");
-    expect(getRouteShell("/variant_1")).toBe("none");
+    expect(getRouteShell("/design-system")).toBe("none");
   });
 
   it("keeps About Caraway Labs on the public shell and out of footer navigation", () => {
