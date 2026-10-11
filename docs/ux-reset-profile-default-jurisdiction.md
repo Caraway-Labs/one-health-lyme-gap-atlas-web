@@ -14,7 +14,7 @@ Settings and later onboarding share one adapter. There is no second preference s
 | `src/features/ux-reset/profile/saved-profile-client.ts` | Read and write through the generated client |
 | `src/features/ux-reset/profile/use-saved-profile.ts` | Shared React Query cache for Settings and Review |
 
-Route authority stays in `src/features/ux-reset/routes.ts` (`RESET_SETTINGS_PATH` = `/app/settings`) and `src/features/ux-reset/context-params.ts`. Explicit Review `scope` stays authoritative via `hasExplicitReviewScopeParam` and `resolveStartingReviewScope`. This contract does not add a parallel route helper.
+Route authority stays in `src/features/ux-reset/routes.ts` (`RESET_SETTINGS_PATH` = `/app/settings`) and `src/features/ux-reset/context-params.ts`. An explicit Review location stays authoritative via `hasExplicitReviewLocation` and `resolveStartingReviewScope`: a `scope` param or a `county` param blocks the saved starting view. This contract does not add a parallel route helper.
 
 ## National versus unselected
 
@@ -45,7 +45,7 @@ A lost response, non-200, or unreadable body stays unresolved. A follow-up read 
 
 ## Boundaries
 
-- Changing the saved default affects the next Review open that omits `scope`. It does not rewrite an existing explicit Review URL.
+- Changing the saved default affects the next Review open that omits both `scope` and `county`. It does not rewrite an existing explicit Review URL.
 - Scope changes on Review do not call `PUT /v1/me/profile`.
 - Onboarding (#436 / #437) must import this adapter instead of inventing completion storage.
 - API credential management stays out of this surface until a backend token contract exists.
