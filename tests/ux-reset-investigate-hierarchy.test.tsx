@@ -5,7 +5,7 @@ import {
   screen,
   within,
 } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
 import { evidenceInspectState } from "@/features/ux-reset/evidence/from-observation";
@@ -20,7 +20,10 @@ import {
 } from "@/features/ux-reset/investigate/county-evidence";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/investigate-settled-view";
-import { indicatorDomainsById } from "@/features/ux-reset/investigate/load-county-evidence";
+import {
+  indicatorDomainsById,
+  loadInvestigateCountyRecord,
+} from "@/features/ux-reset/investigate/load-county-evidence";
 import {
   environmentalCoverageRows,
   mapPublishedRow,
@@ -37,6 +40,7 @@ import {
   type Measure,
   type Observation,
 } from "@/generated/models";
+import { ApiResponseValidationError } from "@/lib/api-response-validation";
 
 import {
   INVESTIGATE_RELEASE_ID,
@@ -1010,53 +1014,66 @@ function statusTokenSeen(
   }
 }
 
-type MethodologyVersionCase = {
+const COUNTY_DETAIL_VALIDATION_FAILURE =
+  "County detail could not be verified. Please try again later.";
+
+type AcceptedMethodologyVersion = {
   governed: string | null;
   method: string;
   name: string;
-  raw: string | null | undefined;
+  outcome: "accepted";
+  raw: string;
+};
+
+type RejectedMethodologyVersion = {
+  name: string;
+  outcome: "rejected";
+  raw: "null" | "omitted";
 };
 
 /**
- * Present text is a governed version. Omission, null, empty string, and
- * whitespace are not. Surrounding whitespace on a present version is trimmed.
+ * The county contract requires methodology_version to be a string.
+ * Empty and whitespace-only strings validate and stay unset. Null and
+ * omission fail CountyV1CountiesFipsGetResponse before row mapping.
  */
-const METHODOLOGY_VERSION_CASES: readonly MethodologyVersionCase[] = [
+const METHODOLOGY_VERSION_CASES = [
   {
     governed: "semantic-1.0.0",
     method: "Version semantic-1.0.0",
     name: "present",
+    outcome: "accepted",
     raw: "semantic-1.0.0",
   },
   {
     governed: "semantic-1.0.0",
     method: "Version semantic-1.0.0",
-    name: "present with surrounding whitespace",
+    name: "whitespace-padded",
+    outcome: "accepted",
     raw: "  semantic-1.0.0  ",
   },
   {
     governed: null,
     method: "Unavailable",
-    name: "absent",
-    raw: undefined,
-  },
-  {
-    governed: null,
-    method: "Unavailable",
-    name: "null",
-    raw: null,
-  },
-  {
-    governed: null,
-    method: "Unavailable",
     name: "empty string",
+    outcome: "accepted",
     raw: "",
   },
   {
     governed: null,
     method: "Unavailable",
-    name: "whitespace",
+    name: "whitespace-only",
+    outcome: "accepted",
     raw: " \n\t ",
+  },
+  {
+    name: "null",
+    outcome: "rejected",
+    raw: "null",
+  },
+  {
+    name: "omitted",
+    outcome: "rejected",
+    raw: "omitted",
   },
 ];
 
@@ -1134,10 +1151,38 @@ function inspectProvenanceText(root: ParentNode): string {
   return lines.join("\n");
 }
 
-function countyRecordOnlyDetail(
-  methodologyVersion: string | null | undefined
-): Parameters<typeof publishedCountyRecordFromDetail>[0] {
-  const detail = {
+function countyRecordPayload(
+  methodologyVersion: string | "null" | "omitted"
+): unknown {
+  const release: Record<string, unknown> = {
+    bundle_sha256: "abc",
+    generated_at: "2026-09-18T00:50:00-07:00",
+    limitations: "",
+    loaded_at: "2026-09-18T00:50:00-07:00",
+    methodology_version: "semantic-1.0.0",
+    release_id: INVESTIGATE_RELEASE_ID,
+    schema_version: "1",
+    scope: "US_COUNTIES",
+    score_defaults: {},
+    sources: [
+      {
+        key: "tick",
+        label: "CDC ArboNET county tick status",
+        note: "",
+        url: "",
+        vintage: "2025",
+      },
+    ],
+    states: [],
+  };
+  if (methodologyVersion === "omitted") {
+    delete release.methodology_version;
+  } else if (methodologyVersion === "null") {
+    release.methodology_version = null;
+  } else {
+    release.methodology_version = methodologyVersion;
+  }
+  return {
     burgdorferi_status: "missing",
     case_count_floor_2023: null,
     color: "#e9602b",
@@ -1150,27 +1195,7 @@ function countyRecordOnlyDetail(
     pacificus_status: null,
     population: 0,
     priority: "not evidence",
-    release: {
-      bundle_sha256: "abc",
-      generated_at: "2026-09-18T00:50:00-07:00",
-      limitations: "",
-      loaded_at: "2026-09-18T00:50:00-07:00",
-      methodology_version: "semantic-1.0.0",
-      release_id: INVESTIGATE_RELEASE_ID,
-      schema_version: "1",
-      scope: "US_COUNTIES",
-      score_defaults: {},
-      sources: [
-        {
-          key: "tick",
-          label: "CDC ArboNET county tick status",
-          note: "",
-          url: "",
-          vintage: "2025",
-        },
-      ],
-      states: [],
-    },
+    release,
     rucc_2023: 1,
     scapularis_status: null,
     score: {
@@ -1191,24 +1216,12 @@ function countyRecordOnlyDetail(
     tick_status: "Established",
     uninsured_percent: 0,
     uninsured_percentile: null,
-  } satisfies CountyDetail;
-  if (methodologyVersion === undefined) {
-    const { methodology_version: _methodologyVersion, ...release } =
-      detail.release;
-    return { ...detail, release };
-  }
-  return {
-    ...detail,
-    release: {
-      ...detail.release,
-      methodology_version: methodologyVersion,
-    },
   };
 }
 
 function expectedInspectProvenance(
   row: (typeof COUNTY_RECORD_ONLY_ROWS)[number],
-  versionCase: MethodologyVersionCase
+  versionCase: AcceptedMethodologyVersion
 ): string {
   const lines = [
     `Source: ${row.source}`,
@@ -1228,6 +1241,7 @@ function expectedInspectProvenance(
 describe("County Investigate evidence hierarchy", () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   it("places observed families before coverage, context, and explicit limits", () => {
@@ -1799,16 +1813,30 @@ describe("County Investigate evidence hierarchy", () => {
     ).toBe("human");
   });
 
-  it.each(METHODOLOGY_VERSION_CASES)(
+  it.each(
+    METHODOLOGY_VERSION_CASES.filter(
+      (entry): entry is AcceptedMethodologyVersion =>
+        entry.outcome === "accepted"
+    )
+  )(
     "keeps Inspect provenance exact for county-record-only rows when methodology_version is $name",
-    (versionCase) => {
+    async (versionCase) => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        Response.json(countyRecordPayload(versionCase.raw))
+      );
+      const detail = await loadInvestigateCountyRecord({
+        fips: "08001",
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: new AbortController().signal,
+      });
+      if (!detail) {
+        throw new Error("The county record validator rejected a string.");
+      }
       const geography = investigateGeographyFixture("08001");
       if (!geography) {
         throw new Error("Denver County fixture is missing.");
       }
-      const record = publishedCountyRecordFromDetail(
-        countyRecordOnlyDetail(versionCase.raw)
-      );
+      const record = publishedCountyRecordFromDetail(detail);
       render(
         <InvestigateEvidenceHierarchy
           bundle={investigateBundleWithoutObservations({
@@ -1850,6 +1878,38 @@ describe("County Investigate evidence hierarchy", () => {
           expectedInspectProvenance(row, versionCase)
         );
       }
+    }
+  );
+
+  it.each(
+    METHODOLOGY_VERSION_CASES.filter(
+      (entry): entry is RejectedMethodologyVersion =>
+        entry.outcome === "rejected"
+    )
+  )(
+    "rejects a contract-invalid methodology_version when it is $name",
+    async (versionCase) => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        Response.json(countyRecordPayload(versionCase.raw))
+      );
+      const error = await loadInvestigateCountyRecord({
+        fips: "08001",
+        releaseId: INVESTIGATE_RELEASE_ID,
+        signal: new AbortController().signal,
+      }).then(
+        () => null,
+        (error: unknown) => error
+      );
+      if (!(error instanceof ApiResponseValidationError)) {
+        throw new Error("County detail validation did not fail.");
+      }
+      expect({
+        message: error.message,
+        name: error.name,
+      }).toStrictEqual({
+        message: COUNTY_DETAIL_VALIDATION_FAILURE,
+        name: "ApiResponseValidationError",
+      });
     }
   );
 

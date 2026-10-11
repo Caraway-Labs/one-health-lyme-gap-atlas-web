@@ -36,7 +36,10 @@ export type PublishedCountyRecord = {
   burgdorferiStatus: string;
   evidenceCompleteness: number;
   fips: string;
-  /** Trimmed `release.methodology_version`. Null when that version is absent. */
+  /**
+   * Trimmed `release.methodology_version`. Null when that required string is
+   * empty or whitespace. The county validator rejects null and omission.
+   */
   methodologyVersion: string | null;
   pacificusStatus: string | null;
   population: number | null;
@@ -127,25 +130,13 @@ type PublishedField = {
 };
 
 /**
- * County payloads can omit `methodology_version`, send null, or send blank
- * text even though the generated contract types it as a string. Those are
- * not a governed version.
+ * `AtlasMetadata.methodology_version` is a required string. Empty and
+ * whitespace-only strings still validate, and they stay unset. A null or
+ * omitted version fails `CountyV1CountiesFipsGetResponse` in
+ * `loadInvestigateCountyRecord` before this mapper runs.
  */
-type CountyReleaseMethodology = Omit<
-  CountyDetail["release"],
-  "methodology_version"
-> & {
-  methodology_version?: string | null;
-};
-
-/**
- * A present version is the trimmed release text. Omission, null, and blank
- * text stay unset so Inspect does not show them as a governed method.
- */
-function governedMethodologyVersion(
-  version: string | null | undefined
-): string | null {
-  const trimmed = version?.trim() ?? "";
+function governedMethodologyVersion(version: string): string | null {
+  const trimmed = version.trim();
   if (trimmed.length === 0) {
     return null;
   }
@@ -154,9 +145,7 @@ function governedMethodologyVersion(
 
 /** Drops score, priority, and color. Those are not Investigate evidence. */
 export function publishedCountyRecordFromDetail(
-  detail: Omit<CountyDetail, "release"> & {
-    release: CountyReleaseMethodology;
-  }
+  detail: CountyDetail
 ): PublishedCountyRecord {
   return {
     burgdorferiStatus: detail.burgdorferi_status,
