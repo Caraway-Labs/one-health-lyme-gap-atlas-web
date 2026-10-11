@@ -34,6 +34,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `.priority-pill` on `Badge` | `src/components/atlas-priority-badge.tsx` | Domain severity colors composed through Badge, not a second badge system |
 | MapLibre internals | `src/components/atlas-map.tsx` and map CSS | Geo renderer and ramps stay outside shadcn |
 | Assistant demo | `src/features/assistant` | Separate conversational product track |
+| Evidence brief local context | `src/features/ux-reset/action/evidence-brief-panel.tsx` | Native `textarea` for a user note. No shared Textarea primitive. The note is not governed evidence |
 
 - Editorial dark-hero CTAs may use `.hero-cta-primary` and `.cta-on-dark` on top of Button/`buttonVariants`. Do not reintroduce generic `.button` or `.card` classes.
 

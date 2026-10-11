@@ -1,3 +1,4 @@
+import { ACTION_EVIDENCE_BRIEF_PLAN_ID } from "@/features/ux-reset/action/evidence-brief";
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import {
   countyObservationsLoaded,
@@ -27,12 +28,14 @@ export type ActionPeriodState =
   (typeof actionPeriodStates)[keyof typeof actionPeriodStates];
 
 export const actionPlanPostureKinds = {
+  evidenceBrief: "evidence_brief",
   none: "none",
   surveillanceUnavailable: "surveillance_unavailable",
   unsupported: "unsupported",
 } as const;
 
 export type ActionPlanPosture =
+  | { kind: typeof actionPlanPostureKinds.evidenceBrief }
   | { kind: typeof actionPlanPostureKinds.none }
   | { kind: typeof actionPlanPostureKinds.surveillanceUnavailable }
   | { kind: typeof actionPlanPostureKinds.unsupported; plan: string };
@@ -103,8 +106,9 @@ export function actionBundlePeriodState(input: {
 }
 
 /**
- * One plan value is read from the Action URL. Any other value, including an
- * Evidence Brief id, is unsupported. Surveillance Planning stays unavailable.
+ * One plan value is read from the Action URL. `evidence-brief` opens the
+ * evidence brief. Surveillance Planning stays unavailable. Any other value,
+ * including `brief`, is an unsupported direct link.
  */
 export function actionPlanPosture(
   planValues: readonly string[]
@@ -124,6 +128,9 @@ export function actionPlanPosture(
   }
   if (plan === ACTION_SURVEILLANCE_PLAN_ID) {
     return { kind: actionPlanPostureKinds.surveillanceUnavailable };
+  }
+  if (plan === ACTION_EVIDENCE_BRIEF_PLAN_ID) {
+    return { kind: actionPlanPostureKinds.evidenceBrief };
   }
   return { kind: actionPlanPostureKinds.unsupported, plan };
 }

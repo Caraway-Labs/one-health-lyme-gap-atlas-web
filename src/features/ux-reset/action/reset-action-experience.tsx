@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+import { useQueryStates } from "nuqs";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
@@ -15,6 +15,14 @@ import {
   actionPlanPosture,
   actionPlanPostureKinds,
 } from "@/features/ux-reset/action/action-context";
+import { actionSearchParams } from "@/features/ux-reset/action/action-search-params";
+import {
+  ACTION_EVIDENCE_BRIEF_PLAN_ID,
+  decideEvidenceBrief,
+  EVIDENCE_BRIEF_OFFER,
+  EVIDENCE_BRIEF_UNAVAILABLE_WORKFLOW,
+} from "@/features/ux-reset/action/evidence-brief";
+import { ActionEvidenceBrief } from "@/features/ux-reset/action/evidence-brief-panel";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromAction } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
@@ -82,8 +90,21 @@ function unsupportedPlanMessage(plan: string): string {
 }
 
 function ActionExperienceInner() {
-  const searchParams = useSearchParams();
   const workspace = useInvestigateWorkspace();
+  const [actionUrl, setActionUrl] = useQueryStates(actionSearchParams, {
+    history: "replace",
+    scroll: false,
+    shallow: true,
+  });
+  const [localContext, setLocalContext] = useState("");
+  const noteCounty = useRef(workspace.requestedFips);
+  useEffect(() => {
+    if (noteCounty.current === workspace.requestedFips) {
+      return;
+    }
+    noteCounty.current = workspace.requestedFips;
+    setLocalContext("");
+  }, [workspace.requestedFips]);
   const handleRetryDirectory = () => {
     workspace.retryDirectory();
   };
@@ -161,7 +182,23 @@ function ActionExperienceInner() {
     observationsLoaded,
     requestedPeriod: workspace.period,
   });
-  const planPosture = actionPlanPosture(searchParams.getAll("plan"));
+  const planPosture = actionPlanPosture(actionUrl.plan);
+  const briefGate = decideEvidenceBrief({
+    catalogFailed:
+      hierarchy?.catalogFailed === true || Boolean(workspace.catalogError),
+    observationOutcome: workspace.observationOutcome,
+    realBundle: bundle,
+    recovery: workspace.recovery,
+  });
+  const briefReady = briefGate.kind === "ready";
+  const openEvidenceBrief = () => {
+    void setActionUrl({
+      plan:
+        planPosture.kind === actionPlanPostureKinds.evidenceBrief
+          ? []
+          : [ACTION_EVIDENCE_BRIEF_PLAN_ID],
+    });
+  };
   const unavailableRecords = carriedBundle
     ? actionGovernedUnavailableRecords(carriedBundle, findingSummary)
     : [];
@@ -445,17 +482,32 @@ function ActionExperienceInner() {
       <section
         aria-label="Follow-up workflows"
         className="ux-reset-action-workflows"
+        data-brief-ready={briefReady ? "true" : "false"}
         data-plan={planPosture.kind}
         data-testid="action-workflows"
       >
         <h2>Follow-up</h2>
         <p className="type-body" data-testid="action-workflow-status">
-          No follow-up workflow is available for this evidence. Atlas does not
-          choose or start an intervention.
+          {briefReady
+            ? EVIDENCE_BRIEF_OFFER
+            : EVIDENCE_BRIEF_UNAVAILABLE_WORKFLOW}
         </p>
         <p data-surveillance="unavailable" data-testid="action-surveillance">
           Surveillance Planning is not available.
         </p>
+        {briefReady ? (
+          <Button
+            aria-pressed={
+              planPosture.kind === actionPlanPostureKinds.evidenceBrief
+            }
+            data-testid="action-brief-offer"
+            type="button"
+            variant="secondary"
+            onClick={openEvidenceBrief}
+          >
+            Evidence brief
+          </Button>
+        ) : null}
         {planPosture.kind === actionPlanPostureKinds.unsupported ? (
           <AtlasStatusMessage titleAs="h3" tone="empty">
             <p data-testid="action-unsupported-plan">
@@ -464,6 +516,23 @@ function ActionExperienceInner() {
           </AtlasStatusMessage>
         ) : null}
       </section>
+      {planPosture.kind === actionPlanPostureKinds.evidenceBrief ? (
+        <ActionEvidenceBrief
+          catalogFailed={
+            hierarchy?.catalogFailed === true || Boolean(workspace.catalogError)
+          }
+          countyRecord={hierarchy?.countyRecord ?? null}
+          countyRecordError={hierarchy?.countyRecordError ?? null}
+          countyRecordLoading={hierarchy?.countyRecordLoading ?? false}
+          localContext={localContext}
+          measures={workspace.measures}
+          observationOutcome={workspace.observationOutcome}
+          onLocalContextChange={setLocalContext}
+          period={workspace.period}
+          realBundle={bundle}
+          recovery={workspace.recovery}
+        />
+      ) : null}
     </div>
   );
 }
