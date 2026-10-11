@@ -19,13 +19,11 @@ import {
   type InvestigatePeriodConflict,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
-  investigateFindingSummary,
-  investigateLimitationSummary,
+  investigateHandoffLimitation,
   publishedCaveatRow,
-  publishedFindingRow,
+  resolveInvestigateFinding,
 } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import {
-  combineCaveatText,
   coverageRowAnchor,
   environmentalCoverageRows,
   governedStatusDisclosure,
@@ -106,18 +104,6 @@ function conflictCopy(conflict: InvestigatePeriodConflict): string {
   return `${conflict.measureLabel} returned ${conflict.observationCount} observations for the same period (${period}) ${disagreementPhrase(conflict.disagreement)}. They stay separate and are not combined.`;
 }
 
-const COUNTY_RECORD_LOADING_FINDING =
-  "The published county record is still loading, so an empty finding is not shown yet.";
-const COUNTY_RECORD_LOADING_LIMITATION =
-  "The published county record is still loading, so an empty limitation is not shown yet.";
-const COUNTY_RECORD_FINDING_FAILURE =
-  "The published county record could not be loaded, so findings may be incomplete. That is a request failure, not a statement that no finding was returned.";
-const COUNTY_RECORD_LIMITATION_FAILURE =
-  "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.";
-const CATALOG_FINDING_FAILURE =
-  "The measure catalog could not be loaded, so no observation finding was requested. That is a request failure, not a statement that no finding was returned.";
-const CATALOG_LIMITATION_FAILURE =
-  "The measure catalog could not be loaded, so no observation limitation was requested. That is a request failure, not a statement that no limitation was returned.";
 const CATALOG_GAPS_FAILURE =
   "The measure catalog could not be loaded, so observation gaps were not requested. That is a request failure, not a statement that no gap was returned.";
 const EMPTY_GAPS =
@@ -397,7 +383,6 @@ export function InvestigateEvidenceHierarchy({
   retrying?: boolean;
 }) {
   const observationStatus = observationDisclosures(bundle);
-  const finding = bundle.leadFinding;
   const limitation = bundle.leadLimitation;
   const failedMeasureIds = new Set(
     bundle.measureFailures.map((failure) => failure.measureId)
@@ -417,83 +402,32 @@ export function InvestigateEvidenceHierarchy({
   const coverage = environmentalCoverageRows({
     contexts: coverageContexts(bundle),
   });
-  const holdEmptyFinding = countyRecordLoading && !finding;
+  const findingSummary = resolveInvestigateFinding({
+    bundle,
+    catalogFailed,
+    countyRecordError,
+    countyRecordLoading,
+    countyRecordPresent: countyRecord !== null,
+    publishedRows,
+  });
   const holdEmptyLimitation = countyRecordLoading && !limitation;
-  const countyRecordFailed =
-    Boolean(countyRecordError) && !finding && !published;
   const countyLimitationFailed =
     Boolean(countyRecordError) && !limitation && !published;
-  const publishedLead = publishedFindingRow(publishedRows);
-  const catalogFindingUnsent = catalogFailed && !finding && !publishedLead;
-  const findingSummary = holdEmptyFinding
-    ? {
-        text: COUNTY_RECORD_LOADING_FINDING,
-        title: "Published county record loading",
-      }
-    : countyRecordFailed
-      ? {
-          text: COUNTY_RECORD_FINDING_FAILURE,
-          title: "Published county record did not load",
-        }
-      : catalogFindingUnsent
-        ? {
-            text: CATALOG_FINDING_FAILURE,
-            title: "Measure catalog did not load",
-          }
-        : investigateFindingSummary(bundle, publishedRows);
-  const publishedFinding =
-    finding || holdEmptyFinding || countyRecordFailed || catalogFindingUnsent
-      ? null
-      : publishedLead;
   const publishedCaveat =
     holdEmptyLimitation || countyLimitationFailed
       ? null
       : publishedCaveatRow(publishedRows);
   const coverageCaveat =
     coverage.find((row) => row.state.limitationText) ?? null;
-  const releaseLimitation =
-    holdEmptyLimitation || countyLimitationFailed
-      ? ""
-      : (published?.releaseLimitation.trim() ?? "");
-  const combinedCaveat = combineCaveatText([
-    ...observationStatus.flatMap((disclosure) =>
-      disclosure.uncertaintyText ? [disclosure.uncertaintyText] : []
-    ),
-    publishedCaveat
-      ? `${publishedCaveat.row.evidence.claimLabel}: ${publishedCaveat.text}`
-      : null,
-    coverageCaveat?.state.limitationText
-      ? `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`
-      : null,
-    releaseLimitation || null,
-  ]);
-  const catalogLimitationUnsent =
-    catalogFailed && !limitation && !publishedCaveat && !coverageCaveat;
-  const limitationSummary = combinedCaveat
-    ? {
-        text: combinedCaveat,
-        title:
-          limitation?.observation.measureLabel ??
-          publishedCaveat?.row.evidence.claimLabel ??
-          coverageCaveat?.evidence.claimLabel ??
-          "Release limitation",
-      }
-    : holdEmptyLimitation
-      ? {
-          text: COUNTY_RECORD_LOADING_LIMITATION,
-          title: "Published county record loading",
-        }
-      : countyLimitationFailed
-        ? {
-            text: COUNTY_RECORD_LIMITATION_FAILURE,
-            title: "Published county record did not load",
-          }
-        : catalogLimitationUnsent
-          ? {
-              text: CATALOG_LIMITATION_FAILURE,
-              title: "Measure catalog did not load",
-            }
-          : investigateLimitationSummary(bundle, publishedRows);
+  const limitationSummary = investigateHandoffLimitation({
+    bundle,
+    catalogFailed,
+    countyRecordError,
+    countyRecordLoading,
+    countyRecordPresent: countyRecord !== null,
+    publishedReleaseLimitation: published?.releaseLimitation,
+    publishedRows,
+  });
   const conflicts = investigateEvidenceConflicts(bundle);
   const multipleObservations = investigateMultipleObservations(bundle);
   const limitations = uniqueLines([
@@ -529,6 +463,7 @@ export function InvestigateEvidenceHierarchy({
       <section
         className="ux-reset-investigate-summary"
         data-county={bundle.county.fips}
+        data-evidence-state={findingSummary.availability}
         data-testid="investigate-finding"
       >
         <AtlasSectionHeader
@@ -540,17 +475,8 @@ export function InvestigateEvidenceHierarchy({
           <p className="type-body" data-testid="investigate-finding-text">
             {findingSummary.text}
           </p>
-          {finding ? (
-            <a
-              href={`#${observationAnchor(finding.observation.observation_id)}`}
-            >
-              Inspect this finding
-            </a>
-          ) : null}
-          {publishedFinding ? (
-            <a href={`#${publishedRowAnchor(publishedFinding.measureId)}`}>
-              Inspect this finding
-            </a>
+          {findingSummary.inspectHref ? (
+            <a href={findingSummary.inspectHref}>Inspect this finding</a>
           ) : null}
         </Card>
       </section>

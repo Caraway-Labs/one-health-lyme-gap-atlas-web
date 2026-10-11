@@ -10,6 +10,7 @@ import {
   useAskAtlasInheritedContext,
 } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { InheritedContextNotice } from "@/features/ux-reset/ask-atlas/inherited-context-notice";
+import { CATALOG_FINDING_FAILURE } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import { clearObservationRetryDeadlines } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ValueState } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
@@ -220,6 +221,16 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
+    countyV1CountiesFipsGet: vi.fn<
+      typeof import("@/generated/atlas").countyV1CountiesFipsGet
+    >(
+      async () =>
+        ({
+          data: { detail: "not found" },
+          headers: new Headers(),
+          status: 404,
+        }) as never
+    ),
     scoresV1AtlasScoresGet: vi.fn<
       typeof import("@/generated/atlas").scoresV1AtlasScoresGet
     >(
@@ -286,8 +297,12 @@ function renderAction(
 async function waitForEvidence(county: string, timeout = 1000) {
   await waitFor(
     () => {
-      if (screen.getByTestId("action-evidence").dataset.county !== county) {
+      const evidence = screen.getByTestId("action-evidence");
+      if (evidence.dataset.county !== county) {
         throw new Error(`Waiting for county ${county}.`);
+      }
+      if (evidence.dataset.countyRecord === "loading") {
+        throw new Error(`Waiting for the county record to settle.`);
       }
     },
     { timeout }
@@ -329,6 +344,9 @@ describe("Action evidence handoff", () => {
       screen.getByTestId("action-return").getAttribute("href") ?? "";
     expect({
       availability: finding.includes("Available"),
+      canopy: limitation.includes(
+        "Tree canopy cover: Unavailable for this release."
+      ),
       cases: finding.includes("12 cases"),
       evidenceState: evidence.dataset.evidenceState,
       heading: screen.getByRole("heading", { level: 1 }).textContent,
@@ -349,6 +367,7 @@ describe("Action evidence handoff", () => {
       }),
     }).toStrictEqual({
       availability: true,
+      canopy: true,
       cases: true,
       evidenceState: "available",
       heading: "Denver",
@@ -716,15 +735,19 @@ describe("Action evidence handoff", () => {
       showContext: true,
     });
     await screen.findByText("Governed measures could not be loaded.");
+    await screen.findByText(CATALOG_FINDING_FAILURE);
     const failedContext = screen.getByTestId("ask-atlas-inherited-context");
     expect({
-      evidence: screen.queryByTestId("action-evidence"),
+      evidence: screen.getByTestId("action-finding-text").textContent,
+      evidenceState:
+        screen.getByTestId("action-evidence").dataset.evidenceState,
       geography: inheritedFieldValue(failedContext, "geography", "fieldId"),
       identity: screen.getByTestId("action-county-identity").textContent,
       none: screen.queryByTestId("ask-atlas-no-context"),
       release: inheritedFieldValue(failedContext, "release", "fieldId"),
     }).toStrictEqual({
-      evidence: null,
+      evidence: CATALOG_FINDING_FAILURE,
+      evidenceState: "",
       geography: "08001",
       identity: "FIPS 08001 · Colorado (CO).",
       none: null,

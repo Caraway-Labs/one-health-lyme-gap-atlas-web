@@ -126,6 +126,8 @@ function appendUnique(values: string[], value: string): void {
 /**
  * County, release, periods, sources, and caveats copied from the observations
  * already on the page. The PDF includes published measures and names the rest.
+ * It does not repeat the resolved finding sentence and does not add a second
+ * mapping for county-record-only rows.
  */
 export function investigatePdfContext(
   bundle: CountyEvidenceBundle,

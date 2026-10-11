@@ -11,6 +11,7 @@ import {
   type InvestigateCompareOfferKind,
 } from "@/features/ux-reset/investigate/investigate-next-step";
 import { InvestigatePdfExport } from "@/features/ux-reset/investigate/investigate-pdf-export";
+import type { ResolvedInvestigateFinding } from "@/features/ux-reset/investigate/investigate-visible-summary";
 import { cn } from "@/lib/utils";
 
 function investigateCompareTestId(kind: InvestigateCompareOfferKind): string {
@@ -29,19 +30,26 @@ function investigateCompareTestId(kind: InvestigateCompareOfferKind): string {
 }
 
 export function InvestigateNextSteps({
+  actionBundle = null,
   actionHref,
   bundle,
   compare,
   compareHref,
   countyFips,
+  finding,
+  findingCountyLabel,
   requestedPeriod,
   resolvedCounty,
 }: {
+  actionBundle?: CountyEvidenceBundle | null;
   actionHref: string;
+  /** Observation bundle. The PDF export reads this and does not repeat the finding sentence. */
   bundle: CountyEvidenceBundle | null;
   compare: readonly string[];
   compareHref: string;
   countyFips: string;
+  finding: ResolvedInvestigateFinding | null;
+  findingCountyLabel: string;
   requestedPeriod: string | null;
   resolvedCounty: string | null;
 }) {
@@ -49,7 +57,9 @@ export function InvestigateNextSteps({
     compare,
     resolvedCounty,
   });
-  const actionOffer = investigateActionOffer({ bundle });
+  const actionOffer = investigateActionOffer({
+    bundle: actionBundle ?? bundle,
+  });
   const pdfContext = bundle
     ? investigatePdfContext(bundle, requestedPeriod)
     : null;
@@ -91,13 +101,13 @@ export function InvestigateNextSteps({
           {actionOffer.label}
         </Link>
       ) : null}
-      {bundle?.leadFinding ? (
+      {finding?.inspectHref ? (
         <a
-          data-county={bundle.county.fips}
+          data-county={countyFips}
           data-testid="investigate-next-finding"
-          href={`#investigate-observation-${bundle.leadFinding.observation.observation_id}`}
+          href={finding.inspectHref}
         >
-          Inspect the finding for {bundle.county.label}
+          Inspect the finding for {findingCountyLabel}
         </a>
       ) : null}
       {bundle?.leadLimitation ? (

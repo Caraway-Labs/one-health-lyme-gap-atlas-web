@@ -1,4 +1,8 @@
-import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
+import {
+  evidenceAvailabilityValues,
+  type EvidenceAvailability,
+  type EvidenceObjectModel,
+} from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import {
   countyEvidenceGap,
@@ -6,9 +10,50 @@ import {
   type CountyEvidenceGap,
   type CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
-import type { PublishedHierarchyRow } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import {
+  combineCaveatText,
+  environmentalCoverageRows,
+  governedStatusDisclosure,
+  publishedCountyHierarchy,
+  publishedRowAnchor,
+  type EnvironmentalCoverageContext,
+  type PublishedCountyRecord,
+  type PublishedHierarchyRow,
+} from "@/features/ux-reset/investigate/published-county-hierarchy";
+import type { Measure } from "@/generated/models";
 
 export type InvestigateVisibleSummary = {
+  text: string;
+  title: string;
+};
+
+export const COUNTY_RECORD_LOADING_FINDING =
+  "The published county record is still loading, so an empty finding is not shown yet.";
+export const COUNTY_RECORD_LOADING_LIMITATION =
+  "The published county record is still loading, so an empty limitation is not shown yet.";
+export const COUNTY_RECORD_FINDING_FAILURE =
+  "The published county record could not be loaded, so findings may be incomplete. That is a request failure, not a statement that no finding was returned.";
+export const COUNTY_RECORD_LIMITATION_FAILURE =
+  "The published county record could not be loaded, so limitations may be incomplete. That is a request failure, not a statement that no limitation was returned.";
+export const CATALOG_FINDING_FAILURE =
+  "The measure catalog could not be loaded, so no observation finding was requested. That is a request failure, not a statement that no finding was returned.";
+export const CATALOG_LIMITATION_FAILURE =
+  "The measure catalog could not be loaded, so no observation limitation was requested. That is a request failure, not a statement that no limitation was returned.";
+
+/** Availability of the resolved finding. Empty when the sentence is not an evidence state. */
+export type ResolvedFindingAvailability = "" | EvidenceAvailability;
+
+/**
+ * The one finding Investigate, Action, Ask Atlas, and the next-step link share.
+ * Observation leads win. A published Available or Limited row fills the sentence
+ * when the observation series has none. Request failures stay request failures.
+ */
+export type ResolvedInvestigateFinding = {
+  availability: ResolvedFindingAvailability;
+  evidence: EvidenceObjectModel | null;
+  inspectHref: string | null;
+  measureId: string | null;
+  measureLabel: string | null;
   text: string;
   title: string;
 };
@@ -116,8 +161,8 @@ export function publishedCaveatRow(
 }
 
 /**
- * The finding sentence Investigate shows for a loaded county bundle.
- * Action repeats this sentence so the handoff does not rewrite the summary.
+ * Observation or published sentence for a loaded county bundle.
+ * Request-failure and loading sentences live in `resolveInvestigateFinding`.
  * Published county rows fill the sentence when the observation series has none.
  */
 export function investigateFindingSummary(
@@ -142,9 +187,9 @@ export function investigateFindingSummary(
 }
 
 /**
- * The limitation sentence Investigate shows for a loaded county bundle.
- * Published county caveats fill the sentence when the observation series
- * has none. Action's one-argument call stays observation-scoped.
+ * Observation or published caveat for a loaded county bundle.
+ * Action uses `investigateHandoffLimitation`, which passes these rows through
+ * the same loading and request-failure sentences as Investigate.
  */
 export function investigateLimitationSummary(
   bundle: CountyEvidenceBundle,
@@ -176,4 +221,235 @@ export function visibleCountyObservations(
   }
   records.push(...bundle.unassigned);
   return records;
+}
+
+function observationInspectHref(observationId: string): string {
+  return `#investigate-observation-${observationId}`;
+}
+
+function resolvedGap(
+  summary: InvestigateVisibleSummary,
+  availability: ResolvedFindingAvailability
+): ResolvedInvestigateFinding {
+  return {
+    availability,
+    evidence: null,
+    inspectHref: null,
+    measureId: null,
+    measureLabel: null,
+    text: summary.text,
+    title: summary.title,
+  };
+}
+
+function unavailableObservationAvailability(
+  bundle: CountyEvidenceBundle
+): ResolvedFindingAvailability {
+  const unavailable = visibleCountyObservations(bundle).some(
+    (record) =>
+      record.evidence.availability === evidenceAvailabilityValues.unavailable
+  );
+  return unavailable ? evidenceAvailabilityValues.unavailable : "";
+}
+
+/**
+ * Published rows for measures the observation series does not already show.
+ * Investigate and Action both build the finding from this list.
+ */
+export function publishedRowsForCounty(input: {
+  bundle: CountyEvidenceBundle;
+  countyRecord: PublishedCountyRecord | null;
+  measures: readonly Measure[];
+}): readonly PublishedHierarchyRow[] {
+  if (!input.countyRecord) {
+    return NO_PUBLISHED_ROWS;
+  }
+  return publishedCountyHierarchy({
+    measures: input.measures,
+    observedMeasureIds: visibleCountyObservations(input.bundle).map(
+      (record) => record.measureId
+    ),
+    record: input.countyRecord,
+  }).rows;
+}
+
+/**
+ * Finding text, title, and availability for every surface that repeats
+ * Investigate. A published Available or Limited row is kept when the
+ * observation series has no lead, including after a catalog failure.
+ */
+export function resolveInvestigateFinding(input: {
+  bundle: CountyEvidenceBundle;
+  catalogFailed?: boolean;
+  countyRecordError?: string | null;
+  countyRecordLoading?: boolean;
+  countyRecordPresent?: boolean;
+  publishedRows?: readonly PublishedHierarchyRow[];
+}): ResolvedInvestigateFinding {
+  const rows = input.publishedRows ?? NO_PUBLISHED_ROWS;
+  const observation = input.bundle.leadFinding;
+  const published = publishedLeadRow(rows);
+  if (input.countyRecordLoading && !observation) {
+    return resolvedGap(
+      {
+        text: COUNTY_RECORD_LOADING_FINDING,
+        title: "Published county record loading",
+      },
+      ""
+    );
+  }
+  if (input.countyRecordError && !observation && !input.countyRecordPresent) {
+    return resolvedGap(
+      {
+        text: COUNTY_RECORD_FINDING_FAILURE,
+        title: "Published county record did not load",
+      },
+      ""
+    );
+  }
+  if (input.catalogFailed && !observation && !published) {
+    return resolvedGap(
+      {
+        text: CATALOG_FINDING_FAILURE,
+        title: "Measure catalog did not load",
+      },
+      ""
+    );
+  }
+  const summary = investigateFindingSummary(input.bundle, rows);
+  if (observation) {
+    return {
+      availability: observation.evidence.availability,
+      evidence: observation.evidence,
+      inspectHref: observationInspectHref(
+        observation.observation.observation_id
+      ),
+      measureId: observation.measureId,
+      measureLabel: observation.measureLabel,
+      text: summary.text,
+      title: summary.title,
+    };
+  }
+  if (published) {
+    return {
+      availability: published.evidence.availability,
+      evidence: published.evidence,
+      inspectHref: `#${publishedRowAnchor(published.measureId)}`,
+      measureId: published.measureId,
+      measureLabel: published.evidence.claimLabel,
+      text: summary.text,
+      title: summary.title,
+    };
+  }
+  return resolvedGap(summary, unavailableObservationAvailability(input.bundle));
+}
+
+function observationUncertaintySentences(
+  bundle: CountyEvidenceBundle
+): string[] {
+  const sentences: string[] = [];
+  for (const record of visibleCountyObservations(bundle)) {
+    const [leadLimitation] = record.evidence.provenance.limitations;
+    const uncertainty = governedStatusDisclosure({
+      claimLabel: record.measureLabel,
+      limitations: leadLimitation ? [leadLimitation] : [],
+      reasonCode: record.evidence.reasonCode ?? record.observation.value_state,
+      valueState: record.observation.value_state,
+    });
+    if (uncertainty.uncertaintyText) {
+      sentences.push(`${record.measureLabel}: ${uncertainty.uncertaintyText}`);
+    }
+  }
+  return sentences;
+}
+
+function coverageContextsForBundle(
+  bundle: CountyEvidenceBundle
+): EnvironmentalCoverageContext[] {
+  const contexts: EnvironmentalCoverageContext[] = [];
+  for (const record of visibleCountyObservations(bundle)) {
+    const context = record.observation.environmental_context;
+    if (!context) {
+      continue;
+    }
+    contexts.push({
+      context,
+      measureId: record.measureId,
+      measureLabel: record.measureLabel,
+      observationId: record.observation.observation_id,
+      provenance: record.evidence.provenance,
+    });
+  }
+  return contexts;
+}
+
+/**
+ * The limitation paragraph Investigate shows, including unavailable-state
+ * disclosures that are not the lead caveat. Action repeats this paragraph
+ * so a reload does not drop them.
+ */
+export function investigateHandoffLimitation(input: {
+  bundle: CountyEvidenceBundle;
+  catalogFailed?: boolean;
+  countyRecordError?: string | null;
+  countyRecordLoading?: boolean;
+  countyRecordPresent?: boolean;
+  publishedReleaseLimitation?: string | null;
+  publishedRows?: readonly PublishedHierarchyRow[];
+}): InvestigateVisibleSummary {
+  const rows = input.publishedRows ?? NO_PUBLISHED_ROWS;
+  const limitation = input.bundle.leadLimitation;
+  const holdEmpty = Boolean(input.countyRecordLoading) && !limitation;
+  const countyFailed =
+    Boolean(input.countyRecordError) &&
+    !limitation &&
+    !input.countyRecordPresent;
+  const published = holdEmpty || countyFailed ? null : publishedCaveatRow(rows);
+  const coverageCaveat =
+    environmentalCoverageRows({
+      contexts: coverageContextsForBundle(input.bundle),
+    }).find((row) => row.state.limitationText) ?? null;
+  const releaseLimitation =
+    holdEmpty || countyFailed
+      ? ""
+      : (input.publishedReleaseLimitation?.trim() ?? "");
+  const combined = combineCaveatText([
+    ...observationUncertaintySentences(input.bundle),
+    published
+      ? `${published.row.evidence.claimLabel}: ${published.text}`
+      : null,
+    coverageCaveat?.state.limitationText
+      ? `${coverageCaveat.evidence.claimLabel}: ${coverageCaveat.state.limitationText}`
+      : null,
+    releaseLimitation || null,
+  ]);
+  if (combined) {
+    return {
+      text: combined,
+      title:
+        limitation?.observation.measureLabel ??
+        published?.row.evidence.claimLabel ??
+        coverageCaveat?.evidence.claimLabel ??
+        "Release limitation",
+    };
+  }
+  if (holdEmpty) {
+    return {
+      text: COUNTY_RECORD_LOADING_LIMITATION,
+      title: "Published county record loading",
+    };
+  }
+  if (countyFailed) {
+    return {
+      text: COUNTY_RECORD_LIMITATION_FAILURE,
+      title: "Published county record did not load",
+    };
+  }
+  if (input.catalogFailed && !limitation && !published && !coverageCaveat) {
+    return {
+      text: CATALOG_LIMITATION_FAILURE,
+      title: "Measure catalog did not load",
+    };
+  }
+  return investigateLimitationSummary(input.bundle, rows);
 }

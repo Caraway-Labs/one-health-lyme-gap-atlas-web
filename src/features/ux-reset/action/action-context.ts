@@ -3,7 +3,10 @@ import type {
   CountyEvidenceBundle,
   CountyEvidenceObservation,
 } from "@/features/ux-reset/investigate/county-evidence";
-import { visibleCountyObservations } from "@/features/ux-reset/investigate/investigate-visible-summary";
+import {
+  visibleCountyObservations,
+  type ResolvedInvestigateFinding,
+} from "@/features/ux-reset/investigate/investigate-visible-summary";
 
 /**
  * Page-local Action plan id for the deferred Surveillance Planning workflow.
@@ -60,13 +63,16 @@ export function actionRequestedPeriodState(input: {
 }
 
 /**
- * Governed unavailable observations when no available or limited finding
- * exists. Failed requests and empty responses are not observations.
+ * Governed unavailable observations when the resolved finding has no
+ * Available or Limited evidence. A published lead is not an observation
+ * lead, so it suppresses this list the same way an observation lead does.
+ * Failed requests and empty responses are not observations.
  */
 export function actionGovernedUnavailableRecords(
-  bundle: CountyEvidenceBundle
+  bundle: CountyEvidenceBundle,
+  finding?: ResolvedInvestigateFinding | null
 ): readonly CountyEvidenceObservation[] {
-  if (bundle.leadFinding) {
+  if (bundle.leadFinding || finding?.evidence) {
     return [];
   }
   return visibleCountyObservations(bundle).filter(

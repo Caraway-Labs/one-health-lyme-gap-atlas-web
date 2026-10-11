@@ -27,6 +27,10 @@ import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/in
 import { InvestigateNextSteps } from "@/features/ux-reset/investigate/investigate-next-steps";
 import { settledInvestigateHierarchy } from "@/features/ux-reset/investigate/investigate-settled-view";
 import {
+  publishedRowsForCounty,
+  resolveInvestigateFinding,
+} from "@/features/ux-reset/investigate/investigate-visible-summary";
+import {
   useInvestigateWorkspace,
   type InvestigateRecovery,
 } from "@/features/ux-reset/investigate/use-investigate-workspace";
@@ -165,6 +169,23 @@ function InvestigateExperienceInner() {
     releaseId: workspace.releaseId,
   });
   const visibleBundle = hierarchy?.bundle ?? null;
+  const publishedRows = visibleBundle
+    ? publishedRowsForCounty({
+        bundle: visibleBundle,
+        countyRecord: hierarchy?.countyRecord ?? null,
+        measures: workspace.measures,
+      })
+    : [];
+  const carriedFinding = visibleBundle
+    ? resolveInvestigateFinding({
+        bundle: visibleBundle,
+        catalogFailed: hierarchy?.catalogFailed,
+        countyRecordError: hierarchy?.countyRecordError,
+        countyRecordLoading: hierarchy?.countyRecordLoading,
+        countyRecordPresent: hierarchy?.countyRecord !== null,
+        publishedRows,
+      })
+    : null;
   const nextCounty = bundle?.county.fips ?? workspace.requestedFips ?? "";
   const resolvedCounty =
     bundle?.county.fips ?? workspace.identity?.fips ?? null;
@@ -179,7 +200,8 @@ function InvestigateExperienceInner() {
   );
   usePublishAskAtlasInheritedContext(
     inheritedContextFromInvestigate({
-      bundle,
+      bundle: visibleBundle,
+      finding: carriedFinding,
       identity: workspace.identity,
       releaseId: workspace.releaseId,
       releaseMismatch: workspace.recovery === "release_mismatch",
@@ -380,11 +402,16 @@ function InvestigateExperienceInner() {
       ) : null}
 
       <InvestigateNextSteps
+        actionBundle={visibleBundle}
         actionHref={actionHref}
         bundle={bundle}
         compare={workspace.compare}
         compareHref={compareHref}
         countyFips={nextCounty}
+        finding={carriedFinding}
+        findingCountyLabel={
+          visibleBundle?.county.label ?? workspace.identity?.label ?? nextCounty
+        }
         requestedPeriod={workspace.period}
         resolvedCounty={resolvedCounty}
       />
