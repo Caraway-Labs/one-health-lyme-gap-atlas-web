@@ -8,13 +8,18 @@ import {
 
 async function installReviewApiMocks(
   page: import("@playwright/test").Page,
-  options: { profileState?: string | null; scoreDelayMs?: number } = {}
+  options: {
+    profileMethods?: string[];
+    profileState?: string | null;
+    scoreDelayMs?: number;
+  } = {}
 ) {
   const profileState =
     options.profileState === undefined ? "CO" : options.profileState;
   const scoreDelayMs = options.scoreDelayMs ?? 0;
 
   await page.route("**/v1/me/profile", async (route) => {
+    options.profileMethods?.push(route.request().method());
     await route.fulfill({
       json: {
         profile: profileState ? { state_code: profileState } : null,
@@ -191,7 +196,8 @@ test.describe("Review national and state scope controls", () => {
   test("does not change Settings default jurisdiction after scope switches", async ({
     page,
   }, testInfo) => {
-    await installReviewApiMocks(page, { profileState: "CO" });
+    const profileMethods: string[] = [];
+    await installReviewApiMocks(page, { profileMethods, profileState: "CO" });
     await page.goto("/app/review?scope=NY");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "United States" }).click();
@@ -209,6 +215,57 @@ test.describe("Review national and state scope controls", () => {
     await expect(
       page.locator("[data-default-jurisdiction='CO']")
     ).toBeVisible();
+    expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
+      []
+    );
+  });
+
+  test("replaces a saved state scope so Back does not open national Review", async ({
+    page,
+  }) => {
+    await installReviewApiMocks(page, { profileState: "CO" });
+    await page.goto("/app/settings");
+    await page.goto("/app/review");
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "CO"
+    );
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
+      0
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/settings/);
+    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
+      0
+    );
+  });
+
+  test("rewrites an invalid scope to national instead of the profile state", async ({
+    page,
+  }) => {
+    await installReviewApiMocks(page, { profileState: "CO" });
+    await page.goto("/app/review?scope=NOT");
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect(page.getByTestId("review-scope-status")).toContainText(
+      "United States"
+    );
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page).not.toHaveURL(/scope=NOT/);
+    await expect(page.getByTestId("review-state-panel")).toHaveCount(0);
+  });
+
+  test("leaves an unrecognized state code unsupported", async ({ page }) => {
+    await installReviewApiMocks(page, { profileState: "CO" });
+    await page.goto("/app/review?scope=ZZ");
+    await expect(page.getByTestId("review-scope-unsupported")).toHaveText(
+      "ZZ is not supported — lower 48 only."
+    );
+    await expect(page).toHaveURL(/scope=ZZ/);
+    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
+      0
+    );
+    await expect(page.getByTestId("review-state-panel")).toHaveCount(0);
   });
 
   test("ignores a delayed response for a previous scope", async ({ page }) => {
@@ -252,6 +309,57 @@ test.describe("Review national and state scope controls", () => {
     await expect(page.getByTestId("review-scope-status")).toHaveAttribute(
       "data-request-scope",
       "NY"
+    );
+  });
+
+  test("keeps the current state review when an earlier state's response arrives late", async ({
+    page,
+  }) => {
+    await page.route("**/v1/me/profile", async (route) => {
+      await route.fulfill({
+        json: { profile: { state_code: "CO" } },
+        status: 200,
+      });
+    });
+    await page.route("**/v1/atlas/metadata**", async (route) => {
+      await route.fulfill({ json: reviewScopeMetadataFixture, status: 200 });
+    });
+    await page.route("**/v1/states/*/review**", async (route) => {
+      const state =
+        new URL(route.request().url()).pathname.split("/").at(-2) ?? "";
+      if (state === "CO") {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+      }
+      await route.fulfill({
+        json: stateReviewResponseForUrl(route.request().url()),
+        status: 200,
+      });
+    });
+
+    const lateColorado = page
+      .waitForResponse(
+        (response) => response.url().includes("/v1/states/CO/review"),
+        { timeout: 8000 }
+      )
+      .catch(() => null);
+    await page.goto("/app/review?scope=CO");
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "New York (NY)" }).click();
+    await expect(page.getByTestId("review-candidate")).toContainText("Albany");
+    await lateColorado;
+    await expect(page.getByTestId("review-candidate")).toContainText("Albany");
+    await expect(page.getByText("Denver")).toHaveCount(0);
+    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
+      "data-rendered-scope",
+      "NY"
+    );
+    await expect(page.getByTestId("review-scope-status")).toContainText(
+      "New York"
+    );
+    await expect(page).toHaveURL(/scope=NY/);
+    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
+      "href",
+      /scope=NY/
     );
   });
 });

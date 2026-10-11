@@ -7,8 +7,10 @@ import {
 import { buildReviewScopePresentation } from "@/features/ux-reset/review/build-review-presentation";
 import {
   hasExplicitReviewScopeParam,
+  isReviewStartingScopeUnresolved,
   resolveStartingReviewScope,
   reviewScopeMatchesPresentation,
+  reviewScopeQueryCanonicalRewrite,
 } from "@/features/ux-reset/review/resolve-review-scope";
 import type { CountyScoreSummary } from "@/generated/models";
 
@@ -78,6 +80,79 @@ describe("Review scope resolution", () => {
       hasExplicitReviewScopeParam(new URLSearchParams("scope=ALL"))
     ).toBeTruthy();
     expect(hasExplicitReviewScopeParam(new URLSearchParams())).toBeFalsy();
+  });
+
+  it("rewrites malformed scope queries to the canonical token", () => {
+    expect({
+      conflict: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=CO&scope=NY")
+      ),
+      explicit: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=CO")
+      ),
+      malformed: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=NOT")
+      ),
+      national: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=ALL")
+      ),
+      omitted: reviewScopeQueryCanonicalRewrite(new URLSearchParams()),
+      padded: reviewScopeQueryCanonicalRewrite(
+        new URLSearchParams("scope=%20CO%20")
+      ),
+    }).toStrictEqual({
+      conflict: "ALL",
+      explicit: null,
+      malformed: "ALL",
+      national: null,
+      omitted: null,
+      padded: "CO",
+    });
+  });
+
+  it("holds national orientation until a saved state default is applied", () => {
+    const pending = {
+      arrivalExplicitScope: false,
+      metadataError: false,
+      metadataReady: true,
+      profileFetched: false,
+      profileStateCode: "CO",
+      scope: "ALL",
+      stateOptions,
+      userChoseScope: false,
+    };
+    expect({
+      appliedState: isReviewStartingScopeUnresolved({
+        ...pending,
+        profileFetched: true,
+        scope: "CO",
+      }),
+      explicitArrival: isReviewStartingScopeUnresolved({
+        ...pending,
+        arrivalExplicitScope: true,
+      }),
+      loadingProfile: isReviewStartingScopeUnresolved(pending),
+      profileReady: isReviewStartingScopeUnresolved({
+        ...pending,
+        profileFetched: true,
+      }),
+      unselectedProfile: isReviewStartingScopeUnresolved({
+        ...pending,
+        profileFetched: true,
+        profileStateCode: null,
+      }),
+      userChoice: isReviewStartingScopeUnresolved({
+        ...pending,
+        userChoseScope: true,
+      }),
+    }).toStrictEqual({
+      appliedState: false,
+      explicitArrival: false,
+      loadingProfile: true,
+      profileReady: true,
+      unselectedProfile: false,
+      userChoice: false,
+    });
   });
 
   it("round-trips explicit national scope in shared URL context", () => {

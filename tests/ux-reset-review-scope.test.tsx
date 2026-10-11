@@ -145,6 +145,12 @@ vi.mock(import("@/generated/atlas"), () => ({
     data: reviewScopeScoresFixture,
     status: 200,
   })),
+  saveProfileV1MeProfilePut: vi.fn<
+    () => Promise<{ data: { profile: null }; status: number }>
+  >(async () => ({
+    data: { profile: null },
+    status: 200,
+  })),
   stateReviewV1StatesStateReviewGet: vi.fn<
     (
       state: string,
@@ -195,7 +201,7 @@ function renderReview(
   search = "",
   options: {
     client?: QueryClient;
-    onUrlUpdate?: (queryString: string) => void;
+    onUrlUpdate?: (queryString: string, history: "push" | "replace") => void;
   } = {}
 ) {
   mockedSearch = search.startsWith("?") ? search.slice(1) : search;
@@ -208,7 +214,9 @@ function renderReview(
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter
         hasMemory
-        onUrlUpdate={({ queryString }) => options.onUrlUpdate?.(queryString)}
+        onUrlUpdate={({ options: updateOptions, queryString }) =>
+          options.onUrlUpdate?.(queryString, updateOptions.history)
+        }
         searchParams={new URL(`http://localhost/app/review${search}`).search}
       >
         <ResetReviewExperience />
@@ -1374,6 +1382,256 @@ describe("Reset Review scope UI", () => {
     expect(screen.getByTestId("review-scope-status").dataset.requestScope).toBe(
       "ALL"
     );
+  });
+
+  it("applies a state profile default with replace and without a national flash", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const updates: { history: string; query: string }[] = [];
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    renderReview("", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Loading review scope…")).toBeTruthy()
+    );
+    expect(screen.queryByTestId("review-national-orientation")).toBeNull();
+    expect(screen.queryByTestId("review-scope-status")).toBeNull();
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("CO")
+    );
+    expect({
+      history: updates[0]?.history ?? "",
+      national: screen.queryByTestId("review-national-orientation"),
+      query: updates[0]?.query ?? "",
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      status: screen.getByTestId("review-scope-status").textContent,
+    }).toStrictEqual({
+      history: "replace",
+      national: null,
+      query: expect.stringContaining("scope=CO"),
+      saves: 0,
+      status: expect.stringContaining("Colorado"),
+    });
+  });
+
+  it("keeps a scope chosen before the profile default arrives", async () => {
+    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
+      await import("@/generated/atlas");
+    const profileGate = Promise.withResolvers<{
+      data: { profile: { state_code: string } };
+      status: number;
+    }>();
+    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
+      profileGate.promise as never
+    );
+    renderReview("");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-scope-select")).toBeTruthy()
+    );
+    fireEvent.click(screen.getByTestId("review-scope-select"));
+    const newYork = await screen.findByRole("option", {
+      name: "New York (NY)",
+    });
+    fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+    fireEvent.click(newYork);
+    profileGate.resolve({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("review-scope-results").dataset.renderedScope
+      ).toBe("NY")
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("review-candidate").textContent).toContain(
+        "Albany"
+      )
+    );
+    expect({
+      denver: screen.queryByText("Denver"),
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      scope: screen.getByTestId("review-scope-status").textContent,
+    }).toStrictEqual({
+      denver: null,
+      saves: 0,
+      scope: expect.stringContaining("New York"),
+    });
+  });
+
+  it("rewrites an invalid scope to national without applying the profile state", async () => {
+    const {
+      getProfileV1MeProfileGet,
+      saveProfileV1MeProfilePut,
+      stateReviewV1StatesStateReviewGet,
+    } = await import("@/generated/atlas");
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+      data: { profile: { state_code: "CO" } },
+      status: 200,
+    } as never);
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    const updates: string[] = [];
+    renderReview("?scope=NOT", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("review-national-orientation")).toBeTruthy()
+    );
+    expect({
+      panel: screen.queryByTestId("review-state-panel"),
+      reviewCalls: vi.mocked(stateReviewV1StatesStateReviewGet).mock.calls
+        .length,
+      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      status: screen.getByTestId("review-scope-status").textContent,
+      updates,
+    }).toStrictEqual({
+      panel: null,
+      reviewCalls: 0,
+      saves: 0,
+      status: expect.stringContaining("United States"),
+      updates: [expect.stringContaining("scope=ALL")],
+    });
+  });
+
+  it("does not request a review for an unrecognized state code", async () => {
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    renderReview("?scope=ZZ");
+    await waitFor(() =>
+      expect(screen.getByTestId("review-scope-unsupported").textContent).toBe(
+        "ZZ is not supported — lower 48 only."
+      )
+    );
+    expect({
+      national: screen.queryByTestId("review-national-orientation"),
+      requestScope: screen.getByTestId("review-scope-status").dataset
+        .requestScope,
+      reviewCalls: vi.mocked(stateReviewV1StatesStateReviewGet).mock.calls
+        .length,
+    }).toStrictEqual({
+      national: null,
+      requestScope: "ZZ",
+      reviewCalls: 0,
+    });
+  });
+
+  it("keeps URL, list, map, and handoff on the new scope when a prior review arrives late", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const { stateReviewV1StatesStateReviewGet } =
+      await import("@/generated/atlas");
+    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-73.9, 42.6], type: "Point" },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const pending: { resolve: () => void; state: string }[] = [];
+    review.mockImplementation(((
+      state: string,
+      params?: { dataset_version?: string }
+    ) => {
+      const held = Promise.withResolvers<{
+        data: ReturnType<typeof defaultReviewForState>;
+        status: 200;
+      }>();
+      pending.push({
+        resolve: () => {
+          held.resolve(defaultStateReviewResponse(state, params));
+        },
+        state,
+      });
+      return held.promise;
+    }) as never);
+    const updates: string[] = [];
+    try {
+      renderReview("?scope=CO", {
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      await waitFor(() =>
+        expect(pending.some((entry) => entry.state === "CO")).toBeTruthy()
+      );
+      fireEvent.click(screen.getByTestId("review-scope-select"));
+      const newYork = await screen.findByRole("option", {
+        name: "New York (NY)",
+      });
+      fireEvent.pointerDown(newYork, { pointerType: "mouse" });
+      fireEvent.click(newYork);
+      await waitFor(() =>
+        expect(pending.some((entry) => entry.state === "NY")).toBeTruthy()
+      );
+      pending.find((entry) => entry.state === "NY")?.resolve();
+      await waitFor(() =>
+        expect(screen.getByTestId("review-candidate").textContent).toContain(
+          "Albany"
+        )
+      );
+      pending.find((entry) => entry.state === "CO")?.resolve();
+      await waitFor(() =>
+        expect(
+          screen.getByTestId("review-investigate").getAttribute("href")
+        ).toContain("scope=NY")
+      );
+      expect({
+        denver: screen.queryByText("Denver"),
+        handoff: screen.getByTestId("review-investigate").getAttribute("href"),
+        list: screen.getByTestId("review-candidate").textContent,
+        map: screen.getByTestId("mock-atlas-map").dataset.mapScoreFips,
+        rendered: screen.getByTestId("review-scope-results").dataset
+          .renderedScope,
+        status: screen.getByTestId("review-scope-status").textContent,
+        url: updates.at(-1) ?? "",
+      }).toStrictEqual({
+        denver: null,
+        handoff: expect.stringContaining("scope=NY"),
+        list: expect.stringContaining("Albany"),
+        map: "36001",
+        rendered: "NY",
+        status: expect.stringContaining("New York"),
+        url: expect.stringContaining("scope=NY"),
+      });
+      expect(
+        screen.getByTestId("review-investigate").getAttribute("href")
+      ).toContain("county=36001");
+      expect(
+        screen.getByTestId("mock-atlas-map").dataset.mapScoreFips
+      ).not.toContain("08001");
+    } finally {
+      review.mockImplementation(
+        async (state: string, params?: { dataset_version?: string }) =>
+          defaultStateReviewResponse(state, params)
+      );
+    }
   });
 
   it("requests metadata for a supplied dataset query param", async () => {

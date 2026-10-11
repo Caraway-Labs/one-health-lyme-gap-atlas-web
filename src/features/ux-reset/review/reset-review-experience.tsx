@@ -1,13 +1,26 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
-import { Suspense, useCallback, useLayoutEffect, useMemo } from "react";
+import {
+  Suspense,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromReview } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { resetRouteById } from "@/features/ux-reset/paths";
+import {
+  hasExplicitReviewScopeParam,
+  isReviewStartingScopeUnresolved,
+  reviewScopeQueryCanonicalRewrite,
+} from "@/features/ux-reset/review/resolve-review-scope";
 import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
@@ -43,6 +56,14 @@ function ResetReviewExperienceInner() {
     shallow: true,
   });
   const scope = urlState.scope;
+  const searchParams = useSearchParams();
+  const [arrivalExplicitScope] = useState(() =>
+    hasExplicitReviewScopeParam(searchParams)
+  );
+  const userChoseScopeRef = useRef(false);
+  const [userChoseScope, setUserChoseScope] = useState(false);
+  const rewrittenScopeKey = useRef<string | null>(null);
+  const rawScopeKey = searchParams.getAll("scope").join("\u0000");
   const reviewCounty = normalizeReviewCounty(scope, urlState.county);
   const profileQuery = useProfileDefaultJurisdiction();
 
@@ -78,7 +99,18 @@ function ResetReviewExperienceInner() {
       if (nextScope === scope) {
         return;
       }
+      userChoseScopeRef.current = true;
+      setUserChoseScope(true);
       void setUrlState({ scope: nextScope });
+    },
+    [scope, setUrlState]
+  );
+  const replaceStartingScope = useCallback(
+    (nextScope: "ALL" | string) => {
+      if (userChoseScopeRef.current || nextScope === scope) {
+        return;
+      }
+      void setUrlState({ scope: nextScope }, { history: "replace" });
     },
     [scope, setUrlState]
   );
@@ -91,15 +123,29 @@ function ResetReviewExperienceInner() {
     [scope, setUrlState]
   );
 
+  // A scope chosen while the profile read is still in flight stays temporary.
+  // The saved default is written with replace so Back does not reopen national.
   useApplyProfileStartingScope({
     activeScope: scope,
     profileReady:
+      !userChoseScope &&
       profileQuery.isFetched &&
       (Boolean(presentationQuery.metadata) || presentationQuery.isError),
     profileStateCode: profileQuery.data?.stateCode,
-    setScope,
+    setScope: replaceStartingScope,
     stateOptions,
   });
+  useLayoutEffect(() => {
+    if (rewrittenScopeKey.current === rawScopeKey) {
+      return;
+    }
+    const canonical = reviewScopeQueryCanonicalRewrite(searchParams);
+    rewrittenScopeKey.current = rawScopeKey;
+    if (canonical === null) {
+      return;
+    }
+    void setUrlState({ scope: canonical }, { history: "replace" });
+  }, [rawScopeKey, searchParams, setUrlState]);
 
   const reviewReady = Boolean(
     !scopeUnsupported &&
@@ -116,8 +162,19 @@ function ResetReviewExperienceInner() {
     reviewResultPayloadConsistent(reviewRecord) &&
     reviewRecord.result_state === "candidates_found"
   );
+  const startingScopePending = isReviewStartingScopeUnresolved({
+    arrivalExplicitScope,
+    metadataError: presentationQuery.metadataIsError,
+    metadataReady: Boolean(presentationQuery.metadata),
+    profileFetched: profileQuery.isFetched,
+    profileStateCode: profileQuery.data?.stateCode,
+    scope,
+    stateOptions,
+    userChoseScope,
+  });
+  const scopeViewReady = !startingScopePending;
   const reviewIdentities =
-    reviewReady && reviewRecord && candidatesAreFindings
+    scopeViewReady && reviewReady && reviewRecord && candidatesAreFindings
       ? scopedReviewCandidates(
           reviewRecord.review_candidates,
           scope
@@ -128,15 +185,17 @@ function ResetReviewExperienceInner() {
         }))
       : [];
   usePublishAskAtlasInheritedContext(
-    inheritedContextFromReview({
-      rankedCounties: reviewIdentities,
-      releaseId:
-        scope === "ALL"
-          ? (presentationQuery.metadata?.release_id ?? null)
-          : reviewDatasetId(stateReview.review?.data_release_version),
-      releaseReady: scope === "ALL" ? nationalReady : reviewReady,
-      requestedCounty: reviewCounty,
-    })
+    scopeViewReady
+      ? inheritedContextFromReview({
+          rankedCounties: reviewIdentities,
+          releaseId:
+            scope === "ALL"
+              ? (presentationQuery.metadata?.release_id ?? null)
+              : reviewDatasetId(stateReview.review?.data_release_version),
+          releaseReady: scope === "ALL" ? nationalReady : reviewReady,
+          requestedCounty: reviewCounty,
+        })
+      : null
   );
   const pictureActive = Boolean(reviewReady && stateReview.review);
   const clearCounty = urlState.county !== reviewCounty;
@@ -176,13 +235,15 @@ function ResetReviewExperienceInner() {
           stateOptions={stateOptions}
           onScopeChange={setScope}
         />
-        <p
-          className="type-body ux-reset-review-scope-status"
-          data-request-scope={renderedScope}
-          data-testid="review-scope-status"
-        >
-          Showing results for <strong>{scopeLabel}</strong>
-        </p>
+        {scopeViewReady ? (
+          <p
+            className="type-body ux-reset-review-scope-status"
+            data-request-scope={renderedScope}
+            data-testid="review-scope-status"
+          >
+            Showing results for <strong>{scopeLabel}</strong>
+          </p>
+        ) : null}
       </div>
 
       <ReviewReleaseEvidence
@@ -192,7 +253,7 @@ function ResetReviewExperienceInner() {
         metadata={presentationQuery.metadata}
       />
 
-      {metadataLoading ? (
+      {metadataLoading || startingScopePending ? (
         <AtlasStatusMessage tone="loading">
           Loading review scope…
         </AtlasStatusMessage>
@@ -230,7 +291,7 @@ function ResetReviewExperienceInner() {
         </AtlasStatusMessage>
       ) : null}
 
-      {reviewReady || nationalReady ? (
+      {scopeViewReady && (reviewReady || nationalReady) ? (
         <section
           aria-label="Review scope results"
           className="ux-reset-review-results"
