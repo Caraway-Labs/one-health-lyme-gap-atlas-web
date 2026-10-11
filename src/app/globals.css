@@ -5013,3 +5013,233 @@ select:focus-visible {
     white-space: nowrap;
   }
 }
+
+/* Approved /auth/sign-in entrance (#482). The finalized handoff requires this
+   palette and says not to substitute the workspace palette. Values that already
+   match semantic chrome reference those tokens. Every other entrance color is
+   declared once here because it differs from the shared token. */
+.auth-entrance {
+  --entrance-bg: #f6f8f7; /* not --background (#fbfcfb) */
+  --entrance-surface: var(--card);
+  --entrance-text: #15383b; /* not --foreground (#152c3b) */
+  --entrance-muted: #496567; /* not --muted-foreground (#506772) */
+  --entrance-border: #b9ceca; /* not --border (#d8e2df) */
+  --entrance-primary: #185e5e; /* not --primary (#0f7782) */
+  --entrance-on-primary: var(--primary-foreground);
+  --entrance-error: #973d32; /* not --destructive (#b63d26) */
+  /* Google Identity button chrome. The multicolor G stays in the logo SVG. */
+  --entrance-google-bg: var(--card);
+  --entrance-google-text: #1f1f1f;
+  --entrance-google-border: #747775;
+  --entrance-radius: 6px; /* approved corners; --radius is 8px */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--entrance-bg);
+  color: var(--entrance-text);
+  font-family: var(--font-front-porch-hero), system-ui, sans-serif;
+  font-size: var(--type-body-size);
+  line-height: 1.5;
+}
+
+.auth-entrance-header {
+  display: flex;
+  align-items: center;
+  padding: var(--space-5) 28px;
+  background: var(--entrance-surface);
+  border-bottom: 1px solid var(--entrance-border);
+}
+
+.auth-entrance-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-weight: 500;
+}
+
+.auth-entrance-main {
+  flex: 1;
+  padding: 52px 28px var(--space-10);
+}
+
+.auth-entrance-form {
+  max-width: 456px;
+  margin: auto;
+}
+
+.auth-entrance h1 {
+  margin: 0 0 var(--space-4);
+  color: var(--entrance-text);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.auth-entrance p {
+  margin: 0 0 22px;
+}
+
+.auth-entrance-subtle {
+  color: var(--entrance-muted);
+}
+
+.auth-entrance-label {
+  display: block;
+  margin: var(--space-5) 0 var(--space-2);
+  font-weight: 500;
+}
+
+.auth-entrance-input {
+  width: 100%;
+  min-height: var(--control-height);
+  border: 1px solid var(--entrance-border);
+  border-radius: var(--entrance-radius);
+  background: var(--entrance-surface);
+  color: var(--entrance-text);
+  padding: 10px 14px;
+  font: inherit;
+}
+
+/* Invalid email keeps the approved border; the shared input ring is for workspace fields. */
+.auth-entrance-input[aria-invalid="true"] {
+  border-color: var(--entrance-border);
+  box-shadow: none;
+}
+
+.auth-entrance-primary,
+.auth-entrance-secondary,
+.auth-entrance-google,
+.auth-entrance-quiet {
+  min-height: var(--control-height);
+  border-radius: var(--entrance-radius);
+  font: inherit;
+  font-weight: 500;
+}
+
+.auth-entrance-primary {
+  width: 100%;
+  margin-top: var(--space-5);
+  background: var(--entrance-primary);
+  color: var(--entrance-on-primary);
+  border: 1px solid var(--entrance-primary);
+}
+
+.auth-entrance-primary:hover {
+  background: var(--entrance-primary);
+  color: var(--entrance-on-primary);
+}
+
+.auth-entrance p.auth-entrance-hint {
+  margin: var(--space-2) 0 0;
+  color: var(--entrance-muted);
+  text-align: center;
+}
+
+.auth-entrance p.auth-entrance-error {
+  margin: 14px 0 0;
+  color: var(--entrance-error);
+}
+
+.auth-entrance-separator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+  color: var(--entrance-muted);
+}
+
+.auth-entrance-separator::before,
+.auth-entrance-separator::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--entrance-border);
+}
+
+.auth-entrance-google {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--entrance-google-bg);
+  color: var(--entrance-google-text);
+  border: 1px solid var(--entrance-google-border);
+}
+
+.auth-entrance-google:hover {
+  background: var(--entrance-google-bg);
+  color: var(--entrance-google-text);
+}
+
+.auth-entrance-google-logo {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: var(--entrance-google-bg);
+}
+
+.auth-entrance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: 14px;
+}
+
+.auth-entrance-secondary {
+  border: 1px solid var(--entrance-border);
+  background: var(--entrance-surface);
+  color: var(--entrance-text);
+  padding: 10px 14px;
+}
+
+.auth-entrance-quiet {
+  border: none;
+  background: transparent;
+  color: var(--entrance-text);
+  padding: var(--space-2);
+}
+
+.auth-entrance p.auth-entrance-status {
+  margin: 18px 0 0;
+}
+
+.auth-entrance .auth-entrance-footer {
+  display: flex;
+  grid-template-columns: none;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-6);
+  background: var(--entrance-bg);
+  color: var(--entrance-muted);
+}
+
+.auth-entrance .auth-entrance-footer a {
+  color: var(--entrance-muted);
+  font-size: var(--type-body-size);
+  font-weight: 400;
+  text-underline-offset: var(--space-1);
+}
+
+.auth-entrance button:disabled {
+  opacity: 0.65;
+}
+
+@media (max-width: 500px) {
+  .auth-entrance-header {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .auth-entrance-main {
+    padding: var(--space-8) var(--space-5);
+  }
+
+  .auth-entrance h1 {
+    font-size: 26px;
+  }
+}

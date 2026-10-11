@@ -15,6 +15,18 @@ export function RouteChrome({ children }: { children: React.ReactNode }) {
 
   if (shell === "docs" || shell === "none") return children;
 
+  // The approved sign-in entrance is a full-page surface. The route stays on
+  // the analytical shell so consent-aware analytics still starts here, without
+  // the workspace sidebar or chat launcher.
+  if (pathname === "/auth/sign-in") {
+    return (
+      <FeedbackProvider>
+        <AnalyticsClient />
+        {children}
+      </FeedbackProvider>
+    );
+  }
+
   return (
     <FeedbackProvider>
       {shell === "public" ? (

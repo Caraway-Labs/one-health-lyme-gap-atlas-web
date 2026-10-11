@@ -13,13 +13,19 @@ Quality checks and production deployment are separate. Quality stays parallel. P
 
 Pushing to `main` deploys after quality. That is a change from the previous manual-only `workflow_dispatch` path. `.do/app.yaml` keeps `deploy_on_push: false`, so DigitalOcean does not start a second deploy when `main` moves. The GitHub Actions deploy job is the only production path.
 
-The required check name remains `quality`. A failed quality job does not deploy.
+The required check name remains `quality`. It aggregates `quality-gates` and all three Playwright shards and fails if either dependency is failed, cancelled, or skipped. No branch-protection update is needed: the existing GitHub Actions `quality` check remains required. Guard and deploy also depend directly on both quality jobs.
 
 ## Parallel CI
 
 `CI_MAX_PARALLEL` defaults to `4`. It records the intended capacity in the workflow environment and in the quality log. It is not a queue.
 
-This workflow has one `quality` job and no matrix, so `strategy.max-parallel` does not apply. A GitHub concurrency group runs a single member at a time and would serialize CI, so quality has no concurrency group. Separate pull requests and `main` pushes run at the same time, up to the GitHub-hosted runner limit for the account. Setting `CI_MAX_PARALLEL` does not change that limit.
+Each run starts four independent jobs: `quality-gates` plus `Playwright shard 1/3`, `2/3`, and `3/3`. The matrix has `max-parallel: 3` and `fail-fast: false`, so a failed shard does not cancel sibling diagnostics. After all four finish, the lightweight `quality` aggregate runs, followed by the existing production guard/deploy where applicable. There is no workflow-wide serialization or cross-run four-slot semaphore; account runner capacity can still introduce queue time.
+
+The required E2E command retains the auth grep exclusion and both desktop/mobile projects, uses file-level sharding (no `fullyParallel` change), and sets one worker per shard after the two-worker trial exposed navigation/focus failures. Local defaults, auth shells, and Front Porch production visuals retain one worker. Auth shells run exactly once with their existing soft-fail policy in `quality-gates`; production visual comparisons run exactly once there with `ATLAS_VISUAL_PRODUCTION=1`. Every existing non-browser gate, coverage upload, Next/Docker build, and security scan remains in that job and runs independently of required E2E.
+
+Each shard publishes a uniquely named `playwright-shard-N` artifact containing JUnit, an HTML report, screenshots/attachments, traces, and error contexts, plus a `Playwright Results N/3` check. Reports are per shard; there is no merge job or new reporting service. Test command failures determine the shard outcome regardless of reporter check settings. Existing auth/visual artifacts and result checks remain available.
+
+Expected elapsed time becomes the slower of the general quality job and the longest shard, plus deployment time. Targets are <=15 minutes, stretch <=12; confirm with a successful merged production run rather than assuming a threefold end-to-end speedup.
 
 ## Production concurrency
 

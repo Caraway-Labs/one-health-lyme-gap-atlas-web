@@ -24,7 +24,7 @@ npm run dev
 
 ## Continuous integration
 
-Pull requests and pushes to `main` run the `quality` check concurrently. A green push to `main` deploys this web app after that check. Production deploys one at a time, and a commit that is no longer the head of `main` is skipped. See [CI and production deployment](docs/ci.md).
+Pull requests and pushes to `main` run the `quality` check concurrently. A green push to `main` deploys this web app after that check aggregates the general quality gates and all three Playwright shards. Production deploys one at a time, and a commit that is no longer the head of `main` is skipped. See [CI and production deployment](docs/ci.md).
 
 ## Documentation
 

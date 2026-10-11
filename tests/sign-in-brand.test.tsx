@@ -15,6 +15,13 @@ const auth = vi.hoisted(() => ({
     vi.fn<(options: unknown) => Promise<{ error: Error | null }>>(),
 }));
 vi.mock(
+  import("next/font/local"),
+  () =>
+    ({
+      default: () => ({ variable: "--font-front-porch-hero" }),
+    }) as never
+);
+vi.mock(
   import("@/lib/supabase/client"),
   () => ({ createClient: () => ({ auth }) }) as never
 );
@@ -28,6 +35,16 @@ vi.mock(import("next/navigation"), async (original) => ({
 
 import SignInPage from "@/app/auth/sign-in/page";
 
+function expectCanonicalMark(container: HTMLElement) {
+  const marks = container.querySelectorAll(
+    ".atlas-sign-in-brand img.atlas-brand-mark"
+  );
+  expect(marks).toHaveLength(1);
+  expect(marks[0]?.getAttribute("src")).toBe("/android-chrome-192x192.png");
+  expect(marks[0]?.getAttribute("alt")).toBe("");
+  expect(marks[0]?.getAttribute("aria-hidden")).toBe("true");
+}
+
 describe("branded sign-in preserves provider behavior", () => {
   beforeEach(() => vi.resetAllMocks());
   afterEach(cleanup);
@@ -37,44 +54,47 @@ describe("branded sign-in preserves provider behavior", () => {
       .mockResolvedValueOnce({ error: null })
       .mockResolvedValueOnce({ error: new Error("fixture") });
     const { container } = render(<SignInPage />);
-    fireEvent.change(screen.getByLabelText("Email address"), {
+    expectCanonicalMark(container);
+    fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "fixture@example.invalid" },
     });
     fireEvent.click(
       screen.getByRole("button", { name: "Email me a sign-in link" })
     );
-    await waitFor(() =>
-      expect(screen.getByRole("status").textContent).toContain(
-        "a link is on its way"
-      )
-    );
+    await screen.findByRole("heading", { name: "Check your email" });
     expect(auth.signInWithOtp).toHaveBeenCalledWith({
       email: "fixture@example.invalid",
       options: {
         emailRedirectTo: `${window.location.origin}/auth/confirm?next=%2Fapp%2Freview`,
       },
     });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Email me a sign-in link" })
-    );
+    expectCanonicalMark(container);
+    fireEvent.click(screen.getByRole("button", { name: "Resend link" }));
     await waitFor(() =>
-      expect(screen.getByRole("status").textContent).toContain(
+      expect(screen.getByRole("alert").textContent).toContain(
         "Please try again"
       )
     );
     expect(
-      container.querySelector(".atlas-sign-in-brand img")?.getAttribute("src")
-    ).toBe("/android-chrome-192x192.png");
+      screen.getByRole("heading", { name: "Check your email" })
+    ).toBeTruthy();
+    expectCanonicalMark(container);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use a different email" })
+    );
+    expect(screen.getByLabelText("Email")).toBeTruthy();
+    expectCanonicalMark(container);
   });
 
   it("keeps Google callback routing and actionable errors", async () => {
     auth.signInWithOAuth.mockResolvedValue({ error: new Error("fixture") });
-    render(<SignInPage />);
+    const { container } = render(<SignInPage />);
+    expectCanonicalMark(container);
     fireEvent.click(
       screen.getByRole("button", { name: "Continue with Google" })
     );
     await waitFor(() =>
-      expect(screen.getByRole("status").textContent).toBe(
+      expect(screen.getByRole("alert").textContent).toBe(
         "Google sign-in is unavailable. Please try again."
       )
     );
@@ -89,5 +109,6 @@ describe("branded sign-in preserves provider behavior", () => {
         .getByRole("button", { name: "Continue with Google" })
         .hasAttribute("disabled")
     ).toBeFalsy();
+    expectCanonicalMark(container);
   });
 });
