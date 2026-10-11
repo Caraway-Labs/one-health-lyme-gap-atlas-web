@@ -4511,6 +4511,106 @@ select:focus-visible {
   }
 }
 
+.about-caraway {
+  display: grid;
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: var(--layout-section-block) var(--layout-inline) var(--space-12);
+  gap: var(--space-10);
+  background: var(--background);
+  color: var(--foreground);
+}
+.about-caraway-header,
+.about-caraway-section,
+.about-caraway-approach {
+  display: grid;
+  gap: var(--space-4);
+}
+.about-caraway-header,
+.about-caraway-section {
+  max-width: 42rem;
+}
+.about-caraway h1,
+.about-caraway h2,
+.about-caraway h3 {
+  margin: 0;
+  color: var(--navy);
+}
+.about-caraway h1 {
+  font-size: clamp(1.85rem, 3vw, 2.6rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+.about-caraway h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.about-caraway h3 {
+  font-size: 1.15rem;
+  line-height: 1.3;
+}
+.about-caraway-lede {
+  margin: 0;
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: var(--type-section-size);
+  font-weight: 500;
+  line-height: 1.35;
+}
+.about-caraway p {
+  margin: 0;
+  line-height: var(--leading-body);
+}
+.about-caraway-principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.about-caraway-principles > li {
+  display: flex;
+  min-width: 0;
+}
+.about-caraway-principles [data-slot="card"] {
+  flex: 1;
+  background: var(--card);
+}
+.about-caraway-disclosure {
+  max-width: 42rem;
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--teal);
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+}
+.about-caraway-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+}
+.about-caraway-return {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+  color: var(--teal-dark);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.about-caraway-return:hover {
+  color: var(--navy);
+}
+@media (max-width: 800px) {
+  .about-caraway-principles {
+    grid-template-columns: 1fr;
+  }
+}
+
 .design-system-gallery {
   max-width: var(--layout-content-max);
   margin: auto;

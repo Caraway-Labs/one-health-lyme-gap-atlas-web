@@ -156,6 +156,10 @@ test("opens trust links from the professional footer", async ({
   await brand.click();
   const popup = await popupPromise;
   await expect(popup).toHaveURL(/\/about\/caraway-labs$/);
+  await expect(popup).not.toHaveURL(/sign-in/);
+  await expect(
+    popup.getByRole("heading", { level: 1, name: "About Caraway Labs" })
+  ).toBeVisible();
   await expect(page).toHaveURL(/\/app\/review$/);
   await popup.close();
 

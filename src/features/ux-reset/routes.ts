@@ -9,9 +9,8 @@ export const UX_RESET_APP_PREFIX = "/app" as const;
 export const DOCS_PATH = "/docs" as const;
 
 /**
- * Proposed public About Caraway Labs path from issue 523 and the approved
- * issue 522 footer reference. The page is not published. This is not a verified
- * live target until issue 523 ships.
+ * Public About Caraway Labs page (issue 523). The professional trust footer
+ * links here and opens it in a new tab.
  */
 export const ABOUT_CARAWAY_LABS_PATH = "/about/caraway-labs" as const;
 
