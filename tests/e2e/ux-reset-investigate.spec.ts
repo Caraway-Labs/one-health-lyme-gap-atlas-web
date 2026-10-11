@@ -1,6 +1,18 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Download,
+  type Page,
+  type Route,
+} from "@playwright/test";
 
+import {
+  ADAMS_COUNTY_PDF_TEXT,
+  adamsCountyPdfFixture,
+  concatChunks,
+  openPdfFixture,
+} from "../fixtures/county-report-pdf-fixture";
 import {
   INVESTIGATE_CASES_LIMITATION,
   INVESTIGATE_STATE_SOURCE_URL,
@@ -15,6 +27,16 @@ import {
   type InvestigateScenario,
 } from "../fixtures/investigate-api-fixtures";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
+
+const ADAMS_PDF_DOWNLOAD_NAME = "atlas-county-08001-2023-01-01-2023-12-31.pdf";
+
+async function openedPdfDownload(download: Download) {
+  const stream = await download.createReadStream();
+  if (!stream) {
+    throw new Error("The PDF download has no bytes.");
+  }
+  return openPdfFixture(await concatChunks(stream));
+}
 
 type InvestigateControls = {
   delayFips: string | null;
@@ -751,6 +773,7 @@ test.describe("County Investigate evidence hierarchy", () => {
     const pdfUrls: string[] = [];
     await page.route("**/v1/counties/**/report.pdf**", async (route) => {
       pdfUrls.push(route.request().url());
+      // Selector guard only. This body is not opened and is not PDF evidence.
       await route.fulfill({
         body: "%PDF-1.7 boulder",
         contentType: "application/pdf",
@@ -958,9 +981,11 @@ test.describe("Investigate canonical PDF export", () => {
     await page.route("**/v1/counties/**/report.pdf**", async (route) => {
       reports.push(new URL(route.request().url()));
       await route.fulfill({
-        body: "%PDF-1.7 fixture",
-        contentType: "application/pdf",
-        headers: { "Cache-Control": "no-store" },
+        body: Buffer.from(adamsCountyPdfFixture),
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "Application/PDF; charset=binary",
+        },
       });
     });
     await page.goto(
@@ -973,7 +998,11 @@ test.describe("Investigate canonical PDF export", () => {
     await expect(button).toBeVisible();
     const download = page.waitForEvent("download");
     await button.click();
-    await download;
+    const file = await download;
+    expect(file.suggestedFilename()).toBe(ADAMS_PDF_DOWNLOAD_NAME);
+    // Opened fixture text is separate from the selector assertion below.
+    // It is not Typst output and does not show that tick_survey is published.
+    expect((await openedPdfDownload(file)).text).toBe(ADAMS_COUNTY_PDF_TEXT);
     expect(
       reports.map((url) => ({
         county: url.pathname,

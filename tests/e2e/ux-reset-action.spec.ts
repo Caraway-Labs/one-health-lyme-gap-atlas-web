@@ -1,6 +1,18 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Download,
+  type Page,
+  type Route,
+} from "@playwright/test";
 
+import {
+  ADAMS_COUNTY_PDF_TEXT,
+  adamsCountyPdfFixture,
+  concatChunks,
+  openPdfFixture,
+} from "../fixtures/county-report-pdf-fixture";
 import {
   INVESTIGATE_CASES_LIMITATION,
   INVESTIGATE_CONTEXT_MEASURE_ID,
@@ -12,6 +24,16 @@ import {
   investigateScoresFixture,
   type InvestigateScenario,
 } from "../fixtures/investigate-api-fixtures";
+
+const ADAMS_PDF_DOWNLOAD_NAME = "atlas-county-08001-2023-01-01-2023-12-31.pdf";
+
+async function openedPdfDownload(download: Download) {
+  const stream = await download.createReadStream();
+  if (!stream) {
+    throw new Error("The PDF download has no bytes.");
+  }
+  return openPdfFixture(await concatChunks(stream));
+}
 
 type ActionControls = {
   delayFips: string | null;
@@ -432,9 +454,11 @@ test.describe("Action evidence handoff", () => {
     await page.route("**/v1/counties/**/report.pdf**", async (route) => {
       reports.push(route.request().url());
       await route.fulfill({
-        body: "%PDF-1.7 fixture",
-        contentType: "application/pdf",
-        headers: { "Cache-Control": "no-store" },
+        body: Buffer.from(adamsCountyPdfFixture),
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "application/pdf; charset=binary",
+        },
       });
     });
     await page.goto(
@@ -471,7 +495,11 @@ test.describe("Action evidence handoff", () => {
     );
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "Export PDF" }).click();
-    await download;
+    const file = await download;
+    expect(file.suggestedFilename()).toBe(ADAMS_PDF_DOWNLOAD_NAME);
+    // Opened fixture text is separate from the request-selector assertion below.
+    // It is not Typst output and does not show that tick_survey is published.
+    expect((await openedPdfDownload(file)).text).toBe(ADAMS_COUNTY_PDF_TEXT);
     expect(reports).toHaveLength(1);
     const reportUrl = new URL(reports[0] ?? "");
     expect({
