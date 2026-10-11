@@ -1712,6 +1712,144 @@ describe("County Investigate evidence hierarchy", () => {
     });
   });
 
+  it("counts every observation value state in the lead, uncertainty, and closing sentences", () => {
+    const caveat = "Count is provisional.";
+    const claim = "Reported Lyme cases";
+    const emptyFinding =
+      "No observed or limited finding was returned for this county.";
+    const emptyLimitation =
+      "No material limitation was returned on the observations for this county.";
+    const emptyGaps =
+      "No conflict, gap, or extra limitation was returned for this county.";
+    const unavailableGap = `${claim} is unavailable for this county. That is not zero.`;
+    const suppressedGap = `${claim}: Suppressed or privacy-protected.`;
+    const caveatGap = `${claim}: ${caveat}`;
+    const leadFor = (display: string, availability: string) =>
+      `${claim}: ${display}. ${availability}. Period 2023. Source CDC surveillance.`;
+    const states = [
+      ValueState.OBSERVED,
+      ValueState.ZERO,
+      ValueState.SUPPRESSED,
+      ValueState.MISSING,
+      ValueState.UNAVAILABLE,
+      ValueState.NO_COUNTY_LINKED_RECORD,
+    ] as const;
+    const limitationModes = ["empty", "present"] as const;
+    const rendered: Record<
+      string,
+      { closing: string[]; lead: string; uncertainty: string }
+    > = {};
+    for (const valueState of states) {
+      for (const mode of limitationModes) {
+        cleanup();
+        render(
+          <InvestigateEvidenceHierarchy
+            bundle={casesBundle([
+              {
+                ...caseObservation(
+                  `${valueState}-${mode}`,
+                  valueState === ValueState.ZERO ? 0 : 4,
+                  "2023-01-01",
+                  "2023-12-31"
+                ),
+                limitations: mode === "present" ? [caveat] : [],
+                value_state: valueState,
+              },
+            ])}
+          />
+        );
+        const gapList = screen.queryByTestId("investigate-gap-list");
+        const closing = gapList
+          ? [...gapList.querySelectorAll("li")].map(
+              (item) => item.textContent ?? ""
+            )
+          : [screen.getByTestId("investigate-gaps-empty").textContent ?? ""];
+        rendered[`${valueState}|${mode}`] = {
+          closing: closing.map((line) => line.replaceAll(/\s+/g, " ").trim()),
+          lead: normalizeSummary(
+            screen.getByTestId("investigate-finding-text").textContent
+          ),
+          uncertainty: normalizeSummary(
+            screen.getByTestId("investigate-limitation-text").textContent
+          ),
+        };
+      }
+    }
+    const expected: Record<
+      string,
+      { closing: string[]; lead: string; uncertainty: string }
+    > = {};
+    for (const valueState of states) {
+      for (const mode of limitationModes) {
+        const hasLimitation = mode === "present";
+        let lead = emptyFinding;
+        let uncertainty = emptyLimitation;
+        let closing = [emptyGaps];
+        switch (valueState) {
+          case ValueState.OBSERVED: {
+            lead = leadFor("4 cases", hasLimitation ? "Limited" : "Available");
+            uncertainty = hasLimitation
+              ? `${claim}: ${caveat}`
+              : emptyLimitation;
+            closing = hasLimitation ? [caveatGap] : [emptyGaps];
+            break;
+          }
+          case ValueState.ZERO: {
+            lead = leadFor("0 cases", hasLimitation ? "Limited" : "Available");
+            uncertainty = hasLimitation
+              ? `${claim}: ${caveat}`
+              : emptyLimitation;
+            closing = hasLimitation ? [caveatGap] : [emptyGaps];
+            break;
+          }
+          case ValueState.SUPPRESSED: {
+            lead = leadFor("Suppressed", "Limited");
+            uncertainty = hasLimitation
+              ? `${claim}: Suppressed or privacy-protected. ${caveat}`
+              : suppressedGap;
+            closing = hasLimitation
+              ? [caveatGap, suppressedGap]
+              : [suppressedGap];
+            break;
+          }
+          case ValueState.MISSING: {
+            uncertainty = hasLimitation
+              ? `${claim}: No county record. ${caveat}`
+              : `${claim}: No county record.`;
+            closing = hasLimitation
+              ? [caveatGap, unavailableGap]
+              : [unavailableGap];
+            break;
+          }
+          case ValueState.UNAVAILABLE: {
+            uncertainty = hasLimitation
+              ? `${claim}: Unavailable for this release. ${caveat}`
+              : `${claim}: Unavailable for this release.`;
+            closing = hasLimitation
+              ? [caveatGap, unavailableGap]
+              : [unavailableGap];
+            break;
+          }
+          case ValueState.NO_COUNTY_LINKED_RECORD: {
+            uncertainty = hasLimitation
+              ? `${claim}: No county-linked record. ${caveat}`
+              : `${claim}: No county-linked record.`;
+            closing = hasLimitation
+              ? [caveatGap, unavailableGap]
+              : [unavailableGap];
+            break;
+          }
+          default: {
+            const exhaustive: never = valueState;
+            throw new Error(exhaustive);
+          }
+        }
+        expected[`${valueState}|${mode}`] = { closing, lead, uncertainty };
+      }
+    }
+    expect(rendered).toStrictEqual(expected);
+  });
+
   it("keeps every status reason beside each inherited caveat in the uncertainty summary", () => {
     const rows: Record<string, string> = {};
     for (const status of CAVEAT_ROW_STATUSES) {

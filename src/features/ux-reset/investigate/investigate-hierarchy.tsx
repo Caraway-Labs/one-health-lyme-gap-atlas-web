@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceObject } from "@/features/ux-reset/evidence";
 import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-period";
-import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
+import type { EvidenceReasonCode } from "@/features/ux-reset/evidence/types";
 import {
   investigateEvidenceConflicts,
   investigateFamilyPublication,
@@ -28,6 +28,7 @@ import {
   combineCaveatText,
   coverageRowAnchor,
   environmentalCoverageRows,
+  governedStatusDisclosure,
   publishedCountyHierarchy,
   publishedRowAnchor,
   type EnvironmentalCoverageContext,
@@ -270,33 +271,49 @@ function rowsForFamily(
   return rows.filter((row) => row.familyId === familyId);
 }
 
-function limitationLines(bundle: CountyEvidenceBundle): string[] {
-  const lines: string[] = [];
-  const seen = new Set<string>();
-  const records = [
+function visibleObservations(
+  bundle: CountyEvidenceBundle
+): CountyEvidenceObservation[] {
+  return [
     ...bundle.families.flatMap((family) => [...family.observations]),
     ...bundle.unassigned,
   ];
-  for (const record of records) {
-    for (const limitation of record.evidence.provenance.limitations) {
-      const line = `${record.measureLabel}: ${limitation}`;
-      if (seen.has(line)) {
-        continue;
-      }
-      seen.add(line);
-      lines.push(line);
-    }
-    if (
-      record.evidence.availability === evidenceAvailabilityValues.unavailable &&
-      !seen.has(record.measureId)
-    ) {
-      seen.add(record.measureId);
-      lines.push(
-        `${record.measureLabel} is unavailable for this county. That is not zero.`
-      );
-    }
-  }
-  return lines;
+}
+
+function observationReasonCode(
+  record: CountyEvidenceObservation
+): EvidenceReasonCode {
+  return record.evidence.reasonCode ?? record.observation.value_state;
+}
+
+function observationDisclosures(bundle: CountyEvidenceBundle): {
+  gapLines: readonly string[];
+  uncertaintyText: string | null;
+}[] {
+  return visibleObservations(bundle).map((record) => {
+    const limitations = record.evidence.provenance.limitations;
+    const reasonCode = observationReasonCode(record);
+    const valueState = record.observation.value_state;
+    const gaps = governedStatusDisclosure({
+      claimLabel: record.measureLabel,
+      limitations,
+      reasonCode,
+      valueState,
+    });
+    const [leadLimitation] = limitations;
+    const uncertainty = governedStatusDisclosure({
+      claimLabel: record.measureLabel,
+      limitations: leadLimitation ? [leadLimitation] : [],
+      reasonCode,
+      valueState,
+    });
+    return {
+      gapLines: gaps.gapLines,
+      uncertaintyText: uncertainty.uncertaintyText
+        ? `${record.measureLabel}: ${uncertainty.uncertaintyText}`
+        : null,
+    };
+  });
 }
 
 function uniqueLines(groups: readonly (readonly string[])[]): string[] {
@@ -376,6 +393,7 @@ export function InvestigateEvidenceHierarchy({
   onRetryFailures?: () => void;
   retrying?: boolean;
 }) {
+  const observationStatus = observationDisclosures(bundle);
   const finding = bundle.leadFinding;
   const limitation = bundle.leadLimitation;
   const failedMeasureIds = new Set(
@@ -435,9 +453,9 @@ export function InvestigateEvidenceHierarchy({
       ? ""
       : (published?.releaseLimitation.trim() ?? "");
   const combinedCaveat = combineCaveatText([
-    limitation
-      ? `${limitation.observation.measureLabel}: ${limitation.text}`
-      : null,
+    ...observationStatus.flatMap((disclosure) =>
+      disclosure.uncertaintyText ? [disclosure.uncertaintyText] : []
+    ),
     publishedCaveat
       ? `${publishedCaveat.row.evidence.claimLabel}: ${publishedCaveat.text}`
       : null,
@@ -476,7 +494,7 @@ export function InvestigateEvidenceHierarchy({
   const conflicts = investigateEvidenceConflicts(bundle);
   const multipleObservations = investigateMultipleObservations(bundle);
   const limitations = uniqueLines([
-    limitationLines(bundle),
+    observationStatus.flatMap((disclosure) => disclosure.gapLines),
     derivedGapLines(publishedRows),
     derivedGapLines(coverage),
   ]);

@@ -1,10 +1,9 @@
 import { evidenceTypeFromGovernedMetadata } from "@/features/ux-reset/evidence/evidence-type";
-import {
-  evidenceAvailabilityValues,
-  type EvidenceAvailability,
-  type EvidenceObjectModel,
-  type EvidenceProvenanceModel,
-  type EvidenceReasonCode,
+import type {
+  EvidenceAvailability,
+  EvidenceObjectModel,
+  EvidenceProvenanceModel,
+  EvidenceReasonCode,
 } from "@/features/ux-reset/evidence/types";
 import {
   availabilityFromGovernedValueState,
@@ -286,70 +285,88 @@ export function publishedValueStateRole(
   }
 }
 
-function statusCaveatSentence(
-  valueState: ValueState,
-  reasonCode: EvidenceReasonCode
-): string | null {
-  const role = publishedValueStateRole(valueState);
+const UNAVAILABLE_GAP_SENTENCE =
+  "is unavailable for this county. That is not zero.";
+
+/**
+ * Uncertainty copy and gap lines for one governed state. Observation rows
+ * and published rows both use this. Informational states stay in provenance.
+ * Uncertainty states, including suppression, also produce a gap line.
+ */
+export function governedStatusDisclosure(input: {
+  claimLabel: string;
+  limitations: readonly string[];
+  reasonCode: EvidenceReasonCode;
+  valueState: ValueState;
+}): {
+  gapLine: string | null;
+  gapLines: string[];
+  uncertaintyText: string | null;
+} {
+  const limitations = normalizeGovernedLimitations(input.limitations);
+  const caveatLines = limitations.map((text) => `${input.claimLabel}: ${text}`);
+  const role = publishedValueStateRole(input.valueState);
+  let statusGap: string | null = null;
+  let statusText: string | null = null;
   switch (role) {
     case "informational": {
-      return null;
+      statusGap = null;
+      statusText = null;
+      break;
     }
     case "uncertainty": {
-      return evidenceReasonLabel(
-        valueState === ValueState.UNAVAILABLE &&
-          reasonCode === "ENVIRONMENTAL_SOURCE_MISSING"
-          ? "ENVIRONMENTAL_SOURCE_MISSING"
-          : valueState
-      );
+      switch (input.valueState) {
+        case ValueState.SUPPRESSED: {
+          statusText = evidenceReasonLabel(ValueState.SUPPRESSED);
+          statusGap = `${input.claimLabel}: ${statusText}.`;
+          break;
+        }
+        case ValueState.MISSING: {
+          statusText = evidenceReasonLabel(ValueState.MISSING);
+          statusGap = `${input.claimLabel} ${UNAVAILABLE_GAP_SENTENCE}`;
+          break;
+        }
+        case ValueState.NO_COUNTY_LINKED_RECORD: {
+          statusText = evidenceReasonLabel(ValueState.NO_COUNTY_LINKED_RECORD);
+          statusGap = `${input.claimLabel} ${UNAVAILABLE_GAP_SENTENCE}`;
+          break;
+        }
+        case ValueState.UNAVAILABLE: {
+          statusText = evidenceReasonLabel(
+            input.reasonCode === "ENVIRONMENTAL_SOURCE_MISSING"
+              ? "ENVIRONMENTAL_SOURCE_MISSING"
+              : ValueState.UNAVAILABLE
+          );
+          statusGap = `${input.claimLabel} ${UNAVAILABLE_GAP_SENTENCE}`;
+          break;
+        }
+        case ValueState.OBSERVED: {
+          statusGap = null;
+          statusText = null;
+          break;
+        }
+        case ValueState.ZERO: {
+          statusGap = null;
+          statusText = null;
+          break;
+        }
+        default: {
+          const exhaustive: never = input.valueState;
+          return exhaustive;
+        }
+      }
+      break;
     }
     default: {
       const exhaustive: never = role;
       return exhaustive;
     }
   }
-}
-
-function limitationTextForRow(input: {
-  measureLimitations: readonly string[];
-  reasonCode: EvidenceReasonCode;
-  sourceNote: string | null;
-  statusLimitations: readonly string[];
-  valueState: ValueState;
-}): string | null {
-  return combineCaveatText([
-    statusCaveatSentence(input.valueState, input.reasonCode),
-    ...input.statusLimitations,
-    input.sourceNote,
-    ...input.measureLimitations,
-  ]);
-}
-
-function gapLinesForRow(input: {
-  availability: EvidenceAvailability;
-  claimLabel: string;
-  limitations: readonly string[];
-  reasonCode: EvidenceReasonCode;
-}): { gapLine: string | null; gapLines: string[] } {
-  const caveatLines = input.limitations.map(
-    (text) => `${input.claimLabel}: ${text}`
-  );
-  const suppressedLine =
-    input.reasonCode === ValueState.SUPPRESSED
-      ? `${input.claimLabel}: ${evidenceReasonLabel(ValueState.SUPPRESSED)}.`
-      : null;
-  const unavailableLine =
-    input.availability === evidenceAvailabilityValues.unavailable
-      ? `${input.claimLabel} is unavailable for this county. That is not zero.`
-      : null;
-  const gapLines = [
-    ...caveatLines,
-    ...(suppressedLine ? [suppressedLine] : []),
-    ...(unavailableLine ? [unavailableLine] : []),
-  ];
+  const gapLines = [...caveatLines, ...(statusGap ? [statusGap] : [])];
   return {
-    gapLine: unavailableLine ?? suppressedLine ?? caveatLines[0] ?? null,
+    gapLine: statusGap ?? caveatLines[0] ?? null,
     gapLines,
+    uncertaintyText: combineCaveatText([statusText, ...limitations]),
   };
 }
 
@@ -386,19 +403,21 @@ export function mapPublishedRow(input: {
     input.subject.status === EnvironmentalContextCoverageStatus.SOURCE_MISSING
       ? "ENVIRONMENTAL_SOURCE_MISSING"
       : governedReason;
-  const limitationText = limitationTextForRow({
-    measureLimitations,
+  const disclosure = governedStatusDisclosure({
+    claimLabel: input.claimLabel,
+    limitations: normalizeGovernedLimitations([
+      ...seed.limitations,
+      sourceNote ?? "",
+      ...measureLimitations,
+    ]),
     reasonCode,
-    sourceNote,
-    statusLimitations: seed.limitations,
     valueState,
   });
-  const gaps = gapLinesForRow({
-    availability,
-    claimLabel: input.claimLabel,
-    limitations,
-    reasonCode,
-  });
+  const limitationText = disclosure.uncertaintyText;
+  const gaps = {
+    gapLine: disclosure.gapLine,
+    gapLines: disclosure.gapLines,
+  };
   return {
     availability,
     gapLine: gaps.gapLine,
