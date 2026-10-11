@@ -5,6 +5,7 @@ import { pageMetadataForResetRoute } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
 import "@/features/ux-reset/ux-reset.css";
+import "@/features/ux-reset/trust-footer.css";
 
 export const metadata: Metadata = pageMetadataForResetRoute("overview");
 
