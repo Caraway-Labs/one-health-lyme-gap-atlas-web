@@ -27,13 +27,13 @@ const MAP_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 
 const NAVIGATION_COLOR_TOKENS = {
   canvas: "--background",
-  fill: "--pale",
+  fill: "--mint",
   focus: "--teal",
   hover: "--mint",
-  outline: "--line",
-  outlineActive: "--teal",
+  outline: "--teal",
+  outlineActive: "--navy",
   selected: "--navy",
-  unavailable: "--line",
+  unavailable: "--pale",
   unavailableHover: "--input",
 } as const;
 
@@ -163,8 +163,8 @@ function lineWidthExpression(): LineWidth {
     ["boolean", ["feature-state", "focus"], false],
     2.5,
     ["boolean", ["feature-state", "hover"], false],
-    1.5,
-    0.6,
+    2,
+    1.25,
   ];
 }
 
@@ -187,6 +187,26 @@ function webglUnavailable(map: MapLibreMap): boolean {
     return false;
   }
   return !canvas.getContext("webgl2");
+}
+
+function browserCanStartWebgl(): boolean {
+  const probe = document.createElement("canvas");
+  if (typeof probe.getContext !== "function") {
+    return true;
+  }
+  try {
+    const context = probe.getContext("webgl2");
+    if (!context || !("getExtension" in context)) {
+      return context !== null;
+    }
+    const lose = context.getExtension("WEBGL_lose_context");
+    if (lose && "loseContext" in lose) {
+      lose.loseContext();
+    }
+    return true;
+  } catch {
+    return true;
+  }
 }
 
 type ReviewStateNavigationMapProps = {
@@ -254,6 +274,10 @@ export function ReviewStateNavigationMap({
     const paint = colors === undefined ? readReviewNavigationColors() : colors;
     if (!paint) {
       onLoadFailedRef.current();
+      return;
+    }
+    if (!browserCanStartWebgl()) {
+      onWebglUnavailableRef.current();
       return;
     }
     disposedRef.current = false;

@@ -1,5 +1,5 @@
 import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 
 import type { ReviewStateFeatureCollection } from "@/features/ux-reset/review/review-state-navigation";
 import {
@@ -190,10 +190,18 @@ function renderNavigationMap(
 }
 
 describe("Review state navigation map lifecycle", () => {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+
+  beforeEach(() => {
+    HTMLCanvasElement.prototype.getContext = (() =>
+      ({}) as WebGL2RenderingContext) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+  });
+
   afterEach(() => {
     cleanup();
     engine.reset();
     setWorkerUrl.mockClear();
+    HTMLCanvasElement.prototype.getContext = originalGetContext;
   });
 
   it("constructs one static map and registers its source and layers once", () => {

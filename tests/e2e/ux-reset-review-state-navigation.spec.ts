@@ -82,7 +82,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 test.describe("Review national geographic navigation", () => {
   test("selects a state from the list, keeps history, and does not write Settings", async ({
     page,
-  }) => {
+  }, testInfo) => {
     const profileMethods = await installReviewApi(page);
     await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto("/app/review?scope=ALL");
@@ -123,10 +123,15 @@ test.describe("Review national geographic navigation", () => {
     await page.reload();
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect(
+      page.getByTestId("review-state-navigation-status")
+    ).toContainText(
+      /The map is ready\.|The map could not start\. Choose a state from the list\.|The map could not load\. Choose a state from the list\./
+    );
     await expectNoHorizontalOverflow(page);
     await page.screenshot({
       fullPage: true,
-      path: "/opt/cursor/artifacts/review-national-1440.png",
+      path: `/opt/cursor/artifacts/review-national-1440-${testInfo.project.name}.png`,
     });
   });
 
@@ -149,7 +154,9 @@ test.describe("Review national geographic navigation", () => {
     );
   });
 
-  test("keeps the state list usable without WebGL", async ({ page }) => {
+  test("keeps the state list usable without WebGL", async ({
+    page,
+  }, testInfo) => {
     await page.addInitScript(() => {
       const prototype = HTMLCanvasElement.prototype;
       const original = prototype.getContext;
@@ -174,28 +181,33 @@ test.describe("Review national geographic navigation", () => {
       page.getByTestId("review-state-navigation-status")
     ).toContainText("The map could not start. Choose a state from the list.");
     await expect(page.locator(".ux-reset-review-state-grid")).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({
+      fullPage: true,
+      path: `/opt/cursor/artifacts/review-national-390-no-webgl-${testInfo.project.name}.png`,
+    });
     const search = page.getByTestId("review-state-search");
     await search.fill("Colorado");
     await search.press("Enter");
     await expect(page).toHaveURL(/scope=CO/);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
-    await expectNoHorizontalOverflow(page);
-    await page.screenshot({
-      fullPage: true,
-      path: "/opt/cursor/artifacts/review-national-390-no-webgl.png",
-    });
   });
 
-  test("fits the national map at tablet width", async ({ page }) => {
+  test("fits the national map at tablet width", async ({ page }, testInfo) => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1024, width: 768 });
     await page.goto("/app/review?scope=ALL");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.locator(".ux-reset-review-state-grid")).toHaveCount(0);
+    await expect(
+      page.getByTestId("review-state-navigation-status")
+    ).toContainText(
+      /The map is ready\.|The map could not start\. Choose a state from the list\.|The map could not load\. Choose a state from the list\./
+    );
     await expectNoHorizontalOverflow(page);
     await page.screenshot({
       fullPage: true,
-      path: "/opt/cursor/artifacts/review-national-768.png",
+      path: `/opt/cursor/artifacts/review-national-768-${testInfo.project.name}.png`,
     });
   });
 });
