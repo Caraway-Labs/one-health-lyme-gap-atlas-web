@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { BrandMark } from "@/components/brand-mark";
 import {
   ABOUT_CARAWAY_LABS_PATH,
   RESET_AI_RESPONSIBLE_USE_PATH,
@@ -25,9 +26,12 @@ export function ProfessionalTrustFooter() {
           rel="noopener noreferrer"
           target="_blank"
         >
-          One Health Atlas by Caraway Labs
-          <span aria-hidden="true"> ↗</span>
-          <span className="sr-only"> (opens in a new tab)</span>
+          <BrandMark size={24} />
+          <span>
+            One Health Atlas by Caraway Labs
+            <span aria-hidden="true"> ↗</span>
+            <span className="sr-only"> (opens in a new tab)</span>
+          </span>
         </Link>
         <nav aria-label="Trust" className="ux-reset-trust-links">
           <Link href="/privacy">Privacy</Link>
