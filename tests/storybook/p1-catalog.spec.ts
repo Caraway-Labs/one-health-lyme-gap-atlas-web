@@ -150,6 +150,19 @@ test.describe("P1 Storybook catalog", () => {
     test(`${story.id} renders without a service request`, async ({ page }) => {
       const traffic = track(page);
       await openStory(page, story.id);
+      const scoreSummaries = page.locator("summary", {
+        hasText: "Score and methodology",
+      });
+      const summaryCount = await scoreSummaries.count();
+      for (let index = 0; index < summaryCount; index += 1) {
+        const scoreSummary = scoreSummaries.nth(index);
+        const collapsed = await scoreSummary.evaluate(
+          (element) => element.parentElement?.hasAttribute("open") !== true
+        );
+        if (collapsed) {
+          await scoreSummary.click();
+        }
+      }
       await expect(
         page.getByText(story.text, { exact: false }).first()
       ).toBeVisible();

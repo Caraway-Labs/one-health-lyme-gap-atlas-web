@@ -1854,8 +1854,8 @@
   }
 
   .ux-reset-explorer-map .map-wrap {
-    min-height: 7rem;
-    height: 7rem;
+    min-height: 16rem;
+    height: 16rem;
   }
 }
 

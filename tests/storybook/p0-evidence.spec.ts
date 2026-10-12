@@ -311,6 +311,7 @@ test.describe("P0 evidence catalog", () => {
     await expect(page.getByTestId("preview-action")).toHaveText(
       "Last preview action: None"
     );
+    await page.locator("summary", { hasText: "Score and methodology" }).click();
     await page.getByText("Inspect provenance").click();
     const source = page.getByRole("link", { name: "Open source reference" });
     await source.evaluate((anchor) => {

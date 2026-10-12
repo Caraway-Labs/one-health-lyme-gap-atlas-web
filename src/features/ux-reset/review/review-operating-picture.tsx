@@ -490,10 +490,22 @@ export function ReviewOperatingPicture({
     if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
       return;
     }
+    const publishedDirectory = layoutRef.current?.querySelector(
+      '[aria-label="Published counties"]'
+    );
     const row = layoutRef.current?.querySelector<HTMLButtonElement>(
       `button[data-fips="${selectedFips}"]`
     );
-    if (row) {
+    const focusPublishedSelect = () => {
+      layoutRef.current
+        ?.querySelector<HTMLButtonElement>(
+          '[data-testid="review-published-county-select"]'
+        )
+        ?.focus({ preventScroll: true });
+    };
+    if (publishedDirectory) {
+      focusPublishedSelect();
+    } else if (row) {
       const list = row.closest(".ux-reset-review-candidate-list");
       if (list instanceof HTMLElement) {
         const rowBox = row.getBoundingClientRect();
@@ -501,16 +513,16 @@ export function ReviewOperatingPicture({
         const visible =
           rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
         if (!visible) {
-          row.scrollIntoView({ block: "nearest" });
+          const delta =
+            rowBox.top < listBox.top
+              ? rowBox.top - listBox.top
+              : rowBox.bottom - listBox.bottom;
+          list.scrollTop += delta;
         }
       }
       row.focus({ preventScroll: true });
     } else {
-      layoutRef.current
-        ?.querySelector<HTMLButtonElement>(
-          '[data-testid="review-published-county-select"]'
-        )
-        ?.focus({ preventScroll: true });
+      focusPublishedSelect();
     }
     consumeReviewReturnFocus(selectedFips);
   }, [focusReturnedCounty, freezeCountySelection, selectedFips]);

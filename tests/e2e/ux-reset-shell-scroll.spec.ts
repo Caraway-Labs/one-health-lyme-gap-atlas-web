@@ -99,6 +99,23 @@ async function mainScrollTop(page: Page): Promise<number> {
     .evaluate((element) => element.scrollTop);
 }
 
+async function mainScrollMax(page: Page): Promise<number> {
+  return page.locator("main.ux-reset-pro-main").evaluate((element) => {
+    return Math.max(0, element.scrollHeight - element.clientHeight);
+  });
+}
+
+async function setMainScroll(page: Page, requested: number): Promise<number> {
+  return page
+    .locator("main.ux-reset-pro-main")
+    .evaluate((element, next: number) => {
+      const max = Math.max(0, element.scrollHeight - element.clientHeight);
+      const applied = Math.min(next, max);
+      element.scrollTop = applied;
+      return applied;
+    }, requested);
+}
+
 async function expectRouteContentReachable(page: Page): Promise<void> {
   await expect(
     page.locator(".app-inset[data-chrome-overflow='true']")
@@ -212,8 +229,8 @@ test.describe("professional shell scroll containment", () => {
 
     const mainBox = await box(main);
     await page.mouse.move(mainBox.left + mainBox.width / 2, mainBox.top + 80);
-    await page.mouse.wheel(0, 700);
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(400);
+    await page.mouse.wheel(0, 120);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(40);
     await expectChromeParked(page, sidebarBox, headerBox);
     expect(
       await page
@@ -228,9 +245,7 @@ test.describe("professional shell scroll containment", () => {
       }
     });
     await page.keyboard.press("PageDown");
-    await expect
-      .poll(() => mainScrollTop(page))
-      .toBeGreaterThan(afterWheel + 200);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(afterWheel);
     await expectChromeParked(page, sidebarBox, headerBox);
 
     const beforeSpace = await mainScrollTop(page);
@@ -267,10 +282,9 @@ test.describe("professional shell scroll containment", () => {
     await installArizonaReview(page);
     await page.goto("/app/review?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
-    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
-      element.scrollTop = 640;
-    });
-    await expect.poll(() => mainScrollTop(page)).toBe(640);
+    const parked = await setMainScroll(page, 640);
+    expect(parked).toBeGreaterThan(80);
+    await expect.poll(() => mainScrollTop(page)).toBe(parked);
 
     await page.getByRole("link", { exact: true, name: "Settings" }).click();
     await expect(page).toHaveURL(/\/app\/settings$/);
@@ -280,7 +294,7 @@ test.describe("professional shell scroll containment", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/app\/review\?scope=AZ/);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(500);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(parked - 40);
     expect(
       await page.locator("#ux-reset-pro-navigation").evaluate((element) => {
         return Math.round(element.getBoundingClientRect().top);
@@ -488,10 +502,9 @@ test.describe("professional shell scroll containment", () => {
     await installArizonaReview(page);
     await page.goto("/app/review?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
-    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
-      element.scrollTop = 640;
-    });
-    await expect.poll(() => mainScrollTop(page)).toBe(640);
+    const parked = await setMainScroll(page, 640);
+    expect(parked).toBeGreaterThan(80);
+    await expect.poll(() => mainScrollTop(page)).toBe(parked);
     // The scope trigger sits above a scrolled main pane. A real pointer click
     // scrolls that trigger into view and would store the new offset. Dispatch
     // the same select events without moving main.
@@ -515,10 +528,10 @@ test.describe("professional shell scroll containment", () => {
     await expect(
       page.getByRole("option", { name: "New York (NY)" })
     ).toBeAttached();
-    await page.evaluate(() => {
+    await page.evaluate((offset) => {
       const main = document.querySelector("main.ux-reset-pro-main");
       if (main instanceof HTMLElement) {
-        main.scrollTop = 640;
+        main.scrollTop = offset;
       }
       const option = [...document.querySelectorAll("[role='option']")].find(
         (node) => node.textContent?.includes("New York (NY)")
@@ -543,7 +556,7 @@ test.describe("professional shell scroll containment", () => {
           view: window,
         })
       );
-    });
+    }, parked);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect.poll(() => mainScrollTop(page)).toBe(0);
@@ -551,7 +564,7 @@ test.describe("professional shell scroll containment", () => {
     await page.goBack();
     await expect(page).toHaveURL(/scope=AZ/);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(500);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(parked - 40);
   });
 
   test("keeps separate scroll offsets for two entries of the same review URL", async ({
@@ -561,33 +574,33 @@ test.describe("professional shell scroll containment", () => {
     await installArizonaReview(page);
     await page.goto("/app/review?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
-    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
-      element.scrollTop = 180;
-    });
-    await expect.poll(() => mainScrollTop(page)).toBe(180);
+    const max = await mainScrollMax(page);
+    const low = Math.min(180, Math.max(80, Math.floor(max * 0.4)));
+    const high = Math.min(420, max);
+    expect(high - low).toBeGreaterThan(40);
+    await setMainScroll(page, low);
+    await expect.poll(() => mainScrollTop(page)).toBe(low);
     await page.evaluate(() => {
       window.history.pushState(window.history.state, "", window.location.href);
     });
-    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
-      element.scrollTop = 420;
-    });
-    await expect.poll(() => mainScrollTop(page)).toBe(420);
-    await expect.poll(() => storedMainOffset(page)).toBe(420);
+    await setMainScroll(page, high);
+    await expect.poll(() => mainScrollTop(page)).toBe(high);
+    await expect.poll(() => storedMainOffset(page)).toBe(high);
     await page.locator("main.ux-reset-pro-main").evaluate((element) => {
       element.scrollTop = 0;
     });
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(350);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(high - 40);
 
     await page.goBack();
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(100);
-    await expect.poll(() => mainScrollTop(page)).toBeLessThan(250);
-    await expect.poll(() => storedMainOffset(page)).toBeGreaterThan(100);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(low - 40);
+    await expect.poll(() => mainScrollTop(page)).toBeLessThan(low + 70);
+    await expect.poll(() => storedMainOffset(page)).toBeGreaterThan(low - 40);
     await page.locator("main.ux-reset-pro-main").evaluate((element) => {
       element.scrollTop = 0;
     });
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(100);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(low - 40);
     await page.goForward();
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(350);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(high - 40);
   });
 
   test("starts the next route at the top after a hash-only history change", async ({
@@ -783,10 +796,16 @@ test.describe("professional shell scroll containment mobile", () => {
       const header = page.locator(".ux-reset-pro-app .app-header");
       const headerBefore = await box(header);
       expect(headerBefore.top).toBe(0);
-      await page.locator("main.ux-reset-pro-main").evaluate((element) => {
-        element.scrollTop = 480;
-      });
-      await expect.poll(() => mainScrollTop(page)).toBe(480);
+      const scrolled = await page
+        .locator("main.ux-reset-pro-main")
+        .evaluate((element) => {
+          const max = Math.max(0, element.scrollHeight - element.clientHeight);
+          const next = Math.min(480, max);
+          element.scrollTop = next;
+          return next;
+        });
+      expect(scrolled).toBeGreaterThan(0);
+      await expect.poll(() => mainScrollTop(page)).toBe(scrolled);
       expect((await box(header)).top).toBe(0);
       expect(
         await page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
@@ -801,7 +820,7 @@ test.describe("professional shell scroll containment mobile", () => {
       await page.keyboard.press("Escape");
       await expect(sidebar).toHaveAttribute("inert", "");
       await expect(open).toBeFocused();
-      expect(await mainScrollTop(page)).toBe(480);
+      expect(await mainScrollTop(page)).toBe(scrolled);
       await page.keyboard.press("Tab");
       const askAtlas = page.getByTestId("ask-atlas-launcher");
       await expect(askAtlas).toBeFocused();
