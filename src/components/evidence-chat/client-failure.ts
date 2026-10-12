@@ -5,6 +5,7 @@ import {
   AskAtlasAnswerContractError,
   type AskAtlasCloseReason,
 } from "@/lib/ask-atlas-answer-contract";
+import { AskAtlasLiteratureRequestError } from "@/lib/ask-atlas-literature-adapter";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
 export interface ClientFailure {
@@ -57,6 +58,14 @@ function isTimeoutError(error: unknown): boolean {
 }
 
 export function clientFailure(error: unknown): ClientFailure {
+  if (error instanceof AskAtlasLiteratureRequestError) {
+    return {
+      message: error.message,
+      retry: false,
+      state: "request_not_processed",
+      title: "Question not processed.",
+    };
+  }
   if (
     error instanceof ApiResponseValidationError ||
     error instanceof AskAtlasAnswerContractError

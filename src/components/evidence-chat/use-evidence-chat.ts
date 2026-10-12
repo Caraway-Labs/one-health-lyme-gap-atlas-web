@@ -9,13 +9,13 @@ import {
   useState,
 } from "react";
 
-import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import type { KnowledgeChatResponse } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   acceptAskAtlasPayload,
   AskAtlasAnswerContractError,
 } from "@/lib/ask-atlas-answer-contract";
+import { postLiteratureChat } from "@/lib/ask-atlas-literature-adapter";
 import {
   readAssistantConversationId,
   resolveActiveConversation,
@@ -367,14 +367,14 @@ export function useEvidenceChat({
     setPending(true);
     setFailure(null);
     try {
-      const result = await knowledgeGraphChatV1KnowledgeGraphChatPost(
+      const result = await postLiteratureChat(
         {
-          message: question,
           history: conversationHistory(
             replaceOperationalTurn && active
               ? { ...active, turns: active.turns.slice(0, -2) }
               : active
           ),
+          message: question,
         },
         { signal: controller.signal }
       );
