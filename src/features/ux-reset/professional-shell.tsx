@@ -39,6 +39,10 @@ import {
   useExploreCommittedNavigation,
 } from "@/features/ux-reset/explore-committed-navigation";
 import {
+  ResetFeedbackProvider,
+  ResetFeedbackTrigger,
+} from "@/features/ux-reset/feedback/reset-feedback-dialog";
+import {
   escapeStillClosingNavigation,
   trustedMobileTriggerRestoreShouldStop,
 } from "@/features/ux-reset/mobile-trigger-restore";
@@ -160,7 +164,9 @@ export function ResetProfessionalShell({
         storageKey={sidebarStorageKey}
       >
         <AskAtlasChromeProvider>
-          <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
+          <ResetFeedbackProvider>
+            <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
+          </ResetFeedbackProvider>
         </AskAtlasChromeProvider>
       </SidebarProvider>
     </ExploreCommittedNavigationProvider>
@@ -478,6 +484,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
                     </SidebarMenuItem>
                   );
                 })}
+                <ResetFeedbackTrigger
+                  onActivate={() => {
+                    if (isMobileViewport) setMobileOpen(false);
+                  }}
+                />
               </SidebarMenu>
             </SidebarGroup>
           </nav>
