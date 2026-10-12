@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 export {
+  ATLAS_EXPLORER_PATH,
   DOCS_PATH,
   RESET_ACTION_PATH,
   RESET_ASSISTANT_PATH,
