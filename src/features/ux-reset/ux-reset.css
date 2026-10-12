@@ -1,8 +1,55 @@
+/* Viewport shell: the document must not scroll professional routes.
+   The sidebar and header stay in place; the route outlet scrolls. */
+.app-shell.ux-reset-pro-app {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .ux-reset-pro-app .atlas-sidebar {
   position: relative;
   z-index: 1;
   top: auto;
+  align-self: stretch;
   height: auto;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-content"] {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding: var(--space-2);
+}
+
+.ux-reset-pro-app .app-inset[data-slot="sidebar-inset"] {
+  max-height: 100%;
+  min-height: 0;
+  /* Main scrolls for route content. The inset scrolls when the header and
+     trust footer leave no usable route strip, and then it scrolls the route
+     with that chrome. */
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.ux-reset-pro-app
+  .app-inset[data-chrome-overflow="true"]
+  .ux-reset-workspace-body,
+.ux-reset-pro-app
+  .app-inset[data-chrome-overflow="true"]
+  .ux-reset-workspace-body
+  > .ux-reset-pro-main {
+  flex: none;
+  height: auto;
+  min-height: auto;
+  overflow: visible;
 }
 
 /* Professional /app navigation only. Legacy atlas-sidebar rules stay untouched.
@@ -156,27 +203,11 @@
   }
 }
 
-/* Account footer stays outside the scrolling navigation. */
-.ux-reset-pro-app .atlas-sidebar {
-  position: sticky;
-  top: 0;
-  height: 100dvh;
-  max-height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
-}
-
+/* Account footer stays outside the scrolling navigation. The shell parks
+   the sidebar; these rules only keep the footer from joining that scroll. */
 .ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-header"],
 .ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-footer"] {
   flex-shrink: 0;
-}
-
-.ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-content"] {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scroll-padding: var(--space-2);
 }
 
 .ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-footer"] {
@@ -821,14 +852,20 @@
 
 .ux-reset-workspace-body {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   min-width: 0;
-  flex: 1;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .ux-reset-workspace-body > .ux-reset-pro-main {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-padding: var(--space-2);
 }
 
 .ux-reset-ask-atlas-panel,
@@ -841,11 +878,13 @@
 }
 
 .ux-reset-ask-atlas-panel {
-  position: sticky;
-  top: 0;
+  position: relative;
+  top: auto;
   flex: 0 0 22rem;
+  align-self: stretch;
   width: 22rem;
-  height: calc(100dvh - 4.5rem);
+  min-height: 0;
+  max-height: 100%;
   border-left: 1px solid var(--border);
 }
 
@@ -981,38 +1020,29 @@
   font-weight: 500;
 }
 
-/* Fill the viewport and dock the composer while the chrome fits.
-   The flexible chain shrinks so the transcript scrolls internally.
-   When the header, notices, composer, and trust footer are taller than the
-   viewport, that overflow stays visible and this shell scrolls. */
-.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow-x: clip;
-  overflow-y: auto;
-}
-
-.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .app-inset {
-  height: auto;
-  max-height: none;
-  min-height: 100%;
-  overflow: visible;
-}
-
-.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-workspace-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  align-items: stretch;
-  overflow: visible;
-}
-
+/* The workspace fills the main pane and the transcript scrolls inside it.
+   When notices and the composer exceed that pane, the pane scrolls so they
+   stay reachable without moving the sidebar or header. */
 .ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-pro-main {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
-  overflow: visible;
+  overflow: auto;
   padding-bottom: var(--space-3);
+}
+
+@media print {
+  .app-shell.ux-reset-pro-app,
+  .ux-reset-pro-app .app-inset[data-slot="sidebar-inset"],
+  .ux-reset-pro-app .ux-reset-workspace-body,
+  .ux-reset-pro-app .ux-reset-workspace-body > .ux-reset-pro-main,
+  .ux-reset-pro-app .atlas-sidebar,
+  .ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-content"] {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 .ux-reset-ask-atlas-workspace {

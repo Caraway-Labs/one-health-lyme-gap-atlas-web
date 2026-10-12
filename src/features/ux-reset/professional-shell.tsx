@@ -38,6 +38,7 @@ import {
   searchParamsWithCommittedExploreContext,
   useExploreCommittedNavigation,
 } from "@/features/ux-reset/explore-committed-navigation";
+import { trustedMobileTriggerRestoreShouldStop } from "@/features/ux-reset/mobile-trigger-restore";
 import {
   RESET_ACCESS_NAV,
   RESET_WORKSPACE_NAV,
@@ -45,6 +46,8 @@ import {
   resetRouteById,
   type ResetRoute,
 } from "@/features/ux-reset/paths";
+import { useProfessionalMainScroll } from "@/features/ux-reset/professional-main-scroll";
+import { insetShouldScrollWithRoute } from "@/features/ux-reset/professional-shell-chrome";
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu";
@@ -53,7 +56,8 @@ import {
   workspaceRestoreConcealed,
 } from "@/features/ux-reset/workspace-sign-out";
 
-const MOBILE_TRIGGER_RESTORE_FRAMES = 12;
+const MOBILE_TRIGGER_RESTORE_FRAMES = 90;
+const MOBILE_TRIGGER_RESTORE_MS = 1000;
 
 function portaledMenuElement(): HTMLElement | null {
   const menus = document.querySelectorAll(
@@ -79,41 +83,50 @@ function portaledMenuOwnsFocus(target: EventTarget | null): boolean {
   return Boolean(element?.closest("[data-slot='dropdown-menu-content']"));
 }
 
-function focusWasDisplacedByInertClose(
-  active: Element | null,
-  sidebar: HTMLElement | null
-): boolean {
-  if (!(active instanceof HTMLElement)) return true;
-  if (active === document.body || active === document.documentElement) {
-    return true;
-  }
-  return Boolean(sidebar?.contains(active));
-}
-
-function restoreMobileNavigationTrigger(
-  trigger: HTMLElement,
-  sidebar: HTMLElement | null
-): () => void {
+function restoreMobileNavigationTrigger(trigger: HTMLElement): () => void {
   let frame = 0;
   let frames = 0;
   let restoring = true;
+  const startedAt = performance.now();
   const restore = () => {
-    if (!restoring) return;
-    if (
-      focusWasDisplacedByInertClose(document.activeElement, sidebar) &&
-      trigger.isConnected
-    ) {
+    if (!restoring || !trigger.isConnected) {
+      restoring = false;
+      return;
+    }
+    // Inert removal can leave focus on the body after the drawer closes.
+    // Keep the trigger focused through that window. Tab, Shift+Tab, and
+    // Escape end that window even when they start on the trigger. Enter,
+    // Space, and a pointer on the trigger can reopen the drawer.
+    if (document.activeElement !== trigger) {
       trigger.focus({ preventScroll: true });
     }
     frames += 1;
-    if (restoring && frames < MOBILE_TRIGGER_RESTORE_FRAMES) {
+    const withinBudget =
+      frames < MOBILE_TRIGGER_RESTORE_FRAMES &&
+      performance.now() - startedAt < MOBILE_TRIGGER_RESTORE_MS;
+    if (restoring && withinBudget) {
       frame = window.requestAnimationFrame(restore);
     }
   };
+  const stopForUserAction = (event: Event) => {
+    if (trustedMobileTriggerRestoreShouldStop(event, trigger)) {
+      restoring = false;
+    }
+  };
   restore();
+  const timers = [100, 250, 500, MOBILE_TRIGGER_RESTORE_MS].map((delay) =>
+    window.setTimeout(restore, delay)
+  );
+  document.addEventListener("keydown", stopForUserAction, true);
+  document.addEventListener("pointerdown", stopForUserAction, true);
   return () => {
     restoring = false;
     window.cancelAnimationFrame(frame);
+    for (const timer of timers) {
+      window.clearTimeout(timer);
+    }
+    document.removeEventListener("keydown", stopForUserAction, true);
+    document.removeEventListener("pointerdown", stopForUserAction, true);
   };
 }
 
@@ -162,7 +175,49 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const pageInert = mobileDrawerActive || askAtlas.pageInert;
   const sidebarInert = mobileDrawerClosed || askAtlas.pageInert;
   const sidebarRef = useRef<HTMLElement>(null);
+  const insetRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  useProfessionalMainScroll(mainRef, pathname, searchParams.toString());
+
+  useLayoutEffect(() => {
+    const inset = insetRef.current;
+    if (!inset) {
+      return;
+    }
+    const apply = () => {
+      const header = inset.querySelector<HTMLElement>(":scope > .app-header");
+      const footer = inset.querySelector<HTMLElement>(":scope > footer");
+      const scrollsWithRoute = insetShouldScrollWithRoute(
+        header?.offsetHeight ?? 0,
+        footer?.offsetHeight ?? 0,
+        inset.clientHeight
+      );
+      if (scrollsWithRoute) {
+        inset.dataset.chromeOverflow = "true";
+      } else {
+        delete inset.dataset.chromeOverflow;
+      }
+    };
+    apply();
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver(apply);
+    observer.observe(inset);
+    const header = inset.querySelector<HTMLElement>(":scope > .app-header");
+    const footer = inset.querySelector<HTMLElement>(":scope > footer");
+    if (header) {
+      observer.observe(header);
+    }
+    if (footer) {
+      observer.observe(footer);
+    }
+    return () => {
+      observer.disconnect();
+      delete inset.dataset.chromeOverflow;
+    };
+  }, []);
 
   const closeMobileNavigation = useCallback(
     () => setMobileOpen(false),
@@ -210,7 +265,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       }
       // Closing makes the focused close control inert. Chromium can then move
       // focus to the body after this effect's first focus(), without focusin.
-      return restoreMobileNavigationTrigger(trigger, sidebarRef.current);
+      return restoreMobileNavigationTrigger(trigger);
     }
     if (!isMobileViewport) {
       return;
@@ -435,6 +490,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         aria-hidden={pageInert || undefined}
         className="app-inset"
         inert={pageInert || undefined}
+        ref={insetRef}
       >
         <header className="app-header">
           <SidebarTrigger
@@ -454,7 +510,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           {askAtlas.launcher}
         </header>
         <div className="ux-reset-workspace-body">
-          <main className="app-content ux-reset-pro-main">{children}</main>
+          <main ref={mainRef} className="app-content ux-reset-pro-main">
+            {children}
+          </main>
           {askAtlas.desktopPanel}
         </div>
         <ProfessionalTrustFooter />

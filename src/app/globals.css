@@ -48,6 +48,8 @@
   --popover-foreground: var(--ink);
   --primary: var(--teal);
   --primary-foreground: var(--white);
+  /* Darken on hover so white label text stays above 4.5:1. */
+  --primary-hover: var(--teal-dark);
   --secondary: var(--mint);
   --secondary-foreground: var(--teal-dark);
   --muted: var(--pale);
@@ -141,6 +143,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
