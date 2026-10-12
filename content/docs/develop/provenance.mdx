@@ -1,0 +1,91 @@
+---
+title: Provenance and evidence
+description: Read source, methodology, release, freshness, and value-state fields together before citing an Atlas observation.
+---
+
+An observation is reproducible only when the value, the value state, and the provenance fields from that same response stay together. Response time is not publisher freshness. A null timestamp is unknown. Do not fill it in.
+
+## Fields that travel with the value
+
+From the observation you received, keep:
+
+| Field | Role |
+| --- | --- |
+| `observation_id` | Stable observation identity and compact provenance reference |
+| `measure_id` | Exact measure |
+| `geography` | `geography_type` and `geography_id` |
+| `period_start`, `period_end`, `temporal_grain` | Inclusive governed period and grain |
+| `value`, `value_state`, `unit`, `denominator` | The result. Read them as a set |
+| `source_id` | Public source resource key |
+| `lineage_source_id`, `dataset_id` | Lineage and dataset ids. They are distinct from `source_id` |
+| `methodology_id` | Methodology resource id. Null when the row has no governed methodology id |
+| `methodology_version` | Transformation version |
+| `release_methodology_version` | Release methodology version when present |
+| `semantic_version` | Semantic contract version for the row |
+| `release_id` | Release identity |
+| `provenance_ref` | Structured provenance identity. The schema says this is not a literature citation |
+| `source_vintage`, `source_label`, `source_url` | Publisher context copied onto the row when governed |
+| `source_published_at`, `atlas_acquired_at`, `atlas_processed_at` | Timestamps when governed. Null is not inferred freshness |
+| `limitations` | Interpretation limits. Preserve the list |
+| `evidence` | `resource_type` and `resource_id`, plus optional source, provenance, version, release, and uri fields |
+| `metadata_revision_id` | Consumer-safe metadata revision when present. The schema says it is not private lineage |
+
+`evidence.resource_type` on the contract's synthetic observation example is `observation`, and `resource_id` repeats the observation id. `provenance_ref` on a checked case-floor row was the same string as `observation_id`. That equality is not a second citation format. It is the provenance identity returned for that row.
+
+## Source and methodology resources
+
+Resolve ids with the canonical detail routes:
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
+curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
+```
+
+Replace those ids with the ids on your observation. A source resource adds `publisher`, `release_version`, `source_version`, `published_at`, `upstream_updated_at`, and `source_retrieved_at`. On the checked `human` source, `publisher` was present and `published_at`, `atlas_acquired_at`, `upstream_updated_at`, and `source_retrieved_at` were null. Those nulls stay null.
+
+A methodology resource has `methodology_id`, `measure_id`, `version`, `description`, `limitations`, `semantic_version`, and `release_version`. Its `version` is the methodology resource version. The observation's `methodology_version` is the transformation version. Keep both when both are present.
+
+Unknown ids return HTTP 404 `RESOURCE_NOT_FOUND`. Supported detail responses include `ETag`. A matching `If-None-Match` returns HTTP 304 and an empty body.
+
+## Freshness
+
+| Clock | What it measures |
+| --- | --- |
+| `period_start` and `period_end` | The governed observation period |
+| `source_vintage` | Publisher vintage label when present |
+| `source_published_at` | Publisher timestamp when governed |
+| `atlas_acquired_at` | When Atlas acquired the source, when governed |
+| `atlas_processed_at` | When Atlas processed the row, when governed |
+| Source `upstream_updated_at` | Governed publisher update time. Null when unavailable |
+| Source `source_retrieved_at` | Governed retrieval time. Null when unavailable |
+| `meta.response_at` | When this HTTP response was built |
+| `environmental_context.upstream_date_modified` | Upstream modification metadata when environmental context is present. The schema says this is never original publication or first availability |
+
+The contract states that response time is not publisher freshness. A generated or response timestamp does not become the surveillance observation date.
+
+## Evidence semantics
+
+`value_state` answers a different question from a low number:
+
+- `OBSERVED` is a nonzero value under the measure's unit and limitations.
+- `ZERO` is a published numeric zero. It remains bounded by the measure's coverage and method.
+- `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require a null `value`. `SUPPRESSED` means the value was withheld. `MISSING` and `UNAVAILABLE` are gaps.
+- `NO_COUNTY_LINKED_RECORD` and `NO_RECORDS` keep publisher literals. The schema says neither establishes biological absence.
+
+`surveillance_context`, when a release supplies it, can include evidence, methodology comparison, and temporal alignment. The schema says comparison is case-definition scope only, and alignment is descriptive. Omitted or null context does not assert comparability. Surveillance floors and gap scores are not diagnoses, individual risk estimates, or causal claims.
+
+The same interpretation for people using the Atlas screens is in [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) and [Releases and methodology labels](/docs/releases-and-methodology).
+
+## States for source and methodology reads
+
+| State | Result |
+| --- | --- |
+| Success | HTTP 200 and `data` for the id you asked for |
+| Empty collection | `GET /v1/sources` can return HTTP 200 and `data: []` when a page is exhausted. Detail routes identify one id, so exhaustion is not their empty state |
+| Not found | HTTP 404 `RESOURCE_NOT_FOUND` |
+| Invalid parameters | HTTP 400 `INVALID_REQUEST`, including a GET body (`413`) and an overlong query (`414`) |
+| Unsupported filter or strata | HTTP 400 `UNSUPPORTED_FILTER` or `UNSUPPORTED_STRATIFICATION` |
+| Query too broad | HTTP 400 `QUERY_TOO_BROAD` |
+| Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` |
+| Server unavailable | HTTP 503 and `Retry-After` |
+| Unknown or limited data | Null publisher timestamps and a null observation `methodology_id` stay null. HTTP 304 returns an empty body when the `ETag` matches |

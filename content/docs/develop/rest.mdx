@@ -1,0 +1,74 @@
+---
+title: REST API
+description: Call the anonymous Atlas HTTP contract, page collections, and handle the declared errors, cache headers, and version fields.
+---
+
+Public Atlas reads are GET requests to `https://api.onehealthatlas.org`. The contract path prefix is `/v1`. No API key is used. The machine-readable parameters and schemas are in the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and the generated `/docs/api-reference` pages.
+
+## Collections and resources
+
+Canonical collections — indicators, measures, observations, and sources — return:
+
+```json
+{
+  "data": [],
+  "meta": { "next_page_token": null, "response_at": "2026-01-01T00:00:00Z" },
+  "links": { "self": null }
+}
+```
+
+That JSON is the contract's illustrative empty page. A live indicators page also returned `links.self` null while `data` contained rows, so a null `self` does not mean the page failed.
+
+Canonical detail routes — one indicator, measure, source, or methodology — return `data`. Legacy county, state, score, and geometry routes use their own response schemas. Read the operation you called.
+
+## Pagination
+
+Collection `page_size` defaults to 100. The minimum is 1 and the maximum is 500. `page_size=0` on the observations query returned HTTP 400 `INVALID_REQUEST` with an `errors` entry that the value must be greater than or equal to 1.
+
+`meta.next_page_token` is an opaque string bound to the query and the release. Send it back as `page_token` and keep the other query parameters unchanged. `null` means the collection is exhausted. Tokens can expire on restart. A page token is not a citation and not a release id.
+
+Checked on 12 October 2026, `GET /v1/indicators?page_size=2` returned two indicators and a token. Repeating `page_size=2` with that `page_token` returned the next two indicators. Stop when `next_page_token` is null.
+
+## Rate limits
+
+`429` and `503` responses declare a `Retry-After` header. The header description is "Seconds before retry when supplied by the service." The illustrative `429` problem uses `code` `RATE_LIMITED`.
+
+The public OpenAPI document does not publish a numeric quota, a concurrency cap, or a fixed `Retry-After` range. When the header is present, wait that many seconds before retrying the same request. When you contact support, keep `request_id`.
+
+## Errors
+
+Canonical errors use RFC 9457 `application/problem+json`. Required problem fields are `type`, `title`, `status`, `detail`, `instance`, and `request_id`. `code` and `errors` may be present. `errors` is an array of objects when validation details are included.
+
+| HTTP status | `code` | When it applies |
+| --- | --- | --- |
+| 400 | `INVALID_REQUEST` | The query is incomplete or a value fails validation. Also declared for a GET body (`413`) and a query string that is too long (`414`) |
+| 400 | `UNSUPPORTED_FILTER` | The query contains a filter V1 does not accept, including unknown parameters, `sort`, and `aggregation` |
+| 400 | `UNSUPPORTED_STRATIFICATION` | `stratification` is sent. The current release has no strata |
+| 400 | `QUERY_TOO_BROAD` | The query exceeds the default pre-execution logical-result ceiling of 10,000. That ceiling is a rejection, not a silent shorter page |
+| 404 | `RESOURCE_NOT_FOUND` | The canonical resource id is unknown |
+| 429 | `RATE_LIMITED` | The service asks you to wait. Read `Retry-After` |
+| 503 | Declared on the geography route as `CANONICAL_DATA_UNAVAILABLE` | The canonical data service is unavailable. Read `Retry-After` when it is present |
+
+Legacy Atlas routes keep their existing statuses, including `422` for invalid values and `404` for a missing county or dataset release. A checked `GET /v1/counties/00000` returned HTTP 404 `application/problem+json` with detail `County or dataset release not found` and no `code` field. Do not require `code` on every problem body.
+
+## Versions
+
+Keep these identifiers separate:
+
+| Identifier | Where it appears | What it names |
+| --- | --- | --- |
+| `/v1` | URL path | HTTP contract. Breaking public changes require an approved migration and deprecation plan. Optional additive fields may appear within V1 |
+| OpenAPI `info.version` | The schema document | Application version of the published document. It is not the HTTP contract |
+| `semantic_version` | Indicator, measure, observation, source, methodology | Governed semantic contract version |
+| `release_id` | Observation | Governed release identity for the row you retrieved |
+| `release_version` | Indicator, measure, source, methodology | Governed current-release relationship version |
+| `methodology_version` | Observation | Transformation version |
+| Methodology `version` | Methodology resource | Methodology resource version. It is distinct from `methodology_version` on the observation |
+
+These routes read the current release. The same URL can return a different `release_id` after a later release. Save the response, or a checksum of the response, with the request URL when you need a stable record.
+
+## Caching
+
+Discovery collections declare `Cache-Control: public, max-age=60, must-revalidate`. A checked indicators response used that policy. Supported detail resources return an `ETag`. Send `If-None-Match` with that value to receive HTTP 304 and an empty body when the representation is unchanged. `GET /v1/sources/human` behaved that way.
+
+Legacy metadata describes a public cache of 300 seconds and an informational `ETag` that does not implement conditional `304`. Read the operation. `meta.response_at` is the time the response was built. It is not publisher freshness.

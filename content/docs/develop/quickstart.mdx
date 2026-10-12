@@ -1,0 +1,66 @@
+---
+title: Quickstart
+description: Make one anonymous current-release observation request and read every response state that request can return.
+---
+
+This page completes one representative production read: the 2023 published case-count floor for New York County. The measure id `case_count_floor_2023` is the example in the public observations operation and a measure in the current catalog. County FIPS `36061` is in the lower 48.
+
+You need an HTTPS client. You do not create an account, API key, or SDK project.
+
+## Request
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023'
+```
+
+`curl -f` hides error bodies. Drop `-f` when you need to read a problem response.
+
+A successful body is a collection:
+
+| Field | Meaning |
+| --- | --- |
+| `data` | Observation records for this query. An empty array means no row matched. |
+| `meta.next_page_token` | Opaque continuation. `null` means this query is exhausted. |
+| `meta.response_at` | UTC time when the service built the response. This is not source freshness. |
+| `links.self` | Link object field. The contract allows `null`. |
+
+On 12 October 2026 this URL returned HTTP 200, one row, `value_state` `OBSERVED`, a numeric `value`, `unit` `cases`, and `environmental_context` null. The number and `release_id` belong to that release. Read them from your response. A later release can change them.
+
+Read `value` only together with `value_state` and `unit`. `case_count_floor_2023` is a privacy-protected case floor in `cases`. It is a surveillance floor, not a diagnosis, a complete incidence count, or an individual risk estimate.
+
+## States for this request
+
+Use this table for the quickstart URL and the same query with a different county FIPS, period, or extra parameter.
+
+| State | What you receive | What to do |
+| --- | --- | --- |
+| Success, observed value | HTTP 200, `data` has a row, `value_state` is `OBSERVED`, `value` is numeric | Record the value, unit, period, `release_id`, and `semantic_version` |
+| Success, explicit zero | HTTP 200 and `value_state` `ZERO` | Keep the zero. The schema defines `ZERO` as numeric zero |
+| Success, gap or withheld value | HTTP 200 and `value` null with `MISSING`, `SUPPRESSED`, or `UNAVAILABLE` | Leave the value null. Do not substitute zero |
+| Success, publisher literal | HTTP 200 and `NO_COUNTY_LINKED_RECORD` or `NO_RECORDS` | Keep the literal the schema describes. Neither state establishes biological absence |
+| Success, empty collection | HTTP 200, `data` is `[]`, `next_page_token` is null | No row matched. This is not HTTP 404 |
+| Not found | HTTP 404, `application/problem+json`, `code` `RESOURCE_NOT_FOUND` | The operation declares this code. A missing measure id on `GET /v1/measures/{measure_id}` returned it with detail `Measure not found.` |
+| Invalid parameters | HTTP 400, `code` `INVALID_REQUEST` | Fix the query. Missing year and dates returns detail `Supply a year or both start_date and end_date.` Sending `year` together with both dates returns detail `Use year or a date range, not both.` `page_size=0` and `geography_type=tract` also return `INVALID_REQUEST`. `tract` includes an `errors` entry because `geography_type` must be `county` or `state` |
+| Unsupported filter | HTTP 400, `code` `UNSUPPORTED_FILTER`, detail `This query filter is not supported in V1.` | Remove the extra parameter. `sort`, `aggregation`, and unknown query names returned this code |
+| Unsupported stratification | HTTP 400, `code` `UNSUPPORTED_STRATIFICATION`, detail `This release has no governed strata.` | Omit `stratification`. The current release has no strata |
+| Query too broad | HTTP 400, `code` `QUERY_TOO_BROAD` | The contract declares this when the query exceeds the pre-execution logical-result ceiling of 10,000. Narrow the county list or period. The ceiling is not a truncated page |
+| Rate limited | HTTP 429, `code` `RATE_LIMITED`, header `Retry-After` | Wait the number of seconds in `Retry-After` when the header is present, then retry the same request. The public document does not publish a numeric quota |
+| Server unavailable | HTTP 503, header `Retry-After` | Wait when `Retry-After` is present, then retry. Canonical problem bodies use `application/problem+json` |
+| Conditional detail | HTTP 304, empty body | This applies to supported detail resources after `If-None-Match`, not to this observation collection |
+
+`GET /v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=99999&year=2023` returned HTTP 200 with `data: []` on 12 October 2026. An unknown five-digit FIPS can be an empty page. HTTP 404 is the declared not-found status; an empty page means the query succeeded and matched nothing.
+
+The same measure for Adams County, FIPS `08001`, and `year=2023` returned HTTP 200 with `value_state` `MISSING` and `value` null on that date. That row is a gap for the published floor. It is still a successful response.
+
+## Follow provenance
+
+Take `source_id` and `methodology_id` from the observation you received. For this measure on the checked release those ids were `human` and `human_confirmed_probable_case_floor_v1`.
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
+curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
+```
+
+Detail routes return `data`. Unknown ids return HTTP 404 `RESOURCE_NOT_FOUND`. A matching `If-None-Match` returns HTTP 304 with an empty body. `GET /v1/sources/human` did that when the previous `ETag` was sent back.
+
+Continue with [Indicators, measures, and observations](/docs/develop/resources), [Provenance and evidence](/docs/develop/provenance), and the [workflow guides](/docs/develop/workflows).

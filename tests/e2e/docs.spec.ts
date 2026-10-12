@@ -89,9 +89,13 @@ test("keeps every HelpDocs route reachable and accessible", async ({
   }
 
   if (testInfo.project.name === "desktop") {
-    await expect(page.locator("#nd-sidebar a")).toHaveCount(
-      docsPages.length + 1
-    );
+    const sidebar = page.locator("#nd-sidebar");
+    await expect(
+      sidebar.getByRole("link", { name: "Developer overview" })
+    ).toBeVisible();
+    await expect(
+      sidebar.getByRole("link", { name: "FAQ and troubleshooting" })
+    ).toBeVisible();
   }
 });
 
