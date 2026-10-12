@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
@@ -24,11 +25,16 @@ import {
 } from "@/components/ui/table";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
+import {
+  ASK_ATLAS_PAGE_REFERENCE_PARAM,
+  askAtlasEntryHref,
+} from "@/features/ux-reset/ask-atlas/page-reference";
 import type {
   CompareAlignedRow,
   CompareCell,
   CompareRelation,
 } from "@/features/ux-reset/compare/compare-alignment";
+import { CompareCountyProfileSection } from "@/features/ux-reset/compare/compare-county-profile-section";
 import { compareReturnLabel } from "@/features/ux-reset/compare/compare-entry";
 import {
   compareOptionDisabled,
@@ -41,6 +47,7 @@ import {
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { RESET_COMPARE_PATH } from "@/features/ux-reset/routes";
 import { cn } from "@/lib/utils";
 
 function relationText(relation: CompareRelation): string {
@@ -151,20 +158,35 @@ function CompareExperienceInner() {
   const rightOption = workspace.options.find(
     (option) => option.fips === rightFips
   );
-  usePublishAskAtlasInheritedContext(
-    inheritedContextFromCompare({
-      alignment: workspace.alignment,
-      alignmentReady: Boolean(workspace.alignment && workspace.releaseId),
-      counties:
-        leftOption && rightOption
-          ? [
-              { fips: leftOption.fips, label: leftOption.label },
-              { fips: rightOption.fips, label: rightOption.label },
-            ]
-          : [],
-      releaseId: workspace.alignment ? workspace.releaseId : null,
-    })
+  const searchParams = useSearchParams();
+  const askContext = useMemo(
+    () =>
+      inheritedContextFromCompare({
+        alignment: workspace.alignment,
+        alignmentReady: Boolean(workspace.alignment && workspace.releaseId),
+        counties:
+          leftOption && rightOption
+            ? [
+                { fips: leftOption.fips, label: leftOption.label },
+                { fips: rightOption.fips, label: rightOption.label },
+              ]
+            : [],
+        releaseId: workspace.alignment ? workspace.releaseId : null,
+      }),
+    [leftOption, rightOption, workspace.alignment, workspace.releaseId]
   );
+  const askHref = useMemo(() => {
+    if (!askContext) {
+      return null;
+    }
+    const href = askAtlasEntryHref({
+      context: askContext,
+      pathname: RESET_COMPARE_PATH,
+      searchParams,
+    });
+    return href.includes(`${ASK_ATLAS_PAGE_REFERENCE_PARAM}=`) ? href : null;
+  }, [askContext, searchParams]);
+  usePublishAskAtlasInheritedContext(askContext);
   usePublishExploreCommittedNavigation({
     county: null,
     compare: pair,
@@ -185,6 +207,9 @@ function CompareExperienceInner() {
     workspace.alignment?.outcomes.some(
       (outcome) => outcome.status === "failed"
     ) ?? false;
+  const handleRetryProfile = () => {
+    workspace.retryProfile();
+  };
 
   return (
     <div
@@ -422,6 +447,18 @@ function CompareExperienceInner() {
         </AtlasStatusMessage>
       ) : null}
 
+      <CompareCountyProfileSection
+        alignment={workspace.profile}
+        coolingDown={workspace.profileCoolingDown}
+        error={workspace.profileError}
+        leftLabel={leftOption?.label ?? leftFips}
+        loading={workspace.profileLoading}
+        period={workspace.period}
+        retrying={workspace.profileRetrying}
+        rightLabel={rightOption?.label ?? rightFips}
+        onRetry={handleRetryProfile}
+      />
+
       {workspace.alignment && counts ? (
         <section
           className="ux-reset-compare-table"
@@ -514,10 +551,10 @@ function CompareExperienceInner() {
           className="ux-reset-compare-next"
         >
           {/* Action is one investigated county. Compare does not choose it. */}
-          {pair.map((fips) => {
-            const label =
-              workspace.options.find((option) => option.fips === fips)?.label ??
-              fips;
+          {pair.map((fips, index) => {
+            if (index !== 0 && index !== 1) {
+              return null;
+            }
             return (
               <Link
                 className={cn(
@@ -530,14 +567,42 @@ function CompareExperienceInner() {
                 href={workspace.investigateHref(fips)}
                 key={fips}
               >
-                Investigate {label}
+                {countyEvidenceLinkLabel(index)}
               </Link>
             );
           })}
+          {askHref ? (
+            <Link
+              className={cn(
+                buttonVariants({ variant: "secondary" }),
+                "ux-reset-compare-action"
+              )}
+              data-testid="compare-ask-atlas"
+              data-variant="secondary"
+              href={askHref}
+            >
+              Ask Atlas about this comparison
+            </Link>
+          ) : null}
         </nav>
       ) : null}
     </div>
   );
+}
+
+function countyEvidenceLinkLabel(index: 0 | 1): string {
+  switch (index) {
+    case 0: {
+      return "View first county evidence";
+    }
+    case 1: {
+      return "View second county evidence";
+    }
+    default: {
+      const exhaustive: never = index;
+      return exhaustive;
+    }
+  }
 }
 
 function CountySlot({

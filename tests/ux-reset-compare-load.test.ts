@@ -6,12 +6,17 @@ import {
   type CompareRelation,
 } from "@/features/ux-reset/compare/compare-alignment";
 import {
+  COMPARE_PUBLIC_READ_LIMIT,
+  resetCompareReadLimit,
+} from "@/features/ux-reset/compare/compare-read-limit";
+import {
   clearCompareObservationRetryDeadlines,
   compareObservationRequestRejection,
   compareRetryCooldowns,
   loadCompareEvidence,
   preservedCompareMeasures,
 } from "@/features/ux-reset/compare/load-compare-evidence";
+import { loadCompareCountyProfiles } from "@/features/ux-reset/compare/load-compare-profile";
 import type { Measure } from "@/generated/models";
 import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
 
@@ -28,6 +33,20 @@ import {
 } from "./fixtures/compare-api-fixtures";
 
 const requests: string[] = [];
+const COMPARE_READ_POLL_ATTEMPTS = 20;
+
+async function waitForCompareReads(ready: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < COMPARE_READ_POLL_ATTEMPTS; attempt += 1) {
+    if (ready()) {
+      return;
+    }
+    const pending = Promise.withResolvers<boolean>();
+    setTimeout(() => {
+      pending.resolve(true);
+    }, 0);
+    await pending.promise;
+  }
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return Response.json(body, {
@@ -76,6 +95,7 @@ function observationsForRequest(url: URL) {
 describe("compare evidence loading through the generated client", () => {
   afterEach(() => {
     clearCompareObservationRetryDeadlines();
+    resetCompareReadLimit();
     vi.unstubAllGlobals();
     vi.useRealTimers();
     requests.length = 0;
@@ -492,5 +512,84 @@ describe("compare evidence loading through the generated client", () => {
       secondTick: "ready",
       unchangedCaseCalls: caseCalls,
     });
+  });
+
+  it("keeps county records and observations within five concurrent reads", async () => {
+    const controller = new AbortController();
+    let inFlight = 0;
+    let maxInFlight = 0;
+    let started = 0;
+    const release: (() => void)[] = [];
+    vi.stubGlobal("fetch", (_input: RequestInfo | URL, init?: RequestInit) => {
+      started += 1;
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      const pending = Promise.withResolvers<Response>();
+      const finish = (aborted: boolean) => {
+        inFlight -= 1;
+        if (aborted) {
+          pending.reject(new DOMException("Aborted", "AbortError"));
+          return;
+        }
+        pending.resolve(
+          Response.json(
+            { detail: "held" },
+            {
+              headers: { "content-type": "application/json" },
+              status: 400,
+            }
+          )
+        );
+      };
+      init?.signal?.addEventListener("abort", () => finish(true), {
+        once: true,
+      });
+      release.push(() => finish(false));
+      return pending.promise;
+    });
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const measures = ["m1", "m2", "m3", "m4", "m5"].map((measureId) => ({
+      ...base,
+      measure_id: measureId,
+    }));
+    const evidence = loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: controller.signal,
+    });
+    const profile = loadCompareCountyProfiles({
+      leftFips: COMPARE_LEFT_FIPS,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      signal: controller.signal,
+    });
+    await waitForCompareReads(() => started >= COMPARE_PUBLIC_READ_LIMIT);
+    const first = release.shift();
+    if (!first) {
+      throw new Error("No read was waiting on the shared limit.");
+    }
+    const held = started;
+    const peak = maxInFlight;
+    first();
+    await waitForCompareReads(() => started >= held + 1);
+    expect({
+      nextStarted: started,
+      peak,
+      queued: held,
+    }).toStrictEqual({
+      nextStarted: COMPARE_PUBLIC_READ_LIMIT + 1,
+      peak: COMPARE_PUBLIC_READ_LIMIT,
+      queued: COMPARE_PUBLIC_READ_LIMIT,
+    });
+    controller.abort();
+    await Promise.allSettled([evidence, profile]);
   });
 });

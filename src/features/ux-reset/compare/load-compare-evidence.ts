@@ -3,6 +3,7 @@ import {
   type CompareAlignment,
   type CompareMeasureOutcome,
 } from "@/features/ux-reset/compare/compare-alignment";
+import { withCompareReadLimit } from "@/features/ux-reset/compare/compare-read-limit";
 import { parseCalendarIsoDate } from "@/features/ux-reset/context-params";
 import {
   resolveExploreTimeBound,
@@ -614,14 +615,16 @@ export async function loadCompareEvidence(input: {
           scope,
           signal: input.signal,
         });
-        const observations = await fetchCompareObservations({
-          measureId: measure.measure_id,
-          pair,
-          period: input.period,
-          releaseId: input.releaseId,
-          signal: input.signal,
-          timeBound,
-        });
+        const observations = await withCompareReadLimit(input.signal, () =>
+          fetchCompareObservations({
+            measureId: measure.measure_id,
+            pair,
+            period: input.period,
+            releaseId: input.releaseId,
+            signal: input.signal,
+            timeBound,
+          })
+        );
         return {
           measureId: measure.measure_id,
           observations,

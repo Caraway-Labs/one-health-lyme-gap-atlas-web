@@ -817,6 +817,7 @@
 .ux-reset-compare {
   display: grid;
   gap: var(--space-4);
+  min-width: 0;
 }
 
 .ux-reset-compare-header,
@@ -825,6 +826,7 @@
 .ux-reset-compare-next {
   display: grid;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .ux-reset-compare-header,
@@ -863,6 +865,10 @@
 .ux-reset-compare-slot {
   display: grid;
   align-items: stretch;
+}
+
+.ux-reset-compare-table > * {
+  min-width: 0;
 }
 
 .ux-reset-compare-table table {
