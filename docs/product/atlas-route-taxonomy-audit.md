@@ -9,6 +9,8 @@
 
 **Retirement note (#550):** `/variant_1` through `/variant_7` were removed after this audit, including the `/variant_6` permanent redirect to `/investigate`. Sections below that describe those URLs as routable, experimental, or aliased are the pre-retirement baseline. Direct requests, including query strings, now return HTTP 404. `/investigate` still uses `ExperimentAtlas` (`wide-workbench`). `/geographic_explorer` still uses `GeographicExplorer`. `investigationWorkspaceHref` was removed with the redirect because nothing else called it.
 
+**Supersession (#196):** The October 11, 2026 six-page workspace map is [ux-reset-six-page-route-mapping.md](../ux-reset-six-page-route-mapping.md). The proposed canonical route map later in this audit is the earlier recommendation, not that approved map. `/variant_*` stays retired. Redirects are not installed here.
+
 ## Executive summary
 
 The production user-facing Atlas taxonomy is already encoded in `src/lib/navigation.ts` (`ATLAS_ROUTES`) and summarized in [navigation.md](../navigation.md). This audit inventories every App Router surface under `src/app`, reconciles it with `ATLAS_ROUTES`, and classifies each route family for epic #194.
