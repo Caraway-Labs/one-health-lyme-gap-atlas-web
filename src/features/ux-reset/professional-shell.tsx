@@ -3,13 +3,20 @@
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import type { MouseEvent, ReactNode } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -43,9 +50,38 @@ import { useProfessionalMainScroll } from "@/features/ux-reset/professional-main
 import { insetShouldScrollWithRoute } from "@/features/ux-reset/professional-shell-chrome";
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
+import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu";
+import {
+  subscribeWorkspaceRestore,
+  workspaceRestoreConcealed,
+} from "@/features/ux-reset/workspace-sign-out";
 
 const MOBILE_TRIGGER_RESTORE_FRAMES = 90;
 const MOBILE_TRIGGER_RESTORE_MS = 1000;
+
+function portaledMenuElement(): HTMLElement | null {
+  const menus = document.querySelectorAll(
+    "[data-slot='dropdown-menu-content']"
+  );
+  for (const menu of menus) {
+    if (!(menu instanceof HTMLElement)) {
+      continue;
+    }
+    if (Object.hasOwn(menu.dataset, "closed") || menu.hidden) {
+      continue;
+    }
+    return menu;
+  }
+  return null;
+}
+
+function portaledMenuOwnsFocus(target: EventTarget | null): boolean {
+  if (!(target instanceof Node)) {
+    return false;
+  }
+  const element = target instanceof Element ? target : target.parentElement;
+  return Boolean(element?.closest("[data-slot='dropdown-menu-content']"));
+}
 
 function restoreMobileNavigationTrigger(trigger: HTMLElement): () => void {
   let frame = 0;
@@ -129,6 +165,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const { mobileOpen, open, setMobileOpen } = useSidebar();
   const isMobileViewport = useMobileViewport();
   const askAtlas = useAskAtlasChrome();
+  const restoreConcealed = useSyncExternalStore(
+    subscribeWorkspaceRestore,
+    workspaceRestoreConcealed,
+    () => false
+  );
   const mobileDrawerActive = isMobileViewport && mobileOpen;
   const mobileDrawerClosed = isMobileViewport && !mobileOpen;
   const pageInert = mobileDrawerActive || askAtlas.pageInert;
@@ -248,6 +289,10 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       if (active instanceof Node && sidebar.contains(active)) {
         return;
       }
+      // The account menu is portaled, so its focus is outside the drawer node.
+      if (portaledMenuElement() || portaledMenuOwnsFocus(active)) {
+        return;
+      }
       closeButton.focus({ preventScroll: true });
     };
 
@@ -266,6 +311,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       if (target instanceof Node && sidebar.contains(target)) {
         return;
       }
+      if (portaledMenuOwnsFocus(target)) {
+        return;
+      }
       focusCloseNavigationIfNeeded();
     };
 
@@ -277,8 +325,14 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (portaledMenuElement()) {
+          return;
+        }
         event.preventDefault();
         closeMobileNavigation();
+        return;
+      }
+      if (portaledMenuElement()) {
         return;
       }
       if (event.key !== "Tab") return;
@@ -313,7 +367,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const navigationToggleLabel = open ? "Hide navigation" : "Show navigation";
 
   return (
-    <div className="app-shell ux-reset-pro-app">
+    <div
+      className="app-shell ux-reset-pro-app"
+      hidden={restoreConcealed || undefined}
+      inert={restoreConcealed || undefined}
+    >
       <Sidebar
         id="ux-reset-pro-navigation"
         ref={sidebarRef}
@@ -416,6 +474,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
             </SidebarGroup>
           </nav>
         </SidebarContent>
+        <SidebarFooter>
+          <WorkspaceAccountMenu />
+        </SidebarFooter>
       </Sidebar>
       {mobileDrawerActive ? (
         <button
