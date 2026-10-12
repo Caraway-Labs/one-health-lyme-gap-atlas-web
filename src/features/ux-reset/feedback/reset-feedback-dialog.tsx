@@ -65,6 +65,19 @@ type ResetFeedbackController = {
   openFeedback: () => void;
 };
 
+type FeedbackRetryCooldown = {
+  message: string;
+  until: number;
+};
+
+function draftsAfterSuccessfulSubmit(
+  drafts: ResetFeedbackDrafts,
+  category: ResetFeedbackCategoryId
+): ResetFeedbackDrafts {
+  const empty = createEmptyResetFeedbackDrafts();
+  return { ...drafts, [category]: empty[category] };
+}
+
 const ResetFeedbackContext = createContext<ResetFeedbackController | null>(
   null
 );
@@ -103,6 +116,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
   const [failure, setFailure] = useState<FeedbackSubmitFailure | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cooldown, setCooldown] = useState<FeedbackRetryCooldown | null>(null);
   const [retryLocked, setRetryLocked] = useState(false);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
@@ -116,7 +130,6 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
     setReturnPanel({ name: "choose" });
     setFailure(null);
     setValidationError(null);
-    setRetryLocked(false);
     setCopied(false);
   }, []);
 
@@ -149,35 +162,58 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
   }, [open]);
 
   useEffect(() => {
-    const retryAfterSeconds = failure?.retryAfterSeconds ?? 0;
-    if (!retryLocked || retryAfterSeconds <= 0) return;
-    const timer = window.setTimeout(() => {
-      setRetryLocked(false);
-    }, retryAfterSeconds * 1000);
+    if (!cooldown) return;
+    const remaining = cooldown.until - Date.now();
+    const timer = window.setTimeout(
+      () => {
+        setCooldown(null);
+        setRetryLocked(false);
+        setFailure((current) =>
+          current?.kind === "throttled" ? null : current
+        );
+      },
+      Math.max(0, remaining)
+    );
     return () => {
       window.clearTimeout(timer);
     };
-  }, [failure, retryLocked]);
+  }, [cooldown]);
 
   const closeDialog = (afterSuccess: boolean) => {
     setOpen(false);
     if (afterSuccess) {
-      resetComposer();
+      setPanel({ name: "choose" });
+      setReturnPanel({ name: "choose" });
+      setFailure(null);
+      setValidationError(null);
+      setCopied(false);
       return;
     }
     trackFeedbackOutcomeViewed("dismissed");
     resetComposer();
   };
 
+  const rememberThrottle = (nextFailure: FeedbackSubmitFailure) => {
+    setFailure(nextFailure);
+    const seconds = nextFailure.retryAfterSeconds ?? 0;
+    if (nextFailure.kind !== "throttled" || seconds <= 0) return;
+    setRetryLocked(true);
+    setCooldown({
+      message: nextFailure.message,
+      until: Date.now() + seconds * 1000,
+    });
+  };
+
   const submitWith = async (token: string) => {
     if (submittingRef.current || panel.name !== "form") return;
+    const category = panel.category;
     submittingRef.current = true;
     setSubmitting(true);
     setValidationError(null);
     setFailure(null);
 
     const built = buildResetFeedbackSubmission({
-      category: panel.category,
+      category,
       drafts,
       pathname,
       searchParams,
@@ -195,11 +231,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
       const result = await submitFeedbackV1FeedbackPost(built.request);
       if (result.status !== 200) {
         const nextFailure = classifyFeedbackHttpStatus(result.status, null);
-        setFailure(nextFailure);
-        setRetryLocked(
-          nextFailure.kind === "throttled" &&
-            (nextFailure.retryAfterSeconds ?? 0) > 0
-        );
+        rememberThrottle(nextFailure);
         trackFeedbackOutcomeViewed(
           nextFailure.kind === "throttled" ? "throttled" : "unavailable"
         );
@@ -211,7 +243,8 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
         trackFeedbackOutcomeViewed("unavailable");
         return;
       }
-      setDrafts(createEmptyResetFeedbackDrafts());
+      setDrafts((current) => draftsAfterSuccessfulSubmit(current, category));
+      setSubmissionToken(createSubmissionToken());
       setPanel({ feedbackId, name: "success" });
       trackFeedbackSubmitted(built.topic, "success");
       trackFeedbackOutcomeViewed("success");
@@ -220,11 +253,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
       const retryAfterSeconds =
         error instanceof AtlasApiError ? error.retryAfterSeconds : null;
       const nextFailure = classifyFeedbackHttpStatus(status, retryAfterSeconds);
-      setFailure(nextFailure);
-      setRetryLocked(
-        nextFailure.kind === "throttled" &&
-          (nextFailure.retryAfterSeconds ?? 0) > 0
-      );
+      rememberThrottle(nextFailure);
       if (nextFailure.kind === "rejected") {
         trackFeedbackOutcomeViewed("validation_error");
       } else if (nextFailure.kind === "throttled") {
@@ -371,6 +400,10 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
                 <p className="text-sm" role="alert">
                   {failure.message}
                 </p>
+              ) : retryLocked && cooldown ? (
+                <p className="text-sm" role="alert">
+                  {cooldown.message}
+                </p>
               ) : null}
               <DialogFooter className="feedback-actions">
                 <Button
@@ -418,7 +451,8 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
                 <Button
                   {...analyticsControlAttributes(
                     failure?.kind === "throttled" ||
-                      failure?.kind === "unavailable"
+                      failure?.kind === "unavailable" ||
+                      retryLocked
                       ? "feedback_retry"
                       : "feedback_submit"
                   )}

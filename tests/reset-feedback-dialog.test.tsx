@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -118,6 +119,7 @@ describe("reset feedback dialog", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("opens the positive-first chooser without leaving the page", async () => {
@@ -399,6 +401,140 @@ describe("reset feedback dialog", () => {
       disabled: true,
       message: expect.stringContaining("120 seconds"),
       outcome: "throttled",
+    });
+  });
+
+  it("keeps an unsent category draft after another category is submitted", async () => {
+    submitFeedback.mockResolvedValue({
+      data: {
+        feedback_id: SERVER_ID,
+        received_at: "2026-10-12T00:00:00Z",
+        replayed: false,
+      },
+      headers: new Headers(),
+      status: 200,
+    });
+    renderFeedback();
+    openDialog();
+    fillDataset();
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    choose(/Share an idea/);
+    fireEvent.change(screen.getByLabelText("What should we improve?"), {
+      target: { value: "Let me save a county comparison." },
+    });
+    fireEvent.change(
+      screen.getByLabelText("What problem or outcome would that address?"),
+      { target: { value: "I could return to the same pair later." } }
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await screen.findByRole("status");
+    const first = submitFeedback.mock.calls[0]?.[0] as {
+      category: string;
+      message: string;
+      submission_token: string;
+    };
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    openDialog();
+    choose(/Suggest a dataset/);
+    const preserved = (
+      screen.getByLabelText("Dataset name or URL") as HTMLInputElement
+    ).value;
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await screen.findByRole("status");
+    const second = submitFeedback.mock.calls[1]?.[0] as {
+      category: string;
+      message: string;
+      submission_token: string;
+    };
+
+    expect({
+      calls: submitFeedback.mock.calls.length,
+      firstCategory: first.category,
+      firstHasDataset: first.message.includes("CDC tick file"),
+      preserved,
+      secondCategory: second.category,
+      secondHasDataset: second.message.includes("CDC tick file"),
+      tokensDiffer: second.submission_token !== first.submission_token,
+    }).toStrictEqual({
+      calls: 2,
+      firstCategory: "feature_idea",
+      firstHasDataset: false,
+      preserved: "CDC tick file",
+      secondCategory: "general",
+      secondHasDataset: true,
+      tokensDiffer: true,
+    });
+  });
+
+  it("keeps the 429 cooldown across Back and retries the same report", async () => {
+    vi.useFakeTimers();
+    submitFeedback
+      .mockRejectedValueOnce(
+        new AtlasApiError("slow", "/v1/feedback", 429, null, 120, null)
+      )
+      .mockResolvedValueOnce({
+        data: {
+          feedback_id: SERVER_ID,
+          received_at: "2026-10-12T00:00:00Z",
+          replayed: true,
+        },
+        headers: new Headers(),
+        status: 200,
+      });
+    renderFeedback();
+    openDialog();
+    fillDataset();
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    choose(/Suggest a dataset/);
+    const sameCategorySend = screen.getByRole("button", {
+      name: "Send feedback",
+    }) as HTMLButtonElement;
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    choose(/Share an idea/);
+    const otherCategorySend = screen.getByRole("button", {
+      name: "Send feedback",
+    }) as HTMLButtonElement;
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    choose(/Suggest a dataset/);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(119_000);
+    });
+    const beforeExpiry = (
+      screen.getByRole("button", { name: "Send feedback" }) as HTMLButtonElement
+    ).disabled;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    const send = screen.getByRole("button", {
+      name: "Send feedback",
+    }) as HTMLButtonElement;
+    const enabledBeforeRetry = send.disabled;
+    fireEvent.click(send);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    const first = submitFeedback.mock.calls[0]?.[0];
+    const second = submitFeedback.mock.calls[1]?.[0];
+    expect({
+      beforeExpiry,
+      calls: submitFeedback.mock.calls.length,
+      enabledBeforeRetry,
+      otherDisabled: otherCategorySend.disabled,
+      replay: second,
+      sameDisabled: sameCategorySend.disabled,
+    }).toStrictEqual({
+      beforeExpiry: true,
+      calls: 2,
+      enabledBeforeRetry: false,
+      otherDisabled: true,
+      replay: first,
+      sameDisabled: true,
     });
   });
 });
