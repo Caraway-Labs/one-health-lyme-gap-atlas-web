@@ -14,8 +14,8 @@ const { chatRequest, mixedRequest, structuredRequest } = vi.hoisted(() => ({
 
 vi.mock(import("../src/generated/atlas"), async (importOriginal) => ({
   ...(await importOriginal()),
-  askAtlasMixed: mixedRequest,
-  askAtlasStructured: structuredRequest,
+  askAtlasMixed: mixedRequest as never,
+  askAtlasStructured: structuredRequest as never,
   knowledgeGraphChatV1KnowledgeGraphChatPost: chatRequest as never,
 }));
 
