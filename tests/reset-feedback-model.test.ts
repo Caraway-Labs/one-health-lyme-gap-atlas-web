@@ -4,6 +4,7 @@ import {
   buildResetFeedbackContext,
   buildResetFeedbackSubmission,
   classifyFeedbackHttpStatus,
+  shouldKeepRetrySnapshot,
   createEmptyResetFeedbackDrafts,
   RESET_FEEDBACK_CATEGORIES,
   resetFeedbackDraftHasContent,
@@ -91,7 +92,7 @@ describe("reset feedback model", () => {
     expect(resetFeedbackPage("/app/settings?county=08031")).toMatchObject({
       includeGeography: false,
       pageLabel: "Settings",
-      routeId: "overview",
+      routeId: "account",
     });
     expect(resetFeedbackPage("/app/ai-responsible-use")).toMatchObject({
       includeGeography: false,
@@ -330,16 +331,22 @@ describe("reset feedback model", () => {
   it("classifies retry, auth, conflict, and outage responses", () => {
     expect({
       conflict: classifyFeedbackHttpStatus(409, null).kind,
-      outage: classifyFeedbackHttpStatus(503, null).kind,
       fallback: classifyFeedbackHttpStatus(429, null).retryAfterSeconds,
+      lostResponse: shouldKeepRetrySnapshot(0),
+      offline: classifyFeedbackHttpStatus(0, null).message,
+      outage: classifyFeedbackHttpStatus(503, null).kind,
+      rejected: shouldKeepRetrySnapshot(422),
+      serverOutage: shouldKeepRetrySnapshot(503),
       throttled: classifyFeedbackHttpStatus(429, 30),
       unauthorized: classifyFeedbackHttpStatus(401, null).kind,
-      offline: classifyFeedbackHttpStatus(0, null).message,
     }).toMatchObject({
       conflict: "conflict",
+      fallback: 60,
+      lostResponse: true,
       offline: expect.stringContaining("draft is kept"),
       outage: "unavailable",
-      fallback: 60,
+      rejected: false,
+      serverOutage: true,
       throttled: { kind: "throttled", retryAfterSeconds: 30 },
       unauthorized: "unauthorized",
     });

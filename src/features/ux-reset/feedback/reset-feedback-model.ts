@@ -366,6 +366,17 @@ export function classifyFeedbackHttpStatus(
   }
 }
 
+export function shouldKeepRetrySnapshot(status: number): boolean {
+  return status === 0 || status >= 500;
+}
+
+export function feedbackRequestsMatch(
+  left: FeedbackSubmissionRequest,
+  right: FeedbackSubmissionRequest
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 export function serverFeedbackId(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -728,9 +739,11 @@ function routeIdForResetPage(id: string): FeedbackSubmissionRequestRouteId {
     case "compare":
     case "action":
     case "feed":
-    case "settings":
     case "docs": {
       return FeedbackSubmissionRequestRouteId.overview;
+    }
+    case "settings": {
+      return FeedbackSubmissionRequestRouteId.account;
     }
     default: {
       return FeedbackSubmissionRequestRouteId.overview;

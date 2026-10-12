@@ -30,6 +30,8 @@ import {
   buildResetFeedbackSubmission,
   classifyFeedbackHttpStatus,
   createEmptyResetFeedbackDrafts,
+  feedbackRequestsMatch,
+  shouldKeepRetrySnapshot,
   PROBLEM_KIND_OPTIONS,
   RESET_FEEDBACK_CATEGORIES,
   RESET_FEEDBACK_HEADING,
@@ -46,6 +48,7 @@ import {
   type ResetFeedbackDrafts,
 } from "@/features/ux-reset/feedback/reset-feedback-model";
 import { submitFeedbackV1FeedbackPost } from "@/generated/atlas";
+import type { FeedbackSubmissionRequest } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   analyticsControlAttributes,
@@ -69,6 +72,33 @@ type FeedbackRetryCooldown = {
   message: string;
   until: number;
 };
+
+type AttemptedFeedback = {
+  category: ResetFeedbackCategoryId;
+  request: FeedbackSubmissionRequest;
+  topic: FeedbackSubmissionRequest["category"];
+};
+
+function currentAttemptDiffers(
+  attempt: AttemptedFeedback,
+  input: {
+    category: ResetFeedbackCategoryId;
+    drafts: ResetFeedbackDrafts;
+    pathname: string;
+    searchParams: Pick<URLSearchParams, "get" | "getAll" | "has">;
+    submissionToken: string;
+  }
+): boolean {
+  const built = buildResetFeedbackSubmission({
+    category: input.category,
+    drafts: input.drafts,
+    pathname: input.pathname,
+    searchParams: input.searchParams,
+    submissionToken: input.submissionToken,
+  });
+  if (!built.ok) return true;
+  return !feedbackRequestsMatch(built.request, attempt.request);
+}
 
 function draftsAfterSuccessfulSubmit(
   drafts: ResetFeedbackDrafts,
@@ -117,6 +147,9 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState<FeedbackRetryCooldown | null>(null);
+  const [pendingRetry, setPendingRetry] = useState<AttemptedFeedback | null>(
+    null
+  );
   const [retryLocked, setRetryLocked] = useState(false);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
@@ -130,6 +163,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
     setReturnPanel({ name: "choose" });
     setFailure(null);
     setValidationError(null);
+    setPendingRetry(null);
     setCopied(false);
   }, []);
 
@@ -204,32 +238,25 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const submitWith = async (token: string) => {
+  const keepAttempt = (attempt: AttemptedFeedback) => {
+    setPendingRetry((current) =>
+      current?.request.submission_token === attempt.request.submission_token
+        ? current
+        : attempt
+    );
+  };
+
+  const sendAttempt = async (attempt: AttemptedFeedback) => {
     if (submittingRef.current || panel.name !== "form") return;
-    const category = panel.category;
     submittingRef.current = true;
     setSubmitting(true);
     setValidationError(null);
     setFailure(null);
 
-    const built = buildResetFeedbackSubmission({
-      category,
-      drafts,
-      pathname,
-      searchParams,
-      submissionToken: token,
-    });
-    if (!built.ok) {
-      setValidationError(built.error);
-      trackFeedbackOutcomeViewed("validation_error");
-      submittingRef.current = false;
-      setSubmitting(false);
-      return;
-    }
-
     try {
-      const result = await submitFeedbackV1FeedbackPost(built.request);
+      const result = await submitFeedbackV1FeedbackPost(attempt.request);
       if (result.status !== 200) {
+        if (shouldKeepRetrySnapshot(result.status)) keepAttempt(attempt);
         const nextFailure = classifyFeedbackHttpStatus(result.status, null);
         rememberThrottle(nextFailure);
         trackFeedbackOutcomeViewed(
@@ -239,19 +266,24 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
       }
       const feedbackId = serverFeedbackId(result.data.feedback_id);
       if (!feedbackId) {
+        keepAttempt(attempt);
         setFailure(classifyFeedbackHttpStatus(0, null));
         trackFeedbackOutcomeViewed("unavailable");
         return;
       }
-      setDrafts((current) => draftsAfterSuccessfulSubmit(current, category));
+      setPendingRetry(null);
+      setDrafts((current) =>
+        draftsAfterSuccessfulSubmit(current, attempt.category)
+      );
       setSubmissionToken(createSubmissionToken());
       setPanel({ feedbackId, name: "success" });
-      trackFeedbackSubmitted(built.topic, "success");
+      trackFeedbackSubmitted(attempt.topic, "success");
       trackFeedbackOutcomeViewed("success");
     } catch (error) {
       const status = error instanceof AtlasApiError ? error.status : 0;
       const retryAfterSeconds =
         error instanceof AtlasApiError ? error.retryAfterSeconds : null;
+      if (shouldKeepRetrySnapshot(status)) keepAttempt(attempt);
       const nextFailure = classifyFeedbackHttpStatus(status, retryAfterSeconds);
       rememberThrottle(nextFailure);
       if (nextFailure.kind === "rejected") {
@@ -267,18 +299,72 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const submitCurrent = (token: string) => {
+    if (panel.name !== "form") return;
+    const built = buildResetFeedbackSubmission({
+      category: panel.category,
+      drafts,
+      pathname,
+      searchParams,
+      submissionToken: token,
+    });
+    if (!built.ok) {
+      setValidationError(built.error);
+      trackFeedbackOutcomeViewed("validation_error");
+      return;
+    }
+    void sendAttempt({
+      category: panel.category,
+      request: built.request,
+      topic: built.topic,
+    });
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (retryLocked) return;
-    void submitWith(submissionToken);
+    if (retryLocked || panel.name !== "form") return;
+    if (pendingRetry?.request.submission_token === submissionToken) {
+      void sendAttempt(pendingRetry);
+      return;
+    }
+    submitCurrent(submissionToken);
   };
 
   const submitAsNewReport = () => {
+    if (panel.name !== "form") return;
     const nextToken = createSubmissionToken();
+    const built = buildResetFeedbackSubmission({
+      category: panel.category,
+      drafts,
+      pathname,
+      searchParams,
+      submissionToken: nextToken,
+    });
+    if (!built.ok) {
+      setValidationError(built.error);
+      trackFeedbackOutcomeViewed("validation_error");
+      return;
+    }
     setSubmissionToken(nextToken);
+    setPendingRetry(null);
     setFailure(null);
-    void submitWith(nextToken);
+    void sendAttempt({
+      category: panel.category,
+      request: built.request,
+      topic: built.topic,
+    });
   };
+
+  const retryDiverged =
+    panel.name === "form" &&
+    pendingRetry?.request.submission_token === submissionToken &&
+    currentAttemptDiffers(pendingRetry, {
+      category: panel.category,
+      drafts,
+      pathname,
+      searchParams,
+      submissionToken,
+    });
 
   const chooseCategory = (category: ResetFeedbackCategoryId) => {
     setPanel({ category, name: "form" });
@@ -405,6 +491,12 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
                   {cooldown.message}
                 </p>
               ) : null}
+              {retryDiverged ? (
+                <p className="text-sm" role="alert">
+                  Send resubmits the original note. Submit as a new report to
+                  send what you changed.
+                </p>
+              ) : null}
               <DialogFooter className="feedback-actions">
                 <Button
                   {...analyticsControlAttributes("feedback_discard")}
@@ -436,7 +528,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
                 >
                   Back
                 </Button>
-                {failure?.kind === "conflict" ? (
+                {failure?.kind === "conflict" || retryDiverged ? (
                   <Button
                     {...analyticsControlAttributes("feedback_retry")}
                     className="min-h-11"
@@ -529,16 +621,19 @@ function CategoryChooser({
       <ul className="space-y-2">
         {RESET_FEEDBACK_CATEGORIES.map((category) => (
           <li key={category.id}>
-            <button
-              className="bg-card text-card-foreground ring-foreground/10 hover:bg-muted focus-visible:ring-ring min-h-11 w-full cursor-pointer rounded-xl border-0 px-3 py-3 text-left font-[inherit] ring-1 focus-visible:ring-2 focus-visible:outline-none"
+            <Button
+              className="h-auto min-h-11 w-full justify-start px-3 py-3 text-left whitespace-normal"
               onClick={() => onChoose(category.id)}
               type="button"
+              variant="outline"
             >
-              <span className="block font-medium">{category.label}</span>
-              <span className="text-muted-foreground block text-sm">
-                {category.description}
+              <span className="block">
+                <span className="block font-medium">{category.label}</span>
+                <span className="text-muted-foreground block text-sm font-normal">
+                  {category.description}
+                </span>
               </span>
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

@@ -537,4 +537,71 @@ describe("reset feedback dialog", () => {
       sameDisabled: true,
     });
   });
+
+  it("retries a lost response with the original payload", async () => {
+    const accepted = {
+      data: {
+        feedback_id: SERVER_ID,
+        received_at: "2026-10-12T00:00:00Z",
+        replayed: false,
+      },
+      headers: new Headers(),
+      status: 200,
+    };
+    submitFeedback
+      .mockRejectedValueOnce(
+        new AtlasApiError("down", "/v1/feedback", 503, null, null, null)
+      )
+      .mockRejectedValueOnce(
+        new AtlasApiError("down", "/v1/feedback", 503, null, null, null)
+      )
+      .mockResolvedValueOnce(accepted);
+    renderFeedback();
+    openDialog();
+    choose(/Report a problem/);
+    fireEvent.click(screen.getByRole("radio", { name: "Something broke" }));
+    fireEvent.change(screen.getByLabelText("What happened?"), {
+      target: { value: "The send control did nothing." },
+    });
+    fireEvent.change(screen.getByLabelText("What did you expect?"), {
+      target: { value: "The note should reach review." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await screen.findByRole("alert");
+    fireEvent.change(screen.getByLabelText("What happened?"), {
+      target: { value: "The count changed after the first send." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await screen.findByRole("button", { name: "Submit as a new report" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Submit as a new report" })
+    );
+    await screen.findByRole("status");
+
+    const first = submitFeedback.mock.calls[0]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    const retry = submitFeedback.mock.calls[1]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    const revised = submitFeedback.mock.calls[2]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    expect({
+      calls: submitFeedback.mock.calls.length,
+      retryMessage: retry.message,
+      retryToken: retry.submission_token,
+      revisedMessage: revised.message.includes("changed after"),
+      revisedToken: revised.submission_token === first.submission_token,
+    }).toStrictEqual({
+      calls: 3,
+      retryMessage: first.message,
+      retryToken: first.submission_token,
+      revisedMessage: true,
+      revisedToken: false,
+    });
+  });
 });
