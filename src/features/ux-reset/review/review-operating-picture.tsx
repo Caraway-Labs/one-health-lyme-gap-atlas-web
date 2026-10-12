@@ -117,7 +117,9 @@ type ReviewOperatingPictureProps = {
   countyQuery?: string;
 };
 
-function resolveExplorerPaintColor(color: string | undefined): string | undefined {
+function resolveExplorerPaintColor(
+  color: string | undefined
+): string | undefined {
   if (!color?.startsWith("var(") || typeof document === "undefined") {
     return color;
   }
@@ -404,7 +406,9 @@ export function ReviewOperatingPicture({
         scopeCode,
       }).map((county) => ({
         ...county,
-        color: resolveExplorerPaintColor(mapPaint.colorsByFips.get(county.fips)),
+        color: resolveExplorerPaintColor(
+          mapPaint.colorsByFips.get(county.fips)
+        ),
       })),
     [geometryFips, mapPaint.colorsByFips, scopeCode]
   );
@@ -932,38 +936,40 @@ export function ReviewOperatingPicture({
 
       {gapModel ? (
         <details className="ux-reset-review-result">
-        <summary>Data gaps</summary>
-        <section
-          aria-label="Data gaps"
-          className="ux-reset-review-gaps"
-          data-testid="review-data-gaps"
-        >
-          <h3 className="type-card">Data gaps</h3>
-          <p className="type-body">These records are not review candidates.</p>
-          <EvidenceStateStrip model={gapModel} />
-          <EvidenceProvenanceInspect
-            provenance={gapModel.provenance}
-            stateLabel="Unavailable"
-          />
-          {omittedGapCount > 0 ? (
-            <p className="type-body" data-testid="review-omitted-gaps">
-              {omittedGapNote(omittedGapCount, stateName)}
+          <summary>Data gaps</summary>
+          <section
+            aria-label="Data gaps"
+            className="ux-reset-review-gaps"
+            data-testid="review-data-gaps"
+          >
+            <h3 className="type-card">Data gaps</h3>
+            <p className="type-body">
+              These records are not review candidates.
             </p>
-          ) : null}
-          <ul className="ux-reset-review-gap-list">
-            {scopedGaps.gaps.map((entry) => (
-              <li
-                key={`${entry.countyFips}-${entry.gap.code}`}
-                data-code={entry.gap.code.trim() || undefined}
-                data-fips={entry.countyFips}
-                data-testid="review-data-gap"
-              >
-                <strong>FIPS {entry.countyFips}</strong>{" "}
-                {reviewText(entry.gap.code)}. {reviewText(entry.gap.detail)}
-              </li>
-            ))}
-          </ul>
-        </section>
+            <EvidenceStateStrip model={gapModel} />
+            <EvidenceProvenanceInspect
+              provenance={gapModel.provenance}
+              stateLabel="Unavailable"
+            />
+            {omittedGapCount > 0 ? (
+              <p className="type-body" data-testid="review-omitted-gaps">
+                {omittedGapNote(omittedGapCount, stateName)}
+              </p>
+            ) : null}
+            <ul className="ux-reset-review-gap-list">
+              {scopedGaps.gaps.map((entry) => (
+                <li
+                  key={`${entry.countyFips}-${entry.gap.code}`}
+                  data-code={entry.gap.code.trim() || undefined}
+                  data-fips={entry.countyFips}
+                  data-testid="review-data-gap"
+                >
+                  <strong>FIPS {entry.countyFips}</strong>{" "}
+                  {reviewText(entry.gap.code)}. {reviewText(entry.gap.detail)}
+                </li>
+              ))}
+            </ul>
+          </section>
         </details>
       ) : null}
       {omittedGapCount > 0 && !gapModel ? (
