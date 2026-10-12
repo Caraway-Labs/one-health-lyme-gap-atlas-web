@@ -70,6 +70,12 @@ Save the request URL, measure id, county FIPS codes, period, `release_id`, `sema
 
 A practical attribution names Atlas, the public API V1, the measure id, county FIPS, period, release id, semantic version, retrieval date, and the upstream publisher and dataset from the source resource you received. Replace every example identifier with the values in your response.
 
+## Canonical evidence for API and MCP consumers
+
+Public REST reads return governed Atlas resources. Indicators, measures, observations, sources, and methodologies are that contract for current-release evidence. Clients are intended to use those resources rather than a schema that changes with each upstream source. The [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) remains authoritative for HTTP fields. The generated [API reference](/docs/api-reference) is rendered from the pinned public contract.
+
+MCP tool and resource definitions stay in the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp) and its tests. The development server does not return Atlas evidence. If a later release adds an Atlas-data MCP tool, that tool is intended to return the same canonical evidence and provenance, including source identity and value state, rather than a source-specific schema. [Sources and canonical evidence](/docs/sources-and-canonical-evidence) describes that design and the open-data boundary of this release. [Provenance and evidence](/docs/develop/provenance) lists the fields to keep with a value.
+
 ## MCP
 
 The MCP server is owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). Its development deployment registers `server_status` and `atlas_smoke_test` in [`server.py`](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/src/atlas_lyme_mcp/server.py). Those tools report server status and a smoke message. They do not read Atlas data, connect to a database, or write.

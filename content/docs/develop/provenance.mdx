@@ -76,6 +76,14 @@ Surveillance floors and gap scores are not diagnoses, individual risk estimates,
 
 The same interpretation for people using the Atlas screens is in [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) and [Releases and methodology labels](/docs/releases-and-methodology).
 
+## Source identity survives normalization
+
+The fields above are the public provenance contract for an observation in the current release. Atlas is designed so a later governed source can pass through a source-specific adapter and a terminology mapping and still arrive as this same observation shape. The mapping can annotate source meaning. It does not replace `source_id`, `lineage_source_id`, `dataset_id`, or `source_vintage` with a generic label.
+
+Read `value_state` with `limitations`. `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` stay gaps or withheld values. Uncertainty recorded in `limitations` stays a limitation. Those states are not rewritten into `ZERO`.
+
+HTTP fields stay in the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and the generated [provenance reference](/docs/api-reference/provenance). MCP tool definitions stay in the MCP repository and its tests. [Sources and canonical evidence](/docs/sources-and-canonical-evidence) separates that intent from the open-data release available now. The development MCP server does not read these resources.
+
 ## States for source and methodology reads
 
 | State | Result |
