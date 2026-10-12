@@ -9,7 +9,6 @@ import {
   type ReviewPreviewPresetId,
 } from "./fixtures/review-preview-presets";
 import { Tier1StoryQueryProvider } from "./support/tier1-hook-substitute";
-import { useDomClick } from "./support/use-dom-click";
 
 import "@/features/ux-reset/ux-reset.css";
 
@@ -22,25 +21,16 @@ function PreviewStory({ preset }: PreviewStoryProps) {
 }
 
 function PreviewFrame({ preset }: PreviewStoryProps) {
-  const [action, setAction] = useState("None");
+  const [opened, setOpened] = useState<{ count: number; fips: string } | null>(
+    null
+  );
   const model = reviewPreviewPreset(preset);
-  const frameRef = useDomClick((event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-    const anchor = target.closest("a");
-    if (!anchor) {
-      return;
-    }
-    const label = anchor.textContent?.includes("Compare")
-      ? "Compare"
-      : "Open Investigate";
-    setAction(`${label} for ${model.preview.fips}`);
-  });
+  const action = opened
+    ? `Opened county ${opened.fips} (${String(opened.count)})`
+    : "None";
   return (
     <Tier1StoryQueryProvider value={model.query}>
-      <div className="ux-reset-pro-main" ref={frameRef}>
+      <div className="ux-reset-pro-main">
         <p data-testid="preview-action">Last preview action: {action}</p>
         <ReviewCountyPreviewPanel
           compareHref={model.compareHref}
@@ -48,7 +38,12 @@ function PreviewFrame({ preset }: PreviewStoryProps) {
           href={model.href}
           preview={model.preview}
           release={model.release}
-          onOpen={() => {}}
+          onOpen={(fips) => {
+            setOpened((current) => ({
+              count: (current?.count ?? 0) + 1,
+              fips,
+            }));
+          }}
         />
       </div>
     </Tier1StoryQueryProvider>
@@ -67,7 +62,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Purpose: selected-county preview on Review. Source: src/features/ux-reset/review/review-county-preview-panel.tsx. Limitations: Adams County, Colorado (08001) fixtures are synthetic. Qualification comes from the score or candidate builder. The nested surveillance block uses a deterministic hook substitute and does not request the API. Review priority is not disease risk. Investigate and Compare update the action line in this preview and keep the handoff hrefs. Dropped Review list controls stay listed when the source URL contained them.",
+          "Purpose: selected-county preview on Review. Source: src/features/ux-reset/review/review-county-preview-panel.tsx. Limitations: Adams County, Colorado (08001) fixtures are synthetic and use release alpha-2026, including handoff dataset parameters. Qualification comes from the score or candidate builder. The long-reference example adds a synthetic source link so a provenance click can be distinguished from a county open. The nested surveillance block uses a deterministic hook substitute and does not request the API. Review priority is not disease risk. Investigate and Compare call onOpen with the county FIPS, and this preview counts only that callback. A provenance source reference does not. Dropped Review list controls stay listed when the source URL contained them.",
       },
     },
   },

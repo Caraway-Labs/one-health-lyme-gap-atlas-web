@@ -107,13 +107,19 @@ test("keeps every HelpDocs route reachable and accessible", async ({
   if (testInfo.project.name !== "desktop") {
     await page.getByRole("button", { name: "Open Sidebar" }).click();
   }
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "Developer overview" })
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "FAQ and troubleshooting" })
+  ).toBeVisible();
   const apiReferenceFolder = sidebar.getByRole("button", {
     name: "API reference",
   });
   await expect(apiReferenceFolder).toBeVisible();
   await apiReferenceFolder.click();
   await expect(
-    sidebar.getByRole("link", { name: "Observations" })
+    sidebar.getByRole("link", { exact: true, name: "Observations" })
   ).toBeVisible();
   await expect(
     sidebar.getByRole("link", { name: "API, MCP, and access" })
