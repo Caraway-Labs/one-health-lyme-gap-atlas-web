@@ -307,10 +307,10 @@ test.describe("two-county Compare", () => {
     );
     await expect(floor).toContainText("12");
     await expect(floor).toContainText("floor");
-    const suppressed = page.getByTestId(
-      "compare-profile-cell-incidence_floor-08013"
-    );
-    await expect(suppressed).toContainText("Suppressed");
+    const suppressed = page
+      .getByTestId("compare-profile-cell-incidence_floor-08013")
+      .getByTestId("evidence-display-value");
+    await expect(suppressed).toHaveText("Suppressed");
     await expect(suppressed).not.toContainText("0");
     await expect(
       page.getByTestId("compare-profile-row-human_case_floor")
