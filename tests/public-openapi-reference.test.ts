@@ -97,6 +97,37 @@ describe("public OpenAPI reference", () => {
     );
   });
 
+  it("renders Retry-After, descriptions, and examples for 429 and 503", () => {
+    const pages = renderPublicApiReference(
+      readAndLoadPublicOpenApiContract(process.cwd())
+    );
+    const sections = ["429", "503"].flatMap((status) =>
+      [...pages.entries()]
+        .filter(([name]) => name.endsWith(".mdx"))
+        .flatMap(([name, contents]) =>
+          responseSections(contents, status).map((body) => ({
+            body,
+            name,
+            status,
+          }))
+        )
+    );
+    const incomplete = sections
+      .filter((section) =>
+        [
+          "###### Retry-After",
+          "Seconds before retry when supplied by the service.",
+          "Type: `string`",
+          "application/problem+json",
+          "Synthetic error example",
+        ].some((phrase) => !section.body.includes(phrase))
+      )
+      .map((section) => `${section.name} ${section.status}`);
+
+    expect(sections).toHaveLength(36);
+    expect(incomplete).toStrictEqual([]);
+  });
+
   it("renders each operation id once and keeps authored guides free of that catalog", () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const pages = renderPublicApiReference(contract);
@@ -253,12 +284,23 @@ describe("public OpenAPI reference", () => {
         "county_fips",
         "08001",
         "Synthetic lower-48 indicator.",
+        "###### Again",
+        "Read the indicator again.",
       ])
     ).toStrictEqual([]);
     expect(
       referenced.includes("This response does not declare a body.")
     ).toBeFalsy();
-    expect(empty).toContain("This response does not declare a body.");
+    expect(
+      missingPhrases(empty, [
+        "This response does not declare a body.",
+        "###### ETag",
+        "Required: yes",
+        "Entity tag.",
+        "Type: `string`",
+        "example-etag",
+      ])
+    ).toStrictEqual([]);
     expect(
       missingPhrases(submitted, [
         "Inline indicators.",
@@ -299,6 +341,12 @@ describe("public OpenAPI reference", () => {
       "malformed"
     );
     expect(failureCode(() => checkDocument(nonObjectResponseRef()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(missingLinkRef()))).toBe(
+      "malformed"
+    );
+    expect(failureCode(() => checkDocument(circularLinkRefs()))).toBe(
       "malformed"
     );
   });
@@ -498,6 +546,17 @@ function loadFirstPartyContract(): void {
   loadPublicOpenApiContract(firstPartyBytes, manifestText);
 }
 
+function responseSections(contents: string, status: string): string[] {
+  const marker = `\n#### ${status}\n`;
+  return contents
+    .split(marker)
+    .slice(1)
+    .map((piece) => {
+      const next = piece.indexOf("\n#### ");
+      return next === -1 ? piece : piece.slice(0, next);
+    });
+}
+
 function between(contents: string, start: string, end: string): string {
   const startIndex = contents.indexOf(start);
   if (startIndex === -1) return "";
@@ -533,7 +592,14 @@ function documentWithReusableComponents(): Record<string, unknown> {
       headers: {
         ETag: {
           description: "Entity tag.",
-          schema: { type: "string" },
+          required: true,
+          schema: { example: "example-etag", type: "string" },
+        },
+      },
+      links: {
+        ReadIndicator: {
+          description: "Read the indicator again.",
+          operationId: "indicators_v1_indicators_get",
         },
       },
       parameters: {
@@ -568,6 +634,9 @@ function documentWithReusableComponents(): Record<string, unknown> {
             },
           },
           description: "Reusable indicators.",
+          links: {
+            Again: { $ref: "#/components/links/ReadIndicator" },
+          },
         },
       },
       schemas: {
@@ -709,6 +778,33 @@ function circularExampleRefs(): Record<string, unknown> {
   components.examples = {
     LoopA: { $ref: "#/components/examples/LoopB" },
     LoopB: { $ref: "#/components/examples/LoopA" },
+  };
+  return document;
+}
+
+function missingLinkRef(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    responses: { IndicatorOk: { links: Record<string, unknown> } };
+  };
+  components.responses.IndicatorOk.links = {
+    Again: { $ref: "#/components/links/Missing" },
+  };
+  return document;
+}
+
+function circularLinkRefs(): Record<string, unknown> {
+  const document = documentWithReusableComponents();
+  const components = document.components as {
+    links: Record<string, unknown>;
+    responses: { IndicatorOk: { links: Record<string, unknown> } };
+  };
+  components.links = {
+    LoopA: { $ref: "#/components/links/LoopB" },
+    LoopB: { $ref: "#/components/links/LoopA" },
+  };
+  components.responses.IndicatorOk.links = {
+    Again: { $ref: "#/components/links/LoopA" },
   };
   return document;
 }

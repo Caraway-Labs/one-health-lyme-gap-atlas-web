@@ -159,6 +159,18 @@ test("renders the generated observations reference with version, source, and raw
   await expect(
     page.getByText("application/problem+json").first()
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "429", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "503", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Retry-After", exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Seconds before retry when supplied by the service.").first()
+  ).toBeVisible();
   const schemaLink = page.getByRole("link", { name: "ProblemDetails" }).first();
   await expect(schemaLink).toHaveAttribute(
     "href",

@@ -92,8 +92,27 @@ type MediaView = {
   schema: unknown;
 };
 
+type HeaderView = {
+  description: string;
+  examples: ExampleView[];
+  name: string;
+  required: boolean;
+  schema: unknown;
+};
+
+type LinkView = {
+  description: string;
+  name: string;
+  operationId: string;
+  operationRef: string;
+  parameters: unknown;
+  requestBody: unknown;
+};
+
 type ResponseView = {
   description: string;
+  headers: HeaderView[];
+  links: LinkView[];
   media: MediaView[];
   status: string;
 };
@@ -533,35 +552,77 @@ function buildResponses(
       response,
       `Operation ${operationId} response ${status} must be an object.`
     );
-    resolveHeaders(document, resolved.headers, operationId, status);
     return {
       description: text(resolved, "description"),
+      headers: buildHeaders(document, resolved.headers, operationId, status),
+      links: buildLinks(document, resolved.links, operationId, status),
       media: mediaViews(document, resolved.content),
       status,
     };
   });
 }
 
-function resolveHeaders(
+function buildHeaders(
   document: JsonRecord,
   headers: unknown,
   operationId: string,
   status: string
-): void {
-  if (headers === undefined) return;
+): HeaderView[] {
+  if (headers === undefined) return [];
   if (!isRecord(headers)) {
     throw new PublicOpenApiContractError(
       "malformed",
       `Operation ${operationId} response ${status} headers must be an object.`
     );
   }
-  for (const [name, header] of Object.entries(headers)) {
-    reusableRecord(
+  return Object.entries(headers).map(([name, header]) => {
+    const resolved = reusableRecord(
       document,
       header,
       `Operation ${operationId} response ${status} header ${name} must be an object.`
     );
+    const schema = isRecord(resolved.schema) ? resolved.schema : undefined;
+    return {
+      description: text(resolved, "description") || text(schema, "description"),
+      examples: [
+        ...collectExamples(document, resolved),
+        ...collectExamples(document, schema),
+      ],
+      name,
+      required: resolved.required === true,
+      schema: resolved.schema,
+    };
+  });
+}
+
+function buildLinks(
+  document: JsonRecord,
+  links: unknown,
+  operationId: string,
+  status: string
+): LinkView[] {
+  if (links === undefined) return [];
+  if (!isRecord(links)) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `Operation ${operationId} response ${status} links must be an object.`
+    );
   }
+  return Object.entries(links).map(([name, link]) => {
+    const resolved = reusableRecord(
+      document,
+      link,
+      `Operation ${operationId} response ${status} link ${name} must be an object.`
+    );
+    return {
+      description: text(resolved, "description"),
+      name,
+      operationId: text(resolved, "operationId"),
+      operationRef: text(resolved, "operationRef"),
+      parameters: resolved.parameters,
+      requestBody: resolved.requestBody,
+    };
+  });
 }
 
 function buildRequestBody(
@@ -832,15 +893,66 @@ function renderOperation(
   for (const response of operation.responses) {
     lines.push(`#### ${escapeInline(response.status)}`, "");
     if (response.description) lines.push(escapeMdx(response.description), "");
+    if (response.headers.length > 0) {
+      lines.push("##### Headers", "");
+      for (const header of response.headers) {
+        lines.push(renderHeader(header), "");
+      }
+    }
     if (response.media.length === 0) {
       lines.push("This response does not declare a body.", "");
-      continue;
+    } else {
+      for (const media of response.media) {
+        lines.push(renderMedia(media, schemaAnchors), "");
+      }
     }
-    for (const media of response.media) {
-      lines.push(renderMedia(media, schemaAnchors), "");
+    if (response.links.length > 0) {
+      lines.push("##### Links", "");
+      for (const link of response.links) {
+        lines.push(renderLink(link), "");
+      }
     }
   }
   return lines.join("\n").trim();
+}
+
+function renderHeader(header: HeaderView): string {
+  const lines = [
+    `###### ${escapeInline(header.name)}`,
+    "",
+    `- Required: ${header.required ? "yes" : "no"}`,
+  ];
+  if (header.description) lines.push(`- ${escapeInline(header.description)}`);
+  const schemaType = headerSchemaType(header.schema);
+  if (schemaType) lines.push(`- Type: \`${escapeInline(schemaType)}\``);
+  if (header.schema !== undefined) {
+    lines.push("", "Schema:", "", jsonFence(header.schema));
+  }
+  appendExamples(lines, header.examples);
+  return lines.join("\n");
+}
+
+function renderLink(link: LinkView): string {
+  const lines = [`###### ${escapeInline(link.name)}`, ""];
+  if (link.operationId) {
+    lines.push(`- Operation ID: \`${escapeInline(link.operationId)}\``);
+  }
+  if (link.operationRef) {
+    lines.push(`- Operation ref: \`${escapeInline(link.operationRef)}\``);
+  }
+  if (link.description) lines.push("", escapeMdx(link.description));
+  if (link.parameters !== undefined) {
+    lines.push("", "Parameters:", "", jsonFence(link.parameters));
+  }
+  if (link.requestBody !== undefined) {
+    lines.push("", "Request body:", "", jsonFence(link.requestBody));
+  }
+  return lines.join("\n");
+}
+
+function headerSchemaType(schema: unknown): string {
+  if (!isRecord(schema) || typeof schema.type !== "string") return "";
+  return schema.type;
 }
 
 function renderMedia(
@@ -982,6 +1094,7 @@ const REUSABLE_COMPONENT_PREFIXES = [
   "#/components/headers/",
   "#/components/examples/",
   "#/components/requestBodies/",
+  "#/components/links/",
 ] as const;
 
 function isReusableComponentRef(ref: string): boolean {
