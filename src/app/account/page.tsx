@@ -27,9 +27,11 @@ import {
   beginWorkspaceShellCheck,
   concealRestoredWorkspace,
   invalidateWorkspaceShellCheck,
+  noteWorkspaceDocumentUser,
   revealRestoredWorkspace,
   runWorkspaceSignOut,
   subscribeWorkspaceSignOut,
+  workspaceDocumentUserId,
   workspaceShellCheckCurrent,
   workspaceSignOutPending,
 } from "@/features/ux-reset/workspace-sign-out";
@@ -119,7 +121,7 @@ const ROLE_UNSET = "unspecified";
 const STATE_UNSET = "none";
 const ACCOUNT_PAGE_PATH = "/account";
 
-/** A restored /account page stays hidden unless the session is still present. */
+/** A restored /account page stays hidden unless this session owns its profile. */
 async function settleAccountPageRestore(generation: number): Promise<void> {
   const snapshot = await readWorkspaceSession();
   if (!workspaceShellCheckCurrent(generation)) {
@@ -127,7 +129,12 @@ async function settleAccountPageRestore(generation: number): Promise<void> {
   }
   switch (snapshot.read) {
     case "present": {
-      revealRestoredWorkspace();
+      const ownerId = workspaceDocumentUserId();
+      if (ownerId !== null && snapshot.userId === ownerId) {
+        revealRestoredWorkspace();
+        break;
+      }
+      followWorkspaceHref(ACCOUNT_PAGE_PATH, "replace");
       break;
     }
     case "absent": {
@@ -169,6 +176,7 @@ export default function AccountPage() {
       try {
         const session = await createClient().auth.getUser();
         if (!session.data.user) return setSignedIn(false);
+        noteWorkspaceDocumentUser(session.data.user.id);
         setSignedIn(true);
         setLoadingProfile(true);
         const result = await getProfileV1MeProfileGet();

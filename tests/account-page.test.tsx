@@ -72,9 +72,9 @@ function profileHidden(): boolean {
   return profile.closest("main")?.hasAttribute("hidden") === true;
 }
 
-async function renderSignedInProfile() {
+async function renderSignedInProfile(userId = "user-1") {
   getUser.mockResolvedValue({
-    data: { user: { id: "user-1" } },
+    data: { user: { id: userId } },
   });
   getProfile.mockResolvedValue({
     data: {
@@ -206,7 +206,7 @@ describe("account page", () => {
     expect(profileHidden()).toBeTruthy();
   });
 
-  it("shows a restored account page again when the session is still present", async () => {
+  it("shows a restored account page again when the same account is still signed in", async () => {
     await renderSignedInProfile();
     getSession.mockResolvedValue({
       data: { session: { user: { id: "user-1" } } },
@@ -218,6 +218,40 @@ describe("account page", () => {
       expect(profileHidden()).toBeFalsy();
     });
     expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("reloads /account instead of revealing account A's profile to account B", async () => {
+    await renderSignedInProfile("user-a");
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    followWorkspaceHref.mockClear();
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-b" } } },
+      error: null,
+    });
+    pageTransition("pageshow", true);
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/account", "replace");
+    });
+    expect(profileHidden()).toBeTruthy();
+  });
+
+  it("reloads /account when a restored session has no recorded owner", async () => {
+    const gate = Promise.withResolvers<{ data: { user: { id: string } } }>();
+    getUser.mockReturnValue(gate.promise);
+    render(<AccountPage />);
+    expect(screen.getByText("Checking account session…")).toBeTruthy();
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-b" } } },
+      error: null,
+    });
+    pageTransition("pageshow", true);
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/account", "replace");
+    });
+    gate.resolve({ data: { user: { id: "user-a" } } });
   });
 
   it("keeps a restored account page hidden when the session read fails", async () => {
