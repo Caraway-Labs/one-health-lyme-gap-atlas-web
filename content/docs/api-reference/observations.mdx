@@ -1,0 +1,622 @@
+---
+title: "Observations"
+description: "Bounded county observations with explicit value states."
+---
+Generated from the public OpenAPI contract.
+
+Bounded county observations with explicit value states.
+
+## Query county observations [#observations_v1_observations_get]
+
+`GET /v1/observations`
+
+Operation ID: `observations_v1_observations_get`
+
+Tag: `observations`
+
+Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Missing context does not establish absence or temporal comparability. A measure and bounded county/time selection are required; no user sorting or aggregation.
+
+### Parameters
+
+#### measure_id
+
+- Location: `query`
+- Required: yes
+- Exact discovery measure ID.
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "minLength": 1,
+  "description": "Exact discovery measure ID.",
+  "examples": [
+    "case_count_floor_2023"
+  ],
+  "title": "Measure Id"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+"case_count_floor_2023"
+```
+
+#### geography_type
+
+- Location: `query`
+- Required: yes
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/GeographyType"
+}
+```
+
+#### geography_id
+
+- Location: `query`
+- Required: yes
+- Repeat for 1-500 county FIPS strings; preserve leading zeros.
+
+Schema:
+
+```json
+{
+  "type": "array",
+  "items": {
+    "type": "string"
+  },
+  "minItems": 1,
+  "maxItems": 500,
+  "description": "Repeat for 1-500 county FIPS strings; preserve leading zeros.",
+  "examples": [
+    [
+      "08001"
+    ]
+  ],
+  "title": "Geography Id"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+[
+  "08001"
+]
+```
+
+#### year
+
+- Location: `query`
+- Required: no
+- Year or complete date range, not both; current published year is 2023.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "integer",
+      "maximum": 2100,
+      "minimum": 1900
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Year or complete date range, not both; current published year is 2023.",
+  "examples": [
+    2023
+  ],
+  "title": "Year"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+2023
+```
+
+#### start_date
+
+- Location: `query`
+- Required: no
+- Inclusive period start; requires end_date and excludes year.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string",
+      "format": "date"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Inclusive period start; requires end_date and excludes year.",
+  "examples": [
+    "2023-01-01"
+  ],
+  "title": "Start Date"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+"2023-01-01"
+```
+
+#### end_date
+
+- Location: `query`
+- Required: no
+- Inclusive period end; requires start_date and excludes year.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string",
+      "format": "date"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Inclusive period end; requires start_date and excludes year.",
+  "examples": [
+    "2023-12-31"
+  ],
+  "title": "End Date"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+"2023-12-31"
+```
+
+#### stratification
+
+- Location: `query`
+- Required: no
+- Current release has no strata; unsupported selections fail explicitly.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Current release has no strata; unsupported selections fail explicitly.",
+  "title": "Stratification"
+}
+```
+
+#### page_size
+
+- Location: `query`
+- Required: no
+- Items per page; defaults to 100, configured maximum at most 500.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "integer",
+      "maximum": 500,
+      "minimum": 1
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Items per page; defaults to 100, configured maximum at most 500.",
+  "examples": [
+    100
+  ],
+  "title": "Page Size"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+100
+```
+
+#### page_token
+
+- Location: `query`
+- Required: no
+- Opaque next_page_token; retain query filters and release.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Opaque next_page_token; retain query filters and release.",
+  "title": "Page Token"
+}
+```
+
+
+### Responses
+
+#### 200
+
+Bounded current-release observations.
+
+##### application/json
+
+Schema: [CollectionEnvelope_Observation_](/docs/api-reference/schemas#schema-collectionenvelope-observation) (`#/components/schemas/CollectionEnvelope_Observation_`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/CollectionEnvelope_Observation_"
+}
+```
+
+Examples:
+
+###### empty
+
+Illustrative exhausted page; no observations matched
+
+```json
+{
+  "data": [],
+  "meta": {
+    "next_page_token": null,
+    "response_at": "2026-01-01T00:00:00Z"
+  },
+  "links": {
+    "self": null
+  }
+}
+```
+
+###### missing
+
+Synthetic missing-value example; not a published county result
+
+```json
+{
+  "data": [
+    {
+      "observation_id": "example-observation",
+      "measure_id": "case_count_floor_2023",
+      "geography": {
+        "geography_type": "county",
+        "geography_id": "08001"
+      },
+      "period_start": "2023-01-01",
+      "period_end": "2023-12-31",
+      "temporal_grain": "year",
+      "value": null,
+      "value_state": "MISSING",
+      "unit": "cases",
+      "denominator": null,
+      "source_id": "human",
+      "methodology_id": null,
+      "methodology_version": "example-transform-v1",
+      "semantic_version": "example-semantic-v1",
+      "release_id": "example-release",
+      "provenance_ref": "example-observation",
+      "limitations": [
+        "Synthetic documentation example; no measured value is asserted."
+      ],
+      "evidence": {
+        "resource_type": "observation",
+        "resource_id": "example-observation"
+      }
+    }
+  ],
+  "meta": {
+    "next_page_token": null,
+    "response_at": "2026-01-01T00:00:00Z"
+  },
+  "links": {
+    "self": null
+  }
+}
+```
+
+#### 400
+
+INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-400",
+  "title": "Request failed",
+  "status": 400,
+  "detail": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 404
+
+RESOURCE_NOT_FOUND; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "RESOURCE_NOT_FOUND; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RESOURCE_NOT_FOUND"
+}
+```
+
+#### 413
+
+GET request body rejected; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-413",
+  "title": "Request failed",
+  "status": 413,
+  "detail": "GET request body rejected; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 414
+
+Query string too long; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-414",
+  "title": "Request failed",
+  "status": 414,
+  "detail": "Query string too long; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 429
+
+Rate limited; Retry-After; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limited; Retry-After; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RATE_LIMITED"
+}
+```
+
+#### 503
+
+Canonical data service unavailable; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Canonical data service unavailable; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 4XX
+
+Canonical client errors use application/problem+json.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
