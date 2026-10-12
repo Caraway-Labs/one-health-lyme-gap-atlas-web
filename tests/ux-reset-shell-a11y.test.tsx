@@ -309,9 +309,15 @@ describe("UX Reset shell accessibility", () => {
     });
     const later = new KeyboardEvent("keydown", { key: "Escape" });
     const tab = new KeyboardEvent("keydown", { key: "Tab" });
-    expect(escapeStillClosingNavigation(closing, closing.timeStamp + 5)).toBeTruthy();
-    expect(escapeStillClosingNavigation(repeat, repeat.timeStamp - 5)).toBeTruthy();
-    expect(escapeStillClosingNavigation(later, later.timeStamp - 5)).toBeFalsy();
+    expect(
+      escapeStillClosingNavigation(closing, closing.timeStamp + 5)
+    ).toBeTruthy();
+    expect(
+      escapeStillClosingNavigation(repeat, repeat.timeStamp - 5)
+    ).toBeTruthy();
+    expect(
+      escapeStillClosingNavigation(later, later.timeStamp - 5)
+    ).toBeFalsy();
     expect(escapeStillClosingNavigation(tab, tab.timeStamp + 5)).toBeFalsy();
   });
 
