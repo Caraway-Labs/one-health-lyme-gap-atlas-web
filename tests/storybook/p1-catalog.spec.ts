@@ -34,6 +34,10 @@ const stories: { id: string; text: string }[] = [
     text: "Adams County, CO",
   },
   {
+    id: "review-operating-picture--selected-county",
+    text: "Selected county 08001",
+  },
+  {
     id: "review-operating-picture--candidates-and-gaps",
     text: "data gap",
   },
@@ -262,6 +266,25 @@ test.describe("P1 Storybook catalog", () => {
     await expect(page.getByTestId("operating-selected")).toHaveText(
       "Selected county 08001"
     );
+    expect(traffic.blocked).toEqual([]);
+  });
+
+  test("published selection without candidates stays synthetic and local", async ({
+    page,
+  }) => {
+    const traffic = track(page);
+    await openStory(page, "review-operating-picture--none");
+    await page.getByRole("combobox", { name: "Published county" }).click();
+    await page.getByRole("option", { name: /Adams County/ }).click();
+    await expect(page.getByTestId("operating-selected")).toHaveText(
+      "Selected county 08001"
+    );
+    await expect(
+      page.getByRole("link", { name: /Open Investigate/ })
+    ).toBeVisible();
+    await expect(
+      page.getByText("Loading published county evidence…")
+    ).toHaveCount(0);
     expect(traffic.blocked).toEqual([]);
   });
 

@@ -1,0 +1,404 @@
+[
+  {
+    "county": "Bullock County",
+    "fips": "01011",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Barbour County",
+    "fips": "01005",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Clarke County",
+    "fips": "01025",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Escambia County",
+    "fips": "01053",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Monroe County",
+    "fips": "01099",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Chambers County",
+    "fips": "01017",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Fayette County",
+    "fips": "01057",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Franklin County",
+    "fips": "01059",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Tallapoosa County",
+    "fips": "01123",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Dallas County",
+    "fips": "01047",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Russell County",
+    "fips": "01113",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Winston County",
+    "fips": "01133",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Jackson County",
+    "fips": "01071",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Butler County",
+    "fips": "01013",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Choctaw County",
+    "fips": "01023",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Covington County",
+    "fips": "01039",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Crenshaw County",
+    "fips": "01041",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Mobile County",
+    "fips": "01097",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Houston County",
+    "fips": "01069",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Pickens County",
+    "fips": "01107",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Conecuh County",
+    "fips": "01035",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Hale County",
+    "fips": "01065",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Bibb County",
+    "fips": "01007",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Lamar County",
+    "fips": "01075",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Henry County",
+    "fips": "01067",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Jefferson County",
+    "fips": "01073",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Lee County",
+    "fips": "01081",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Washington County",
+    "fips": "01129",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Coosa County",
+    "fips": "01037",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Baldwin County",
+    "fips": "01003",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Lauderdale County",
+    "fips": "01077",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Tuscaloosa County",
+    "fips": "01125",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Colbert County",
+    "fips": "01033",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Elmore County",
+    "fips": "01051",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Wilcox County",
+    "fips": "01131",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Sumter County",
+    "fips": "01119",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Autauga County",
+    "fips": "01001",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "DeKalb County",
+    "fips": "01049",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Greene County",
+    "fips": "01063",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Talladega County",
+    "fips": "01121",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Montgomery County",
+    "fips": "01101",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Calhoun County",
+    "fips": "01015",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Shelby County",
+    "fips": "01117",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Clay County",
+    "fips": "01027",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Dale County",
+    "fips": "01045",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Lowndes County",
+    "fips": "01085",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Marengo County",
+    "fips": "01091",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Cleburne County",
+    "fips": "01029",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Coffee County",
+    "fips": "01031",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Randolph County",
+    "fips": "01111",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Marshall County",
+    "fips": "01095",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Geneva County",
+    "fips": "01061",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Chilton County",
+    "fips": "01021",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Lawrence County",
+    "fips": "01079",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Madison County",
+    "fips": "01089",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Marion County",
+    "fips": "01093",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Macon County",
+    "fips": "01087",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Perry County",
+    "fips": "01105",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Pike County",
+    "fips": "01109",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Etowah County",
+    "fips": "01055",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Morgan County",
+    "fips": "01103",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Cherokee County",
+    "fips": "01019",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Walker County",
+    "fips": "01127",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Cullman County",
+    "fips": "01043",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Blount County",
+    "fips": "01009",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "Limestone County",
+    "fips": "01083",
+    "state": "AL",
+    "stateName": "Alabama"
+  },
+  {
+    "county": "St. Clair County",
+    "fips": "01115",
+    "state": "AL",
+    "stateName": "Alabama"
+  }
+]
