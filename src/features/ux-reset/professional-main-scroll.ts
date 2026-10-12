@@ -141,6 +141,139 @@ function rememberOffset(id: string, offset: number) {
   persistOffsets();
 }
 
+const NAVIGATION_SNAPSHOT_MS = 1500;
+
+type NavigationScrollSnapshot = {
+  id: string;
+  offset: number;
+  timer: number;
+};
+
+let navigationScrollSnapshot: NavigationScrollSnapshot | null = null;
+
+function clearNavigationScrollSnapshot() {
+  if (navigationScrollSnapshot === null) {
+    return;
+  }
+  window.clearTimeout(navigationScrollSnapshot.timer);
+  navigationScrollSnapshot = null;
+}
+
+function armNavigationScrollSnapshot() {
+  if (!mountedMain) {
+    return;
+  }
+  const id = readHistoryEntryId(window.history.state);
+  if (!id) {
+    return;
+  }
+  const offset = mountedMain.scrollTop;
+  if (!(offset > 0)) {
+    return;
+  }
+  rememberOffset(id, offset);
+  if (navigationScrollSnapshot) {
+    window.clearTimeout(navigationScrollSnapshot.timer);
+  }
+  const timer = window.setTimeout(() => {
+    const current = navigationScrollSnapshot;
+    if (!current || current.timer !== timer) {
+      return;
+    }
+    navigationScrollSnapshot = null;
+    const liveId = readHistoryEntryId(window.history.state);
+    if (liveId === current.id && mountedMain && !suppressRemember.current) {
+      rememberOffset(current.id, mountedMain.scrollTop);
+    }
+  }, NAVIGATION_SNAPSHOT_MS);
+  navigationScrollSnapshot = { id, offset, timer };
+}
+
+function offsetKeepingNavigationSnapshot(
+  id: string,
+  scrollTop: number
+): number {
+  const snapshot = navigationScrollSnapshot;
+  if (
+    snapshot &&
+    snapshot.id === id &&
+    snapshot.offset > 0 &&
+    scrollTop === 0
+  ) {
+    return snapshot.offset;
+  }
+  return scrollTop;
+}
+
+function navigationIntentTarget(
+  target: EventTarget | null
+): HTMLElement | null {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+  const option = target.closest("[role='option']");
+  if (option instanceof HTMLElement) {
+    return option;
+  }
+  const anchor = target.closest("a[href]");
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return null;
+  }
+  if (anchor.target === "_blank" || anchor.hasAttribute("download")) {
+    return null;
+  }
+  try {
+    const url = new URL(anchor.href, window.location.href);
+    if (url.origin !== window.location.origin) {
+      return null;
+    }
+    if (`${url.pathname}${url.search}` === pathAndSearch()) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+  return anchor;
+}
+
+function shouldArmNavigationIntent(event: Event): boolean {
+  if (
+    event instanceof MouseEvent &&
+    (event.button !== 0 ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey)
+  ) {
+    return false;
+  }
+  return navigationIntentTarget(event.target) !== null;
+}
+
+function onNavigationPointerDown(event: Event) {
+  if (!shouldArmNavigationIntent(event)) {
+    return;
+  }
+  armNavigationScrollSnapshot();
+}
+
+function onNavigationKeyDown(event: Event) {
+  if (!(event instanceof KeyboardEvent)) {
+    return;
+  }
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return;
+  }
+  const target = navigationIntentTarget(event.target);
+  if (!target) {
+    return;
+  }
+  const option = target.getAttribute("role") === "option";
+  if (event.key === "Enter" || (event.key === " " && option)) {
+    armNavigationScrollSnapshot();
+  }
+}
+
 function readOffset(id: string): number | undefined {
   const value = offsets.get(id);
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -387,11 +520,29 @@ function installHistoryGuards() {
   Object.defineProperty(window, "atlasMainScroll", { value: true });
   offsets = loadOffsets();
   lastCommittedPath = pathAndSearch();
+  try {
+    // The viewport does not scroll. Leave main's offset to this module so a
+    // back/forward navigation cannot zero it before the entry is restored.
+    window.history.scrollRestoration = "manual";
+  } catch {
+    // Embedded documents can reject scrollRestoration.
+  }
+  document.addEventListener("pointerdown", onNavigationPointerDown, true);
+  document.addEventListener("click", onNavigationPointerDown, true);
+  document.addEventListener("keydown", onNavigationKeyDown, true);
   const originalPushState = window.history.pushState.bind(window.history);
   const originalReplaceState = window.history.replaceState.bind(window.history);
   window.history.pushState = (data, unused, url) => {
     const nextPath = pathAndSearchFrom(url);
     const hashOnly = nextPath === pathAndSearch();
+    const leavingId = readHistoryEntryId(window.history.state);
+    if (leavingId && mountedMain && !hashOnly && !suppressRemember.current) {
+      rememberOffset(
+        leavingId,
+        offsetKeepingNavigationSnapshot(leavingId, mountedMain.scrollTop)
+      );
+    }
+    clearNavigationScrollSnapshot();
     const id = createEntryId();
     const result = originalPushState(stateWithEntry(data, id), unused, url);
     pendingRestoreEntryId = null;
@@ -418,6 +569,7 @@ function installHistoryGuards() {
   window.addEventListener(
     "popstate",
     () => {
+      clearNavigationScrollSnapshot();
       const hashOnly = pathAndSearch() === lastCommittedPath;
       if (hashOnly) {
         if (mountedMain) {
@@ -746,6 +898,7 @@ function applyScrollDecision(
 export function resetProfessionalMainScrollForTests() {
   cancelMainScrollHold();
   stopHashWatch();
+  clearNavigationScrollSnapshot();
   offsets = new Map();
   navigationKind = "idle";
   pendingRestoreEntryId = null;
@@ -876,7 +1029,10 @@ export function useProfessionalMainScroll(
       if (!entryId) {
         return;
       }
-      rememberOffset(entryId, main.scrollTop);
+      rememberOffset(
+        entryId,
+        offsetKeepingNavigationSnapshot(entryId, main.scrollTop)
+      );
     };
     main.addEventListener("scroll", remember, { passive: true });
     return () => {

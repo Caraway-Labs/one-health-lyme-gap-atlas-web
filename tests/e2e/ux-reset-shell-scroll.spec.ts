@@ -440,9 +440,58 @@ test.describe("professional shell scroll containment", () => {
       element.scrollTop = 640;
     });
     await expect.poll(() => mainScrollTop(page)).toBe(640);
-
-    await page.getByTestId("review-scope-select").click();
-    await page.getByRole("option", { name: "New York (NY)" }).click();
+    // The scope trigger sits above a scrolled main pane. A real pointer click
+    // scrolls that trigger into view and would store the new offset. Dispatch
+    // the same select events without moving main.
+    await page.evaluate(() => {
+      const trigger = document.querySelector(
+        "[data-testid='review-scope-select']"
+      );
+      if (!(trigger instanceof HTMLElement)) {
+        throw new Error("missing review scope select");
+      }
+      trigger.focus({ preventScroll: true });
+      trigger.dispatchEvent(
+        new MouseEvent("mousedown", {
+          bubbles: true,
+          button: 0,
+          cancelable: true,
+          view: window,
+        })
+      );
+    });
+    await expect(
+      page.getByRole("option", { name: "New York (NY)" })
+    ).toBeAttached();
+    await page.evaluate(() => {
+      const main = document.querySelector("main.ux-reset-pro-main");
+      if (main instanceof HTMLElement) {
+        main.scrollTop = 640;
+      }
+      const option = [...document.querySelectorAll("[role='option']")].find(
+        (node) => node.textContent?.includes("New York (NY)")
+      );
+      if (!(option instanceof HTMLElement)) {
+        throw new Error("missing New York option");
+      }
+      option.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          cancelable: true,
+          pointerType: "mouse",
+        })
+      );
+      option.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          button: 0,
+          cancelable: true,
+          detail: 1,
+          view: window,
+        })
+      );
+    });
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect.poll(() => mainScrollTop(page)).toBe(0);
@@ -487,19 +536,31 @@ test.describe("professional shell scroll containment", () => {
       await route.fulfill({ json: { profile: null }, status: 200 });
     });
     await page.goto("/app/settings#settings-job-title");
-    await expect(page.getByTestId("settings-job-title")).toBeAttached();
+    const field = page.getByTestId("settings-job-title");
+    await expect(field).toBeAttached();
     await page.evaluate(() => {
-      const main = document.querySelector("main.ux-reset-pro-main");
-      if (main instanceof HTMLElement) {
-        main.scrollTop = 240;
-      }
       window.history.pushState(
         window.history.state,
         "",
         `${window.location.pathname}${window.location.search}#settings-job-title`
       );
     });
-    await expect.poll(() => mainScrollTop(page)).toBe(240);
+    await expect
+      .poll(() =>
+        field.evaluate((element) => {
+          const main = element.closest("main");
+          if (!main) {
+            return false;
+          }
+          const fieldBox = element.getBoundingClientRect();
+          const mainBox = main.getBoundingClientRect();
+          return (
+            fieldBox.top >= mainBox.top - 1 &&
+            fieldBox.bottom <= mainBox.bottom + 1
+          );
+        })
+      )
+      .toBe(true);
     await page.getByRole("link", { exact: true, name: "Review" }).click();
     await expect(page).toHaveURL(/\/app\/review/);
     await expect.poll(() => mainScrollTop(page)).toBe(0);

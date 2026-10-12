@@ -725,6 +725,98 @@ describe("professional main scroll history", () => {
       window.history.pushState({}, "", "http://[");
     }).toThrow(DOMException);
   });
+
+  it("keeps the leaving offset when navigation zeros main before pushState", async () => {
+    const view = renderScroller();
+    rememberMainOffset(640);
+    const link = appendControl(document.createElement("a"));
+    link.setAttribute("href", "/app/review?scope=NY");
+    link.textContent = "Open New York review";
+    fireEvent.pointerDown(link);
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    window.history.pushState({}, "", "/app/review?scope=NY");
+    view.rerender(<ScrollHarness pathname="/app/review" search="scope=NY" />);
+    flushFrames();
+    expect(mainElement().scrollTop).toBe(0);
+
+    await goHistory("back");
+    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    flushFrames();
+    expect(mainElement().scrollTop).toBeGreaterThan(500);
+    link.remove();
+  });
+
+  it("does not keep an offset for a modified click or a hash-only link", () => {
+    renderScroller();
+    rememberMainOffset(640);
+    const external = appendControl(document.createElement("a"));
+    external.setAttribute("href", "/app/settings");
+    external.textContent = "Settings";
+    external.addEventListener("click", (event) => {
+      event.preventDefault();
+    });
+    fireEvent.click(external, { metaKey: true });
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    const afterModified = JSON.parse(
+      sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
+    ) as [string, number][];
+    expect(afterModified.at(-1)?.[1]).toBe(0);
+
+    rememberMainOffset(640);
+    const hashLink = appendControl(document.createElement("a"));
+    hashLink.setAttribute("href", "#settings-job-title");
+    hashLink.textContent = "Job title";
+    fireEvent.click(hashLink);
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    const afterHash = JSON.parse(
+      sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
+    ) as [string, number][];
+    expect(afterHash.at(-1)?.[1]).toBe(0);
+    external.remove();
+    hashLink.remove();
+  });
+
+  it("keeps the offset when Enter activates an option before main jumps to zero", () => {
+    renderScroller();
+    rememberMainOffset(320);
+    const option = appendControl(document.createElement("div"));
+    option.setAttribute("role", "option");
+    option.tabIndex = 0;
+    option.focus();
+    keydown("Enter", option);
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    const stored = JSON.parse(
+      sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
+    ) as [string, number][];
+    expect(stored.at(-1)?.[1]).toBe(320);
+    option.remove();
+  });
+
+  it("commits the live offset when a navigation click stays on the entry", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      renderScroller();
+      rememberMainOffset(640);
+      const link = appendControl(document.createElement("a"));
+      link.setAttribute("href", "/app/settings");
+      link.textContent = "Settings";
+      fireEvent.pointerDown(link);
+      mainElement().scrollTop = 0;
+      fireEvent.scroll(mainElement());
+      vi.advanceTimersByTime(1500);
+      const stored = JSON.parse(
+        sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
+      ) as [string, number][];
+      expect(stored.at(-1)?.[1]).toBe(0);
+      link.remove();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("professional main scroll keyboard ownership", () => {
