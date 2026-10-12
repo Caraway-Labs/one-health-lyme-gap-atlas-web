@@ -503,12 +503,15 @@ export function useCompareWorkspace(): CompareWorkspace {
         ? alignCompareCountyProfiles({
             left: profileRecords.left,
             leftFips: profileRecords.leftFips,
-            measures: measuresQuery.isSuccess ? measures : EMPTY_MEASURES,
+            // Retained query data is the last accepted catalog for this
+            // release. A failed refetch sets isSuccess to false without
+            // clearing that data, so known types and limitations stay.
+            measures,
             right: profileRecords.right,
             rightFips: profileRecords.rightFips,
           })
         : null,
-    [measures, measuresQuery.isSuccess, profileRecords]
+    [measures, profileRecords]
   );
 
   return {

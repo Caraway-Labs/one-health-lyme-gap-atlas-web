@@ -42,6 +42,8 @@ const observationFailureBudgets = new Map<string, number>();
 let catalogFailureStatus = 503;
 let catalogFailuresRemaining = 0;
 let catalogRetryAfter: string | null = null;
+let blankContextSourceNote = false;
+let extraCatalogMeasures: typeof compareMeasuresFixture = [];
 const countyRecordRequests: string[] = [];
 let countyRateLimitRemaining = 0;
 let countyRetryAfterSeconds: number | null = null;
@@ -78,8 +80,17 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 404,
         } as never;
       }
+      const detail = compareCountyDetail(fips);
+      if (blankContextSourceNote) {
+        detail.release = {
+          ...detail.release,
+          sources: detail.release.sources.map((source) =>
+            source.key === "context_svi" ? { ...source, note: "" } : source
+          ),
+        };
+      }
       return {
-        data: compareCountyDetail(fips),
+        data: detail,
         headers: new Headers(),
         status: 200,
       } as never;
@@ -109,7 +120,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
       }
       return {
         data: {
-          data: [...compareMeasuresFixture]
+          data: [...compareMeasuresFixture, ...extraCatalogMeasures]
             .toReversed()
             .filter(
               (measure) =>
@@ -199,6 +210,7 @@ function renderCompare(search: string, retry: boolean | number = false) {
   );
   return {
     ...view,
+    client,
     rerenderSearch(next: string) {
       setSearch(next);
       view.rerender(
@@ -250,13 +262,29 @@ function cell(measureId: string, fips: string) {
   return screen.getByTestId(`compare-cell-${measureId}-${fips}`);
 }
 
+function populationCatalogState() {
+  const population = screen.getByTestId(
+    "compare-profile-cell-population_2022-08001"
+  );
+  const text = population.textContent ?? "";
+  return {
+    availability:
+      within(population).getByTestId("ux-reset-evidence-object").dataset
+        .evidenceAvailability ?? "",
+    caveat: text.includes("Coverage is incomplete"),
+    evidenceType: text.includes("Count"),
+  };
+}
+
 describe("two-county aligned comparison", () => {
   afterEach(() => {
     cleanup();
+    blankContextSourceNote = false;
     catalogFailureStatus = 503;
     catalogFailuresRemaining = 0;
     catalogRequests.length = 0;
     catalogRetryAfter = null;
+    extraCatalogMeasures = [];
     clearCompareCatalogRetryDeadlines();
     clearCompareProfileRetryDeadlines();
     countyRateLimitRemaining = 0;
@@ -619,6 +647,65 @@ describe("two-county aligned comparison", () => {
       period: true,
       recovery: "ready",
       samePair: true,
+    });
+  });
+
+  it("keeps catalog limitations when a later catalog refresh fails", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    blankContextSourceNote = true;
+    extraCatalogMeasures = [
+      {
+        ...base,
+        definition: "Resident population.",
+        indicator_id: "population",
+        label: "Population",
+        limitations: ["Coverage is incomplete"],
+        measure_id: "population_2022",
+        measure_type: "count",
+        unit: "people",
+      },
+    ];
+    const view = renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026"
+    );
+    await screen.findByTestId("compare-profile-cell-population_2022-08001");
+    expect(populationCatalogState()).toStrictEqual({
+      availability: "limited",
+      caveat: true,
+      evidenceType: true,
+    });
+    catalogFailuresRemaining = 1;
+    await act(async () => {
+      await view.client.refetchQueries({
+        queryKey: ["ux-reset-compare-measures"],
+      });
+    });
+    expect({
+      ...populationCatalogState(),
+      refreshError: (
+        screen.queryByText("Governed measures could not be loaded.")
+          ?.textContent ?? ""
+      ).includes("could not be loaded"),
+    }).toStrictEqual({
+      availability: "limited",
+      caveat: true,
+      evidenceType: true,
+      refreshError: true,
+    });
+    catalogFailuresRemaining = 0;
+    fireEvent.click(screen.getByTestId("compare-retry-catalog"));
+    await waitFor(() => {
+      if (screen.queryByText("Governed measures could not be loaded.")) {
+        throw new Error("Catalog refresh error is still showing.");
+      }
+    });
+    expect(populationCatalogState()).toStrictEqual({
+      availability: "limited",
+      caveat: true,
+      evidenceType: true,
     });
   });
 
