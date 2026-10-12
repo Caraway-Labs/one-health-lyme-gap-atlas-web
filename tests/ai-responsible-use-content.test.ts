@@ -39,7 +39,10 @@ describe("AI / Responsible Use content", () => {
     const currentTitles = capabilityClaims
       .filter((claim) => claim.maturity === "current")
       .map((claim) => claim.title);
-    expect(currentTitles).toStrictEqual(["County review priority"]);
+    expect(currentTitles).toStrictEqual([
+      "County review priority",
+      "Model-assisted surveillance review priority",
+    ]);
     expect(
       capabilityClaims.find((claim) => claim.id === "ask-atlas-literature")
     ).toMatchObject({
@@ -54,9 +57,16 @@ describe("AI / Responsible Use content", () => {
         ?.maturity
     ).toBe("planned");
     expect(
-      capabilityClaims.find((claim) => claim.id === "ml-prioritization")
-        ?.maturity
+      capabilityClaims.find((claim) => claim.id === "ml-forecasts")?.maturity
     ).toBe("planned");
+  });
+
+  it("keeps the deployed review tier distinct from disease risk", () => {
+    expect(
+      capabilityClaims.find(
+        (claim) => claim.id === "model-assisted-review-priority"
+      )?.boundary
+    ).toMatch(/not disease risk, predicted incidence/i);
   });
 
   it("keeps dataset discovery as in-development human review", () => {

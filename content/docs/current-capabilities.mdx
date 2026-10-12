@@ -33,6 +33,7 @@ These routes require sign-in. They sit beside the public Explorer until a later 
 | Capability | Status | How it supports investigation | Important boundary |
 | --- | --- | --- | --- |
 | Review at [/app/review](/app/review) | Available now | Start from the United States or one state, and read the map and county list for that scope. | National Review is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope. |
+| Model-assisted surveillance review priority | Available now | On signed-in Review and Investigate, read the persisted HIGH, MEDIUM, or LOW tier the API returns for a county in the active batch. | This is review prioritization, not disease risk or predicted incidence. It is separate from the rules-based county review score. Forecasts are not released. |
 | Explore at [/app/explore](/app/explore) | Available now | Scan one governed measure on a map and in a table of the same values. | Explore filters stay on Explore. The table remains the non-map path. |
 | Investigate at [/app/investigate](/app/investigate) | Available now | Read one county's evidence, limitations, and provenance, then return to Review. | The page opens the county in the address. It does not substitute another county. |
 | Compare at [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures, with unit, period, and availability on each value. | This page does not rank a winner. The public Explorer's five-county comparison is a separate legacy surface. |
