@@ -5,7 +5,22 @@ import {
   type ReviewNationalCamera,
 } from "../../src/features/ux-reset/review/review-national-camera";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
-import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
+import {
+  reviewScopeMetadataFixture,
+  reviewScopeScoresFixture,
+} from "../fixtures/review-scope-api-fixtures";
+
+test.beforeEach(async ({ page }) => {
+  await page.route("**/v1/atlas/scores**", (route) => {
+    const releaseId =
+      new URL(route.request().url()).searchParams.get("dataset_version") ??
+      "alpha-2026";
+    return route.fulfill({
+      json: { ...reviewScopeScoresFixture, release_id: releaseId },
+      status: 200,
+    });
+  });
+});
 
 function box(
   fips: string,

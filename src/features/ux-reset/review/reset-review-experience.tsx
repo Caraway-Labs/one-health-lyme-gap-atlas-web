@@ -31,13 +31,10 @@ import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-valu
 import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
-  isGovernedReviewResultState,
   isUnsupportedReviewScope,
   normalizeReviewCounty,
   REVIEW_REQUEST_FAILURE_MESSAGE,
   reviewCandidateFipsForScope,
-  reviewResultPayloadConsistent,
-  scopedReviewCandidates,
   unsupportedReviewScopeMessage,
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
@@ -45,6 +42,7 @@ import { ReviewScopeSelector } from "@/features/ux-reset/review/review-scope-sel
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
+import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
 import { useStateReview } from "@/features/ux-reset/review/use-state-review";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
@@ -244,12 +242,9 @@ function ResetReviewExperienceInner() {
   const nationalReady = scope === "ALL" && Boolean(presentationQuery.metadata);
   const stateName =
     stateOptions.find((option) => option.code === scope)?.name ?? scope;
-  const reviewRecord = stateReview.review;
-  const candidatesAreFindings = Boolean(
-    reviewRecord &&
-    isGovernedReviewResultState(reviewRecord.result_state) &&
-    reviewResultPayloadConsistent(reviewRecord) &&
-    reviewRecord.result_state === "candidates_found"
+  const publishedDirectory = usePublishedReviewCounties(
+    scope,
+    scopeUnsupported ? null : confirmedRelease
   );
   const startingScopePending = isReviewStartingScopeUnresolved({
     arrivalExplicitScope: arrivalExplicitLocation,
@@ -262,15 +257,14 @@ function ResetReviewExperienceInner() {
   });
   const scopeViewReady = !startingScopePending;
   const reviewIdentities =
-    scopeViewReady && reviewReady && reviewRecord && candidatesAreFindings
-      ? scopedReviewCandidates(
-          reviewRecord.review_candidates,
-          scope
-        ).candidates.map((candidate) => ({
-          county: candidate.countyName,
-          fips: candidate.countyFips,
-          state_name: stateName,
-        }))
+    scopeViewReady && reviewReady
+      ? publishedDirectory.counties
+          .filter((entry) => entry.fips === reviewCounty)
+          .map((entry) => ({
+            county: entry.county,
+            fips: entry.fips,
+            state_name: entry.stateName,
+          }))
       : [];
   usePublishAskAtlasInheritedContext(
     scopeViewReady
