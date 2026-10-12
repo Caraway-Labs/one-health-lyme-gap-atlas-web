@@ -4,8 +4,10 @@ import {
   readWorkspaceSession,
   WORKSPACE_SESSION_READS,
   workspaceSessionDecision,
+  workspaceShellAction,
   type WorkspaceSessionNavigation,
   type WorkspaceSessionRead,
+  type WorkspaceShellAction,
 } from "@/features/ux-reset/workspace-session-gate";
 
 type Session = { user: { id: string } } | null;
@@ -261,4 +263,168 @@ describe("workspace session gate", () => {
       )
     ).toStrictEqual(rows.map((row) => row.action));
   });
+
+  it("reloads a restored page when the recorded account is unknown", () => {
+    const navigation: WorkspaceSessionNavigation = "bfcache";
+    const read: WorkspaceSessionRead = "present";
+    expect(
+      workspaceSessionDecision({
+        documentUserId: null,
+        loggedOutInPageLifetime: false,
+        navigation,
+        read,
+        sessionUserId: "user-b",
+      })
+    ).toBe("keep");
+    expect(
+      workspaceShellAction({
+        concealed: true,
+        documentUserId: null,
+        loggedOutInPageLifetime: false,
+        navigation,
+        read,
+        sessionUserId: "user-b",
+      })
+    ).toBe("reload");
+  });
+
+  it("chooses one shell action for every account, read, and concealment", () => {
+    const navigations: WorkspaceSessionNavigation[] = ["bfcache", "fresh"];
+    const presentAccounts = [
+      { documentUserId: "user-a", sessionUserId: "user-a" },
+      { documentUserId: "user-a", sessionUserId: "user-b" },
+      { documentUserId: null, sessionUserId: "user-b" },
+    ];
+    const documentUsers = ["user-a", null] as const;
+    const flags = [false, true];
+    const rows: {
+      concealed: boolean;
+      documentUserId: string | null;
+      expected: WorkspaceShellAction;
+      loggedOutInPageLifetime: boolean;
+      navigation: WorkspaceSessionNavigation;
+      read: WorkspaceSessionRead;
+      sessionUserId: string | null;
+    }[] = [];
+    for (const navigation of navigations) {
+      for (const loggedOutInPageLifetime of flags) {
+        for (const concealed of flags) {
+          for (const account of presentAccounts) {
+            rows.push({
+              concealed,
+              documentUserId: account.documentUserId,
+              expected: expectedShellAction({
+                concealed,
+                documentUserId: account.documentUserId,
+                loggedOutInPageLifetime,
+                navigation,
+                read: "present",
+                sessionUserId: account.sessionUserId,
+              }),
+              loggedOutInPageLifetime,
+              navigation,
+              read: "present",
+              sessionUserId: account.sessionUserId,
+            });
+          }
+          for (const read of WORKSPACE_SESSION_READS) {
+            if (read === "present") {
+              continue;
+            }
+            for (const documentUserId of documentUsers) {
+              rows.push({
+                concealed,
+                documentUserId,
+                expected: expectedShellAction({
+                  concealed,
+                  documentUserId,
+                  loggedOutInPageLifetime,
+                  navigation,
+                  read,
+                  sessionUserId: null,
+                }),
+                loggedOutInPageLifetime,
+                navigation,
+                read,
+                sessionUserId: null,
+              });
+            }
+          }
+        }
+      }
+    }
+    const counts: Record<WorkspaceShellAction, number> = {
+      hold: 0,
+      reload: 0,
+      reveal: 0,
+      "sign-in": 0,
+    };
+    const mismatches = rows.filter((row) => {
+      const action = workspaceShellAction(row);
+      counts[row.expected] += 1;
+      return action !== row.expected;
+    });
+    expect({
+      count: rows.length,
+      counts,
+      mismatches,
+    }).toStrictEqual({
+      count: 88,
+      counts: { hold: 14, reload: 26, reveal: 8, "sign-in": 40 },
+      mismatches: [],
+    });
+  });
 });
+
+function expectedShellAction(input: {
+  concealed: boolean;
+  documentUserId: string | null;
+  loggedOutInPageLifetime: boolean;
+  navigation: WorkspaceSessionNavigation;
+  read: WorkspaceSessionRead;
+  sessionUserId: string | null;
+}): WorkspaceShellAction {
+  if (
+    input.read === "present" &&
+    input.documentUserId !== null &&
+    input.sessionUserId !== null &&
+    input.documentUserId === input.sessionUserId
+  ) {
+    return "reveal";
+  }
+  if (
+    input.read === "present" &&
+    input.documentUserId !== null &&
+    input.sessionUserId !== null
+  ) {
+    return "reload";
+  }
+  if (input.read === "absent") {
+    return "sign-in";
+  }
+  if (
+    input.read === "present" &&
+    input.sessionUserId !== null &&
+    input.documentUserId === null &&
+    (input.navigation === "bfcache" || input.concealed)
+  ) {
+    return "reload";
+  }
+  if (
+    input.loggedOutInPageLifetime &&
+    (input.read === "error" ||
+      input.read === "throws" ||
+      input.read === "unconfigured")
+  ) {
+    return "sign-in";
+  }
+  if (
+    input.concealed &&
+    (input.read === "error" ||
+      input.read === "throws" ||
+      input.read === "unconfigured")
+  ) {
+    return "reload";
+  }
+  return "hold";
+}

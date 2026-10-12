@@ -16,8 +16,26 @@ let signOutEpoch = 0;
 let signOutPending = false;
 let succeededSignOutEpoch = 0;
 let restoredWorkspaceConcealed = false;
+let shellCheckGeneration = 0;
 const restoreListeners = new Set<() => void>();
 const signOutListeners = new Set<() => void>();
+
+/** The latest shell check. An older read must not reveal or navigate. */
+export function beginWorkspaceShellCheck(): number {
+  shellCheckGeneration += 1;
+  return shellCheckGeneration;
+}
+
+export function workspaceShellCheckCurrent(generation: number): boolean {
+  return generation === shellCheckGeneration;
+}
+
+export function invalidateWorkspaceShellCheck(generation: number): void {
+  if (generation !== shellCheckGeneration) {
+    return;
+  }
+  shellCheckGeneration += 1;
+}
 
 export function noteWorkspaceDocumentUser(userId: string): void {
   if (documentUserId === null) {
@@ -142,6 +160,7 @@ export function resetWorkspaceSignOutStateForTests(): void {
   signOutEpoch = 0;
   signOutPending = false;
   succeededSignOutEpoch = 0;
+  shellCheckGeneration = 0;
   notifySignOutListeners();
   if (typeof document === "undefined") {
     restoredWorkspaceConcealed = false;

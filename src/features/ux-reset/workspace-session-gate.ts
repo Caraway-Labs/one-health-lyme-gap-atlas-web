@@ -19,6 +19,15 @@ export type WorkspaceSessionSnapshot = {
 
 export type WorkspaceSessionAction = "keep" | "reload" | "sign-in";
 
+export const WORKSPACE_SHELL_ACTIONS = [
+  "reveal",
+  "reload",
+  "sign-in",
+  "hold",
+] as const;
+
+export type WorkspaceShellAction = (typeof WORKSPACE_SHELL_ACTIONS)[number];
+
 /**
  * A confirmed session keeps this document only for the account that opened
  * it. A different confirmed account reloads the document so the previous
@@ -28,7 +37,8 @@ export type WorkspaceSessionAction = "keep" | "reload" | "sign-in";
  * restore. A page that has not logged out leaves only when a successful read
  * confirms the session is absent; an error, a throw, or an unconfigured
  * client keeps the page. Fresh loads and bfcache restores follow this same
- * rule.
+ * rule. Whether protected content may be shown is decided separately by
+ * `workspaceShellAction`.
  */
 export function workspaceSessionDecision(input: {
   documentUserId?: string | null;
@@ -73,6 +83,65 @@ export function workspaceSessionDecision(input: {
       throw new Error(`Unsupported session read: ${String(exhaustive)}`);
     }
   }
+}
+
+/**
+ * Protected content stays concealed until a read confirms the same account
+ * that opened the page. A different account, an unknown account on a restored
+ * or already concealed page, and an indeterminate read of concealed content
+ * reload that page. An absent session, or an indeterminate read after logout,
+ * redirects to sign-in. Any other keep leaves a visible page alone.
+ */
+export function workspaceShellAction(input: {
+  concealed: boolean;
+  documentUserId: string | null;
+  loggedOutInPageLifetime: boolean;
+  navigation: WorkspaceSessionNavigation;
+  read: WorkspaceSessionRead;
+  sessionUserId: string | null;
+}): WorkspaceShellAction {
+  const decision = workspaceSessionDecision(input);
+  if (
+    input.read === "present" &&
+    input.documentUserId !== null &&
+    input.sessionUserId !== null &&
+    input.documentUserId === input.sessionUserId
+  ) {
+    return "reveal";
+  }
+  switch (decision) {
+    case "sign-in":
+    case "reload": {
+      return decision;
+    }
+    case "keep": {
+      return concealedKeepAction(input);
+    }
+    default: {
+      const exhaustive: never = decision;
+      throw new Error(
+        `Unsupported workspace session decision: ${String(exhaustive)}`
+      );
+    }
+  }
+}
+
+function concealedKeepAction(input: {
+  concealed: boolean;
+  documentUserId: string | null;
+  navigation: WorkspaceSessionNavigation;
+  read: WorkspaceSessionRead;
+  sessionUserId: string | null;
+}): WorkspaceShellAction {
+  const unknownAccount =
+    input.read === "present" &&
+    input.sessionUserId !== null &&
+    input.documentUserId === null &&
+    (input.navigation === "bfcache" || input.concealed);
+  if (unknownAccount || (input.concealed && input.read !== "present")) {
+    return "reload";
+  }
+  return "hold";
 }
 
 /** Distinguishes a confirmed session from a failed read. */

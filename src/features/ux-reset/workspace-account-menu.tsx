@@ -4,7 +4,13 @@ import { QueryClientContext, type QueryClient } from "@tanstack/react-query";
 import { DoorOpen, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useContext, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,19 +36,24 @@ import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
 import {
   readWorkspaceSession,
-  workspaceSessionDecision,
+  workspaceShellAction,
   type WorkspaceSessionNavigation,
+  type WorkspaceShellAction,
 } from "@/features/ux-reset/workspace-session-gate";
 import {
   abortWorkspaceSignOut,
+  beginWorkspaceShellCheck,
   beginWorkspaceSignOut,
   completeWorkspaceSignOut,
   concealRestoredWorkspace,
+  invalidateWorkspaceShellCheck,
   noteWorkspaceDocumentUser,
   revealRestoredWorkspace,
   subscribeWorkspaceSignOut,
   workspaceDocumentUserId,
   workspaceLoggedOutInPageLifetime,
+  workspaceRestoreConcealed,
+  workspaceShellCheckCurrent,
   workspaceSignOutPending,
   workspaceSignOutSuppressesExpiryRedirect,
 } from "@/features/ux-reset/workspace-sign-out";
@@ -76,8 +87,85 @@ function professionalPath(path: string): boolean {
   return isProfessionalAppPath(pathname);
 }
 
-async function denyWorkspacePage(input: {
-  cancelled: () => boolean;
+function protectedLeaveConceals(input: {
+  concealed: boolean;
+  documentUserId: string | null;
+  navigation: WorkspaceSessionNavigation;
+}): boolean {
+  return (
+    input.concealed ||
+    input.documentUserId !== null ||
+    input.navigation === "bfcache"
+  );
+}
+
+function leaveHref(action: "reload" | "sign-in", path: string): string {
+  switch (action) {
+    case "reload": {
+      return path;
+    }
+    case "sign-in": {
+      return signInHrefForReturnPath(path);
+    }
+    default: {
+      const exhaustive: never = action;
+      throw new Error(`Unsupported protected leave: ${String(exhaustive)}`);
+    }
+  }
+}
+
+/** Conceals first, then replaces the document. A later read cannot reveal it. */
+function leaveProtectedWorkspace(input: {
+  conceal: boolean;
+  href: string;
+  queryClient: QueryClient | null;
+}): void {
+  if (input.conceal) {
+    concealRestoredWorkspace();
+  }
+  beginWorkspaceShellCheck();
+  clearAccountSessionCache(input.queryClient);
+  followWorkspaceHref(input.href, "replace");
+}
+
+function applyProtectedShellAction(input: {
+  action: WorkspaceShellAction;
+  concealed: boolean;
+  documentUserId: string | null;
+  navigation: WorkspaceSessionNavigation;
+  path: string;
+  queryClient: QueryClient | null;
+}): void {
+  switch (input.action) {
+    case "reveal": {
+      revealRestoredWorkspace();
+      break;
+    }
+    case "hold": {
+      break;
+    }
+    case "reload":
+    case "sign-in": {
+      leaveProtectedWorkspace({
+        conceal: protectedLeaveConceals({
+          concealed: input.concealed,
+          documentUserId: input.documentUserId,
+          navigation: input.navigation,
+        }),
+        href: leaveHref(input.action, input.path),
+        queryClient: input.queryClient,
+      });
+      return;
+    }
+    default: {
+      const exhaustive: never = input.action;
+      throw new Error(`Unsupported shell action: ${String(exhaustive)}`);
+    }
+  }
+}
+
+async function settleProtectedWorkspace(input: {
+  generation: number;
   navigation: WorkspaceSessionNavigation;
   path: string;
   queryClient: QueryClient | null;
@@ -86,62 +174,26 @@ async function denyWorkspacePage(input: {
     return;
   }
   const snapshot = await readWorkspaceSession();
-  if (input.cancelled()) {
+  if (!workspaceShellCheckCurrent(input.generation)) {
     return;
   }
-  const decision = workspaceSessionDecision({
-    documentUserId: workspaceDocumentUserId(),
-    loggedOutInPageLifetime: workspaceLoggedOutInPageLifetime(),
+  const documentUserId = workspaceDocumentUserId();
+  const concealed = workspaceRestoreConcealed();
+  applyProtectedShellAction({
+    action: workspaceShellAction({
+      concealed,
+      documentUserId,
+      loggedOutInPageLifetime: workspaceLoggedOutInPageLifetime(),
+      navigation: input.navigation,
+      read: snapshot.read,
+      sessionUserId: snapshot.userId,
+    }),
+    concealed,
+    documentUserId,
     navigation: input.navigation,
-    read: snapshot.read,
-    sessionUserId: snapshot.userId,
+    path: input.path,
+    queryClient: input.queryClient,
   });
-  switch (input.navigation) {
-    case "bfcache": {
-      const sameAccount =
-        snapshot.read === "present" &&
-        snapshot.userId !== null &&
-        snapshot.userId === workspaceDocumentUserId();
-      if (decision === "keep" && sameAccount) {
-        revealRestoredWorkspace();
-        return;
-      }
-      break;
-    }
-    case "fresh": {
-      if (decision === "keep") {
-        revealRestoredWorkspace();
-      }
-      break;
-    }
-    default: {
-      const exhaustive: never = input.navigation;
-      throw new Error(
-        `Unsupported workspace navigation: ${String(exhaustive)}`
-      );
-    }
-  }
-  switch (decision) {
-    case "keep": {
-      return;
-    }
-    case "reload": {
-      clearAccountSessionCache(input.queryClient);
-      followWorkspaceHref(input.path, "replace");
-      return;
-    }
-    case "sign-in": {
-      clearAccountSessionCache(input.queryClient);
-      followWorkspaceHref(signInHrefForReturnPath(input.path), "replace");
-      return;
-    }
-    default: {
-      const exhaustive: never = decision;
-      throw new Error(
-        `Unsupported workspace session decision: ${String(exhaustive)}`
-      );
-    }
-  }
 }
 
 function WithAccountTooltip({
@@ -236,58 +288,64 @@ export function WorkspaceAccountMenu() {
     };
   }, [identity]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (identity?.kind !== "user") {
       return;
     }
-    const decision = workspaceSessionDecision({
-      documentUserId: workspaceDocumentUserId(),
+    const documentUserId = workspaceDocumentUserId();
+    const concealed = workspaceRestoreConcealed();
+    const action = workspaceShellAction({
+      concealed,
+      documentUserId,
       loggedOutInPageLifetime: workspaceLoggedOutInPageLifetime(),
       navigation: "fresh",
       read: "present",
       sessionUserId: identity.userId,
     });
-    switch (decision) {
-      case "keep": {
-        noteWorkspaceDocumentUser(identity.userId);
-        break;
-      }
+    switch (action) {
       case "reload": {
-        clearAccountSessionCache(queryClient);
-        followWorkspaceHref(returnPath, "replace");
-        break;
+        leaveProtectedWorkspace({
+          conceal: protectedLeaveConceals({
+            concealed,
+            documentUserId,
+            navigation: "fresh",
+          }),
+          href: returnPath,
+          queryClient,
+        });
+        return;
       }
+      case "reveal":
+      case "hold":
       case "sign-in": {
-        break;
+        if (documentUserId === null && !concealed) {
+          noteWorkspaceDocumentUser(identity.userId);
+        }
+        return;
       }
       default: {
-        const exhaustive: never = decision;
-        throw new Error(
-          `Unsupported workspace session decision: ${String(exhaustive)}`
-        );
+        const exhaustive: never = action;
+        throw new Error(`Unsupported shell action: ${String(exhaustive)}`);
       }
     }
   }, [identity, queryClient, returnPath]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (identity?.kind !== "signed-out" || signOutSuppressesExpiryRedirect) {
       return;
     }
+    const generation = beginWorkspaceShellCheck();
     if (workspaceDocumentUserId() !== null && professionalPath(returnPath)) {
       concealRestoredWorkspace();
     }
-    let cancelled = false;
-    const denyFreshSignedOutPage = async () => {
-      await denyWorkspacePage({
-        cancelled: () => cancelled,
-        navigation: "fresh",
-        path: returnPath,
-        queryClient,
-      });
-    };
-    void denyFreshSignedOutPage();
+    void settleProtectedWorkspace({
+      generation,
+      navigation: "fresh",
+      path: returnPath,
+      queryClient,
+    });
     return () => {
-      cancelled = true;
+      invalidateWorkspaceShellCheck(generation);
     };
   }, [identity, queryClient, returnPath, signOutSuppressesExpiryRedirect]);
 
@@ -299,11 +357,12 @@ export function WorkspaceAccountMenu() {
       concealRestoredWorkspace();
       return true;
     };
+    let pageshowGeneration = 0;
     const onPageHide = (event: PageTransitionEvent) => {
-      if (!event.persisted) {
+      if (!event.persisted || !concealIfProfessional(browserReturnPath())) {
         return;
       }
-      concealIfProfessional(browserReturnPath());
+      beginWorkspaceShellCheck();
     };
     const onPageShow = (event: PageTransitionEvent) => {
       if (!event.persisted) {
@@ -313,8 +372,9 @@ export function WorkspaceAccountMenu() {
       if (!concealIfProfessional(path)) {
         return;
       }
-      void denyWorkspacePage({
-        cancelled: () => false,
+      pageshowGeneration = beginWorkspaceShellCheck();
+      void settleProtectedWorkspace({
+        generation: pageshowGeneration,
         navigation: "bfcache",
         path,
         queryClient,
@@ -325,6 +385,7 @@ export function WorkspaceAccountMenu() {
     return () => {
       window.removeEventListener("pagehide", onPageHide);
       window.removeEventListener("pageshow", onPageShow);
+      invalidateWorkspaceShellCheck(pageshowGeneration);
     };
   }, [queryClient]);
 

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -21,6 +22,7 @@ import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu
 import {
   beginWorkspaceSignOut,
   resetWorkspaceSignOutStateForTests,
+  workspaceDocumentUserId,
 } from "@/features/ux-reset/workspace-sign-out";
 
 type SessionUser = {
@@ -41,6 +43,13 @@ const auth = vi.hoisted(() => {
     configured: true,
     failReads: 0,
     listeners,
+    deferredReads: [] as Promise<
+      | {
+          data: { session: Session | null };
+          error: { message: string } | null;
+        }
+      | "throw"
+    >[],
     pause: null as Promise<unknown> | null,
     reads: 0,
     session: null as Session,
@@ -89,6 +98,14 @@ vi.mock(import("@/lib/supabase/client"), () => ({
       auth: {
         getSession: async () => {
           auth.reads += 1;
+          const deferred = auth.deferredReads.shift();
+          if (deferred) {
+            const result = await deferred;
+            if (result === "throw") {
+              throw new Error("session read failed");
+            }
+            return result;
+          }
           if (auth.pause) {
             await auth.pause;
           }
@@ -142,6 +159,23 @@ function persistedPageShow() {
 
 function restoredWorkspaceConcealed(): boolean {
   return document.documentElement.dataset.workspaceRestore === "concealed";
+}
+
+function restoredNoteHidden(): boolean {
+  return (
+    screen.getByTestId("restored-private-note").closest("[hidden]") ===
+    document.querySelector(".ux-reset-pro-app")
+  );
+}
+
+function scriptedSession(
+  session: Session,
+  error: { message: string } | null = null
+) {
+  return {
+    data: { session },
+    error,
+  };
 }
 
 function notify(session: Session) {
@@ -237,6 +271,7 @@ describe("workspace account menu", () => {
     pathname = "/app/review";
     searchParams = new URLSearchParams("scope=CO");
     auth.configured = true;
+    auth.deferredReads = [];
     auth.failReads = 0;
     auth.listeners.clear();
     auth.pause = null;
@@ -498,18 +533,24 @@ describe("workspace account menu", () => {
     expect(followWorkspaceHref).not.toHaveBeenCalled();
   });
 
-  it("keeps a restored page when the read fails and this page has not logged out", async () => {
+  it("reloads a restored page when the read fails and this page has not logged out", async () => {
     renderMenu();
     await screen.findByRole("button", { name: "Ada Lovelace" });
     const readsBeforeRestore = auth.reads;
     auth.sessionRead = { error: { message: "read failed" } };
     persistedPageShow();
     await waitFor(() => {
-      expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
     });
-    await Promise.resolve();
-    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
     expect(restoredWorkspaceConcealed()).toBeTruthy();
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/sign-in"),
+      "replace"
+    );
   });
 
   it("sends a restored page to sign-in after logout when the read throws", async () => {
@@ -800,14 +841,20 @@ describe("workspace account menu", () => {
     const readsBeforeRestore = auth.reads;
     persistedPageShow();
     await waitFor(() => {
-      expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
     });
-    await Promise.resolve();
+    expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
     expect(
       screen.getByTestId("restored-private-note").closest("[hidden]")
     ).toBe(document.querySelector(".ux-reset-pro-app"));
     expect(restoredWorkspaceConcealed()).toBeTruthy();
-    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/sign-in"),
+      "replace"
+    );
   });
 
   it("keeps a restored private note hidden when the account read returns an error", async () => {
@@ -820,14 +867,20 @@ describe("workspace account menu", () => {
     const readsBeforeRestore = auth.reads;
     persistedPageShow();
     await waitFor(() => {
-      expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
     });
-    await Promise.resolve();
+    expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
     expect(
       screen.getByTestId("restored-private-note").closest("[hidden]")
     ).toBe(document.querySelector(".ux-reset-pro-app"));
     expect(restoredWorkspaceConcealed()).toBeTruthy();
-    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/sign-in"),
+      "replace"
+    );
   });
 
   it("keeps a restored private note hidden when the account client is unconfigured", async () => {
@@ -838,12 +891,20 @@ describe("workspace account menu", () => {
     await screen.findByRole("button", { name: "Ada Lovelace" });
     auth.configured = false;
     persistedPageShow();
-    await Promise.resolve();
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
+    });
     expect(
       screen.getByTestId("restored-private-note").closest("[hidden]")
     ).toBe(document.querySelector(".ux-reset-pro-app"));
     expect(restoredWorkspaceConcealed()).toBeTruthy();
-    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/sign-in"),
+      "replace"
+    );
   });
 
   it("conceals the workspace when the page enters the back-forward cache", async () => {
@@ -869,6 +930,173 @@ describe("workspace account menu", () => {
     pageTransition("pageshow", false);
     expect(restoredWorkspaceConcealed()).toBeFalsy();
     expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("conceals the shell before reloading for another account", async () => {
+    renderMenu({
+      note: "Draft note for account A",
+      shell: true,
+    });
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    followWorkspaceHref.mockClear();
+    let concealedBeforeReplace = false;
+    followWorkspaceHref.mockImplementation(() => {
+      concealedBeforeReplace =
+        restoredWorkspaceConcealed() && restoredNoteHidden();
+    });
+    notify({
+      access_token: "token-user-b",
+      user: {
+        email: "other@example.com",
+        id: "user-b",
+        user_metadata: { full_name: "Grace Hopper" },
+      },
+    });
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
+    });
+    expect({
+      concealedBeforeReplace,
+      noteHidden: restoredNoteHidden(),
+      stillConcealed: restoredWorkspaceConcealed(),
+    }).toStrictEqual({
+      concealedBeforeReplace: true,
+      noteHidden: true,
+      stillConcealed: true,
+    });
+  });
+
+  it("reloads a restored page that has no recorded account", async () => {
+    const gate = Promise.withResolvers<boolean>();
+    auth.pause = gate.promise;
+    renderMenu({
+      note: "Draft note for account A",
+      shell: true,
+    });
+    await waitFor(() => {
+      expect(auth.reads).toBeGreaterThan(0);
+    });
+    persistedPageShow();
+    expect({
+      concealed: restoredWorkspaceConcealed(),
+      navigated: followWorkspaceHref.mock.calls,
+      noteHidden: restoredNoteHidden(),
+      recordedAccount: workspaceDocumentUserId(),
+    }).toStrictEqual({
+      concealed: true,
+      navigated: [],
+      noteHidden: true,
+      recordedAccount: null,
+    });
+    gate.resolve(true);
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
+    });
+    expect({
+      cover: screen.getByTestId("workspace-restore-cover").textContent,
+      noteHidden: restoredNoteHidden(),
+      signIn: followWorkspaceHref.mock.calls.some((call) =>
+        String(call[0]).includes("/auth/sign-in")
+      ),
+      stillConcealed: restoredWorkspaceConcealed(),
+    }).toStrictEqual({
+      cover: "Checking session",
+      noteHidden: true,
+      signIn: false,
+      stillConcealed: true,
+    });
+  });
+
+  it("does not let a late fresh read reveal a page concealed by restore", async () => {
+    renderMenu({
+      note: "Draft note for account A",
+      shell: true,
+    });
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    const readsBefore = auth.reads;
+    const fresh = Promise.withResolvers<ReturnType<typeof scriptedSession>>();
+    const restore = Promise.withResolvers<ReturnType<typeof scriptedSession>>();
+    auth.deferredReads = [fresh.promise, restore.promise];
+    notify(null);
+    await waitFor(() => {
+      expect(auth.reads).toBe(readsBefore + 1);
+    });
+    persistedPageShow();
+    expect({
+      noteHidden: restoredNoteHidden(),
+      reads: auth.reads,
+      stillConcealed: restoredWorkspaceConcealed(),
+    }).toStrictEqual({
+      noteHidden: true,
+      reads: readsBefore + 2,
+      stillConcealed: true,
+    });
+    restore.resolve(scriptedSession(null, { message: "read failed" }));
+    await act(async () => {
+      await restore.promise;
+    });
+    fresh.resolve(scriptedSession(userSession({ full_name: "Ada Lovelace" })));
+    await act(async () => {
+      await fresh.promise;
+    });
+    expect({
+      noteHidden: restoredNoteHidden(),
+      stillConcealed: restoredWorkspaceConcealed(),
+    }).toStrictEqual({
+      noteHidden: true,
+      stillConcealed: true,
+    });
+  });
+
+  it("stays concealed when sign-out arrives during a restore check", async () => {
+    renderMenu({
+      note: "Draft note for account A",
+      shell: true,
+    });
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    const readsBefore = auth.reads;
+    const restore = Promise.withResolvers<ReturnType<typeof scriptedSession>>();
+    const fresh = Promise.withResolvers<ReturnType<typeof scriptedSession>>();
+    auth.deferredReads = [restore.promise, fresh.promise];
+    persistedPageShow();
+    notify(null);
+    await waitFor(() => {
+      expect(auth.reads).toBe(readsBefore + 2);
+    });
+    expect({
+      noteHidden: restoredNoteHidden(),
+      readsAfterShow: auth.reads,
+    }).toStrictEqual({
+      noteHidden: true,
+      readsAfterShow: readsBefore + 2,
+    });
+    restore.resolve(
+      scriptedSession(userSession({ full_name: "Ada Lovelace" }))
+    );
+    await act(async () => {
+      await restore.promise;
+    });
+    fresh.resolve(scriptedSession(null, { message: "read failed" }));
+    await act(async () => {
+      await fresh.promise;
+    });
+    expect({
+      noteHidden: restoredNoteHidden(),
+      signIn: followWorkspaceHref.mock.calls.some((call) =>
+        String(call[0]).includes("/auth/sign-in")
+      ),
+      stillConcealed: restoredWorkspaceConcealed(),
+    }).toStrictEqual({
+      noteHidden: true,
+      signIn: false,
+      stillConcealed: true,
+    });
   });
 
   it("redirects when a failed sign-out leaves the session absent", async () => {
