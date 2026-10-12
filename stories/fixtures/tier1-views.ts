@@ -10,8 +10,9 @@ import {
   tier1LowInsufficientFixture,
   tier1MediumSufficientFixture,
   tier1PriorityForCounty,
+  tier1PriorityForRelease,
 } from "../../tests/fixtures/tier1-surveillance-priority";
-import { syntheticCounty } from "./synthetic-county";
+import { syntheticCounty, syntheticReleaseId } from "./synthetic-county";
 
 export const tier1StoryPresetIds = [
   "high-sufficient",
@@ -29,21 +30,33 @@ export const tier1StoryPresetIds = [
 export type Tier1StoryPresetId = (typeof tier1StoryPresetIds)[number];
 
 const requestedFips = syntheticCounty.fips;
-const alignedRelease: Tier1ActiveRelease = {
-  releaseId: tier1HighSufficientFixture.release_id,
+const storyRelease: Tier1ActiveRelease = {
+  releaseId: syntheticReleaseId,
   status: "ready",
 };
 
+function storyCountyResult(
+  result: Tier1CountyPriority,
+  fips: string
+): Tier1CountyPriority {
+  return tier1PriorityForRelease(
+    tier1PriorityForCounty(result, fips),
+    syntheticReleaseId
+  );
+}
+
 function notEstimable(fips: string): Tier1CountyPriority {
-  return {
-    ...tier1HighSufficientFixture,
-    county_fips: fips,
-    evidence_sufficiency: "NOT_ESTIMABLE",
-    priority_percentile: null,
-    priority_tier: null,
-    raw_model_score: null,
-    reasons: [],
-  };
+  return storyCountyResult(
+    {
+      ...tier1HighSufficientFixture,
+      evidence_sufficiency: "NOT_ESTIMABLE",
+      priority_percentile: null,
+      priority_tier: null,
+      raw_model_score: null,
+      reasons: [],
+    },
+    fips
+  );
 }
 
 export function tier1StoryView(
@@ -53,43 +66,34 @@ export function tier1StoryView(
     case "high-sufficient": {
       return presentTier1SurveillancePriority({
         errorStatus: null,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
-        result: tier1PriorityForCounty(
-          tier1HighSufficientFixture,
-          requestedFips
-        ),
+        result: storyCountyResult(tier1HighSufficientFixture, requestedFips),
         status: "success",
       });
     }
     case "medium-sufficient": {
       return presentTier1SurveillancePriority({
         errorStatus: null,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
-        result: tier1PriorityForCounty(
-          tier1MediumSufficientFixture,
-          requestedFips
-        ),
+        result: storyCountyResult(tier1MediumSufficientFixture, requestedFips),
         status: "success",
       });
     }
     case "low-insufficient": {
       return presentTier1SurveillancePriority({
         errorStatus: null,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
-        result: tier1PriorityForCounty(
-          tier1LowInsufficientFixture,
-          requestedFips
-        ),
+        result: storyCountyResult(tier1LowInsufficientFixture, requestedFips),
         status: "success",
       });
     }
     case "not-estimable": {
       return presentTier1SurveillancePriority({
         errorStatus: null,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
         result: notEstimable(requestedFips),
         status: "success",
@@ -98,7 +102,7 @@ export function tier1StoryView(
     case "unavailable": {
       return presentTier1SurveillancePriority({
         errorStatus: 404,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
         result: null,
         status: "error",
@@ -107,7 +111,7 @@ export function tier1StoryView(
     case "loading": {
       return presentTier1SurveillancePriority({
         errorStatus: null,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
         result: null,
         status: "loading",
@@ -116,7 +120,7 @@ export function tier1StoryView(
     case "failed": {
       return presentTier1SurveillancePriority({
         errorStatus: 500,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
         result: null,
         status: "error",
@@ -125,9 +129,9 @@ export function tier1StoryView(
     case "stale": {
       return presentTier1SurveillancePriority({
         errorStatus: null,
-        release: alignedRelease,
+        release: storyRelease,
         requestedFips,
-        result: tier1PriorityForCounty(tier1HighSufficientFixture, "08013"),
+        result: storyCountyResult(tier1HighSufficientFixture, "08013"),
         status: "success",
       });
     }
@@ -136,17 +140,14 @@ export function tier1StoryView(
         errorStatus: null,
         release: { status: "unknown" },
         requestedFips,
-        result: tier1PriorityForCounty(
-          tier1HighSufficientFixture,
-          requestedFips
-        ),
+        result: storyCountyResult(tier1HighSufficientFixture, requestedFips),
         status: "success",
       });
     }
     case "release-mismatch": {
       return presentTier1SurveillancePriority({
         errorStatus: null,
-        release: { releaseId: "alpha-2026", status: "ready" },
+        release: storyRelease,
         requestedFips,
         result: tier1PriorityForCounty(
           tier1HighSufficientFixture,

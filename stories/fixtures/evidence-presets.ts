@@ -6,6 +6,7 @@ import {
   type ReleaseEvidenceContextModel,
   type ReleaseEvidenceLoadState,
 } from "@/features/ux-reset/evidence/types";
+import type { Observation } from "@/generated/models";
 
 import {
   exactDecimalStringObservation,
@@ -15,10 +16,15 @@ import {
   publishedZeroObservation,
   suppressedNumericObservation,
 } from "../../tests/fixtures/ux-reset-evidence-observations";
+import { syntheticReleaseId } from "./synthetic-county";
 
 const syntheticVintage = "v1.0.0-scaled-202501";
 const syntheticSourceUrl = "https://example.com/synthetic-precipitation-source";
 const syntheticConfiguration = "ab".repeat(32);
+
+function storyObservation(observation: Observation): Observation {
+  return { ...observation, release_id: syntheticReleaseId };
+}
 
 export const evidenceObjectPresetIds = [
   "observed-nonzero",
@@ -33,34 +39,34 @@ export type EvidenceObjectPresetId = (typeof evidenceObjectPresetIds)[number];
 const observedNonzero = evidenceObjectFromObservation({
   claimLabel: "Synthetic daily precipitation",
   measureType: "continuous",
-  observation: {
+  observation: storyObservation({
     ...noaaDailyPrecipitationWithoutVintage,
     source_vintage: syntheticVintage,
-  },
+  }),
 });
 
 const publishedZero = evidenceObjectFromObservation({
   claimLabel: "Synthetic published zero",
   measureType: "continuous",
-  observation: publishedZeroObservation,
+  observation: storyObservation(publishedZeroObservation),
 });
 
 const suppressed = evidenceObjectFromObservation({
   claimLabel: "Synthetic suppressed cell",
   measureType: "count",
-  observation: suppressedNumericObservation,
+  observation: storyObservation(suppressedNumericObservation),
 });
 
 const missing = evidenceObjectFromObservation({
   claimLabel: "Synthetic missing record",
   measureType: "count",
-  observation: missingNumericObservation,
+  observation: storyObservation(missingNumericObservation),
 });
 
 const preciseCaveat = evidenceObjectFromObservation({
   claimLabel: "Synthetic precise value",
   measureType: "continuous",
-  observation: exactDecimalStringObservation,
+  observation: storyObservation(exactDecimalStringObservation),
   valueNote:
     "Synthetic example. Full published precision is kept for this small value.",
 });
@@ -261,7 +267,7 @@ export function provenancePreset(
       const model = evidenceObjectFromObservation({
         claimLabel: "Synthetic precipitation with limitations",
         measureType: "continuous",
-        observation: noaaDailyPrecipitationObservation,
+        observation: storyObservation(noaaDailyPrecipitationObservation),
       });
       if (!model.reasonCode) {
         throw new Error("Precipitation fixture did not produce a reason code.");
@@ -310,7 +316,7 @@ export function provenancePreset(
           methodologyVersion: "1.0.0",
           observationId: "obs-synthetic-unreadable-08001",
           provenanceRef: "prov/synthetic/unreadable/08001",
-          releaseId: "alpha-2026",
+          releaseId: syntheticReleaseId,
         }),
         reasonCode: observedNonzero.reasonCode,
       };

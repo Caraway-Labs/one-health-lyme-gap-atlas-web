@@ -10,6 +10,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
+    "docs:api": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/lib/public-openapi-reference.ts",
+    "docs:api:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/lib/public-openapi-reference.ts --check",
     "docs:check": "node scripts/check-docs.mjs",
     "docs:generate": "fumadocs-mdx",
     "lint": "ultracite check",
@@ -22,9 +24,9 @@
     "test:e2e": "playwright test",
     "format": "ultracite fix",
     "postinstall": "npm run docs:generate",
-    "prebuild": "node scripts/copy-maplibre-worker.mjs && npm run docs:generate && npm run docs:check",
-    "predev": "node scripts/copy-maplibre-worker.mjs",
-    "pretypecheck": "npm run docs:generate && npm run docs:check"
+    "prebuild": "node scripts/copy-maplibre-worker.mjs && npm run docs:api:check && npm run docs:generate && npm run docs:check",
+    "predev": "node scripts/copy-maplibre-worker.mjs && npm run docs:api:check",
+    "pretypecheck": "npm run docs:api:check && npm run docs:generate && npm run docs:check"
   },
   "dependencies": {
     "@amplitude/analytics-browser": "2.45.8",

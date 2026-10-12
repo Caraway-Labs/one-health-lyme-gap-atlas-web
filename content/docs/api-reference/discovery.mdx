@@ -1,0 +1,1377 @@
+---
+title: "Discovery"
+description: "Current-release indicators and measurable variables."
+---
+Generated from the public OpenAPI contract.
+
+Current-release indicators and measurable variables.
+
+## Discover indicators [#indicators_v1_indicators_get]
+
+`GET /v1/indicators`
+
+Operation ID: `indicators_v1_indicators_get`
+
+Tag: `discovery`
+
+Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
+
+### Parameters
+
+#### indicator_id
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "title": "Indicator Id"
+}
+```
+
+#### page_size
+
+- Location: `query`
+- Required: no
+- Items per page; defaults to 100, configured maximum at most 500.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "integer",
+      "maximum": 500,
+      "minimum": 1
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Items per page; defaults to 100, configured maximum at most 500.",
+  "examples": [
+    100
+  ],
+  "title": "Page Size"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+100
+```
+
+#### page_token
+
+- Location: `query`
+- Required: no
+- Opaque next_page_token; retain query filters and release.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Opaque next_page_token; retain query filters and release.",
+  "title": "Page Token"
+}
+```
+
+
+### Responses
+
+#### 200
+
+Successful current-release resource.
+
+##### application/json
+
+Schema: [CollectionEnvelope_Indicator_](/docs/api-reference/schemas#schema-collectionenvelope-indicator) (`#/components/schemas/CollectionEnvelope_Indicator_`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/CollectionEnvelope_Indicator_"
+}
+```
+
+#### 400
+
+INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-400",
+  "title": "Request failed",
+  "status": 400,
+  "detail": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 404
+
+RESOURCE_NOT_FOUND; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "RESOURCE_NOT_FOUND; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RESOURCE_NOT_FOUND"
+}
+```
+
+#### 413
+
+GET request body rejected; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-413",
+  "title": "Request failed",
+  "status": 413,
+  "detail": "GET request body rejected; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 414
+
+Query string too long; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-414",
+  "title": "Request failed",
+  "status": 414,
+  "detail": "Query string too long; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 429
+
+Rate limited; Retry-After; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limited; Retry-After; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RATE_LIMITED"
+}
+```
+
+#### 503
+
+Canonical data service unavailable; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Canonical data service unavailable; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 4XX
+
+Canonical client errors use application/problem+json.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+## Get an indicator [#indicator_v1_indicators__indicator_id__get]
+
+`GET /v1/indicators/{indicator_id}`
+
+Operation ID: `indicator_v1_indicators__indicator_id__get`
+
+Tag: `discovery`
+
+Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
+
+### Parameters
+
+#### indicator_id
+
+- Location: `path`
+- Required: yes
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "title": "Indicator Id"
+}
+```
+
+
+### Responses
+
+#### 200
+
+Successful current-release resource.
+
+##### application/json
+
+Schema: [ResourceEnvelope_Indicator_](/docs/api-reference/schemas#schema-resourceenvelope-indicator) (`#/components/schemas/ResourceEnvelope_Indicator_`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ResourceEnvelope_Indicator_"
+}
+```
+
+#### 304
+
+Not modified. ETag matches If-None-Match; empty response body.
+
+This response does not declare a body.
+
+#### 400
+
+INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-400",
+  "title": "Request failed",
+  "status": 400,
+  "detail": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 404
+
+RESOURCE_NOT_FOUND; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "RESOURCE_NOT_FOUND; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RESOURCE_NOT_FOUND"
+}
+```
+
+#### 413
+
+GET request body rejected; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-413",
+  "title": "Request failed",
+  "status": 413,
+  "detail": "GET request body rejected; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 414
+
+Query string too long; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-414",
+  "title": "Request failed",
+  "status": 414,
+  "detail": "Query string too long; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 429
+
+Rate limited; Retry-After; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limited; Retry-After; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RATE_LIMITED"
+}
+```
+
+#### 503
+
+Canonical data service unavailable; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Canonical data service unavailable; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 4XX
+
+Canonical client errors use application/problem+json.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+## Discover measures [#measures_v1_measures_get]
+
+`GET /v1/measures`
+
+Operation ID: `measures_v1_measures_get`
+
+Tag: `discovery`
+
+Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
+
+### Parameters
+
+#### measure_id
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "title": "Measure Id"
+}
+```
+
+#### indicator_id
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "title": "Indicator Id"
+}
+```
+
+#### geography_type
+
+- Location: `query`
+- Required: no
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "title": "Geography Type"
+}
+```
+
+#### page_size
+
+- Location: `query`
+- Required: no
+- Items per page; defaults to 100, configured maximum at most 500.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "integer",
+      "maximum": 500,
+      "minimum": 1
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Items per page; defaults to 100, configured maximum at most 500.",
+  "examples": [
+    100
+  ],
+  "title": "Page Size"
+}
+```
+
+Examples:
+
+###### example
+
+```json
+100
+```
+
+#### page_token
+
+- Location: `query`
+- Required: no
+- Opaque next_page_token; retain query filters and release.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Opaque next_page_token; retain query filters and release.",
+  "title": "Page Token"
+}
+```
+
+
+### Responses
+
+#### 200
+
+Successful current-release resource.
+
+##### application/json
+
+Schema: [CollectionEnvelope_Measure_](/docs/api-reference/schemas#schema-collectionenvelope-measure) (`#/components/schemas/CollectionEnvelope_Measure_`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/CollectionEnvelope_Measure_"
+}
+```
+
+#### 400
+
+INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-400",
+  "title": "Request failed",
+  "status": 400,
+  "detail": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 404
+
+RESOURCE_NOT_FOUND; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "RESOURCE_NOT_FOUND; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RESOURCE_NOT_FOUND"
+}
+```
+
+#### 413
+
+GET request body rejected; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-413",
+  "title": "Request failed",
+  "status": 413,
+  "detail": "GET request body rejected; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 414
+
+Query string too long; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-414",
+  "title": "Request failed",
+  "status": 414,
+  "detail": "Query string too long; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 429
+
+Rate limited; Retry-After; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limited; Retry-After; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RATE_LIMITED"
+}
+```
+
+#### 503
+
+Canonical data service unavailable; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Canonical data service unavailable; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 4XX
+
+Canonical client errors use application/problem+json.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+## Get a measure [#measure_v1_measures__measure_id__get]
+
+`GET /v1/measures/{measure_id}`
+
+Operation ID: `measure_v1_measures__measure_id__get`
+
+Tag: `discovery`
+
+Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
+
+### Parameters
+
+#### measure_id
+
+- Location: `path`
+- Required: yes
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "title": "Measure Id"
+}
+```
+
+
+### Responses
+
+#### 200
+
+Successful current-release resource.
+
+##### application/json
+
+Schema: [ResourceEnvelope_Measure_](/docs/api-reference/schemas#schema-resourceenvelope-measure) (`#/components/schemas/ResourceEnvelope_Measure_`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ResourceEnvelope_Measure_"
+}
+```
+
+#### 304
+
+Not modified. ETag matches If-None-Match; empty response body.
+
+This response does not declare a body.
+
+#### 400
+
+INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-400",
+  "title": "Request failed",
+  "status": 400,
+  "detail": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 404
+
+RESOURCE_NOT_FOUND; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "RESOURCE_NOT_FOUND; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RESOURCE_NOT_FOUND"
+}
+```
+
+#### 413
+
+GET request body rejected; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-413",
+  "title": "Request failed",
+  "status": 413,
+  "detail": "GET request body rejected; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 414
+
+Query string too long; application/problem+json
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-414",
+  "title": "Request failed",
+  "status": 414,
+  "detail": "Query string too long; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "INVALID_REQUEST"
+}
+```
+
+#### 429
+
+Rate limited; Retry-After; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limited; Retry-After; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RATE_LIMITED"
+}
+```
+
+#### 503
+
+Canonical data service unavailable; application/problem+json
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Canonical data service unavailable; application/problem+json",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 4XX
+
+Canonical client errors use application/problem+json.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
