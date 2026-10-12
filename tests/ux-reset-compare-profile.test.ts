@@ -287,18 +287,24 @@ describe("compare county profile", () => {
   it("keeps recognized review categories in their published meaning", () => {
     expect({
       lower: categoryDisplay("Lower"),
+      lowerWithPriority10: categoryDisplay("Lower — Priority 10"),
       priority1: categoryDisplay("Priority 1 — Investigate"),
       priority10: categoryDisplay("Priority 10 — Review"),
+      priority10Watch: categoryDisplay("Priority 10 — Watch"),
       priority1a: categoryDisplay("Priority 1a — Review"),
       priority2: categoryDisplay("Priority 2 — Review"),
+      priority2With10: categoryDisplay("Priority 2 — Priority 10"),
       priority20: categoryDisplay("Priority 20 — Review"),
       watch: categoryDisplay("Watch"),
     }).toStrictEqual({
       lower: "Lower review priority",
+      lowerWithPriority10: "Lower — Priority 10",
       priority1: "Highest review priority",
       priority10: "Priority 10 — Review",
+      priority10Watch: "Priority 10 — Watch",
       priority1a: "Priority 1a — Review",
       priority2: "Moderate review priority",
+      priority2With10: "Priority 2 — Priority 10",
       priority20: "Priority 20 — Review",
       watch: "Monitor for changes",
     });
@@ -329,11 +335,13 @@ describe("compare county profile", () => {
     }
     const withoutCatalog = evidenceFor(COMPARE_LEFT_FIPS, "tick_status");
     expect({
+      catalogAvailability: catalogCell.evidence.availability,
       catalogLimit: catalogCell.evidence.provenance.limitations,
       catalogStatus: catalogCell.evidence.displayValue,
       catalogType: catalogCell.evidence.provenance.evidenceType,
       plainType: withoutCatalog.provenance.evidenceType,
     }).toStrictEqual({
+      catalogAvailability: "limited",
       catalogLimit: [
         "Tick surveillance does not cover every habitat.",
         "No records is not absence.",

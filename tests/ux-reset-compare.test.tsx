@@ -1163,12 +1163,24 @@ describe("published county profile section", () => {
           `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
         )
       ).getByTestId("evidence-display-value").textContent ?? "";
+    cleanup();
+    const mixed = compareCountyDetail(COMPARE_LEFT_FIPS);
+    mixed.priority = "Lower — Priority 10";
+    renderProfileSection(mixed);
+    const lowerWithPriority10 =
+      within(
+        screen.getByTestId(
+          `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
+        )
+      ).getByTestId("evidence-display-value").textContent ?? "";
     expect({
       displays,
+      lowerWithPriority10,
       priority10,
       unfamiliar: unfamiliarDisplay,
     }).toStrictEqual({
       displays: ["Unavailable", "Unavailable", "Unavailable", "Suppressed"],
+      lowerWithPriority10: "Lower — Priority 10",
       priority10: "Priority 10 — Review",
       unfamiliar: "Priority 3 — Review",
     });

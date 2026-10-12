@@ -15,11 +15,7 @@ import {
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-published-county-preview";
 import type { CountyDetail, Measure, SourceMetadata } from "@/generated/models";
-import {
-  plainPriority,
-  reviewReasonsFor,
-  type CountyReviewReason,
-} from "@/lib/atlas-ui";
+import { reviewReasonsFor, type CountyReviewReason } from "@/lib/atlas-ui";
 
 /**
  * Side-by-side county-record rows for Compare.
@@ -342,18 +338,45 @@ function acceptedCaseCountFloor(detail: CountyDetail): number | null {
   );
 }
 
+const NUMBERED_REVIEW_CATEGORY = /(?:^|\s)Priority (?<number>\d+)\b/g;
 const PRIORITY_1_CATEGORY = /(?:^|\s)Priority 1\b/;
 const PRIORITY_2_CATEGORY = /(?:^|\s)Priority 2\b/;
 const WATCH_CATEGORY = /(?:^|\s)watch(?:\s|$)/i;
 const LOWER_CATEGORY = /(?:^|\s)lower(?:\s|$)/i;
 
-function recognizedReviewCategory(priority: string): boolean {
-  return (
-    PRIORITY_1_CATEGORY.test(priority) ||
-    PRIORITY_2_CATEGORY.test(priority) ||
-    WATCH_CATEGORY.test(priority) ||
-    LOWER_CATEGORY.test(priority)
-  );
+function hasUnfamiliarNumberedCategory(priority: string): boolean {
+  for (const match of priority.matchAll(NUMBERED_REVIEW_CATEGORY)) {
+    const number = match.groups?.number;
+    if (number !== "1" && number !== "2") {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Plain-language labels for the four recognized review categories.
+ * An unfamiliar number, including one beside "watch" or "lower", stays
+ * published. Token checks replace substring matching so "Priority 10" is
+ * not read as "Priority 1".
+ */
+function recognizedReviewLabel(priority: string): string | null {
+  if (hasUnfamiliarNumberedCategory(priority)) {
+    return null;
+  }
+  if (PRIORITY_1_CATEGORY.test(priority)) {
+    return "Highest review priority";
+  }
+  if (PRIORITY_2_CATEGORY.test(priority)) {
+    return "Moderate review priority";
+  }
+  if (WATCH_CATEGORY.test(priority)) {
+    return "Monitor for changes";
+  }
+  if (LOWER_CATEGORY.test(priority)) {
+    return "Lower review priority";
+  }
+  return null;
 }
 
 function reviewCategoryDisplay(
@@ -367,10 +390,7 @@ function reviewCategoryDisplay(
       valueState: state.valueState,
     });
   }
-  if (recognizedReviewCategory(priority)) {
-    return plainPriority(priority);
-  }
-  return priority;
+  return recognizedReviewLabel(priority) ?? priority;
 }
 
 function compareReviewReasons(
