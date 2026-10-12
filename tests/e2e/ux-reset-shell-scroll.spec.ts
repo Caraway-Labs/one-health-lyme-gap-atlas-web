@@ -429,6 +429,82 @@ test.describe("professional shell scroll containment", () => {
     expect(scroll.scrollHeight).toBeGreaterThan(scroll.clientHeight);
   });
 
+  test("starts a pushed query at the top and restores the previous entry", async ({
+    page,
+  }) => {
+    await page.setViewportSize(DESKTOP);
+    await installArizonaReview(page);
+    await page.goto("/app/review?scope=AZ");
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
+      element.scrollTop = 640;
+    });
+    await expect.poll(() => mainScrollTop(page)).toBe(640);
+
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "New York (NY)" }).click();
+    await expect(page).toHaveURL(/scope=NY/);
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    await expect.poll(() => mainScrollTop(page)).toBe(0);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/scope=AZ/);
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(500);
+  });
+
+  test("keeps separate scroll offsets for two entries of the same review URL", async ({
+    page,
+  }) => {
+    await page.setViewportSize(DESKTOP);
+    await installArizonaReview(page);
+    await page.goto("/app/review?scope=AZ");
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
+      element.scrollTop = 180;
+    });
+    await expect.poll(() => mainScrollTop(page)).toBe(180);
+    await page.evaluate(() => {
+      window.history.pushState(window.history.state, "", window.location.href);
+    });
+    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
+      element.scrollTop = 420;
+    });
+    await expect.poll(() => mainScrollTop(page)).toBe(420);
+
+    await page.goBack();
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(100);
+    await expect.poll(() => mainScrollTop(page)).toBeLessThan(250);
+    await page.goForward();
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(350);
+  });
+
+  test("starts the next route at the top after a hash-only history change", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 360, width: 1280 });
+    await page.route("**/v1/me/profile", async (route) => {
+      await route.fulfill({ json: { profile: null }, status: 200 });
+    });
+    await page.goto("/app/settings#settings-job-title");
+    await expect(page.getByTestId("settings-job-title")).toBeAttached();
+    await page.evaluate(() => {
+      const main = document.querySelector("main.ux-reset-pro-main");
+      if (main instanceof HTMLElement) {
+        main.scrollTop = 240;
+      }
+      window.history.pushState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${window.location.search}#settings-job-title`
+      );
+    });
+    await expect.poll(() => mainScrollTop(page)).toBe(240);
+    await page.getByRole("link", { exact: true, name: "Review" }).click();
+    await expect(page).toHaveURL(/\/app\/review/);
+    await expect.poll(() => mainScrollTop(page)).toBe(0);
+  });
+
   test("prints the professional shell without clipping the route", async ({
     page,
   }) => {

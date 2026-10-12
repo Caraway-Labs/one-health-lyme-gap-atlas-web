@@ -207,6 +207,40 @@ describe("UX Reset shell accessibility", () => {
     expect(document.activeElement).toBe(openButton);
   });
 
+  it("reclaims Open navigation when focus moves to the body after the frame budget", async () => {
+    mockMobileViewport(true);
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+
+    const openButton = screen.getByRole("button", { name: "Open navigation" });
+    openButton.focus();
+    fireEvent.click(openButton);
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => {
+      expect(
+        document
+          .querySelector("#ux-reset-pro-navigation")
+          ?.hasAttribute("inert")
+      ).toBeTruthy();
+    });
+    expect(document.activeElement).toBe(openButton);
+
+    const elsewhere = document.createElement("button");
+    elsewhere.type = "button";
+    elsewhere.textContent = "Elsewhere";
+    document.body.append(elsewhere);
+    elsewhere.focus();
+    expect(document.activeElement).toBe(elsewhere);
+    await vi.waitUntil(() => document.activeElement === openButton, {
+      interval: 16,
+      timeout: 400,
+    });
+    elsewhere.remove();
+  });
+
   it("clears mobile modal state when the viewport grows past the drawer breakpoint", async () => {
     const viewport = createResponsiveMatchMedia(true);
     render(
