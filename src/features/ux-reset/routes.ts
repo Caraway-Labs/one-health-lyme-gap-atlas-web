@@ -17,7 +17,7 @@ export const ABOUT_CARAWAY_LABS_PATH = "/about/caraway-labs" as const;
 export const RESET_REVIEW_PATH = `${UX_RESET_APP_PREFIX}/review` as const;
 
 /**
- * Canonical Atlas Explorer URL for the six-page workspace (#196).
+ * Canonical Atlas Explorer URL for the six-page workspace (issue 196).
  * The display name is Atlas Explorer. The path reuses Review.
  * Compatibility redirects are recorded separately and are not installed.
  */

@@ -1,9 +1,9 @@
 /**
- * Recorded six-page workspace route migration (#196).
+ * Recorded six-page workspace route migration (issue 196).
  *
  * `recordedWorkspaceMigration` is the old→new map. It does not redirect,
- * rewrite history, or change navigation. Installing it is #197, after the
- * Explorer view (#413) and dedicated Ask Atlas page (#424) are ready.
+ * rewrite history, or change navigation. Installing it is issue 197, after the
+ * Explorer view (issue 413) and dedicated Ask Atlas page (issue 424) are ready.
  */
 
 import {
