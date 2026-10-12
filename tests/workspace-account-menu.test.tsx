@@ -53,12 +53,24 @@ const auth = vi.hoisted(() => {
 let pathname = "/app/review";
 let searchParams = new URLSearchParams("scope=CO");
 
-vi.mock(import("next/navigation"), async (importOriginal) => ({
-  ...(await importOriginal()),
-  usePathname: () => pathname,
-  useRouter: () => ({ push: vi.fn<() => void>() }),
-  useSearchParams: () => searchParams as ReadonlyURLSearchParams,
-}));
+vi.mock(import("next/navigation"), async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    usePathname: () => pathname,
+    useRouter: () =>
+      ({
+        back() {},
+        bfcacheId: "workspace-account-test",
+        forward() {},
+        prefetch() {},
+        push() {},
+        refresh() {},
+        replace() {},
+      }) as ReturnType<typeof actual.useRouter>,
+    useSearchParams: () => searchParams as ReadonlyURLSearchParams,
+  };
+});
 
 vi.mock(import("@/features/ux-reset/workspace-navigation"), () => ({
   followWorkspaceHref,
