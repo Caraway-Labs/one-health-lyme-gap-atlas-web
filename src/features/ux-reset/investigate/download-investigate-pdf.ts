@@ -74,7 +74,7 @@ export async function downloadInvestigatePdf(
     }
     if (evidenceIdentity(fresh) !== expected)
       throw new Error(
-        "Evidence changed. Refresh Investigate before exporting."
+        "Evidence changed. Refresh county evidence before exporting."
       );
   };
   await verify();

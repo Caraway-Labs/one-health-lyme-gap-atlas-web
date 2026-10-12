@@ -286,7 +286,7 @@ test("signed-in header and responsive boundary widths remain readable", async ({
   await page.goto("/");
   // Same server-rendered account label and href as the signed-in session.
   await page.locator(".front-porch-sign-in").evaluate((element) => {
-    element.textContent = "Open Review";
+    element.textContent = "Open Atlas Explorer";
     element.setAttribute("href", "/app/review");
   });
   for (const width of [320, 390, 768, 800, 801, 850, 851, 1024, 1440]) {

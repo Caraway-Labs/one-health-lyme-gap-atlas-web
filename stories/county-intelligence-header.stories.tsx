@@ -80,7 +80,7 @@ function HeaderStory({ preset }: { preset: HeaderPreset }) {
     <main className="ux-reset-pro-main grid gap-3">
       <p className="type-small">
         Synthetic Investigate header for Adams County, Colorado (08001), release
-        alpha-2026. Return to Review stays inside the workspace.
+        alpha-2026. Return to Atlas Explorer stays inside the workspace.
       </p>
       <CountyIntelligenceHeader model={headerModel(preset)} />
     </main>

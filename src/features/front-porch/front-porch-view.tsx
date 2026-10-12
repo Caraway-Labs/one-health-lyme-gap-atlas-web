@@ -32,7 +32,7 @@ export function FrontPorchView({
   signedIn,
 }: FrontPorchViewProps) {
   const exploreHref = frontPorchExploreHref(signedIn);
-  const headerAccountLabel = signedIn ? "Open Review" : "Sign in";
+  const headerAccountLabel = signedIn ? "Open Atlas Explorer" : "Sign in";
 
   return (
     <div className={cn("front-porch", heroFontClassName)}>

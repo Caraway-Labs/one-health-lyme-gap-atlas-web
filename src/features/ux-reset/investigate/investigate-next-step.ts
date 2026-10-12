@@ -25,8 +25,8 @@ export type InvestigateContinueDestination =
 
 /**
  * Return to Compare when the URL already has a validated two-county pair.
- * Continue to Action is a separate offer once a county evidence bundle exists.
- * Return to Review stays in the county header.
+ * Suggested follow-up is a separate offer once a county evidence bundle exists.
+ * Return to Atlas Explorer stays in the county header.
  */
 export function investigateContinueDestination(input: {
   compare: readonly string[];
@@ -52,7 +52,7 @@ export type InvestigateCompareOffer = {
 };
 
 export type InvestigateActionOffer = {
-  label: "Continue to Action";
+  label: "Suggested follow-up";
 };
 
 /**
@@ -70,7 +70,7 @@ export function investigateActionOffer(input: {
   if (!input.bundle?.county.fips || !input.bundle.releaseId) {
     return null;
   }
-  return { label: "Continue to Action" };
+  return { label: "Suggested follow-up" };
 }
 
 /**

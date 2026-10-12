@@ -106,7 +106,7 @@ describe("About Caraway Labs page", () => {
       },
       professionalPath: false,
       redirect: false,
-      robots: { allow: "/", userAgent: "*" },
+      robots: { allow: "/", disallow: "/app", userAgent: "*" },
     });
   });
 });
