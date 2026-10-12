@@ -31,7 +31,7 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 
 | Capability | Status | How it supports investigation | Important boundary |
 | --- | --- | --- | --- |
-| Atlas Explorer at [/app/review](/app/review) | Available now | Start from the United States or one state, and read the map and county list. Open county evidence or suggested follow-up on that address. | National scope is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope and no county. A missing or invalid county is not replaced. |
+| Atlas Explorer at [/app/review](/app/review) | Available now | Start from the United States or one state, and read the map and county list. Open county evidence or suggested follow-up on that address. | National scope is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope and no county. On a state picture with no county, Atlas Explorer selects the first published review candidate and writes it into the address. A county that is present but does not validate opens with `selection=required` and is not replaced. |
 | Compare at [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures, with unit, period, and availability on each value. | This page does not rank a winner. |
 | Settings at [/app/settings](/app/settings) | Available now | Save United States or a state as the next Atlas Explorer start, plus optional role, organization, and job title. Sign out, export, and removal use the account controls on the same page. | Optional fields can stay empty. The default does not change evidence values or block other geographies. |
 | Docs from the workspace | Available now | Open this reference in a new tab from the workspace navigation. | The original workspace tab keeps its URL. Docs is not in-page help. |
@@ -43,7 +43,7 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 ## Capabilities that are not current promises
 
 | Capability | Status | What this means for you |
-| --- | --- | --- | --- |
+| --- | --- | --- |
 | Historical release trends | Not supported | The public explorer currently exposes one active release. A generated date is release metadata, not the date of disease observations. |
 | Guaranteed outbreak prediction or automated public-health action | Not supported | Atlas surfaces signals and investigation candidates. It does not predict with certainty or act on behalf of an authority. |
 | Clinical diagnosis or person-level exposure risk | Not supported | Atlas is a population-level public-health decision-support experience, not a clinical or individual-risk tool. |
@@ -51,7 +51,7 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 | Live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory ingestion | Not supported | Naming a future standard is not a connection. No live EHR or production clinical-laboratory feed is part of this release. |
 | AI-generated findings treated as authoritative | Experimental/demo | AI-enabled experiences must remain grounded in approved evidence, show limitations, and retain human review. Do not use an AI suggestion as a finding by itself. |
 | Alerts, private feeds, or account-based evidence access | Not supported | The Front Porch remains usable without sign-in. A workspace account does not unlock different governed evidence, change a score, or authorize an interpretation. Feed does not list items, and alerts are not released. |
-| Separate public map, five-county comparison, or Investigation Workspace | Not a current page | Older `/overview`, `/geographic_explorer`, and `/investigate` bookmarks open Atlas Explorer after sign-in. | They do not restore a separate public analytical page. |
+| Separate public map, five-county comparison, or Investigation Workspace | Not a current page | Older `/overview`, `/geographic_explorer`, and `/investigate` bookmarks open Atlas Explorer after sign-in. They do not restore a separate public analytical page. |
 
 ## Where to start
 

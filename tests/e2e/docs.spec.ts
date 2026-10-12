@@ -395,6 +395,29 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   ).toBeVisible();
 });
 
+test("renders the capability-boundaries table with one column count", async ({
+  page,
+}) => {
+  await page.goto("/docs/current-capabilities");
+  const table = page
+    .locator("main table")
+    .filter({ hasText: "Historical release trends" });
+  await expect(table).toBeVisible();
+  const shape = await table.evaluate((node) => {
+    const headers = [...node.querySelectorAll("thead th")].map(
+      (cell) => cell.textContent?.replace(/\s+/g, " ").trim() ?? ""
+    );
+    const rows = [...node.querySelectorAll("tbody tr")].map(
+      (row) => row.querySelectorAll("td").length
+    );
+    return { headers, rows };
+  });
+  expect(shape).toEqual({
+    headers: ["Capability", "Status", "What this means for you"],
+    rows: [3, 3, 3, 3, 3, 3, 3, 3],
+  });
+});
+
 test("opens the configured docs destination from the workspace sidebar", async ({
   page,
 }, testInfo) => {
