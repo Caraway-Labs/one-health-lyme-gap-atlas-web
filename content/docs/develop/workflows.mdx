@@ -30,7 +30,7 @@ County analytics and display scores are a different route, `GET /v1/counties/{fi
 | Invalid parameters | HTTP 400 `INVALID_REQUEST` when the period is missing, when `year` is combined with a date range, or when `geography_type` is not `county` or `state` |
 | Unsupported filter | HTTP 400 `UNSUPPORTED_FILTER` for `sort`, `aggregation`, or an unknown parameter |
 | Unsupported stratification | HTTP 400 `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD` |
+| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
 | Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` |
 | Server unavailable | HTTP 503 and `Retry-After` |
 | Unknown or limited data | HTTP 200 with `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`. Checked for FIPS `08001`: `MISSING` and `value` null |
@@ -55,7 +55,7 @@ You can repeat up to 500 county ids. There is no rank and no winner field. Do no
 | Not found | HTTP 404 `RESOURCE_NOT_FOUND` is declared for the operation. An unknown measure path is the checked 404 |
 | Invalid parameters | HTTP 400 `INVALID_REQUEST` for a bad period or `geography_type` |
 | Unsupported filter or strata | HTTP 400 `UNSUPPORTED_FILTER` or `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD` |
+| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
 | Rate limited | HTTP 429 and `Retry-After` |
 | Server unavailable | HTTP 503 and `Retry-After` |
 | Unknown or limited data | Mixed `value_state` values, null `denominator`, or null context on either row |
@@ -64,7 +64,7 @@ You can repeat up to 500 county ids. There is no rank and no winner field. Do no
 
 ## Retrieve environmental context
 
-There is no separate environmental-context endpoint. `environmental_context` is an optional object on an observation. It is present only for reviewed environmental context. The observations operation describes it as descriptive weather, with no causal, disease-risk, or ML claim.
+There is no separate environmental-context endpoint. `environmental_context` is an optional object on an observation. It is present only for reviewed environmental context. The observations operation describes it as descriptive weather, with no causal, disease-risk, or ML claim. `surveillance_context` is a different optional object. It is supplied only through an admitted Data release and supported slice. Omitted or null carries no evidence-state, comparability, or lag claim.
 
 When the object is present, read `coverage_status` before the measure value. The status is `COMPLETE`, `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`. Coverage is independent of `value_state`. `day_convention` is the publisher's labeled 24-hour period. `source_coverage_fraction` is monthly source-supported area over legal county area. `valid_fraction_of_supported_area` is daily valid area over source-supported area, with a completeness threshold of 0.95. Area quantities may be numbers or exact numeric strings. `geometry_version` names analysis geometry and does not include polygons. Null context does not establish absence or temporal comparability.
 
@@ -92,10 +92,10 @@ FIPS `08001` is outside the selected land-cover geographies. That request return
 | Not found | HTTP 404 `RESOURCE_NOT_FOUND` for an unknown measure id |
 | Invalid parameters | HTTP 400 `INVALID_REQUEST` for a missing or contradictory period |
 | Unsupported filter or strata | HTTP 400 `UNSUPPORTED_FILTER` or `UNSUPPORTED_STRATIFICATION`. These measures declare no supported strata |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD` |
+| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
 | Rate limited | HTTP 429 and `Retry-After` |
 | Server unavailable | HTTP 503 and `Retry-After` |
-| Unknown or limited data | `coverage_status` of `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`, a null area field, or a null `environmental_context` |
+| Unknown or limited data | `coverage_status` of `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`, a null area field, a null `environmental_context`, or a null or omitted `surveillance_context` |
 
 ## Reproduce and cite an observation
 

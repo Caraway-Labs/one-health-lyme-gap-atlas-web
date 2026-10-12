@@ -63,7 +63,7 @@ There is no caller sort and no aggregation. `sort=value`, `aggregation=sum`, and
 
 `strata` on a checked case-floor row was an empty object. An empty object is not a breakdown.
 
-Each observation also carries period, unit, denominator, source, methodology, `semantic_version`, `release_id`, `provenance_ref`, `limitations`, and `evidence`. `environmental_context` is optional and present only for reviewed environmental context. The field list and types are in the generated [schema reference](/docs/api-reference/schemas).
+Each observation also carries period, unit, denominator, source, methodology, `semantic_version`, `release_id`, `provenance_ref`, `limitations`, and `evidence`. `environmental_context` is optional and present only for reviewed environmental context. `surveillance_context` is also optional. The schema supplies it only through an admitted Data release and supported slice. Omitted or null carries no evidence-state, comparability, or lag claim. Comparison is case-definition scope only, and alignment is descriptive. When the object is present it has `evidence`, `methodology_comparison`, and `temporal_alignment`. The observations operation says `normalized_state` preserves Data semantics and the publisher value remains `value`. Missing context does not establish absence or temporal comparability. The field list and types are in the generated [schema reference](/docs/api-reference/schemas).
 
 ## States for the discovery and observation routes
 
@@ -74,9 +74,9 @@ Each observation also carries period, unit, denominator, source, methodology, `s
 | Not found | HTTP 404 `RESOURCE_NOT_FOUND` for an unknown path id | HTTP 404 `RESOURCE_NOT_FOUND` is declared. An unmatched county filter can be an empty page instead |
 | Invalid parameters | HTTP 400 `INVALID_REQUEST`, including `page_size` below 1 | HTTP 400 `INVALID_REQUEST` for a missing period, for `year` plus a date range, for `page_size` below 1, and for a `geography_type` outside `county` and `state` |
 | Unsupported filter or strata | HTTP 400 with the declared filter and stratification codes | Checked: `UNSUPPORTED_FILTER` and `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | Declared as HTTP 400 `QUERY_TOO_BROAD` | Same code |
+| Query too broad | Declared as HTTP 400 `QUERY_TOO_BROAD` | Same code. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
 | Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` | Same |
 | Server unavailable | HTTP 503 and `Retry-After` | Same |
-| Unknown or limited data | Null definition, denominator, methodology, or source list fields stay null | `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, and a null `environmental_context` stay as returned |
+| Unknown or limited data | Null definition, denominator, methodology, or source list fields stay null | `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, a null `environmental_context`, and a null or omitted `surveillance_context` stay as returned |
 
 Detail resources also return HTTP 304 with an empty body when `If-None-Match` matches the current `ETag`.

@@ -40,7 +40,7 @@ These guides cover two route families. Read the family you called.
 | Canonical current-release resources | Indicators, measures, observations, sources, methodologies, and geography identity | Problem details with a stable `code` |
 | Legacy Atlas analytics and exports | County and state review, scores, display geometry, rankings, and PDF reports | Existing status codes, including `422`. A problem body may omit `code` |
 
-Account, feedback, and conversational routes are not part of these read examples.
+Internal conversational AI, literature retrieval, account, and feedback product routes are excluded from this public contract.
 
 ## Geography used in examples
 
@@ -48,8 +48,8 @@ Atlas product geography for these guides is the lower 48 states and the District
 
 ## Limits recorded with the contract
 
-The public document does not publish a numeric request quota. Honor `Retry-After` on `429` and `503`. See [REST API](/docs/develop/rest).
+Current-release observations have a default pre-execution logical-result ceiling of 10,000. That ceiling is not truncation. The public document does not publish a numeric request quota. Honor `Retry-After` on `429` and `503`. See [REST API](/docs/develop/rest).
 
 `GET /v1/geographies/{geography_type}/{geography_id}` is declared, and its description says delivery currently returns `503` with `CANONICAL_DATA_UNAVAILABLE` and no geometry. See [Geography](/docs/develop/geography).
 
-The observations operation describes separately enabled January 2025 environmental measures that carry `environmental_context`. The current `GET /v1/measures` catalog does not list a measure id for that daily series. See [Workflow guides](/docs/develop/workflows).
+The observations operation describes separately enabled January 2025 environmental measures that carry `environmental_context`. The current `GET /v1/measures` catalog does not list a measure id for that daily series. `surveillance_context` is optional and requires an admitted Data delivery. See [Workflow guides](/docs/develop/workflows).

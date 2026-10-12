@@ -3,8 +3,6 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { ValueState } from "@/generated/models";
-
 const docsRoot = path.join(process.cwd(), "content", "docs");
 const developRoot = path.join(docsRoot, "develop");
 
@@ -76,6 +74,9 @@ describe("developer documentation guides", () => {
       "NO_COUNTY_LINKED_RECORD",
       "413",
       "414",
+      "surveillance_context",
+      "10,000",
+      "not truncation",
     ];
     const missingPhrases = requiredPhrases.filter(
       (phrase) => !developText.includes(phrase)
@@ -101,7 +102,7 @@ describe("developer documentation guides", () => {
     expect(developText).not.toContain("`/docs/api-reference");
   });
 
-  it("does not invent credentials, SDKs, quotas, or out-of-scope states", () => {
+  it("does not invent credentials, SDKs, or out-of-scope states", () => {
     const violations = [
       developText.match(/Alaska|Hawaii/)?.[0],
       developText.match(/\b(?<postal>AK|HI)\b/)?.[0],
@@ -109,11 +110,9 @@ describe("developer documentation guides", () => {
       developText.match(/Bearer |API token|install the SDK/i)?.[0],
       developText.includes("npm install") ? "npm install" : undefined,
       developText.includes("NO_RECORDS") ? "NO_RECORDS" : undefined,
-      developText.includes("surveillance_context")
-        ? "surveillance_context"
+      developText.includes("contracts/openapi.json")
+        ? "contracts/openapi.json"
         : undefined,
-      developText.includes("10,000") ? "10,000" : undefined,
-      developText.includes("10000") ? "10000" : undefined,
     ].filter((violation) => violation !== undefined);
 
     expect(violations).toStrictEqual([]);
@@ -180,17 +179,30 @@ function stringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
+const publicContractPath = path.join(
+  process.cwd(),
+  "contracts",
+  "public-openapi.json"
+);
+
 function readContract(): JsonRecord {
   const parsed: unknown = JSON.parse(
-    fs.readFileSync(
-      path.join(process.cwd(), "contracts", "openapi.json"),
-      "utf-8"
-    )
+    fs.readFileSync(publicContractPath, "utf-8")
   );
   if (!isRecord(parsed)) {
-    throw new Error("OpenAPI contract must be an object");
+    throw new Error("Public OpenAPI contract must be an object");
   }
   return parsed;
+}
+
+function schemaPropertyNames(spec: JsonRecord, schemaName: string): string[] {
+  const components = isRecord(spec.components) ? spec.components : {};
+  const schemas = isRecord(components.schemas) ? components.schemas : {};
+  const schema = schemas[schemaName];
+  if (!isRecord(schema) || !isRecord(schema.properties)) {
+    return [];
+  }
+  return Object.keys(schema.properties);
 }
 
 function walkSchema(node: unknown, vocab: ContractVocabulary): void {
@@ -651,26 +663,52 @@ function contractMismatches(
   return mismatches;
 }
 
-describe("developer guides follow the pinned OpenAPI contract", () => {
+describe("developer guides follow the pinned public OpenAPI contract", () => {
   const spec = readContract();
   const vocab = collectVocabulary(spec);
 
-  it("documents the contract value states in enum order", () => {
-    const contractStates = schemaEnum(spec, "ValueState");
-    expect({
-      documented: documentedValueStates(readPage("resources")),
-      generated: Object.values(ValueState),
-    }).toStrictEqual({
-      documented: contractStates,
-      generated: contractStates,
-    });
+  it("documents the public contract value states in enum order", () => {
+    expect(documentedValueStates(readPage("resources"))).toStrictEqual(
+      schemaEnum(spec, "ValueState")
+    );
   });
 
   it("lists 413 and 414 apart from HTTP 400", () => {
     expect(errorTableProblems(readPage("rest"), spec)).toStrictEqual([]);
   });
 
-  it("uses only contract enums, statuses, codes, headers, and fields", () => {
+  it("uses only public-contract enums, statuses, codes, headers, and fields", () => {
     expect(contractMismatches(spec, vocab)).toStrictEqual([]);
+  });
+
+  it("documents the public result ceiling and surveillance context", () => {
+    const info = isRecord(spec.info) ? spec.info : {};
+    const description =
+      typeof info.description === "string" ? info.description : "";
+    const servers = Array.isArray(spec.servers) ? spec.servers : [];
+    const server = isRecord(servers[0]) ? servers[0] : {};
+    expect({
+      clientArtifactDisclaimer: description.includes(
+        "Not an external developer contract"
+      ),
+      ceiling: description.includes(
+        "The default pre-execution logical-result ceiling is 10,000, not truncation."
+      ),
+      guidesCeiling:
+        developText.includes("10,000") &&
+        developText.includes("not truncation"),
+      surveillanceProperty: schemaPropertyNames(spec, "Observation").includes(
+        "surveillance_context"
+      ),
+      guidesSurveillance: developText.includes("`surveillance_context`"),
+      server: server.url,
+    }).toStrictEqual({
+      clientArtifactDisclaimer: false,
+      ceiling: true,
+      guidesCeiling: true,
+      surveillanceProperty: true,
+      guidesSurveillance: true,
+      server: "https://api.onehealthatlas.org",
+    });
   });
 });
