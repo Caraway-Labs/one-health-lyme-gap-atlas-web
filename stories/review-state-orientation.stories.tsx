@@ -70,6 +70,14 @@ export function StateOrientationStory({
 }: {
   phase: ReviewNavigationMapPhase;
 }) {
+  return <StateOrientationPreview key={phase} phase={phase} />;
+}
+
+function StateOrientationPreview({
+  phase,
+}: {
+  phase: ReviewNavigationMapPhase;
+}) {
   const catalog = useMemo(
     () => reviewStateNavigationEntries(storyReleaseStates),
     []
@@ -83,7 +91,7 @@ export function StateOrientationStory({
   const entries = filterReviewStateNavigationEntries(catalog, query);
   const features = showsMap(phase) ? STUB_FEATURES : EMPTY_FEATURES;
   return (
-    <div className="grid gap-3" key={phase}>
+    <div className="grid gap-3">
       <p className="type-small">
         Synthetic state orientation from the #562 MapLibre navigation. The map
         frame is a stub. The list is the non-map fallback and only offers states
