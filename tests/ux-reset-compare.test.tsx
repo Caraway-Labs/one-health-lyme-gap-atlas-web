@@ -23,6 +23,7 @@ import {
   COMPARE_TICK_MEASURE_ID,
   COMPARE_WASHINGTON_MN,
   COMPARE_WASHINGTON_RI,
+  compareCountyDetail,
   compareMeasuresFixture,
   compareObservationsFor,
   compareScoresFixture,
@@ -47,6 +48,22 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
+    countyV1CountiesFipsGet: vi.fn<
+      typeof import("@/generated/atlas").countyV1CountiesFipsGet
+    >(async (fips) => {
+      if (fips === "08013") {
+        return {
+          data: null,
+          headers: new Headers(),
+          status: 404,
+        } as never;
+      }
+      return {
+        data: compareCountyDetail(fips),
+        headers: new Headers(),
+        status: 200,
+      } as never;
+    }),
     measuresV1MeasuresGet: vi.fn<
       typeof import("@/generated/atlas").measuresV1MeasuresGet
     >(async (params) => {
@@ -848,6 +865,46 @@ describe("two-county aligned comparison", () => {
       path: true,
       period: true,
       returnParam: false,
+    });
+  });
+
+  it("does not show a county-record table until two counties are selected", async () => {
+    renderCompare("?compare=08001&scope=CO&dataset=alpha-2026");
+    await waitForPair("08001");
+    expect(screen.queryByTestId("compare-profile")).toBeNull();
+    expect(screen.queryByTestId("compare-profile-loading")).toBeNull();
+  });
+
+  it("aligns the published county record and hands the pair to Ask Atlas", async () => {
+    renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=1999-01-01"
+    );
+    await waitForPair("08001,08013");
+    const floor = await screen.findByTestId(
+      "compare-profile-cell-human_case_floor-08001"
+    );
+    const missing = screen.getByTestId(
+      "compare-profile-cell-human_case_floor-08013"
+    );
+    const ask = await screen.findByTestId("compare-ask-atlas");
+    expect({
+      ask: ask.getAttribute("href")?.includes("page_ref="),
+      first: screen.getByTestId("compare-investigate-08001").textContent,
+      floor: floor.textContent?.includes("12"),
+      missing: missing.dataset.observation,
+      missingDigits: /\d/.test(missing.textContent ?? ""),
+      period: screen
+        .getByTestId("compare-profile-comparability")
+        .textContent?.includes("1999-01-01"),
+      second: screen.getByTestId("compare-investigate-08013").textContent,
+    }).toStrictEqual({
+      ask: true,
+      first: "View first county evidence",
+      floor: true,
+      missing: "missing",
+      missingDigits: false,
+      period: true,
+      second: "View second county evidence",
     });
   });
 

@@ -1,6 +1,14 @@
-import { ValueState, type Measure, type Observation } from "@/generated/models";
+import {
+  ValueState,
+  type CountyDetail,
+  type Measure,
+  type Observation,
+} from "@/generated/models";
 
-import { investigateMeasuresFixture } from "./investigate-api-fixtures";
+import {
+  investigateMeasuresFixture,
+  investigateMetadataFixture,
+} from "./investigate-api-fixtures";
 import { reviewScopeScoresFixture } from "./review-scope-api-fixtures";
 
 export const COMPARE_RELEASE_ID = "alpha-2026";
@@ -140,4 +148,81 @@ export function compareObservationsFor(input: {
   return rows.toSorted((left, right) =>
     right.geography.geography_id.localeCompare(left.geography.geography_id)
   );
+}
+
+const compareScore = {
+  access_signal: 10,
+  community: 22,
+  ecological: 30,
+  human_weakness: 18,
+  pathogen_signal: 10,
+  rural_signal: 10,
+  score: 64,
+  svi_signal: 10,
+  tick_signal: 10,
+};
+
+/**
+ * Published county record for Compare tests.
+ * Boulder (08013) carries numeric zeros on suppressed human fields so a test
+ * can prove those zeros are not displayed.
+ */
+export function compareCountyDetail(fips: string): CountyDetail {
+  const suppressed = fips === COMPARE_RIGHT_FIPS;
+  return {
+    burgdorferi_status: suppressed ? "No records" : "Present",
+    case_count_floor_2023: suppressed ? 0 : 12,
+    color: "navy",
+    county: suppressed ? "Boulder" : "County",
+    evidence_completeness: suppressed ? 20 : 80,
+    fips,
+    human_status: suppressed ? "suppressed" : "published_count_floor",
+    in_contiguous_tick_scope: true,
+    incidence_floor_2023: suppressed ? 0 : 4.2,
+    pacificus_status: suppressed ? null : "No records",
+    population: suppressed ? null : 716_492,
+    priority: suppressed ? "Watch" : "Priority 1 — Investigate",
+    release: {
+      ...investigateMetadataFixture,
+      limitations: suppressed ? "" : "Not a diagnosis.",
+      release_id: COMPARE_RELEASE_ID,
+      sources: [
+        {
+          key: "human",
+          label: "CDC published human cases",
+          note: "A floor is not an exact total.",
+          url: "https://www.cdc.gov/",
+          vintage: "2023",
+        },
+        {
+          key: "tick",
+          label: "CDC county tick status",
+          note: "No records is not absence.",
+          url: "https://www.cdc.gov/",
+          vintage: "through 2025",
+        },
+        {
+          key: "context_svi",
+          label: "Social vulnerability",
+          note: "Percentile context.",
+          url: "https://www.atsdr.cdc.gov/",
+          vintage: "2022",
+        },
+      ],
+    },
+    rucc_2023: suppressed ? null : 2,
+    scapularis_status: suppressed ? null : "Reported",
+    score: {
+      ...compareScore,
+      community: suppressed ? 8 : 22,
+      score: suppressed ? 40 : 64,
+    },
+    state: "CO",
+    state_name: "Colorado",
+    state_unallocated_records_2023: suppressed ? null : 3,
+    svi_percentile: suppressed ? null : 0.91,
+    tick_status: suppressed ? "No records" : "Established",
+    uninsured_percent: suppressed ? null : 11.2,
+    uninsured_percentile: null,
+  };
 }

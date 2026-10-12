@@ -9,6 +9,7 @@ import {
   COMPARE_TICK_MEASURE_ID,
   COMPARE_WASHINGTON_MN,
   COMPARE_WASHINGTON_RI,
+  compareCountyDetail,
   compareMeasuresFixture,
   compareObservationsFor,
   compareScoresFixture,
@@ -57,6 +58,15 @@ async function installCompareMocks(page: Page, requested: string[]) {
       links: { self: "/v1/measures" },
       meta: {},
     });
+  });
+  await page.route(/\/v1\/counties\/\d{5}(?:\?|$)/, async (route) => {
+    const fips = new URL(route.request().url()).pathname.split("/").at(-1);
+    if (!fips) {
+      await route.fulfill({ json: { detail: "missing county" }, status: 404 });
+      return;
+    }
+    requested.push(route.request().url());
+    await fulfill(route, compareCountyDetail(fips));
   });
   await page.route("**/v1/observations**", async (route) => {
     const url = new URL(route.request().url());
@@ -286,6 +296,36 @@ test.describe("two-county Compare", () => {
       "href",
       /compare=08001(?:%2C|,)08013/
     );
+    await expect(page.getByTestId("compare-investigate-08001")).toHaveText(
+      "View first county evidence"
+    );
+    await expect(page.getByTestId("compare-investigate-08013")).toHaveText(
+      "View second county evidence"
+    );
+    const floor = page.getByTestId(
+      "compare-profile-cell-human_case_floor-08001"
+    );
+    await expect(floor).toContainText("12");
+    await expect(floor).toContainText("floor");
+    const suppressed = page.getByTestId(
+      "compare-profile-cell-incidence_floor-08013"
+    );
+    await expect(suppressed).toContainText("Suppressed");
+    await expect(suppressed).not.toContainText("0");
+    await expect(
+      page.getByTestId("compare-profile-row-human_case_floor")
+    ).not.toContainText("differ by");
+    await expect(page.getByTestId("compare-ask-atlas")).toHaveAttribute(
+      "href",
+      /page_ref=/
+    );
+    if (testInfo.project.name.includes("mobile")) {
+      const scrolls = await page
+        .getByTestId("compare-profile")
+        .locator("[data-slot=table-container]")
+        .evaluate((element) => element.scrollWidth > element.clientWidth);
+      expect(scrolls).toBe(true);
+    }
 
     const observationUrls = requested.filter((url) =>
       url.includes("/v1/observations")
@@ -547,6 +587,54 @@ test.describe("two-county Compare", () => {
     await expect(page).toHaveURL(new RegExp(`county=${fips}`));
     await expectOverflowCountyRestored(page, fips);
     await expectConsumedReviewReturn(page, fips);
+  });
+
+  test("shows loading, then recovers a failed county record", async ({
+    page,
+  }) => {
+    let failCounty = true;
+    let released = false;
+    let releaseGate: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+    await installCompareMocks(page, []);
+    await page.route(/\/v1\/counties\/\d{5}(?:\?|$)/, async (route) => {
+      if (!released) {
+        await gate;
+      }
+      if (failCounty) {
+        await route.fulfill({
+          json: { detail: "unavailable" },
+          status: 503,
+        });
+        return;
+      }
+      await route.fallback();
+    });
+    await page.goto(
+      "/app/compare?compare=08001,08013&scope=CO&dataset=alpha-2026"
+    );
+    await expect(page.getByTestId("compare-profile-loading")).toBeVisible();
+    await expect(page.getByTestId("compare-profile")).toHaveCount(0);
+    released = true;
+    releaseGate();
+    await expect(page.getByTestId("compare-retry-profile")).toBeVisible();
+    await expect(
+      page.getByTestId("compare-profile-cell-human_case_floor-08001")
+    ).toContainText("not used");
+    await expect(
+      page.getByTestId("compare-profile-cell-human_case_floor-08001")
+    ).not.toContainText("12");
+    failCounty = false;
+    await page.getByTestId("compare-retry-profile").click();
+    await expect(
+      page.getByTestId("compare-profile-cell-human_case_floor-08001")
+    ).toContainText("12");
+    await expect(page.getByTestId("compare-profile-section")).toHaveAttribute(
+      "data-records-ready",
+      "true"
+    );
   });
 
   test("keeps a direct Compare link usable without a return target", async ({

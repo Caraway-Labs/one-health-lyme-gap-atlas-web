@@ -13,6 +13,7 @@ import {
   rememberCompareCatalogCooldown,
   waitForCompareCatalogCooldown,
 } from "@/features/ux-reset/compare/compare-catalog-cooldown";
+import type { CompareProfileAlignment } from "@/features/ux-reset/compare/compare-county-profile";
 import {
   classifyCompareEntry,
   compareCountyOptionLabel,
@@ -33,6 +34,7 @@ import {
   preservedCompareMeasures,
   shouldRetryCompareRequest,
 } from "@/features/ux-reset/compare/load-compare-evidence";
+import { loadCompareCountyProfiles } from "@/features/ux-reset/compare/load-compare-profile";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import {
   parseCompareFipsList,
@@ -95,6 +97,10 @@ export type CompareWorkspace = {
   options: readonly CompareCountyOption[];
   pairIssue: string;
   period: string | null;
+  profile: CompareProfileAlignment | null;
+  profileError: string | null;
+  profileLoading: boolean;
+  profileRetrying: boolean;
   recoveryMessages: string[];
   recoveryState: CompareRecoveryState;
   releaseId: string | null;
@@ -103,6 +109,7 @@ export type CompareWorkspace = {
   returnTarget: CompareReturnTarget | null;
   retryCatalog: () => void;
   retryEvidence: () => void;
+  retryProfile: () => void;
   scopeLabel: string;
   setSlot: (slot: 0 | 1, fips: string) => void;
   slotMessage: string | null;
@@ -372,6 +379,30 @@ export function useCompareWorkspace(): CompareWorkspace {
     void measuresQuery.refetch();
   };
 
+  const profileQuery = useQuery({
+    enabled: Boolean(releaseId && pairReady && leftFips && rightFips),
+    queryFn: ({ signal }) => {
+      if (!(releaseId && leftFips && rightFips)) {
+        throw new CompareContractError(
+          "County records require two counties and a release.",
+          "rejected"
+        );
+      }
+      return loadCompareCountyProfiles({
+        leftFips,
+        releaseId,
+        rightFips,
+        signal,
+      });
+    },
+    queryKey: ["ux-reset-compare-profile", releaseId, leftFips, rightFips],
+    retry: (failureCount, error) =>
+      shouldRetryCompareRequest(failureCount, error, retrySetting),
+  });
+  const retryProfile = () => {
+    void profileQuery.refetch();
+  };
+
   const currentPair = pairKey.length > 0 ? pairKey.split(",") : [];
   const setSlot = (slot: 0 | 1, fips: string) => {
     const next = replaceCompareSlot(currentPair, slot, fips);
@@ -489,6 +520,21 @@ export function useCompareWorkspace(): CompareWorkspace {
     options,
     pairIssue: pairIssue(entry),
     period: urlState.period,
+    profile:
+      recoveryState === "ready" &&
+      profileQuery.data?.leftFips === leftFips &&
+      profileQuery.data.rightFips === rightFips
+        ? profileQuery.data
+        : null,
+    profileError:
+      recoveryState === "ready" && profileQuery.isError
+        ? "Published county records did not load for these two counties."
+        : null,
+    profileLoading: recoveryState === "ready" && profileQuery.isLoading,
+    profileRetrying:
+      recoveryState === "ready" &&
+      profileQuery.isFetching &&
+      (profileQuery.isError || Boolean(profileQuery.data)),
     recoveryMessages: compareRecoveryMessages({
       entry,
       unknownFips,
@@ -500,6 +546,7 @@ export function useCompareWorkspace(): CompareWorkspace {
     returnTarget,
     retryCatalog,
     retryEvidence,
+    retryProfile,
     scopeLabel: reviewScopeLabel(urlState.scope, stateOptions),
     setSlot,
     slotMessage,
