@@ -23,10 +23,9 @@ test.describe("six-destination redirects", () => {
     );
     expect(labels).toEqual([...DESTINATION_LABELS]);
 
-    const brand = page.getByRole("link", {
-      exact: true,
-      name: "One Health Atlas",
-    });
+    const brand = page.locator(
+      '#ux-reset-pro-navigation a[aria-label="One Health Atlas"]'
+    );
     await expect(brand).toHaveAttribute("href", /\/app\/review/);
 
     const cases = [
