@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import ResetWorkspaceOverviewPage from "@/app/app/page";
 import {
+  escapeStillClosingNavigation,
   mobileTriggerRestoreShouldStop,
   trustedMobileTriggerRestoreShouldStop,
 } from "@/features/ux-reset/mobile-trigger-restore";
@@ -298,6 +299,20 @@ describe("UX Reset shell accessibility", () => {
     ).toBeTruthy();
     trigger.remove();
     outside.remove();
+  });
+
+  it("keeps restoring through the Escape press that closed the drawer", () => {
+    const closing = new KeyboardEvent("keydown", { key: "Escape" });
+    const repeat = new KeyboardEvent("keydown", {
+      key: "Escape",
+      repeat: true,
+    });
+    const later = new KeyboardEvent("keydown", { key: "Escape" });
+    const tab = new KeyboardEvent("keydown", { key: "Tab" });
+    expect(escapeStillClosingNavigation(closing, closing.timeStamp + 5)).toBeTruthy();
+    expect(escapeStillClosingNavigation(repeat, repeat.timeStamp - 5)).toBeTruthy();
+    expect(escapeStillClosingNavigation(later, later.timeStamp - 5)).toBeFalsy();
+    expect(escapeStillClosingNavigation(tab, tab.timeStamp + 5)).toBeFalsy();
   });
 
   it("keeps restoring for Space or a pointer on the trigger, and ignores untrusted leaves", () => {
