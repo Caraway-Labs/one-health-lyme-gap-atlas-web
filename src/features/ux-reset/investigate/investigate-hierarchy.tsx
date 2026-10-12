@@ -34,6 +34,7 @@ import {
   type PublishedCountyRecord,
   type PublishedHierarchyRow,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
 import type { Measure } from "@/generated/models";
 
 const EMPTY_MEASURES: readonly Measure[] = [];
@@ -604,6 +605,7 @@ export function InvestigateEvidenceHierarchy({
         className="ux-reset-investigate-summary"
         data-evidence-class="limitation"
         data-testid="investigate-gaps"
+        id={EXPLORER_SECTION_IDS.context}
       >
         <AtlasSectionHeader
           eyebrow="Limits"

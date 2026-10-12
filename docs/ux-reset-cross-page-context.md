@@ -46,7 +46,7 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 
 | Destination | Local keys (dropped on navigation)                |
 | ----------- | ------------------------------------------------- |
-| Review      | `sort`, `page`                                    |
+| Review      | `sort`, `page`, `mode`                            |
 | Explore     | `view`, `metric`, `page`, `selected`, `map_scope` |
 | Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q`   |
 | Compare     | `metric`, `return`                                |
@@ -56,6 +56,8 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 | Settings    | _(none)_                                          |
 
 Explore `selected` maps into `compare` **only** when the destination accepts `compare` and `compare` is not already set.
+
+Review `mode` is the in-page Atlas Explorer county view. Omitted means browse. `evidence` opens county evidence. `follow-up` opens that same view at Suggested follow-up. Any other token is removed. Handoff does not copy `mode`. Compare copies one exact `mode` onto a Review return link when that Compare URL already carried it.
 
 ## Route-to-route handoff matrix
 
@@ -85,7 +87,7 @@ An actual candidate keeps its existing recommendation preview. Other published c
 
 The canonical `county`, `scope`, `dataset`, and supported `period` handoff stays the existing shared context contract. Ask Atlas inherits only the selected, validated published identity, independent of candidate naming. Returning from Investigate focuses the candidate row when one exists, otherwise the Published county picker. A fresh URL without a county does not auto-select a factual county; the existing first-candidate default applies only to published candidates.
 
-Selecting a county on Review updates shared `county` and shows a preview on Review: county identity, why it is in the review set, suggested follow-up, and **Open Investigate**. Selection does not open Investigate. The open control uses `uxResetShellHandoffHref` with the current Review search params, so the destination receives only the shared keys Investigate accepts.
+Selecting a county on Review updates shared `county` and shows a preview on Review: county identity, why it is in the review set, suggested follow-up, **View county evidence**, and **Open Investigate**. Selection does not open Investigate and does not expand evidence. **View county evidence** sets Review-local `mode=evidence` and replaces the map, list, and preview with the in-page county view. **Back to map** clears `mode` and restores that browse surface. **Open Investigate** still uses `uxResetShellHandoffHref` with the current Review search params, so the destination receives only the shared keys Investigate accepts. `mode` is not one of those keys.
 
 The preview why line is the review-priority rationale only. It does not say that county inputs are available, and it does not treat a missing tick or pathogen record as biological absence. When the score row is limited or unavailable, the preview shows that evidence state through the shared evidence strip and an Inspect provenance control. A `SUPPRESSED` status is Limited under the shared contract, including when evidence completeness is 100. A row whose human, tick, and pathogen statuses are all absent is Unavailable only when evidence completeness is zero. Completeness above zero means other scored inputs still provide governed signal, so that aggregate state is Limited. A county score summary does not include source family, observation period, evidence type, or provenance for that status, so those fields stay Unavailable and the caveat states the metadata limitation. The page release strip remains release-level. Governed observation rows stay on Investigate.
 

@@ -45,6 +45,7 @@ import {
   fetchExploreCountyDirectory,
   fetchExploreMeasures,
 } from "@/features/ux-reset/explore/load-explore-resources";
+import { compareReturnHrefWithExplorerMode } from "@/features/ux-reset/review/explorer-mode";
 import {
   RESET_COMPARE_PATH,
   RESET_INVESTIGATE_PATH,
@@ -408,13 +409,17 @@ export function useCompareWorkspace(): CompareWorkspace {
       sharedContextToSearchParams(contextFor(fips, currentPair))
     );
   const returnTarget = urlState.return;
-  const returnHref = returnTarget
-    ? uxResetShellHandoffHref(
-        compareReturnPath(returnTarget),
-        RESET_COMPARE_PATH,
-        sharedContextToSearchParams(contextFor(urlState.county, currentPair))
-      )
-    : null;
+  const returnHref = compareReturnHrefWithExplorerMode({
+    href: returnTarget
+      ? uxResetShellHandoffHref(
+          compareReturnPath(returnTarget),
+          RESET_COMPARE_PATH,
+          sharedContextToSearchParams(contextFor(urlState.county, currentPair))
+        )
+      : null,
+    modeValues: searchParams.getAll("mode"),
+    returnTarget,
+  });
   const optionRows = new Map<string, ExploreCountyIdentity | null>();
   for (const county of directory) {
     optionRows.set(county.fips, county);
