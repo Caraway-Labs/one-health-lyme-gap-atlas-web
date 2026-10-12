@@ -10,6 +10,7 @@ import {
   ValueState,
   type Candidate,
   type CountyScoreSummary,
+  type Tier1CountyPriority,
 } from "@/generated/models";
 import type { Score } from "@/generated/models/score";
 
@@ -17,6 +18,7 @@ import {
   tier1HighSufficientFixture,
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
+  tier1PriorityForRelease,
 } from "../../tests/fixtures/tier1-surveillance-priority";
 import type { Tier1StoryQuery } from "../support/tier1-hook-substitute";
 import {
@@ -44,10 +46,39 @@ export type ReviewPreviewStoryModel = {
   release: Tier1ActiveRelease;
 };
 
-const alignedRelease: Tier1ActiveRelease = {
-  releaseId: tier1HighSufficientFixture.release_id,
+const storyRelease: Tier1ActiveRelease = {
+  releaseId: syntheticReleaseId,
   status: "ready",
 };
+
+export const syntheticReviewSourceUrl =
+  "https://example.com/synthetic-review-source";
+
+function alignedPriority(result: Tier1CountyPriority): Tier1CountyPriority {
+  return tier1PriorityForRelease(
+    tier1PriorityForCounty(result, syntheticCounty.fips),
+    syntheticReleaseId
+  );
+}
+
+function withSyntheticSourceLink(
+  preview: ReviewCountyPreviewModel
+): ReviewCountyPreviewModel {
+  const qualification = preview.qualification;
+  if (!qualification) {
+    return preview;
+  }
+  return {
+    ...preview,
+    qualification: {
+      ...qualification,
+      provenance: {
+        ...qualification.provenance,
+        sourceUrl: syntheticReviewSourceUrl,
+      },
+    },
+  };
+}
 
 const reviewScore = {
   access_signal: 50,
@@ -167,13 +198,10 @@ export function reviewPreviewPreset(
         ...keptContext,
         preview: buildReviewCountyPreview(scoreCounty({})),
         query: {
-          data: tier1PriorityForCounty(
-            tier1HighSufficientFixture,
-            syntheticCounty.fips
-          ),
+          data: alignedPriority(tier1HighSufficientFixture),
           status: "success",
         },
-        release: alignedRelease,
+        release: storyRelease,
       };
     }
     case "limited-qualification": {
@@ -186,13 +214,10 @@ export function reviewPreviewPreset(
           })
         ),
         query: {
-          data: tier1PriorityForCounty(
-            tier1LowInsufficientFixture,
-            syntheticCounty.fips
-          ),
+          data: alignedPriority(tier1LowInsufficientFixture),
           status: "success",
         },
-        release: alignedRelease,
+        release: storyRelease,
       };
     }
     case "missing-metadata": {
@@ -207,32 +232,33 @@ export function reviewPreviewPreset(
           })
         ),
         query: { errorStatus: 404, status: "error" },
-        release: alignedRelease,
+        release: storyRelease,
       };
     }
     case "long-references": {
       return {
         ...keptContext,
-        preview: buildReviewCandidatePreview({
-          candidate: longReferenceCandidate(),
-          methodologyId: "synthetic-method",
-          methodologyVersion: "1.0.0",
-          stateCode: syntheticCounty.stateCode,
-          stateName: syntheticCounty.stateName,
-        }),
+        preview: withSyntheticSourceLink(
+          buildReviewCandidatePreview({
+            candidate: longReferenceCandidate(),
+            methodologyId: "synthetic-method",
+            methodologyVersion: "1.0.0",
+            stateCode: syntheticCounty.stateCode,
+            stateName: syntheticCounty.stateName,
+          })
+        ),
         query: {
-          data: {
+          data: alignedPriority({
             ...tier1HighSufficientFixture,
-            county_fips: syntheticCounty.fips,
             evidence_sufficiency: "NOT_ESTIMABLE",
             priority_percentile: null,
             priority_tier: null,
             raw_model_score: null,
             reasons: [],
-          },
+          }),
           status: "success",
         },
-        release: alignedRelease,
+        release: storyRelease,
       };
     }
     case "dropped-context": {
@@ -240,13 +266,10 @@ export function reviewPreviewPreset(
         ...droppedContext,
         preview: buildReviewCountyPreview(scoreCounty({})),
         query: {
-          data: tier1PriorityForCounty(
-            tier1HighSufficientFixture,
-            syntheticCounty.fips
-          ),
+          data: alignedPriority(tier1HighSufficientFixture),
           status: "success",
         },
-        release: { releaseId: syntheticReleaseId, status: "ready" },
+        release: storyRelease,
       };
     }
     default: {
