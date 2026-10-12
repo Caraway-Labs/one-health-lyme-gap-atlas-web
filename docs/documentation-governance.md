@@ -14,7 +14,7 @@ Docs-only wording and navigation changes may ship independently. A product, API,
 
 `npm run docs:generate` validates Fumadocs frontmatter/navigation and creates ignored `.source` files. `npm run docs:check` additionally requires a page title and description, verifies `content/docs/meta.json`, rejects JavaScript links, and checks internal `/docs` and Atlas route links. The standard typecheck, lint, unit, Playwright/Axe, production build, Docker build, and secret scan remain required.
 
-The initial developer page links directly to the API-owned OpenAPI artifact and labels MCP guidance as unavailable until the owning service has a released contract. When those contracts are published, CI or a review check must fail or raise an explicit signal when generated/link-based references drift.
+The developer guide explains access. The API reference under `content/docs/api-reference` is generated from the pinned public contract in `contracts/public-openapi.json`, not from the first-party Web generator artifact and not from a hand-maintained endpoint list. `npm run docs:api:check` fails the build when that contract is missing, malformed, empty, checksum-mismatched, version-mismatched, or when the generated pages drift. MCP guidance stays limited to the released smoke tools.
 
 ## Versioning and recovery
 
