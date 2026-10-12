@@ -4,7 +4,7 @@ import { QueryClientContext, type QueryClient } from "@tanstack/react-query";
 import { DoorOpen, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState, useSyncExternalStore } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -40,8 +40,10 @@ import {
   concealRestoredWorkspace,
   noteWorkspaceDocumentUser,
   revealRestoredWorkspace,
+  subscribeWorkspaceSignOut,
   workspaceDocumentUserId,
   workspaceLoggedOutInPageLifetime,
+  workspaceSignOutPending,
   workspaceSignOutSuppressesExpiryRedirect,
 } from "@/features/ux-reset/workspace-sign-out";
 import { isProfessionalAppPath } from "@/lib/auth/app-route-guard";
@@ -107,6 +109,9 @@ async function denyWorkspacePage(input: {
       break;
     }
     case "fresh": {
+      if (decision === "keep") {
+        revealRestoredWorkspace();
+      }
       break;
     }
     default: {
@@ -185,8 +190,16 @@ export function WorkspaceAccountMenu() {
     userId: string;
   } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const pendingRef = useRef(false);
+  const pending = useSyncExternalStore(
+    subscribeWorkspaceSignOut,
+    workspaceSignOutPending,
+    () => false
+  );
+  const signOutSuppressesExpiryRedirect = useSyncExternalStore(
+    subscribeWorkspaceSignOut,
+    workspaceSignOutSuppressesExpiryRedirect,
+    () => false
+  );
   const showTooltip = !(open || isMobileViewport);
   const returnPath = workspaceReturnPath(pathname, searchParams.toString());
   const signInHref = signInHrefForReturnPath(returnPath);
@@ -257,11 +270,11 @@ export function WorkspaceAccountMenu() {
   }, [identity, queryClient, returnPath]);
 
   useEffect(() => {
-    if (
-      identity?.kind !== "signed-out" ||
-      workspaceSignOutSuppressesExpiryRedirect()
-    ) {
+    if (identity?.kind !== "signed-out" || signOutSuppressesExpiryRedirect) {
       return;
+    }
+    if (workspaceDocumentUserId() !== null && professionalPath(returnPath)) {
+      concealRestoredWorkspace();
     }
     let cancelled = false;
     const denyFreshSignedOutPage = async () => {
@@ -276,7 +289,7 @@ export function WorkspaceAccountMenu() {
     return () => {
       cancelled = true;
     };
-  }, [identity, queryClient, returnPath]);
+  }, [identity, queryClient, returnPath, signOutSuppressesExpiryRedirect]);
 
   useEffect(() => {
     const concealIfProfessional = (path: string) => {
@@ -316,18 +329,14 @@ export function WorkspaceAccountMenu() {
   }, [queryClient]);
 
   async function signOut() {
-    if (pendingRef.current) {
+    const epoch = beginWorkspaceSignOut();
+    if (epoch === null) {
       return;
     }
-    pendingRef.current = true;
-    const epoch = beginWorkspaceSignOut();
-    setPending(true);
     setNotice(null);
     const result = await endLocalAtlasSession(queryClient);
     if (!result.ok) {
       abortWorkspaceSignOut(epoch);
-      pendingRef.current = false;
-      setPending(false);
       setNotice(result.notice);
       return;
     }

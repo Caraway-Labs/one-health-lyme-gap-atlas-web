@@ -13,9 +13,11 @@ let loggedOutInPageLifetime = false;
 let navigatingHome = false;
 let openSignOutEpoch = 0;
 let signOutEpoch = 0;
+let signOutPending = false;
 let succeededSignOutEpoch = 0;
 let restoredWorkspaceConcealed = false;
 const restoreListeners = new Set<() => void>();
+const signOutListeners = new Set<() => void>();
 
 export function noteWorkspaceDocumentUser(userId: string): void {
   if (documentUserId === null) {
@@ -27,10 +29,15 @@ export function workspaceDocumentUserId(): string | null {
   return documentUserId;
 }
 
-export function beginWorkspaceSignOut(): number {
+export function beginWorkspaceSignOut(): number | null {
+  if (signOutPending) {
+    return null;
+  }
   signOutEpoch += 1;
   openSignOutEpoch = signOutEpoch;
+  signOutPending = true;
   navigatingHome = true;
+  notifySignOutListeners();
   return signOutEpoch;
 }
 
@@ -39,20 +46,41 @@ export function abortWorkspaceSignOut(epoch: number): void {
     return;
   }
   navigatingHome = false;
+  signOutPending = false;
+  notifySignOutListeners();
 }
 
 export function completeWorkspaceSignOut(epoch: number): void {
   succeededSignOutEpoch = epoch;
   loggedOutInPageLifetime = true;
   navigatingHome = true;
+  signOutPending = true;
+  notifySignOutListeners();
 }
 
 export function workspaceLoggedOutInPageLifetime(): boolean {
   return loggedOutInPageLifetime;
 }
 
+export function workspaceSignOutPending(): boolean {
+  return signOutPending;
+}
+
 export function workspaceSignOutSuppressesExpiryRedirect(): boolean {
   return navigatingHome;
+}
+
+export function subscribeWorkspaceSignOut(listener: () => void): () => void {
+  signOutListeners.add(listener);
+  return () => {
+    signOutListeners.delete(listener);
+  };
+}
+
+function notifySignOutListeners(): void {
+  for (const listener of signOutListeners) {
+    listener();
+  }
 }
 
 export function workspaceRestoreConcealed(): boolean {
@@ -112,7 +140,9 @@ export function resetWorkspaceSignOutStateForTests(): void {
   navigatingHome = false;
   openSignOutEpoch = 0;
   signOutEpoch = 0;
+  signOutPending = false;
   succeededSignOutEpoch = 0;
+  notifySignOutListeners();
   if (typeof document === "undefined") {
     restoredWorkspaceConcealed = false;
   } else {

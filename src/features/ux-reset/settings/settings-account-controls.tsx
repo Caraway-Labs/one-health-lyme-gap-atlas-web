@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { AccountDataRights } from "@/components/account-data-rights";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import {
   abortWorkspaceSignOut,
   beginWorkspaceSignOut,
   completeWorkspaceSignOut,
+  subscribeWorkspaceSignOut,
+  workspaceSignOutPending,
 } from "@/features/ux-reset/workspace-sign-out";
 
 const SIGN_OUT_LABEL = "Sign out";
@@ -19,17 +21,18 @@ const SIGNING_OUT_LABEL = "Signing out";
 export function SettingsAccountControls() {
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const pendingRef = useRef(false);
+  const pending = useSyncExternalStore(
+    subscribeWorkspaceSignOut,
+    workspaceSignOutPending,
+    () => false
+  );
 
   async function signOut() {
-    if (pendingRef.current) {
+    const epoch = beginWorkspaceSignOut();
+    if (epoch === null) {
       return;
     }
-    pendingRef.current = true;
-    setPending(true);
     setNotice(null);
-    const epoch = beginWorkspaceSignOut();
     const result = await endLocalAtlasSession(queryClient);
     if (result.ok) {
       completeWorkspaceSignOut(epoch);
@@ -37,8 +40,6 @@ export function SettingsAccountControls() {
       return;
     }
     abortWorkspaceSignOut(epoch);
-    pendingRef.current = false;
-    setPending(false);
     setNotice(result.notice);
   }
 

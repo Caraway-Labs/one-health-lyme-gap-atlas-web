@@ -19,9 +19,7 @@ import { savedProfileQueryRoot } from "@/features/ux-reset/profile/use-saved-pro
 import { SettingsAccountControls } from "@/features/ux-reset/settings/settings-account-controls";
 import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu";
 import {
-  abortWorkspaceSignOut,
   beginWorkspaceSignOut,
-  completeWorkspaceSignOut,
   resetWorkspaceSignOutStateForTests,
 } from "@/features/ux-reset/workspace-sign-out";
 
@@ -41,6 +39,7 @@ const auth = vi.hoisted(() => {
   const listeners = new Set<(event: string, session: Session) => void>();
   return {
     configured: true,
+    failReads: 0,
     listeners,
     pause: null as Promise<unknown> | null,
     reads: 0,
@@ -92,6 +91,13 @@ vi.mock(import("@/lib/supabase/client"), () => ({
           auth.reads += 1;
           if (auth.pause) {
             await auth.pause;
+          }
+          if (auth.failReads > 0) {
+            auth.failReads -= 1;
+            return {
+              data: { session: auth.session },
+              error: { message: "read failed" },
+            };
           }
           if (auth.sessionRead === "throw") {
             throw new Error("session read failed");
@@ -231,6 +237,7 @@ describe("workspace account menu", () => {
     pathname = "/app/review";
     searchParams = new URLSearchParams("scope=CO");
     auth.configured = true;
+    auth.failReads = 0;
     auth.listeners.clear();
     auth.pause = null;
     auth.reads = 0;
@@ -864,18 +871,68 @@ describe("workspace account menu", () => {
     expect(followWorkspaceHref).not.toHaveBeenCalled();
   });
 
-  it("keeps home navigation when a later sign-out attempt fails", async () => {
-    renderMenu();
+  it("redirects when a failed sign-out leaves the session absent", async () => {
+    auth.signOut.mockImplementation(async () => {
+      notify(null);
+      auth.failReads = 1;
+      return { error: { message: "remote failed" } };
+    });
+    renderMenu({
+      note: "Draft note for account A",
+      shell: true,
+    });
     await screen.findByRole("button", { name: "Ada Lovelace" });
-    const first = beginWorkspaceSignOut();
-    const second = beginWorkspaceSignOut();
-    completeWorkspaceSignOut(first);
-    abortWorkspaceSignOut(second);
-    notify(null);
-    await expect(
-      screen.findByRole("link", { name: "Sign in" })
-    ).resolves.toBeTruthy();
-    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Ada Lovelace" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+    expect(
+      (await screen.findByTestId("workspace-sign-out-notice")).textContent
+    ).toBe(SIGN_OUT_STILL_ACTIVE);
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "replace"
+      );
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith("/");
+    expect(restoredWorkspaceConcealed()).toBeTruthy();
+    expect(
+      screen.getByTestId("restored-private-note").closest("[hidden]")
+    ).toBe(document.querySelector(".ux-reset-pro-app"));
+  });
+
+  it("disables Settings and the sidebar while either sign-out is pending", async () => {
+    const gate = Promise.withResolvers<{ error: null }>();
+    auth.signOut.mockReturnValue(gate.promise);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <TooltipProvider>
+          <SidebarProvider defaultOpen storageKey="workspace-account-test">
+            <WorkspaceAccountMenu />
+            <SettingsAccountControls />
+          </SidebarProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    const signingOut = await screen.findAllByRole("button", {
+      name: "Signing out",
+    });
+    expect(signingOut).toHaveLength(2);
+    for (const button of signingOut) {
+      expect((button as HTMLButtonElement).disabled).toBeTruthy();
+    }
+    fireEvent.click(signingOut[0]);
+    fireEvent.click(signingOut[1]);
+    expect(auth.signOut).toHaveBeenCalledOnce();
+    expect(beginWorkspaceSignOut()).toBeNull();
+    gate.resolve({ error: null });
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
   });
 
   it("places the account control in the sidebar footer, outside primary navigation", () => {
