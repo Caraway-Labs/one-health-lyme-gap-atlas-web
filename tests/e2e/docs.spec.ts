@@ -119,7 +119,7 @@ test("keeps every HelpDocs route reachable and accessible", async ({
   await expect(apiReferenceFolder).toBeVisible();
   await apiReferenceFolder.click();
   await expect(
-    sidebar.getByRole("link", { name: "Observations" })
+    sidebar.getByRole("link", { exact: true, name: "Observations" })
   ).toBeVisible();
   await expect(
     sidebar.getByRole("link", { name: "API, MCP, and access" })
