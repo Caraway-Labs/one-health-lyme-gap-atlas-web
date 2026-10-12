@@ -604,4 +604,173 @@ describe("reset feedback dialog", () => {
       revisedToken: false,
     });
   });
+
+  it("keeps unsent edits after the original report is replayed", async () => {
+    const accepted = {
+      data: {
+        feedback_id: SERVER_ID,
+        received_at: "2026-10-12T00:00:00Z",
+        replayed: true,
+      },
+      headers: new Headers(),
+      status: 200,
+    };
+    submitFeedback
+      .mockRejectedValueOnce(
+        new AtlasApiError("down", "/v1/feedback", 503, null, null, null)
+      )
+      .mockResolvedValueOnce(accepted)
+      .mockResolvedValueOnce({
+        ...accepted,
+        data: { ...accepted.data, replayed: false },
+      });
+    renderFeedback();
+    openDialog();
+    choose(/Report a problem/);
+    fireEvent.click(screen.getByRole("radio", { name: "Something broke" }));
+    fireEvent.change(screen.getByLabelText("What happened?"), {
+      target: { value: "The send control did nothing." },
+    });
+    fireEvent.change(screen.getByLabelText("What did you expect?"), {
+      target: { value: "The note should reach review." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await screen.findByRole("alert");
+    fireEvent.change(screen.getByLabelText("What happened?"), {
+      target: { value: "The count changed after the first send." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await screen.findByRole("status");
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    openDialog();
+    choose(/Report a problem/);
+    const kept = (
+      screen.getByLabelText("What happened?") as HTMLTextAreaElement
+    ).value;
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await screen.findByRole("status");
+
+    const first = submitFeedback.mock.calls[0]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    const replay = submitFeedback.mock.calls[1]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    const revised = submitFeedback.mock.calls[2]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    expect({
+      calls: submitFeedback.mock.calls.length,
+      kept,
+      replayMessage: replay.message,
+      replayToken: replay.submission_token,
+      revisedMessage: revised.message.includes("changed after"),
+      revisedToken: revised.submission_token === first.submission_token,
+    }).toStrictEqual({
+      calls: 3,
+      kept: "The count changed after the first send.",
+      replayMessage: first.message,
+      replayToken: first.submission_token,
+      revisedMessage: true,
+      revisedToken: false,
+    });
+  });
+
+  it("holds a new report until the retry cooldown ends", async () => {
+    vi.useFakeTimers();
+    const randomUUID = vi.spyOn(crypto, "randomUUID");
+    submitFeedback
+      .mockRejectedValueOnce(
+        new AtlasApiError("down", "/v1/feedback", 503, null, null, null)
+      )
+      .mockRejectedValueOnce(
+        new AtlasApiError("slow", "/v1/feedback", 429, null, 120, null)
+      )
+      .mockResolvedValueOnce({
+        data: {
+          feedback_id: SERVER_ID,
+          received_at: "2026-10-12T00:00:00Z",
+          replayed: false,
+        },
+        headers: new Headers(),
+        status: 200,
+      });
+    renderFeedback();
+    openDialog();
+    choose(/Report a problem/);
+    fireEvent.click(screen.getByRole("radio", { name: "Something broke" }));
+    fireEvent.change(screen.getByLabelText("What happened?"), {
+      target: { value: "The send control did nothing." },
+    });
+    fireEvent.change(screen.getByLabelText("What did you expect?"), {
+      target: { value: "The note should reach review." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    fireEvent.change(screen.getByLabelText("What happened?"), {
+      target: { value: "The count changed after the first send." },
+    });
+    const blocked = screen.getByRole("button", {
+      name: "Submit as a new report",
+    }) as HTMLButtonElement;
+    const blockedDisabled = blocked.disabled;
+    const tokensBeforeBlockedClick = randomUUID.mock.calls.length;
+    fireEvent.click(blocked);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(119_000);
+    });
+    const callsWhileLocked = submitFeedback.mock.calls.length;
+    const tokensWhileLocked = randomUUID.mock.calls.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Submit as a new report" })
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    const first = submitFeedback.mock.calls[0]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    const retry = submitFeedback.mock.calls[1]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    const revised = submitFeedback.mock.calls[2]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    expect({
+      blocked: blockedDisabled,
+      calls: submitFeedback.mock.calls.length,
+      callsWhileLocked,
+      retryMessage: retry.message,
+      retryToken: retry.submission_token,
+      revisedMessage: revised.message.includes("changed after"),
+      revisedToken: revised.submission_token === first.submission_token,
+      tokenRotatedWhileLocked: tokensWhileLocked !== tokensBeforeBlockedClick,
+    }).toStrictEqual({
+      blocked: true,
+      calls: 3,
+      callsWhileLocked: 2,
+      retryMessage: first.message,
+      retryToken: first.submission_token,
+      revisedMessage: true,
+      revisedToken: false,
+      tokenRotatedWhileLocked: false,
+    });
+    randomUUID.mockRestore();
+  });
 });

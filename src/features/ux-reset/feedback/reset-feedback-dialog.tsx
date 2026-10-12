@@ -247,7 +247,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
   };
 
   const sendAttempt = async (attempt: AttemptedFeedback) => {
-    if (submittingRef.current || panel.name !== "form") return;
+    if (submittingRef.current || retryLocked || panel.name !== "form") return;
     submittingRef.current = true;
     setSubmitting(true);
     setValidationError(null);
@@ -272,9 +272,18 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
         return;
       }
       setPendingRetry(null);
-      setDrafts((current) =>
-        draftsAfterSuccessfulSubmit(current, attempt.category)
-      );
+      setDrafts((current) => {
+        const newerEdits = currentAttemptDiffers(attempt, {
+          category: attempt.category,
+          drafts: current,
+          pathname,
+          searchParams,
+          submissionToken: attempt.request.submission_token,
+        });
+        return newerEdits
+          ? current
+          : draftsAfterSuccessfulSubmit(current, attempt.category);
+      });
       setSubmissionToken(createSubmissionToken());
       setPanel({ feedbackId, name: "success" });
       trackFeedbackSubmitted(attempt.topic, "success");
@@ -331,7 +340,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
   };
 
   const submitAsNewReport = () => {
-    if (panel.name !== "form") return;
+    if (retryLocked || submittingRef.current || panel.name !== "form") return;
     const nextToken = createSubmissionToken();
     const built = buildResetFeedbackSubmission({
       category: panel.category,
@@ -532,7 +541,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
                   <Button
                     {...analyticsControlAttributes("feedback_retry")}
                     className="min-h-11"
-                    disabled={submitting}
+                    disabled={submitting || retryLocked}
                     onClick={submitAsNewReport}
                     type="button"
                     variant="secondary"
