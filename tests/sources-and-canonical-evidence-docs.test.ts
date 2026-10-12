@@ -117,8 +117,42 @@ describe("sources and canonical evidence documentation", () => {
     expect(missing).toStrictEqual([]);
     expect(sourcePage).toContain("does not copy those schemas");
     expect(sourcePage).toContain(
-      "MCP contracts and tests in the [Atlas MCP repository]"
+      "tests in the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp)"
     );
+  });
+
+  it("documents the released MCP evidence surface and keeps smoke-only historical", () => {
+    const requiredPhrases = [
+      "atlas_discover_indicators",
+      "atlas_get_county_profile",
+      "atlas_get_evidence_provenance",
+      "atlas_resolve_geographies",
+      "docs/public-evidence-tools.md",
+      "docs/adr/0003-public-evidence-tools.md",
+      "does not establish that evidence exists",
+      "smoke tools only is historical",
+      "Live EHR connectivity, TEFCA",
+    ];
+    const missing = requiredPhrases.filter(
+      (phrase) => !sourcePage.includes(phrase)
+    );
+    const accessPage = readDoc("api-mcp-and-access.mdx");
+    const provenancePage = readDoc("develop/provenance.mdx");
+    const linkedPagesMissing = [
+      "atlas_get_county_profile",
+      "atlas_get_evidence_provenance",
+      "public-evidence-tools.md",
+      "smoke-only",
+      "historical",
+    ].filter(
+      (phrase) =>
+        !accessPage.includes(phrase) || !provenancePage.includes(phrase)
+    );
+
+    expect(missing).toStrictEqual([]);
+    expect(linkedPagesMissing).toStrictEqual([]);
+    expect(accessPage).toContain("issuecomment-6116902766");
+    expect(accessPage).toContain("exactly six tools");
   });
 
   it("keeps the flexible-source story on the provenance pages", () => {
@@ -170,4 +204,59 @@ describe("sources and canonical evidence documentation", () => {
 
     expect(violations).toStrictEqual([]);
   });
+
+  it("rejects a current-release claim that MCP is smoke tools only", () => {
+    const docsFiles = collectDocFiles(docsRoot);
+    const contentFiles = [
+      ...docsFiles,
+      path.join(
+        process.cwd(),
+        "src/features/ux-reset/ai-responsible-use/content.ts"
+      ),
+    ];
+    const bannedPhrases = [
+      "Production MCP does not serve",
+      "Production Atlas-data MCP is not available",
+      "REST remains the way to read Atlas data",
+      "REST remains the supported interface for Atlas data",
+      "does not return Atlas evidence",
+      "development MCP server does not read",
+      "production MCP is not the data interface",
+      "exposes smoke tools only",
+      "with smoke tools only",
+    ];
+    const problems: string[] = [];
+
+    for (const file of contentFiles) {
+      const relativeFile = path.relative(process.cwd(), file);
+      const text = fs.readFileSync(file, "utf-8");
+      for (const phrase of bannedPhrases) {
+        if (text.includes(phrase)) {
+          problems.push(`${relativeFile}: ${phrase}`);
+        }
+      }
+      for (const sentence of text.split(/\n|(?<=\.)\s+/u)) {
+        const claimsSmokeOnly = /smoke tools only|smoke-only/iu.test(sentence);
+        const labelsHistorical = /\bhistorical\b/iu.test(sentence);
+        if (claimsSmokeOnly && !labelsHistorical) {
+          problems.push(`${relativeFile}: ${sentence.trim()}`);
+        }
+      }
+    }
+
+    expect(problems).toStrictEqual([]);
+  });
 });
+
+function collectDocFiles(directory: string): string[] {
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectDocFiles(fullPath));
+    } else if (entry.name.endsWith(".mdx") || entry.name.endsWith(".md")) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
