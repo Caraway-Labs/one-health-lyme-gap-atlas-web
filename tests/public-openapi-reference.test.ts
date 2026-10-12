@@ -56,6 +56,7 @@ describe("public OpenAPI reference", () => {
         contract.provenance.sourceCommit,
         contract.provenance.sha256,
         "[OpenAPI schema](https://api.onehealthatlas.org/openapi.json)",
+        "[Atlas documentation and developer guides](https://onehealthatlas.org/docs)",
       ])
     ).toStrictEqual([]);
     expect(index.includes("Alaska") || index.includes("Hawaii")).toBeFalsy();
@@ -671,6 +672,78 @@ describe("public OpenAPI reference", () => {
   it("rejects a security scheme reference that is not a security scheme", () => {
     expect(failureText(() => checkDocument(schemaSecurityScheme()))).toContain(
       "must point to components.securitySchemes"
+    );
+  });
+
+  it("inherits document security and renders content parameters and schemaless media", () => {
+    const pinned = pin(documentWithInheritedSecurityAndContent());
+    const page = requiredFile(
+      renderPublicApiReference(
+        loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+      ),
+      "discovery.mdx"
+    );
+    const inherited = between(
+      page,
+      "## Referenced indicators",
+      "## Submit an indicator"
+    );
+    const requestBody = between(inherited, "### Request body", "### Security");
+    const response = between(inherited, "#### 200", "\n## ");
+    const published = between(page, "## Submit an indicator", "\n## ");
+
+    expect(
+      missingPhrases(page, [
+        "X-Atlas-Key",
+        "Structured filter.",
+        "08001",
+        "- Deprecated.",
+        "- Empty values are allowed.",
+        "- Style: `form`",
+        "- Explode: yes",
+        "- Reserved characters are allowed.",
+        "[Indicator guide](https://onehealthatlas.org/docs)",
+        "[Discovery guide](https://onehealthatlas.org/docs)",
+        "human_disease_burden",
+        "case_count_floor_2023",
+        "##### text/plain",
+        "Seconds before retry.",
+        "Content type: `text/plain`",
+        "**profile**",
+        "Profile token.",
+        "- Server: `https://api.onehealthatlas.org` (Link server)",
+      ])
+    ).toStrictEqual([]);
+    expect(requestBody.includes("Schema:")).toBeFalsy();
+    expect(response.includes("Schema:")).toBeFalsy();
+    expect(published.includes("X-Atlas-Key")).toBeFalsy();
+    expect(published).toContain("[]");
+  });
+
+  it("rejects parameters and headers that mix or omit schema and content", () => {
+    expect(
+      failureText(() => checkDocument(parameterSchemaAndContent()))
+    ).toContain("must not declare both schema and content");
+    expect(
+      failureText(() => checkDocument(parameterWithoutSchemaOrContent()))
+    ).toContain("must declare schema or content");
+    expect(
+      failureText(() => checkDocument(parameterContentWithTwoMediaTypes()))
+    ).toContain("content must contain exactly one media type");
+    expect(
+      failureText(() => checkDocument(parameterContentWithExample()))
+    ).toContain("with content must not declare example or examples");
+    expect(
+      failureText(() => checkDocument(headerWithoutSchemaOrContent()))
+    ).toContain("must declare schema or content");
+  });
+
+  it("rejects external documentation and encoding that cannot be rendered", () => {
+    expect(
+      failureText(() => checkDocument(externalDocsWithoutHttpUrl()))
+    ).toContain("externalDocs url must be an HTTP(S) URL");
+    expect(failureText(() => checkDocument(encodingNotAnObject()))).toContain(
+      "encoding must be an object"
     );
   });
 });
@@ -1568,6 +1641,203 @@ function parameterHeaderRef(): Record<string, unknown> {
   paths["/v1/indicators"].get.responses["200"].headers = {
     ETag: { $ref: "#/components/parameters/County" },
   };
+  return document;
+}
+
+function documentWithInheritedSecurityAndContent(): Record<string, unknown> {
+  const base = minimalDocument();
+  return {
+    ...base,
+    components: {
+      ...(base.components as Record<string, unknown>),
+      securitySchemes: {
+        ApiKey: { in: "header", name: "X-Atlas-Key", type: "apiKey" },
+      },
+    },
+    paths: {
+      "/v1/indicators": {
+        get: {
+          externalDocs: {
+            description: "Indicator guide",
+            url: "https://onehealthatlas.org/docs",
+          },
+          operationId: "indicators_v1_indicators_get",
+          parameters: [
+            {
+              allowEmptyValue: true,
+              allowReserved: true,
+              content: {
+                "application/json": {
+                  example: { county_fips: "08001" },
+                  schema: { type: "object" },
+                },
+              },
+              deprecated: true,
+              description: "Structured filter.",
+              explode: true,
+              in: "query",
+              name: "filter",
+              required: true,
+              style: "form",
+            },
+          ],
+          requestBody: {
+            content: {
+              "application/json": {
+                encoding: {
+                  profile: {
+                    contentType: "application/json",
+                    headers: {
+                      "X-Profile": {
+                        content: {
+                          "text/plain": { example: "profile-token" },
+                        },
+                        description: "Profile token.",
+                      },
+                    },
+                    style: "form",
+                  },
+                },
+                examples: {
+                  sample: {
+                    value: { indicator_id: "human_disease_burden" },
+                  },
+                },
+              },
+            },
+            description: "Examples only.",
+            required: true,
+          },
+          responses: {
+            "200": {
+              content: {
+                "text/plain": { example: "case_count_floor_2023" },
+              },
+              description: "Illustrated indicators.",
+              headers: {
+                "Retry-After": {
+                  content: {
+                    "text/plain": { example: "30" },
+                  },
+                  description: "Seconds before retry.",
+                },
+              },
+              links: {
+                Again: {
+                  description: "Read again.",
+                  operationId: "indicators_v1_indicators_get",
+                  server: {
+                    description: "Link server",
+                    url: "https://api.onehealthatlas.org",
+                  },
+                },
+              },
+            },
+          },
+          summary: "Referenced indicators",
+          tags: ["discovery"],
+        },
+        post: {
+          operationId: "indicators_post",
+          responses: { "204": { description: "Public write." } },
+          security: [],
+          summary: "Submit an indicator",
+          tags: ["discovery"],
+        },
+      },
+    },
+    security: [{ ApiKey: [] }],
+    tags: [
+      {
+        description: "Discovery.",
+        externalDocs: {
+          description: "Discovery guide",
+          url: "https://onehealthatlas.org/docs",
+        },
+        name: "discovery",
+      },
+    ],
+  };
+}
+
+function parameterOnMinimal(
+  parameter: Record<string, unknown>
+): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": { get: { parameters?: unknown[] } };
+  };
+  paths["/v1/indicators"].get.parameters = [parameter];
+  return document;
+}
+
+function parameterSchemaAndContent(): Record<string, unknown> {
+  return parameterOnMinimal({
+    content: { "application/json": { schema: { type: "object" } } },
+    in: "query",
+    name: "filter",
+    schema: { type: "string" },
+  });
+}
+
+function parameterWithoutSchemaOrContent(): Record<string, unknown> {
+  return parameterOnMinimal({ in: "query", name: "filter" });
+}
+
+function parameterContentWithTwoMediaTypes(): Record<string, unknown> {
+  return parameterOnMinimal({
+    content: {
+      "application/json": { schema: { type: "object" } },
+      "text/plain": { schema: { type: "string" } },
+    },
+    in: "query",
+    name: "filter",
+  });
+}
+
+function parameterContentWithExample(): Record<string, unknown> {
+  return parameterOnMinimal({
+    content: { "application/json": { schema: { type: "object" } } },
+    example: "08001",
+    in: "query",
+    name: "filter",
+  });
+}
+
+function headerWithoutSchemaOrContent(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": {
+      get: { responses: { "200": { headers?: unknown } } };
+    };
+  };
+  paths["/v1/indicators"].get.responses["200"].headers = {
+    "X-Trace": { description: "Trace." },
+  };
+  return document;
+}
+
+function externalDocsWithoutHttpUrl(): Record<string, unknown> {
+  return {
+    ...minimalDocument(),
+    externalDocs: { description: "Mail", url: "mailto:docs@example.com" },
+  };
+}
+
+function encodingNotAnObject(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": {
+      get: {
+        responses: {
+          "200": { content: { "application/json": { encoding?: unknown } } };
+        };
+      };
+    };
+  };
+  paths["/v1/indicators"].get.responses["200"].content[
+    "application/json"
+  ].encoding = [];
   return document;
 }
 

@@ -70,13 +70,24 @@ export type PublicOpenApiProvenance = {
 
 type JsonRecord = Record<string, unknown>;
 
+type ExternalDocsView = {
+  description: string;
+  url: string;
+};
+
 type ParameterView = {
+  allowEmptyValue: boolean;
+  allowReserved: boolean;
+  content: MediaView[] | undefined;
+  deprecated: boolean;
   description: string;
   examples: ExampleView[];
+  explode: boolean | undefined;
   location: string;
   name: string;
   required: boolean;
   schema: unknown;
+  style: string;
 };
 
 type ExampleView = {
@@ -87,17 +98,31 @@ type ExampleView = {
 };
 
 type MediaView = {
+  encoding: EncodingView[];
   examples: ExampleView[];
   mediaType: string;
   schema: unknown;
 };
 
+type EncodingView = {
+  allowReserved: boolean;
+  contentType: string;
+  explode: boolean | undefined;
+  headers: HeaderView[];
+  name: string;
+  style: string;
+};
+
 type HeaderView = {
+  content: MediaView[] | undefined;
+  deprecated: boolean;
   description: string;
   examples: ExampleView[];
+  explode: boolean | undefined;
   name: string;
   required: boolean;
   schema: unknown;
+  style: string;
 };
 
 type LinkView = {
@@ -107,6 +132,7 @@ type LinkView = {
   operationRef: string;
   parameters: unknown;
   requestBody: unknown;
+  server: ServerView | undefined;
 };
 
 type ResponseView = {
@@ -130,6 +156,7 @@ type SecuritySchemeView = {
 type OperationView = {
   deprecated: boolean;
   description: string;
+  externalDocs: ExternalDocsView | undefined;
   method: string;
   operationId: string;
   parameters: ParameterView[];
@@ -149,6 +176,7 @@ type OperationView = {
 
 type TagView = {
   description: string;
+  externalDocs: ExternalDocsView | undefined;
   name: string;
   operations: OperationView[];
   slug: string;
@@ -157,6 +185,7 @@ type TagView = {
 export type LoadedPublicOpenApiContract = {
   description: string;
   document: JsonRecord;
+  externalDocs: ExternalDocsView | undefined;
   provenance: PublicOpenApiProvenance;
   schemas: JsonRecord;
   servers: ServerView[];
@@ -250,6 +279,7 @@ export function loadPublicOpenApiContract(
   return {
     description: text(info, "description"),
     document,
+    externalDocs: externalDocsFrom(document.externalDocs, "Document"),
     provenance: {
       applicationVersion,
       httpContract: httpContractLabel(
@@ -458,6 +488,7 @@ function buildTags(document: JsonRecord): TagView[] {
   const paths = asRecord(document.paths, "paths");
   const declared = Array.isArray(document.tags) ? document.tags : [];
   const descriptions = new Map<string, string>();
+  const tagDocs = new Map<string, ExternalDocsView>();
   const order: string[] = [];
   for (const tag of declared) {
     if (!isRecord(tag) || typeof tag.name !== "string" || tag.name === "") {
@@ -468,6 +499,8 @@ function buildTags(document: JsonRecord): TagView[] {
     }
     if (!order.includes(tag.name)) order.push(tag.name);
     descriptions.set(tag.name, text(tag, "description"));
+    const docs = externalDocsFrom(tag.externalDocs, `Tag ${tag.name}`);
+    if (docs) tagDocs.set(tag.name, docs);
   }
 
   const grouped = new Map<string, OperationView[]>();
@@ -512,6 +545,7 @@ function buildTags(document: JsonRecord): TagView[] {
       usedSlugs.add(slug);
       return {
         description: descriptions.get(name) ?? "",
+        externalDocs: tagDocs.get(name),
         name,
         operations: grouped.get(name) ?? [],
         slug,
@@ -547,6 +581,7 @@ function buildOperation(
   return {
     deprecated: operation.deprecated === true,
     description: text(operation, "description"),
+    externalDocs: externalDocsFrom(operation.externalDocs, label),
     method: method.toUpperCase(),
     operationId,
     parameters: mergeParameters(
@@ -614,8 +649,13 @@ function securityDeclaration(
   pathItem: JsonRecord,
   label: string
 ): { requirements: unknown[]; schemes: SecuritySchemeView[] } | undefined {
-  const requirements =
-    operation.security === undefined ? pathItem.security : operation.security;
+  let requirements: unknown;
+  if (operation.security !== undefined) requirements = operation.security;
+  else if (pathItem.security === undefined) {
+    requirements = document.security;
+  } else {
+    requirements = pathItem.security;
+  }
   if (requirements === undefined) return undefined;
   if (!Array.isArray(requirements)) {
     throw new PublicOpenApiContractError(
@@ -717,16 +757,19 @@ function buildHeaders(
       `Operation ${operationId} response ${status} header ${name} must be an object.`,
       "#/components/headers/"
     );
-    const schema = isRecord(resolved.schema) ? resolved.schema : undefined;
+    const label = `Header ${name}`;
+    const body = schemaOrContent(document, resolved, label);
+    const schema = isRecord(body.schema) ? body.schema : undefined;
     return {
+      content: body.content,
+      deprecated: booleanFlag(resolved, "deprecated") === true,
       description: text(resolved, "description") || text(schema, "description"),
-      examples: [
-        ...collectExamples(document, resolved),
-        ...collectExamples(document, schema),
-      ],
+      examples: body.examples,
+      explode: booleanFlag(resolved, "explode"),
       name,
       required: resolved.required === true,
-      schema: resolved.schema,
+      schema: body.schema,
+      style: styleOf(resolved),
     };
   });
 }
@@ -758,6 +801,10 @@ function buildLinks(
       operationRef: text(resolved, "operationRef"),
       parameters: resolved.parameters,
       requestBody: resolved.requestBody,
+      server:
+        resolved.server === undefined
+          ? undefined
+          : serverView(document, resolved.server, `Link ${name}`, 0),
     };
   });
 }
@@ -797,6 +844,7 @@ function mediaViews(document: JsonRecord, value: unknown): MediaView[] {
       `Media type ${mediaType} must be an object.`
     );
     return {
+      encoding: buildEncoding(document, resolved.encoding, mediaType),
       examples: collectExamples(document, resolved),
       mediaType,
       schema: resolved.schema,
@@ -842,17 +890,21 @@ function parameterList(document: JsonRecord, value: unknown): ParameterView[] {
         "Each OpenAPI parameter needs a name and location."
       );
     }
-    const schema = isRecord(resolved.schema) ? resolved.schema : undefined;
+    const body = schemaOrContent(document, resolved, `Parameter ${name}`);
+    const schema = isRecord(body.schema) ? body.schema : undefined;
     return {
+      allowEmptyValue: booleanFlag(resolved, "allowEmptyValue") === true,
+      allowReserved: booleanFlag(resolved, "allowReserved") === true,
+      content: body.content,
+      deprecated: booleanFlag(resolved, "deprecated") === true,
       description: text(resolved, "description") || text(schema, "description"),
-      examples: [
-        ...collectExamples(document, resolved),
-        ...collectExamples(document, schema),
-      ],
+      examples: body.examples,
+      explode: booleanFlag(resolved, "explode"),
       location,
       name,
       required: resolved.required === true,
-      schema: resolved.schema,
+      schema: body.schema,
+      style: styleOf(resolved),
     };
   });
 }
@@ -898,6 +950,134 @@ function collectExamples(
   return examples;
 }
 
+function schemaOrContent(
+  document: JsonRecord,
+  source: JsonRecord,
+  label: string
+): {
+  content: MediaView[] | undefined;
+  examples: ExampleView[];
+  schema: unknown;
+} {
+  const hasSchema = source.schema !== undefined;
+  const hasContent = source.content !== undefined;
+  if (hasSchema && hasContent) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `${label} must not declare both schema and content.`
+    );
+  }
+  if (!hasSchema && !hasContent) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `${label} must declare schema or content.`
+    );
+  }
+  if (hasContent && ("example" in source || source.examples !== undefined)) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `${label} with content must not declare example or examples.`
+    );
+  }
+  const content = hasContent ? mediaViews(document, source.content) : undefined;
+  if (content && content.length !== 1) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `${label} content must contain exactly one media type.`
+    );
+  }
+  const schema = isRecord(source.schema) ? source.schema : undefined;
+  return {
+    content,
+    examples: hasContent
+      ? []
+      : [
+          ...collectExamples(document, source),
+          ...collectExamples(document, schema),
+        ],
+    schema: hasSchema ? source.schema : undefined,
+  };
+}
+
+function buildEncoding(
+  document: JsonRecord,
+  value: unknown,
+  mediaType: string
+): EncodingView[] {
+  if (value === undefined) return [];
+  if (!isRecord(value)) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `Media type ${mediaType} encoding must be an object.`
+    );
+  }
+  return Object.entries(value).map(([name, entry]) => {
+    if (!isRecord(entry)) {
+      throw new PublicOpenApiContractError(
+        "malformed",
+        `Encoding ${name} must be an object.`
+      );
+    }
+    return {
+      allowReserved: booleanFlag(entry, "allowReserved") === true,
+      contentType: text(entry, "contentType"),
+      explode: booleanFlag(entry, "explode"),
+      headers: buildHeaders(document, entry.headers, mediaType, name),
+      name,
+      style: styleOf(entry),
+    };
+  });
+}
+
+function booleanFlag(record: JsonRecord, key: string): boolean | undefined {
+  if (!(key in record)) return undefined;
+  const value = record[key];
+  if (typeof value !== "boolean") {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `OpenAPI ${key} must be a boolean.`
+    );
+  }
+  return value;
+}
+
+function styleOf(record: JsonRecord): string {
+  if (record.style === undefined) return "";
+  if (typeof record.style !== "string") {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      "OpenAPI style must be a string."
+    );
+  }
+  return record.style;
+}
+
+function externalDocsFrom(
+  value: unknown,
+  label: string
+): ExternalDocsView | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `${label} externalDocs must be an object.`
+    );
+  }
+  const url = text(value, "url");
+  if (!url.startsWith("https://") && !url.startsWith("http://")) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      `${label} externalDocs url must be an HTTP(S) URL.`
+    );
+  }
+  return { description: text(value, "description"), url };
+}
+
+function externalDocsLink(docs: ExternalDocsView): string {
+  const label = docs.description || docs.url;
+  return `[${escapeInline(label)}](${docs.url})`;
+}
+
 function renderIndex(
   contract: LoadedPublicOpenApiContract,
   schemaAnchors: Map<string, string>
@@ -938,6 +1118,14 @@ function renderIndex(
       lines.push(`- \`${escapeInline(server.url)}\`${description}`);
     }
   }
+  if (contract.externalDocs) {
+    lines.push(
+      "",
+      "## External documentation",
+      "",
+      externalDocsLink(contract.externalDocs)
+    );
+  }
 
   if (contract.summary) {
     lines.push("", `**${escapeInline(contract.summary)}**`);
@@ -977,6 +1165,7 @@ function renderTagPage(
     "",
   ];
   if (tag.description) lines.push(escapeMdx(tag.description), "");
+  if (tag.externalDocs) lines.push(externalDocsLink(tag.externalDocs), "");
   for (const operation of tag.operations) {
     lines.push(renderOperation(operation, schemaAnchors), "");
   }
@@ -997,6 +1186,12 @@ function renderOperation(
     `Tag: ${operation.tags.map((tag) => `\`${escapeInline(tag)}\``).join(", ") || "`untagged`"}`,
   ];
   if (operation.deprecated) lines.push("", "Deprecated.");
+  if (operation.externalDocs) {
+    lines.push(
+      "",
+      `Documentation: ${externalDocsLink(operation.externalDocs)}`
+    );
+  }
   if (operation.pathSummary) lines.push("", escapeMdx(operation.pathSummary));
   if (operation.pathDescription) {
     lines.push("", escapeMdx(operation.pathDescription));
@@ -1023,11 +1218,28 @@ function renderOperation(
         `- Location: \`${escapeInline(parameter.location)}\``,
         `- Required: ${parameter.required ? "yes" : "no"}`
       );
+      if (parameter.deprecated) lines.push("- Deprecated.");
       if (parameter.description) {
         lines.push(`- ${escapeInline(parameter.description)}`);
       }
-      lines.push("", "Schema:", "", jsonFence(parameter.schema));
-      appendExamples(lines, parameter.examples);
+      if (parameter.allowEmptyValue) lines.push("- Empty values are allowed.");
+      if (parameter.style) {
+        lines.push(`- Style: \`${escapeInline(parameter.style)}\``);
+      }
+      if (parameter.explode !== undefined) {
+        lines.push(`- Explode: ${parameter.explode ? "yes" : "no"}`);
+      }
+      if (parameter.allowReserved) {
+        lines.push("- Reserved characters are allowed.");
+      }
+      if (parameter.content) {
+        for (const media of parameter.content) {
+          lines.push("", renderMedia(media, schemaAnchors));
+        }
+      } else if (parameter.schema !== undefined) {
+        lines.push("", "Schema:", "", jsonFence(parameter.schema));
+        appendExamples(lines, parameter.examples);
+      }
       lines.push("");
     }
   }
@@ -1069,7 +1281,7 @@ function renderOperation(
     if (response.headers.length > 0) {
       lines.push("##### Headers", "");
       for (const header of response.headers) {
-        lines.push(renderHeader(header), "");
+        lines.push(renderHeader(header, schemaAnchors), "");
       }
     }
     if (response.media.length === 0) {
@@ -1089,19 +1301,33 @@ function renderOperation(
   return lines.join("\n").trim();
 }
 
-function renderHeader(header: HeaderView): string {
+function renderHeader(
+  header: HeaderView,
+  schemaAnchors: Map<string, string>
+): string {
   const lines = [
     `###### ${escapeInline(header.name)}`,
     "",
     `- Required: ${header.required ? "yes" : "no"}`,
   ];
+  if (header.deprecated) lines.push("- Deprecated.");
   if (header.description) lines.push(`- ${escapeInline(header.description)}`);
-  const schemaType = headerSchemaType(header.schema);
-  if (schemaType) lines.push(`- Type: \`${escapeInline(schemaType)}\``);
-  if (header.schema !== undefined) {
-    lines.push("", "Schema:", "", jsonFence(header.schema));
+  if (header.style) lines.push(`- Style: \`${escapeInline(header.style)}\``);
+  if (header.explode !== undefined) {
+    lines.push(`- Explode: ${header.explode ? "yes" : "no"}`);
   }
-  appendExamples(lines, header.examples);
+  if (header.content) {
+    for (const media of header.content) {
+      lines.push("", renderMedia(media, schemaAnchors, true));
+    }
+  } else {
+    const schemaType = headerSchemaType(header.schema);
+    if (schemaType) lines.push(`- Type: \`${escapeInline(schemaType)}\``);
+    if (header.schema !== undefined) {
+      lines.push("", "Schema:", "", jsonFence(header.schema));
+    }
+    appendExamples(lines, header.examples);
+  }
   return lines.join("\n");
 }
 
@@ -1120,6 +1346,12 @@ function renderLink(link: LinkView): string {
   if (link.requestBody !== undefined) {
     lines.push("", "Request body:", "", jsonFence(link.requestBody));
   }
+  if (link.server) {
+    const description = link.server.description
+      ? ` (${escapeInline(link.server.description)})`
+      : "";
+    lines.push(`- Server: \`${escapeInline(link.server.url)}\`${description}`);
+  }
   return lines.join("\n");
 }
 
@@ -1130,25 +1362,51 @@ function headerSchemaType(schema: unknown): string {
 
 function renderMedia(
   media: MediaView,
-  schemaAnchors: Map<string, string>
+  schemaAnchors: Map<string, string>,
+  nested = false
 ): string {
-  const lines = [`##### ${escapeInline(media.mediaType)}`, ""];
-  const refs = findRefs(media.schema);
-  if (refs.length > 0) {
-    lines.push(
-      refs
-        .map((ref) => {
-          const anchor = schemaAnchors.get(ref);
-          const name = ref.split("/").at(-1) ?? ref;
-          if (!anchor) return `Schema: \`${ref}\``;
-          return `Schema: [${escapeInline(name)}](/docs/api-reference/schemas#${anchor}) (\`${ref}\`)`;
-        })
-        .join("\n")
-    );
-    lines.push("");
+  const lines = nested
+    ? [`Content type: \`${escapeInline(media.mediaType)}\``, ""]
+    : [`##### ${escapeInline(media.mediaType)}`, ""];
+  if (media.schema !== undefined) {
+    const refs = findRefs(media.schema);
+    if (refs.length > 0) {
+      lines.push(
+        refs
+          .map((ref) => {
+            const anchor = schemaAnchors.get(ref);
+            const name = ref.split("/").at(-1) ?? ref;
+            if (!anchor) return `Schema: \`${ref}\``;
+            return `Schema: [${escapeInline(name)}](/docs/api-reference/schemas#${anchor}) (\`${ref}\`)`;
+          })
+          .join("\n")
+      );
+      lines.push("");
+    }
+    lines.push("Schema:", "", jsonFence(media.schema));
   }
-  lines.push("Schema:", "", jsonFence(media.schema));
   appendExamples(lines, media.examples);
+  if (media.encoding.length > 0) {
+    lines.push("", "Encoding:");
+    for (const encoding of media.encoding) {
+      lines.push("", `**${escapeInline(encoding.name)}**`);
+      if (encoding.contentType) {
+        lines.push(`- Content type: \`${escapeInline(encoding.contentType)}\``);
+      }
+      if (encoding.style) {
+        lines.push(`- Style: \`${escapeInline(encoding.style)}\``);
+      }
+      if (encoding.explode !== undefined) {
+        lines.push(`- Explode: ${encoding.explode ? "yes" : "no"}`);
+      }
+      if (encoding.allowReserved) {
+        lines.push("- Reserved characters are allowed.");
+      }
+      for (const header of encoding.headers) {
+        lines.push("", renderHeader(header, schemaAnchors));
+      }
+    }
+  }
   return lines.join("\n").trim();
 }
 
