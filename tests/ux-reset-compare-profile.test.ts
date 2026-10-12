@@ -93,6 +93,17 @@ function reasonTexts(detail: ReturnType<typeof compareCountyDetail>): string {
   return cell.reasons.map((reason) => reason.text).join(" ");
 }
 
+function evidenceDisplay(
+  detail: ReturnType<typeof compareCountyDetail>,
+  rowId: string
+): string {
+  const cell = leftCell(detail, rowId);
+  if (cell.kind !== "evidence") {
+    throw new Error(`${rowId} is ${cell.kind}`);
+  }
+  return cell.evidence.displayValue;
+}
+
 describe("compare county profile", () => {
   it("keeps human floors from being read as exact totals", () => {
     const cases = evidenceFor(COMPARE_LEFT_FIPS, "human_case_floor");
@@ -173,16 +184,35 @@ describe("compare county profile", () => {
     );
   });
 
-  it("does not treat a negative floor as an exact or zero value", () => {
+  it("keeps a published case count when the incidence floor is null", () => {
     const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
-    detail.incidence_floor_2023 = -4;
-    const evidence = compareIncidenceFloorEvidence(detail);
+    detail.case_count_floor_2023 = 12;
+    detail.incidence_floor_2023 = null;
     const reasons = reasonTexts(detail);
-    expect(evidence.displayValue).toBe("Unavailable");
-    expect(evidence.displayValue).not.toContain("-4");
+    expect(evidenceDisplay(detail, "human_case_floor")).toBe(
+      "12 (published count floor)"
+    );
+    expect(evidenceDisplay(detail, "incidence_floor")).toBe("Unavailable");
+    expect(reasons).toContain("12 (published count floor)");
+    expect(reasons).toContain("incidence floor is Unavailable");
+    expect(reasons).not.toContain(
+      "No county-level 2023 Lyme case count was published"
+    );
+  });
+
+  it("keeps a published case count when the incidence floor is negative", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.case_count_floor_2023 = 12;
+    detail.incidence_floor_2023 = -4;
+    const reasons = reasonTexts(detail);
+    const incidence = compareIncidenceFloorEvidence(detail);
+    expect(evidenceDisplay(detail, "human_case_floor")).toContain("12");
+    expect(incidence.displayValue).toBe("Unavailable");
+    expect(reasons).toContain("12 (published count floor)");
     expect(reasons).not.toContain("-4");
-    expect(reasons).not.toContain("0.0");
-    expect(reasons).toContain("not as zero cases");
+    expect(reasons).not.toContain(
+      "No county-level 2023 Lyme case count was published"
+    );
   });
 
   it("keeps a small incidence floor from rounding to zero in the reasons", () => {

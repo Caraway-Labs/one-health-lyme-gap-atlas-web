@@ -346,13 +346,15 @@ function scoreCell(
 }
 
 /**
- * A published incidence floor is usable only when the human status is the
- * published floor and the number is finite and non-negative.
+ * A published floor number is usable only with the published-floor status
+ * and a finite, non-negative value. Count and incidence are judged separately.
  */
-function acceptedIncidenceFloor(detail: CountyDetail): number | null {
-  const floor = detail.incidence_floor_2023;
+function acceptedPublishedFloor(
+  status: string,
+  floor: number | null
+): number | null {
   if (
-    detail.human_status === "published_count_floor" &&
+    status === "published_count_floor" &&
     floor !== null &&
     Number.isFinite(floor) &&
     floor >= 0
@@ -360,6 +362,20 @@ function acceptedIncidenceFloor(detail: CountyDetail): number | null {
     return floor;
   }
   return null;
+}
+
+function acceptedIncidenceFloor(detail: CountyDetail): number | null {
+  return acceptedPublishedFloor(
+    detail.human_status,
+    detail.incidence_floor_2023
+  );
+}
+
+function acceptedCaseCountFloor(detail: CountyDetail): number | null {
+  return acceptedPublishedFloor(
+    detail.human_status,
+    detail.case_count_floor_2023
+  );
 }
 
 function recognizedReviewCategory(priority: string): boolean {
@@ -395,10 +411,14 @@ function compareReviewReasons(
   const reasons = reviewReasonsFor(detail);
   const [human, ...rest] = reasons;
   const incidence = compareIncidenceFloorEvidence(detail);
-  const humanText =
-    acceptedIncidenceFloor(detail) === null
-      ? NO_PUBLISHED_CASE_REASON
-      : `The minimum rate supported by the published 2023 county data was ${incidence.displayValue}.`;
+  const caseCount = acceptedCaseCountFloor(detail);
+  let humanText = NO_PUBLISHED_CASE_REASON;
+  if (acceptedIncidenceFloor(detail) !== null) {
+    humanText = `The minimum rate supported by the published 2023 county data was ${incidence.displayValue}.`;
+  } else if (caseCount !== null) {
+    const count = reviewHumanFloorEvidence(detail);
+    humanText = `The published 2023 incidence floor is ${incidence.displayValue}. The published case-count floor is ${count.displayValue}.`;
+  }
   return [
     {
       label: human?.label ?? "Published Lyme case data",

@@ -1019,10 +1019,16 @@ describe("published county profile section", () => {
 
   it("does not repeat a rejected negative floor in the section", () => {
     const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.case_count_floor_2023 = 12;
     detail.incidence_floor_2023 = -4;
     renderProfileSection(detail);
     const section =
       screen.getByTestId("compare-profile-section").textContent ?? "";
+    const count = within(
+      screen.getByTestId(
+        `compare-profile-cell-human_case_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
     const incidence = within(
       screen.getByTestId(
         `compare-profile-cell-incidence_floor-${COMPARE_LEFT_FIPS}`
@@ -1031,8 +1037,46 @@ describe("published county profile section", () => {
     const reasons = screen.getByTestId(
       `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
     );
+    expect({
+      count: count.textContent,
+      deniesCount: reasons.textContent?.includes(
+        "No county-level 2023 Lyme case count was published"
+      ),
+      incidence: incidence.textContent,
+      repeatsRate: section.includes("-4"),
+      showsCount: reasons.textContent?.includes("12 (published count floor)"),
+    }).toStrictEqual({
+      count: "12 (published count floor)",
+      deniesCount: false,
+      incidence: "Unavailable",
+      repeatsRate: false,
+      showsCount: true,
+    });
+  });
+
+  it("keeps a published case count when incidence is null", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.case_count_floor_2023 = 12;
+    detail.incidence_floor_2023 = null;
+    renderProfileSection(detail);
+    const count = within(
+      screen.getByTestId(
+        `compare-profile-cell-human_case_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const incidence = within(
+      screen.getByTestId(
+        `compare-profile-cell-incidence_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const reasons = screen.getByTestId(
+      `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
+    );
+    expect(count.textContent).toBe("12 (published count floor)");
     expect(incidence.textContent).toBe("Unavailable");
-    expect(reasons.textContent).not.toContain("-4");
-    expect(section).not.toContain("-4");
+    expect(reasons.textContent).toContain("12 (published count floor)");
+    expect(reasons.textContent).not.toContain(
+      "No county-level 2023 Lyme case count was published"
+    );
   });
 });
