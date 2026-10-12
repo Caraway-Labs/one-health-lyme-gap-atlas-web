@@ -620,7 +620,7 @@ test.describe("professional shell scroll containment", () => {
     });
     await page.goto("/app/settings");
     const main = page.locator("main.ux-reset-pro-main");
-    await expect(main).toBeVisible();
+    await expect(page.getByTestId("settings-job-title")).toBeVisible();
     const leaving = await main.evaluate((element) => {
       const target = document.createElement("div");
       target.id = "fragment-target";
