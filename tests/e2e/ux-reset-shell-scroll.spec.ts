@@ -99,6 +99,22 @@ async function mainScrollTop(page: Page): Promise<number> {
     .evaluate((element) => element.scrollTop);
 }
 
+async function expectTrustFooterReachable(page: Page): Promise<void> {
+  const footerLink = page.getByRole("link", { name: "Privacy", exact: true });
+  await footerLink.evaluate((element) => {
+    element.scrollIntoView({ block: "nearest" });
+  });
+  const visible = await footerLink.evaluate((element) => {
+    const linkBox = element.getBoundingClientRect();
+    return {
+      documentTop: document.scrollingElement?.scrollTop ?? 0,
+      fullyVisible:
+        linkBox.top >= -1 && linkBox.bottom <= window.innerHeight + 1,
+    };
+  });
+  expect(visible).toEqual({ documentTop: 0, fullyVisible: true });
+}
+
 async function storedMainOffset(page: Page): Promise<number> {
   return page.evaluate(() => {
     const raw = sessionStorage.getItem("atlas-main-scroll-offsets");
@@ -375,18 +391,7 @@ test.describe("professional shell scroll containment", () => {
   }) => {
     await page.setViewportSize({ height: 80, width: 1280 });
     await page.goto("/app/settings");
-    const footerLink = page.getByRole("link", { name: "Privacy", exact: true });
-    await footerLink.evaluate((element) => {
-      element.scrollIntoView({ block: "nearest" });
-    });
-    const visible = await footerLink.evaluate((element) => {
-      const box = element.getBoundingClientRect();
-      return {
-        documentTop: document.scrollingElement?.scrollTop ?? 0,
-        fullyVisible: box.top >= -1 && box.bottom <= window.innerHeight + 1,
-      };
-    });
-    expect(visible).toEqual({ documentTop: 0, fullyVisible: true });
+    await expectTrustFooterReachable(page);
   });
 
   test("keeps other professional routes in the shared shell", async ({
@@ -633,6 +638,14 @@ test.describe("professional shell scroll containment mobile", () => {
       !isMobileProject(testInfo.project.name),
       "Compact drawer scroll checks."
     );
+  });
+
+  test("reaches the trust footer on a short phone viewport", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 80, width: MOBILE.width });
+    await page.goto("/app/settings");
+    await expectTrustFooterReachable(page);
   });
 
   for (const viewport of [MOBILE, TABLET]) {

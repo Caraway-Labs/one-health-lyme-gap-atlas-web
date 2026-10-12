@@ -588,6 +588,65 @@ describe("professional main scroll history", () => {
     expect(mainElement().scrollTop).toBe(0);
   });
 
+  it("reapplies a restoration hold while the content is still too short", () => {
+    const entryId = readHistoryEntryId(window.history.state);
+    sessionStorage.setItem(
+      OFFSET_STORAGE_KEY,
+      JSON.stringify([[entryId, 9000]])
+    );
+    hydrateProfessionalMainScrollForTests();
+    renderScroller();
+    flushFrames(6);
+    expect(mainElement().scrollTop).toBe(9000);
+  });
+
+  it("cancels a restoration hold when the user scrolls before content is ready", () => {
+    const positions: number[] = [];
+    const gestures = [
+      (main: HTMLElement) => {
+        main.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
+        main.scrollTop = 25;
+        fireEvent.scroll(main);
+        return 25;
+      },
+      (main: HTMLElement) => {
+        main.dispatchEvent(new Event("touchmove", { bubbles: true }));
+        main.scrollTop = 30;
+        fireEvent.scroll(main);
+        return 30;
+      },
+      (main: HTMLElement) => {
+        keydown("End");
+        return main.scrollTop;
+      },
+      (main: HTMLElement) => {
+        main.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+        main.scrollTop = 15;
+        fireEvent.scroll(main);
+        return 15;
+      },
+    ];
+    for (const gesture of gestures) {
+      cleanup();
+      resetProfessionalMainScrollForTests();
+      window.history.replaceState(null, "", "/app/review?scope=AZ");
+      const primed = renderScroller();
+      const entryId = readHistoryEntryId(window.history.state);
+      primed.unmount();
+      sessionStorage.setItem(
+        OFFSET_STORAGE_KEY,
+        JSON.stringify([[entryId, 9000]])
+      );
+      hydrateProfessionalMainScrollForTests();
+      renderScroller();
+      const main = mainElement();
+      const chosen = gesture(main);
+      flushFrames(20);
+      positions.push(main.scrollTop, chosen);
+    }
+    expect(positions).toStrictEqual([25, 25, 30, 30, 4000, 4000, 15, 15]);
+  });
+
   it("cancels a hold when the scroller unmounts", () => {
     const entryId = readHistoryEntryId(window.history.state);
     sessionStorage.setItem(
@@ -922,6 +981,41 @@ describe("professional main scroll keyboard ownership", () => {
 
     const button = screen.getByRole("button", { name: "Save" });
     expect(keydown(" ", button).defaultPrevented).toBeFalsy();
+    expect(main.scrollTop).toBe(0);
+  });
+
+  it("leaves arrow, Home, End, and Page keys with native controls at the main boundary", () => {
+    const main = mainElement();
+    const keys = ["ArrowDown", "ArrowUp", "End", "Home", "PageDown", "PageUp"];
+    const fields = [
+      ["input", "date"],
+      ["input", "datetime-local"],
+      ["input", "email"],
+      ["input", "month"],
+      ["input", "number"],
+      ["input", "password"],
+      ["input", "range"],
+      ["input", "search"],
+      ["input", "tel"],
+      ["input", "text"],
+      ["input", "time"],
+      ["input", "url"],
+      ["input", "week"],
+      ["select", ""],
+      ["textarea", ""],
+    ];
+    const prevented: boolean[] = [];
+    for (const [tag, type] of fields) {
+      const field = appendControl(document.createElement(tag));
+      if (field instanceof HTMLInputElement) {
+        field.type = type;
+      }
+      for (const key of keys) {
+        prevented.push(keydown(key, field).defaultPrevented);
+      }
+      field.remove();
+    }
+    expect(prevented.some(Boolean)).toBeFalsy();
     expect(main.scrollTop).toBe(0);
   });
 

@@ -212,6 +212,10 @@ function offsetKeepingNavigationSnapshot(
 
 function markUserScrollGesture() {
   userScrollGesture = true;
+  // A restoration hold reapplies until the content is tall enough. A wheel,
+  // touch, paging key, or scrollbar drag is the user taking over, so the
+  // hold must stop or the next frame snaps the pane back.
+  cancelMainScrollHold();
   window.clearTimeout(userScrollGestureTimer);
   userScrollGestureTimer = window.setTimeout(() => {
     userScrollGesture = false;
