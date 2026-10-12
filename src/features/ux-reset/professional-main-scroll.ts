@@ -150,6 +150,8 @@ type NavigationScrollSnapshot = {
 };
 
 let navigationScrollSnapshot: NavigationScrollSnapshot | null = null;
+let userScrollGesture = false;
+let userScrollGestureTimer = 0;
 
 function clearNavigationScrollSnapshot() {
   if (navigationScrollSnapshot === null) {
@@ -203,6 +205,28 @@ function offsetKeepingNavigationSnapshot(
     return snapshot.offset;
   }
   return scrollTop;
+}
+
+function markUserScrollGesture() {
+  userScrollGesture = true;
+  window.clearTimeout(userScrollGestureTimer);
+  userScrollGestureTimer = window.setTimeout(() => {
+    userScrollGesture = false;
+  }, 200);
+}
+
+function retainedOffset(id: string, scrollTop: number): number {
+  if (userScrollGesture) {
+    return scrollTop;
+  }
+  const preserved = offsetKeepingNavigationSnapshot(id, scrollTop);
+  if (scrollTop === 0 && preserved === 0) {
+    const stored = readOffset(id);
+    if (typeof stored === "number" && stored > 0) {
+      return stored;
+    }
+  }
+  return preserved;
 }
 
 function navigationIntentTarget(
@@ -325,7 +349,13 @@ function scrollMainToHash(main: HTMLElement): boolean {
     target.getBoundingClientRect().top -
     main.getBoundingClientRect().top -
     offset;
+  suppressRemember.current = true;
   main.scrollTop += delta;
+  const entryId = readHistoryEntryId(window.history.state);
+  if (entryId) {
+    rememberOffset(entryId, main.scrollTop);
+  }
+  suppressRemember.current = false;
   return true;
 }
 
@@ -536,11 +566,13 @@ function installHistoryGuards() {
     const nextPath = pathAndSearchFrom(url);
     const hashOnly = nextPath === pathAndSearch();
     const leavingId = readHistoryEntryId(window.history.state);
-    if (leavingId && mountedMain && !hashOnly && !suppressRemember.current) {
-      rememberOffset(
-        leavingId,
-        offsetKeepingNavigationSnapshot(leavingId, mountedMain.scrollTop)
-      );
+    const captured = mountedMain?.scrollTop ?? 0;
+    const inherited =
+      leavingId && mountedMain && !suppressRemember.current
+        ? retainedOffset(leavingId, captured)
+        : captured;
+    if (leavingId && mountedMain && !suppressRemember.current) {
+      rememberOffset(leavingId, inherited);
     }
     clearNavigationScrollSnapshot();
     const id = createEntryId();
@@ -548,6 +580,11 @@ function installHistoryGuards() {
     pendingRestoreEntryId = null;
     if (hashOnly) {
       navigationKind = "idle";
+      if (mountedMain && !suppressRemember.current) {
+        // A same-URL push does not move main, so no scroll event seeds the
+        // new history entry. Inherit the offset or Forward restores 0.
+        rememberOffset(id, inherited);
+      }
       if (mountedMain && hashFrom(url).length > 1) {
         watchMainHash(mountedMain, window.location.pathname);
       }
@@ -899,6 +936,8 @@ export function resetProfessionalMainScrollForTests() {
   cancelMainScrollHold();
   stopHashWatch();
   clearNavigationScrollSnapshot();
+  userScrollGesture = false;
+  window.clearTimeout(userScrollGestureTimer);
   offsets = new Map();
   navigationKind = "idle";
   pendingRestoreEntryId = null;
@@ -983,6 +1022,7 @@ export function useProfessionalMainScroll(
       if (scrollableAncestor(event.target, direction)) {
         return;
       }
+      markUserScrollGesture();
       event.preventDefault();
       scrollMainForKey(main, event.key, direction);
     };
@@ -1029,14 +1069,41 @@ export function useProfessionalMainScroll(
       if (!entryId) {
         return;
       }
-      rememberOffset(
-        entryId,
-        offsetKeepingNavigationSnapshot(entryId, main.scrollTop)
-      );
+      if (userScrollGesture) {
+        clearNavigationScrollSnapshot();
+        userScrollGesture = false;
+        window.clearTimeout(userScrollGestureTimer);
+        rememberOffset(entryId, main.scrollTop);
+        return;
+      }
+      const kept = retainedOffset(entryId, main.scrollTop);
+      rememberOffset(entryId, kept);
+      const snapshotHoldingZero =
+        navigationScrollSnapshot?.id === entryId &&
+        navigationScrollSnapshot.offset > 0 &&
+        main.scrollTop === 0;
+      if (!(snapshotHoldingZero || kept === main.scrollTop)) {
+        suppressRemember.current = true;
+        main.scrollTop = kept;
+        suppressRemember.current = false;
+      }
+    };
+    const markScrollbarGesture = (event: PointerEvent) => {
+      if (event.target === main) {
+        markUserScrollGesture();
+      }
     };
     main.addEventListener("scroll", remember, { passive: true });
+    main.addEventListener("wheel", markUserScrollGesture, { passive: true });
+    main.addEventListener("touchmove", markUserScrollGesture, {
+      passive: true,
+    });
+    main.addEventListener("pointerdown", markScrollbarGesture);
     return () => {
       main.removeEventListener("scroll", remember);
+      main.removeEventListener("wheel", markUserScrollGesture);
+      main.removeEventListener("touchmove", markUserScrollGesture);
+      main.removeEventListener("pointerdown", markScrollbarGesture);
     };
   }, [mainRef]);
 }

@@ -31,6 +31,7 @@ import {
   searchParamsWithCommittedExploreContext,
   useExploreCommittedNavigation,
 } from "@/features/ux-reset/explore-committed-navigation";
+import { trustedMobileTriggerRestoreShouldStop } from "@/features/ux-reset/mobile-trigger-restore";
 import {
   RESET_ACCESS_NAV,
   RESET_WORKSPACE_NAV,
@@ -55,10 +56,10 @@ function restoreMobileNavigationTrigger(trigger: HTMLElement): () => void {
       restoring = false;
       return;
     }
-    // Inert removal can leave focus on the body, or on whatever control the
-    // browser picks next, after the drawer has already closed. Keep the
-    // trigger focused through that window. A trusted key or pointer is the
-    // user moving on, and that wins.
+    // Inert removal can leave focus on the body after the drawer closes.
+    // Keep the trigger focused through that window. Tab, Shift+Tab, and
+    // Escape end that window even when they start on the trigger. Enter,
+    // Space, and a pointer on the trigger can reopen the drawer.
     if (document.activeElement !== trigger) {
       trigger.focus({ preventScroll: true });
     }
@@ -71,10 +72,9 @@ function restoreMobileNavigationTrigger(trigger: HTMLElement): () => void {
     }
   };
   const stopForUserAction = (event: Event) => {
-    if (!event.isTrusted || event.target === trigger) {
-      return;
+    if (trustedMobileTriggerRestoreShouldStop(event, trigger)) {
+      restoring = false;
     }
-    restoring = false;
   };
   restore();
   const timers = [100, 250, 500, MOBILE_TRIGGER_RESTORE_MS].map((delay) =>

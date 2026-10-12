@@ -747,7 +747,7 @@ describe("professional main scroll history", () => {
     link.remove();
   });
 
-  it("does not keep an offset for a modified click or a hash-only link", () => {
+  it("keeps a positive offset after a modified click or hash-only link", () => {
     renderScroller();
     rememberMainOffset(640);
     const external = appendControl(document.createElement("a"));
@@ -762,21 +762,60 @@ describe("professional main scroll history", () => {
     const afterModified = JSON.parse(
       sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
     ) as [string, number][];
-    expect(afterModified.at(-1)?.[1]).toBe(0);
+    expect(afterModified.at(-1)?.[1]).toBe(640);
 
     rememberMainOffset(640);
     const hashLink = appendControl(document.createElement("a"));
     hashLink.setAttribute("href", "#settings-job-title");
     hashLink.textContent = "Job title";
+    hashLink.addEventListener("click", (event) => {
+      event.preventDefault();
+    });
     fireEvent.click(hashLink);
     mainElement().scrollTop = 0;
     fireEvent.scroll(mainElement());
     const afterHash = JSON.parse(
       sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
     ) as [string, number][];
-    expect(afterHash.at(-1)?.[1]).toBe(0);
+    expect(afterHash.at(-1)?.[1]).toBe(640);
     external.remove();
     hashLink.remove();
+  });
+
+  it("seeds a same-URL push and ignores a history jump to zero", async () => {
+    const view = renderScroller();
+    rememberMainOffset(180);
+    window.history.pushState({}, "", "/app/review?scope=AZ");
+    rememberMainOffset(420);
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    expect(mainElement().scrollTop).toBe(420);
+
+    await goHistory("back");
+    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    flushFrames();
+    expect(mainElement().scrollTop).toBeGreaterThan(100);
+    expect(mainElement().scrollTop).toBeLessThan(250);
+
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    expect(mainElement().scrollTop).toBeGreaterThan(100);
+    await goHistory("forward");
+    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    flushFrames();
+    expect(mainElement().scrollTop).toBeGreaterThan(350);
+  });
+
+  it("stores a wheel gesture that scrolls main to the top", () => {
+    renderScroller();
+    rememberMainOffset(180);
+    mainElement().dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    const stored = JSON.parse(
+      sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
+    ) as [string, number][];
+    expect(stored.at(-1)?.[1]).toBe(0);
   });
 
   it("keeps the offset when Enter activates an option before main jumps to zero", () => {

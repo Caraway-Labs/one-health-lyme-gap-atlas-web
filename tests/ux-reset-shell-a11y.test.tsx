@@ -9,6 +9,11 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import ResetWorkspaceOverviewPage from "@/app/app/page";
+import {
+  mobileTriggerRestoreShouldStop,
+  trustedMobileTriggerRestoreShouldStop,
+} from "@/features/ux-reset/mobile-trigger-restore";
+import * as mobileTriggerRestore from "@/features/ux-reset/mobile-trigger-restore";
 import { RESET_APP_PATH } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
@@ -239,6 +244,168 @@ describe("UX Reset shell accessibility", () => {
       timeout: 400,
     });
     elsewhere.remove();
+  });
+
+  it("stops restoring the mobile trigger for Tab, Shift+Tab, Escape, and an outside pointer", () => {
+    const trigger = document.createElement("button");
+    const outside = document.createElement("button");
+    document.body.append(trigger, outside);
+    const dispatched = (
+      type: "keydown" | "pointerdown",
+      target: HTMLElement,
+      init: KeyboardEventInit = {}
+    ) => {
+      const event =
+        type === "keydown"
+          ? new KeyboardEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              ...init,
+            })
+          : new MouseEvent(type, { bubbles: true, cancelable: true });
+      target.dispatchEvent(event);
+      return event;
+    };
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("keydown", trigger, { key: "Tab" }),
+        trigger
+      )
+    ).toBeTruthy();
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("keydown", trigger, { key: "Tab", shiftKey: true }),
+        trigger
+      )
+    ).toBeTruthy();
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("keydown", trigger, { key: "Escape" }),
+        trigger
+      )
+    ).toBeTruthy();
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("keydown", trigger, { key: "Enter" }),
+        trigger
+      )
+    ).toBeFalsy();
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("pointerdown", outside),
+        trigger
+      )
+    ).toBeTruthy();
+    trigger.remove();
+    outside.remove();
+  });
+
+  it("keeps restoring for Space or a pointer on the trigger, and ignores untrusted leaves", () => {
+    const trigger = document.createElement("button");
+    const outside = document.createElement("button");
+    document.body.append(trigger, outside);
+    const dispatched = (
+      type: "keydown" | "pointerdown",
+      target: HTMLElement,
+      init: KeyboardEventInit = {}
+    ) => {
+      const event =
+        type === "keydown"
+          ? new KeyboardEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              ...init,
+            })
+          : new MouseEvent(type, { bubbles: true, cancelable: true });
+      target.dispatchEvent(event);
+      return event;
+    };
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("keydown", trigger, { key: " " }),
+        trigger
+      )
+    ).toBeFalsy();
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("pointerdown", trigger),
+        trigger
+      )
+    ).toBeFalsy();
+    expect(
+      trustedMobileTriggerRestoreShouldStop(
+        dispatched("keydown", trigger, { key: "Tab" }),
+        trigger
+      )
+    ).toBeFalsy();
+    expect(
+      trustedMobileTriggerRestoreShouldStop(
+        dispatched("pointerdown", outside),
+        trigger
+      )
+    ).toBeFalsy();
+    expect(
+      mobileTriggerRestoreShouldStop(
+        dispatched("keydown", outside, { key: "ArrowDown" }),
+        trigger
+      )
+    ).toBeTruthy();
+    trigger.remove();
+    outside.remove();
+  });
+
+  it("does not pull focus back after Tab leaves Open navigation", async () => {
+    const leave = vi
+      .spyOn(mobileTriggerRestore, "trustedMobileTriggerRestoreShouldStop")
+      .mockImplementation((event, trigger) =>
+        mobileTriggerRestore.mobileTriggerRestoreShouldStop(event, trigger)
+      );
+    try {
+      mockMobileViewport(true);
+      render(
+        <ResetProfessionalShell>
+          <ResetWorkspaceOverviewPage />
+        </ResetProfessionalShell>
+      );
+
+      const openButton = screen.getByRole("button", {
+        name: "Open navigation",
+      });
+      openButton.focus();
+      fireEvent.click(openButton);
+      fireEvent.keyDown(document, { key: "Escape" });
+      await waitFor(() => {
+        expect(
+          document
+            .querySelector("#ux-reset-pro-navigation")
+            ?.hasAttribute("inert")
+        ).toBeTruthy();
+      });
+      expect(document.activeElement).toBe(openButton);
+
+      const next = document.createElement("button");
+      next.type = "button";
+      next.textContent = "Next control";
+      document.body.append(next);
+      openButton.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          key: "Tab",
+        })
+      );
+      next.focus();
+      const started = performance.now();
+      await vi.waitUntil(
+        () =>
+          performance.now() - started >= 350 && document.activeElement === next,
+        { interval: 20, timeout: 800 }
+      );
+      expect(document.activeElement).toBe(next);
+      next.remove();
+    } finally {
+      leave.mockRestore();
+    }
   });
 
   it("clears mobile modal state when the viewport grows past the drawer breakpoint", async () => {

@@ -520,10 +520,18 @@ test.describe("professional shell scroll containment", () => {
       element.scrollTop = 420;
     });
     await expect.poll(() => mainScrollTop(page)).toBe(420);
+    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
+      element.scrollTop = 0;
+    });
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(350);
 
     await page.goBack();
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(100);
     await expect.poll(() => mainScrollTop(page)).toBeLessThan(250);
+    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
+      element.scrollTop = 0;
+    });
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(100);
     await page.goForward();
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(350);
   });
@@ -637,6 +645,15 @@ test.describe("professional shell scroll containment mobile", () => {
       await expect(sidebar).toHaveAttribute("inert", "");
       await expect(open).toBeFocused();
       expect(await mainScrollTop(page)).toBe(480);
+      await page.keyboard.press("Tab");
+      const askAtlas = page.getByTestId("ask-atlas-launcher");
+      await expect(askAtlas).toBeFocused();
+      await page.waitForTimeout(400);
+      await expect(askAtlas).toBeFocused();
+      await page.keyboard.press("Shift+Tab");
+      await expect(open).toBeFocused();
+      await page.waitForTimeout(400);
+      await expect(open).toBeFocused();
       expect((await box(header)).top).toBe(0);
     });
   }
