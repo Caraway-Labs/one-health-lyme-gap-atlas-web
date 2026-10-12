@@ -9,8 +9,8 @@
 export { RESET_AI_RESPONSIBLE_USE_PATH as AI_RESPONSIBLE_USE_PATH } from "@/features/ux-reset/routes";
 
 export const aiResponsibleUseContent = {
-  version: "1.0.0",
-  lastUpdated: "2026-10-05",
+  version: "1.1.0",
+  lastUpdated: "2026-10-11",
   title: "AI / Responsible Use",
   summary:
     "Atlas uses analytical rules and a narrow set of AI-assisted tools to help people decide what deserves investigation. People remain responsible for interpretation. This page states which of those tools you can use today, which are limited, and which are not released. Methods, API detail, and evidence interpretation stay in Docs.",
@@ -99,7 +99,7 @@ export const workKinds: readonly WorkKind[] = [
     id: "modeled",
     term: "Modeled",
     definition:
-      "An estimate, forecast, or classification produced by a model. Atlas does not publish a modeled outbreak forecast or an individual-risk score.",
+      "An estimate, forecast, or classification produced by a model. The released model-assisted surveillance review priority is a persisted review tier, not a forecast. Atlas does not publish a modeled outbreak forecast or an individual-risk score.",
   },
   {
     id: "ai-generated",
@@ -144,15 +144,30 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     docLabel: "Releases and methodology",
   },
   {
-    id: "ml-prioritization",
-    maturity: "planned",
-    title: "Machine-learning prioritization and forecasts",
+    id: "model-assisted-review-priority",
+    maturity: "current",
+    title: "Model-assisted surveillance review priority",
     summary:
-      "A future validated model may help explain unusual patterns or add modeled context to a review. That model is not in the released product.",
+      "On signed-in Review and Investigate, Atlas shows a persisted HIGH, MEDIUM, or LOW priority for a county in the active batch. The API returns the tier, and the page labels it model-assisted. A person still decides what to investigate.",
     boundary:
-      "No current score, map color, or rank is a machine-learning prediction. Atlas does not forecast outbreaks, predict individual risk, or prove what caused an outcome.",
+      "This tier is review prioritization. It is not disease risk, predicted incidence, a diagnosis, or an autonomous decision. LOW is a scored tier. A missing or not-estimable result is not shown as LOW. The browser does not calculate the tier, percentile, or reasons.",
     statusBasis:
-      "Docs list anomaly candidates and interpretable modeling as planned. This web application does not ship a forecast endpoint or a model card.",
+      "Web issue 457 is closed as live in production. Review and Investigate render the API response and the limitation that this is review prioritization, not disease risk or predicted incidence.",
+    support:
+      "Deployed UI: src/features/ux-reset/surveillance-priority/. Production acceptance: web pull request 470 merged as 8886cdf75bb1274d42964b816e38f4f4de9a2d05; quality and deploy run 37717195860. API production proof: API issue 197. Contract: GET /v1/counties/{fips}/tier1-surveillance-priority.",
+    docHref: "/docs/ai-enabled-decision-intelligence",
+    docLabel: "AI-enabled decision intelligence",
+  },
+  {
+    id: "ml-forecasts",
+    maturity: "planned",
+    title: "Forecasts and anomaly candidates",
+    summary:
+      "A future validated model may help explain unusual patterns or add a forecast. That work is not in the released product. It is separate from the rules-based review score and from the deployed model-assisted surveillance review priority.",
+    boundary:
+      "Atlas does not forecast outbreaks, predict individual risk, or prove what caused an outcome. The deployed review tier is not a forecast.",
+    statusBasis:
+      "Docs list anomaly candidates and interpretable modeling as planned. This web application does not ship a forecast endpoint.",
     support:
       "Owning contract: content/docs/ai-enabled-decision-intelligence.mdx row “Anomaly candidates and interpretable modeling | Planned”; content/docs/evidence-and-uncertainty.mdx modeled-output row. Source intent: web issue 393. No deployed forecast capability.",
     docHref: "/docs/ai-enabled-decision-intelligence",
