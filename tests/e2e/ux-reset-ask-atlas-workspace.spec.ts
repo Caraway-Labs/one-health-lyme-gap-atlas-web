@@ -507,6 +507,54 @@ test("scrolls the research page instead of trapping the transcript", async ({
   await expectControlReachable(page.getByLabel("Your question"));
 });
 
+test("focuses the transcript when a saved conversation link is opened from the keyboard", async ({
+  page,
+}) => {
+  await installExploreMocks(page);
+  await seedSavedCountyChat(page);
+  await page.goto(EXPLORE_URL);
+  await page.evaluate(() => {
+    const link = document.createElement("a");
+    link.dataset.testid = "saved-conversation-link";
+    link.href = "/app/assistant?conversation=conversation-county";
+    link.textContent = "Open saved conversation";
+    link.style.position = "fixed";
+    link.style.top = "0";
+    link.style.zIndex = "20";
+    document.body.append(link);
+  });
+  const link = page.getByTestId("saved-conversation-link");
+  await link.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/conversation=conversation-county/);
+  await expect(
+    page.getByText("County answer stays in the transcript.")
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        const transcript = document.querySelector(".chat-transcript");
+        if (
+          !(active instanceof HTMLElement) ||
+          !(transcript instanceof HTMLElement)
+        ) {
+          return null;
+        }
+        return {
+          focused: active === transcript,
+          overflowY: getComputedStyle(transcript).overflowY,
+          tabIndex: active.getAttribute("tabindex"),
+        };
+      })
+    )
+    .toEqual({
+      focused: true,
+      overflowY: "visible",
+      tabIndex: "-1",
+    });
+});
+
 test("ignores a late answer after a newer question is saved", async ({
   page,
 }) => {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useSyncExternalStore } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -10,8 +11,10 @@ import {
   type AskAtlasSurface,
 } from "@/features/ux-reset/ask-atlas/inherited-context";
 import {
+  absentAskAtlasPageReference,
   askAtlasReturnLabel,
-  readAskAtlasPageReference,
+  readAskAtlasPageReferenceClient,
+  subscribeAskAtlasPageReference,
 } from "@/features/ux-reset/ask-atlas/page-reference";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +47,11 @@ function boundaryCopy(surface: AskAtlasSurface): string {
 export function AskAtlasPageReferenceStrip() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const state = readAskAtlasPageReference(
-    pathname,
-    new URLSearchParams(searchParams.toString())
+  const search = searchParams.toString();
+  const state = useSyncExternalStore(
+    subscribeAskAtlasPageReference,
+    () => readAskAtlasPageReferenceClient(pathname, search),
+    absentAskAtlasPageReference
   );
 
   if (state.kind === "absent") {

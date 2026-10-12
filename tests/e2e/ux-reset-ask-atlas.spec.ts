@@ -373,6 +373,46 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page).not.toHaveURL(/page_ref=/);
   });
 
+  test("keeps an accepted page reference across reload and browser history", async ({
+    page,
+  }) => {
+    await installExploreMocks(page);
+    await page.goto(EXPLORE_URL);
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
+      .toBe("08001");
+    await page.getByTestId("ask-atlas-launcher").click();
+    const reference = page.getByTestId("ask-atlas-page-reference");
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
+    );
+    await expect(referenceField(page, "geography")).toContainText(
+      "Adams, Colorado (08001)"
+    );
+
+    await page.reload();
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
+    );
+    await expect(referenceField(page, "geography")).toContainText(
+      "Adams, Colorado (08001)"
+    );
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/explore/);
+    await page.goForward();
+    await expect(page).toHaveURL(/\/app\/assistant/);
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
+    );
+    await expect(referenceField(page, "geography")).toContainText(
+      "Adams, Colorado (08001)"
+    );
+  });
+
   test("withholds a page reference until Explore context is validated", async ({
     page,
   }) => {

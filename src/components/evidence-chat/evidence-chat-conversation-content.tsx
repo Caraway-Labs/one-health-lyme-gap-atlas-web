@@ -165,15 +165,17 @@ export function EvidenceChatConversationContent({
         </p>
       )}
       {askAtlasPage && showEmptyState ? null : (
-        /* tabIndex satisfies axe scrollable-region-focusable for overflow transcript */
+        /* Public drawer tabIndex=0 reaches a scrollable transcript. Ask Atlas
+           uses -1 so a restored conversation can be focused without a tab stop
+           or a nested scroll trap. */
         <div
           className="chat-transcript"
           aria-label="Conversation transcript"
           aria-live="polite"
           ref={transcriptRef}
           role="region"
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard access to scrollable transcript
-          tabIndex={askAtlasPage ? undefined : 0}
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- programmatic focus target; the public drawer transcript also scrolls
+          tabIndex={askAtlasPage ? -1 : 0}
         >
           <div className="chat-transcript-flow">
             {missingConversationId ? (

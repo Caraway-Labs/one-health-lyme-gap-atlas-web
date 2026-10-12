@@ -34,6 +34,9 @@ export const ASK_ATLAS_PAGE_REFERENCE_PARAM = "page_ref";
 
 const PAGE_REFERENCE_VERSION = 1;
 const MAX_PAGE_REFERENCE_LENGTH = 4000;
+const ACCEPTED_PAGE_REFERENCE_KEY =
+  "one-health-lyme-gap-atlas:ask-atlas-accepted-page-reference:v1";
+const MAX_ACCEPTED_PAGE_REFERENCES = 8;
 const MEASURE_TOKEN_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 const SCOPE_PATTERN = /^[A-Z]{2}$/;
 
@@ -530,6 +533,110 @@ export function askAtlasPageReferenceHref(
   return query ? `${pathname}?${query}` : pathname;
 }
 
+function rememberAcceptedPageReference(reference: AskAtlasPageReference): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const encoded = serializeAskAtlasPageReference(reference);
+  if (!encoded) {
+    return;
+  }
+  const items = [
+    encoded,
+    ...readAcceptedPageReferences().filter((item) => item !== encoded),
+  ].slice(0, MAX_ACCEPTED_PAGE_REFERENCES);
+  try {
+    sessionStorage.setItem(
+      ACCEPTED_PAGE_REFERENCE_KEY,
+      JSON.stringify({ items, v: 1 })
+    );
+  } catch {
+    // A later read fails closed when this browser cannot retain the snapshot.
+  }
+}
+
+function readAcceptedPageReferences(): string[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  try {
+    const raw = sessionStorage.getItem(ACCEPTED_PAGE_REFERENCE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || parsed.v !== 1 || !Array.isArray(parsed.items)) {
+      return [];
+    }
+    return parsed.items.filter(
+      (item): item is string =>
+        typeof item === "string" && item.length <= MAX_PAGE_REFERENCE_LENGTH
+    );
+  } catch {
+    return [];
+  }
+}
+
+function optionalReturnAgrees(
+  candidate: string | null,
+  accepted: string | null
+): boolean {
+  return candidate === null || candidate === accepted;
+}
+
+function acceptedSnapshotCovers(candidate: AskAtlasPageReference): boolean {
+  for (const encoded of readAcceptedPageReferences()) {
+    const accepted = parseSerializedPageReference(encoded);
+    if (!accepted || accepted.context.surface !== candidate.context.surface) {
+      continue;
+    }
+    const fieldsAgree = ASK_ATLAS_INHERITED_FIELD_KEYS.every((key) => {
+      const urlField = candidate.context.fields[key];
+      const storedField = accepted.context.fields[key];
+      if (urlField.state === "absent") {
+        return true;
+      }
+      return (
+        storedField.state === "validated" &&
+        storedField.id === urlField.id &&
+        storedField.label === urlField.label
+      );
+    });
+    if (!fieldsAgree) {
+      continue;
+    }
+    const returnsAgree =
+      candidate.returnTo.scope === accepted.returnTo.scope &&
+      optionalReturnAgrees(
+        candidate.returnTo.county,
+        accepted.returnTo.county
+      ) &&
+      optionalReturnAgrees(
+        candidate.returnTo.dataset,
+        accepted.returnTo.dataset
+      ) &&
+      optionalReturnAgrees(
+        candidate.returnTo.period,
+        accepted.returnTo.period
+      ) &&
+      optionalReturnAgrees(
+        candidate.returnTo.metric,
+        accepted.returnTo.metric
+      ) &&
+      optionalReturnAgrees(
+        candidate.returnTo.mapScope,
+        accepted.returnTo.mapScope
+      ) &&
+      (candidate.returnTo.compare.length === 0 ||
+        candidate.returnTo.compare.join(",") ===
+          accepted.returnTo.compare.join(","));
+    if (returnsAgree) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function askAtlasEntryHref(input: {
   context: AskAtlasInheritedContext | null;
   pathname: string;
@@ -542,6 +649,7 @@ export function askAtlasEntryHref(input: {
   if (!reference) {
     return base;
   }
+  rememberAcceptedPageReference(reference);
   const url = new URL(base, "https://atlas.local");
   return askAtlasPageReferenceHref(url.pathname, url.searchParams, reference);
 }
@@ -651,18 +759,67 @@ function hrefWithoutReference(
   return askAtlasPageReferenceHref(pathname, searchParams, null);
 }
 
+const ABSENT_PAGE_REFERENCE: AskAtlasPageReferenceState = { kind: "absent" };
+
+let cachedPageReferenceKey = "";
+let cachedPageReferenceState: AskAtlasPageReferenceState =
+  ABSENT_PAGE_REFERENCE;
+
+export function absentAskAtlasPageReference(): AskAtlasPageReferenceState {
+  return ABSENT_PAGE_REFERENCE;
+}
+
+export function subscribeAskAtlasPageReference(
+  onStoreChange: () => void
+): () => void {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+/** Stable client snapshot. Server rendering stays absent until this runs. */
+export function readAskAtlasPageReferenceClient(
+  pathname: string,
+  search: string
+): AskAtlasPageReferenceState {
+  let record = "";
+  try {
+    record = sessionStorage.getItem(ACCEPTED_PAGE_REFERENCE_KEY) ?? "";
+  } catch {
+    record = "";
+  }
+  const key = `${pathname}?${search}\n${record}`;
+  if (key === cachedPageReferenceKey) {
+    return cachedPageReferenceState;
+  }
+  cachedPageReferenceKey = key;
+  cachedPageReferenceState = readAskAtlasPageReference(
+    pathname,
+    new URLSearchParams(search)
+  );
+  return cachedPageReferenceState;
+}
+
 export function readAskAtlasPageReference(
   pathname: string,
   searchParams: URLSearchParams
 ): AskAtlasPageReferenceState {
   const clearHref = hrefWithoutReference(pathname, searchParams);
   if (!searchParams.has(ASK_ATLAS_PAGE_REFERENCE_PARAM)) {
-    return { kind: "absent" };
+    return ABSENT_PAGE_REFERENCE;
   }
   const values = searchParams.getAll(ASK_ATLAS_PAGE_REFERENCE_PARAM);
   const encoded = values.length === 1 ? values[0] : null;
   const reference = encoded ? parseSerializedPageReference(encoded) : null;
-  if (!(reference && sharedUrlAgrees(reference, searchParams))) {
+  // The address can claim any label. This browser shows it as validated only
+  // when a source page already accepted that same id and label. Node test
+  // runners have no window, so they inspect the link shape without a snapshot.
+  if (
+    !(
+      reference &&
+      sharedUrlAgrees(reference, searchParams) &&
+      (typeof window === "undefined" || acceptedSnapshotCovers(reference))
+    )
+  ) {
     return { clearHref, kind: "unverified" };
   }
   const removeHrefs: Partial<Record<AskAtlasInheritedFieldKey, string>> = {};
