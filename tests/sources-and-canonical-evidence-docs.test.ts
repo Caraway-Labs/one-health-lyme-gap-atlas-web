@@ -177,7 +177,7 @@ describe("sources and canonical evidence documentation", () => {
     );
   });
 
-  it("does not claim unreleased clinical connectivity or excluded geographies", () => {
+  it("does not claim unreleased clinical connectivity or include Alaska and Hawaii", () => {
     const corpus = [
       sourcePage,
       readDoc("evidence-and-uncertainty.mdx"),
@@ -186,8 +186,20 @@ describe("sources and canonical evidence documentation", () => {
       readDoc("current-capabilities.mdx"),
       readDoc("faq-and-troubleshooting.mdx"),
     ].join("\n");
+    const coverage = "lower 48 states and the District of Columbia";
     const violations = [
-      corpus.match(/Alaska|Hawaii/)?.[0],
+      ...falseGeographyInclusions(corpus),
+      sourcePage.includes(coverage)
+        ? undefined
+        : `missing coverage: ${coverage}`,
+      falseGeographyInclusions("Alaska and Hawaii are not supported.")
+        .length === 0
+        ? undefined
+        : "not-supported wording was rejected",
+      falseGeographyInclusions("Coverage includes Alaska and Hawaii.")
+        .length === 1
+        ? undefined
+        : "false inclusion wording was accepted",
       corpus.includes("live EHR connection is available")
         ? "live EHR connection is available"
         : undefined,
@@ -247,6 +259,25 @@ describe("sources and canonical evidence documentation", () => {
     expect(problems).toStrictEqual([]);
   });
 });
+
+function falseGeographyInclusions(text: string): string[] {
+  const place = /\b(?:Alaska|Hawaii)\b/u;
+  const exclusion =
+    /\b(?:not supported|not included|does not include|do not include|are not|is not|outside|excluded|excluding|never|unsupported)\b/iu;
+  const inclusion =
+    /\b(?:included|includes|including|supported|supports|covered|covers|covering|in scope|available)\b/iu;
+  const problems: string[] = [];
+
+  for (const sentence of text.split(/\n|(?<=\.)\s+/u)) {
+    if (!place.test(sentence) || exclusion.test(sentence)) {
+      continue;
+    }
+    if (inclusion.test(sentence)) {
+      problems.push(sentence.trim());
+    }
+  }
+  return problems;
+}
 
 function collectDocFiles(directory: string): string[] {
   const files: string[] = [];
