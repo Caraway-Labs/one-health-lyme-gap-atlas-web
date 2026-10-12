@@ -96,7 +96,10 @@ type ReviewCountyHistory = "push" | "replace";
 
 type ReviewOperatingPictureProps = {
   county?: string | null;
+  /** Keep the map mounted without writing a county into the URL. */
+  freezeCountySelection?: boolean;
   onCountyChange?: (fips: string | null, history: ReviewCountyHistory) => void;
+  onViewCountyEvidence?: (fips: string) => void;
   period?: string | null;
   review: StateReview;
   scopeCode: string;
@@ -230,7 +233,9 @@ function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
 
 export function ReviewOperatingPicture({
   county = null,
+  freezeCountySelection = false,
   onCountyChange,
+  onViewCountyEvidence,
   period = null,
   review,
   scopeCode,
@@ -299,7 +304,7 @@ export function ReviewOperatingPicture({
     period: period ?? null,
   });
   useEffect(() => {
-    if (!directory.isSuccess) {
+    if (freezeCountySelection || !directory.isSuccess) {
       return;
     }
     if (selectedFips) {
@@ -312,7 +317,13 @@ export function ReviewOperatingPicture({
     if (county) {
       onCountyChange?.(null, "replace");
     }
-  }, [county, directory.isSuccess, onCountyChange, selectedFips]);
+  }, [
+    county,
+    directory.isSuccess,
+    freezeCountySelection,
+    onCountyChange,
+    selectedFips,
+  ]);
 
   const geometryQuery = useQuery({
     enabled: Boolean(releaseId),
@@ -724,6 +735,7 @@ export function ReviewOperatingPicture({
             href={handoff.href}
             openRef={openRef}
             onOpen={markReviewReturnFocus}
+            onViewCountyEvidence={onViewCountyEvidence}
           />
         ) : null}
         {preview && handoff ? (
@@ -735,6 +747,7 @@ export function ReviewOperatingPicture({
             preview={preview}
             release={tierRelease}
             onOpen={markReviewReturnFocus}
+            onViewCountyEvidence={onViewCountyEvidence}
           />
         ) : null}
       </div>

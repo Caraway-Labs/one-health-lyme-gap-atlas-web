@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Ref } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
@@ -85,12 +85,14 @@ export function ReviewPublishedCountyPreview({
   county,
   releaseId,
   href,
+  onViewCountyEvidence,
   openRef,
   onOpen,
 }: {
   county: ExploreCountyIdentity;
   releaseId: string;
   href: string;
+  onViewCountyEvidence?: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   onOpen: (fips: string) => void;
 }) {
@@ -133,6 +135,18 @@ export function ReviewPublishedCountyPreview({
         Published factual evidence. This selection does not imply recommendation
         eligibility or disease risk.
       </p>
+      {onViewCountyEvidence ? (
+        <Button
+          data-county={county.fips}
+          data-testid="review-view-county-evidence"
+          type="button"
+          onClick={() => {
+            onViewCountyEvidence(county.fips);
+          }}
+        >
+          View county evidence
+        </Button>
+      ) : null}
       <Link
         ref={openRef}
         className={cn(

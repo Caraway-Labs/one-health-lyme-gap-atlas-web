@@ -1,0 +1,297 @@
+import "@testing-library/jest-dom/vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
+import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
+import type { ExplorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
+
+const workspace = vi.hoisted(() => ({
+  current: null as InvestigateWorkspace | null,
+}));
+
+vi.mock(
+  import("@/features/ux-reset/investigate/use-investigate-workspace"),
+  () => ({
+    useInvestigateWorkspace: () => {
+      if (!workspace.current) {
+        throw new Error("Explorer test workspace was not set.");
+      }
+      return workspace.current;
+    },
+  })
+);
+
+vi.mock(
+  import("@/features/ux-reset/surveillance-priority/tier1-surveillance-priority"),
+  () => ({
+    Tier1SurveillancePriority: () => (
+      <p data-testid="tier1-stub">Secondary score</p>
+    ),
+  })
+);
+
+vi.mock(
+  import("@/features/ux-reset/investigate/investigate-hierarchy"),
+  () => ({
+    InvestigateEvidenceHierarchy: () => (
+      <div data-testid="investigate-evidence">Observed evidence</div>
+    ),
+  })
+);
+
+vi.mock(
+  import("@/features/ux-reset/investigate/investigate-pdf-export"),
+  () => ({
+    InvestigatePdfExport: () => <p data-testid="investigate-pdf">PDF</p>,
+  })
+);
+
+function baseWorkspace(
+  overrides: Partial<InvestigateWorkspace> = {}
+): InvestigateWorkspace {
+  return {
+    bundle: null,
+    catalogError: null,
+    catalogRefreshError: null,
+    compare: [],
+    countyRecord: null,
+    countyRecordAbsent: false,
+    countyRecordError: null,
+    countyRecordLoading: false,
+    countyRecordRefreshError: null,
+    directory: [],
+    directoryError: null,
+    directoryLoading: false,
+    directoryRefreshError: null,
+    evidenceError: null,
+    evidenceFetching: false,
+    evidenceLoading: false,
+    identity: null,
+    indicatorError: null,
+    indicatorRefreshError: null,
+    measures: [],
+    metadata: null,
+    metadataError: null,
+    metadataLoading: false,
+    metadataRefreshError: null,
+    observationOutcome: "settled-absent",
+    period: null,
+    recovery: "missing",
+    releaseId: null,
+    requestedDataset: null,
+    requestedFips: null,
+    retryDirectory: vi.fn<() => void>(),
+    retryEvidence: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+    scope: "CO",
+    scopeLabel: "Colorado",
+    selection: { kind: "missing" },
+    setCounty: vi.fn<(fips: string) => void>(),
+    stateLabel: null,
+    ...overrides,
+  };
+}
+
+function candidateFollowUp(
+  limitation = "Collection dates are unavailable for this status."
+): ExplorerFollowUpState {
+  return {
+    category: "PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW",
+    firstStep: "Review the cited source records.",
+    limitations: [limitation],
+    rationale: "Denver is included because the review method returned it.",
+    status: "candidate",
+  };
+}
+
+describe("Explorer county evidence", () => {
+  afterEach(() => {
+    cleanup();
+    workspace.current = null;
+  });
+
+  it("shows a missing-county prompt and withholds compare, ask, and export", () => {
+    workspace.current = baseWorkspace();
+    const onBackToMap = vi.fn<() => void>();
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={onBackToMap}
+      />
+    );
+    expect(screen.getByTestId("explorer-recovery")).toHaveAttribute(
+      "data-recovery",
+      "missing"
+    );
+    expect(screen.getByTestId("explorer-county-heading")).toHaveTextContent(
+      "Choose a county"
+    );
+    expect(screen.getByTestId("explorer-county-heading")).toHaveFocus();
+    expect(screen.queryByTestId("explorer-compare")).toBeNull();
+    expect(screen.queryByTestId("explorer-ask-atlas")).toBeNull();
+  });
+
+  it("keeps export withheld and returns to the map without showing zero", () => {
+    workspace.current = baseWorkspace();
+    const onBackToMap = vi.fn<() => void>();
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={onBackToMap}
+      />
+    );
+    expect(screen.getByTestId("explorer-export-unavailable")).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Context and gaps" })
+    ).toBeVisible();
+    fireEvent.click(screen.getByTestId("explorer-back-to-map"));
+    expect(onBackToMap).toHaveBeenCalledOnce();
+    expect(
+      screen.getByTestId("explorer-county-evidence").textContent
+    ).not.toMatch(/\b0 cases\b/);
+  });
+
+  it("focuses suggested follow-up and clears local checks when the county changes", () => {
+    workspace.current = baseWorkspace({
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+      stateLabel: "Colorado (CO)",
+    });
+    render(
+      <ExplorerCountyEvidence
+        followUp={candidateFollowUp()}
+        methodologyLabel="Method atlas-county-review 1.0.0. Release alpha-2026."
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(
+      screen.getByRole("heading", { name: "Suggested follow-up" })
+    ).toHaveFocus();
+    expect(screen.getByTestId("explorer-follow-up-step")).toHaveTextContent(
+      "Review the cited source records."
+    );
+    expect(screen.getByTestId("explorer-follow-up").textContent).not.toMatch(
+      /2 weeks|within 60/i
+    );
+  });
+
+  it("clears a local verification check when the county changes", () => {
+    workspace.current = baseWorkspace({
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+      stateLabel: "Colorado (CO)",
+    });
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={candidateFollowUp()}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const box = screen.getByRole("checkbox");
+    fireEvent.click(box);
+    expect(box).toBeChecked();
+    workspace.current = baseWorkspace({
+      identity: { fips: "08013", label: "Boulder", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08013",
+      stateLabel: "Colorado (CO)",
+    });
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={candidateFollowUp("Boulder limitation stays on Boulder.")}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(
+      screen.getByLabelText("Boulder limitation stays on Boulder.")
+    ).toBeVisible();
+  });
+
+  it("carries the county into Compare and Ask Atlas without copying mode to Ask Atlas", () => {
+    workspace.current = baseWorkspace({
+      identity: { fips: "08013", label: "Boulder", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08013",
+      stateLabel: "Colorado (CO)",
+    });
+    render(
+      <ExplorerCountyEvidence
+        followUp={candidateFollowUp("Boulder limitation stays on Boulder.")}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const compareHref =
+      screen.getByTestId("explorer-compare").getAttribute("href") ?? "";
+    expect(compareHref).toContain("mode=follow-up");
+    expect(compareHref).toContain("return=review");
+    expect(compareHref).toContain("county=08013");
+    const askHref =
+      screen.getByTestId("explorer-ask-atlas").getAttribute("href") ?? "";
+    expect(askHref).toContain("/app/assistant");
+    expect(askHref).not.toContain("mode=");
+  });
+
+  it("keeps an evidence error distinct from an empty county", () => {
+    workspace.current = baseWorkspace({
+      evidenceError: "County evidence is temporarily unavailable.",
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      requestedFips: "08001",
+    });
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "request-failed" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(
+      screen.getByText("County evidence is temporarily unavailable.")
+    ).toBeVisible();
+    expect(screen.getByTestId("explorer-review-category")).toHaveTextContent(
+      "did not load"
+    );
+    expect(screen.queryByTestId("investigate-evidence")).toBeNull();
+  });
+
+  it("shows loading without a settled evidence hierarchy", () => {
+    workspace.current = baseWorkspace({
+      evidenceLoading: true,
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      requestedFips: "08001",
+    });
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "loading" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.getByText("Loading county evidence…")).toBeVisible();
+    expect(screen.getByTestId("explorer-review-category")).toHaveTextContent(
+      "loading"
+    );
+    expect(screen.queryByTestId("investigate-evidence")).toBeNull();
+  });
+});

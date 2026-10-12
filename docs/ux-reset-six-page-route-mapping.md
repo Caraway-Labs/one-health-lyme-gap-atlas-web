@@ -46,7 +46,7 @@ These are not workspace destinations and this map does not retarget them:
 
 Browse is the current Review surface: map, list, and compact preview when `county` is a single valid FIPS. `mode` is omitted.
 
-`mode=evidence` is expanded county evidence. `mode=follow-up` is that same expanded county opened at Suggested follow-up. Neither value is read by production pages yet. #413 owns the view. Until it does, a bookmarked `mode` on `/app/review` is inert, and the aliases below still render their current pages.
+`mode=evidence` is expanded county evidence. `mode=follow-up` is that same expanded county opened at Suggested follow-up. `/app/review` reads one exact token and renders that view. An invalid or repeated `mode` is removed. The aliases below still render their current pages until #197.
 
 | Source | Recorded target | State |
 | --- | --- | --- |
@@ -173,8 +173,8 @@ Focus and anchor restoration, verified by #197 once #413 has the view:
 | --- | --- |
 | Browse with a county the user left from Review | Existing `markReviewReturnFocus` county row, or the published-county picker when the county is outside the first page. |
 | Browse with no county | The county-selection prompt. Do not focus a fabricated row. |
-| `mode=evidence` | The expanded evidence heading, after #413 renders it. |
-| `mode=follow-up` | The Suggested follow-up section, after #413 renders it. |
+| `mode=evidence` | The expanded evidence heading on `/app/review`. |
+| `mode=follow-up` | The Suggested follow-up section on `/app/review`. |
 
 No hash is added for those states. #413's in-page section links can be hashes on the canonical URL after the targets exist. Until the targets exist, a hash is not a successful restore.
 
