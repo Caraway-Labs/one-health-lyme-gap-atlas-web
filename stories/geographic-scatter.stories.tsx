@@ -46,7 +46,15 @@ function ScatterPreview({ preset }: { preset: ScatterPreset }) {
 const meta = {
   title: "Geographic explorer/Scatter plot",
   component: ScatterStory,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "ScatterPlot from src/features/geographic-explorer/charts.tsx shows selectable synthetic points, including an overlapping completeness pair, on a fixed 0–100 scale.",
+      },
+    },
+  },
   args: { preset: "none" },
   argTypes: { preset: { control: "select", options: presets } },
   excludeStories: ["ScatterStory"],

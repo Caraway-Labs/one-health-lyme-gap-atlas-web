@@ -7,7 +7,16 @@ import { storyRelease, storyReleaseMissing } from "./fixtures/story-counties";
 const meta = {
   title: "Atlas/Evidence snapshot",
   component: AtlasEvidenceSnapshot,
-  parameters: { layout: "padded", docs: { story: { inline: false } } },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "AtlasEvidenceSnapshot from src/components/atlas-evidence-snapshot.tsx shows banner and card release metadata, including missing fields, from the synthetic alpha-2026 release.",
+      },
+      story: { inline: false },
+    },
+  },
   args: {
     layout: "card",
     metadata: storyRelease,

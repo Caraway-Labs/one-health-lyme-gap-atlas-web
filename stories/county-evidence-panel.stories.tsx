@@ -44,7 +44,16 @@ function EvidenceStory({ preset }: { preset: EvidencePreset }) {
 const meta = {
   title: "County/Evidence panel",
   component: EvidenceStory,
-  parameters: { layout: "padded", docs: { story: { inline: false } } },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "CountyEvidencePanel from src/components/county-evidence-panel.tsx shows compact and full published, zero, and missing synthetic county evidence.",
+      },
+      story: { inline: false },
+    },
+  },
   args: { preset: "published" },
   argTypes: { preset: { control: "select", options: presets } },
 } satisfies Meta<typeof EvidenceStory>;

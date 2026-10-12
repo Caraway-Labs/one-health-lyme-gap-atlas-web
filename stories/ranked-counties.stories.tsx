@@ -78,7 +78,15 @@ function RankedPreview({ preset }: { preset: RankPreset }) {
 const meta = {
   title: "Overview/Ranked counties",
   component: RankedStory,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "RankedCounties from src/components/ranked-counties.tsx shows an empty list, a selected row, and the first-40 toggle with synthetic lower-48 and DC counties.",
+      },
+    },
+  },
   args: { preset: "short" },
   argTypes: { preset: { control: "select", options: presets } },
   excludeStories: ["RankedStory"],

@@ -5,7 +5,15 @@ import { AtlasSectionHeader } from "@/components/atlas-section-header";
 const meta = {
   title: "Atlas/Section header",
   component: AtlasSectionHeader,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "AtlasSectionHeader from src/components/atlas-section-header.tsx shows an eyebrow, description, aside, and heading level with synthetic county text.",
+      },
+    },
+  },
   args: {
     eyebrow: "County review",
     title: "Adams County, Colorado",

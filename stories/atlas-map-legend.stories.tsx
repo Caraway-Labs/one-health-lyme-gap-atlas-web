@@ -5,7 +5,15 @@ import { AtlasMapLegend } from "@/components/atlas-map-legend";
 const meta = {
   title: "Atlas/Map legend",
   component: AtlasMapLegend,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "AtlasMapLegend from src/components/atlas-map-legend.tsx shows the review-priority ramp with synthetic captions, and the colors are not a disease-risk scale.",
+      },
+    },
+  },
   args: {
     caption:
       "County Review Priority for this synthetic release. The ramp is not a disease-risk scale.",

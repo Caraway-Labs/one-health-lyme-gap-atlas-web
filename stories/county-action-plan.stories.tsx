@@ -31,7 +31,15 @@ function PlanStory({ preset }: { preset: PlanPreset }) {
 const meta = {
   title: "County/Action plan",
   component: PlanStory,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "CountyActionPlan from src/components/county-action-plan.tsx shows the priority-derived follow-up plan for synthetic counties without adding scoring logic.",
+      },
+    },
+  },
   args: { preset: "priority" },
   argTypes: { preset: { control: "select", options: presets } },
 } satisfies Meta<typeof PlanStory>;

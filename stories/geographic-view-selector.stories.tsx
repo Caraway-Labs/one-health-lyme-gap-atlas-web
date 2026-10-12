@@ -38,7 +38,16 @@ function ViewPreview({ preset }: { preset: ViewPreset }) {
 const meta = {
   title: "Geographic explorer/View selector",
   component: ViewStory,
-  parameters: { layout: "padded", docs: { story: { inline: false } } },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "GeographicExplorerViewSelector from src/features/geographic-explorer/view-selector.tsx shows the supported views and the release-trends prerequisite with synthetic local state.",
+      },
+      story: { inline: false },
+    },
+  },
   args: { preset: "tiles" },
   argTypes: { preset: { control: "select", options: presets } },
   excludeStories: ["ViewStory"],

@@ -64,7 +64,15 @@ function ResultsPreview({ preset }: { preset: TablePreset }) {
 const meta = {
   title: "Overview/Results table",
   component: ResultsStory,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "ResultsTable from src/components/results-table.tsx shows empty and populated synthetic county rows, local selection, and a long cell that scrolls.",
+      },
+    },
+  },
   args: { preset: "populated" },
   argTypes: { preset: { control: "select", options: presets } },
   excludeStories: ["ResultsStory"],

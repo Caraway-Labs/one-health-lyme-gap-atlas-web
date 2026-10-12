@@ -45,7 +45,15 @@ function TablePreview({ preset }: { preset: TablePreset }) {
 const meta = {
   title: "Geographic explorer/Evidence table",
   component: EvidenceTableStory,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "EvidenceTable from src/features/geographic-explorer/charts.tsx shows exact synthetic county values with local selection and horizontal scroll.",
+      },
+    },
+  },
   args: { preset: "none" },
   argTypes: { preset: { control: "select", options: presets } },
   excludeStories: ["EvidenceTableStory"],

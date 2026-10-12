@@ -56,7 +56,15 @@ function GridPreview({
 const gridMeta = {
   title: "Geographic explorer/State grid",
   component: GridStory,
-  parameters: { layout: "padded" },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "GeographicGrid from src/features/geographic-explorer/charts.tsx shows state tiles and small multiples for synthetic lower-48 and DC counties, with empty tiles disabled.",
+      },
+    },
+  },
   args: { multiples: false, preset: "none" },
   argTypes: { preset: { control: "select", options: gridPresets } },
   excludeStories: ["GridStory"],

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useState } from "react";
 
 import { ScoringAssumptions } from "@/components/experiment-atlas";
+import { Button } from "@/components/ui/button";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 
 import { publishedCounty } from "./fixtures/story-counties";
@@ -27,14 +28,15 @@ function ScoringStory({ preset }: { preset: ScorePreset }) {
       <p data-testid="score-share">
         {`Tick and pathogen share ${settings.ecological_share}%`}
       </p>
-      <button
+      <Button
         onClick={() => {
           setSettings(initialSettings);
         }}
         type="button"
+        variant="outline"
       >
         Reset assumptions
-      </button>
+      </Button>
       <ScoringAssumptions
         collapsible={preset === "collapsible"}
         detail={publishedCounty}
@@ -48,7 +50,16 @@ function ScoringStory({ preset }: { preset: ScorePreset }) {
 const meta = {
   title: "Investigation/Scoring assumptions",
   component: ScoringStory,
-  parameters: { layout: "padded", docs: { story: { inline: false } } },
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "ScoringAssumptions from src/components/experiment-atlas.tsx shows the existing range settings for a synthetic county through the AtlasMap stub, so MapLibre is not mounted.",
+      },
+      story: { inline: false },
+    },
+  },
   args: { preset: "open" },
   argTypes: { preset: { control: "select", options: presets } },
 } satisfies Meta<typeof ScoringStory>;

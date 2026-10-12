@@ -35,7 +35,16 @@ function UncertaintyStory({ preset }: { preset: UncertaintyPreset }) {
 const meta = {
   title: "County/Uncertainty panel",
   component: UncertaintyStory,
-  parameters: { atlasLandmark: "story", layout: "padded" },
+  parameters: {
+    atlasLandmark: "story",
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "CountyUncertaintyPanel from src/components/county-evidence-panel.tsx shows data-dependent uncertainty cues and the release limitation for synthetic complete and limited counties.",
+      },
+    },
+  },
   args: { preset: "complete" },
   argTypes: { preset: { control: "select", options: presets } },
 } satisfies Meta<typeof UncertaintyStory>;
