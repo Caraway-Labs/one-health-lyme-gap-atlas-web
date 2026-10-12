@@ -210,7 +210,7 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     summary:
       "Publishing evidence still follows deterministic ingestion and human governance. Model-assisted extraction, classification, or an agent that loads a dataset into Atlas is not a released workflow.",
     boundary:
-      "Deterministic data engineering and AI stay separate. An AI suggestion does not publish a source. A development MCP server can report its own status. Production Atlas-data MCP is not available.",
+      "Deterministic data engineering and AI stay separate. An AI suggestion does not publish a source. Released MCP tools read public evidence. They do not load a dataset. The September 2026 smoke-only development receipt is historical.",
     statusBasis:
       "Docs list literature monitoring and agent assistance as planned. Dataset Discovery does not own catalog ingestion.",
     support:
