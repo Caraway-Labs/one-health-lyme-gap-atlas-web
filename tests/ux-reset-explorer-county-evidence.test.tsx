@@ -2,6 +2,13 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { investigateBundleWithoutObservations } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  CATALOG_REFRESH_FAILURE,
+  DIRECTORY_REFRESH_FAILURE,
+  INDICATOR_REFRESH_FAILURE,
+  METADATA_REFRESH_FAILURE,
+} from "@/features/ux-reset/investigate/investigate-request-state";
 import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import type { ExplorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
@@ -247,6 +254,79 @@ describe("Explorer county evidence", () => {
       screen.getByTestId("explorer-ask-atlas").getAttribute("href") ?? "";
     expect(askHref).toContain("/app/assistant");
     expect(askHref).not.toContain("mode=");
+  });
+
+  it("withholds Compare until the requested county matches a published identity", () => {
+    workspace.current = baseWorkspace({
+      recovery: "unsupported",
+      requestedFips: "08014",
+      stateLabel: "Colorado (CO)",
+    });
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "not-in-scope" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.queryByTestId("explorer-compare")).toBeNull();
+    expect(screen.getByTestId("explorer-recovery")).toHaveAttribute(
+      "data-recovery",
+      "unsupported"
+    );
+    workspace.current = baseWorkspace({
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+      stateLabel: "Colorado (CO)",
+    });
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const href =
+      screen.getByTestId("explorer-compare").getAttribute("href") ?? "";
+    expect(href).toContain("county=08001");
+    expect(href).not.toContain("08014");
+  });
+
+  it("shows refresh failures beside the cached evidence hierarchy", () => {
+    const identity = { fips: "08001", label: "Denver", stateCode: "CO" };
+    workspace.current = baseWorkspace({
+      bundle: investigateBundleWithoutObservations({
+        county: identity,
+        releaseId: "alpha-2026",
+      }),
+      catalogRefreshError: CATALOG_REFRESH_FAILURE,
+      directoryRefreshError: DIRECTORY_REFRESH_FAILURE,
+      identity,
+      indicatorRefreshError: INDICATOR_REFRESH_FAILURE,
+      metadataRefreshError: METADATA_REFRESH_FAILURE,
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+    });
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const page =
+      screen.getByTestId("explorer-county-evidence").textContent ?? "";
+    expect(screen.getByTestId("investigate-evidence")).toBeVisible();
+    expect(page).toContain(METADATA_REFRESH_FAILURE);
+    expect(page).toContain(DIRECTORY_REFRESH_FAILURE);
+    expect(page).toContain(CATALOG_REFRESH_FAILURE);
+    expect(page).toContain(INDICATOR_REFRESH_FAILURE);
   });
 
   it("keeps an evidence error distinct from an empty county", () => {

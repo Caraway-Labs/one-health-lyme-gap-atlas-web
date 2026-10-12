@@ -292,6 +292,10 @@ export function ExplorerCountyEvidence({
         publishedRows,
       })
     : null;
+  const publishedCounty =
+    workspace.identity?.fips === workspace.requestedFips
+      ? workspace.identity.fips
+      : null;
   const handoffParams = sharedContextToSearchParams({
     compare: [...workspace.compare],
     county: workspace.requestedFips,
@@ -301,7 +305,7 @@ export function ExplorerCountyEvidence({
   });
   const compareHref = hrefWithExplorerMode(
     buildCompareEntryHref({
-      county: workspace.requestedFips,
+      county: publishedCounty,
       dataset: workspace.releaseId ?? workspace.requestedDataset,
       period: workspace.period,
       returnTo: "review",
@@ -399,7 +403,7 @@ export function ExplorerCountyEvidence({
           >
             Back to map
           </Button>
-          {workspace.requestedFips ? (
+          {publishedCounty ? (
             <Link
               className={cn(buttonVariants({ variant: "secondary" }))}
               data-testid="explorer-compare"
@@ -472,6 +476,26 @@ export function ExplorerCountyEvidence({
         {workspace.catalogError ? (
           <AtlasStatusMessage tone="error">
             {workspace.catalogError}
+          </AtlasStatusMessage>
+        ) : null}
+        {workspace.catalogRefreshError ? (
+          <AtlasStatusMessage tone="error">
+            {workspace.catalogRefreshError}
+          </AtlasStatusMessage>
+        ) : null}
+        {workspace.indicatorRefreshError ? (
+          <AtlasStatusMessage tone="error">
+            {workspace.indicatorRefreshError}
+          </AtlasStatusMessage>
+        ) : null}
+        {workspace.metadataRefreshError ? (
+          <AtlasStatusMessage tone="error">
+            {workspace.metadataRefreshError}
+          </AtlasStatusMessage>
+        ) : null}
+        {workspace.directoryRefreshError ? (
+          <AtlasStatusMessage tone="error">
+            {workspace.directoryRefreshError}
           </AtlasStatusMessage>
         ) : null}
         {workspace.evidenceLoading ? (
