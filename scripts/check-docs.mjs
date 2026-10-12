@@ -6,15 +6,27 @@ const docsRoot = path.join(repositoryRoot, "content", "docs");
 const appRoot = path.join(repositoryRoot, "src", "app");
 const errors = [];
 
-function contentPathForSlug(slug) {
+function contentExists(baseDir, slug) {
   const normalizedSlug = slug === "" ? "index" : slug;
-  const candidates = [
-    path.join(docsRoot, `${normalizedSlug}.mdx`),
-    path.join(docsRoot, `${normalizedSlug}.md`),
-    path.join(docsRoot, normalizedSlug, "index.mdx"),
-    path.join(docsRoot, normalizedSlug, "index.md"),
-  ];
-  return candidates.find((candidate) => fs.existsSync(candidate));
+  return [
+    path.join(baseDir, `${normalizedSlug}.mdx`),
+    path.join(baseDir, `${normalizedSlug}.md`),
+    path.join(baseDir, normalizedSlug, "index.mdx"),
+    path.join(baseDir, normalizedSlug, "index.md"),
+  ].some((candidate) => fs.existsSync(candidate));
+}
+
+function collectFiles(directory, predicate) {
+  const files = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectFiles(fullPath, predicate));
+    } else if (predicate(entry.name)) {
+      files.push(fullPath);
+    }
+  }
+  return files;
 }
 
 function routeExists(routePath) {
@@ -34,7 +46,7 @@ function checkInternalLink(sourceFile, href) {
   const [pathPart] = href.split(/[?#]/, 1);
   if (pathPart === "/docs" || pathPart.startsWith("/docs/")) {
     const docsSlug = pathPart.slice("/docs".length).replace(/^\//, "");
-    if (!contentPathForSlug(docsSlug)) {
+    if (!contentExists(docsRoot, docsSlug)) {
       errors.push(`${sourceFile}: broken docs link ${href}`);
     }
     return;
@@ -44,10 +56,9 @@ function checkInternalLink(sourceFile, href) {
   }
 }
 
-const contentFiles = fs
-  .readdirSync(docsRoot, { withFileTypes: true })
-  .filter((entry) => entry.isFile() && /\.(?:md|mdx)$/.test(entry.name))
-  .map((entry) => path.join(docsRoot, entry.name));
+const contentFiles = collectFiles(docsRoot, (name) =>
+  /\.(?:md|mdx)$/.test(name)
+);
 
 if (contentFiles.length === 0) {
   errors.push("content/docs must contain at least one Markdown or MDX page");
@@ -80,30 +91,32 @@ for (const file of contentFiles) {
   }
 }
 
-const navigationFile = path.join(docsRoot, "meta.json");
-if (fs.existsSync(navigationFile)) {
+const navigationFiles = collectFiles(docsRoot, (name) => name === "meta.json");
+for (const navigationFile of navigationFiles) {
+  const relativeNavigation = path.relative(repositoryRoot, navigationFile);
+  const navigationBase = path.dirname(navigationFile);
   try {
     const navigation = JSON.parse(fs.readFileSync(navigationFile, "utf-8"));
     if (!navigation.title || typeof navigation.title !== "string") {
-      errors.push("content/docs/meta.json: title is required");
+      errors.push(`${relativeNavigation}: title is required`);
     }
     if (Array.isArray(navigation.pages)) {
       for (const page of navigation.pages) {
         if (
           typeof page !== "string" ||
           page.startsWith("...") ||
-          !contentPathForSlug(page)
+          !contentExists(navigationBase, page)
         ) {
           errors.push(
-            `content/docs/meta.json: page does not exist: ${String(page)}`
+            `${relativeNavigation}: page does not exist: ${String(page)}`
           );
         }
       }
     } else {
-      errors.push("content/docs/meta.json: pages must be an array");
+      errors.push(`${relativeNavigation}: pages must be an array`);
     }
   } catch (error) {
-    errors.push(`content/docs/meta.json: invalid JSON (${error.message})`);
+    errors.push(`${relativeNavigation}: invalid JSON (${error.message})`);
   }
 }
 

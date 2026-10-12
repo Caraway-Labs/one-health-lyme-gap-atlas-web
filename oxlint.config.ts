@@ -15,6 +15,7 @@ export default defineConfig({
     "node_modules.broken-*/**",
     "playwright-report/**",
     "src/generated/**",
+    "content/docs/api-reference/**",
     "tests/e2e/**",
     "tests/storybook/**",
     "test-results/**",
