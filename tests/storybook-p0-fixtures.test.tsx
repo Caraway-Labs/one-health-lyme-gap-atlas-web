@@ -1,10 +1,18 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { ReleaseEvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import { investigateEvidenceConflicts } from "@/features/ux-reset/investigate/county-evidence";
+import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
   TIER1_FAILED_MESSAGE,
   TIER1_RELEASE_MISMATCH_MESSAGE,
@@ -19,16 +27,39 @@ import {
   releaseEvidencePreset,
 } from "../stories/fixtures/evidence-presets";
 import { hierarchyPreset } from "../stories/fixtures/investigate-hierarchy-presets";
-import { reviewPreviewPreset } from "../stories/fixtures/review-preview-presets";
+import {
+  reviewPreviewPreset,
+  syntheticReviewSourceUrl,
+} from "../stories/fixtures/review-preview-presets";
 import {
   isLower48OrDcFips,
   syntheticCounty,
+  syntheticReleaseId,
 } from "../stories/fixtures/synthetic-county";
 import { tier1StoryView } from "../stories/fixtures/tier1-views";
 import {
   Tier1StoryQueryProvider,
   useTier1SurveillancePriority,
 } from "../stories/support/tier1-hook-substitute";
+import { tier1HighSufficientFixture } from "./fixtures/tier1-surveillance-priority";
+
+vi.mock(
+  import("@/features/ux-reset/surveillance-priority/use-tier1-surveillance-priority"),
+  async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+      ...actual,
+      useTier1SurveillancePriority: () =>
+        ({
+          data: undefined,
+          error: null,
+          isError: false,
+          isPending: true,
+          isSuccess: false,
+        }) as ReturnType<typeof actual.useTier1SurveillancePriority>,
+    };
+  }
+);
 
 const reviewPresetIds = [
   "rationale",
@@ -38,8 +69,27 @@ const reviewPresetIds = [
   "long-references",
 ] as const;
 
+function SidebarState({ name }: { name: string }) {
+  const { open } = useSidebar();
+  return <p>{`${name} ${open ? "expanded" : "collapsed"}`}</p>;
+}
+
+function clickLink(link: HTMLElement): void {
+  link.addEventListener(
+    "click",
+    (event) => {
+      event.preventDefault();
+    },
+    { capture: true }
+  );
+  fireEvent.click(link);
+}
+
 describe("Storybook P0 evidence fixtures", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+  });
 
   it("keeps a published zero available and distinct from absence", () => {
     const zero = evidenceObjectPreset("published-zero");
@@ -286,17 +336,61 @@ describe("Storybook P0 evidence fixtures", () => {
     );
   });
 
-  it("keeps long references and an explicit release mismatch context", () => {
+  it("keeps long references and dropped review context on one release", () => {
     const longForm = reviewPreviewPreset("long-references");
     const dropped = reviewPreviewPreset("dropped-context");
+    const high = tier1StoryView("high-sufficient");
+    if (
+      dropped.query.status !== "success" ||
+      dropped.release.status !== "ready" ||
+      high.kind !== "result"
+    ) {
+      throw new Error("Aligned stories must return the synthetic model.");
+    }
     expect(
       longForm.preview.qualification?.provenance.referenceLines?.length
     ).toBe(2);
-    expect(dropped.droppedNotes.length).toBeGreaterThan(0);
-    expect(dropped.release).toStrictEqual({
-      releaseId: "alpha-2026",
-      status: "ready",
+    expect(longForm.preview.qualification?.provenance.sourceUrl).toBe(
+      syntheticReviewSourceUrl
+    );
+    expect(dropped.query.data.release_id).toBe(dropped.release.releaseId);
+    expect(dropped.release.releaseId).toBe(syntheticReleaseId);
+    expect(high.details.releaseId).toBe(syntheticReleaseId);
+  });
+
+  it("puts the synthetic release on handoff dataset parameters", () => {
+    const rationale = reviewPreviewPreset("rationale");
+    if (
+      rationale.query.status !== "success" ||
+      rationale.release.status !== "ready"
+    ) {
+      throw new Error("Rationale must return a model.");
+    }
+    expect(rationale.query.data.release_id).toBe(rationale.release.releaseId);
+    expect(rationale.href).toContain(`dataset=${syntheticReleaseId}`);
+    expect(rationale.compareHref).toContain(`dataset=${syntheticReleaseId}`);
+    expect(tier1StoryView("release-mismatch")).toMatchObject({
+      kind: "release-unaligned",
+      reason: "mismatch",
     });
+    expect(tier1HighSufficientFixture.release_id).not.toBe(syntheticReleaseId);
+  });
+
+  it("matches the nested model release to the investigate bundle", () => {
+    const model = hierarchyPreset("with-model");
+    const view = tier1StoryView("high-sufficient");
+    if (view.kind !== "result") {
+      throw new Error("High sufficient view must return a tier.");
+    }
+    expect(model.bundle.releaseId).toBe(syntheticReleaseId);
+    expect(model.countyRecord?.releaseId).toBe(syntheticReleaseId);
+    expect(view.details.releaseId).toBe(model.bundle.releaseId);
+    expect(
+      provenancePreset("full-reason").provenance.technical?.releaseId
+    ).toBe(syntheticReleaseId);
+    expect(
+      evidenceObjectPreset("published-zero").provenance.technical?.releaseId
+    ).toBe(syntheticReleaseId);
   });
 
   it("resolves the nested surveillance substitute without fetching", () => {
@@ -316,5 +410,80 @@ describe("Storybook P0 evidence fixtures", () => {
     expect(screen.getByText("settled")).toBeTruthy();
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
+  });
+
+  it("calls onOpen once per county action with the preview fips", () => {
+    const onOpen = vi.fn<(fips: string) => void>();
+    const model = reviewPreviewPreset("rationale");
+    render(
+      <ReviewCountyPreviewPanel
+        compareHref={model.compareHref}
+        droppedNotes={model.droppedNotes}
+        href={model.href}
+        onOpen={onOpen}
+        preview={model.preview}
+        release={model.release}
+      />
+    );
+    clickLink(screen.getByRole("link", { name: "Open Investigate" }));
+    expect(onOpen).toHaveBeenCalledExactlyOnceWith(syntheticCounty.fips);
+    clickLink(screen.getByRole("link", { name: "Compare" }));
+    expect(onOpen).toHaveBeenCalledTimes(2);
+    expect(onOpen.mock.calls[1]).toStrictEqual([syntheticCounty.fips]);
+  });
+
+  it("does not treat a provenance source reference as a county open", () => {
+    const onOpen = vi.fn<(fips: string) => void>();
+    const model = reviewPreviewPreset("long-references");
+    render(
+      <ReviewCountyPreviewPanel
+        compareHref={model.compareHref}
+        droppedNotes={model.droppedNotes}
+        href={model.href}
+        onOpen={onOpen}
+        preview={model.preview}
+        release={model.release}
+      />
+    );
+    clickLink(
+      screen.getByRole("link", {
+        hidden: true,
+        name: /Open source reference/,
+      })
+    );
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(
+      screen.getByTestId("review-investigate").getAttribute("href")
+    ).toContain(`dataset=${syntheticReleaseId}`);
+    expect(screen.getByTestId("review-compare").getAttribute("href")).toContain(
+      `county=${syntheticCounty.fips}`
+    );
+  });
+
+  it("keeps sidebar providers on their own storage keys", async () => {
+    window.localStorage.setItem("ux-reset-pro-sidebar", "false");
+    window.localStorage.setItem("ux-reset-pro-sidebar:review", "true");
+    window.localStorage.setItem("ux-reset-pro-sidebar:collapsed", "false");
+    render(
+      <>
+        <SidebarProvider defaultOpen storageKey="ux-reset-pro-sidebar:review">
+          <SidebarState name="review" />
+        </SidebarProvider>
+        <SidebarProvider
+          defaultOpen={false}
+          storageKey="ux-reset-pro-sidebar:collapsed"
+        >
+          <SidebarState name="collapsed" />
+        </SidebarProvider>
+      </>
+    );
+    await waitFor(() => {
+      expect(window.localStorage.getItem("ux-reset-pro-sidebar:review")).toBe(
+        "true"
+      );
+    });
+    expect(screen.getByText("review expanded")).toBeTruthy();
+    expect(screen.getByText("collapsed collapsed")).toBeTruthy();
+    expect(window.localStorage.getItem("ux-reset-pro-sidebar")).toBe("false");
   });
 });
