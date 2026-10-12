@@ -294,42 +294,6 @@ function numericCell(input: {
   });
 }
 
-function statusCell(
-  detail: CountyDetail,
-  claimLabel: string,
-  status: string,
-  sourceKey: string
-): CompareProfileCell {
-  const trimmed = status.trim();
-  if (!trimmed) {
-    return missingField();
-  }
-  const source = sourceFor(detail, sourceKey);
-  const state = mapPublishedRow({
-    claimLabel,
-    inspectAnchor: `compare-${sourceKey}`,
-    sourceNote: source?.note,
-    subject: { kind: "status", status: trimmed },
-  });
-  const displayValue = formatGovernedEvidenceValue({
-    unit: null,
-    value: trimmed,
-    valueState: state.valueState,
-  });
-  return evidenceCell({
-    claimLabel,
-    detail,
-    displayValue,
-    observationPeriod: "Unavailable",
-    source,
-    state,
-    valueNote:
-      displayValue === "Unavailable"
-        ? `Published status: ${trimmed.replaceAll("_", " ")}. This is not zero.`
-        : null,
-  });
-}
-
 function scoreCell(
   detail: CountyDetail,
   claimLabel: string,
@@ -378,13 +342,17 @@ function acceptedCaseCountFloor(detail: CountyDetail): number | null {
   );
 }
 
+const PRIORITY_1_CATEGORY = /(?:^|\s)Priority 1\b/;
+const PRIORITY_2_CATEGORY = /(?:^|\s)Priority 2\b/;
+const WATCH_CATEGORY = /(?:^|\s)watch(?:\s|$)/i;
+const LOWER_CATEGORY = /(?:^|\s)lower(?:\s|$)/i;
+
 function recognizedReviewCategory(priority: string): boolean {
-  const normalized = priority.toLowerCase();
   return (
-    priority.includes("Priority 1") ||
-    priority.includes("Priority 2") ||
-    normalized.includes("watch") ||
-    normalized.includes("lower")
+    PRIORITY_1_CATEGORY.test(priority) ||
+    PRIORITY_2_CATEGORY.test(priority) ||
+    WATCH_CATEGORY.test(priority) ||
+    LOWER_CATEGORY.test(priority)
   );
 }
 
@@ -498,14 +466,20 @@ function hierarchyById(
     byId.set(row.measureId, row.evidence);
   }
   if (!byId.has("tick_status") && record.tickStatus.trim()) {
-    const cell = statusCell(
-      detail,
-      "Tick surveillance status",
-      record.tickStatus,
-      "tick"
-    );
-    if (cell.kind === "evidence") {
-      byId.set("tick_status", cell.evidence);
+    // Species rows replace tick_status in the shared hierarchy. Rebuild the
+    // aggregate with the same catalog entry so its type and limitations stay.
+    const aggregate = publishedCountyHierarchy({
+      measures,
+      observedMeasureIds: [],
+      record: {
+        ...record,
+        pacificusStatus: null,
+        scapularisStatus: null,
+      },
+    });
+    const tick = aggregate.rows.find((row) => row.measureId === "tick_status");
+    if (tick) {
+      byId.set("tick_status", tick.evidence);
     }
   }
   return byId;

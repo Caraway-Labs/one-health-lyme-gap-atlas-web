@@ -288,13 +288,59 @@ describe("compare county profile", () => {
     expect({
       lower: categoryDisplay("Lower"),
       priority1: categoryDisplay("Priority 1 — Investigate"),
+      priority10: categoryDisplay("Priority 10 — Review"),
+      priority1a: categoryDisplay("Priority 1a — Review"),
       priority2: categoryDisplay("Priority 2 — Review"),
+      priority20: categoryDisplay("Priority 20 — Review"),
       watch: categoryDisplay("Watch"),
     }).toStrictEqual({
       lower: "Lower review priority",
       priority1: "Highest review priority",
+      priority10: "Priority 10 — Review",
+      priority1a: "Priority 1a — Review",
       priority2: "Moderate review priority",
+      priority20: "Priority 20 — Review",
       watch: "Monitor for changes",
+    });
+  });
+
+  it("carries catalog metadata into the aggregate tick row", () => {
+    const tickMeasure: Measure = {
+      definition: "County tick surveillance status.",
+      indicator_id: "tick",
+      label: "Tick surveillance status",
+      limitations: ["Tick surveillance does not cover every habitat."],
+      measure_id: "tick_status",
+      measure_type: "status",
+      semantic_version: "1.0.0",
+    };
+    const withCatalog = alignCompareCountyProfiles({
+      left: ready(COMPARE_LEFT_FIPS),
+      leftFips: COMPARE_LEFT_FIPS,
+      measures: [tickMeasure],
+      right: ready(COMPARE_RIGHT_FIPS),
+      rightFips: COMPARE_RIGHT_FIPS,
+    });
+    const catalogCell = withCatalog.rows.find(
+      (row) => row.id === "tick_status"
+    )?.left;
+    if (catalogCell?.kind !== "evidence") {
+      throw new Error("Aggregate tick row did not use catalog metadata.");
+    }
+    const withoutCatalog = evidenceFor(COMPARE_LEFT_FIPS, "tick_status");
+    expect({
+      catalogLimit: catalogCell.evidence.provenance.limitations,
+      catalogStatus: catalogCell.evidence.displayValue,
+      catalogType: catalogCell.evidence.provenance.evidenceType,
+      plainType: withoutCatalog.provenance.evidenceType,
+    }).toStrictEqual({
+      catalogLimit: [
+        "Tick surveillance does not cover every habitat.",
+        "No records is not absence.",
+      ],
+      catalogStatus: "Established",
+      catalogType: "Status",
+      plainType: "Unavailable",
     });
   });
 });
