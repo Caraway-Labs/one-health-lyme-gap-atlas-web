@@ -689,9 +689,10 @@ test.describe("professional shell scroll containment", () => {
       spacer.style.height = "2400px";
       document.body.append(spacer);
       const scroller = document.scrollingElement;
-      if (!scroller) {
+      if (!(scroller instanceof HTMLElement)) {
         return 0;
       }
+      scroller.style.scrollBehavior = "auto";
       scroller.scrollTop = 640;
       return scroller.scrollTop;
     });
