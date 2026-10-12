@@ -22,6 +22,7 @@ import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explor
 import { resetRouteById } from "@/features/ux-reset/paths";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import {
+  explorerFollowUpSelection,
   explorerFollowUpState,
   explorerReviewLoad,
 } from "@/features/ux-reset/review/explorer-follow-up";
@@ -335,8 +336,12 @@ function ResetReviewExperienceInner() {
       window.dispatchEvent(new Event("resize"));
     }
   }, [explorerMode]);
+  const followUpSelection = explorerFollowUpSelection({
+    review: stateReview.review,
+    scopeCode: scope,
+  });
   const followUp = explorerFollowUpState({
-    candidates: stateReview.review?.review_candidates ?? null,
+    candidates: followUpSelection.candidates,
     county: reviewCounty,
     metadataFailed: presentationQuery.metadataIsError,
     review: explorerReviewLoad({
@@ -344,6 +349,7 @@ function ResetReviewExperienceInner() {
       reviewError: stateReview.isError,
       reviewReady: Boolean(stateReview.review),
     }),
+    withheld: followUpSelection.withheld,
   });
   const methodologyLabel = stateReview.review
     ? `Method ${reviewText(stateReview.review.methodology_id)} ${reviewText(stateReview.review.methodology_version)}. Release ${reviewDatasetText(stateReview.review.data_release_version)}.`

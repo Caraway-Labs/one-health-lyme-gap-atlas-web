@@ -1,4 +1,9 @@
-import type { Candidate } from "@/generated/models";
+import type { Candidate, StateReview } from "@/generated/models";
+
+import {
+  reviewCandidatesWithheld,
+  scopedReviewCandidates,
+} from "./review-operating-state";
 
 /**
  * Suggested follow-up for one selected county, taken only from that county's
@@ -15,7 +20,8 @@ export type ExplorerFollowUpState =
       rationale: string | null;
       status: "candidate";
     }
-  | { status: "factual" };
+  | { status: "factual" }
+  | { status: "withheld" };
 
 function trimmedUnique(values: readonly string[]): string[] {
   const unique: string[] = [];
@@ -51,11 +57,34 @@ export function explorerReviewLoad(input: {
   return "loading";
 }
 
+export function explorerFollowUpSelection(input: {
+  review: Pick<
+    StateReview,
+    "data_gaps" | "result_state" | "review_candidates"
+  > | null;
+  scopeCode: string;
+}): { candidates: readonly Candidate[] | null; withheld: boolean } {
+  if (!input.review) {
+    return { candidates: null, withheld: false };
+  }
+  if (reviewCandidatesWithheld(input.review)) {
+    return { candidates: [], withheld: true };
+  }
+  return {
+    candidates: scopedReviewCandidates(
+      input.review.review_candidates,
+      input.scopeCode
+    ).candidates.map((entry) => entry.candidate),
+    withheld: false,
+  };
+}
+
 export function explorerFollowUpState(input: {
   candidates: readonly Candidate[] | null;
   county: string | null;
   metadataFailed: boolean;
   review: "error" | "loading" | "ready" | "unavailable";
+  withheld: boolean;
 }): ExplorerFollowUpState {
   if (input.review === "unavailable") {
     return { status: "not-in-scope" };
@@ -65,6 +94,9 @@ export function explorerFollowUpState(input: {
   }
   if (input.review === "loading" || input.candidates === null) {
     return { status: "loading" };
+  }
+  if (input.withheld) {
+    return { status: "withheld" };
   }
   if (!input.county) {
     return { status: "factual" };

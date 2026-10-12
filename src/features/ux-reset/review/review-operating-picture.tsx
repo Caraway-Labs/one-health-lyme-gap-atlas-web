@@ -47,10 +47,10 @@ import {
 import {
   isGovernedReviewResultState,
   reviewCandidateCountyLabel,
+  reviewCandidatesWithheld,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
-  reviewResultPayloadConsistent,
   reviewResultStateLabel,
   scopedReviewCandidates,
   scopedReviewGaps,
@@ -253,17 +253,10 @@ export function ReviewOperatingPicture({
   const resultState = isGovernedReviewResultState(review.result_state)
     ? review.result_state
     : null;
-  const payloadConsistent =
-    resultState !== null &&
-    reviewResultPayloadConsistent({
-      data_gaps: review.data_gaps,
-      result_state: resultState,
-      review_candidates: review.review_candidates,
-    });
-  const authoritativeResultState = payloadConsistent ? resultState : null;
   // An ungoverned state still shows returned rows. A governed state that
   // contradicts its candidate list publishes none of them.
-  const suppressCandidates = resultState !== null && !payloadConsistent;
+  const suppressCandidates = reviewCandidatesWithheld(review);
+  const authoritativeResultState = suppressCandidates ? null : resultState;
   const candidates = useMemo(
     () => (suppressCandidates ? [] : scopedCandidates.candidates),
     [scopedCandidates.candidates, suppressCandidates]

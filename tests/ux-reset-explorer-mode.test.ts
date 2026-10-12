@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { explorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
+import {
+  explorerFollowUpSelection,
+  explorerFollowUpState,
+} from "@/features/ux-reset/review/explorer-follow-up";
 import {
   compareReturnHrefWithExplorerMode,
   EXPLORER_EVIDENCE_MODE as evidenceMode,
@@ -16,7 +19,10 @@ import {
 } from "@/features/ux-reset/workspace-route-migration";
 import type { Candidate } from "@/generated/models";
 
-import { reviewCandidate } from "./fixtures/review-operating-picture-fixtures";
+import {
+  buildStateReview,
+  reviewCandidate,
+} from "./fixtures/review-operating-picture-fixtures";
 
 describe("explorer county mode", () => {
   it("uses the same mode tokens as the recorded route map", () => {
@@ -121,6 +127,7 @@ describe("explorer suggested follow-up", () => {
         county: "08001",
         metadataFailed: false,
         review: "ready",
+        withheld: false,
       })
     ).toStrictEqual({
       category: "PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW",
@@ -138,6 +145,7 @@ describe("explorer suggested follow-up", () => {
         county: "08013",
         metadataFailed: false,
         review: "ready",
+        withheld: false,
       })
     ).toStrictEqual({ status: "factual" });
     const blank: Candidate = {
@@ -151,6 +159,7 @@ describe("explorer suggested follow-up", () => {
         county: "08001",
         metadataFailed: false,
         review: "ready",
+        withheld: false,
       })
     ).toMatchObject({
       firstStep: null,
@@ -166,6 +175,7 @@ describe("explorer suggested follow-up", () => {
         county: "08001",
         metadataFailed: false,
         review: "loading",
+        withheld: false,
       }).status
     ).toBe("loading");
     expect(
@@ -174,6 +184,7 @@ describe("explorer suggested follow-up", () => {
         county: "08001",
         metadataFailed: true,
         review: "loading",
+        withheld: true,
       }).status
     ).toBe("request-failed");
     expect(
@@ -182,6 +193,7 @@ describe("explorer suggested follow-up", () => {
         county: "08001",
         metadataFailed: false,
         review: "unavailable",
+        withheld: false,
       }).status
     ).toBe("not-in-scope");
     expect(
@@ -190,7 +202,54 @@ describe("explorer suggested follow-up", () => {
         county: "08001",
         metadataFailed: false,
         review: "error",
+        withheld: false,
       }).status
     ).toBe("request-failed");
+  });
+
+  it("drops a withheld candidate instead of publishing its step", () => {
+    expect(
+      explorerFollowUpState({
+        candidates: [denver],
+        county: "08001",
+        metadataFailed: false,
+        review: "ready",
+        withheld: true,
+      })
+    ).toStrictEqual({ status: "withheld" });
+  });
+
+  it("publishes a consistent candidate and withholds a contradictory payload", () => {
+    const selection = (
+      resultState:
+        | "candidates_found"
+        | "insufficient_evidence"
+        | "none_stand_out"
+        | "unsupported"
+    ) =>
+      explorerFollowUpSelection({
+        review: buildStateReview({
+          candidates: [denver],
+          resultState,
+          state: "CO",
+        }),
+        scopeCode: "CO",
+      });
+    expect(selection("candidates_found").withheld).toBeFalsy();
+    expect(
+      selection("candidates_found").candidates?.[0]?.suggested_next_check
+    ).toBe("Review the cited source records.");
+    expect(selection("unsupported")).toStrictEqual({
+      candidates: [],
+      withheld: true,
+    });
+    expect(selection("none_stand_out")).toStrictEqual({
+      candidates: [],
+      withheld: true,
+    });
+    expect(selection("insufficient_evidence")).toStrictEqual({
+      candidates: [],
+      withheld: true,
+    });
   });
 });

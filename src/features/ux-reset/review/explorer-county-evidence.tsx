@@ -63,6 +63,9 @@ function reviewCategoryCopy(followUp: ExplorerFollowUpState): string {
     case "factual": {
       return "No review category was returned for this county.";
     }
+    case "withheld": {
+      return "Review category is withheld because this result does not publish candidates.";
+    }
     default: {
       const exhaustive: never = followUp;
       return exhaustive;
@@ -190,6 +193,13 @@ function SuggestedFollowUp({
           {countyFips
             ? "No suggested follow-up was returned for this county. Atlas does not invent a rationale or a next step."
             : "Choose a county before reading suggested follow-up. Atlas will not pick one."}
+        </AtlasStatusMessage>
+      ) : null}
+      {status === "withheld" ? (
+        <AtlasStatusMessage tone="empty">
+          Suggested follow-up is withheld. This review result does not publish a
+          recommendation, so Atlas is not showing the records that arrived with
+          it.
         </AtlasStatusMessage>
       ) : null}
       {status === "candidate" ? (
