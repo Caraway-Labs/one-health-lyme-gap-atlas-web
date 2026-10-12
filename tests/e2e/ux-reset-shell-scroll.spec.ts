@@ -99,6 +99,24 @@ async function mainScrollTop(page: Page): Promise<number> {
     .evaluate((element) => element.scrollTop);
 }
 
+async function expectRouteContentReachable(page: Page): Promise<void> {
+  await expect(
+    page.locator(".app-inset[data-chrome-overflow='true']")
+  ).toBeAttached();
+  const heading = page.locator("main.ux-reset-pro-main h1").first();
+  await heading.evaluate((element) => {
+    element.scrollIntoView({ block: "center", inline: "nearest" });
+  });
+  const probe = await heading.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return {
+      documentTop: document.scrollingElement?.scrollTop ?? 0,
+      visible: box.height > 8 && box.bottom > 1 && box.top < window.innerHeight,
+    };
+  });
+  expect(probe).toEqual({ documentTop: 0, visible: true });
+}
+
 async function expectTrustFooterReachable(page: Page): Promise<void> {
   const footerLink = page.getByRole("link", { name: "Privacy", exact: true });
   await footerLink.evaluate((element) => {
@@ -391,6 +409,7 @@ test.describe("professional shell scroll containment", () => {
   }) => {
     await page.setViewportSize({ height: 80, width: 1280 });
     await page.goto("/app/settings");
+    await expectRouteContentReachable(page);
     await expectTrustFooterReachable(page);
   });
 
@@ -652,6 +671,44 @@ test.describe("professional shell scroll containment", () => {
     await expect.poll(() => mainScrollTop(page)).toBe(leaving);
   });
 
+  test("returns document scroll restoration after leaving the professional shell", async ({
+    page,
+  }) => {
+    await page.setViewportSize(DESKTOP);
+    await page.goto("/app/settings");
+    await expect
+      .poll(() => page.evaluate(() => history.scrollRestoration))
+      .toBe("manual");
+    await page.getByRole("link", { name: "Privacy", exact: true }).click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect
+      .poll(() => page.evaluate(() => history.scrollRestoration))
+      .toBe("auto");
+    const scrolled = await page.evaluate(() => {
+      const spacer = document.createElement("div");
+      spacer.style.height = "2400px";
+      document.body.append(spacer);
+      const scroller = document.scrollingElement;
+      if (!scroller) {
+        return 0;
+      }
+      scroller.scrollTop = 640;
+      return scroller.scrollTop;
+    });
+    expect(scrolled).toBeGreaterThan(400);
+    await page
+      .getByRole("link", { name: "One Health Lyme Gap Atlas home" })
+      .click();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
+      )
+      .toBeGreaterThan(400);
+  });
+
   test("prints the professional shell without clipping the route", async ({
     page,
   }) => {
@@ -686,6 +743,7 @@ test.describe("professional shell scroll containment mobile", () => {
   }) => {
     await page.setViewportSize({ height: 80, width: MOBILE.width });
     await page.goto("/app/settings");
+    await expectRouteContentReachable(page);
     await expectTrustFooterReachable(page);
   });
 

@@ -453,6 +453,18 @@ describe("professional main scroll history", () => {
     vi.unstubAllGlobals();
   });
 
+  it("restores the previous scrollRestoration when the shell unmounts", () => {
+    window.history.scrollRestoration = "auto";
+    const view = renderScroller();
+    expect(window.history.scrollRestoration).toBe("manual");
+    view.unmount();
+    expect(window.history.scrollRestoration).toBe("auto");
+    window.history.scrollRestoration = "manual";
+    const again = renderScroller();
+    again.unmount();
+    expect(window.history.scrollRestoration).toBe("manual");
+  });
+
   it("reads only a non-empty string entry id", () => {
     expect(readHistoryEntryId(null)).toBeNull();
     expect(readHistoryEntryId({ atlasMainScrollEntry: "" })).toBeNull();
@@ -967,6 +979,45 @@ describe("professional main scroll keyboard ownership", () => {
     cleanup();
     resetProfessionalMainScrollForTests();
     vi.unstubAllGlobals();
+  });
+
+  it("pages the inset when the route pane cannot scroll", () => {
+    const main = mainElement();
+    main.style.overflowY = "visible";
+    Object.defineProperty(main, "clientHeight", {
+      configurable: true,
+      value: 400,
+    });
+    Object.defineProperty(main, "scrollHeight", {
+      configurable: true,
+      value: 400,
+    });
+    const inset = main.parentElement;
+    if (!(inset instanceof HTMLElement)) {
+      throw new Error("inset missing");
+    }
+    inset.style.overflowY = "auto";
+    Object.defineProperty(inset, "clientHeight", {
+      configurable: true,
+      value: 120,
+    });
+    Object.defineProperty(inset, "scrollHeight", {
+      configurable: true,
+      value: 900,
+    });
+    let insetTop = 0;
+    Object.defineProperty(inset, "scrollTop", {
+      configurable: true,
+      get: () => insetTop,
+      set: (value: number) => {
+        insetTop = value;
+      },
+    });
+    expect(keydown("PageDown").defaultPrevented).toBeTruthy();
+    expect(insetTop).toBe(120);
+    keydown("End");
+    expect(insetTop).toBe(900);
+    expect(main.scrollTop).toBe(0);
   });
 
   it("pages main from the document and leaves radio arrows alone", () => {

@@ -37,6 +37,8 @@ let entrySequence = 0;
 let offsets = new Map<string, number>();
 let activeHold: HoldState | null = null;
 let mountedMain: HTMLElement | null = null;
+let manualScrollRestorationDepth = 0;
+let scrollRestorationBeforeManual: History["scrollRestoration"] | null = null;
 const suppressRemember = { current: false };
 
 let hashWatch: {
@@ -661,13 +663,6 @@ function installHistoryGuards() {
   offsets = loadOffsets();
   lastCommittedPath = pathAndSearch();
   lastSeenHash = window.location.hash;
-  try {
-    // The viewport does not scroll. Leave main's offset to this module so a
-    // back/forward navigation cannot zero it before the entry is restored.
-    window.history.scrollRestoration = "manual";
-  } catch {
-    // Embedded documents can reject scrollRestoration.
-  }
   document.addEventListener("pointerdown", onNavigationPointerDown, true);
   document.addEventListener("click", onNavigationPointerDown, true);
   document.addEventListener("keydown", onNavigationKeyDown, true);
@@ -965,6 +960,17 @@ function scrollableAncestor(
   return null;
 }
 
+function routeScrollTarget(
+  main: HTMLElement,
+  direction: "down" | "up"
+): HTMLElement {
+  return (
+    scrollableAncestor(main, direction) ??
+    scrollableAncestor(main, direction === "down" ? "up" : "down") ??
+    main
+  );
+}
+
 function scrollMainForKey(
   main: HTMLElement,
   key: MainScrollKey,
@@ -1069,7 +1075,60 @@ function applyScrollDecision(
   }
 }
 
+function retainManualScrollRestoration(): () => void {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+  let released = false;
+  try {
+    if (manualScrollRestorationDepth === 0) {
+      scrollRestorationBeforeManual = window.history.scrollRestoration;
+      window.history.scrollRestoration = "manual";
+    }
+    manualScrollRestorationDepth += 1;
+  } catch {
+    return () => {};
+  }
+  return () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    manualScrollRestorationDepth = Math.max(
+      0,
+      manualScrollRestorationDepth - 1
+    );
+    if (
+      manualScrollRestorationDepth !== 0 ||
+      scrollRestorationBeforeManual === null
+    ) {
+      return;
+    }
+    try {
+      window.history.scrollRestoration = scrollRestorationBeforeManual;
+    } catch {
+      // Embedded documents can reject scrollRestoration.
+    }
+    scrollRestorationBeforeManual = null;
+  };
+}
+
+function releaseManualScrollRestoration() {
+  manualScrollRestorationDepth = 0;
+  if (scrollRestorationBeforeManual === null || typeof window === "undefined") {
+    scrollRestorationBeforeManual = null;
+    return;
+  }
+  try {
+    window.history.scrollRestoration = scrollRestorationBeforeManual;
+  } catch {
+    // Embedded documents can reject scrollRestoration.
+  }
+  scrollRestorationBeforeManual = null;
+}
+
 export function resetProfessionalMainScrollForTests() {
+  releaseManualScrollRestoration();
   cancelMainScrollHold();
   stopHashWatch();
   clearNavigationScrollSnapshot();
@@ -1102,6 +1161,8 @@ export function useProfessionalMainScroll(
   searchKey: string
 ) {
   const previousLocationRef = useRef<string | null>(null);
+
+  useEffect(() => retainManualScrollRestoration(), []);
 
   useEffect(() => {
     const main = mainRef.current;
@@ -1177,12 +1238,17 @@ export function useProfessionalMainScroll(
       ) {
         return;
       }
-      if (scrollableAncestor(event.target, direction)) {
+      const nested = scrollableAncestor(event.target, direction);
+      if (nested && nested !== main && main.contains(nested)) {
         return;
       }
       markUserScrollGesture();
       event.preventDefault();
-      scrollMainForKey(main, event.key, direction);
+      scrollMainForKey(
+        routeScrollTarget(main, direction),
+        event.key,
+        direction
+      );
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
