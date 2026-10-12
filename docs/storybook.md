@@ -17,7 +17,9 @@ npm run test:storybook
 
 The static artifact is `storybook-static/`. To inspect it under the actual project subpath, run `node scripts/serve-storybook.mjs` and open `http://127.0.0.1:6007/one-health-lyme-gap-atlas-web/`. Use HTTP, not `file://`. The browser works independently of the Atlas app on Windows, macOS and mobile.
 
-## Initial coverage and adding stories
+## Coverage and adding stories
+
+The original catalog remains:
 
 - Button: variants, sizes, disabled, Lucide icon.
 - Card: information panel and compact spacing.
@@ -26,7 +28,11 @@ The static artifact is `storybook-static/`. To inspect it under the actual proje
 - AtlasStatusMessage: empty, loading and error announcements.
 - AtlasDataStamp: snapshot and inline provenance presentation.
 
-Add `stories/name.stories.tsx`, importing the canonical production component. Use `Meta`/`StoryObj` from `@storybook/nextjs-vite`, a descriptive title, useful `args`/`argTypes`, and a component description. Follow existing story examples. Use local fixtures and narrowly scoped deterministic provider/router mocks when needed. Never import the production providers, routes, API, auth, analytics or environment secrets. Do not put real protected records into fixtures. Scores and provenance examples must explicitly disclose synthetic data and limitations. Add representative coverage to `tests/storybook/catalog.spec.ts` when extending the initial catalog. Stories reuse production CSS and its system font stacks; no separate theme or web-font service is needed.
+[#567](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/567) is expanding the catalog to 46 approved components. The first group adds shared fixtures and rows 01–08: Evidence object, Evidence state strip, Release evidence state strip, Evidence provenance inspect, Tier 1 surveillance priority panel, Investigate evidence hierarchy, Reset professional shell, and County preview panel. Later groups stay on that issue. A partial catalog does not close #567.
+
+Storybook aliases three modules so stories do not call production services: the surveillance-priority request hook, Ask Atlas chrome, and the brand mark. The brand substitute bundles `public/android-chrome-192x192.png` because an absolute public URL does not resolve on the project subpath, and `staticDirs` stays empty so `public/` is not published. Vitest and the Next.js app keep the real modules. Each story loader clears the professional sidebar key and the knowledge-chat storage key. Shell and hierarchy docs render in separate frames so repeated anchors and the navigation id stay unique.
+
+Add `stories/name.stories.tsx`, importing the canonical production component. Use `Meta`/`StoryObj` from `@storybook/nextjs-vite`, a descriptive title, useful `args`/`argTypes`, and a component description. Follow existing story examples. Use local fixtures and narrowly scoped deterministic provider/router mocks when needed. Never import the production providers, routes, API, auth, analytics or environment secrets. Do not put real protected records into fixtures. Scores and provenance examples must explicitly disclose synthetic data and limitations. Geographic fixtures use the lower 48 states and the District of Columbia. Add representative coverage to `tests/storybook/` when extending the catalog. Stories reuse production CSS and its system font stacks; no separate theme or web-font service is needed.
 
 ## Pages deployment and human activation
 
