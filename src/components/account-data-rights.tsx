@@ -1,7 +1,8 @@
 "use client";
 
+import { QueryClientContext } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useContext, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
+import {
+  runWorkspaceSignOut,
+  workspaceSignOutSuppressesExpiryRedirect,
+} from "@/features/ux-reset/workspace-sign-out";
 import {
   confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost,
   createPrivacyRequestV1MePrivacyRequestsPost,
@@ -19,7 +25,6 @@ import {
 } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { safeReturnPath } from "@/lib/auth/return-path";
-import { createClient } from "@/lib/supabase/client";
 
 type PrivacyAction = "export" | "deletion";
 
@@ -57,6 +62,7 @@ export function AccountDataRights({
   returnPath?: string;
 }) {
   const router = useRouter();
+  const queryClient = useContext(QueryClientContext) ?? null;
   const [pending, setPending] = useState<PrivacyAction | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -97,13 +103,22 @@ export function AccountDataRights({
         setNotice("Your data export downloaded.");
         return;
       }
-      await createClient().auth.signOut();
-      router.push("/");
+      const result = await runWorkspaceSignOut(queryClient);
+      if (result === null) {
+        return;
+      }
+      if (!result.ok) {
+        setNotice(result.notice);
+        return;
+      }
+      followWorkspaceHref("/");
     } catch (error) {
       if (error instanceof AtlasApiError && error.status === 401) {
-        router.push(
-          `/auth/sign-in?next=${encodeURIComponent(safeReturnPath(returnPath))}`
-        );
+        if (!workspaceSignOutSuppressesExpiryRedirect()) {
+          router.push(
+            `/auth/sign-in?next=${encodeURIComponent(safeReturnPath(returnPath))}`
+          );
+        }
         return;
       }
       const reference =

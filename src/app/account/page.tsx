@@ -1,8 +1,14 @@
 "use client";
 
+import { QueryClientContext } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { AccountDataRights } from "@/components/account-data-rights";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -14,6 +20,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
+import { readWorkspaceSession } from "@/features/ux-reset/workspace-session-gate";
+import {
+  ACCOUNT_SESSION_SHELL_CLASS,
+  beginWorkspaceShellCheck,
+  concealRestoredWorkspace,
+  invalidateWorkspaceShellCheck,
+  noteWorkspaceDocumentUser,
+  revealRestoredWorkspace,
+  runWorkspaceSignOut,
+  subscribeWorkspaceSignOut,
+  workspaceDocumentUserId,
+  workspaceShellCheckCurrent,
+  workspaceSignOutPending,
+} from "@/features/ux-reset/workspace-sign-out";
 import {
   getProfileV1MeProfileGet,
   saveProfileV1MeProfilePut,
@@ -23,6 +44,7 @@ import type {
   UserProfileWriteRole,
 } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { createClient } from "@/lib/supabase/client";
 
 const roles: { value: Exclude<UserProfileWriteRole, null>; label: string }[] = [
@@ -97,9 +119,52 @@ const states = [
 
 const ROLE_UNSET = "unspecified";
 const STATE_UNSET = "none";
+const ACCOUNT_PAGE_PATH = "/account";
+
+/** A restored /account page stays hidden unless this session owns its profile. */
+async function settleAccountPageRestore(generation: number): Promise<void> {
+  const snapshot = await readWorkspaceSession();
+  if (!workspaceShellCheckCurrent(generation)) {
+    return;
+  }
+  switch (snapshot.read) {
+    case "present": {
+      const ownerId = workspaceDocumentUserId();
+      if (ownerId !== null && snapshot.userId === ownerId) {
+        revealRestoredWorkspace();
+        break;
+      }
+      followWorkspaceHref(ACCOUNT_PAGE_PATH, "replace");
+      break;
+    }
+    case "absent": {
+      followWorkspaceHref(
+        signInHrefForReturnPath(ACCOUNT_PAGE_PATH),
+        "replace"
+      );
+      break;
+    }
+    case "error":
+    case "throws":
+    case "unconfigured": {
+      break;
+    }
+    default: {
+      const exhaustive: never = snapshot.read;
+      throw new Error(
+        `Unsupported account session read: ${String(exhaustive)}`
+      );
+    }
+  }
+}
 
 export default function AccountPage() {
-  const router = useRouter();
+  const queryClient = useContext(QueryClientContext) ?? null;
+  const signOutPending = useSyncExternalStore(
+    subscribeWorkspaceSignOut,
+    workspaceSignOutPending,
+    () => false
+  );
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [form, setForm] = useState<UserProfileWrite>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -111,6 +176,7 @@ export default function AccountPage() {
       try {
         const session = await createClient().auth.getUser();
         if (!session.data.user) return setSignedIn(false);
+        noteWorkspaceDocumentUser(session.data.user.id);
         setSignedIn(true);
         setLoadingProfile(true);
         const result = await getProfileV1MeProfileGet();
@@ -130,6 +196,45 @@ export default function AccountPage() {
     }
     void loadAccount();
   }, []);
+
+  useEffect(() => {
+    let pageshowGeneration = 0;
+    const onPageHide = (event: PageTransitionEvent) => {
+      if (!event.persisted) {
+        return;
+      }
+      concealRestoredWorkspace();
+      beginWorkspaceShellCheck();
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) {
+        return;
+      }
+      concealRestoredWorkspace();
+      pageshowGeneration = beginWorkspaceShellCheck();
+      void settleAccountPageRestore(pageshowGeneration);
+    };
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+      invalidateWorkspaceShellCheck(pageshowGeneration);
+    };
+  }, []);
+
+  async function signOut() {
+    const result = await runWorkspaceSignOut(queryClient);
+    if (result === null) {
+      return;
+    }
+    if (!result.ok) {
+      setNotice(result.notice);
+      return;
+    }
+    setNotice(null);
+    followWorkspaceHref("/");
+  }
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -183,7 +288,7 @@ export default function AccountPage() {
     );
   const isPublic = form.role === "general_public_citizen";
   return (
-    <main className="container py-12">
+    <main className={`${ACCOUNT_SESSION_SHELL_CLASS} container py-12`}>
       <section className="mx-auto max-w-xl">
         <p className="eyebrow">Optional account</p>
         <h1 className="text-3xl font-semibold">Your profile</h1>
@@ -310,14 +415,16 @@ export default function AccountPage() {
         )}
         <AccountDataRights />
         <Button
+          aria-busy={signOutPending || undefined}
           className="mt-6"
+          disabled={signOutPending}
+          type="button"
           variant="secondary"
-          onClick={async () => {
-            await createClient().auth.signOut();
-            router.push("/");
+          onClick={() => {
+            void signOut();
           }}
         >
-          Sign out
+          {signOutPending ? "Signing out" : "Sign out"}
         </Button>
       </section>
     </main>
