@@ -148,6 +148,21 @@ Account deletion, as described in [data-rights-workflow.md](data-rights-workflow
 
 A future story may introduce time-based deletion only after a retention period is separately approved. Until then, do not publish a feedback retention clock in the UI.
 
+## UX Reset workspace
+
+Issue #560 adds a second entry point on the professional shell: a sidebar action labeled **Give feedback**, using the Lucide `message-square-plus` icon, placed with Docs and above the account menu. It opens one modal on the current `/app` route. The modal does not navigate, and it does not write the note or contact value into the URL, analytics, `localStorage`, or `sessionStorage`.
+
+The four chooser labels are **Suggest a dataset**, **Share an idea**, **Expand Atlas**, and **Report a problem**. They are not new API categories. Until the feedback contract grows, Web maps them onto the existing enum:
+
+| Chooser | `category` | Where the extra answers go |
+| --- | --- | --- |
+| Suggest a dataset | `general` | Composed into `message`, including the line `Product category: Suggest a dataset` |
+| Share an idea | `feature_idea` | Composed into `message` |
+| Expand Atlas | `feature_idea` | Composed into `message`, including the line `Product category: Expand Atlas` |
+| Report a problem | `data_issue`, `usability`, or `bug` from an explicit choice | Composed into `message` |
+
+`contact_email` is sent only when the optional contact field is a single email. A name or organization stays in the draft and is not copied into `message`, because account deletion retains message text and removes contact fields. UX Reset route ids are not in `route_id`; the request uses the closest existing value and puts an allowlisted page label in `message`. Geography context uses the shared `scope`, `county`, `compare`, and `dataset` keys when they are lower-48 or DC values. Alaska, Hawaii, search text, and `period` are omitted. Dataset URLs are validated as `http` or `https` and are not fetched. A 429 disables another send for the `Retry-After` interval. When that header is missing, the modal waits 60 seconds before another send.
+
 ## Out of scope for this document
 
 - Dialog component, `apiMutator` changes, Orval generation, privacy-page launch copy updates, and tests (web #65)

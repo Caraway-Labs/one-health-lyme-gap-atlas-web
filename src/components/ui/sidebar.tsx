@@ -212,6 +212,38 @@ export function SidebarMenuButton({
   );
 }
 
+/** Sidebar row that runs an action instead of navigating. */
+export function SidebarMenuAction({
+  active,
+  children,
+  className,
+  tooltip,
+  type = "button",
+  ...props
+}: ComponentProps<"button"> & {
+  active?: boolean;
+  tooltip?: string;
+}) {
+  const button = (
+    <button
+      className={cn("cursor-pointer text-left font-[inherit]", className)}
+      data-active={active || undefined}
+      data-slot="sidebar-menu-button"
+      type={type}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+  if (!tooltip) return button;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={button} />
+      <TooltipContent side="right">{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function SidebarTrigger({
   mobile = false,
   mobileAction = "toggle",

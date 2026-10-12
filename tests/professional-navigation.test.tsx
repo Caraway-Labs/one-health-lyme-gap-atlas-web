@@ -197,4 +197,32 @@ describe("professional workspace navigation", () => {
     );
     expect(css.includes("#092F51") || css.includes("#006978")).toBeFalsy();
   });
+
+  it("offers Give feedback with the message-square-plus icon above account", () => {
+    render(
+      <ResetProfessionalShell>
+        <p>Overview</p>
+      </ResetProfessionalShell>
+    );
+
+    const feedback = screen.getByRole("button", { name: "Give feedback" });
+    const docs = screen.getByRole("link", { name: "Docs, opens in a new tab" });
+    const account = screen.getByTestId("workspace-account-menu");
+    expect({
+      afterDocs:
+        docs.compareDocumentPosition(feedback) ===
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      beforeAccount:
+        feedback.compareDocumentPosition(account) ===
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      icon: feedback.querySelector("svg")?.getAttribute("class"),
+    }).toStrictEqual({
+      afterDocs: true,
+      beforeAccount: true,
+      icon: expect.stringContaining("message-square-plus"),
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide navigation" }));
+    expect(screen.getByRole("button", { name: "Give feedback" })).toBeTruthy();
+  });
 });
