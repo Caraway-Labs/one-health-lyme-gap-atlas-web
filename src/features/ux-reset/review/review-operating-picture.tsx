@@ -510,15 +510,8 @@ export function ReviewOperatingPicture({
       if (list instanceof HTMLElement) {
         const rowBox = row.getBoundingClientRect();
         const listBox = list.getBoundingClientRect();
-        const visible =
-          rowBox.top >= listBox.top && rowBox.bottom <= listBox.bottom;
-        if (!visible) {
-          const delta =
-            rowBox.top < listBox.top
-              ? rowBox.top - listBox.top
-              : rowBox.bottom - listBox.bottom;
-          list.scrollTop += delta;
-        }
+        const topWithinList = rowBox.top - listBox.top + list.scrollTop;
+        list.scrollTop = Math.max(0, topWithinList - 8);
       }
       row.focus({ preventScroll: true });
     } else {

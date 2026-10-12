@@ -78,10 +78,8 @@ export function ReviewCountyPreviewPanel({
         {preview.why}
       </p>
       <p className="type-small" data-testid="review-preview-guardrail">
-        {preview.caveat ===
-        "The review result did not include an additional caveat."
-          ? "Review priority is not a diagnosis, an individual risk estimate, or an outbreak status."
-          : preview.caveat}
+        Review priority is not a diagnosis, an individual risk estimate, or an
+        outbreak status.
       </p>
       <details className="ux-reset-explorer-score">
         <summary>Score and methodology</summary>

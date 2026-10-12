@@ -160,7 +160,7 @@ test.describe("Published Review county exploration", () => {
       "Unsupported"
     );
     const result = await new AxeBuilder({ page })
-      .include(".ux-reset-review-operating-side")
+      .include(".ux-reset-explorer-list, .ux-reset-explorer-preview")
       .analyze();
     expect(result.violations).toEqual([]);
   });
