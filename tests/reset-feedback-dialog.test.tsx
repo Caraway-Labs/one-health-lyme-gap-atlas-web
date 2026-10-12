@@ -538,6 +538,62 @@ describe("reset feedback dialog", () => {
     });
   });
 
+  it("retries a rate-limited report with the original payload", async () => {
+    vi.useFakeTimers();
+    submitFeedback
+      .mockRejectedValueOnce(
+        new AtlasApiError("slow", "/v1/feedback", 429, null, 120, null)
+      )
+      .mockResolvedValueOnce({
+        data: {
+          feedback_id: SERVER_ID,
+          received_at: "2026-10-12T00:00:00Z",
+          replayed: true,
+        },
+        headers: new Headers(),
+        status: 200,
+      });
+    renderFeedback();
+    openDialog();
+    fillDataset();
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    fireEvent.change(screen.getByLabelText("Dataset name or URL"), {
+      target: { value: "A newer dataset name" },
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120_000);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    const first = submitFeedback.mock.calls[0]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    const retry = submitFeedback.mock.calls[1]?.[0] as {
+      message: string;
+      submission_token: string;
+    };
+    expect({
+      calls: submitFeedback.mock.calls.length,
+      droppedEdit: retry.message.includes("A newer dataset name"),
+      keptOriginal: retry.message.includes("CDC tick file"),
+      retryMessage: retry.message,
+      retryToken: retry.submission_token,
+    }).toStrictEqual({
+      calls: 2,
+      droppedEdit: false,
+      keptOriginal: true,
+      retryMessage: first.message,
+      retryToken: first.submission_token,
+    });
+  });
+
   it("retries a lost response with the original payload", async () => {
     const accepted = {
       data: {

@@ -220,20 +220,24 @@ export function SidebarMenuAction({
   tooltip,
   type = "button",
   ...props
-}: ComponentProps<"button"> & {
+}: ComponentProps<typeof Button> & {
   active?: boolean;
   tooltip?: string;
 }) {
   const button = (
-    <button
-      className={cn("cursor-pointer text-left font-[inherit]", className)}
+    <Button
+      {...props}
+      className={cn(
+        "h-auto w-full cursor-pointer justify-start px-2 py-2 text-left font-[inherit] text-[0.8rem] whitespace-normal focus-visible:ring-0 active:translate-y-0",
+        className
+      )}
       data-active={active || undefined}
       data-slot="sidebar-menu-button"
       type={type}
-      {...props}
+      variant="ghost"
     >
       {children}
-    </button>
+    </Button>
   );
   if (!tooltip) return button;
   return (

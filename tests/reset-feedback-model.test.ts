@@ -337,6 +337,7 @@ describe("reset feedback model", () => {
       outage: classifyFeedbackHttpStatus(503, null).kind,
       rejected: shouldKeepRetrySnapshot(422),
       serverOutage: shouldKeepRetrySnapshot(503),
+      throttledSnapshot: shouldKeepRetrySnapshot(429),
       throttled: classifyFeedbackHttpStatus(429, 30),
       unauthorized: classifyFeedbackHttpStatus(401, null).kind,
     }).toMatchObject({
@@ -347,6 +348,7 @@ describe("reset feedback model", () => {
       outage: "unavailable",
       rejected: false,
       serverOutage: true,
+      throttledSnapshot: true,
       throttled: { kind: "throttled", retryAfterSeconds: 30 },
       unauthorized: "unauthorized",
     });

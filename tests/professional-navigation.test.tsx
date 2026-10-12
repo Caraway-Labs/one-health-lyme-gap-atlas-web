@@ -216,10 +216,14 @@ describe("professional workspace navigation", () => {
         feedback.compareDocumentPosition(account) ===
         Node.DOCUMENT_POSITION_FOLLOWING,
       icon: feedback.querySelector("svg")?.getAttribute("class"),
+      sharedButton: feedback.className.includes("group/button"),
+      slot: feedback.dataset.slot ?? null,
     }).toStrictEqual({
       afterDocs: true,
       beforeAccount: true,
       icon: expect.stringContaining("message-square-plus"),
+      sharedButton: true,
+      slot: "sidebar-menu-button",
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Hide navigation" }));

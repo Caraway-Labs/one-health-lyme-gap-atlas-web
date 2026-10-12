@@ -367,7 +367,7 @@ export function classifyFeedbackHttpStatus(
 }
 
 export function shouldKeepRetrySnapshot(status: number): boolean {
-  return status === 0 || status >= 500;
+  return status === 0 || status === 429 || status >= 500;
 }
 
 export function feedbackRequestsMatch(
