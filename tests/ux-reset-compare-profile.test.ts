@@ -55,6 +55,44 @@ function emptyFor(
   return value;
 }
 
+function alignmentFor(detail: ReturnType<typeof compareCountyDetail>) {
+  return alignCompareCountyProfiles({
+    left: { detail, status: "ready" },
+    leftFips: detail.fips,
+    right: ready(COMPARE_RIGHT_FIPS),
+    rightFips: COMPARE_RIGHT_FIPS,
+  });
+}
+
+function leftCell(
+  detail: ReturnType<typeof compareCountyDetail>,
+  rowId: string
+): CompareProfileCell {
+  const row = alignmentFor(detail).rows.find((item) => item.id === rowId);
+  if (!row) {
+    throw new Error(`Missing profile row ${rowId}`);
+  }
+  return row.left;
+}
+
+function categoryDisplay(priority: string): string {
+  const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+  detail.priority = priority;
+  const cell = leftCell(detail, "review_category");
+  if (cell.kind !== "evidence") {
+    throw new Error(`Review category for ${priority} is ${cell.kind}`);
+  }
+  return cell.evidence.displayValue;
+}
+
+function reasonTexts(detail: ReturnType<typeof compareCountyDetail>): string {
+  const cell = leftCell(detail, "review_reasons");
+  if (cell.kind !== "reasons") {
+    throw new Error(`Review reasons are ${cell.kind}`);
+  }
+  return cell.reasons.map((reason) => reason.text).join(" ");
+}
+
 describe("compare county profile", () => {
   it("keeps human floors from being read as exact totals", () => {
     const cases = evidenceFor(COMPARE_LEFT_FIPS, "human_case_floor");
@@ -139,7 +177,56 @@ describe("compare county profile", () => {
     const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
     detail.incidence_floor_2023 = -4;
     const evidence = compareIncidenceFloorEvidence(detail);
+    const reasons = reasonTexts(detail);
+    expect(evidence.displayValue).toBe("Unavailable");
     expect(evidence.displayValue).not.toContain("-4");
-    expect(evidence.displayValue).not.toBe("0");
+    expect(reasons).not.toContain("-4");
+    expect(reasons).not.toContain("0.0");
+    expect(reasons).toContain("not as zero cases");
+  });
+
+  it("keeps a small incidence floor from rounding to zero in the reasons", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.incidence_floor_2023 = 0.04;
+    const evidence = leftCell(detail, "incidence_floor");
+    if (evidence.kind !== "evidence") {
+      throw new Error(`Incidence floor is ${evidence.kind}`);
+    }
+    const reasons = reasonTexts(detail);
+    expect(evidence.evidence.displayValue).toBe(
+      "0.04 cases per 100,000 (published incidence floor)"
+    );
+    expect(reasons).toContain(evidence.evidence.displayValue);
+    expect(reasons).not.toContain("0.0 cases");
+  });
+
+  it("preserves unavailable priorities instead of a lower category", () => {
+    expect({
+      missing: categoryDisplay("missing"),
+      suppressed: categoryDisplay("suppressed"),
+      unavailable: categoryDisplay("Unavailable"),
+      unfamiliar: categoryDisplay("Priority 3 — Review"),
+      unknown: categoryDisplay("unknown"),
+    }).toStrictEqual({
+      missing: "Unavailable",
+      suppressed: "Suppressed",
+      unavailable: "Unavailable",
+      unfamiliar: "Priority 3 — Review",
+      unknown: "Unavailable",
+    });
+  });
+
+  it("keeps recognized review categories in their published meaning", () => {
+    expect({
+      lower: categoryDisplay("Lower"),
+      priority1: categoryDisplay("Priority 1 — Investigate"),
+      priority2: categoryDisplay("Priority 2 — Review"),
+      watch: categoryDisplay("Watch"),
+    }).toStrictEqual({
+      lower: "Lower review priority",
+      priority1: "Highest review priority",
+      priority2: "Moderate review priority",
+      watch: "Monitor for changes",
+    });
   });
 });

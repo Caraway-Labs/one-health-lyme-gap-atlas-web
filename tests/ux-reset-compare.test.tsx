@@ -13,6 +13,8 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearCompareCatalogRetryDeadlines } from "@/features/ux-reset/compare/compare-catalog-cooldown";
+import { alignCompareCountyProfiles } from "@/features/ux-reset/compare/compare-county-profile";
+import { CompareCountyProfileSection } from "@/features/ux-reset/compare/compare-county-profile-section";
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
 import { ResetCompareExperience } from "@/features/ux-reset/compare/reset-compare-experience";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
@@ -20,6 +22,8 @@ import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import {
   COMPARE_CANOPY_MEASURE_ID,
   COMPARE_CASES_MEASURE_ID,
+  COMPARE_LEFT_FIPS,
+  COMPARE_RIGHT_FIPS,
   COMPARE_TICK_MEASURE_ID,
   COMPARE_WASHINGTON_MN,
   COMPARE_WASHINGTON_RI,
@@ -924,5 +928,111 @@ describe("two-county aligned comparison", () => {
     expect(screen.getByTestId("compare-recovery").textContent).toContain(
       "second county"
     );
+  });
+});
+
+function handleRetryProfile() {}
+
+function renderProfileSection(detail: ReturnType<typeof compareCountyDetail>) {
+  const alignment = alignCompareCountyProfiles({
+    left: { detail, status: "ready" },
+    leftFips: detail.fips,
+    right: {
+      detail: compareCountyDetail(COMPARE_RIGHT_FIPS),
+      status: "ready",
+    },
+    rightFips: COMPARE_RIGHT_FIPS,
+  });
+  render(
+    <CompareCountyProfileSection
+      alignment={alignment}
+      error={null}
+      leftLabel="Denver, Colorado (08001)"
+      loading={false}
+      period={null}
+      retrying={false}
+      rightLabel="Boulder, Colorado (08013)"
+      onRetry={handleRetryProfile}
+    />
+  );
+}
+
+describe("published county profile section", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders unavailable and unfamiliar priorities without a lower category", () => {
+    const absent = ["unknown", "Unavailable", "missing", "suppressed"] as const;
+    const displays = absent.map((priority) => {
+      const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+      detail.priority = priority;
+      renderProfileSection(detail);
+      const display =
+        within(
+          screen.getByTestId(
+            `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
+          )
+        ).getByTestId("evidence-display-value").textContent ?? "";
+      cleanup();
+      return display;
+    });
+    const unfamiliar = compareCountyDetail(COMPARE_LEFT_FIPS);
+    unfamiliar.priority = "Priority 3 — Review";
+    renderProfileSection(unfamiliar);
+    const unfamiliarDisplay =
+      within(
+        screen.getByTestId(
+          `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
+        )
+      ).getByTestId("evidence-display-value").textContent ?? "";
+    expect({
+      displays,
+      unfamiliar: unfamiliarDisplay,
+    }).toStrictEqual({
+      displays: ["Unavailable", "Unavailable", "Unavailable", "Suppressed"],
+      unfamiliar: "Priority 3 — Review",
+    });
+  });
+
+  it("renders a small incidence floor without rounding it to zero", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.incidence_floor_2023 = 0.04;
+    renderProfileSection(detail);
+    const incidence = within(
+      screen.getByTestId(
+        `compare-profile-cell-incidence_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const reasons = screen.getByTestId(
+      `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
+    );
+    const section =
+      screen.getByTestId("compare-profile-section").textContent ?? "";
+    expect(incidence.textContent).toBe(
+      "0.04 cases per 100,000 (published incidence floor)"
+    );
+    expect(reasons.textContent).toContain(incidence.textContent);
+    expect(reasons.textContent).not.toContain("0.0 cases");
+    expect(section).not.toContain("0.0 cases");
+  });
+
+  it("does not repeat a rejected negative floor in the section", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.incidence_floor_2023 = -4;
+    renderProfileSection(detail);
+    const section =
+      screen.getByTestId("compare-profile-section").textContent ?? "";
+    const incidence = within(
+      screen.getByTestId(
+        `compare-profile-cell-incidence_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const reasons = screen.getByTestId(
+      `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
+    );
+    expect(incidence.textContent).toBe("Unavailable");
+    expect(reasons.textContent).not.toContain("-4");
+    expect(section).not.toContain("-4");
   });
 });

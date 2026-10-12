@@ -10,6 +10,7 @@ import {
   mapPublishedRow,
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
+  publishedValueStateRole,
   type GovernedPublishedState,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-published-county-preview";
@@ -43,6 +44,8 @@ const UNINSURED_NOTE = "A percent. Not a percentile, and not scaled again.";
 const UNALLOCATED_NOTE = "Not a county case count.";
 const NO_LIMITATION =
   "No governed limitation was returned for this county record.";
+const NO_PUBLISHED_CASE_REASON =
+  "No county-level 2023 Lyme case count was published. This may reflect zero cases, privacy suppression, or other reporting limitations; the score treats missing data not as zero cases.";
 
 const PROFILE_ROW_IDS = [
   "review_category",
@@ -343,6 +346,69 @@ function scoreCell(
 }
 
 /**
+ * A published incidence floor is usable only when the human status is the
+ * published floor and the number is finite and non-negative.
+ */
+function acceptedIncidenceFloor(detail: CountyDetail): number | null {
+  const floor = detail.incidence_floor_2023;
+  if (
+    detail.human_status === "published_count_floor" &&
+    floor !== null &&
+    Number.isFinite(floor) &&
+    floor >= 0
+  ) {
+    return floor;
+  }
+  return null;
+}
+
+function recognizedReviewCategory(priority: string): boolean {
+  const normalized = priority.toLowerCase();
+  return (
+    priority.includes("Priority 1") ||
+    priority.includes("Priority 2") ||
+    normalized.includes("watch") ||
+    normalized.includes("lower")
+  );
+}
+
+function reviewCategoryDisplay(
+  priority: string,
+  state: GovernedPublishedState
+): string {
+  if (publishedValueStateRole(state.valueState) === "uncertainty") {
+    return formatGovernedEvidenceValue({
+      unit: null,
+      value: null,
+      valueState: state.valueState,
+    });
+  }
+  if (recognizedReviewCategory(priority)) {
+    return plainPriority(priority);
+  }
+  return priority;
+}
+
+function compareReviewReasons(
+  detail: CountyDetail
+): readonly CountyReviewReason[] {
+  const reasons = reviewReasonsFor(detail);
+  const [human, ...rest] = reasons;
+  const incidence = compareIncidenceFloorEvidence(detail);
+  const humanText =
+    acceptedIncidenceFloor(detail) === null
+      ? NO_PUBLISHED_CASE_REASON
+      : `The minimum rate supported by the published 2023 county data was ${incidence.displayValue}.`;
+  return [
+    {
+      label: human?.label ?? "Published Lyme case data",
+      text: humanText,
+    },
+    ...rest,
+  ];
+}
+
+/**
  * Incidence uses the same published-floor rule as the case-count floor.
  * A missing, suppressed, or non-floor status is never rendered as zero.
  */
@@ -350,12 +416,8 @@ export function compareIncidenceFloorEvidence(
   detail: CountyDetail
 ): EvidenceObjectModel {
   const source = sourceFor(detail, "human");
-  const floor = detail.incidence_floor_2023;
-  const hasFloor =
-    detail.human_status === "published_count_floor" &&
-    floor !== null &&
-    Number.isFinite(floor) &&
-    floor >= 0;
+  const floor = acceptedIncidenceFloor(detail);
+  const hasFloor = floor !== null;
   const humanStatus = detail.human_status.trim().toLowerCase();
   const missingStatus = [
     "suppressed",
@@ -492,7 +554,7 @@ function readyCell(
       return evidenceCell({
         claimLabel: "Review category",
         detail,
-        displayValue: plainPriority(priority),
+        displayValue: reviewCategoryDisplay(priority, state),
         observationPeriod: "Unavailable",
         source: null,
         state,
@@ -500,7 +562,7 @@ function readyCell(
       });
     }
     case "review_reasons": {
-      return { kind: "reasons", reasons: reviewReasonsFor(detail) };
+      return { kind: "reasons", reasons: compareReviewReasons(detail) };
     }
     case "published_review_score": {
       return scoreCell(detail, "Published review score", detail.score.score);
