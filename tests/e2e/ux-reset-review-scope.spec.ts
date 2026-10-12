@@ -45,9 +45,59 @@ async function installReviewApiMocks(
       status: 200,
     });
   });
+  await installReviewGeometry(page);
+}
+
+function reviewNavigationGeometry() {
+  const box = (
+    fips: string,
+    west: number,
+    south: number,
+    east: number,
+    north: number
+  ) => ({
+    geometry: {
+      coordinates: [
+        [
+          [west, south],
+          [east, south],
+          [east, north],
+          [west, north],
+          [west, south],
+        ],
+      ],
+      type: "Polygon",
+    },
+    properties: { fips },
+    type: "Feature",
+  });
+  return {
+    features: [
+      box("08001", -109.1, 36.9, -102, 41.1),
+      box("36001", -79.8, 40.5, -71.8, 45.1),
+      box("11001", -77.12, 38.79, -76.91, 38.995),
+    ],
+    type: "FeatureCollection",
+  };
+}
+
+async function installReviewGeometry(
+  page: import("@playwright/test").Page,
+  body:
+    | ReturnType<typeof reviewNavigationGeometry>
+    | { detail: string } = reviewNavigationGeometry(),
+  status = 200
+) {
+  await page.route("**/v1/atlas/geometry**", async (route) => {
+    await route.fulfill({ json: body, status });
+  });
 }
 
 test.describe("Review national and state scope controls", () => {
+  test.beforeEach(async ({ page }) => {
+    await installReviewGeometry(page);
+  });
+
   test("writes scope=ALL when selecting United States from profile default state", async ({
     page,
   }) => {
