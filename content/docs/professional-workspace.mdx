@@ -29,7 +29,7 @@ Sign-in is required for `/app` routes. After you sign in, Atlas returns you to t
 | Investigate | [/app/investigate](/app/investigate) | Available now | Read one county's evidence, limitations, and the path back to Review. |
 | Compare | [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures. Availability stays visible. The page does not rank a winner. |
 | Action | [/app/action](/app/action) | Reserved | The route is present. Surveillance-planning and evidence-brief workflows are not released. |
-| Assistant | [/app/assistant](/app/assistant) | Experimental | Full research workspace for reviewed-literature questions when that service is enabled. It uses the same browser-local conversation as the Ask Atlas side panel. Structured and Both modes are not available. |
+| Assistant | [/app/assistant](/app/assistant) | Experimental | Ask Atlas research page for reviewed-literature questions when that service is enabled. A validated Explorer or Compare reference can be shown and changed, with a return link. Structured and Both modes are not available. |
 | Feed | [/app/feed](/app/feed) | Reserved | The route is present. There is no item list, alert, or saved-article library. |
 | Settings | [/app/settings](/app/settings) | Available now | Save a default jurisdiction and optional profile details, then use account sign-out, export, and removal. |
 | Docs | [/docs](/docs) | Available now | Open this reference in a new tab from the workspace navigation. |
@@ -107,15 +107,15 @@ Settings does not generate, display, or revoke an API key. It does not manage sa
 
 ## Ask Atlas
 
-Review, Explore, Investigate, Compare, and Action include an **Ask Atlas** control. It opens a side panel on a wide screen and a dialog on a narrow screen. You close it and return to the same page.
+Review, Explore, Investigate, Compare, and Action include an **Ask Atlas** control. It opens the [Ask Atlas page](/app/assistant). It does not open a side panel or a dialog.
 
-When reviewed-literature chat is enabled for that deployment, the panel asks the literature service and shows cited evidence or an explicit unavailable-evidence outcome. The notice of inherited county or release context is context for the question. It is not a citation.
+When reviewed-literature chat is enabled for that deployment, that page asks the literature service and shows cited evidence or an explicit unavailable-evidence outcome. Explorer and Compare can carry a validated page reference. That reference is labeled on the page, can be changed or cleared, and is not a citation or retrieved surveillance evidence. The return link restores the Explorer county detail or the Compare pair, including the relevant geography, period, and release. An address that does not verify is not shown as evidence.
 
-When literature chat is not enabled, the panel says Ask Atlas is unavailable and that the workspace pages stay usable. That message is a service state. It does not mean the county's evidence is absent.
+When literature chat is not enabled, the page says Ask Atlas is unavailable and the other workspace pages stay usable. That message is a service state. It does not mean the county's evidence is absent.
 
-Ask Atlas does not change filters, maps, or the address, and it does not run a workflow for you. It has no Structured mode and no Both mode.
+Ask Atlas does not change filters or maps on its own, and it does not run a workflow for you. It has no Structured mode and no Both mode. Showing a comparison reference does not ask the service to compare counties.
 
-After a saved answer, **Open full workspace** opens [/app/assistant](/app/assistant) on that same local conversation. The link does not send the question again. Unsent text in the panel is not carried over. A direct link to a conversation that is not saved in this browser says so and lets you start a new chat. History stays in this browser for up to 30 days. It is not a saved research library on Atlas servers.
+A direct link to a conversation that is not saved in this browser says so and lets you start a new chat. History stays in this browser for up to 30 days. It is not a saved research library on Atlas servers.
 
 The separate legacy workspace at [/assistant](/assistant) remains available when that route is enabled. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence).
 

@@ -29,6 +29,7 @@ interface ChatHistoryActionsProps {
   onDelete: (id: string) => void;
   onMobileHistoryOpenChange: (open: boolean) => void;
   onSelect: (id: string) => void;
+  showRetentionCopy?: boolean;
 }
 
 function ChatHistoryList({
@@ -206,6 +207,7 @@ export function ChatHistoryWorkspace({
   onDelete,
   onMobileHistoryOpenChange,
   onSelect,
+  showRetentionCopy = true,
 }: ChatHistoryActionsProps) {
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [clearDialogFocusTarget, setClearDialogFocusTarget] = useState<
@@ -267,10 +269,12 @@ export function ChatHistoryWorkspace({
           </button>
         </div>
         {list}
-        <p className="retention-copy">
-          Up to five conversations are stored in this browser for 30 days.
-          Deleting here removes the local copy.
-        </p>
+        {showRetentionCopy ? (
+          <p className="retention-copy">
+            Up to five conversations are stored in this browser for 30 days.
+            Deleting here removes the local copy.
+          </p>
+        ) : null}
       </aside>
       {mobileHistoryOpen && (
         <div
@@ -313,10 +317,12 @@ export function ChatHistoryWorkspace({
               </div>
             </header>
             {list}
-            <p className="retention-copy">
-              Up to five conversations are stored in this browser for 30 days.
-              Deleting here removes the local copy.
-            </p>
+            {showRetentionCopy ? (
+              <p className="retention-copy">
+                Up to five conversations are stored in this browser for 30 days.
+                Deleting here removes the local copy.
+              </p>
+            ) : null}
           </section>
         </div>
       )}

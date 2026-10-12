@@ -9,10 +9,6 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  AskAtlasChromeProvider,
-  useAskAtlasChrome,
-} from "@/features/ux-reset/ask-atlas/ask-atlas-chrome";
 import { AskAtlasWorkspace } from "@/features/ux-reset/ask-atlas/ask-atlas-workspace";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { CHAT_STORAGE_KEY } from "@/lib/knowledge-chat-storage";
@@ -49,16 +45,6 @@ function stubMatchMedia(mobile: boolean) {
         onchange: null,
         removeEventListener: () => {},
       }) as unknown as MediaQueryList
-  );
-}
-
-function ChromeProbe() {
-  const chrome = useAskAtlasChrome();
-  return (
-    <div>
-      <div data-testid="launcher-slot">{chrome.launcher}</div>
-      <div data-testid="desktop-slot">{chrome.desktopPanel}</div>
-    </div>
   );
 }
 
@@ -133,7 +119,7 @@ describe("Ask Atlas research workspace", () => {
     vi.unstubAllGlobals();
   });
 
-  it("asks once in the sidecar and opens that conversation in the workspace", async () => {
+  it("asks once on the dedicated page and restores that conversation without a second request", async () => {
     chatRequest.mockResolvedValue(
       chatResult(
         "Reviewed studies describe exposure.",
@@ -141,32 +127,31 @@ describe("Ask Atlas research workspace", () => {
         "conversation-1"
       )
     );
-    pathname = "/app/explore";
-    search = new URLSearchParams(
-      "scope=ALL&county=08001&metric=reported-cases"
-    );
-    window.history.replaceState({}, "", "/app/explore?county=08001");
-    const sidecar = render(
-      <AskAtlasChromeProvider>
-        <ChromeProbe />
-      </AskAtlasChromeProvider>
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+    pathname = "/app/assistant";
+    search = new URLSearchParams("county=08001");
+    window.history.replaceState({}, "", "/app/assistant?county=08001");
+    const first = render(<AskAtlasWorkspace />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Ask Atlas" })
+    ).toBeTruthy();
+    expect(screen.getByText("Reviewed literature")).toBeTruthy();
+    expect(screen.queryByTestId("ask-atlas-page-reference")).toBeNull();
     await ask("How do reviewed studies describe tick exposure?");
     await screen.findByText("Reviewed studies describe exposure.");
-    const handoff = screen.getByRole("link", { name: "Open full workspace" });
     expect({
       calls: chatRequest.mock.calls.length,
-      href: handoff.getAttribute("href"),
       keys: Object.keys(chatRequest.mock.calls[0]?.[0] as object).toSorted(),
+      modes: screen.getByText(/Structured and Both modes are not available/)
+        .textContent,
     }).toStrictEqual({
       calls: 1,
-      href: "/app/assistant?county=08001&conversation=conversation-1",
       keys: ["history", "message"],
+      modes: expect.stringMatching(
+        /Structured and Both modes are not available/
+      ),
     });
 
-    sidecar.unmount();
-    pathname = "/app/assistant";
+    first.unmount();
     search = new URLSearchParams("conversation=conversation-1");
     window.history.replaceState(
       {},
@@ -179,16 +164,11 @@ describe("Ask Atlas research workspace", () => {
       both: screen.queryByRole("tab", { name: /both/i }),
       calls: chatRequest.mock.calls.length,
       conversations: storedConversations().length,
-      modes: screen.getByText(/Structured and Both modes are not available/)
-        .textContent,
       structured: screen.queryByRole("button", { name: /structured/i }),
     }).toStrictEqual({
       both: null,
       calls: 1,
       conversations: 1,
-      modes: expect.stringMatching(
-        /Structured and Both modes are not available/
-      ),
       structured: null,
     });
   });
@@ -227,7 +207,9 @@ describe("Ask Atlas research workspace", () => {
         name: "Clear all",
       })
     );
-    await screen.findByText("Start with a research question");
+    await screen.findByText(
+      /Ask a research question about reviewed literature/
+    );
     expect(storedConversations()).toStrictEqual([]);
 
     window.history.pushState(
@@ -339,10 +321,9 @@ describe("Ask Atlas research workspace", () => {
       "/app/assistant?county=12abc&dataset=alpha-2026"
     );
     render(<AskAtlasWorkspace />);
-    expect(
-      document.querySelector("[data-assistant-county-state='invalid']")
-        ?.textContent
-    ).toContain("County context not applied");
+    expect(document.querySelector("[data-assistant-county-state]")).toBeNull();
+    expect(screen.queryByTestId("ask-atlas-page-reference")).toBeNull();
+    expect(screen.queryByText("12abc")).toBeNull();
     await ask("Question without county evidence");
     await screen.findByText("Literature only.");
     expect(chatRequest.mock.calls[0]?.[0]).toStrictEqual({

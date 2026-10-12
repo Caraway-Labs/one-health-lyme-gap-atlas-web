@@ -379,15 +379,14 @@ test.describe("P0 evidence catalog", () => {
     await expect(
       page.getByText("Active catalog route: /app/investigate")
     ).toBeVisible();
-    await page.getByTestId("ask-atlas-launcher").click();
-    await expect(page.getByTestId("ask-atlas-panel")).toContainText(
-      "does not send questions"
-    );
+    const launcher = page.getByTestId("ask-atlas-launcher");
+    await expect(launcher).toHaveAttribute("href", "/app/assistant");
+    await expect(page.getByTestId("ask-atlas-panel")).toHaveCount(0);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     const inset = page.locator(".app-inset");
     await expect(inset).not.toHaveAttribute("inert", "");
-    await page.keyboard.press("Escape");
-    await expect(page.getByTestId("ask-atlas-panel")).toHaveCount(0);
-    await expect(page.getByTestId("ask-atlas-launcher")).toBeFocused();
+    await launcher.focus();
+    await expect(launcher).toBeFocused();
     const image = page.locator("img.atlas-brand-mark").first();
     await expect(image).toBeVisible();
     const src = await image.getAttribute("src");

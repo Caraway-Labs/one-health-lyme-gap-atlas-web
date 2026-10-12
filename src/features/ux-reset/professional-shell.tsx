@@ -172,8 +172,8 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   );
   const mobileDrawerActive = isMobileViewport && mobileOpen;
   const mobileDrawerClosed = isMobileViewport && !mobileOpen;
-  const pageInert = mobileDrawerActive || askAtlas.pageInert;
-  const sidebarInert = mobileDrawerClosed || askAtlas.pageInert;
+  const pageInert = mobileDrawerActive;
+  const sidebarInert = mobileDrawerClosed;
   const sidebarRef = useRef<HTMLElement>(null);
   const insetRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -513,11 +513,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           <main ref={mainRef} className="app-content ux-reset-pro-main">
             {children}
           </main>
-          {askAtlas.desktopPanel}
         </div>
         <ProfessionalTrustFooter />
       </SidebarInset>
-      {askAtlas.compactModal}
     </div>
   );
 }

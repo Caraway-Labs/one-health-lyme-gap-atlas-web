@@ -143,7 +143,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Research workspace for reviewed-literature questions, using the same browser-local conversation as the Ask Atlas side panel.",
+      "Research workspace for reviewed-literature questions. Explorer and Compare can hand a validated page reference here and return to that page.",
     pageTitle: "Assistant | One Health Lyme Gap Atlas",
   },
   {
