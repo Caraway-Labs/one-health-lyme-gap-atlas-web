@@ -95,6 +95,77 @@ test.describe("Review operating picture", () => {
     }
   });
 
+  test("selects the first published candidate only when the address omits a county", async ({
+    page,
+  }) => {
+    await installOperatingPicture(page, (state) =>
+      buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Broomfield",
+            fips: "08014",
+            reasonText: "Broomfield was returned before any published county.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Boulder",
+            fips: "08013",
+            reasonText: "Boulder is the first published candidate.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Adams",
+            fips: "08001",
+            reasonText: "Adams was returned after Boulder.",
+          }),
+        ],
+        resultState: "candidates_found",
+        state,
+      })
+    );
+
+    await page.goto("/app/review?scope=CO");
+    await expect(page).toHaveURL(/county=08013/);
+    const omitted = new URL(page.url());
+    expect(omitted.pathname).toBe("/app/review");
+    expect({
+      county: omitted.searchParams.get("county"),
+      scope: omitted.searchParams.get("scope"),
+      selection: omitted.searchParams.get("selection"),
+    }).toStrictEqual({
+      county: "08013",
+      scope: "CO",
+      selection: null,
+    });
+    await expect(
+      page.locator('[data-testid="review-candidate"][aria-current="true"]')
+    ).toHaveAttribute("data-fips", "08013");
+
+    await page.goto("/app/investigate?scope=CO&county=nope");
+    const publishedCounty = page.getByRole("combobox", {
+      exact: true,
+      name: "Published county",
+    });
+    await expect(publishedCounty).toBeEnabled();
+    await expect(page.getByTestId("review-candidate")).toHaveCount(3);
+    await expect(publishedCounty).toContainText("Select a published county");
+    const invalid = new URL(page.url());
+    expect(invalid.pathname).toBe("/app/review");
+    expect({
+      county: invalid.searchParams.get("county"),
+      scope: invalid.searchParams.get("scope"),
+      selection: invalid.searchParams.get("selection"),
+    }).toStrictEqual({
+      county: null,
+      scope: "CO",
+      selection: "required",
+    });
+    await expect(
+      page.locator('[data-testid="review-candidate"][aria-current="true"]')
+    ).toHaveCount(0);
+  });
+
   test("shows a candidate reason, basis, caveat, and Investigate path", async ({
     page,
   }, testInfo) => {

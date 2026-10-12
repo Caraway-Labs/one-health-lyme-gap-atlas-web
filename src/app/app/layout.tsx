@@ -9,6 +9,7 @@ import "@/features/ux-reset/trust-footer.css";
 export const metadata: Metadata = {
   description:
     "Authenticated professional workspace for the One Health Lyme Gap Atlas.",
+  robots: { follow: false, index: false },
   title: "Professional workspace | One Health Lyme Gap Atlas",
 };
 

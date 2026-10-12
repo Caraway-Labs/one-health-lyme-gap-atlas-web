@@ -5,6 +5,7 @@ import { AtlasHomePage } from "../atlas-home-page";
 export const metadata = {
   ...pageMetadataForRoute("/overview"),
   alternates: { canonical: "/overview" },
+  robots: { follow: false, index: false },
 };
 
 // The analytical overview includes navigation that must reflect a completed

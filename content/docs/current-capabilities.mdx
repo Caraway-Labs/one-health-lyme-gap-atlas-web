@@ -18,28 +18,26 @@ Atlas uses four status labels:
 
 | Capability | Status | How it supports investigation | Important boundary |
 | --- | --- | --- | --- |
-| Explore county and state context | Available now | Start with a geography and review its rank, map context, county profile, signals, and evidence together. | A review-priority signal is not a diagnosis, disease-burden estimate, or individual risk estimate. |
-| Filter the county set | Available now | Narrow the review to a state, county name or FIPS code, or the available-evidence state. | Filters describe the current release; they do not create new surveillance data. |
-| Review geographic views | Available now | Use geographic tiles, small multiples, the evidence matrix, ranked dots, synchronized maps, map-linked scatterplots, county comparison, and the county evidence table to look for patterns worth checking. | The table and text summaries are the non-map path. A map color or rank is a prompt for review, not a conclusion. |
-| Compare supported counties | Available now | Select up to five counties from the same release and compare their displayed signals and evidence context side by side. | Comparisons are descriptive and methodology-defined; they do not establish causation or peer-group equivalence. |
-| Inspect evidence and provenance | Available now | Open the selected county's evidence and methodology context before deciding what to investigate next. | Check source, geography, time or vintage, release, method version, freshness, completeness, uncertainty, and limitations. |
-| Share analytical state | Available now | Share a URL that preserves supported filters, view, metric, selected counties, page, and score assumptions for another reviewer. | Record the release and method with the URL. A URL does not guarantee that a future release will contain identical data. |
-| Export a review artifact | Available now | Use the supported county-list CSV or state/county PDF export in the Atlas experience to carry a bounded review into team discussion. | Exports are snapshots of the displayed release and assumptions, not a new analysis or a guarantee of future reproducibility. |
+| Front Porch | Available now | Read the public introduction at `/` without a sign-in. | It does not show county scores, a map of results, or a comparison. |
+| Atlas Explorer | Available now | Sign in and start from the United States or one state. Read the map and county list together, then open county evidence and suggested follow-up on the same address. | A review-priority signal is not a diagnosis, disease-burden estimate, or individual risk estimate. National scope is a bounded picture, not a ranking of every U.S. county. |
+| Compare two counties | Available now | Open Compare for two counties from the same release and read each measure's unit, period, and availability. | The page does not rank a winner. It does not compare five counties. |
+| Inspect evidence and provenance | Available now | Open county evidence and **Inspect provenance** before deciding what to review next. | Check source, geography, time or vintage, release, method version, freshness, completeness, uncertainty, and limitations. |
+| Share a workspace address | Available now | Share an Atlas Explorer or Compare URL that keeps scope, county, compare, release, period, and Explorer mode. | Record the release and method with the URL. A URL does not guarantee that a future release will contain identical data. |
+| County PDF | Available now | From county evidence, export a county PDF when Atlas can verify that the file matches the displayed county, observations, sources, period, and caveats. | If that check fails, the PDF is unavailable. That is not a claim that the report contains none of a period. |
 
 ## Authenticated professional workspace
 
-These routes require sign-in. They sit beside the public Explorer until a later cutover. The [professional workspace](/docs/professional-workspace) guide describes each released page.
+These routes require sign-in. The [professional workspace](/docs/professional-workspace) guide describes each destination. Older public bookmarks open Atlas Explorer after sign-in. They do not keep a separate public map.
 
 | Capability | Status | How it supports investigation | Important boundary |
 | --- | --- | --- | --- |
-| Review at [/app/review](/app/review) | Available now | Start from the United States or one state, and read the map and county list for that scope. | National Review is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope. |
-| Explore at [/app/explore](/app/explore) | Available now | Scan one governed measure on a map and in a table of the same values. | Explore filters stay on Explore. The table remains the non-map path. |
-| Investigate at [/app/investigate](/app/investigate) | Available now | Read one county's evidence, limitations, and provenance, then return to Review. | The page opens the county in the address. It does not substitute another county. |
-| Compare at [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures, with unit, period, and availability on each value. | This page does not rank a winner. The public Explorer's five-county comparison is a separate legacy surface. |
-| Settings at [/app/settings](/app/settings) | Available now | Save United States or a state as the next Review start, plus optional role, organization, and job title. Sign out, export, and removal use the account controls on the same page. | Optional fields can stay empty. The default does not change evidence values or block other geographies. |
-| Docs from the workspace | Available now | Open this reference in a new tab from the Access navigation. | The original workspace tab keeps its URL. Docs is not in-page help. |
-| Ask Atlas at [/app/assistant](/app/assistant) | Experimental/demo | Review, Explore, Investigate, Compare, and Action open this page. It requests reviewed literature when that service is enabled. Explorer and Compare can pass a validated page reference and a return link. | Feature-gated. The reference is not sent as a county or comparison request. With the service off, the page says Ask Atlas is unavailable and the other pages stay usable. There is no Structured or Both mode. History stays in this browser. |
-| Action and Feed | Planned | The addresses [/app/action](/app/action) and [/app/feed](/app/feed) are reserved in the navigation. | They do not yet provide follow-up workflows, feed items, or alerts. |
+| Atlas Explorer at [/app/review](/app/review) | Available now | Start from the United States or one state, and read the map and county list. Open county evidence or suggested follow-up on that address. | National scope is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope and no county. On a state picture with no county, Atlas Explorer selects the first published review candidate and writes it into the address. A county that is present but does not validate opens with `selection=required` and is not replaced. |
+| Compare at [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures, with unit, period, and availability on each value. | This page does not rank a winner. |
+| Settings at [/app/settings](/app/settings) | Available now | Save United States or a state as the next Atlas Explorer start, plus optional role, organization, and job title. Sign out, export, and removal use the account controls on the same page. | Optional fields can stay empty. The default does not change evidence values or block other geographies. |
+| Docs from the workspace | Available now | Open this reference in a new tab from the workspace navigation. | The original workspace tab keeps its URL. Docs is not in-page help. |
+| Ask Atlas at [/app/assistant](/app/assistant) | Experimental/demo | Atlas Explorer and Compare open this dedicated page. It requests reviewed literature when that service is enabled. Explorer and Compare can pass a validated page reference and a return link. | Feature-gated. The reference is not sent as a county or comparison request. With the service off, the page says Ask Atlas is unavailable and the other pages stay usable. There is no side panel, no Structured mode, and no Both mode. History stays in this browser. |
+| Feed at [/app/feed](/app/feed) | Planned | The destination is in the navigation. | It does not yet provide feed items or alerts. |
+| Evidence brief | Experimental/demo | A direct `plan=evidence-brief` address still opens that brief and returns to county evidence. | It is not a workspace destination. Surveillance planning is not released. |
 | API keys in Settings | Not supported | Public API reads do not use a key. | Settings does not generate or revoke a key. See [API, MCP, and access](/docs/api-mcp-and-access) and the [developer quickstart](/docs/develop/quickstart). |
 
 ## Capabilities that are not current promises
@@ -52,13 +50,14 @@ These routes require sign-in. They sit beside the public Explorer until a later 
 | Additional clinical, laboratory, jurisdictional, or other governed sources | Planned | Atlas is designed to adapt future sources into the same evidence model. The current release stays open-data-first. See [Sources and canonical evidence](/docs/sources-and-canonical-evidence). |
 | Live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory ingestion | Not supported | Naming a future standard is not a connection. No live EHR or production clinical-laboratory feed is part of this release. |
 | AI-generated findings treated as authoritative | Experimental/demo | AI-enabled experiences must remain grounded in approved evidence, show limitations, and retain human review. Do not use an AI suggestion as a finding by itself. |
-| Alerts, private feeds, or account-based evidence access | Not supported | The public Explorer remains usable without sign-in. A workspace account does not unlock different governed evidence, change a score, or authorize an interpretation. Feed and alerts are not released. |
+| Alerts, private feeds, or account-based evidence access | Not supported | The Front Porch remains usable without sign-in. A workspace account does not unlock different governed evidence, change a score, or authorize an interpretation. Feed does not list items, and alerts are not released. |
+| Separate public map, five-county comparison, or Investigation Workspace | Not supported | Older `/overview`, `/geographic_explorer`, and `/investigate` bookmarks open Atlas Explorer after sign-in. They do not restore a separate public analytical page. |
 
 ## Where to start
 
-- Open the [Atlas Explorer](/overview) for county and state review.
-- Open the [Geographic Explorer](/geographic_explorer) for coordinated geographic views and the county evidence table.
-- Open the signed-in [professional workspace](/docs/professional-workspace) for Review, Explore, Investigate, Compare, and Settings.
+- Sign in and open [Atlas Explorer](/app/review) for the map, county list, county evidence, and suggested follow-up.
+- Open [Compare](/app/compare) for two counties.
+- Read the [professional workspace](/docs/professional-workspace) guide for Atlas Explorer, Compare, Ask Atlas, Feed, Settings, and Docs.
 - Follow the [investigation workflows](/docs/investigation-workflows) for question-to-next-step guidance.
 - Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) and the methodology context beside the result before relying on a signal. Keep the [AI Ethics commitments](/ai-ethics) nearby for AI-enabled or experimental experiences.
 - Read [sources and canonical evidence](/docs/sources-and-canonical-evidence) before treating a future source, file format, or clinical standard as available.

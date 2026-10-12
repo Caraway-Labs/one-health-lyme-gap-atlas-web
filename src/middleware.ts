@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { installedWorkspaceRedirect } from "@/features/ux-reset/workspace-route-migration";
 import {
+  isProfessionalAppPath,
   isSupabaseAuthConfigured,
   shouldRedirectUnauthenticatedAppRoute,
 } from "@/lib/auth/app-route-guard";
@@ -14,6 +15,18 @@ type PendingCookie = {
   options?: Parameters<NextResponse["cookies"]["set"]>[2];
   value: string;
 };
+
+const WORKSPACE_ROBOTS_TAG = "noindex, nofollow";
+
+function withAccessibleWorkspaceRobots(
+  response: NextResponse,
+  pathname: string
+): NextResponse {
+  if (isProfessionalAppPath(pathname)) {
+    response.headers.set("X-Robots-Tag", WORKSPACE_ROBOTS_TAG);
+  }
+  return response;
+}
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -74,7 +87,7 @@ export async function middleware(request: NextRequest) {
     for (const cookie of pendingCookies) {
       redirect.cookies.set(cookie.name, cookie.value, cookie.options);
     }
-    return redirect;
+    return withAccessibleWorkspaceRobots(redirect, pathname);
   }
 
   const compatibility = installedWorkspaceRedirect({
@@ -89,10 +102,10 @@ export async function middleware(request: NextRequest) {
     for (const cookie of pendingCookies) {
       redirect.cookies.set(cookie.name, cookie.value, cookie.options);
     }
-    return redirect;
+    return withAccessibleWorkspaceRobots(redirect, pathname);
   }
 
-  return response;
+  return withAccessibleWorkspaceRobots(response, pathname);
 }
 
 export const config = {

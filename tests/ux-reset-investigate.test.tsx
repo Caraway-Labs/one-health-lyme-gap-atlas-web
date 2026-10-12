@@ -1173,11 +1173,13 @@ describe("County Investigate workspace", () => {
       screen.getByTestId("investigate-pdf-included").textContent ?? "";
     const omitted =
       screen.getByTestId("investigate-pdf-omitted").textContent ?? "";
-    const action = screen.getByRole("link", { name: "Continue to Action" });
+    const action = screen.getByRole("link", { name: "Suggested follow-up" });
     const actionHref = action.getAttribute("href") ?? "";
     expect({
       actionCounty: actionHref.includes("county=08001"),
-      actionPath: actionHref.includes("/app/action"),
+      actionPath:
+        actionHref.includes("/app/review") &&
+        actionHref.includes("mode=follow-up"),
       continuePath: screen.queryByTestId("investigate-continue"),
       emptyFamily: screen.getByTestId("investigate-family-vector_pathogen")
         .textContent,
@@ -1231,11 +1233,13 @@ describe("County Investigate workspace", () => {
       screen.getByTestId("investigate-pdf-included").textContent ?? "";
     const evidenceText =
       screen.getByTestId("investigate-evidence").textContent ?? "";
-    const action = screen.getByRole("link", { name: "Continue to Action" });
+    const action = screen.getByRole("link", { name: "Suggested follow-up" });
     const actionHref = action.getAttribute("href") ?? "";
     expect({
       actionCounty: actionHref.includes("county=08001"),
-      actionPath: actionHref.includes("/app/action"),
+      actionPath:
+        actionHref.includes("/app/review") &&
+        actionHref.includes("mode=follow-up"),
       actionPeriod: actionHref.includes("period=2023-01-01"),
       actionRelease: actionHref.includes("dataset=alpha-2026"),
       caveats: context.dataset.caveats,
@@ -1299,7 +1303,7 @@ describe("County Investigate workspace", () => {
       if (
         screen.getByTestId("investigate-export-context").dataset.county !==
           "08001" ||
-        !screen.queryByRole("link", { name: "Continue to Action" })
+        !screen.queryByRole("link", { name: "Suggested follow-up" })
       ) {
         throw new Error("Compare return path has not rendered.");
       }
@@ -1311,7 +1315,9 @@ describe("County Investigate workspace", () => {
     expect({
       actionCounty: actionHref.includes("county=08001"),
       actionPair: actionHref.includes("compare=08001%2C08013"),
-      actionPath: actionHref.includes("/app/action"),
+      actionPath:
+        actionHref.includes("/app/review") &&
+        actionHref.includes("mode=follow-up"),
       county: screen.getByTestId("investigate-export-context").dataset.county,
       destination: link.dataset.destination,
       hrefCompare: href.includes("/app/compare"),
@@ -1365,7 +1371,9 @@ describe("County Investigate workspace", () => {
     const actionHref = action.getAttribute("href") ?? "";
     expect({
       county: actionHref.includes("county=08001"),
-      path: actionHref.includes("/app/action"),
+      path:
+        actionHref.includes("/app/review") &&
+        actionHref.includes("mode=follow-up"),
       period: actionHref.includes("period=2023-01-01"),
     }).toStrictEqual({
       county: true,
@@ -1436,7 +1444,7 @@ describe("County Investigate workspace", () => {
     expect(screen.queryByTestId("investigate-continue")).toBeNull();
     expect(screen.queryByTestId("investigate-export-context")).toBeNull();
     expect(
-      screen.queryByRole("link", { name: "Continue to Action" })
+      screen.queryByRole("link", { name: "Suggested follow-up" })
     ).toBeNull();
   });
 

@@ -477,7 +477,8 @@ describe("Explore workspace", () => {
       ).toBe(EXPLORE_PRECIPITATION_MEASURE_ID)
     );
     const investigate = screen.getByTestId("explore-investigate");
-    expect(investigate.getAttribute("href")).toContain("/app/investigate");
+    expect(investigate.getAttribute("href")).toContain("/app/review");
+    expect(investigate.getAttribute("href")).toContain("mode=evidence");
     expect(investigate.getAttribute("href")).toContain("county=08001");
     expect(investigate.getAttribute("href")).not.toContain("metric=");
     expect(

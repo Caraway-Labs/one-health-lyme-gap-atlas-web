@@ -8,6 +8,7 @@ import "@/features/geographic-explorer/explorer.css";
 export const metadata = {
   ...pageMetadataForRoute("/geographic_explorer"),
   alternates: { canonical: "/geographic_explorer" },
+  robots: { follow: false, index: false },
 };
 
 export default function GeographicExplorerPage() {

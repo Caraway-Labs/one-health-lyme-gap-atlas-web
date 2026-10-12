@@ -12,6 +12,7 @@ import {
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
+import { recordedWorkspaceMigration } from "@/features/ux-reset/workspace-route-migration";
 import { isCountyFips } from "@/lib/county-geography";
 
 import {
@@ -303,7 +304,15 @@ export function askAtlasReturnHref(reference: AskAtlasPageReference): string {
   }
   const query = params.toString();
   const path = returnPath(reference.context.surface);
-  return query ? `${path}?${query}` : path;
+  const legacy = query ? `${path}?${query}` : path;
+  const migrated = recordedWorkspaceMigration({
+    pathname: path,
+    searchParams: new URLSearchParams(query),
+  });
+  if (migrated.kind === "redirect") {
+    return migrated.href;
+  }
+  return legacy;
 }
 
 function serializeAskAtlasPageReference(
