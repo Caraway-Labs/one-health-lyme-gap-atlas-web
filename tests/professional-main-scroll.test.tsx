@@ -726,12 +726,21 @@ describe("professional main scroll history", () => {
     HTMLElement.prototype.getBoundingClientRect = original;
   });
 
-  it("keeps the pre-fragment offset when a hash entry reuses history state", () => {
+  it("keeps the pre-fragment offset when the anchor scrolls before hashchange", () => {
     renderScroller("/app/investigate", "");
     rememberMainOffset(500);
     const before = readHistoryEntryId(window.history.state);
+    const link = appendControl(document.createElement("a"));
+    link.setAttribute("href", "#settings-job-title");
+    link.textContent = "Job title";
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+    });
+    fireEvent.click(link);
+    mainElement().scrollTop = 80;
+    fireEvent.scroll(mainElement());
     window.history.replaceState(
-      { atlasMainScrollEntry: before },
+      window.history.state,
       "",
       "/app/investigate#settings-job-title"
     );
@@ -739,12 +748,12 @@ describe("professional main scroll history", () => {
     const after = readHistoryEntryId(window.history.state);
     expect(after).toBeTruthy();
     expect(after).not.toBe(before);
-    rememberMainOffset(80);
     const stored = JSON.parse(
       sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
     ) as [string, number][];
     expect(stored.find(([id]) => id === before)?.[1]).toBe(500);
     expect(stored.find(([id]) => id === after)?.[1]).toBe(80);
+    link.remove();
   });
 
   it("ignores corrupt session storage and keeps working when storage throws", () => {

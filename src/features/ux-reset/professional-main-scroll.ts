@@ -32,6 +32,7 @@ let lastSeenHash = "";
 let lastCommittedPath = "";
 let stampingEntry = false;
 let nextEntryId: string | null = null;
+let fragmentLeave: { id: string; offset: number } | null = null;
 let entrySequence = 0;
 let offsets = new Map<string, number>();
 let activeHold: HoldState | null = null;
@@ -267,6 +268,72 @@ function navigationIntentTarget(
   return anchor;
 }
 
+function fragmentLinkTarget(
+  target: EventTarget | null
+): HTMLAnchorElement | null {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+  const anchor = target.closest("a[href]");
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return null;
+  }
+  if (anchor.target === "_blank" || anchor.hasAttribute("download")) {
+    return null;
+  }
+  try {
+    const url = new URL(anchor.href, window.location.href);
+    if (url.origin !== window.location.origin) {
+      return null;
+    }
+    if (`${url.pathname}${url.search}` !== pathAndSearch()) {
+      return null;
+    }
+    if (url.hash.length <= 1) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+  return anchor;
+}
+
+function armFragmentLeave() {
+  if (!mountedMain) {
+    return;
+  }
+  const id = readHistoryEntryId(window.history.state);
+  if (!id) {
+    return;
+  }
+  const offset = retainedOffset(id, mountedMain.scrollTop);
+  fragmentLeave = { id, offset };
+  rememberOffset(id, offset);
+}
+
+function shouldArmFragmentLeave(event: Event): boolean {
+  if (!fragmentLinkTarget(event.target)) {
+    return false;
+  }
+  if (
+    event instanceof MouseEvent &&
+    (event.button !== 0 ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey)
+  ) {
+    return false;
+  }
+  if (
+    event instanceof KeyboardEvent &&
+    (event.altKey || event.ctrlKey || event.metaKey)
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function shouldArmNavigationIntent(event: Event): boolean {
   if (
     event instanceof MouseEvent &&
@@ -282,6 +349,10 @@ function shouldArmNavigationIntent(event: Event): boolean {
 }
 
 function onNavigationPointerDown(event: Event) {
+  if (shouldArmFragmentLeave(event)) {
+    armFragmentLeave();
+    return;
+  }
   if (!shouldArmNavigationIntent(event)) {
     return;
   }
@@ -293,6 +364,13 @@ function onNavigationKeyDown(event: Event) {
     return;
   }
   if (event.altKey || event.ctrlKey || event.metaKey) {
+    return;
+  }
+  if (
+    (event.key === "Enter" || event.key === " ") &&
+    shouldArmFragmentLeave(event)
+  ) {
+    armFragmentLeave();
     return;
   }
   const target = navigationIntentTarget(event.target);
@@ -480,10 +558,15 @@ function ensureEntryId(): string {
 function assignFragmentEntryId(main: HTMLElement) {
   const previousId = readHistoryEntryId(window.history.state);
   if (!(previousId && !suppressRemember.current)) {
+    fragmentLeave = null;
     return;
   }
-  const inherited = retainedOffset(previousId, main.scrollTop);
-  rememberOffset(previousId, inherited);
+  const leaving =
+    fragmentLeave?.id === previousId
+      ? fragmentLeave.offset
+      : retainedOffset(previousId, main.scrollTop);
+  rememberOffset(previousId, leaving);
+  const anchor = main.scrollTop;
   const id = createEntryId();
   nextEntryId = id;
   stampingEntry = true;
@@ -493,7 +576,8 @@ function assignFragmentEntryId(main: HTMLElement) {
     window.location.href
   );
   stampingEntry = false;
-  rememberOffset(id, inherited);
+  rememberOffset(id, anchor);
+  fragmentLeave = null;
 }
 
 function restoreHashOnly(main: HTMLElement) {
@@ -996,6 +1080,7 @@ export function resetProfessionalMainScrollForTests() {
   pendingRestoreEntryId = null;
   suppressFragmentRekey = false;
   nextEntryId = null;
+  fragmentLeave = null;
   lastSeenHash = typeof window === "undefined" ? "" : window.location.hash;
   lastCommittedPath = typeof window === "undefined" ? "" : pathAndSearch();
   mountedMain = null;
@@ -1145,9 +1230,14 @@ export function useProfessionalMainScroll(
       }
       if (userScrollGesture) {
         clearNavigationScrollSnapshot();
+        fragmentLeave = null;
         userScrollGesture = false;
         window.clearTimeout(userScrollGestureTimer);
         rememberOffset(entryId, main.scrollTop);
+        return;
+      }
+      if (fragmentLeave?.id === entryId) {
+        rememberOffset(entryId, fragmentLeave.offset);
         return;
       }
       const kept = retainedOffset(entryId, main.scrollTop);

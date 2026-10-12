@@ -611,6 +611,52 @@ test.describe("professional shell scroll containment", () => {
     await expect.poll(() => mainScrollTop(page)).toBe(0);
   });
 
+  test("restores the pre-fragment offset after a native anchor click", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 720, width: 1280 });
+    await page.route("**/v1/me/profile", async (route) => {
+      await route.fulfill({ json: { profile: null }, status: 200 });
+    });
+    await page.goto("/app/settings");
+    const main = page.locator("main.ux-reset-pro-main");
+    await expect(page.getByTestId("settings-job-title")).toBeAttached();
+    await main.evaluate((element) => {
+      const anchor = document.createElement("a");
+      anchor.href = "#settings-job-title";
+      anchor.textContent = "Job title";
+      anchor.dataset.testid = "fragment-leave";
+      element.prepend(anchor);
+      element.scrollTop = 640;
+    });
+    await expect.poll(() => mainScrollTop(page)).toBe(640);
+    await page.evaluate(() => {
+      document
+        .querySelector<HTMLAnchorElement>("[data-testid='fragment-leave']")
+        ?.click();
+    });
+    await expect(page).toHaveURL(/#settings-job-title/);
+    await expect
+      .poll(() =>
+        page.getByTestId("settings-job-title").evaluate((element) => {
+          const scroller = element.closest("main");
+          if (!scroller) {
+            return false;
+          }
+          const fieldBox = element.getBoundingClientRect();
+          const mainBox = scroller.getBoundingClientRect();
+          return (
+            fieldBox.top >= mainBox.top - 1 &&
+            fieldBox.bottom <= mainBox.bottom + 1
+          );
+        })
+      )
+      .toBe(true);
+    await page.goBack();
+    await expect(page).not.toHaveURL(/#settings-job-title/);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(500);
+  });
+
   test("prints the professional shell without clipping the route", async ({
     page,
   }) => {
