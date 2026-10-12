@@ -30,6 +30,7 @@ const auth = vi.hoisted(() => {
       access_token: "token-user-a",
       user: { id: "user-a" },
     } as Session,
+    sessionRead: null as "throw" | { error: { message: string } } | null,
     signOut:
       vi.fn<
         (options?: {
@@ -56,9 +57,12 @@ vi.mock(import("@/lib/supabase/client"), () => ({
           auth.pausedLookups += 1;
           await pause.promise;
         }
+        if (auth.sessionRead === "throw") {
+          throw new Error("session read failed");
+        }
         return {
           data: { session: auth.session },
-          error: null,
+          error: auth.sessionRead?.error ?? null,
         };
       },
       onAuthStateChange: (
@@ -172,6 +176,7 @@ describe("saved profile account isolation", () => {
     auth.pausedLookups = 0;
     auth.pendingPauses.length = 0;
     auth.push.mockReset();
+    auth.sessionRead = null;
     auth.signOut.mockReset();
     vi.mocked(getProfileV1MeProfileGet).mockReset();
     vi.mocked(saveProfileV1MeProfilePut).mockReset();
@@ -746,6 +751,18 @@ describe("saved profile account isolation", () => {
       screen.findByTestId("settings-session-expired")
     ).resolves.toBeTruthy();
     expect(screen.queryByTestId("settings-organization")).toBeNull();
+  });
+
+  it("keeps the page when sign-out fails and the follow-up read errors", async () => {
+    auth.signOut.mockResolvedValue({ error: { message: "remote failed" } });
+    renderSettings();
+    await screen.findByRole("button", { name: "Sign out" });
+    auth.sessionRead = { error: { message: "read failed" } };
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(
+      (await screen.findByTestId("settings-sign-out-notice")).textContent
+    ).toContain("still active");
+    expect(auth.push).not.toHaveBeenCalled();
   });
 
   it("keeps the page when sign-out returns an error and the session remains", async () => {

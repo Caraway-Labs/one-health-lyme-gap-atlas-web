@@ -37,6 +37,7 @@ const auth = vi.hoisted(() => {
     listeners,
     pause: null as Promise<unknown> | null,
     session: null as Session,
+    sessionRead: null as "throw" | { error: { message: string } } | null,
     signOut:
       vi.fn<
         (options?: {
@@ -70,7 +71,13 @@ vi.mock(import("@/lib/supabase/client"), () => ({
           if (auth.pause) {
             await auth.pause;
           }
-          return { data: { session: auth.session }, error: null };
+          if (auth.sessionRead === "throw") {
+            throw new Error("session read failed");
+          }
+          return {
+            data: { session: auth.session },
+            error: auth.sessionRead?.error ?? null,
+          };
         },
         onAuthStateChange: (
           // Supabase reports auth changes through a subscription callback.
@@ -182,6 +189,7 @@ describe("workspace account menu", () => {
     auth.listeners.clear();
     auth.pause = null;
     auth.session = userSession({ full_name: "Ada Lovelace" });
+    auth.sessionRead = null;
     auth.signOut.mockReset();
     auth.signOut.mockResolvedValue({ error: null });
     followWorkspaceHref.mockReset();
@@ -332,6 +340,42 @@ describe("workspace account menu", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Ada Lovelace" })
     );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+    expect(
+      (await screen.findByTestId("workspace-sign-out-notice")).textContent
+    ).toBe(SIGN_OUT_STILL_ACTIVE);
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Ada Lovelace" }));
+    await expect(
+      screen.findByRole("menuitem", { name: "Sign out" })
+    ).resolves.toBeTruthy();
+  });
+
+  it("keeps the session when sign-out fails and the follow-up read errors", async () => {
+    auth.signOut.mockResolvedValue({ error: { message: "remote failed" } });
+    renderMenu();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ada Lovelace" })
+    );
+    auth.sessionRead = { error: { message: "read failed" } };
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+    expect(
+      (await screen.findByTestId("workspace-sign-out-notice")).textContent
+    ).toBe(SIGN_OUT_STILL_ACTIVE);
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Ada Lovelace" }));
+    await expect(
+      screen.findByRole("menuitem", { name: "Sign out" })
+    ).resolves.toBeTruthy();
+  });
+
+  it("keeps the session when a configured client cannot read it after sign-out fails", async () => {
+    auth.signOut.mockResolvedValue({ error: { message: "remote failed" } });
+    renderMenu();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ada Lovelace" })
+    );
+    auth.sessionRead = "throw";
     fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     expect(
       (await screen.findByTestId("workspace-sign-out-notice")).textContent

@@ -1,6 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { readProfileSessionIdentity } from "@/features/ux-reset/profile/profile-session";
 import { savedProfileQueryRoot } from "@/features/ux-reset/profile/use-saved-profile";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,11 +15,28 @@ function clearAccountQueries(queryClient: QueryClient | null): void {
   queryClient?.removeQueries({ queryKey: savedProfileQueryRoot() });
 }
 
+/**
+ * A failed sign-out is finished only when getSession succeeds and reports
+ * no user. Thrown reads and returned errors stay indeterminate — including
+ * the unconfigured outcome from a configured client — so local credentials
+ * are not treated as removed.
+ */
+async function sessionReadConfirmsAbsence(): Promise<boolean> {
+  try {
+    const { data, error } = await createClient().auth.getSession();
+    if (error) {
+      return false;
+    }
+    return !data?.session?.user.id;
+  } catch {
+    return false;
+  }
+}
+
 async function finishAfterSignOutError(
   queryClient: QueryClient | null
 ): Promise<LocalSignOutResult> {
-  const identity = await readProfileSessionIdentity();
-  if (identity.kind === "user") {
+  if (!(await sessionReadConfirmsAbsence())) {
     return { notice: SIGN_OUT_STILL_ACTIVE, ok: false };
   }
   clearAccountQueries(queryClient);
