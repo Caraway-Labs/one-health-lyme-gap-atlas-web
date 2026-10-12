@@ -65,10 +65,14 @@ test.describe("workspace account footer desktop", () => {
       "collapsed"
     );
     await expect(signIn).toHaveAttribute("aria-label", "Sign in");
-    await signIn.hover();
-    await expect(page.getByRole("tooltip", { name: "Sign in" })).toBeVisible();
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations).toEqual([]);
+    await signIn.hover();
+    await expect(
+      page
+        .locator("[data-slot='tooltip-content']")
+        .filter({ hasText: "Sign in" })
+    ).toBeVisible();
     await signIn.focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview/);
