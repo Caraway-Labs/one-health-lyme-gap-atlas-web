@@ -10,6 +10,7 @@ import { BrandMark } from "@/components/brand-mark";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -40,8 +41,33 @@ import {
 } from "@/features/ux-reset/paths";
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
+import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu";
 
 const MOBILE_TRIGGER_RESTORE_FRAMES = 12;
+
+function portaledMenuElement(): HTMLElement | null {
+  const menus = document.querySelectorAll(
+    "[data-slot='dropdown-menu-content']"
+  );
+  for (const menu of menus) {
+    if (!(menu instanceof HTMLElement)) {
+      continue;
+    }
+    if (Object.hasOwn(menu.dataset, "closed") || menu.hidden) {
+      continue;
+    }
+    return menu;
+  }
+  return null;
+}
+
+function portaledMenuOwnsFocus(target: EventTarget | null): boolean {
+  if (!(target instanceof Node)) {
+    return false;
+  }
+  const element = target instanceof Element ? target : target.parentElement;
+  return Boolean(element?.closest("[data-slot='dropdown-menu-content']"));
+}
 
 function focusWasDisplacedByInertClose(
   active: Element | null,
@@ -176,6 +202,10 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       if (active instanceof Node && sidebar.contains(active)) {
         return;
       }
+      // The account menu is portaled, so its focus is outside the drawer node.
+      if (portaledMenuElement() || portaledMenuOwnsFocus(active)) {
+        return;
+      }
       closeButton.focus({ preventScroll: true });
     };
 
@@ -194,6 +224,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       if (target instanceof Node && sidebar.contains(target)) {
         return;
       }
+      if (portaledMenuOwnsFocus(target)) {
+        return;
+      }
       focusCloseNavigationIfNeeded();
     };
 
@@ -205,8 +238,14 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (portaledMenuElement()) {
+          return;
+        }
         event.preventDefault();
         closeMobileNavigation();
+        return;
+      }
+      if (portaledMenuElement()) {
         return;
       }
       if (event.key !== "Tab") return;
@@ -344,6 +383,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
             </SidebarGroup>
           </nav>
         </SidebarContent>
+        <SidebarFooter>
+          <WorkspaceAccountMenu />
+        </SidebarFooter>
       </Sidebar>
       {mobileDrawerActive ? (
         <button
