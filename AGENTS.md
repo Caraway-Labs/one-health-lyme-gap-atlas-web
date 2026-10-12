@@ -17,7 +17,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Keep Atlas domain and visualization tokens (map ramps, evidence/risk colors, navy/teal brand values, `.priority-pill` severity colors) independent when their data meaning is important. Do not flatten them into `primary`.
 - Domain components compose UI primitives. Do not move scoring, filter, geography, or provenance logic into `src/components/ui`.
 - MapLibre remains the geo rendering layer. Do not wrap or replace map rendering with shadcn.
-- Conversational AI / assistant UI is a separate track (`src/features/assistant`, evidence chat). Do not invent a second chat framework in this migration.
+- Conversational AI / assistant UI lives in evidence chat (`src/components/evidence-chat.tsx`) and Ask Atlas (`src/features/ux-reset/ask-atlas`). Do not invent a second chat framework in this migration.
 - Follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). Run `npm run check:design-system` before completion. The `/design-system` gallery is unlinked internal reference, not a product surface.
 - UX Reset professional routes (`/app/*`) use the bounded cross-page context contract in [docs/ux-reset-cross-page-context.md](docs/ux-reset-cross-page-context.md); do not promote legacy analytical filters into global Reset URL state.
 - UX Reset professional pages reuse the shared evidence contract in [`src/features/ux-reset/evidence/`](src/features/ux-reset/evidence/) and [docs/ux-reset-evidence-contract.md](docs/ux-reset-evidence-contract.md) (Available / Limited / Unavailable, governed `value_state` mapping, progressive provenance inspect).
@@ -33,7 +33,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | Chat launcher / close / history | `src/components/chat-launcher.tsx`, `src/components/evidence-chat.tsx` | Conversational UI chrome; class-only Button used only for shared actions (New chat, Ask) |
 | `.priority-pill` on `Badge` | `src/components/atlas-priority-badge.tsx` | Domain severity colors composed through Badge, not a second badge system |
 | MapLibre internals | `src/components/atlas-map.tsx` and map CSS | Geo renderer and ramps stay outside shadcn |
-| Assistant demo | `src/features/assistant` | Separate conversational product track |
 | Evidence brief local context | `src/features/ux-reset/action/evidence-brief-panel.tsx` | Native `textarea` for a user note. No shared Textarea primitive. The note is not governed evidence |
 
 - Editorial dark-hero CTAs may use `.hero-cta-primary` and `.cta-on-dark` on top of Button/`buttonVariants`. Do not reintroduce generic `.button` or `.card` classes.
@@ -58,9 +57,9 @@ Before material work, read the workspace [AGENTS.md](../AGENTS.md), the [technol
 - Preserve the browser-to-Python-API boundary. `NEXT_PUBLIC_API_BASE_URL` is the only public service configuration; non-secret boolean feature gates may follow the existing `NEXT_PUBLIC_KG_CHAT_ENABLED` convention. Never add credentials, Snowflake access, or query logic to browser code.
 - Keep atlas state reproducible in validated URL parameters. Affected map findings must retain equivalent table, text, or download access, plus provenance, freshness, methodology, and limitation information.
 - Add focused Vitest coverage and, for user-visible flows, Playwright coverage including axe checks for map/filter, URL state, provenance, and non-map parity as applicable.
-- Extend `src/features/assistant` for conversational UI work; do not create another chat framework or put model/provider SDKs in browser code.
+- Extend evidence chat (`src/components/evidence-chat.tsx`) and Ask Atlas (`src/features/ux-reset/ask-atlas`) for conversational UI work; do not create another chat framework or put model/provider SDKs in browser code.
 - Keep assistant sources structured and attributable, never render hidden reasoning or arbitrary model-provided UI, and use an explicit allowlist before adding generated Atlas UI.
-- The assistant demo is feature-gated and fixture-only until a governed backend adapter is approved; never add AI secrets to public configuration.
+- Keep reviewed-literature chat feature-gated by `NEXT_PUBLIC_KG_CHAT_ENABLED`; never add AI secrets to public configuration.
 
 ### Branch freshness and integration
 
