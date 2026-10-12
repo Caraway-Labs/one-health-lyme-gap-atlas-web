@@ -23,7 +23,7 @@ Atlas uses four status labels:
 | Compare two counties | Available now | Open Compare for two counties from the same release and read each measure's unit, period, and availability. | The page does not rank a winner. It does not compare five counties. |
 | Inspect evidence and provenance | Available now | Open county evidence and **Inspect provenance** before deciding what to review next. | Check source, geography, time or vintage, release, method version, freshness, completeness, uncertainty, and limitations. |
 | Share a workspace address | Available now | Share an Atlas Explorer or Compare URL that keeps scope, county, compare, release, period, and Explorer mode. | Record the release and method with the URL. A URL does not guarantee that a future release will contain identical data. |
-| County PDF | Available now, when verification succeeds | From county evidence, export a county PDF when Atlas can verify that the file matches the displayed county, observations, sources, period, and caveats. | If that check fails, the PDF is unavailable. That is not a claim that the report contains none of a period. |
+| County PDF | Available now | From county evidence, export a county PDF when Atlas can verify that the file matches the displayed county, observations, sources, period, and caveats. | If that check fails, the PDF is unavailable. That is not a claim that the report contains none of a period. |
 
 ## Authenticated professional workspace
 
@@ -36,8 +36,8 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 | Settings at [/app/settings](/app/settings) | Available now | Save United States or a state as the next Atlas Explorer start, plus optional role, organization, and job title. Sign out, export, and removal use the account controls on the same page. | Optional fields can stay empty. The default does not change evidence values or block other geographies. |
 | Docs from the workspace | Available now | Open this reference in a new tab from the workspace navigation. | The original workspace tab keeps its URL. Docs is not in-page help. |
 | Ask Atlas at [/app/assistant](/app/assistant) | Experimental/demo | Atlas Explorer and Compare open this dedicated page. It requests reviewed literature when that service is enabled. Explorer and Compare can pass a validated page reference and a return link. | Feature-gated. The reference is not sent as a county or comparison request. With the service off, the page says Ask Atlas is unavailable and the other pages stay usable. There is no side panel, no Structured mode, and no Both mode. History stays in this browser. |
-| Feed at [/app/feed](/app/feed) | Present, empty | The destination is in the navigation. | It does not yet provide feed items or alerts. |
-| Evidence brief | Limited | A direct `plan=evidence-brief` address still opens that brief and returns to county evidence. | It is not a workspace destination. Surveillance planning is not released. |
+| Feed at [/app/feed](/app/feed) | Planned | The destination is in the navigation. | It does not yet provide feed items or alerts. |
+| Evidence brief | Experimental/demo | A direct `plan=evidence-brief` address still opens that brief and returns to county evidence. | It is not a workspace destination. Surveillance planning is not released. |
 | API keys in Settings | Not supported | Public API reads do not use a key. | Settings does not generate or revoke a key. See [API, MCP, and access](/docs/api-mcp-and-access) and the [developer quickstart](/docs/develop/quickstart). |
 
 ## Capabilities that are not current promises
@@ -51,7 +51,7 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 | Live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory ingestion | Not supported | Naming a future standard is not a connection. No live EHR or production clinical-laboratory feed is part of this release. |
 | AI-generated findings treated as authoritative | Experimental/demo | AI-enabled experiences must remain grounded in approved evidence, show limitations, and retain human review. Do not use an AI suggestion as a finding by itself. |
 | Alerts, private feeds, or account-based evidence access | Not supported | The Front Porch remains usable without sign-in. A workspace account does not unlock different governed evidence, change a score, or authorize an interpretation. Feed does not list items, and alerts are not released. |
-| Separate public map, five-county comparison, or Investigation Workspace | Not a current page | Older `/overview`, `/geographic_explorer`, and `/investigate` bookmarks open Atlas Explorer after sign-in. They do not restore a separate public analytical page. |
+| Separate public map, five-county comparison, or Investigation Workspace | Not supported | Older `/overview`, `/geographic_explorer`, and `/investigate` bookmarks open Atlas Explorer after sign-in. They do not restore a separate public analytical page. |
 
 ## Where to start
 

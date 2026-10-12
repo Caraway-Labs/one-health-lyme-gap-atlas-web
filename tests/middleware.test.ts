@@ -207,10 +207,16 @@ describe("front porch session middleware", () => {
       atlasRequest("/app/explore?scope=NY&county=36061&metric=lyme_cases")
     );
 
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost/auth/sign-in?next=%2Fapp%2Fexplore%3Fscope%3DNY%26county%3D36061%26metric%3Dlyme_cases"
-    );
+    expect({
+      location: response.headers.get("location"),
+      robots: response.headers.get("x-robots-tag"),
+      status: response.status,
+    }).toStrictEqual({
+      location:
+        "http://localhost/auth/sign-in?next=%2Fapp%2Fexplore%3Fscope%3DNY%26county%3D36061%26metric%3Dlyme_cases",
+      robots: "noindex, nofollow",
+      status: 307,
+    });
   });
 
   it("redirects signed-in aliases once and does not loop or invent a county", async () => {
@@ -265,18 +271,24 @@ describe("front porch session middleware", () => {
         installedStatus: installed?.status ?? null,
         location: response.headers.get("location"),
         path,
+        robots: response.headers.get("x-robots-tag"),
         status: response.status,
       });
     }
     expect(observed).toStrictEqual(
-      cases.map(([path, target]) => ({
-        followUp: target === null ? null : 200,
-        installedHref: target,
-        installedStatus: target === null ? null : 307,
-        location: target === null ? null : `http://localhost${target}`,
-        path,
-        status: target === null ? 200 : 307,
-      }))
+      cases.map(([path, target]) => {
+        const pathname = path.split("?")[0] ?? path;
+        const workspace = pathname === "/app" || pathname.startsWith("/app/");
+        return {
+          followUp: target === null ? null : 200,
+          installedHref: target,
+          installedStatus: target === null ? null : 307,
+          location: target === null ? null : `http://localhost${target}`,
+          path,
+          robots: workspace ? "noindex, nofollow" : null,
+          status: target === null ? 200 : 307,
+        };
+      })
     );
   });
 

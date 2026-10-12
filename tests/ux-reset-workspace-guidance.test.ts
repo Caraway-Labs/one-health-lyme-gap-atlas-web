@@ -48,6 +48,8 @@ const STALE_INSTRUCTIONS = [
   "](/app/action)",
   "](/overview)",
   "](/geographic_explorer)",
+  "Review, Explore, Investigate, Compare, and Action",
+  "Assistant page",
 ] as const;
 
 function guideText(): string {
@@ -91,6 +93,27 @@ function returnHref(surface: AskAtlasSurface, search: string): string {
   return askAtlasReturnHref(reference);
 }
 
+const CAPABILITY_STATUS_LABELS = [
+  "Available now",
+  "Planned",
+  "Experimental/demo",
+  "Not supported",
+] as const;
+
+function capabilityStatusCells(markdown: string): string[] {
+  return markdown
+    .split("\n")
+    .filter((line) => line.startsWith("|") && !line.includes("---"))
+    .map((line) =>
+      line
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim())
+    )
+    .filter((cells) => cells[1] !== "Status" && cells.length >= 2)
+    .map((cells) => cells[1] ?? "");
+}
+
 describe("six-page workspace guidance", () => {
   it("describes the six destinations and the evidence states readers can meet", () => {
     const workspace = readFileSync(
@@ -129,6 +152,19 @@ describe("six-page workspace guidance", () => {
   it("does not send readers to removed destinations", () => {
     expect(
       STALE_INSTRUCTIONS.filter((phrase) => guideText().includes(phrase))
+    ).toStrictEqual([]);
+  });
+
+  it("uses only the four declared capability status labels", () => {
+    const capabilities = readFileSync(
+      path.join(process.cwd(), "content/docs/current-capabilities.mdx"),
+      "utf-8"
+    );
+    const declared = new Set<string>(CAPABILITY_STATUS_LABELS);
+    expect(
+      capabilityStatusCells(capabilities).filter(
+        (status) => !declared.has(status)
+      )
     ).toStrictEqual([]);
   });
 });
@@ -333,7 +369,7 @@ describe("product links follow the recorded route map", () => {
       investigateIndexed: { follow: false, index: false },
       overviewCanonical: { canonical: "/overview" },
       overviewIndexed: { follow: false, index: false },
-      robots: { allow: "/", disallow: "/app", userAgent: "*" },
+      robots: { allow: "/", userAgent: "*" },
       signIn: `/auth/sign-in?next=${encodeURIComponent(alias)}`,
       sitemapIncludesApp: false,
       workspaceIndexed: { follow: false, index: false },
