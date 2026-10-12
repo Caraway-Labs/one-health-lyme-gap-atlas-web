@@ -161,19 +161,22 @@ test.describe("Chat and primitive catalog", () => {
     expect(blocked).toEqual([]);
   });
 
-  test("answer source docs keep unique request ids", async ({ page }) => {
+  test("answer source docs keep each request id in its own frame", async ({
+    page,
+  }) => {
     await page.goto(
       "iframe.html?id=ask-atlas-answer-sources--docs&viewMode=docs"
     );
-    await expect(page.getByText("1 source for this answer")).toBeVisible();
-    const duplicateIds = await page.evaluate(() => {
+    await expect(page.locator("[id^='sources-']")).toHaveCount(0);
+    const preview = page.frameLocator("iframe").first();
+    await expect(preview.locator("[id^='sources-']")).toHaveCount(1);
+    const duplicateIds = await preview.locator(":root").evaluate(() => {
       const ids = [...document.querySelectorAll("[id]")]
         .map((element) => element.id)
         .filter((id) => id.startsWith("sources-"));
       return ids.filter((id, index) => ids.indexOf(id) !== index);
     });
     expect(duplicateIds).toEqual([]);
-    await expect(page.locator("[id^='sources-']")).toHaveCount(5);
   });
 
   test("conversation docs keep the composer id in one frame", async ({

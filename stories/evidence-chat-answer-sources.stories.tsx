@@ -80,6 +80,7 @@ const meta = {
         component:
           "Purpose: citations under a grounded literature answer. Source: src/components/evidence-chat-answer-sources.tsx. Limitations: titles, PMIDs, and URLs are synthetic. A non-PubMed URL renders as static text. Corpus-gap and other nongrounded outcomes render nothing.",
       },
+      story: { inline: false },
     },
   },
 } satisfies Meta<typeof SourcesStory>;
