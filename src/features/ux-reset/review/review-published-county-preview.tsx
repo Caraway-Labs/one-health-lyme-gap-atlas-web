@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Ref } from "react";
 
-import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
-import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { formatGovernedEvidenceValue } from "@/features/ux-reset/evidence/value-state-contract";
@@ -156,52 +156,52 @@ export function ReviewPublishedCountyPreview({
         current release.
       </p>
       <div className="ux-reset-review-preview-actions">
-      {onViewCountyEvidence ? (
-        <Button
-          data-county={county.fips}
-          data-testid="review-view-county-evidence"
-          type="button"
-          onClick={() => {
-            onViewCountyEvidence(county.fips);
-          }}
+        {onViewCountyEvidence ? (
+          <Button
+            data-county={county.fips}
+            data-testid="review-view-county-evidence"
+            type="button"
+            onClick={() => {
+              onViewCountyEvidence(county.fips);
+            }}
+          >
+            View county evidence
+          </Button>
+        ) : null}
+        <Link
+          ref={openRef}
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-review-open"
+          )}
+          data-testid="review-investigate"
+          data-variant="secondary"
+          href={href}
+          onClick={() => onOpen(county.fips)}
         >
-          View county evidence
-        </Button>
-      ) : null}
-      <Link
-        ref={openRef}
-        className={cn(
-          buttonVariants({ variant: "secondary" }),
-          "ux-reset-review-open"
-        )}
-        data-testid="review-investigate"
-        data-variant="secondary"
-        href={href}
-        onClick={() => onOpen(county.fips)}
-      >
-        County evidence
-      </Link>
-      <Link
-        className={cn(
-          buttonVariants({ variant: "secondary" }),
-          "ux-reset-review-open"
-        )}
-        data-testid="review-compare"
-        href={compareHref}
-        onClick={() => onOpen(county.fips)}
-      >
-        Compare this county
-      </Link>
-      <Link
-        className={cn(
-          buttonVariants({ variant: "secondary" }),
-          "ux-reset-review-open"
-        )}
-        data-testid="review-ask-atlas"
-        href={askHref}
-      >
-        Ask Atlas
-      </Link>
+          County evidence
+        </Link>
+        <Link
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-review-open"
+          )}
+          data-testid="review-compare"
+          href={compareHref}
+          onClick={() => onOpen(county.fips)}
+        >
+          Compare this county
+        </Link>
+        <Link
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-review-open"
+          )}
+          data-testid="review-ask-atlas"
+          href={askHref}
+        >
+          Ask Atlas
+        </Link>
       </div>
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">
@@ -219,7 +219,7 @@ export function ReviewPublishedCountyPreview({
           No published county record was returned for this release.
         </AtlasStatusMessage>
       ) : null}
-      {floor ? (
+      {detail && floor ? (
         <>
           <p className="type-body">{floor.displayValue}</p>
           <p className="type-small">{floor.valueNote}</p>

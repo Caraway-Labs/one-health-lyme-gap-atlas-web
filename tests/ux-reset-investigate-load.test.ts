@@ -519,14 +519,18 @@ describe("county evidence loading", () => {
     calls.length = 0;
     transientStatus = 404;
     transientRemaining.set("measure-0", 1);
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    if (!identity) {
+      throw new Error("Denver identity was not resolved.");
+    }
     const bundle = await loadCountyEvidenceBundle({
       domainsRequestFailed: false,
       fips: "08001",
-      identity: identityFromPublishedCounty({
-        county: "Denver",
-        fips: "08001",
-        state: "CO",
-      }),
+      identity,
       indicators: [],
       measures: measures(1),
       period: null,

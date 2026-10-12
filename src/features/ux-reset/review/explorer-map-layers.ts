@@ -235,7 +235,7 @@ export function paintExplorerMapLayer(input: {
   return {
     colorsByFips: new Map(),
     entries: [{ color: BOUNDARY_COLOR, label: "County boundary" }],
-    note: `${layer.label} has no published map color scale. The map shows county boundaries only.`,
+    note: "This layer has no published map color scale. The map shows county boundaries only.",
     title: "County boundaries",
   };
 }
