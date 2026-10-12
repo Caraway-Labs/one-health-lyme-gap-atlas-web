@@ -587,8 +587,8 @@ describe("Reset Review scope UI", () => {
         offeredHawaii: false,
         picture: false,
         unsupported: "",
-        unsupportedAlaska: true,
-        unsupportedHawaii: true,
+        unsupportedAlaska: false,
+        unsupportedHawaii: false,
       },
     });
   });
@@ -3743,6 +3743,30 @@ describe("Reset Review scope UI", () => {
           defaultStateReviewResponse(state, params)
       );
     }
+  });
+
+  it("opens a listed state from national orientation without writing Settings", async () => {
+    const { saveProfileV1MeProfilePut } = await import("@/generated/atlas");
+    const save = vi.mocked(saveProfileV1MeProfilePut);
+    save.mockClear();
+    renderReview("?scope=ALL");
+    const colorado = await screen.findByRole("button", {
+      name: "CO, Colorado",
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("review-state-navigation-status").textContent
+      ).toBe(
+        "Map status: No state boundaries are available for this release. Choose a state from the list. Highlighted state: none. Focused state: none. Selected state: none. Showing 49 of 49 states."
+      );
+    });
+    fireEvent.click(colorado);
+    await waitFor(() => {
+      expect(renderedReviewScope()).toBe("CO");
+    });
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("review-national-orientation")).toBeNull();
+    expect(screen.queryByTestId("review-state-panel")).toBeTruthy();
   });
 });
 

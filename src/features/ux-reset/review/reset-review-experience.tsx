@@ -96,14 +96,17 @@ function ResetReviewExperienceInner() {
     scopeUnsupported ? null : confirmedRelease
   );
 
-  const stateOptions = useMemo(
+  const releaseStates = useMemo(
     () =>
       presentationQuery.metadata
-        ? atlasStateOptionsFromMetadata(
-            presentationQuery.metadata.states
-          ).filter((option) => !isUnsupportedReviewScope(option.code))
+        ? atlasStateOptionsFromMetadata(presentationQuery.metadata.states)
         : [],
     [presentationQuery.metadata]
+  );
+  const stateOptions = useMemo(
+    () =>
+      releaseStates.filter((option) => !isUnsupportedReviewScope(option.code)),
+    [releaseStates]
   );
 
   const setScope = useCallback(
@@ -383,10 +386,13 @@ function ResetReviewExperienceInner() {
           data-rendered-scope={renderedScope}
           data-testid="review-scope-results"
         >
-          {nationalReady ? (
+          {nationalReady && presentationQuery.metadata ? (
             <ReviewNationalOrientation
-              states={stateOptions}
-              onOpenState={(stateCode) => setScope(stateCode)}
+              releaseId={presentationQuery.metadata.release_id}
+              releaseStates={releaseStates}
+              onOpenState={(stateCode) => {
+                setScope(stateCode);
+              }}
             />
           ) : null}
           {reviewReady && stateReview.review ? (
