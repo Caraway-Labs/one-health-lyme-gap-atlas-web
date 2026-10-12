@@ -32,7 +32,11 @@
 .ux-reset-pro-app .app-inset[data-slot="sidebar-inset"] {
   max-height: 100%;
   min-height: 0;
-  overflow: hidden;
+  /* Main scrolls for route content. The inset scrolls only when the header
+     and trust footer themselves exceed the viewport, so those controls stay
+     reachable at a short height or high zoom. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Professional /app navigation only. Legacy atlas-sidebar rules stay untouched.

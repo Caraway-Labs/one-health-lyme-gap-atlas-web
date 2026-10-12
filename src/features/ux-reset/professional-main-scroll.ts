@@ -27,8 +27,11 @@ type StoredOffset = [string, number];
 
 let navigationKind: ScrollNavigationKind = "idle";
 let pendingRestoreEntryId: string | null = null;
+let suppressFragmentRekey = false;
+let lastSeenHash = "";
 let lastCommittedPath = "";
 let stampingEntry = false;
+let nextEntryId: string | null = null;
 let entrySequence = 0;
 let offsets = new Map<string, number>();
 let activeHold: HoldState | null = null;
@@ -470,6 +473,25 @@ function ensureEntryId(): string {
   return id;
 }
 
+function assignFragmentEntryId(main: HTMLElement) {
+  const previousId = readHistoryEntryId(window.history.state);
+  if (!(previousId && !suppressRemember.current)) {
+    return;
+  }
+  const inherited = retainedOffset(previousId, main.scrollTop);
+  rememberOffset(previousId, inherited);
+  const id = createEntryId();
+  nextEntryId = id;
+  stampingEntry = true;
+  window.history.replaceState(
+    stateWithEntry(window.history.state, id),
+    "",
+    window.location.href
+  );
+  stampingEntry = false;
+  rememberOffset(id, inherited);
+}
+
 function restoreHashOnly(main: HTMLElement) {
   pendingRestoreEntryId = null;
   navigationKind = "idle";
@@ -550,6 +572,7 @@ function installHistoryGuards() {
   Object.defineProperty(window, "atlasMainScroll", { value: true });
   offsets = loadOffsets();
   lastCommittedPath = pathAndSearch();
+  lastSeenHash = window.location.hash;
   try {
     // The viewport does not scroll. Leave main's offset to this module so a
     // back/forward navigation cannot zero it before the entry is restored.
@@ -598,9 +621,11 @@ function installHistoryGuards() {
       navigationKind = "replace";
     }
     const id =
+      nextEntryId ??
       readHistoryEntryId(window.history.state) ??
       readHistoryEntryId(data) ??
       createEntryId();
+    nextEntryId = null;
     return originalReplaceState(stateWithEntry(data, id), unused, url);
   };
   window.addEventListener(
@@ -609,6 +634,13 @@ function installHistoryGuards() {
       clearNavigationScrollSnapshot();
       const hashOnly = pathAndSearch() === lastCommittedPath;
       if (hashOnly) {
+        // A fragment traversal already owns this entry. The hashchange that
+        // follows must not mint another id. Same-URL traversals do not emit
+        // hashchange, so only arm the guard when the fragment changed.
+        if (window.location.hash !== lastSeenHash) {
+          suppressFragmentRekey = true;
+        }
+        lastSeenHash = window.location.hash;
         if (mountedMain) {
           restoreHashOnly(mountedMain);
         } else {
@@ -725,6 +757,23 @@ const ARROW_OWNER_ROLES = new Set([
   "tree",
   "treegrid",
 ]);
+
+export function pagingKeyOwnedByTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  if (target instanceof HTMLInputElement && target.type === "range") {
+    return true;
+  }
+  let current: Element | null = target;
+  while (current && current !== document.body) {
+    if (current.getAttribute("role") === "slider") {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
 
 export function arrowKeyOwnedByTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -941,6 +990,9 @@ export function resetProfessionalMainScrollForTests() {
   offsets = new Map();
   navigationKind = "idle";
   pendingRestoreEntryId = null;
+  suppressFragmentRekey = false;
+  nextEntryId = null;
+  lastSeenHash = typeof window === "undefined" ? "" : window.location.hash;
   lastCommittedPath = typeof window === "undefined" ? "" : pathAndSearch();
   mountedMain = null;
   suppressRemember.current = false;
@@ -977,6 +1029,11 @@ export function useProfessionalMainScroll(
 
   useEffect(() => {
     const onHashChange = () => {
+      lastSeenHash = window.location.hash;
+      if (suppressFragmentRekey) {
+        suppressFragmentRekey = false;
+        return;
+      }
       if (pathAndSearch() !== lastCommittedPath) {
         return;
       }
@@ -986,6 +1043,9 @@ export function useProfessionalMainScroll(
       if (!main) {
         return;
       }
+      // Native fragment navigation copies history.state, so the new entry
+      // would otherwise share an id and overwrite the pre-fragment offset.
+      assignFragmentEntryId(main);
       watchMainHash(main, window.location.pathname);
     };
     window.addEventListener("hashchange", onHashChange);
@@ -1016,6 +1076,15 @@ export function useProfessionalMainScroll(
       if (
         (event.key === "ArrowDown" || event.key === "ArrowUp") &&
         arrowKeyOwnedByTarget(event.target)
+      ) {
+        return;
+      }
+      if (
+        (event.key === "Home" ||
+          event.key === "End" ||
+          event.key === "PageDown" ||
+          event.key === "PageUp") &&
+        pagingKeyOwnedByTarget(event.target)
       ) {
         return;
       }
@@ -1053,6 +1122,7 @@ export function useProfessionalMainScroll(
     pendingRestoreEntryId = null;
     previousLocationRef.current = locationKey;
     lastCommittedPath = pathAndSearch();
+    lastSeenHash = window.location.hash;
     applyScrollDecision(main, decision, entryId, pathname);
   }, [mainRef, pathname, searchKey]);
 

@@ -99,6 +99,17 @@ async function mainScrollTop(page: Page): Promise<number> {
     .evaluate((element) => element.scrollTop);
 }
 
+async function storedMainOffset(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const raw = sessionStorage.getItem("atlas-main-scroll-offsets");
+    if (!raw) {
+      return 0;
+    }
+    const entries = JSON.parse(raw) as [string, number][];
+    return entries.at(-1)?.[1] ?? 0;
+  });
+}
+
 async function expectChromeParked(
   page: Page,
   sidebar: ChromeBox,
@@ -359,6 +370,25 @@ test.describe("professional shell scroll containment", () => {
     ).toBe(true);
   });
 
+  test("reaches the trust footer when the chrome exceeds the viewport", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 80, width: 1280 });
+    await page.goto("/app/settings");
+    const footerLink = page.getByRole("link", { name: "Privacy", exact: true });
+    await footerLink.evaluate((element) => {
+      element.scrollIntoView({ block: "nearest" });
+    });
+    const visible = await footerLink.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return {
+        documentTop: document.scrollingElement?.scrollTop ?? 0,
+        fullyVisible: box.top >= -1 && box.bottom <= window.innerHeight + 1,
+      };
+    });
+    expect(visible).toEqual({ documentTop: 0, fullyVisible: true });
+  });
+
   test("keeps other professional routes in the shared shell", async ({
     page,
   }) => {
@@ -520,6 +550,7 @@ test.describe("professional shell scroll containment", () => {
       element.scrollTop = 420;
     });
     await expect.poll(() => mainScrollTop(page)).toBe(420);
+    await expect.poll(() => storedMainOffset(page)).toBe(420);
     await page.locator("main.ux-reset-pro-main").evaluate((element) => {
       element.scrollTop = 0;
     });
@@ -528,6 +559,7 @@ test.describe("professional shell scroll containment", () => {
     await page.goBack();
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(100);
     await expect.poll(() => mainScrollTop(page)).toBeLessThan(250);
+    await expect.poll(() => storedMainOffset(page)).toBeGreaterThan(100);
     await page.locator("main.ux-reset-pro-main").evaluate((element) => {
       element.scrollTop = 0;
     });

@@ -667,6 +667,27 @@ describe("professional main scroll history", () => {
     HTMLElement.prototype.getBoundingClientRect = original;
   });
 
+  it("keeps the pre-fragment offset when a hash entry reuses history state", () => {
+    renderScroller("/app/investigate", "");
+    rememberMainOffset(500);
+    const before = readHistoryEntryId(window.history.state);
+    window.history.replaceState(
+      { atlasMainScrollEntry: before },
+      "",
+      "/app/investigate#settings-job-title"
+    );
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    const after = readHistoryEntryId(window.history.state);
+    expect(after).toBeTruthy();
+    expect(after).not.toBe(before);
+    rememberMainOffset(80);
+    const stored = JSON.parse(
+      sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
+    ) as [string, number][];
+    expect(stored.find(([id]) => id === before)?.[1]).toBe(500);
+    expect(stored.find(([id]) => id === after)?.[1]).toBe(80);
+  });
+
   it("ignores corrupt session storage and keeps working when storage throws", () => {
     sessionStorage.setItem(OFFSET_STORAGE_KEY, "{");
     expect(() => {
@@ -902,6 +923,24 @@ describe("professional main scroll keyboard ownership", () => {
     const button = screen.getByRole("button", { name: "Save" });
     expect(keydown(" ", button).defaultPrevented).toBeFalsy();
     expect(main.scrollTop).toBe(0);
+  });
+
+  it("leaves Home, End, and Page keys with range and slider controls", () => {
+    const main = mainElement();
+    const range = appendControl(document.createElement("input"));
+    if (range instanceof HTMLInputElement) {
+      range.type = "range";
+    }
+    const slider = appendControl(document.createElement("div"));
+    slider.setAttribute("role", "slider");
+    slider.tabIndex = 0;
+    expect(keydown("Home", range).defaultPrevented).toBeFalsy();
+    expect(keydown("End", range).defaultPrevented).toBeFalsy();
+    expect(keydown("PageDown", range).defaultPrevented).toBeFalsy();
+    expect(keydown("PageUp", slider).defaultPrevented).toBeFalsy();
+    expect(main.scrollTop).toBe(0);
+    range.remove();
+    slider.remove();
   });
 
   it("pages from Home, End, arrows, and Shift+Space", () => {
