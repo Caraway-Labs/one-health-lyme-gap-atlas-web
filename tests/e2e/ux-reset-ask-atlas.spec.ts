@@ -256,7 +256,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await page.goto(EXPLORE_URL);
     await expect(page).toHaveURL(/\/app\/review/);
     await expect(page).toHaveURL(/county=08001/);
-    await expect(page).toHaveURL(/metric=reported-cases/);
+    await expect(page).not.toHaveURL(/metric=/);
     await expect(page).not.toHaveURL(/period=/);
     const exploreUrl = page.url();
     await expect(
@@ -441,6 +441,8 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page).toHaveURL(/\/app\/review/);
     const landed = new URL(page.url());
     expect(landed.searchParams.get("county")).toBeNull();
+    expect(landed.searchParams.get("metric")).toBeNull();
+    expect(landed.searchParams.get("selection")).toBe("required");
     expect(landed.pathname).toBe("/app/review");
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
@@ -544,7 +546,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page).toHaveURL(/\/app\/review/);
     await page.reload();
     await expect(page).toHaveURL(/county=08001/);
-    await expect(page).toHaveURL(/metric=reported-cases/);
+    await expect(page).not.toHaveURL(/metric=/);
     await expect(page).not.toHaveURL(/period=/);
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await expect(page.getByTestId("ask-atlas-launcher")).not.toHaveAttribute(

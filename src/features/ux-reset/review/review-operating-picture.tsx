@@ -101,6 +101,8 @@ type ReviewOperatingPictureProps = {
   onCountyChange?: (fips: string | null, history: ReviewCountyHistory) => void;
   onViewCountyEvidence?: (fips: string) => void;
   period?: string | null;
+  /** An invalid or repeated county arrival must not highlight another county. */
+  requireExplicitCountySelection?: boolean;
   review: StateReview;
   scopeCode: string;
   stateName: string;
@@ -237,6 +239,7 @@ export function ReviewOperatingPicture({
   onCountyChange,
   onViewCountyEvidence,
   period = null,
+  requireExplicitCountySelection = false,
   review,
   scopeCode,
   stateName,
@@ -281,12 +284,16 @@ export function ReviewOperatingPicture({
         review_candidates: review.review_candidates,
       })
     : null;
+  const fallbackFips =
+    requireExplicitCountySelection || county
+      ? ""
+      : (candidates.find((entry) => publishedFips.has(entry.countyFips))
+          ?.countyFips ?? "");
   const selectedFips = county
     ? publishedFips.has(county)
       ? county
       : ""
-    : (candidates.find((entry) => publishedFips.has(entry.countyFips))
-        ?.countyFips ?? "");
+    : fallbackFips;
   const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
   );
@@ -298,6 +305,9 @@ export function ReviewOperatingPicture({
   });
   useEffect(() => {
     if (freezeCountySelection || !directory.isSuccess) {
+      return;
+    }
+    if (requireExplicitCountySelection && !county) {
       return;
     }
     if (selectedFips) {
@@ -315,6 +325,7 @@ export function ReviewOperatingPicture({
     directory.isSuccess,
     freezeCountySelection,
     onCountyChange,
+    requireExplicitCountySelection,
     selectedFips,
   ]);
 

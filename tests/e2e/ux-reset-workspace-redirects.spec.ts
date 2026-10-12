@@ -42,7 +42,7 @@ test.describe("six-destination redirects", () => {
       ["/app/investigate", "/app/review"],
       ["/app/action?county=08001", "/app/review?county=08001&mode=follow-up"],
       ["/overview?state=CO&county=08001", "/app/review?scope=CO&county=08001"],
-      ["/investigate?county=not-a-county", "/app/review"],
+      ["/investigate?county=not-a-county", "/app/review?selection=required"],
       ["/geographic_explorer?metric=score", "/app/review"],
     ] as const;
 

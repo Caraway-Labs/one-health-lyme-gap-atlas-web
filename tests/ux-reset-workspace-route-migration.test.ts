@@ -71,6 +71,7 @@ function expectedRedirect(expected: RedirectExpectation) {
     "period",
     "metric",
     EXPLORER_MODE_PARAM,
+    "selection",
   ]) {
     const value = expected.query[key];
     if (value !== undefined) {
@@ -238,14 +239,14 @@ describe("six-page workspace route migration", () => {
   it("maps Action, Overview, Geographic Explorer, and legacy root queries", () => {
     expect(
       redirectView(
-        migrate("/app/action", "county=06037&plan=evidence-brief&role=epi")
+        migrate("/app/action", "county=08001&plan=surveillance&role=epi")
       )
     ).toStrictEqual(
       expectedRedirect({
         droppedKeys: ["plan", "role"],
         mode: "follow-up",
         query: {
-          county: "06037",
+          county: "08001",
           [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
         },
       })
@@ -300,26 +301,81 @@ describe("six-page workspace route migration", () => {
       expectedRedirect({ droppedKeys: [], mode: "browse", query: {} })
     );
     expect(
-      redirectView(migrate("/app/investigate", "county=nope"))
+      redirectView(migrate("/app/investigate", "scope=CO&county=nope"))
     ).toStrictEqual(
       expectedRedirect({
         droppedKeys: ["county"],
         mode: "browse",
-        query: {},
+        query: { scope: "CO", selection: "required" },
       })
     );
     expect(
-      redirectView(migrate("/app/action", "county=06037&county=06059"))
+      redirectView(migrate("/app/action", "county=08001&county=08013"))
     ).toStrictEqual(
       expectedRedirect({
         droppedKeys: ["county"],
         mode: "browse",
-        query: {},
+        query: { selection: "required" },
       })
     );
   });
 
-  it("copies an Explore measure id and keeps an existing compare pair", () => {
+  it("keeps a single evidence-brief plan on Action", () => {
+    expect(
+      migrate("/app/action", "county=08001&plan=evidence-brief&role=epi")
+    ).toStrictEqual({
+      kind: "unchanged",
+      pathname: "/app/action",
+      reason: "evidence-brief",
+    });
+    expect(
+      migrate("/app/action", "county=08001&plan=%20evidence-brief%20")
+    ).toStrictEqual({
+      kind: "unchanged",
+      pathname: "/app/action",
+      reason: "evidence-brief",
+    });
+    expect(
+      redirectView(migrate("/app/action", "county=08001&plan=brief"))
+    ).toStrictEqual(
+      expectedRedirect({
+        droppedKeys: ["plan"],
+        mode: "follow-up",
+        query: {
+          county: "08001",
+          [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
+        },
+      })
+    );
+    expect(
+      redirectView(
+        migrate("/app/action", "county=08001&plan=evidence-brief&plan=brief")
+      )
+    ).toStrictEqual(
+      expectedRedirect({
+        droppedKeys: ["plan"],
+        mode: "follow-up",
+        query: {
+          county: "08001",
+          [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
+        },
+      })
+    );
+    expect(
+      redirectView(migrate("/app/action", "county=08001&plan=surveillance"))
+    ).toStrictEqual(
+      expectedRedirect({
+        droppedKeys: ["plan"],
+        mode: "follow-up",
+        query: {
+          county: "08001",
+          [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
+        },
+      })
+    );
+  });
+
+  it("drops an Explore measure id and keeps an existing compare pair", () => {
     expect(
       redirectView(
         migrate(
@@ -329,11 +385,10 @@ describe("six-page workspace route migration", () => {
       )
     ).toStrictEqual(
       expectedRedirect({
-        droppedKeys: ["map_scope"],
+        droppedKeys: ["map_scope", "metric"],
         mode: "browse",
         query: {
           compare: "06037,06059",
-          metric: "reported-cases",
           scope: "ALL",
         },
       })
@@ -543,7 +598,7 @@ describe("six-page workspace route migration", () => {
   it("is a fixed point after one redirect", () => {
     const samples = [
       ["/app/investigate", "county=06037&scope=NY"],
-      ["/app/action", "county=06037&plan=evidence-brief"],
+      ["/app/action", "county=08001&plan=surveillance"],
       ["/geographic_explorer", "selected=06001,06013,06037"],
       ["/", "q=lyme"],
       ["/overview", "state=NY"],

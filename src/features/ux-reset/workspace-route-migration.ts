@@ -5,6 +5,7 @@
  * middleware after the auth guard. Canonical destinations are fixed points.
  */
 
+import { ACTION_EVIDENCE_BRIEF_PLAN_ID } from "@/features/ux-reset/action/evidence-brief";
 import {
   mergeCompareQueryValues,
   parseUxResetSharedContext,
@@ -13,6 +14,10 @@ import {
   type UxResetSharedContext,
   type UxResetSharedContextParamKey,
 } from "@/features/ux-reset/context-shared";
+import {
+  EXPLORER_SELECTION_PARAM,
+  EXPLORER_SELECTION_REQUIRED,
+} from "@/features/ux-reset/review/explorer-mode";
 import {
   ATLAS_EXPLORER_PATH,
   DOCS_PATH,
@@ -43,20 +48,9 @@ export const EXPLORER_EVIDENCE_MODE = "evidence" as const;
 export const EXPLORER_FOLLOW_UP_MODE = "follow-up" as const;
 
 /**
- * Geographic Explorer's measure switch. These tokens are not Reset measure ids.
- * `/app/explore` uses `metric` for a governed measure id instead.
- */
-export const LEGACY_GEOGRAPHIC_METRIC_VALUES = [
-  "completeness",
-  "score",
-] as const;
-
-const EXPLORE_METRIC_PATTERN = /^[A-Za-z0-9._-]{1,128}$/;
-
-/**
  * Keys the recorded map never copies onto Atlas Explorer.
  * `state` and `selected` are not listed: they map to `scope` and `compare`
- * when those targets are empty. `metric` is copied only from `/app/explore`.
+ * when those targets are empty. `metric` is dropped. Explorer does not read it.
  */
 export const WORKSPACE_MIGRATION_UNSUPPORTED_KEYS = [
   "breakpoint",
@@ -129,6 +123,7 @@ export type ExplorerMigrationMode = "browse" | "evidence" | "follow-up";
 
 export type WorkspaceMigrationUnchangedReason =
   | "canonical-destination"
+  | "evidence-brief"
   | "existing-public-assistant"
   | "front-porch"
   | "out-of-scope";
@@ -224,12 +219,33 @@ function rootCarriesLegacyAnalyticalQuery(
   return legacyAnalyticalOverviewHref(record) !== null;
 }
 
+/**
+ * One trimmed `plan=evidence-brief` still renders ActionEvidenceBrief.
+ * Repeats and every other plan id, including `brief`, redirect with Action.
+ */
+function actionKeepsEvidenceBrief(
+  pathname: string,
+  searchParams: URLSearchParams
+): boolean {
+  if (pathname !== RESET_ACTION_PATH) {
+    return false;
+  }
+  const plans = searchParams.getAll("plan");
+  if (plans.length !== 1) {
+    return false;
+  }
+  return plans[0]?.trim() === ACTION_EVIDENCE_BRIEF_PLAN_ID;
+}
+
 function unchangedReason(
   pathname: string,
   searchParams: URLSearchParams
 ): WorkspaceMigrationUnchangedReason | null {
   if (isCanonicalDestination(pathname)) {
     return "canonical-destination";
+  }
+  if (actionKeepsEvidenceBrief(pathname, searchParams)) {
+    return "evidence-brief";
   }
   if (
     pathname === PUBLIC_ASSISTANT_PATH ||
@@ -328,34 +344,6 @@ function resolveCompare(
   );
 }
 
-function isLegacyGeographicMetric(value: string): boolean {
-  return (LEGACY_GEOGRAPHIC_METRIC_VALUES as readonly string[]).includes(value);
-}
-
-/** Copy a Reset Explore measure id. Geographic `score` / `completeness` never qualify. */
-function readExploreMetric(
-  pathname: string,
-  searchParams: URLSearchParams
-): string | null {
-  if (pathname !== RESET_EXPLORE_PATH || !searchParams.has("metric")) {
-    return null;
-  }
-  const unique = [
-    ...new Set(searchParams.getAll("metric").map((value) => value.trim())),
-  ];
-  if (unique.length !== 1) {
-    return null;
-  }
-  const metric = unique[0] ?? "";
-  if (
-    !EXPLORE_METRIC_PATTERN.test(metric) ||
-    isLegacyGeographicMetric(metric)
-  ) {
-    return null;
-  }
-  return metric;
-}
-
 function modeFor(
   pathname: string,
   county: string | null
@@ -416,8 +404,9 @@ function explorerQuery(
     ...parsed,
     compare: resolvedCompare.compare,
   };
-  const metric = readExploreMetric(pathname, searchParams);
   const mode = modeFor(pathname, context.county);
+  const requireExplicitCounty =
+    searchParams.has("county") && context.county === null;
   const sharedKeys: UxResetSharedContextParamKey[] = [];
   if (explicitScope) {
     sharedKeys.push("scope");
@@ -435,9 +424,6 @@ function explorerQuery(
     sharedKeys.push("period");
   }
   const params = sharedContextToSearchParams(context, { keys: sharedKeys });
-  if (metric) {
-    params.set("metric", metric);
-  }
   switch (mode) {
     case "browse": {
       break;
@@ -455,6 +441,9 @@ function explorerQuery(
       throw new Error(`Unhandled Explorer mode ${exhaustive}.`);
     }
   }
+  if (requireExplicitCounty) {
+    params.set(EXPLORER_SELECTION_PARAM, EXPLORER_SELECTION_REQUIRED);
+  }
   const mapped = new Set<string>();
   if (explicitScope) {
     mapped.add(explicitScope);
@@ -470,9 +459,6 @@ function explorerQuery(
   }
   if (context.period) {
     mapped.add("period");
-  }
-  if (metric) {
-    mapped.add("metric");
   }
   return {
     compareTruncated: resolvedCompare.truncated,

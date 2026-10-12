@@ -46,7 +46,7 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 
 | Destination | Local keys (dropped on navigation)                |
 | ----------- | ------------------------------------------------- |
-| Review      | `sort`, `page`, `mode`                            |
+| Review      | `sort`, `page`, `mode`, `selection`               |
 | Explore     | `view`, `metric`, `page`, `selected`, `map_scope` |
 | Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q`   |
 | Compare     | `metric`, `return`                                |
@@ -58,6 +58,8 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 Explore `selected` maps into `compare` **only** when the destination accepts `compare` and `compare` is not already set.
 
 Review `mode` is the in-page Atlas Explorer county view. Omitted means browse. `evidence` opens county evidence. `follow-up` opens that same view at Suggested follow-up. Any other token is removed. Handoff does not copy `mode`. Compare copies one exact `mode` onto a Review return link when that Compare URL already carried it.
+
+Review `selection=required` marks an alias that named `county` but did not yield one FIPS. Browse does not select a county until the user chooses one. Handoff does not copy `selection`.
 
 ## Route-to-route handoff matrix
 

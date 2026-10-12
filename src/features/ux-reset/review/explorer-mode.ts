@@ -8,6 +8,13 @@ export const EXPLORER_MODE_PARAM = "mode" as const;
 export const EXPLORER_EVIDENCE_MODE = "evidence" as const;
 export const EXPLORER_FOLLOW_UP_MODE = "follow-up" as const;
 
+/**
+ * Alias arrivals that named `county` but did not yield one FIPS.
+ * Browse must not substitute another county while this marker is present.
+ */
+export const EXPLORER_SELECTION_PARAM = "selection" as const;
+export const EXPLORER_SELECTION_REQUIRED = "required" as const;
+
 export const EXPLORER_COUNTY_MODES = [
   EXPLORER_EVIDENCE_MODE,
   EXPLORER_FOLLOW_UP_MODE,
@@ -28,6 +35,15 @@ export function parseExplorerCountyMode(
 ): ExplorerCountyMode | null {
   if (value === EXPLORER_EVIDENCE_MODE || value === EXPLORER_FOLLOW_UP_MODE) {
     return value;
+  }
+  return null;
+}
+
+export function parseExplorerCountySelection(
+  value: string
+): typeof EXPLORER_SELECTION_REQUIRED | null {
+  if (value === EXPLORER_SELECTION_REQUIRED) {
+    return EXPLORER_SELECTION_REQUIRED;
   }
   return null;
 }

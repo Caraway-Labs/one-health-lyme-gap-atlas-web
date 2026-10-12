@@ -21,6 +21,7 @@ test.describe("Investigate bookmarks open Atlas Explorer", () => {
     await expect(page).toHaveURL(/\/app\/review/);
     await expect(page).not.toHaveURL(/mode=/);
     await expect(page).not.toHaveURL(/county=/);
+    await expect(page).toHaveURL(/selection=required/);
     await expect(page).toHaveURL(/scope=CO/);
     await expect(page.getByTestId("investigate-header")).toHaveCount(0);
   });
