@@ -1,7 +1,6 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import type { KnowledgeCitation } from "@/generated/models/knowledgeCitation";
 
-const STORY_CHAT_REQUEST = "story-chat-request";
 const STORY_CHAT_CONVERSATION = "story-chat-conversation";
 
 export const STORY_CHAT_QUESTION =
@@ -28,7 +27,8 @@ function citation(
 function groundedAnswer(
   evidenceState: KnowledgeChatResponse["evidence_state"],
   items: KnowledgeCitation[],
-  texts: string[]
+  texts: string[],
+  requestId: string
 ): KnowledgeChatResponse {
   return {
     answer: texts.join("\n\n"),
@@ -42,7 +42,7 @@ function groundedAnswer(
     configuration_version: "story-config",
     conversation_id: STORY_CHAT_CONVERSATION,
     evidence_state: evidenceState,
-    request_id: STORY_CHAT_REQUEST,
+    request_id: requestId,
     source_used: "literature_evidence",
     status: "answered",
   };
@@ -62,7 +62,8 @@ export function oneCitationResponse(): KnowledgeChatResponse {
         "https://pubmed.ncbi.nlm.nih.gov/10000001/"
       ),
     ],
-    [ONE_TEXT]
+    [ONE_TEXT],
+    "story-chat-one"
   );
 }
 
@@ -86,7 +87,8 @@ export function manyCitationsResponse(): KnowledgeChatResponse {
     [
       ONE_TEXT,
       "Synthetic claim: a second paper describes tick vectors and reservoir hosts.",
-    ]
+    ],
+    "story-chat-many"
   );
 }
 
@@ -101,7 +103,8 @@ export function limitedCitationResponse(): KnowledgeChatResponse {
         "https://pubmed.ncbi.nlm.nih.gov/10000001/"
       ),
     ],
-    [ONE_TEXT]
+    [ONE_TEXT],
+    "story-chat-limited"
   );
 }
 
@@ -118,7 +121,8 @@ export function longCitationResponse(): KnowledgeChatResponse {
     ],
     [
       "Synthetic claim: one study describes surveillance reporting. The long title stays on the citation.",
-    ]
+    ],
+    "story-chat-long"
   );
 }
 
@@ -135,7 +139,8 @@ export function unsafeCitationResponse(): KnowledgeChatResponse {
     ],
     [
       "Synthetic claim: this citation keeps its title as text because the URL is not a PubMed link.",
-    ]
+    ],
+    "story-chat-unsafe"
   );
 }
 
@@ -149,7 +154,7 @@ export function corpusGapResponse(): KnowledgeChatResponse {
     configuration_version: "story-config",
     conversation_id: STORY_CHAT_CONVERSATION,
     evidence_state: "no_relevant_corpus_evidence",
-    request_id: STORY_CHAT_REQUEST,
+    request_id: "story-chat-corpus",
     source_used: "literature_evidence",
     status: "no_evidence",
   };
@@ -164,7 +169,7 @@ export function serviceUnavailableResponse(): KnowledgeChatResponse {
     configuration_version: "story-config",
     conversation_id: STORY_CHAT_CONVERSATION,
     evidence_state: "evidence_unavailable",
-    request_id: STORY_CHAT_REQUEST,
+    request_id: "story-chat-unavailable",
     source_used: "literature_evidence",
     status: "evidence_unavailable",
   };
@@ -179,7 +184,7 @@ export function capacityResponse(): KnowledgeChatResponse {
     configuration_version: "story-config",
     conversation_id: STORY_CHAT_CONVERSATION,
     evidence_state: "not_applicable",
-    request_id: STORY_CHAT_REQUEST,
+    request_id: "story-chat-capacity",
     source_used: "literature_evidence",
     status: "capacity_limited",
   };
@@ -195,7 +200,7 @@ export function refusalResponse(): KnowledgeChatResponse {
     configuration_version: "story-config",
     conversation_id: STORY_CHAT_CONVERSATION,
     evidence_state: "not_applicable",
-    request_id: STORY_CHAT_REQUEST,
+    request_id: "story-chat-refusal",
     source_used: "literature_evidence",
     status: "safety_refusal",
   };

@@ -196,7 +196,9 @@ export function useStoryChatModel(
         },
       ]),
     ]);
+    setFailure(null);
     setMessage("");
+    setRetryQuestion("");
     setAction(`Submitted: ${question}`);
   };
 
@@ -208,10 +210,20 @@ export function useStoryChatModel(
     charCountNearLimit: message.length >= 900,
     clearAllConversations: () => {
       setConversations([]);
+      setFailure(null);
+      setMessage("");
+      setPending(false);
+      setRetryQuestion("");
+      setAction("Cleared conversations.");
     },
     conversations,
     deleteOne: () => {
       setConversations([]);
+      setFailure(null);
+      setMessage("");
+      setPending(false);
+      setRetryQuestion("");
+      setAction("Deleted the conversation.");
     },
     editQuestion,
     failure,
@@ -236,6 +248,8 @@ export function useStoryChatModel(
       setConversations([]);
       setFailure(null);
       setMessage("");
+      setPending(false);
+      setRetryQuestion("");
       setAction("Started a new chat.");
     },
     submit,

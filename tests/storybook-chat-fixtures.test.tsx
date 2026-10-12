@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -76,6 +76,55 @@ describe("Storybook chat fixtures", () => {
     expect(storyChatNearLimitMessage.length).toBeGreaterThanOrEqual(900);
     expect(storyChatNearLimitMessage.length).toBeLessThanOrEqual(1000);
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("clears pending when a new chat starts", () => {
+    render(<ConversationStory preset="pending" />);
+    expect(screen.getByText("Searching reviewed evidence…")).toBeTruthy();
+    const pendingField = screen.getByRole("textbox", { name: "Your question" });
+    expect(
+      pendingField instanceof HTMLTextAreaElement && pendingField.disabled
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    expect(screen.queryByText("Searching reviewed evidence…")).toBeNull();
+    const readyField = screen.getByRole("textbox", { name: "Your question" });
+    expect(
+      readyField instanceof HTMLTextAreaElement && readyField.disabled
+    ).toBeFalsy();
+    expect(screen.getByText("Start with a research question")).toBeTruthy();
+  });
+
+  it("clears a client failure when a new chat starts", () => {
+    render(<ConversationStory preset="client-failure" />);
+    expect(screen.getByText("Connection problem.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    expect(screen.queryByText("Connection problem.")).toBeNull();
+    expect(screen.getByText("Start with a research question")).toBeTruthy();
+  });
+
+  it("gives each grounded source story its own request id", () => {
+    const presets = ["one", "many", "limited", "long", "unsafe"] as const;
+    const view = render(
+      <>
+        {presets.map((preset) => (
+          <SourcesStory key={preset} preset={preset} />
+        ))}
+      </>
+    );
+    const ids = [
+      ...view.container.querySelectorAll<HTMLElement>("[id^='sources-']"),
+    ].map((element) => element.id);
+    expect(ids).toStrictEqual([
+      "sources-story-chat-one",
+      "sources-story-chat-many",
+      "sources-story-chat-limited",
+      "sources-story-chat-long",
+      "sources-story-chat-unsafe",
+    ]);
+    const labelled = [
+      ...view.container.querySelectorAll<HTMLElement>("ol[aria-labelledby]"),
+    ].map((element) => element.getAttribute("aria-labelledby"));
+    expect(labelled).toStrictEqual(ids);
   });
 
   it("resets the chat transcript when the preset changes", () => {

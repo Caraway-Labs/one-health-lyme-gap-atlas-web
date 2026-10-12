@@ -149,6 +149,45 @@ test.describe("Chat and primitive catalog", () => {
     expect(blocked).toEqual([]);
   });
 
+  test("pending new chat clears the search state", async ({ page }) => {
+    const blocked = track(page);
+    await openStory(page, "ask-atlas-evidence-chat-conversation--pending");
+    const field = page.getByRole("textbox", { name: "Your question" });
+    await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
+    await expect(field).toBeDisabled();
+    await page.getByRole("button", { name: "New chat" }).click();
+    await expect(page.getByText("Searching reviewed evidence…")).toHaveCount(0);
+    await expect(field).toBeEnabled();
+    expect(blocked).toEqual([]);
+  });
+
+  test("answer source docs keep unique request ids", async ({ page }) => {
+    await page.goto(
+      "iframe.html?id=ask-atlas-answer-sources--docs&viewMode=docs"
+    );
+    await expect(page.getByText("1 source for this answer")).toBeVisible();
+    const duplicateIds = await page.evaluate(() => {
+      const ids = [...document.querySelectorAll("[id]")]
+        .map((element) => element.id)
+        .filter((id) => id.startsWith("sources-"));
+      return ids.filter((id, index) => ids.indexOf(id) !== index);
+    });
+    expect(duplicateIds).toEqual([]);
+    await expect(page.locator("[id^='sources-']")).toHaveCount(5);
+  });
+
+  test("conversation docs keep the composer id in one frame", async ({
+    page,
+  }) => {
+    await page.goto(
+      "iframe.html?id=ask-atlas-evidence-chat-conversation--docs&viewMode=docs"
+    );
+    await expect(page.locator("#chat-message-drawer")).toHaveCount(0);
+    await expect(
+      page.frameLocator("iframe").first().locator("#chat-message-drawer")
+    ).toHaveCount(1);
+  });
+
   test("client failure retry stays local", async ({ page }) => {
     const blocked = track(page);
     await openStory(
