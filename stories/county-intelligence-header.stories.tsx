@@ -77,19 +77,20 @@ export function headerModel(
 
 function HeaderStory({ preset }: { preset: HeaderPreset }) {
   return (
-    <div className="grid gap-3">
+    <main className="ux-reset-pro-main grid gap-3">
       <p className="type-small">
         Synthetic Investigate header for Adams County, Colorado (08001), release
         alpha-2026. Return to Review stays inside the workspace.
       </p>
       <CountyIntelligenceHeader model={headerModel(preset)} />
-    </div>
+    </main>
   );
 }
 
 const meta = {
   title: "County Investigation/County intelligence header",
   component: HeaderStory,
+  excludeStories: ["headerModel"],
   args: { preset: "resolved" },
   argTypes: {
     preset: { control: "select", options: [...headerPresets] },

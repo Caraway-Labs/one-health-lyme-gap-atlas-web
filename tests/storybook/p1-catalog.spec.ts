@@ -210,7 +210,11 @@ test.describe("P1 Storybook catalog", () => {
     await expect(page.getByTestId("orientation-opened")).toHaveText(
       "Opened state CO"
     );
-    await page.getByRole("button", { name: "Retry map" }).click();
+    // Clearing focus on the state option shortens the status line and shifts
+    // this control up during a center click, so the press misses the button.
+    await page
+      .getByRole("button", { name: "Retry map" })
+      .click({ position: { x: 24, y: 4 } });
     await expect(page.getByTestId("orientation-retries")).toHaveText(
       "Map retries 1"
     );

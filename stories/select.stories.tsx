@@ -65,6 +65,7 @@ function SelectStory({
   const [value, setValue] = useState<string | null>(
     preset === "placeholder" || preset === "disabled" ? null : "08013"
   );
+  const selectedLabel = options.find((option) => option.value === value)?.label;
   return (
     <div className="grid max-w-sm gap-3" key={`${preset}:${size}`}>
       <p className="type-small">
@@ -79,7 +80,9 @@ function SelectStory({
         value={value}
       >
         <SelectTrigger aria-label="County" className="w-full" size={size}>
-          <SelectValue placeholder="Choose a county" />
+          <SelectValue placeholder="Choose a county">
+            {selectedLabel}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (

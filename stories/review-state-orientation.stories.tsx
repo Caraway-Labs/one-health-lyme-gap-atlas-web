@@ -125,6 +125,7 @@ export function StateOrientationStory({
 const meta = {
   title: "Review/State orientation",
   component: StateOrientationStory,
+  excludeStories: ["StateOrientationStory"],
   args: { phase: reviewNavigationMapPhaseValues.ready },
   argTypes: {
     phase: { control: "select", options: [...phases] },

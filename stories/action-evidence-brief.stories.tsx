@@ -90,6 +90,7 @@ function ActionBriefSession({
 const meta = {
   title: "Action/Evidence brief",
   component: ActionEvidenceBriefStory,
+  excludeStories: ["ActionEvidenceBriefStory"],
   args: {
     exportMode: "succeed",
     preset: "ready",
