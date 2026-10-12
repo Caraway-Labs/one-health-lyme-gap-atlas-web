@@ -28,6 +28,8 @@ These routes do not select historical releases, aggregate arbitrary geographies,
 
 Settings can save a default jurisdiction for a signed-in reviewer. That preference is not an API credential. See [the professional workspace](/docs/professional-workspace).
 
+Task-oriented requests, pagination, geography, and citation are in the [developer guides](/docs/develop). Start with the [quickstart](/docs/develop/quickstart).
+
 ## Examples from the public contract
 
 These requests use measure and county identifiers published for the current production release. County FIPS codes are five characters, with any leading zero preserved. `case_count_floor_2023` is a privacy-protected case floor in `cases`, not a complete incidence count and not a diagnosis.
@@ -60,7 +62,7 @@ Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `Z
 
 The observation query needs one measure, `geography_type=county`, one or more five-digit county FIPS codes, and either `year` or both dates. The service rejects unsupported filters, strata, sorting, and aggregation instead of ignoring them. Problem `code` values include `RESOURCE_NOT_FOUND`, `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, and `UNSUPPORTED_STRATIFICATION`. Keep `request_id` if you need support.
 
-Anonymous public reads are limited to 60 requests per rolling minute and five simultaneous requests per connecting address. A `429` response includes `Retry-After` of one to 60 seconds. Wait for that interval before you retry. Successful current-release reads can be cached briefly. Stable detail responses may include an `ETag`; send `If-None-Match` to receive `304` when the representation is unchanged. The [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) is the authority for parameters, status codes, and schema fields.
+`429` and `503` responses include `Retry-After` when the service supplies it. The header is a number of seconds. The public OpenAPI document does not publish a numeric quota or concurrency cap, so this guide does not state one. Wait for `Retry-After`, then retry the same request. Discovery collections use a short public cache. Stable detail responses may include an `ETag`; send `If-None-Match` to receive `304` when the representation is unchanged. The [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) is the authority for parameters, status codes, and schema fields. The [REST API](/docs/develop/rest) guide explains pagination, problem codes, and version fields.
 
 ## Reproduce a result
 
