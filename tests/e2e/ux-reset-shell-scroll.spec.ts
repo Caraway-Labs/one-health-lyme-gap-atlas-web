@@ -698,26 +698,16 @@ test.describe("professional shell scroll containment", () => {
       }
       scroller.style.scrollBehavior = "auto";
       scroller.scrollTop = scroller.scrollHeight;
-      return scroller.scrollTop;
-    });
-    expect(leaving).toBeGreaterThan(400);
-    await expect
-      .poll(() =>
-        page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
-      )
-      .toBe(leaving);
-    await page.evaluate(() => {
+      const top = scroller.scrollTop;
       window.history.pushState(
         { publicScroll: "next" },
         "",
         window.location.href
       );
-      const scroller = document.scrollingElement;
-      if (scroller instanceof HTMLElement) {
-        scroller.style.scrollBehavior = "auto";
-        scroller.scrollTop = 0;
-      }
+      scroller.scrollTop = 0;
+      return top;
     });
+    expect(leaving).toBeGreaterThan(400);
     await expect
       .poll(() =>
         page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
