@@ -709,6 +709,36 @@ describe("two-county aligned comparison", () => {
     });
   });
 
+  it("hides cached county records after a failed refresh", async () => {
+    const view = renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026"
+    );
+    await screen.findByTestId("compare-profile");
+    expect(screen.queryByTestId("compare-profile-error")).toBeNull();
+    countyRateLimitRemaining = 2;
+    countyRetryAfterSeconds = 0;
+    await act(async () => {
+      await view.client.refetchQueries({
+        queryKey: ["ux-reset-compare-profile"],
+      });
+    });
+    expect({
+      error: (
+        screen.getByTestId("compare-profile-error").textContent ?? ""
+      ).includes("did not load"),
+      table: screen.queryByTestId("compare-profile"),
+    }).toStrictEqual({
+      error: true,
+      table: null,
+    });
+    countyRateLimitRemaining = 0;
+    countyRetryAfterSeconds = null;
+    clearCompareProfileRetryDeadlines();
+    fireEvent.click(screen.getByTestId("compare-retry-profile"));
+    await screen.findByTestId("compare-profile");
+    expect(screen.queryByTestId("compare-profile-error")).toBeNull();
+  });
+
   it("waits out Retry-After before another county-record request", async () => {
     countyRateLimitRemaining = 2;
     countyRetryAfterSeconds = 60;

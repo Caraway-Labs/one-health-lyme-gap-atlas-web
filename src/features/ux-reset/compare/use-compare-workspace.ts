@@ -491,8 +491,11 @@ export function useCompareWorkspace(): CompareWorkspace {
     pairLength: entry.pair.length,
     unknownCount: unknownFips.length,
   });
+  // A failed refresh keeps the previous county payload. Hide it so cached
+  // facts are not shown next to the error. Catalog metadata stays separate.
   const profileRecords =
     recoveryState === "ready" &&
+    !profileQuery.isError &&
     profileQuery.data?.leftFips === leftFips &&
     profileQuery.data.rightFips === rightFips
       ? profileQuery.data
