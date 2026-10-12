@@ -685,17 +685,18 @@ describe("two-county aligned comparison", () => {
         queryKey: ["ux-reset-compare-measures"],
       });
     });
-    expect({
-      ...populationCatalogState(),
-      refreshError: (
-        screen.queryByText("Governed measures could not be loaded.")
-          ?.textContent ?? ""
-      ).includes("could not be loaded"),
-    }).toStrictEqual({
-      availability: "limited",
-      caveat: true,
-      evidenceType: true,
-      refreshError: true,
+    await waitFor(() => {
+      expect({
+        ...populationCatalogState(),
+        refreshError: (screen.queryByRole("alert")?.textContent ?? "").includes(
+          "could not be loaded"
+        ),
+      }).toStrictEqual({
+        availability: "limited",
+        caveat: true,
+        evidenceType: true,
+        refreshError: true,
+      });
     });
     catalogFailuresRemaining = 0;
     fireEvent.click(screen.getByTestId("compare-retry-catalog"));

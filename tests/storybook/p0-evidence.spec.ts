@@ -96,7 +96,10 @@ const stories: { id: string; text: string }[] = [
   { id: `${preview}--limited-qualification`, text: "Limited" },
   { id: `${preview}--missing-metadata`, text: "Unavailable" },
   { id: `${preview}--long-references`, text: "Synthetic candidate limitation" },
-  { id: `${preview}--dropped-context`, text: "Review sort stays on Review" },
+  {
+    id: `${preview}--dropped-context`,
+    text: "Sort stays on Atlas Explorer browse",
+  },
 ];
 
 const axeStories = [

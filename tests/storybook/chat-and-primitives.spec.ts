@@ -75,10 +75,13 @@ const stories: { id: string; text?: string; name?: string }[] = [
   { id: "primitives-progress--mid", text: "Signal value 40" },
   { id: "primitives-progress--empty-bar", text: "Signal value 0" },
   { id: "primitives-progress--full", text: "Signal value 100" },
-  { id: "navigation-and-layout-sidebar--expanded", text: "Active item Review" },
+  {
+    id: "navigation-and-layout-sidebar--expanded",
+    text: "Active item Atlas Explorer",
+  },
   {
     id: "navigation-and-layout-sidebar--collapsed",
-    text: "Active item Review",
+    text: "Active item Atlas Explorer",
   },
   { id: "primitives-table--populated", text: "Adams County" },
   { id: "primitives-table--empty", text: "No rows in this preview" },
