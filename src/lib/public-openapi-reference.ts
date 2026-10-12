@@ -1280,7 +1280,7 @@ function isReusableComponentRef(ref: string): boolean {
 function dereferenceReusable(
   document: JsonRecord,
   value: unknown,
-  prefix: string | undefined
+  prefix?: string
 ): unknown {
   const overlays: JsonRecord[] = [];
   let current = value;
@@ -1307,7 +1307,7 @@ function reusableRecord(
   document: JsonRecord,
   value: unknown,
   message: string,
-  prefix: string | undefined
+  prefix?: string
 ): JsonRecord {
   const resolved = dereferenceReusable(document, value, prefix);
   if (!isRecord(resolved)) {
