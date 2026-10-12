@@ -9,12 +9,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { followWorkspaceHref, getProfile, getSession, getUser, signOut } =
   vi.hoisted(() => ({
-    followWorkspaceHref: vi.fn<(href: string) => void>(),
+    followWorkspaceHref: vi.fn<(href: string, history?: string) => void>(),
     getProfile: vi.fn<() => Promise<never>>(),
     getSession: vi.fn<
       () => Promise<{
         data: { session: { user: { id: string } } | null };
-        error: null;
+        error: { message: string } | null;
       }>
     >(),
     getUser: vi.fn<() => Promise<{ data: { user: { id: string } | null } }>>(),
@@ -60,6 +60,34 @@ import {
   resetWorkspaceSignOutStateForTests,
   workspaceSignOutSuppressesExpiryRedirect,
 } from "../src/features/ux-reset/workspace-sign-out";
+
+function pageTransition(type: "pagehide" | "pageshow", persisted: boolean) {
+  const event = new Event(type);
+  Object.defineProperty(event, "persisted", { value: persisted });
+  window.dispatchEvent(event);
+}
+
+function profileHidden(): boolean {
+  const profile = screen.getByDisplayValue("CDPHE");
+  return profile.closest("main")?.hasAttribute("hidden") === true;
+}
+
+async function renderSignedInProfile() {
+  getUser.mockResolvedValue({
+    data: { user: { id: "user-1" } },
+  });
+  getProfile.mockResolvedValue({
+    data: {
+      profile: {
+        organization: "CDPHE",
+        role: "state_level_epidemiologist",
+      },
+    },
+    status: 200,
+  } as never);
+  render(<AccountPage />);
+  await screen.findByDisplayValue("CDPHE");
+}
 
 describe("account page", () => {
   beforeEach(() => {
@@ -143,5 +171,85 @@ describe("account page", () => {
       scope: [[{ scope: "local" }]],
       suppressing: true,
     });
+  });
+
+  it("hides the filled profile before leaving /account", async () => {
+    await renderSignedInProfile();
+    let hiddenBeforeHome = false;
+    followWorkspaceHref.mockImplementation(() => {
+      hiddenBeforeHome = profileHidden();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    expect({
+      hiddenBeforeHome,
+      stillHidden: profileHidden(),
+    }).toStrictEqual({
+      hiddenBeforeHome: true,
+      stillHidden: true,
+    });
+  });
+
+  it("keeps a restored account page hidden and leaves when the session has ended", async () => {
+    await renderSignedInProfile();
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    pageTransition("pageshow", true);
+    expect(profileHidden()).toBeTruthy();
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/auth/sign-in?next=%2Faccount",
+        "replace"
+      );
+    });
+    expect(profileHidden()).toBeTruthy();
+  });
+
+  it("shows a restored account page again when the session is still present", async () => {
+    await renderSignedInProfile();
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-1" } } },
+      error: null,
+    });
+    pageTransition("pageshow", true);
+    expect(profileHidden()).toBeTruthy();
+    await waitFor(() => {
+      expect(profileHidden()).toBeFalsy();
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("keeps a restored account page hidden when the session read fails", async () => {
+    await renderSignedInProfile();
+    getSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: "read failed" },
+    });
+    pageTransition("pageshow", true);
+    await waitFor(() => {
+      expect(getSession).toHaveBeenCalledOnce();
+    });
+    expect({
+      hidden: profileHidden(),
+      navigated: followWorkspaceHref.mock.calls,
+    }).toStrictEqual({
+      hidden: true,
+      navigated: [],
+    });
+  });
+
+  it("hides the account page when it enters the back-forward cache", async () => {
+    await renderSignedInProfile();
+    pageTransition("pagehide", true);
+    expect(profileHidden()).toBeTruthy();
+    expect(getSession).not.toHaveBeenCalled();
+  });
+
+  it("does not hide /account on a fresh pageshow", async () => {
+    await renderSignedInProfile();
+    pageTransition("pageshow", false);
+    expect(profileHidden()).toBeFalsy();
+    expect(getSession).not.toHaveBeenCalled();
   });
 });

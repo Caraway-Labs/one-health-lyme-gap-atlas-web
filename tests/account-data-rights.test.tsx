@@ -111,6 +111,7 @@ describe("account data rights", () => {
   afterEach(() => {
     cleanup();
     document.querySelector(".ux-reset-pro-app")?.remove();
+    document.querySelector(".account-session-shell")?.remove();
     resetWorkspaceSignOutStateForTests();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
@@ -239,12 +240,17 @@ describe("account data rights", () => {
     const shell = document.createElement("div");
     shell.className = "ux-reset-pro-app";
     shell.textContent = "Settings account";
-    document.body.append(shell);
+    const accountShell = document.createElement("main");
+    accountShell.className = "account-session-shell";
+    accountShell.textContent = "CDPHE";
+    document.body.append(shell, accountShell);
     let concealedBeforeHome = false;
     followWorkspaceHref.mockImplementation(() => {
       concealedBeforeHome =
         document.documentElement.dataset.workspaceRestore === "concealed" &&
-        shell.hidden;
+        shell.hidden &&
+        accountShell.hidden &&
+        accountShell.inert;
     });
 
     render(<AccountDataRights returnPath="/app/settings" />);

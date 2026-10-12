@@ -74,6 +74,24 @@ describe("workspace sign-out epochs", () => {
     });
   });
 
+  it("conceals the public account shell when sign-out succeeds", () => {
+    const shell = document.createElement("main");
+    shell.className = "account-session-shell";
+    shell.textContent = "CDPHE";
+    document.body.append(shell);
+    completeWorkspaceSignOut(startedEpoch());
+    expect({
+      hidden: shell.hidden,
+      inert: shell.inert,
+      text: shell.textContent,
+    }).toStrictEqual({
+      hidden: true,
+      inert: true,
+      text: "CDPHE",
+    });
+    shell.remove();
+  });
+
   it("does not let the successful attempt abort its own suppression", () => {
     const epoch = startedEpoch();
     completeWorkspaceSignOut(epoch);

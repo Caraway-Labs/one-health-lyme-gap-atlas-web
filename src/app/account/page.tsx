@@ -21,9 +21,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
+import { readWorkspaceSession } from "@/features/ux-reset/workspace-session-gate";
 import {
+  ACCOUNT_SESSION_SHELL_CLASS,
+  beginWorkspaceShellCheck,
+  concealRestoredWorkspace,
+  invalidateWorkspaceShellCheck,
+  revealRestoredWorkspace,
   runWorkspaceSignOut,
   subscribeWorkspaceSignOut,
+  workspaceShellCheckCurrent,
   workspaceSignOutPending,
 } from "@/features/ux-reset/workspace-sign-out";
 import {
@@ -35,6 +42,7 @@ import type {
   UserProfileWriteRole,
 } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { createClient } from "@/lib/supabase/client";
 
 const roles: { value: Exclude<UserProfileWriteRole, null>; label: string }[] = [
@@ -109,6 +117,39 @@ const states = [
 
 const ROLE_UNSET = "unspecified";
 const STATE_UNSET = "none";
+const ACCOUNT_PAGE_PATH = "/account";
+
+/** A restored /account page stays hidden unless the session is still present. */
+async function settleAccountPageRestore(generation: number): Promise<void> {
+  const snapshot = await readWorkspaceSession();
+  if (!workspaceShellCheckCurrent(generation)) {
+    return;
+  }
+  switch (snapshot.read) {
+    case "present": {
+      revealRestoredWorkspace();
+      break;
+    }
+    case "absent": {
+      followWorkspaceHref(
+        signInHrefForReturnPath(ACCOUNT_PAGE_PATH),
+        "replace"
+      );
+      break;
+    }
+    case "error":
+    case "throws":
+    case "unconfigured": {
+      break;
+    }
+    default: {
+      const exhaustive: never = snapshot.read;
+      throw new Error(
+        `Unsupported account session read: ${String(exhaustive)}`
+      );
+    }
+  }
+}
 
 export default function AccountPage() {
   const queryClient = useContext(QueryClientContext) ?? null;
@@ -146,6 +187,32 @@ export default function AccountPage() {
       }
     }
     void loadAccount();
+  }, []);
+
+  useEffect(() => {
+    let pageshowGeneration = 0;
+    const onPageHide = (event: PageTransitionEvent) => {
+      if (!event.persisted) {
+        return;
+      }
+      concealRestoredWorkspace();
+      beginWorkspaceShellCheck();
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) {
+        return;
+      }
+      concealRestoredWorkspace();
+      pageshowGeneration = beginWorkspaceShellCheck();
+      void settleAccountPageRestore(pageshowGeneration);
+    };
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+      invalidateWorkspaceShellCheck(pageshowGeneration);
+    };
   }, []);
 
   async function signOut() {
@@ -213,7 +280,7 @@ export default function AccountPage() {
     );
   const isPublic = form.role === "general_public_citizen";
   return (
-    <main className="container py-12">
+    <main className={`${ACCOUNT_SESSION_SHELL_CLASS} container py-12`}>
       <section className="mx-auto max-w-xl">
         <p className="eyebrow">Optional account</p>
         <h1 className="text-3xl font-semibold">Your profile</h1>

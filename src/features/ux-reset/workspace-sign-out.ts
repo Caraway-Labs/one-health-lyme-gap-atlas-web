@@ -2,7 +2,7 @@
  * Shared by every local sign-out. Each attempt gets an epoch. A later failure
  * cannot clear an earlier success, and a stale failure cannot clear a newer
  * attempt. Success records that this document logged out and conceals the
- * professional shell before the caller navigates home. The restored-workspace
+ * session shell on the page before the caller navigates home. The restored-workspace
  * cover is also applied synchronously, before any session read, so a
  * back-forward cache page does not show the previous account.
  */
@@ -15,6 +15,14 @@ import {
 
 const RESTORE_COVER_ID = "workspace-restore-cover";
 const RESTORE_COVER_LABEL = "Checking session";
+
+/** Signed-in /account content. The professional shell uses .ux-reset-pro-app. */
+export const ACCOUNT_SESSION_SHELL_CLASS = "account-session-shell";
+
+const SESSION_SHELL_SELECTORS = [
+  ".ux-reset-pro-app",
+  `.${ACCOUNT_SESSION_SHELL_CLASS}`,
+] as const;
 
 let documentUserId: string | null = null;
 let loggedOutInPageLifetime = false;
@@ -149,15 +157,23 @@ function notifyRestoreListeners(): void {
   }
 }
 
-/** Hides the professional shell before a restored session read returns. */
+function forEachSessionShell(apply: (shell: HTMLElement) => void): void {
+  for (const selector of SESSION_SHELL_SELECTORS) {
+    const shell = document.querySelector(selector);
+    if (shell instanceof HTMLElement) {
+      apply(shell);
+    }
+  }
+}
+
+/** Hides whichever session shell is on the page before a restored read returns. */
 export function concealRestoredWorkspace(): void {
   restoredWorkspaceConcealed = true;
   document.documentElement.dataset.workspaceRestore = "concealed";
-  const shell = document.querySelector(".ux-reset-pro-app");
-  if (shell instanceof HTMLElement) {
+  forEachSessionShell((shell) => {
     shell.hidden = true;
     shell.inert = true;
-  }
+  });
   if (!document.querySelector(`#${RESTORE_COVER_ID}`)) {
     const cover = document.createElement("div");
     cover.id = RESTORE_COVER_ID;
@@ -170,15 +186,14 @@ export function concealRestoredWorkspace(): void {
   notifyRestoreListeners();
 }
 
-/** Shows the shell again after the restored session matches this document. */
+/** Shows the session shell again after the restored session is still present. */
 export function revealRestoredWorkspace(): void {
   restoredWorkspaceConcealed = false;
   delete document.documentElement.dataset.workspaceRestore;
-  const shell = document.querySelector(".ux-reset-pro-app");
-  if (shell instanceof HTMLElement) {
+  forEachSessionShell((shell) => {
     shell.hidden = false;
     shell.inert = false;
-  }
+  });
   document.querySelector(`#${RESTORE_COVER_ID}`)?.remove();
   notifyRestoreListeners();
 }
