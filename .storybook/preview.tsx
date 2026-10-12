@@ -3,6 +3,7 @@ import type { Preview } from "@storybook/nextjs-vite";
 import "../src/app/globals.css";
 
 const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
+const PRIMITIVE_SIDEBAR_STORAGE_KEY = "atlas-sidebar-open";
 const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
 
 function clearStoragePrefix(prefix: string): void {
@@ -49,6 +50,7 @@ const preview: Preview = {
   loaders: [
     async () => {
       clearStoragePrefix(SIDEBAR_STORAGE_KEY);
+      clearStoragePrefix(PRIMITIVE_SIDEBAR_STORAGE_KEY);
       window.localStorage.removeItem(CHAT_STORAGE_KEY);
     },
   ],

@@ -1,7 +1,25 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Search } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+
+function ActivationHarness() {
+  const [presses, setPresses] = useState(0);
+  return (
+    <div className="grid gap-2">
+      <Button
+        type="button"
+        onClick={() => {
+          setPresses((count) => count + 1);
+        }}
+      >
+        Review evidence
+      </Button>
+      <p data-testid="button-presses">{`Pressed ${presses}`}</p>
+    </div>
+  );
+}
 
 const meta = {
   title: "Primitives/Button",
@@ -20,7 +38,19 @@ const meta = {
         "link",
       ],
     },
-    size: { control: "select", options: ["default", "sm", "lg", "xs"] },
+    size: {
+      control: "select",
+      options: [
+        "default",
+        "xs",
+        "sm",
+        "lg",
+        "icon",
+        "icon-xs",
+        "icon-sm",
+        "icon-lg",
+      ],
+    },
   },
   parameters: {
     docs: {
@@ -45,3 +75,18 @@ export const WithIcon: Story = {
     ),
   },
 };
+export const Secondary: Story = { args: { variant: "secondary" } };
+export const Outline: Story = { args: { variant: "outline" } };
+export const Ghost: Story = { args: { variant: "ghost" } };
+export const Destructive: Story = { args: { variant: "destructive" } };
+export const Link: Story = { args: { variant: "link" } };
+export const Invalid: Story = { args: { "aria-invalid": true } };
+export const Small: Story = { args: { size: "sm" } };
+export const Icon: Story = {
+  args: {
+    "aria-label": "Search evidence",
+    children: <Search aria-hidden="true" />,
+    size: "icon",
+  },
+};
+export const Activation: Story = { render: () => <ActivationHarness /> };

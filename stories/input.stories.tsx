@@ -43,3 +43,6 @@ type Story = StoryObj<typeof meta>;
 export const Editable: Story = {};
 export const Invalid: Story = { args: { "aria-invalid": true } };
 export const Disabled: Story = { args: { disabled: true } };
+export const Search: Story = {
+  args: { placeholder: "Search a geography", type: "search" },
+};

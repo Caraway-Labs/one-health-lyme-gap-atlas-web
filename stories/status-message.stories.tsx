@@ -1,6 +1,34 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { useState } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { Button } from "@/components/ui/button";
+
+function StatusWithAction() {
+  const [retried, setRetried] = useState(false);
+  return (
+    <AtlasStatusMessage
+      action={
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            setRetried(true);
+          }}
+        >
+          Retry example
+        </Button>
+      }
+      title="Example request unavailable"
+      titleAs="h2"
+      tone="error"
+    >
+      {retried
+        ? "Local retry recorded. No service was called."
+        : "Deterministic fixture. No live service is connected."}
+    </AtlasStatusMessage>
+  );
+}
 
 const meta = {
   title: "Atlas/Status message",
@@ -34,3 +62,4 @@ export const Loading: Story = {
 export const Error: Story = {
   args: { tone: "error", title: "Example request unavailable" },
 };
+export const WithAction: Story = { render: () => <StatusWithAction /> };
