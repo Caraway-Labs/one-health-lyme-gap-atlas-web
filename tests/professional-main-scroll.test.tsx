@@ -907,6 +907,42 @@ describe("professional main scroll history", () => {
     expect(mainElement().scrollTop).toBeGreaterThan(350);
   });
 
+  it("keeps a scroll to the top when it reveals the focused control", () => {
+    renderScroller();
+    rememberMainOffset(420);
+    const save = screen.getByRole("button", { name: "Save" });
+    save.focus();
+    vi.spyOn(save, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 40, 80, 32)
+    );
+    vi.spyOn(mainElement(), "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 800, 200)
+    );
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    expect(mainElement().scrollTop).toBe(0);
+    const stored = JSON.parse(
+      sessionStorage.getItem(OFFSET_STORAGE_KEY) ?? "[]"
+    ) as [string, number][];
+    expect(stored.at(-1)?.[1]).toBe(0);
+  });
+
+  it("restores a positive offset when the focused control is outside the pane", () => {
+    renderScroller();
+    rememberMainOffset(420);
+    const save = screen.getByRole("button", { name: "Save" });
+    save.focus();
+    vi.spyOn(save, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 900, 80, 32)
+    );
+    vi.spyOn(mainElement(), "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 800, 200)
+    );
+    mainElement().scrollTop = 0;
+    fireEvent.scroll(mainElement());
+    expect(mainElement().scrollTop).toBe(420);
+  });
+
   it("stores a wheel gesture that scrolls main to the top", () => {
     renderScroller();
     rememberMainOffset(180);

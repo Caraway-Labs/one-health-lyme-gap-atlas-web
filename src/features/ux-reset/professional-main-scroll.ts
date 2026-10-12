@@ -225,6 +225,31 @@ function markUserScrollGesture() {
   }, 200);
 }
 
+function boxHasSize(box: DOMRect): boolean {
+  return box.width > 0 && box.height > 0;
+}
+
+function focusedControlIsInView(main: HTMLElement): boolean {
+  const active = document.activeElement;
+  if (
+    !(active instanceof HTMLElement) ||
+    active === main ||
+    !main.contains(active)
+  ) {
+    return false;
+  }
+  const viewport = main.getBoundingClientRect();
+  let node: HTMLElement | null = active;
+  while (node && node !== main) {
+    const box = node.getBoundingClientRect();
+    if (boxHasSize(box)) {
+      return box.bottom > viewport.top + 1 && box.top < viewport.bottom - 1;
+    }
+    node = node.parentElement;
+  }
+  return false;
+}
+
 function retainedOffset(id: string, scrollTop: number): number {
   if (userScrollGesture) {
     return scrollTop;
@@ -1306,12 +1331,22 @@ export function useProfessionalMainScroll(
         rememberOffset(entryId, fragmentLeave.offset);
         return;
       }
-      const kept = retainedOffset(entryId, main.scrollTop);
-      rememberOffset(entryId, kept);
+      let kept = retainedOffset(entryId, main.scrollTop);
       const snapshotHoldingZero =
         navigationScrollSnapshot?.id === entryId &&
         navigationScrollSnapshot.offset > 0 &&
         main.scrollTop === 0;
+      // Browser scroll-into-view of a focused control at the top of the
+      // route lands on 0. Store that arrival so the open menu stays put.
+      if (
+        main.scrollTop === 0 &&
+        kept > 0 &&
+        !snapshotHoldingZero &&
+        focusedControlIsInView(main)
+      ) {
+        kept = 0;
+      }
+      rememberOffset(entryId, kept);
       if (!(snapshotHoldingZero || kept === main.scrollTop)) {
         suppressRemember.current = true;
         main.scrollTop = kept;
