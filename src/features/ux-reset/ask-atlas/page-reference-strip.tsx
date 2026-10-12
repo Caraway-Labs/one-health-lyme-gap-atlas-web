@@ -104,17 +104,19 @@ export function AskAtlasPageReferenceStrip() {
               key={key}
             >
               <dt>{FIELD_LABELS[key]}</dt>
-              <dd>{field.label}</dd>
-              {removeHref ? (
-                <Link
-                  className={cn(
-                    buttonVariants({ size: "sm", variant: "outline" })
-                  )}
-                  href={removeHref}
-                >
-                  {`Remove ${FIELD_LABELS[key].toLowerCase()}`}
-                </Link>
-              ) : null}
+              <dd>
+                <span>{field.label}</span>
+                {removeHref ? (
+                  <Link
+                    className={cn(
+                      buttonVariants({ size: "sm", variant: "outline" })
+                    )}
+                    href={removeHref}
+                  >
+                    {`Remove ${FIELD_LABELS[key].toLowerCase()}`}
+                  </Link>
+                ) : null}
+              </dd>
             </div>
           );
         })}

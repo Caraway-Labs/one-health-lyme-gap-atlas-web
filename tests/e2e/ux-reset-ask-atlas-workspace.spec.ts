@@ -267,7 +267,9 @@ test("keeps a county missing from the release out of the literature request", as
     .getByLabel("Your question")
     .fill("Question without county evidence");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
-  await expect(page.getByText("Literature only.")).toBeVisible();
+  await expect(
+    page.getByText("Literature only.", { exact: true })
+  ).toBeVisible();
   expect(requests[0]).toStrictEqual({
     history: [],
     message: "Question without county evidence",

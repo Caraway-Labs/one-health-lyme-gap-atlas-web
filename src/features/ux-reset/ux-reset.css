@@ -924,6 +924,9 @@
 }
 
 .ux-reset-ask-atlas-reference-list dd {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
   margin: 0;
 }
 
