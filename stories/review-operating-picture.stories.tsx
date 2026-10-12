@@ -124,12 +124,42 @@ function OperatingPicturePreview({
   preset: PicturePreset;
 }) {
   setStoryGeometryMode(geometry);
-  const [client] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-      })
-  );
+  const [client] = useState(() => {
+    const storyClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const directoryKey = ["ux-reset-review-county-directory", "alpha-2026"];
+    // Story-only identities: keep the real component's release/scope validation
+    // without allowing background requests for a synthetic release.
+    storyClient.setQueryDefaults(directoryKey, {
+      staleTime: Infinity,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    });
+    storyClient.setQueryData(directoryKey, [
+      {
+        county: "Adams County",
+        fips: "08001",
+        state: "CO",
+        stateName: "Colorado",
+      },
+    ]);
+    const profileKey = [
+      "ux-reset-review-published-county",
+      "alpha-2026",
+      "08001",
+    ];
+    storyClient.setQueryDefaults(profileKey, {
+      staleTime: Infinity,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    });
+    // This catalog demonstrates navigation, not a factual county profile.
+    storyClient.setQueryData(profileKey, null);
+    return storyClient;
+  });
   const [county, setCounty] = useState<string | null>(
     preset === "selected" ? "08001" : null
   );
@@ -143,8 +173,9 @@ function OperatingPicturePreview({
       <div className="grid gap-3">
         <p className="type-small">
           Synthetic Colorado review. Adams County is FIPS 08001. The map is a
-          stub and does not request county geometry from the API. Suggestions
-          are the review list, not a risk score.
+          stub. County identities are synthetic; factual county profiles are
+          unavailable in this catalog. No county API requests are made.
+          Suggestions are the review list, not a risk score.
         </p>
         <p data-testid="operating-selected">{`Selected county ${county ?? "none"}`}</p>
         <Suspense fallback={<p>Loading review preview…</p>}>
