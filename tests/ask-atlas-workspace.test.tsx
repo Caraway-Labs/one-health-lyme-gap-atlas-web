@@ -95,7 +95,7 @@ function storedConversations(): {
 }
 
 async function ask(question: string) {
-  fireEvent.change(screen.getByLabelText("Your question"), {
+  fireEvent.change(screen.getByLabelText("Your research question"), {
     target: { value: question },
   });
   fireEvent.click(screen.getByRole("button", { name: /^Ask$/ }));
@@ -141,14 +141,13 @@ describe("Ask Atlas research workspace", () => {
     expect({
       calls: chatRequest.mock.calls.length,
       keys: Object.keys(chatRequest.mock.calls[0]?.[0] as object).toSorted(),
-      modes: screen.getByText(/Structured and Both modes are not available/)
-        .textContent,
+      pageReferenceCopy: screen.queryByText(
+        /Answers search reviewed literature/
+      ),
     }).toStrictEqual({
       calls: 1,
       keys: ["history", "message"],
-      modes: expect.stringMatching(
-        /Structured and Both modes are not available/
-      ),
+      pageReferenceCopy: null,
     });
 
     first.unmount();
@@ -185,7 +184,8 @@ describe("Ask Atlas research workspace", () => {
     );
     expect(notice).toBeTruthy();
     expect(
-      (screen.getByLabelText("Your question") as HTMLTextAreaElement).disabled
+      (screen.getByLabelText("Your research question") as HTMLTextAreaElement)
+        .disabled
     ).toBeFalsy();
     expect(chatRequest).not.toHaveBeenCalled();
     expect(localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
@@ -201,15 +201,14 @@ describe("Ask Atlas research workspace", () => {
     render(<AskAtlasWorkspace />);
     await ask("Question to clear");
     await screen.findByText("Saved answer.");
+    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
     fireEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", {
         name: "Clear all",
       })
     );
-    await screen.findByText(
-      /Ask a research question about reviewed literature/
-    );
+    await screen.findByText(/Start with your own question or adapt one below/);
     expect(storedConversations()).toStrictEqual([]);
 
     window.history.pushState(
@@ -357,8 +356,9 @@ describe("Ask Atlas research workspace", () => {
       alerts: screen
         .queryAllByRole("alert")
         .map((item) => item.textContent ?? ""),
-      composer: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
-        .value,
+      composer: (
+        screen.getByLabelText("Your research question") as HTMLTextAreaElement
+      ).value,
       ids: storedConversations().map((item) => item.id),
       transcript: document.querySelector(".chat-transcript")?.textContent ?? "",
       url: window.location.search,
@@ -381,11 +381,12 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the selected chat when a history click outruns a late success", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
     fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "success");
@@ -405,11 +406,12 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the selected chat when a history click outruns a late error", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
     fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "error");
@@ -435,7 +437,7 @@ describe("Ask Atlas research workspace", () => {
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "success");
@@ -464,7 +466,7 @@ describe("Ask Atlas research workspace", () => {
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "error");
@@ -481,6 +483,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("does not restore a deleted pending chat when its response arrives late", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete Second question" })
     );
@@ -504,6 +507,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("does not leak a late error after the pending chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete Second question" })
     );
@@ -524,6 +528,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps a late success on the open chat after another saved chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete First question" })
     );
@@ -547,6 +552,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps a late error on the open chat after another saved chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete First question" })
     );
@@ -612,7 +618,7 @@ describe("Ask Atlas research workspace", () => {
     expect(screen.getByTestId("ask-atlas-disabled").textContent).toContain(
       "service availability state"
     );
-    expect(screen.queryByLabelText("Your question")).toBeNull();
+    expect(screen.queryByLabelText("Your research question")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Ask$/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /structured/i })).toBeNull();
     expect(chatRequest).not.toHaveBeenCalled();

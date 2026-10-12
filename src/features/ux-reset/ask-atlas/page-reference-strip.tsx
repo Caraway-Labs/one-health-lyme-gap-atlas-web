@@ -27,15 +27,17 @@ const FIELD_LABELS: Record<AskAtlasInheritedFieldKey, string> = {
 };
 
 function boundaryCopy(surface: AskAtlasSurface): string {
+  const purpose =
+    "This page reference helps you return to where you were. Answers search reviewed literature. It is not a citation, and it is not sent with the question.";
   switch (surface) {
     case "compare": {
-      return "This comparison is a page reference. It is not literature retrieved for an answer. Ask Atlas does not compare these counties or send the pair with a question.";
+      return `${purpose} Ask Atlas does not compare these counties.`;
     }
     case "action":
     case "explore":
     case "investigate":
     case "review": {
-      return "This is a page reference from the workspace. It is not literature retrieved for an answer. Changing it does not request county data.";
+      return `${purpose} Changing it does not request county data.`;
     }
     default: {
       const exhaustive: never = surface;

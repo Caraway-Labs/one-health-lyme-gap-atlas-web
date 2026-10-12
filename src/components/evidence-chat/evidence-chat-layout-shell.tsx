@@ -42,8 +42,8 @@ export function EvidenceChatWorkspaceShell({
     .join(" ");
 
   return (
-    <div className={workspaceClassName}>
-      {hasSavedConversations && (
+    <div className={workspaceClassName} data-presentation={presentation}>
+      {hasSavedConversations && presentation !== "ask-atlas" && (
         <ChatHistoryWorkspace
           activeConversationId={active?.id}
           composerFocusRef={model.inputRef}
@@ -62,7 +62,7 @@ export function EvidenceChatWorkspaceShell({
           onSelect={(id) => {
             model.selectConversation(id);
           }}
-          showRetentionCopy={presentation !== "ask-atlas"}
+          showRetentionCopy
         />
       )}
       <EvidenceChatConversationContent
