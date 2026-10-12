@@ -620,28 +620,36 @@ test.describe("professional shell scroll containment", () => {
     });
     await page.goto("/app/settings");
     const main = page.locator("main.ux-reset-pro-main");
-    await expect(page.getByTestId("settings-job-title")).toBeAttached();
+    await expect(main).toBeVisible();
     const leaving = await main.evaluate((element) => {
+      const target = document.createElement("div");
+      target.id = "fragment-target";
+      target.textContent = "Fragment target";
+      element.prepend(target);
       const anchor = document.createElement("a");
-      anchor.href = "#settings-job-title";
-      anchor.textContent = "Job title";
+      anchor.href = "#fragment-target";
+      anchor.textContent = "Fragment target";
       anchor.dataset.testid = "fragment-leave";
       element.prepend(anchor);
+      const spacer = document.createElement("div");
+      spacer.style.height = "1800px";
+      element.append(spacer);
       element.scrollTop = element.scrollHeight;
       return element.scrollTop;
     });
-    expect(leaving).toBeGreaterThan(200);
+    expect(leaving).toBeGreaterThan(400);
     await expect.poll(() => mainScrollTop(page)).toBe(leaving);
+    await expect.poll(() => storedMainOffset(page)).toBe(leaving);
     await page.evaluate(() => {
       document
         .querySelector<HTMLAnchorElement>("[data-testid='fragment-leave']")
         ?.click();
     });
-    await expect(page).toHaveURL(/#settings-job-title/);
-    await expect.poll(() => mainScrollTop(page)).toBeLessThan(leaving - 40);
+    await expect(page).toHaveURL(/#fragment-target/);
+    await expect.poll(() => mainScrollTop(page)).toBeLessThan(80);
     await page.goBack();
-    await expect(page).not.toHaveURL(/#settings-job-title/);
-    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(leaving - 40);
+    await expect(page).not.toHaveURL(/#fragment-target/);
+    await expect.poll(() => mainScrollTop(page)).toBe(leaving);
   });
 
   test("prints the professional shell without clipping the route", async ({
