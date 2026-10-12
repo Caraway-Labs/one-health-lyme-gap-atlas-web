@@ -5,8 +5,13 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 
 const HISTORY_RELEASE_ID = "alpha-2026-08-06";
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
 
 async function installDeterministicWorkspaceMocks(page: Page) {
   const metadata = {
@@ -18,7 +23,9 @@ async function installDeterministicWorkspaceMocks(page: Page) {
     release_id: HISTORY_RELEASE_ID,
   };
   await page.route("**/v1/me/profile", async (route) => {
-    await route.fulfill({ json: { profile: { state_code: "CO" } } });
+    await route.fulfill({
+      json: { profile: { starting_view_version: 1, state_code: "CO" } },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await route.fulfill({ json: metadata });

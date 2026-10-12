@@ -12,4 +12,6 @@ export interface UserProfileWrite {
   state_code?: string | null;
   organization?: string | null;
   job_title?: string | null;
+  /** Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version. */
+  complete_starting_view?: true;
 }

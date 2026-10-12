@@ -107,7 +107,9 @@ async function installInvestigateMocks(
   };
 
   await page.route("**/v1/me/profile", async (route) => {
-    await fulfillJson(route, { profile: { state_code: "CO" } });
+    await fulfillJson(route, {
+      profile: { starting_view_version: 1, state_code: "CO" },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     requestedUrls.push(route.request().url());

@@ -13,6 +13,8 @@ import {
   FRONT_PORCH_HERO_SUPPORT,
 } from "@/features/front-porch/front-porch-copy";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 async function expectNoCountyPreselection(page: Page) {
   const url = page.url().toLowerCase();
   expect(url).not.toContain("buncombe");
@@ -187,6 +189,7 @@ test("public privacy shell uses the shared unauthenticated chrome", async ({
 });
 
 test("signed-in review entry does not preselect a county", async ({ page }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/app/review");
   await expect(page).toHaveURL(/\/app\/review\/?$/);
   await expectNoCountyPreselection(page);

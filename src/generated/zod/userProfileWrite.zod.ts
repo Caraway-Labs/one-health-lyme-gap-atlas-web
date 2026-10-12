@@ -18,7 +18,8 @@ export const UserProfileWrite = zod.object({
   "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
   "state_code": zod.union([zod.string().max(userProfileWriteStateCodeOneMax),zod.null()]).optional(),
   "organization": zod.union([zod.string().max(userProfileWriteOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(userProfileWriteJobTitleOneMax),zod.null()]).optional()
+  "job_title": zod.union([zod.string().max(userProfileWriteJobTitleOneMax),zod.null()]).optional(),
+  "complete_starting_view": zod.literal(true).optional().describe('Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version.')
 })
 
 export type UserProfileWrite = zod.input<typeof UserProfileWrite>;

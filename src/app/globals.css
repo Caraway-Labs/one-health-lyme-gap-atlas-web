@@ -4167,6 +4167,7 @@ select:focus-visible {
   --entrance-primary: #185e5e; /* not --primary (#0f7782) */
   --entrance-on-primary: var(--primary-foreground);
   --entrance-error: #973d32; /* not --destructive (#b63d26) */
+  --entrance-soft: #e8f1ee; /* selected starting-view row; not a shared token */
   /* Google Identity button chrome. The multicolor G stays in the logo SVG. */
   --entrance-google-bg: var(--card);
   --entrance-google-text: #1f1f1f;
@@ -4222,6 +4223,41 @@ select:focus-visible {
 
 .auth-entrance-subtle {
   color: var(--entrance-muted);
+}
+
+.auth-entrance-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--entrance-border);
+  border-radius: var(--entrance-radius);
+  background: var(--entrance-surface);
+}
+
+.auth-entrance-choice:has(input:checked) {
+  border-color: var(--entrance-primary);
+  background: var(--entrance-soft);
+}
+
+.auth-entrance-choice input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--entrance-primary);
+}
+
+.auth-entrance fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.auth-entrance legend {
+  width: 100%;
+  padding: 0;
 }
 
 .auth-entrance-label {

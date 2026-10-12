@@ -124,7 +124,9 @@ async function fulfillJson(route: Route, body: unknown, status = 200) {
 
 async function installExploreMocks(page: Page) {
   await page.route("**/v1/me/profile", async (route) => {
-    await fulfillJson(route, { profile: null });
+    await fulfillJson(route, {
+      profile: { starting_view_version: 1, state_code: null },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await fulfillJson(route, exploreMetadataFixture);

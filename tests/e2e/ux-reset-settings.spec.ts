@@ -14,8 +14,9 @@ type StoredProfile = {
   job_title: string | null;
   organization: string | null;
   role: string | null;
+  starting_view_version: 1 | null;
   state_code: string | null;
-} | null;
+};
 
 const PROFILE_KEYS = new Set([
   "job_title",
@@ -25,7 +26,13 @@ const PROFILE_KEYS = new Set([
 ]);
 
 async function installSettingsApi(page: Page) {
-  let stored: StoredProfile = null;
+  let stored: StoredProfile = {
+    job_title: null,
+    organization: null,
+    role: null,
+    starting_view_version: 1,
+    state_code: null,
+  };
   let failSaves = 0;
   let holdPut = false;
   let holdGets = false;
@@ -81,7 +88,10 @@ async function installSettingsApi(page: Page) {
       return;
     }
     if (commitBeforeHold) {
-      stored = body as Exclude<StoredProfile, null>;
+      stored = {
+        ...(body as StoredProfile),
+        starting_view_version: 1,
+      };
     }
     if (holdPut) {
       const held = Promise.withResolvers<boolean>();
@@ -93,14 +103,19 @@ async function installSettingsApi(page: Page) {
     if (route.request().failure()) {
       return;
     }
-    const payload = { profile: body };
+    const payload = {
+      profile: { ...body, starting_view_version: 1 as const },
+    };
     UserProfileResponseSchema.parse(payload);
     try {
       await route.fulfill({ json: payload, status: 200 });
     } catch {
       return;
     }
-    stored = body as Exclude<StoredProfile, null>;
+    stored = {
+      ...(body as StoredProfile),
+      starting_view_version: 1,
+    };
   });
 
   await page.route("**/v1/atlas/metadata**", async (route) => {
@@ -165,7 +180,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     const api = await installSettingsApi(page);
     await page.goto("/app/settings");
     await expect(
-      page.locator("[data-default-jurisdiction='unselected']")
+      page.locator("[data-default-jurisdiction='ALL']")
     ).toBeVisible();
     await expect(page.getByTestId("settings-organization")).toHaveValue("");
     await expect(page.getByTestId("settings-job-title")).toHaveValue("");
@@ -290,10 +305,8 @@ test.describe("Settings profile and default jurisdiction", () => {
     const getsBeforeReview = api.completedProfileGets();
     api.holdProfileGets();
     await page.goto(reviewUrl);
-    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
-      "data-rendered-scope",
-      "ALL"
-    );
+    await expect(page.getByText("Checking your starting view…")).toBeVisible();
+    await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
     await expect(page).toHaveURL(/period=2023-01-01/);
@@ -373,7 +386,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     );
     await page.reload();
     await expect(
-      page.locator("[data-default-jurisdiction='unselected']")
+      page.locator("[data-default-jurisdiction='ALL']")
     ).toBeVisible();
     await expect(page.getByTestId("settings-save-notice")).toHaveCount(0);
     api.releaseHeldPut();

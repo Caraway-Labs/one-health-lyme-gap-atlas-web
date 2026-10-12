@@ -14,7 +14,8 @@ export type ProfileDefaultJurisdiction = {
 export function useProfileDefaultJurisdiction() {
   const query = useSavedProfile();
   const stateCode =
-    query.data?.selection.kind === "state"
+    query.data?.startingViewVersion === 1 &&
+    query.data.selection.kind === "state"
       ? query.data.selection.stateCode
       : null;
   return {

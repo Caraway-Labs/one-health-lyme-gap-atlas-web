@@ -15,10 +15,13 @@ export function RouteChrome({ children }: { children: React.ReactNode }) {
 
   if (shell === "docs" || shell === "none") return children;
 
-  // The approved sign-in entrance is a full-page surface. The route stays on
-  // the analytical shell so consent-aware analytics still starts here, without
-  // the workspace sidebar or chat launcher.
-  if (pathname === "/auth/sign-in") {
+  // Sign-in and starting-view setup are full-page entrances. Analytics can
+  // start here without the workspace sidebar or chat launcher.
+  if (
+    pathname === "/auth/sign-in" ||
+    pathname === "/auth/starting-view" ||
+    pathname === "/auth/continue"
+  ) {
     return (
       <FeedbackProvider>
         <AnalyticsClient />

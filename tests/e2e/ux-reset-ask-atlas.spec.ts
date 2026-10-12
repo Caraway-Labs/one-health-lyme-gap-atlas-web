@@ -63,7 +63,9 @@ async function installExploreMocks(
   options: { failObservations?: boolean; holdObservations?: Promise<void> } = {}
 ) {
   await page.route("**/v1/me/profile", async (route) => {
-    await fulfillJson(route, { profile: null });
+    await fulfillJson(route, {
+      profile: { starting_view_version: 1, state_code: null },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await fulfillJson(route, exploreMetadataFixture);
@@ -115,7 +117,9 @@ async function installExploreMocks(
 
 async function installReviewMocks(page: Page) {
   await page.route("**/v1/me/profile", async (route) => {
-    await fulfillJson(route, { profile: null });
+    await fulfillJson(route, {
+      profile: { starting_view_version: 1, state_code: null },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await fulfillJson(route, reviewScopeMetadataFixture);
@@ -127,7 +131,9 @@ async function installReviewMocks(page: Page) {
 
 async function installInvestigateMocks(page: Page) {
   await page.route("**/v1/me/profile", async (route) => {
-    await fulfillJson(route, { profile: { state_code: "CO" } });
+    await fulfillJson(route, {
+      profile: { starting_view_version: 1, state_code: "CO" },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await fulfillJson(route, investigateMetadataFixture);
@@ -172,7 +178,9 @@ async function installInvestigateMocks(page: Page) {
 
 async function installUniformCompareMocks(page: Page) {
   await page.route("**/v1/me/profile", async (route) => {
-    await fulfillJson(route, { profile: { state_code: "CO" } });
+    await fulfillJson(route, {
+      profile: { starting_view_version: 1, state_code: "CO" },
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await fulfillJson(route, investigateMetadataFixture);

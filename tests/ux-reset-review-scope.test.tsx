@@ -1647,7 +1647,7 @@ describe("Reset Review scope UI", () => {
   it("honors explicit URL scope over profile default", async () => {
     const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
     vi.mocked(getProfileV1MeProfileGet).mockResolvedValueOnce({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
     renderReview("?scope=NY");
@@ -1665,7 +1665,7 @@ describe("Reset Review scope UI", () => {
     const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
     const updates: string[] = [];
     vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
     window.history.replaceState(null, "", "/app/review?county=08001");
@@ -1693,7 +1693,7 @@ describe("Reset Review scope UI", () => {
   it("keeps explicit national scope when profile default is a state", async () => {
     const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
     vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
     renderReview("?scope=ALL");
@@ -1727,7 +1727,7 @@ describe("Reset Review scope UI", () => {
     expect(screen.queryByTestId("review-national-orientation")).toBeNull();
     expect(screen.queryByTestId("review-scope-status")).toBeNull();
     profileGate.resolve({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     });
     await waitFor(() =>
@@ -1771,7 +1771,7 @@ describe("Reset Review scope UI", () => {
     fireEvent.pointerDown(newYork, { pointerType: "mouse" });
     fireEvent.click(newYork);
     profileGate.resolve({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     });
     await waitFor(() =>
@@ -1826,7 +1826,7 @@ describe("Reset Review scope UI", () => {
       ).toBeTruthy()
     );
     profileGate.resolve({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     });
     await waitFor(() =>
@@ -1915,7 +1915,7 @@ describe("Reset Review scope UI", () => {
     window.history.replaceState(null, "", "/app/review");
     window.dispatchEvent(new PopStateEvent("popstate"));
     profileGate.resolve({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     });
     await waitFor(() =>
@@ -1947,7 +1947,7 @@ describe("Reset Review scope UI", () => {
         (failProfile
           ? Promise.reject(new Error("profile unavailable"))
           : Promise.resolve({
-              data: { profile: { state_code: "CO" } },
+              data: { profile: { starting_view_version: 1, state_code: "CO" } },
               status: 200,
             })) as never
     );
@@ -1992,7 +1992,7 @@ describe("Reset Review scope UI", () => {
         id: "state-default",
         error: false,
         pick: null,
-        profile: { state_code: "CO" },
+        profile: { starting_view_version: 1, state_code: "CO" },
         refetch: { state_code: "NY" },
         back: false,
         settledScope: "CO",
@@ -2083,7 +2083,7 @@ describe("Reset Review scope UI", () => {
         id: "back-then-forward",
         error: false,
         pick: "New York (NY)" as const,
-        profile: { state_code: "CO" },
+        profile: { starting_view_version: 1, state_code: "CO" },
         refetch: null,
         back: true,
         settledScope: "CO",
@@ -2140,7 +2140,9 @@ describe("Reset Review scope UI", () => {
     vi.mocked(getProfileV1MeProfileGet).mockImplementation(
       () =>
         Promise.resolve({
-          data: { profile: { state_code: profileState } },
+          data: {
+            profile: { starting_view_version: 1, state_code: profileState },
+          },
           status: 200,
         }) as never
     );
@@ -2206,7 +2208,7 @@ describe("Reset Review scope UI", () => {
       stateReviewV1StatesStateReviewGet,
     } = await import("@/generated/atlas");
     vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
-      data: { profile: { state_code: "CO" } },
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
     vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();

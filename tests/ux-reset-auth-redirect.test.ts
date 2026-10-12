@@ -67,7 +67,7 @@ describe("UX Reset auth redirect contract", () => {
       )
     );
     expect(success.headers.get("location")).toBe(
-      "https://atlas.example.test/app/explore?county=08001"
+      "https://atlas.example.test/auth/continue?next=%2Fapp%2Fexplore%3Fcounty%3D08001"
     );
 
     exchangeCodeForSession.mockResolvedValueOnce({

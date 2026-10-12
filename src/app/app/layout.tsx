@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 
+import { StartingViewGate } from "@/features/ux-reset/onboarding/starting-view-gate";
 import { pageMetadataForResetRoute } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
@@ -18,7 +19,9 @@ export default function ResetAppLayout({ children }: { children: ReactNode }) {
         </main>
       }
     >
-      <ResetProfessionalShell>{children}</ResetProfessionalShell>
+      <StartingViewGate>
+        <ResetProfessionalShell>{children}</ResetProfessionalShell>
+      </StartingViewGate>
     </Suspense>
   );
 }

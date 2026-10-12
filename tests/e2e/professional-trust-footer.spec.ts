@@ -1,5 +1,11 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
+
 const NAVY = "rgb(8, 42, 77)";
 const FOCUS_WHITE = "rgb(255, 255, 255)";
 const WHITE = "rgb(255, 255, 255)";
