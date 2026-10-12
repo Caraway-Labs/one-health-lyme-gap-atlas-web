@@ -33,6 +33,15 @@ import {
   workspaceSessionDecision,
   type WorkspaceSessionNavigation,
 } from "@/features/ux-reset/workspace-session-gate";
+import {
+  abortWorkspaceSignOut,
+  beginWorkspaceSignOut,
+  completeWorkspaceSignOut,
+  noteWorkspaceDocumentUser,
+  workspaceDocumentUserId,
+  workspaceLoggedOutInPageLifetime,
+  workspaceSignOutSuppressesExpiryRedirect,
+} from "@/features/ux-reset/workspace-sign-out";
 import { isProfessionalAppPath } from "@/lib/auth/app-route-guard";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { createClient } from "@/lib/supabase/client";
@@ -60,7 +69,6 @@ function browserReturnPath(): string {
 
 async function denyWorkspacePage(input: {
   cancelled: () => boolean;
-  loggedOutInPageLifetime: boolean;
   navigation: WorkspaceSessionNavigation;
   path: string;
   queryClient: QueryClient | null;
@@ -69,20 +77,38 @@ async function denyWorkspacePage(input: {
   if (!isProfessionalAppPath(pathname)) {
     return;
   }
-  const read = await readWorkspaceSession();
+  const snapshot = await readWorkspaceSession();
   if (input.cancelled()) {
     return;
   }
   const decision = workspaceSessionDecision({
-    loggedOutInPageLifetime: input.loggedOutInPageLifetime,
+    documentUserId: workspaceDocumentUserId(),
+    loggedOutInPageLifetime: workspaceLoggedOutInPageLifetime(),
     navigation: input.navigation,
-    read,
+    read: snapshot.read,
+    sessionUserId: snapshot.userId,
   });
-  if (decision === "keep") {
-    return;
+  switch (decision) {
+    case "keep": {
+      return;
+    }
+    case "reload": {
+      clearAccountSessionCache(input.queryClient);
+      followWorkspaceHref(input.path, "replace");
+      return;
+    }
+    case "sign-in": {
+      clearAccountSessionCache(input.queryClient);
+      followWorkspaceHref(signInHrefForReturnPath(input.path), "replace");
+      return;
+    }
+    default: {
+      const exhaustive: never = decision;
+      throw new Error(
+        `Unsupported workspace session decision: ${String(exhaustive)}`
+      );
+    }
   }
-  clearAccountSessionCache(input.queryClient);
-  followWorkspaceHref(signInHrefForReturnPath(input.path), "replace");
 }
 
 function WithAccountTooltip({
@@ -133,10 +159,6 @@ export function WorkspaceAccountMenu() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
-  // Suppresses a fresh sign-in replace while this click is navigating home.
-  const leaveInProgressRef = useRef(false);
-  // Survives a back-forward cache restore of this document.
-  const loggedOutInPageLifetimeRef = useRef(false);
   const showTooltip = !(open || isMobileViewport);
   const returnPath = workspaceReturnPath(pathname, searchParams.toString());
   const signInHref = signInHrefForReturnPath(returnPath);
@@ -174,14 +196,49 @@ export function WorkspaceAccountMenu() {
   }, [identity]);
 
   useEffect(() => {
-    if (identity?.kind !== "signed-out" || leaveInProgressRef.current) {
+    if (identity?.kind !== "user") {
+      return;
+    }
+    const decision = workspaceSessionDecision({
+      documentUserId: workspaceDocumentUserId(),
+      loggedOutInPageLifetime: workspaceLoggedOutInPageLifetime(),
+      navigation: "fresh",
+      read: "present",
+      sessionUserId: identity.userId,
+    });
+    switch (decision) {
+      case "keep": {
+        noteWorkspaceDocumentUser(identity.userId);
+        break;
+      }
+      case "reload": {
+        clearAccountSessionCache(queryClient);
+        followWorkspaceHref(returnPath, "replace");
+        break;
+      }
+      case "sign-in": {
+        break;
+      }
+      default: {
+        const exhaustive: never = decision;
+        throw new Error(
+          `Unsupported workspace session decision: ${String(exhaustive)}`
+        );
+      }
+    }
+  }, [identity, queryClient, returnPath]);
+
+  useEffect(() => {
+    if (
+      identity?.kind !== "signed-out" ||
+      workspaceSignOutSuppressesExpiryRedirect()
+    ) {
       return;
     }
     let cancelled = false;
     const denyFreshSignedOutPage = async () => {
       await denyWorkspacePage({
         cancelled: () => cancelled,
-        loggedOutInPageLifetime: loggedOutInPageLifetimeRef.current,
         navigation: "fresh",
         path: returnPath,
         queryClient,
@@ -200,7 +257,6 @@ export function WorkspaceAccountMenu() {
       }
       void denyWorkspacePage({
         cancelled: () => false,
-        loggedOutInPageLifetime: loggedOutInPageLifetimeRef.current,
         navigation: "bfcache",
         path: browserReturnPath(),
         queryClient,
@@ -217,18 +273,18 @@ export function WorkspaceAccountMenu() {
       return;
     }
     pendingRef.current = true;
-    leaveInProgressRef.current = true;
+    beginWorkspaceSignOut();
     setPending(true);
     setNotice(null);
     const result = await endLocalAtlasSession(queryClient);
     if (!result.ok) {
-      leaveInProgressRef.current = false;
+      abortWorkspaceSignOut();
       pendingRef.current = false;
       setPending(false);
       setNotice(result.notice);
       return;
     }
-    loggedOutInPageLifetimeRef.current = true;
+    completeWorkspaceSignOut();
     followWorkspaceHref("/");
   }
 

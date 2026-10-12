@@ -16,7 +16,9 @@ import { explicitAccountLabel } from "@/features/ux-reset/account-display-label"
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { SIGN_OUT_STILL_ACTIVE } from "@/features/ux-reset/profile/end-local-session";
 import { savedProfileQueryRoot } from "@/features/ux-reset/profile/use-saved-profile";
+import { SettingsAccountControls } from "@/features/ux-reset/settings/settings-account-controls";
 import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu";
+import { resetWorkspaceSignOutStateForTests } from "@/features/ux-reset/workspace-sign-out";
 
 type SessionUser = {
   email?: string;
@@ -54,6 +56,7 @@ let searchParams = new URLSearchParams("scope=CO");
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
   usePathname: () => pathname,
+  useRouter: () => ({ push: vi.fn<() => void>() }),
   useSearchParams: () => searchParams as ReadonlyURLSearchParams,
 }));
 
@@ -203,6 +206,7 @@ describe("workspace account menu", () => {
     auth.signOut.mockReset();
     auth.signOut.mockResolvedValue({ error: null });
     followWorkspaceHref.mockReset();
+    resetWorkspaceSignOutStateForTests();
     localStorage.clear();
     stubMatchMedia(false);
   });
@@ -512,6 +516,164 @@ describe("workspace account menu", () => {
     });
     followWorkspaceHref.mockClear();
     auth.session = userSession({ full_name: "Ada Lovelace" });
+    const readsBeforeRestore = auth.reads;
+    persistedPageShow();
+    await waitFor(() => {
+      expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("keeps a Settings sign-out on the public home", async () => {
+    auth.signOut.mockImplementation(async () => {
+      notify(null);
+      return { error: null };
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <TooltipProvider>
+          <SidebarProvider defaultOpen storageKey="workspace-account-test">
+            <WorkspaceAccountMenu />
+            <SettingsAccountControls />
+          </SidebarProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/sign-in"),
+      "replace"
+    );
+  });
+
+  it("sends a restored page to sign-in after Settings sign-out when the read throws", async () => {
+    auth.signOut.mockImplementation(async () => {
+      notify(null);
+      return { error: null };
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <TooltipProvider>
+          <SidebarProvider defaultOpen storageKey="workspace-account-test">
+            <WorkspaceAccountMenu />
+            <SettingsAccountControls />
+          </SidebarProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    followWorkspaceHref.mockClear();
+    client.setQueryData([...savedProfileQueryRoot(), "user-a"], {
+      organization: "CDPHE",
+    });
+    auth.sessionRead = "throw";
+    persistedPageShow();
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "replace"
+      );
+    });
+    expect(
+      client.getQueryCache().findAll({ queryKey: savedProfileQueryRoot() })
+    ).toStrictEqual([]);
+  });
+
+  it("redirects when the session expires after a failed sign-out", async () => {
+    auth.signOut.mockResolvedValue({ error: { message: "remote failed" } });
+    renderMenu();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ada Lovelace" })
+    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+    expect(
+      (await screen.findByTestId("workspace-sign-out-notice")).textContent
+    ).toBe(SIGN_OUT_STILL_ACTIVE);
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    notify(null);
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "replace"
+      );
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith("/");
+  });
+
+  it("reloads a restored page when a different account is signed in", async () => {
+    const { client } = renderMenu();
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    client.setQueryData([...savedProfileQueryRoot(), "user-a"], {
+      organization: "CDPHE",
+    });
+    followWorkspaceHref.mockClear();
+    auth.session = {
+      access_token: "token-user-b",
+      user: {
+        email: "other@example.com",
+        id: "user-b",
+        user_metadata: { full_name: "Grace Hopper" },
+      },
+    };
+    persistedPageShow();
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/sign-in"),
+      "replace"
+    );
+    expect(
+      client.getQueryCache().findAll({ queryKey: savedProfileQueryRoot() })
+    ).toStrictEqual([]);
+  });
+
+  it("reloads when the signed-in account changes on this page", async () => {
+    const { client } = renderMenu();
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    client.setQueryData([...savedProfileQueryRoot(), "user-a"], {
+      organization: "CDPHE",
+    });
+    followWorkspaceHref.mockClear();
+    notify({
+      access_token: "token-user-b",
+      user: {
+        email: "other@example.com",
+        id: "user-b",
+        user_metadata: { full_name: "Grace Hopper" },
+      },
+    });
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/app/review?scope=CO",
+        "replace"
+      );
+    });
+    expect(
+      client.getQueryCache().findAll({ queryKey: savedProfileQueryRoot() })
+    ).toStrictEqual([]);
+  });
+
+  it("keeps a restored page for the same signed-in account", async () => {
+    renderMenu();
+    await screen.findByRole("button", { name: "Ada Lovelace" });
     const readsBeforeRestore = auth.reads;
     persistedPageShow();
     await waitFor(() => {

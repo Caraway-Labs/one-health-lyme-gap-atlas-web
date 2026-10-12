@@ -24,8 +24,8 @@ export function clearAccountSessionCache(
  * indeterminate, so local credentials are not treated as removed.
  */
 async function sessionReadConfirmsAbsence(): Promise<boolean> {
-  const read = await readWorkspaceSession();
-  return read === "absent";
+  const snapshot = await readWorkspaceSession();
+  return snapshot.read === "absent";
 }
 
 async function finishAfterSignOutError(

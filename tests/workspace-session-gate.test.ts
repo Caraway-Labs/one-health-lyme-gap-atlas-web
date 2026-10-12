@@ -209,11 +209,56 @@ describe("workspace session gate", () => {
     auth.configured = false;
     const unconfigured = await readWorkspaceSession();
     expect({ absent, error, present, thrown, unconfigured }).toStrictEqual({
-      absent: "absent",
-      error: "error",
-      present: "present",
-      thrown: "throws",
-      unconfigured: "unconfigured",
+      absent: { read: "absent", userId: null },
+      error: { read: "error", userId: null },
+      present: { read: "present", userId: "user-a" },
+      thrown: { read: "throws", userId: null },
+      unconfigured: { read: "unconfigured", userId: null },
     });
+  });
+
+  it("reloads a page when the confirmed account is not the one that opened it", () => {
+    const rows: {
+      action: "keep" | "reload";
+      documentUserId: string | null;
+      navigation: WorkspaceSessionNavigation;
+      sessionUserId: string | null;
+    }[] = [
+      {
+        action: "reload",
+        documentUserId: "user-a",
+        navigation: "bfcache",
+        sessionUserId: "user-b",
+      },
+      {
+        action: "reload",
+        documentUserId: "user-a",
+        navigation: "fresh",
+        sessionUserId: "user-b",
+      },
+      {
+        action: "keep",
+        documentUserId: "user-a",
+        navigation: "bfcache",
+        sessionUserId: "user-a",
+      },
+      {
+        action: "keep",
+        documentUserId: null,
+        navigation: "bfcache",
+        sessionUserId: "user-b",
+      },
+    ];
+    expect(
+      rows.map((row) =>
+        workspaceSessionDecision({
+          documentUserId: row.documentUserId,
+          loggedOutInPageLifetime: true,
+          navigation: row.navigation,
+          read: "present",
+          sessionUserId: row.sessionUserId,
+        })
+      )
+    ).toStrictEqual(rows.map((row) => row.action));
   });
 });

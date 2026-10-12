@@ -40,6 +40,10 @@ const auth = vi.hoisted(() => {
   };
 });
 
+const followWorkspaceHref = vi.hoisted(() =>
+  vi.fn<(href: string, history?: string) => void>()
+);
+
 vi.mock(
   import("next/navigation"),
   () =>
@@ -47,6 +51,10 @@ vi.mock(
       useRouter: () => ({ push: auth.push }),
     }) as unknown as Partial<typeof import("next/navigation")>
 );
+
+vi.mock(import("@/features/ux-reset/workspace-navigation"), () => ({
+  followWorkspaceHref,
+}));
 
 vi.mock(import("@/lib/supabase/client"), () => ({
   createClient: () => ({
@@ -104,6 +112,7 @@ import {
 } from "@/features/ux-reset/profile/saved-profile-client";
 import { savedProfileQueryKey } from "@/features/ux-reset/profile/use-saved-profile";
 import { ResetSettingsExperience } from "@/features/ux-reset/settings/reset-settings-experience";
+import { resetWorkspaceSignOutStateForTests } from "@/features/ux-reset/workspace-sign-out";
 import {
   getProfileV1MeProfileGet,
   metadataV1AtlasMetadataGet,
@@ -171,6 +180,8 @@ function renderSettings(
 describe("saved profile account isolation", () => {
   beforeEach(() => {
     resetSavedProfileCoordinationForTests();
+    resetWorkspaceSignOutStateForTests();
+    followWorkspaceHref.mockReset();
     auth.session = { access_token: "token-user-a", user: { id: "user-a" } };
     auth.listeners.clear();
     auth.pausedLookups = 0;
@@ -762,6 +773,7 @@ describe("saved profile account isolation", () => {
     expect(
       (await screen.findByTestId("settings-sign-out-notice")).textContent
     ).toContain("still active");
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
     expect(auth.push).not.toHaveBeenCalled();
   });
 
@@ -774,6 +786,7 @@ describe("saved profile account isolation", () => {
       (await screen.findByTestId("settings-sign-out-notice")).textContent
     ).toContain("still active");
     expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
     expect(auth.push).not.toHaveBeenCalled();
   });
 
@@ -785,7 +798,8 @@ describe("saved profile account isolation", () => {
     renderSettings();
     await screen.findByRole("button", { name: "Sign out" });
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
-    await waitFor(() => expect(auth.push).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(followWorkspaceHref).toHaveBeenCalledWith("/"));
     expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(auth.push).not.toHaveBeenCalled();
   });
 });

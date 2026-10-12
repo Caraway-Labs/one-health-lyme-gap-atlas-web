@@ -1,25 +1,32 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AccountDataRights } from "@/components/account-data-rights";
 import { Button } from "@/components/ui/button";
 import { endLocalAtlasSession } from "@/features/ux-reset/profile/end-local-session";
+import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
+import {
+  abortWorkspaceSignOut,
+  beginWorkspaceSignOut,
+  completeWorkspaceSignOut,
+} from "@/features/ux-reset/workspace-sign-out";
 
 export function SettingsAccountControls() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
 
   async function signOut() {
     setNotice(null);
+    beginWorkspaceSignOut();
     const result = await endLocalAtlasSession(queryClient);
     if (result.ok) {
-      router.push("/");
+      completeWorkspaceSignOut();
+      followWorkspaceHref("/");
       return;
     }
+    abortWorkspaceSignOut();
     setNotice(result.notice);
   }
 
