@@ -411,8 +411,11 @@ export function ReviewOperatingPicture({
   }
   const focusReturnedCounty =
     returnFocusMatches || latchedReturnFips === selectedFips;
+  // County evidence keeps this picture mounted but parked. A focus call there
+  // does not move the keyboard, and consuming the target would skip the
+  // visible browse surface when the user comes back.
   useLayoutEffect(() => {
-    if (!(focusReturnedCounty && selectedFips)) {
+    if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
       return;
     }
     const row = layoutRef.current?.querySelector<HTMLButtonElement>(
@@ -438,7 +441,7 @@ export function ReviewOperatingPicture({
         ?.focus({ preventScroll: true });
     }
     consumeReviewReturnFocus(selectedFips);
-  }, [focusReturnedCounty, selectedFips]);
+  }, [focusReturnedCounty, freezeCountySelection, selectedFips]);
 
   const geometryError = Boolean(geometryQuery.isError);
   const geometryReady = Boolean(geometryQuery.data) && !geometryError;
