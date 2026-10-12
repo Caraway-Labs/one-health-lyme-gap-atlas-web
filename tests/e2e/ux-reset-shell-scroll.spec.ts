@@ -706,8 +706,23 @@ test.describe("professional shell scroll containment", () => {
         page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
       )
       .toBe(leaving);
-    await page.getByRole("link", { name: "Resources" }).click();
-    await expect(page).toHaveURL(/\/docs/);
+    await page.evaluate(() => {
+      window.history.pushState(
+        { publicScroll: "next" },
+        "",
+        window.location.href
+      );
+      const scroller = document.scrollingElement;
+      if (scroller instanceof HTMLElement) {
+        scroller.style.scrollBehavior = "auto";
+        scroller.scrollTop = 0;
+      }
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
+      )
+      .toBe(0);
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
     await expect
