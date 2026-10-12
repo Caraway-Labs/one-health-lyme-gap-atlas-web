@@ -502,10 +502,7 @@ function CompareExperienceInner() {
       ) : null}
 
       {pair.length === 2 ? (
-        <section
-          className="ux-reset-compare-unified"
-          data-testid={workspace.alignment ? "compare-alignment" : undefined}
-        >
+        <section className="ux-reset-compare-unified">
           <h2 className="sr-only">County comparison</h2>
           <CompareCountyProfileSection
             alignment={workspace.profile}
@@ -554,235 +551,245 @@ function CompareExperienceInner() {
                 </p>
               )}
               <div
-                data-testid={workspace.profile ? "compare-profile" : undefined}
+                data-testid={
+                  workspace.alignment ? "compare-alignment" : undefined
+                }
               >
-                <Table>
-                  <TableCaption>
-                    One comparison. Review, human surveillance, tick and
-                    pathogen evidence, then community context. A catalog
-                    observation stays only when its period or value is not the
-                    same record.
-                  </TableCaption>
-                  <colgroup>
-                    <col className="ux-reset-compare-col-measure" />
-                    <col className="ux-reset-compare-col-county" />
-                    <col className="ux-reset-compare-col-county" />
-                  </colgroup>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className={compareCellClass} scope="col">
-                        Evidence measure
-                      </TableHead>
-                      <CountyColumnHead
-                        evidenceHref={workspace.investigateHref(leftFips)}
-                        fips={leftFips}
-                        label={leftOption?.label ?? leftFips}
-                        slot={0}
-                      />
-                      <CountyColumnHead
-                        evidenceHref={workspace.investigateHref(rightFips)}
-                        fips={rightFips}
-                        label={rightOption?.label ?? rightFips}
-                        slot={1}
-                      />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {workspace.profile ? (
-                      <>
-                        <CompareSectionHeading title="Review" />
-                        <CompareProfileRows
-                          alignment={workspace.profile}
-                          leftLabel={leftOption?.label ?? leftFips}
-                          rightLabel={rightOption?.label ?? rightFips}
-                          rowIds={COMPARE_REVIEW_ROW_IDS}
-                        />
-                        <CompareSectionHeading title="Human surveillance" />
-                        <CompareProfileRows
-                          alignment={workspace.profile}
-                          leftLabel={leftOption?.label ?? leftFips}
-                          rightLabel={rightOption?.label ?? rightFips}
-                          rowIds={COMPARE_HUMAN_ROW_IDS}
-                        />
-                        <CompareSectionHeading title="Tick and pathogen evidence" />
-                        <CompareProfileRows
-                          alignment={workspace.profile}
-                          leftLabel={leftOption?.label ?? leftFips}
-                          rightLabel={rightOption?.label ?? rightFips}
-                          rowIds={vectorRowIds}
-                          rowNote={(rowId) =>
-                            rowId === "tick_status"
-                              ? tickStatusRowNote(workspace.profile?.rows ?? [])
-                              : null
-                          }
-                        />
-                        <CompareSectionHeading title="Community context" />
-                        <CompareProfileRows
-                          alignment={workspace.profile}
-                          leftLabel={leftOption?.label ?? leftFips}
-                          rightLabel={rightOption?.label ?? rightFips}
-                          rowIds={COMPARE_COMMUNITY_ROW_IDS}
-                        />
-                      </>
-                    ) : null}
-                    {reconciledRows.length > 0 ? (
-                      <CompareSectionHeading title="Additional observations" />
-                    ) : null}
-                    {reconciledRows.map((entry, index) => (
-                      <TableRow
-                        data-measure-id={entry.row.measureId}
-                        data-row-index={index}
-                        data-testid={`compare-row-${entry.row.measureId}`}
-                        key={entry.row.measureId}
-                      >
-                        <TableHead className={compareCellClass} scope="row">
-                          <span>{entry.row.measureLabel}</span>
-                          <span className="type-small">
-                            {entry.row.measureId}
-                          </span>
-                          {entry.note ? (
-                            <span className="type-small">{entry.note}</span>
-                          ) : null}
-                          <p
-                            data-reasons={relationReasons(entry.row.relation)}
-                            data-relation={entry.row.relation.kind}
-                            data-signed-difference={
-                              entry.row.relation.kind === "different"
-                                ? String(entry.row.relation.signedDifference)
-                                : ""
-                            }
-                            data-testid={`compare-relation-${entry.row.measureId}`}
-                          >
-                            {relationText(entry.row.relation)}
-                          </p>
+                <div
+                  data-testid={
+                    workspace.profile ? "compare-profile" : undefined
+                  }
+                >
+                  <Table>
+                    <TableCaption>
+                      One comparison. Review, human surveillance, tick and
+                      pathogen evidence, then community context. A catalog
+                      observation stays only when its period or value is not the
+                      same record.
+                    </TableCaption>
+                    <colgroup>
+                      <col className="ux-reset-compare-col-measure" />
+                      <col className="ux-reset-compare-col-county" />
+                      <col className="ux-reset-compare-col-county" />
+                    </colgroup>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className={compareCellClass} scope="col">
+                          Evidence measure
                         </TableHead>
-                        <TableCell
-                          className={compareCellClass}
-                          data-county={leftOption?.label ?? leftFips}
-                        >
-                          <CompareCellView
-                            cell={entry.row.left}
-                            fips={workspace.alignment?.leftFips ?? leftFips}
-                            measureId={entry.row.measureId}
-                          />
-                        </TableCell>
-                        <TableCell
-                          className={compareCellClass}
-                          data-county={rightOption?.label ?? rightFips}
-                        >
-                          <CompareCellView
-                            cell={entry.row.right}
-                            fips={workspace.alignment?.rightFips ?? rightFips}
-                            measureId={entry.row.measureId}
-                          />
-                        </TableCell>
+                        <CountyColumnHead
+                          evidenceHref={workspace.investigateHref(leftFips)}
+                          fips={leftFips}
+                          label={leftOption?.label ?? leftFips}
+                          slot={0}
+                        />
+                        <CountyColumnHead
+                          evidenceHref={workspace.investigateHref(rightFips)}
+                          fips={rightFips}
+                          label={rightOption?.label ?? rightFips}
+                          slot={1}
+                        />
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {workspace.profile ? (
-                  <details className="ux-reset-compare-score-method">
-                    <summary>Score and methodology</summary>
-                    <p className="type-small">
-                      These are published score components. They are not case
-                      counts, and this comparison does not rank the counties.
-                    </p>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className={compareCellClass} scope="col">
-                            Evidence measure
+                    </TableHeader>
+                    <TableBody>
+                      {workspace.profile ? (
+                        <>
+                          <CompareSectionHeading title="Review" />
+                          <CompareProfileRows
+                            alignment={workspace.profile}
+                            leftLabel={leftOption?.label ?? leftFips}
+                            rightLabel={rightOption?.label ?? rightFips}
+                            rowIds={COMPARE_REVIEW_ROW_IDS}
+                          />
+                          <CompareSectionHeading title="Human surveillance" />
+                          <CompareProfileRows
+                            alignment={workspace.profile}
+                            leftLabel={leftOption?.label ?? leftFips}
+                            rightLabel={rightOption?.label ?? rightFips}
+                            rowIds={COMPARE_HUMAN_ROW_IDS}
+                          />
+                          <CompareSectionHeading title="Tick and pathogen evidence" />
+                          <CompareProfileRows
+                            alignment={workspace.profile}
+                            leftLabel={leftOption?.label ?? leftFips}
+                            rightLabel={rightOption?.label ?? rightFips}
+                            rowIds={vectorRowIds}
+                            rowNote={(rowId) =>
+                              rowId === "tick_status"
+                                ? tickStatusRowNote(
+                                    workspace.profile?.rows ?? []
+                                  )
+                                : null
+                            }
+                          />
+                          <CompareSectionHeading title="Community context" />
+                          <CompareProfileRows
+                            alignment={workspace.profile}
+                            leftLabel={leftOption?.label ?? leftFips}
+                            rightLabel={rightOption?.label ?? rightFips}
+                            rowIds={COMPARE_COMMUNITY_ROW_IDS}
+                          />
+                        </>
+                      ) : null}
+                      {reconciledRows.length > 0 ? (
+                        <CompareSectionHeading title="Additional observations" />
+                      ) : null}
+                      {reconciledRows.map((entry, index) => (
+                        <TableRow
+                          data-measure-id={entry.row.measureId}
+                          data-row-index={index}
+                          data-testid={`compare-row-${entry.row.measureId}`}
+                          key={entry.row.measureId}
+                        >
+                          <TableHead className={compareCellClass} scope="row">
+                            <span>{entry.row.measureLabel}</span>
+                            <span className="type-small">
+                              {entry.row.measureId}
+                            </span>
+                            {entry.note ? (
+                              <span className="type-small">{entry.note}</span>
+                            ) : null}
+                            <p
+                              data-reasons={relationReasons(entry.row.relation)}
+                              data-relation={entry.row.relation.kind}
+                              data-signed-difference={
+                                entry.row.relation.kind === "different"
+                                  ? String(entry.row.relation.signedDifference)
+                                  : ""
+                              }
+                              data-testid={`compare-relation-${entry.row.measureId}`}
+                            >
+                              {relationText(entry.row.relation)}
+                            </p>
                           </TableHead>
-                          <TableHead className={compareCellClass} scope="col">
-                            {leftOption?.label ?? leftFips}
-                          </TableHead>
-                          <TableHead className={compareCellClass} scope="col">
-                            {rightOption?.label ?? rightFips}
-                          </TableHead>
+                          <TableCell
+                            className={compareCellClass}
+                            data-county={leftOption?.label ?? leftFips}
+                          >
+                            <CompareCellView
+                              cell={entry.row.left}
+                              fips={workspace.alignment?.leftFips ?? leftFips}
+                              measureId={entry.row.measureId}
+                            />
+                          </TableCell>
+                          <TableCell
+                            className={compareCellClass}
+                            data-county={rightOption?.label ?? rightFips}
+                          >
+                            <CompareCellView
+                              cell={entry.row.right}
+                              fips={workspace.alignment?.rightFips ?? rightFips}
+                              measureId={entry.row.measureId}
+                            />
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <CompareProfileRows
-                          alignment={workspace.profile}
-                          leftLabel={leftOption?.label ?? leftFips}
-                          rightLabel={rightOption?.label ?? rightFips}
-                          rowIds={COMPARE_SCORE_ROW_IDS}
-                        />
-                      </TableBody>
-                    </Table>
-                  </details>
-                ) : null}
-                {workspace.profile ? (
-                  <section
-                    aria-labelledby="compare-state-context-title"
-                    className="ux-reset-compare-state-context"
-                  >
-                    <h3 id="compare-state-context-title">
-                      State-level reporting context
-                    </h3>
-                    <p className="type-small">
-                      State-unallocated human records are not county case
-                      counts.
-                    </p>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className={compareCellClass} scope="col">
-                            Evidence measure
-                          </TableHead>
-                          <TableHead className={compareCellClass} scope="col">
-                            {leftOption?.label ?? leftFips}
-                          </TableHead>
-                          <TableHead className={compareCellClass} scope="col">
-                            {rightOption?.label ?? rightFips}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <CompareProfileRows
-                          alignment={workspace.profile}
-                          leftLabel={leftOption?.label ?? leftFips}
-                          rightLabel={rightOption?.label ?? rightFips}
-                          rowIds={[COMPARE_STATE_CONTEXT_ROW_ID]}
-                        />
-                      </TableBody>
-                    </Table>
-                  </section>
-                ) : null}
-                {workspace.profile && limitationTextsDiffer ? (
-                  <section aria-labelledby="compare-gaps-title">
-                    <h3 id="compare-gaps-title">
-                      Evidence gaps and comparability
-                    </h3>
-                    <p className="type-small">
-                      These limitations differ by county. A shared release
-                      limitation is stated once above the comparison.
-                    </p>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className={compareCellClass} scope="col">
-                            Evidence measure
-                          </TableHead>
-                          <TableHead className={compareCellClass} scope="col">
-                            {leftOption?.label ?? leftFips}
-                          </TableHead>
-                          <TableHead className={compareCellClass} scope="col">
-                            {rightOption?.label ?? rightFips}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <CompareProfileRows
-                          alignment={workspace.profile}
-                          leftLabel={leftOption?.label ?? leftFips}
-                          rightLabel={rightOption?.label ?? rightFips}
-                          rowIds={[COMPARE_LIMITATION_ROW_ID]}
-                        />
-                      </TableBody>
-                    </Table>
-                  </section>
-                ) : null}
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {workspace.profile ? (
+                    <details className="ux-reset-compare-score-method">
+                      <summary>Score and methodology</summary>
+                      <p className="type-small">
+                        These are published score components. They are not case
+                        counts, and this comparison does not rank the counties.
+                      </p>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className={compareCellClass} scope="col">
+                              Evidence measure
+                            </TableHead>
+                            <TableHead className={compareCellClass} scope="col">
+                              {leftOption?.label ?? leftFips}
+                            </TableHead>
+                            <TableHead className={compareCellClass} scope="col">
+                              {rightOption?.label ?? rightFips}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <CompareProfileRows
+                            alignment={workspace.profile}
+                            leftLabel={leftOption?.label ?? leftFips}
+                            rightLabel={rightOption?.label ?? rightFips}
+                            rowIds={COMPARE_SCORE_ROW_IDS}
+                          />
+                        </TableBody>
+                      </Table>
+                    </details>
+                  ) : null}
+                  {workspace.profile ? (
+                    <section
+                      aria-labelledby="compare-state-context-title"
+                      className="ux-reset-compare-state-context"
+                    >
+                      <h3 id="compare-state-context-title">
+                        State-level reporting context
+                      </h3>
+                      <p className="type-small">
+                        State-unallocated human records are not county case
+                        counts.
+                      </p>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className={compareCellClass} scope="col">
+                              Evidence measure
+                            </TableHead>
+                            <TableHead className={compareCellClass} scope="col">
+                              {leftOption?.label ?? leftFips}
+                            </TableHead>
+                            <TableHead className={compareCellClass} scope="col">
+                              {rightOption?.label ?? rightFips}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <CompareProfileRows
+                            alignment={workspace.profile}
+                            leftLabel={leftOption?.label ?? leftFips}
+                            rightLabel={rightOption?.label ?? rightFips}
+                            rowIds={[COMPARE_STATE_CONTEXT_ROW_ID]}
+                          />
+                        </TableBody>
+                      </Table>
+                    </section>
+                  ) : null}
+                  {workspace.profile && limitationTextsDiffer ? (
+                    <section aria-labelledby="compare-gaps-title">
+                      <h3 id="compare-gaps-title">
+                        Evidence gaps and comparability
+                      </h3>
+                      <p className="type-small">
+                        These limitations differ by county. A shared release
+                        limitation is stated once above the comparison.
+                      </p>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className={compareCellClass} scope="col">
+                              Evidence measure
+                            </TableHead>
+                            <TableHead className={compareCellClass} scope="col">
+                              {leftOption?.label ?? leftFips}
+                            </TableHead>
+                            <TableHead className={compareCellClass} scope="col">
+                              {rightOption?.label ?? rightFips}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <CompareProfileRows
+                            alignment={workspace.profile}
+                            leftLabel={leftOption?.label ?? leftFips}
+                            rightLabel={rightOption?.label ?? rightFips}
+                            rowIds={[COMPARE_LIMITATION_ROW_ID]}
+                          />
+                        </TableBody>
+                      </Table>
+                    </section>
+                  ) : null}
+                </div>
               </div>
             </>
           ) : null}

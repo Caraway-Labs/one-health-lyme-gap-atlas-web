@@ -1411,7 +1411,7 @@
 
 .ux-reset-explorer-preview,
 .ux-reset-explorer-list > .gap-0,
-.ux-reset-review-preview {
+.ux-reset-explorer-page .ux-reset-review-preview {
   padding: 1rem;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1427,7 +1427,7 @@
   height: min(32rem, calc(100dvh - 16rem));
 }
 
-.ux-reset-review-state-map {
+.ux-reset-explorer-browse .ux-reset-review-state-map {
   min-height: 20rem;
   height: min(32rem, calc(100dvh - 16rem));
 }
@@ -1701,7 +1701,7 @@
   }
 
   .ux-reset-explorer-map,
-  .ux-reset-review-state-map {
+  .ux-reset-explorer-browse .ux-reset-review-state-map {
     grid-column: 2;
     grid-row: 1;
   }

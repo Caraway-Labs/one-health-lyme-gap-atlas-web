@@ -323,8 +323,9 @@ test.describe("two-county Compare", () => {
       const scrolls = await page
         .getByTestId("compare-profile")
         .locator("[data-slot=table-container]")
+        .first()
         .evaluate((element) => element.scrollWidth > element.clientWidth);
-      expect(scrolls).toBe(true);
+      expect(scrolls).toBe(false);
     }
 
     const observationUrls = requested.filter((url) =>
@@ -618,7 +619,7 @@ test.describe("two-county Compare", () => {
     await expect(page.getByTestId("compare-retry-profile")).toBeVisible();
     await expect(
       page.getByTestId("compare-profile-cell-human_case_floor-08001")
-    ).toContainText("not used");
+    ).toContainText("Couldn’t load this evidence.");
     await expect(
       page.getByTestId("compare-profile-cell-human_case_floor-08001")
     ).not.toContainText("12");
