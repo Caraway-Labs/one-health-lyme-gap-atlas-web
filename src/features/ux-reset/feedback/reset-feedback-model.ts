@@ -735,6 +735,7 @@ function routeIdForResetPage(id: string): FeedbackSubmissionRequestRouteId {
     }
     case "overview":
     case "review":
+    case "explorer":
     case "investigate":
     case "compare":
     case "action":
@@ -755,6 +756,7 @@ function geographyPage(id: string): boolean {
   switch (id) {
     case "overview":
     case "review":
+    case "explorer":
     case "explore":
     case "investigate":
     case "compare":
