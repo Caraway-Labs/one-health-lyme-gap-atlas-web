@@ -145,6 +145,12 @@ export function SidebarContent({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
+export function SidebarFooter({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div data-slot="sidebar-footer" className={cn(className)} {...props} />
+  );
+}
+
 export function SidebarGroup({
   className,
   ...props

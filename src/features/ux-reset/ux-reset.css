@@ -203,6 +203,80 @@
   }
 }
 
+/* Account footer stays outside the scrolling navigation. The shell parks
+   the sidebar; these rules only keep the footer from joining that scroll. */
+.ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-header"],
+.ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-footer"] {
+  flex-shrink: 0;
+}
+
+.ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-footer"] {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: var(--space-2);
+  background: var(--card);
+}
+
+.ux-reset-pro-app .atlas-sidebar .ux-reset-account-trigger {
+  width: 100%;
+  height: auto;
+  min-height: var(--shell-navigation-target);
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding-inline: var(--space-2);
+}
+
+.ux-reset-pro-app .atlas-sidebar .ux-reset-account-trigger .sidebar-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ux-reset-pro-app
+  .atlas-sidebar[data-state="collapsed"]
+  .ux-reset-account-trigger {
+  width: var(--shell-navigation-target);
+  min-width: var(--shell-navigation-target);
+  margin-inline: auto;
+  padding-inline: 0;
+  justify-content: center;
+}
+
+.ux-reset-account-menu[data-slot="dropdown-menu-content"] {
+  width: max-content;
+  min-width: max-content;
+}
+
+.ux-reset-account-notice {
+  margin-top: var(--space-2);
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 800px) {
+  .ux-reset-pro-app .atlas-sidebar .ux-reset-account-trigger,
+  .ux-reset-pro-app
+    .atlas-sidebar[data-state="collapsed"]
+    .ux-reset-account-trigger {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--control-height);
+    margin-inline: 0;
+    padding-inline: var(--space-2);
+    justify-content: flex-start;
+  }
+}
+
+@media print {
+  .ux-reset-pro-app .atlas-sidebar,
+  .ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-content"] {
+    position: static;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 .ux-reset-pro-app .app-header {
   position: static;
   flex-wrap: wrap;
@@ -1036,4 +1110,14 @@
 
 .ux-reset-ask-atlas-workspace .chat-turn p {
   margin-block: 0.4rem 0;
+}
+
+/* A restored professional document stays hidden until its account is confirmed. */
+html[data-workspace-restore="concealed"] .ux-reset-pro-app {
+  display: none;
+}
+
+.workspace-restore-cover {
+  padding: var(--space-6);
+  color: var(--foreground);
 }
