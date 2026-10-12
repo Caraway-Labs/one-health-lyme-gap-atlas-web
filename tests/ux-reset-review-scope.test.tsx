@@ -105,6 +105,10 @@ vi.mock(import("@/lib/county-geography"), async (importOriginal) => ({
   })),
 }));
 
+vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
+  loadInvestigateCountyRecord: vi.fn<() => Promise<null>>(async () => null),
+}));
+
 vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
     onSelect,
@@ -146,9 +150,14 @@ vi.mock(import("@/generated/atlas"), () => ({
     () => Promise<{ data: typeof reviewScopeMetadataFixture; status: number }>
   >(async () => defaultMetadataResponse()),
   scoresV1AtlasScoresGet: vi.fn<
-    () => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
-  >(async () => ({
-    data: reviewScopeScoresFixture,
+    (params?: {
+      dataset_version?: string;
+    }) => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
+  >(async (params?: { dataset_version?: string }) => ({
+    data: {
+      ...reviewScopeScoresFixture,
+      release_id: params?.dataset_version ?? "alpha-2026",
+    },
     status: 200,
   })),
   saveProfileV1MeProfilePut: vi.fn<
@@ -414,7 +423,19 @@ async function observeSettledStartup(input: {
 }
 
 describe("Reset Review scope UI", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
+    vi.mocked(scoresV1AtlasScoresGet).mockImplementation(
+      async (params) =>
+        ({
+          data: {
+            ...reviewScopeScoresFixture,
+            release_id: params?.dataset_version ?? "alpha-2026",
+          },
+          status: 200,
+        }) as never
+    );
+
     mockedSearch = "";
     lastMapScoreFips = "";
     reviewRouter.push.mockClear();
@@ -1342,9 +1363,9 @@ describe("Reset Review scope UI", () => {
           defaultStateReviewResponse(state, params)
       );
     }
-  });
+  }, 20_000);
 
-  it("withholds a blank county name from Ask Atlas and keeps that county on handoffs", async () => {
+  it("uses published identity for Ask Atlas when the candidate name is blank", async () => {
     const { stateReviewV1StatesStateReviewGet } =
       await import("@/generated/atlas");
     const review = vi.mocked(stateReviewV1StatesStateReviewGet);
@@ -1428,11 +1449,11 @@ describe("Reset Review scope UI", () => {
         compareCounty: true,
         compareOtherCounty: false,
         exploreCounty: true,
-        geographyLabel: "Not validated on this page",
-        geographyState: "absent",
+        geographyLabel: "Denver, Colorado (08001)",
+        geographyState: "validated",
         investigateCounty: true,
         investigateOtherCounty: false,
-        malformedLabel: false,
+        malformedLabel: true,
         namedCountyInPanel: false,
         preview: "County preview for Unavailable, Colorado",
       });
@@ -3275,22 +3296,22 @@ describe("Reset Review scope UI", () => {
       const finishLoading = reviewGate;
       reviewGate = null;
       finishLoading?.resolve();
-      const noneStandOut = await settle(activeRelease, null);
+      const noneStandOut = await settle(activeRelease, "08001");
       mode = "insufficient";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const insufficient = await settle(activeRelease, null);
+      const insufficient = await settle(activeRelease, "08001");
       mode = "gaps";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const unsupportedWithGaps = await settle(activeRelease, null);
+      const unsupportedWithGaps = await settle(activeRelease, "08001");
       mode = "unsupported";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const unsupportedWithoutGaps = await settle(activeRelease, null);
+      const unsupportedWithoutGaps = await settle(activeRelease, "08001");
       mode = "candidates";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
@@ -3300,7 +3321,7 @@ describe("Reset Review scope UI", () => {
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const afterEmptySwitch = await settle(activeRelease, null);
+      const afterEmptySwitch = await settle(activeRelease, "08001");
       loading.view.unmount();
       mockedSearch = reloadedUrl;
       const reloaded = renderShell(reloadedUrl);
@@ -3332,14 +3353,14 @@ describe("Reset Review scope UI", () => {
         whileFailed,
         whileLoading,
       }).toStrictEqual({
-        afterEmptySwitch: linksFor("release-a", null),
+        afterEmptySwitch: linksFor("release-a", "08001"),
         afterReload: linksFor("release-a", null),
         afterRollover: linksFor("release-b", null),
         candidates: linksFor("release-a", "08001"),
-        insufficient: linksFor("release-a", null),
-        noneStandOut: linksFor("release-a", null),
-        unsupportedWithGaps: linksFor("release-a", null),
-        unsupportedWithoutGaps: linksFor("release-a", null),
+        insufficient: linksFor("release-a", "08001"),
+        noneStandOut: linksFor("release-a", "08001"),
+        unsupportedWithGaps: linksFor("release-a", "08001"),
+        unsupportedWithoutGaps: linksFor("release-a", "08001"),
         whileFailed: {
           action: `/app/action?scope=CO&county=08001&period=${period}`,
           compare: `/app/compare?scope=CO&county=08001&period=${period}`,
