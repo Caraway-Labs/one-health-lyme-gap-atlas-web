@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Users move **Review → Investigate → Compare/Action** without rebuilding geography, release, or compare selections. Context lives in **validated, canonical URL search parameters** so direct links and reloads stay reproducible.
+Users move among **Atlas Explorer, Compare, and Ask Atlas** without rebuilding geography, release, or compare selections. Context lives in **validated, canonical URL search parameters** so direct links and reloads stay reproducible. Atlas Explorer is the Review path (`/app/review`). Explore, Investigate, and Action are compatibility aliases that redirect there ([#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)).
 
 **Browser back/forward** depends on the shell pushing real history entries when navigating; that wiring ships with the authenticated shell ([#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406) / PR #439). This contract defines what belongs in each URL; it does not by itself integrate history.
 
@@ -46,7 +46,7 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 
 | Destination | Local keys (dropped on navigation)                |
 | ----------- | ------------------------------------------------- |
-| Review      | `sort`, `page`, `mode`                            |
+| Review      | `sort`, `page`, `mode`, `selection`               |
 | Explore     | `view`, `metric`, `page`, `selected`, `map_scope` |
 | Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q`   |
 | Compare     | `metric`, `return`                                |
@@ -59,17 +59,19 @@ Explore `selected` maps into `compare` **only** when the destination accepts `co
 
 Review `mode` is the in-page Atlas Explorer county view. Omitted means browse. `evidence` opens county evidence. `follow-up` opens that same view at Suggested follow-up. Any other token is removed. Handoff does not copy `mode`. Compare copies one exact `mode` onto a Review return link when that Compare URL already carried it.
 
+Review `selection=required` marks an alias that named `county` but did not yield one FIPS. Browse does not select a county until the user chooses one. Handoff does not copy `selection`.
+
 ## Route-to-route handoff matrix
 
 **Destination acceptance** (`UX_RESET_HANDOFF_ACCEPTANCE`) and **source export** (`UX_RESET_HANDOFF_EXPORT`) are both enforced. Effective handoff is the intersection.
 
 | Source \\ Dest | Review | Explore | Investigate | Compare | Action | Assistant | Feed | Settings |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Review** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
-| **Explore** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare¹, dataset, period | scope, county, compare¹, dataset, period | scope, county, compare¹, dataset, period | county, dataset | — | — |
-| **Investigate** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
-| **Compare** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
-| **Action** | scope, county, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Review** | scope, county, compare, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Explore** | scope, county, compare¹, dataset, period | scope, county, dataset, period | scope, county, compare¹, dataset, period | scope, county, compare¹, dataset, period | scope, county, compare¹, dataset, period | county, dataset | — | — |
+| **Investigate** | scope, county, compare, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Compare** | scope, county, compare, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
+| **Action** | scope, county, compare, dataset, period | scope, county, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | scope, county, compare, dataset, period | county, dataset | — | — |
 | **Assistant** | county, dataset | county, dataset | county, dataset | county, dataset | county, dataset | county, dataset | — | — |
 | **Feed** | —² | — | — | — | — | — | — | — |
 | **Settings** | —² | — | — | — | — | — | — | — |
@@ -101,7 +103,7 @@ Review and Investigate open Compare through `buildCompareEntryHref` in `compare-
 
 A validated two-county `compare` list is kept, so the selected county is not added as a third. One saved county is replaced by the county selected now, and remains only when no county is selected. When the list is empty, the selected county is written as the only member. Compare does not choose a second county. The Compare page asks for the missing county. Clearing or editing the pair on Compare changes `compare` on the Compare URL. It does not rewrite the Review or Investigate history entry the user left.
 
-`return` is page-local to Compare. Entry links set it to `review` or `investigate`. Any other value is ignored. A direct Compare link without `return` stays usable and does not show a return control. The return link is a normal handoff of the visible pair: Review does not receive `compare`, and Investigate receives the pair currently on screen. Compare edits do not change the originating `county`.
+`return` is page-local to Compare. Entry links set it to `review` or `investigate`. Any other value is ignored. A direct Compare link without `return` stays usable and does not show a return control. The return link is a normal handoff of the visible pair. Atlas Explorer (the Review path) receives `compare`. `return=review` opens Explorer browse, copying one exact `mode` when the Compare URL already carried it. `return=investigate` opens Explorer `mode=evidence`. Compare edits do not change the originating `county`.
 
 ## Investigate next step and export (#417)
 

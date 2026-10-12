@@ -138,7 +138,7 @@ describe("UX Reset cross-page context contract", () => {
     expect(dropped).toContain("selected");
   });
 
-  it("drops the Compare return target and does not copy the pair onto Review", () => {
+  it("drops the Compare return target and keeps the pair on Atlas Explorer", () => {
     const source = new URLSearchParams(
       "scope=CO&county=08001&compare=08001,08013&dataset=alpha&return=review&metric=score"
     );
@@ -156,7 +156,7 @@ describe("UX Reset cross-page context contract", () => {
       investigateCompare: investigate.params.get("compare"),
       investigateDropsReturn: investigate.dropped.includes("return"),
       investigateReturn: investigate.params.has("return"),
-      reviewCompare: review.params.has("compare"),
+      reviewCompare: review.params.get("compare"),
       reviewCounty: review.params.get("county"),
       reviewDropsCompare: review.dropped.includes("compare"),
       reviewDropsReturn: review.dropped.includes("return"),
@@ -165,9 +165,9 @@ describe("UX Reset cross-page context contract", () => {
       investigateCompare: "08001,08013",
       investigateDropsReturn: true,
       investigateReturn: false,
-      reviewCompare: false,
+      reviewCompare: "08001,08013",
       reviewCounty: "08001",
-      reviewDropsCompare: true,
+      reviewDropsCompare: false,
       reviewDropsReturn: true,
       reviewReturn: false,
     });

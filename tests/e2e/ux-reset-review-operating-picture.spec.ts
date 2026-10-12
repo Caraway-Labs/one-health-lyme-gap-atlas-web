@@ -47,6 +47,54 @@ async function installOperatingPicture(
 }
 
 test.describe("Review operating picture", () => {
+  test("an invalid county alias does not select a published county", async ({
+    page,
+  }) => {
+    await installOperatingPicture(page, (state) =>
+      buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Adams",
+            fips: "08001",
+            reasonText: "Adams was returned by the method.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Boulder",
+            fips: "08013",
+            reasonText: "Boulder was returned by the method.",
+          }),
+        ],
+        resultState: "candidates_found",
+        state,
+      })
+    );
+    for (const source of [
+      "/app/action?scope=CO&county=nope",
+      "/app/investigate?scope=CO&county=nope",
+    ]) {
+      await page.goto(source, { waitUntil: "commit" });
+      await expect(page.getByTestId("review-candidate")).toHaveCount(2);
+      await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
+        "data-result-state",
+        "candidates_found"
+      );
+      const landed = new URL(page.url());
+      expect(landed.pathname).toBe("/app/review");
+      expect(landed.searchParams.get("county")).toBeNull();
+      expect(landed.searchParams.get("scope")).toBe("CO");
+      expect(landed.searchParams.get("selection")).toBe("required");
+      await expect(
+        page.locator('[data-testid="review-candidate"][aria-current="true"]')
+      ).toHaveCount(0);
+      await expect(page.getByTestId("review-county-preview")).toHaveCount(0);
+      await expect(
+        page.getByRole("combobox", { name: "Published county", exact: true })
+      ).toContainText("Select a published county");
+    }
+  });
+
   test("shows a candidate reason, basis, caveat, and Investigate path", async ({
     page,
   }, testInfo) => {
@@ -94,9 +142,11 @@ test.describe("Review operating picture", () => {
     const href =
       (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
     expect(href).toContain("county=08001");
-    expect(href).toContain("/app/investigate");
+    expect(href).toContain("/app/review");
+    expect(href).toContain("mode=evidence");
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
 
     if (!testInfo.project.name.includes("mobile")) {

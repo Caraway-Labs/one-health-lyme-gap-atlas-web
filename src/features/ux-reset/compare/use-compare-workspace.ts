@@ -53,10 +53,14 @@ import {
   fetchExploreCountyDirectory,
   fetchExploreMeasures,
 } from "@/features/ux-reset/explore/load-explore-resources";
-import { compareReturnHrefWithExplorerMode } from "@/features/ux-reset/review/explorer-mode";
 import {
+  compareReturnHrefWithExplorerMode,
+  EXPLORER_EVIDENCE_MODE,
+  hrefWithExplorerMode,
+} from "@/features/ux-reset/review/explorer-mode";
+import {
+  ATLAS_EXPLORER_PATH,
   RESET_COMPARE_PATH,
-  RESET_INVESTIGATE_PATH,
 } from "@/features/ux-reset/routes";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
 import type { AtlasMetadata, Measure } from "@/generated/models";
@@ -448,10 +452,13 @@ export function useCompareWorkspace(): CompareWorkspace {
     scope: urlState.scope,
   });
   const investigateHref = (fips: string) =>
-    uxResetShellHandoffHref(
-      RESET_INVESTIGATE_PATH,
-      RESET_COMPARE_PATH,
-      sharedContextToSearchParams(contextFor(fips, currentPair))
+    hrefWithExplorerMode(
+      uxResetShellHandoffHref(
+        ATLAS_EXPLORER_PATH,
+        RESET_COMPARE_PATH,
+        sharedContextToSearchParams(contextFor(fips, currentPair))
+      ),
+      EXPLORER_EVIDENCE_MODE
     );
   const returnTarget = urlState.return;
   const returnHref = compareReturnHrefWithExplorerMode({

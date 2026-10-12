@@ -30,7 +30,7 @@ export const UX_RESET_HANDOFF_ACCEPTANCE: Record<
   explore: ["scope", "county", "dataset", "period"],
   feed: [],
   investigate: ["scope", "county", "compare", "dataset", "period"],
-  review: ["scope", "county", "dataset", "period"],
+  review: ["scope", "county", "compare", "dataset", "period"],
   settings: [],
 };
 

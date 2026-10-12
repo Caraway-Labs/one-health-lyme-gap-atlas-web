@@ -121,7 +121,7 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
   );
   await page.getByTestId("ask-atlas-launcher").click();
   await expect(page).toHaveURL(/\/app\/assistant\?/);
-  await expect(page).toHaveURL(/county=08001/);
+  await expect(page).not.toHaveURL(/county=/);
   await expect(page).toHaveURL(/page_ref=/);
   await expect(page).not.toHaveURL(/conversation=/);
   await expect(
@@ -155,7 +155,7 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
   expect(requests).toHaveLength(1);
 
   await page.goBack();
-  await expect(page).toHaveURL(/\/app\/explore/);
+  await expect(page).toHaveURL(/\/app\/review/);
   await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
   await page.goForward();
   await expect(page).toHaveURL(/\/app\/assistant\?/);

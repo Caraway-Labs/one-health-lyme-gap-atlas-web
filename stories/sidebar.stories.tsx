@@ -39,8 +39,8 @@ function WithStorySidebarKey(
 }
 
 const items = [
-  ["Review", "/app/review"],
-  ["Investigate", "/app/investigate"],
+  ["Atlas Explorer", "/app/review"],
+  ["Compare", "/app/compare"],
 ] as const;
 
 export function SidebarStory({ startCollapsed }: { startCollapsed: boolean }) {
@@ -54,7 +54,7 @@ export function SidebarStory({ startCollapsed }: { startCollapsed: boolean }) {
 
 function SidebarPreview({ startCollapsed }: { startCollapsed: boolean }) {
   const storageKey = useContext(SidebarKeyContext);
-  const [active, setActive] = useState("Review");
+  const [active, setActive] = useState("Atlas Explorer");
   useLayoutEffect(() => {
     window.localStorage.setItem(storageKey, startCollapsed ? "false" : "true");
   }, [startCollapsed, storageKey]);

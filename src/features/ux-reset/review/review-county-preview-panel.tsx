@@ -138,7 +138,6 @@ export function ReviewCountyPreviewPanel({
           </Button>
         ) : null}
         <Link
-          ref={openRef}
           className={cn(buttonVariants(), "ux-reset-review-open")}
           data-county={preview.fips}
           data-testid="review-investigate"
@@ -148,9 +147,10 @@ export function ReviewCountyPreviewPanel({
             onOpen(preview.fips);
           }}
         >
-          Open Investigate
+          County evidence
         </Link>
         <Link
+          ref={openRef}
           className={cn(
             buttonVariants({ variant: "secondary" }),
             "ux-reset-review-open"

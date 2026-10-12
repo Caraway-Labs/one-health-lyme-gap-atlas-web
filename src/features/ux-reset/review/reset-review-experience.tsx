@@ -28,6 +28,7 @@ import {
 } from "@/features/ux-reset/review/explorer-follow-up";
 import {
   EXPLORER_EVIDENCE_MODE,
+  EXPLORER_SELECTION_REQUIRED,
   resolveExplorerModeQuery,
 } from "@/features/ux-reset/review/explorer-mode";
 import {
@@ -72,7 +73,7 @@ import {
 } from "@/lib/atlas-state-geography";
 
 function ResetReviewExperienceInner() {
-  const route = resetRouteById("review");
+  const route = resetRouteById("explorer");
   const router = useRouter();
   const [urlState, setUrlState] = useQueryStates(reviewSearchParams, {
     history: "push",
@@ -491,6 +492,9 @@ function ResetReviewExperienceInner() {
                 county={reviewCounty}
                 freezeCountySelection={explorerMode !== null}
                 period={urlState.period}
+                requireExplicitCountySelection={
+                  urlState.selection === EXPLORER_SELECTION_REQUIRED
+                }
                 review={stateReview.review}
                 scopeCode={scope}
                 stateName={stateName}

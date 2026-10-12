@@ -169,9 +169,9 @@ describe("canonical Compare entry", () => {
       directReturn: false,
       empty: null,
       investigate: "investigate",
-      investigateLabel: "Return to Investigate",
+      investigateLabel: "Return to county evidence",
       review: "review",
-      reviewLabel: "Return to Review",
+      reviewLabel: "Return to Atlas Explorer",
     });
   });
 });

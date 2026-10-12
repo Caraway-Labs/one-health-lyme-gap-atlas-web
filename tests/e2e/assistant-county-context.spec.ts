@@ -81,14 +81,18 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("shows county context in the floating assistant after Explorer selection", async ({
+test("retired Geographic Explorer selection opens Atlas Explorer without the drawer", async ({
   page,
 }) => {
   await page.goto("/geographic_explorer?county=08001");
-  await page.getByRole("button", { name: /Atlas Assistant/ }).click();
-  const countyContext = page.getByLabel("County context");
-  await expect(countyContext.getByText("Adams, Colorado")).toBeVisible();
-  await expect(countyContext.getByText(/FIPS 08001/)).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/review\?.*county=08001/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "Atlas Assistant" })
+  ).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get("county")).toBe("08001");
 });
 
 test("carries county context into the assistant workspace route", async ({

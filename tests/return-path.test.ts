@@ -21,8 +21,8 @@ describe("safe return path", () => {
     }).toStrictEqual({
       bareQuery: "?county=08001",
       overview: "/overview?county=08001&state=CO",
-      review: "/overview",
-      reviewQuery: "/overview",
+      review: "/app/review",
+      reviewQuery: "/app/review",
     });
   });
 

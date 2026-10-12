@@ -146,9 +146,12 @@ test.describe("Published Review county exploration", () => {
       /county=01005/
     );
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate\?.*county=01005/, {
-      timeout: 30000,
-    });
+    await expect(page).toHaveURL(
+      /\/app\/review\?.*county=01005.*mode=evidence|\/app\/review\?.*mode=evidence.*county=01005/,
+      {
+        timeout: 30000,
+      }
+    );
     await expect(page).toHaveURL(new RegExp(`dataset=${release}`));
     await page.goBack();
     await expect(picker).toBeFocused();

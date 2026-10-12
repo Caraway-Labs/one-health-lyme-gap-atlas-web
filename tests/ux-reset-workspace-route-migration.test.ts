@@ -71,6 +71,7 @@ function expectedRedirect(expected: RedirectExpectation) {
     "period",
     "metric",
     EXPLORER_MODE_PARAM,
+    "selection",
   ]) {
     const value = expected.query[key];
     if (value !== undefined) {
@@ -119,15 +120,29 @@ describe("six-page workspace route migration", () => {
     ]);
     expect({
       explorer: ATLAS_EXPLORER_PATH,
+      explorerRoute: RESET_ROUTES.find((route) => route.id === "explorer")
+        ?.href,
       frontPorch: frontPorchExploreHref(true),
       reviewConstant: RESET_REVIEW_PATH,
-      reviewRoute: RESET_ROUTES.find((route) => route.id === "review")?.href,
     }).toStrictEqual({
       explorer: "/app/review",
+      explorerRoute: "/app/review",
       frontPorch: "/app/review",
       reviewConstant: "/app/review",
-      reviewRoute: "/app/review",
     });
+    expect(
+      RESET_ROUTES.filter((route) => route.navGroup !== "alias").map(
+        (route) => ({
+          label: route.label,
+          path: route.href,
+        })
+      )
+    ).toStrictEqual(
+      WORKSPACE_DESTINATIONS.map((destination) => ({
+        label: destination.label,
+        path: destination.path,
+      }))
+    );
     expect([...UX_RESET_DESTINATION_IDS].sort()).toStrictEqual([
       "action",
       "assistant",
@@ -140,23 +155,26 @@ describe("six-page workspace route migration", () => {
     ]);
   });
 
-  it("records a reversible redirect policy and does not install it", () => {
+  it("installs the reversible redirect from middleware after auth", () => {
     expect(WORKSPACE_MIGRATION_INSTALL).toMatchObject({
       history: "replace",
-      redirectsInstalled: false,
+      redirectsInstalled: true,
       redirectStatus: 307,
     });
-    const offenders = sourceFiles("src").filter((file) => {
-      if (file.endsWith("workspace-route-migration.ts")) {
-        return false;
-      }
+    const importers = sourceFiles("src").filter((file) => {
       const source = readFileSync(file, "utf-8");
       return (
         source.includes("recordedWorkspaceMigration") ||
+        source.includes("installedWorkspaceRedirect") ||
         source.includes("workspace-route-migration")
       );
     });
-    expect(offenders).toStrictEqual([]);
+    expect(importers.sort()).toStrictEqual(
+      [
+        "src/features/ux-reset/workspace-route-migration.ts",
+        "src/middleware.ts",
+      ].sort()
+    );
   });
 
   it("does not revive retired variant or UX Lab URLs", () => {
@@ -221,14 +239,14 @@ describe("six-page workspace route migration", () => {
   it("maps Action, Overview, Geographic Explorer, and legacy root queries", () => {
     expect(
       redirectView(
-        migrate("/app/action", "county=06037&plan=evidence-brief&role=epi")
+        migrate("/app/action", "county=08001&plan=surveillance&role=epi")
       )
     ).toStrictEqual(
       expectedRedirect({
         droppedKeys: ["plan", "role"],
         mode: "follow-up",
         query: {
-          county: "06037",
+          county: "08001",
           [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
         },
       })
@@ -283,26 +301,81 @@ describe("six-page workspace route migration", () => {
       expectedRedirect({ droppedKeys: [], mode: "browse", query: {} })
     );
     expect(
-      redirectView(migrate("/app/investigate", "county=nope"))
+      redirectView(migrate("/app/investigate", "scope=CO&county=nope"))
     ).toStrictEqual(
       expectedRedirect({
         droppedKeys: ["county"],
         mode: "browse",
-        query: {},
+        query: { scope: "CO", selection: "required" },
       })
     );
     expect(
-      redirectView(migrate("/app/action", "county=06037&county=06059"))
+      redirectView(migrate("/app/action", "county=08001&county=08013"))
     ).toStrictEqual(
       expectedRedirect({
         droppedKeys: ["county"],
         mode: "browse",
-        query: {},
+        query: { selection: "required" },
       })
     );
   });
 
-  it("copies an Explore measure id and keeps an existing compare pair", () => {
+  it("keeps a single evidence-brief plan on Action", () => {
+    expect(
+      migrate("/app/action", "county=08001&plan=evidence-brief&role=epi")
+    ).toStrictEqual({
+      kind: "unchanged",
+      pathname: "/app/action",
+      reason: "evidence-brief",
+    });
+    expect(
+      migrate("/app/action", "county=08001&plan=%20evidence-brief%20")
+    ).toStrictEqual({
+      kind: "unchanged",
+      pathname: "/app/action",
+      reason: "evidence-brief",
+    });
+    expect(
+      redirectView(migrate("/app/action", "county=08001&plan=brief"))
+    ).toStrictEqual(
+      expectedRedirect({
+        droppedKeys: ["plan"],
+        mode: "follow-up",
+        query: {
+          county: "08001",
+          [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
+        },
+      })
+    );
+    expect(
+      redirectView(
+        migrate("/app/action", "county=08001&plan=evidence-brief&plan=brief")
+      )
+    ).toStrictEqual(
+      expectedRedirect({
+        droppedKeys: ["plan"],
+        mode: "follow-up",
+        query: {
+          county: "08001",
+          [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
+        },
+      })
+    );
+    expect(
+      redirectView(migrate("/app/action", "county=08001&plan=surveillance"))
+    ).toStrictEqual(
+      expectedRedirect({
+        droppedKeys: ["plan"],
+        mode: "follow-up",
+        query: {
+          county: "08001",
+          [EXPLORER_MODE_PARAM]: EXPLORER_FOLLOW_UP_MODE,
+        },
+      })
+    );
+  });
+
+  it("drops an Explore measure id and keeps an existing compare pair", () => {
     expect(
       redirectView(
         migrate(
@@ -312,11 +385,10 @@ describe("six-page workspace route migration", () => {
       )
     ).toStrictEqual(
       expectedRedirect({
-        droppedKeys: ["map_scope"],
+        droppedKeys: ["map_scope", "metric"],
         mode: "browse",
         query: {
           compare: "06037,06059",
-          metric: "reported-cases",
           scope: "ALL",
         },
       })
@@ -526,7 +598,7 @@ describe("six-page workspace route migration", () => {
   it("is a fixed point after one redirect", () => {
     const samples = [
       ["/app/investigate", "county=06037&scope=NY"],
-      ["/app/action", "county=06037&plan=evidence-brief"],
+      ["/app/action", "county=08001&plan=surveillance"],
       ["/geographic_explorer", "selected=06001,06013,06037"],
       ["/", "q=lyme"],
       ["/overview", "state=NY"],

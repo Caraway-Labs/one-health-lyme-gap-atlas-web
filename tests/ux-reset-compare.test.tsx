@@ -394,7 +394,9 @@ describe("two-county aligned comparison", () => {
       county: investigate.includes("county=08001"),
       left: caseRequest?.includes("08001"),
       pair: investigate.includes("compare=08001%2C08013"),
-      path: investigate.includes("/app/investigate"),
+      path:
+        investigate.includes("/app/review") &&
+        investigate.includes("mode=evidence"),
       right: caseRequest?.includes("08013"),
     }).toStrictEqual({
       action: null,
@@ -585,7 +587,7 @@ describe("two-county aligned comparison", () => {
     });
     const sidebarHref =
       navigation
-        .querySelector('a[href^="/app/action"]')
+        .querySelector('a[aria-label="Atlas Explorer"]')
         ?.getAttribute("href") ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
     const pageHref =
@@ -683,17 +685,18 @@ describe("two-county aligned comparison", () => {
         queryKey: ["ux-reset-compare-measures"],
       });
     });
-    expect({
-      ...populationCatalogState(),
-      refreshError: (
-        screen.queryByText("Governed measures could not be loaded.")
-          ?.textContent ?? ""
-      ).includes("could not be loaded"),
-    }).toStrictEqual({
-      availability: "limited",
-      caveat: true,
-      evidenceType: true,
-      refreshError: true,
+    await waitFor(() => {
+      expect({
+        ...populationCatalogState(),
+        refreshError: (screen.queryByRole("alert")?.textContent ?? "").includes(
+          "could not be loaded"
+        ),
+      }).toStrictEqual({
+        availability: "limited",
+        caveat: true,
+        evidenceType: true,
+        refreshError: true,
+      });
     });
     catalogFailuresRemaining = 0;
     fireEvent.click(screen.getByTestId("compare-retry-catalog"));
@@ -974,8 +977,8 @@ describe("two-county aligned comparison", () => {
       returnParam: openedHref.includes("return="),
     }).toStrictEqual({
       county: true,
-      label: "Return to Review",
-      pair: false,
+      label: "Return to Atlas Explorer",
+      pair: true,
       path: true,
       returnParam: false,
     });
@@ -996,7 +999,7 @@ describe("two-county aligned comparison", () => {
     }).toStrictEqual({
       actionPair: true,
       county: true,
-      editedPair: false,
+      editedPair: true,
       returnTarget: "review",
     });
 
@@ -1027,7 +1030,7 @@ describe("two-county aligned comparison", () => {
     expect({
       county: href.includes("county=08001"),
       pair: href.includes("compare=08001%2C36001"),
-      path: href.includes("/app/investigate"),
+      path: href.includes("/app/review") && href.includes("mode=evidence"),
       period: href.includes("period=2023-01-01"),
       returnParam: href.includes("return="),
     }).toStrictEqual({

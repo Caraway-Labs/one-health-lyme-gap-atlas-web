@@ -78,7 +78,7 @@ describe("reset feedback model", () => {
   it("maps reset pages onto the closed route enum and an allowlisted label", () => {
     expect(resetFeedbackPage("/app/review")).toMatchObject({
       includeGeography: true,
-      pageLabel: "Review",
+      pageLabel: "Atlas Explorer",
       routeId: "overview",
     });
     expect(resetFeedbackPage("/app/explore")).toMatchObject({
@@ -86,7 +86,7 @@ describe("reset feedback model", () => {
       routeId: "geographic_explorer",
     });
     expect(resetFeedbackPage("/app/assistant")).toMatchObject({
-      pageLabel: "Assistant",
+      pageLabel: "Ask Atlas",
       routeId: "assistant",
     });
     expect(resetFeedbackPage("/app/settings?county=08031")).toMatchObject({
@@ -165,7 +165,7 @@ describe("reset feedback model", () => {
       contact: null,
       context: { county_fips: "08031" },
       message: expect.stringMatching(
-        /Product category: Suggest a dataset[\s\S]*Page: Review[\s\S]*Dataset: CDC tick file[\s\S]*Source or publisher: CDC[\s\S]*Geographic coverage: Colorado/
+        /Product category: Suggest a dataset[\s\S]*Page: Atlas Explorer[\s\S]*Dataset: CDC tick file[\s\S]*Source or publisher: CDC[\s\S]*Geographic coverage: Colorado/
       ),
       ok: true,
     });

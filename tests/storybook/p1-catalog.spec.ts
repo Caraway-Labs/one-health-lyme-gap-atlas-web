@@ -280,7 +280,7 @@ test.describe("P1 Storybook catalog", () => {
       "Selected county 08001"
     );
     await expect(
-      page.getByRole("link", { name: /Open Investigate/ })
+      page.getByRole("link", { name: /County evidence/ })
     ).toBeVisible();
     await expect(
       page.getByText("Loading published county evidence…")

@@ -6,7 +6,7 @@
 | --- | --- |
 | Status | Accepted for UX Reset Phase 1 encoding ([issue #407](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/407)) |
 | Parent epic | [#394 — Establish the UX Reset professional workspace foundation](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394) |
-| Last updated | 2026-10-11 |
+| Last updated | 2026-10-12 |
 | Companion docs | [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) (tokens and primitives), [helpdocs-phase1-content-contract.md](./helpdocs-phase1-content-contract.md) (public HelpDocs interpretation), [assistant-entry-points.md](./assistant-entry-points.md) (legacy assistant surfaces) |
 
 ## Sources and gaps
@@ -29,9 +29,9 @@ Coding agents and contributors **must not reopen settled UX Reset product decisi
 - Expanding **Ask Atlas** into navigation, page composition, or autonomous workflow execution.
 - Treating **review priority** or map color as **disease risk**, burden, or individual exposure.
 - Coercing **missing, suppressed, or unavailable** governed evidence into **zero**.
-- Turning **Review, Explore, Investigate, Compare, Action, Feed, or Assistant** into catch-all screens that duplicate other destinations.
+- Turning **Atlas Explorer, Compare, Ask Atlas, Feed, Settings, or Docs** into catch-all screens that duplicate other destinations. Atlas Explorer already combines map-led review, county evidence, and suggested follow-up; it does not absorb Compare or Ask Atlas.
 - Adding **saved-work libraries**, artifact history, or **autonomous assistant** scope to Reset V1 unless explicitly approved.
-- **Deleting or redirecting legacy routes** as part of Reset work (legacy stays available until a later cutover decision). The numbered experiment URLs `/variant_1` through `/variant_7` are the only exception, retired by [#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550): they return HTTP 404 and must not be restored. That decision does not approve removing any other legacy route.
+- **Deleting or redirecting legacy routes** outside the approved six-destination cutover ([#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197), map in [ux-reset-six-page-route-mapping.md](./ux-reset-six-page-route-mapping.md)). That cutover uses temporary HTTP 307 redirects for the mapped aliases only. The numbered experiment URLs `/variant_1` through `/variant_7` stay retired by [#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550): they return HTTP 404 and must not be restored or redirected.
 - Introducing a **second design system** or chrome color scheme instead of [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives.
 
 When implementation detail is unspecified, prefer **lean delivery**: smallest change that satisfies the story, reuse tokens and patterns first, and defer scope that epic #394 lists as out of scope.
@@ -49,7 +49,7 @@ Reset V1 is governed by **lean development**:
 
 | Phase | In scope | Out of scope (unless a new approved story says otherwise) |
 | --- | --- | --- |
-| **UX Reset Phase 1** | Authenticated professional workspace shell; **Review, Explore, Investigate, Compare, Action, Assistant, Feed**, Settings, and Docs destinations ([#394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394), [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406)); bounded context handoff; shared evidence/provenance presentation ([#409](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/409)); constitution encoded in repo guidance | Public scrollytelling front porch; new-user onboarding; saved-work library; general contextual-help system; legacy route removal except `/variant_1`–`/variant_7` ([#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550)) |
+| **UX Reset Phase 1** | Authenticated professional workspace shell; **Atlas Explorer, Compare, Ask Atlas, Feed, Settings, and Docs** ([#394](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/394), [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406), [#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)); bounded context handoff; shared evidence/provenance presentation ([#409](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/409)); constitution encoded in repo guidance | Public scrollytelling front porch; new-user onboarding; saved-work library; general contextual-help system; route removal outside the #197 alias map and `/variant_1`–`/variant_7` ([#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550)) |
 | **Phase 2 (planned)** | Public front porch and onboarding per epic #394 | — |
 
 **Reset V1 product posture:** professional workspace **requires authentication**. Unauthenticated users use existing sign-in and return to the intended destination. Geography is **national → state → county** as one hierarchy; default jurisdiction is **starting context**, not an access gate.
@@ -98,7 +98,7 @@ Use [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md): **semantic chrome tokens** for UI ch
 **Anti-patterns (reject in review):**
 
 - Using **red/green** as if Atlas were a clinical risk dashboard.
-- One **mega-page** that combines ranking, deep county narrative, compare matrices, and action plans because “users might need it.”
+- One **mega-page** that also absorbs Compare, Ask Atlas, or Feed because “users might need it.” Atlas Explorer keeps map-led review, county evidence, and suggested follow-up together; Compare stays a dedicated two-county page.
 - **Contextual help** popovers, coach marks, or site-wide “?” widgets in Reset V1 (see below).
 - **Ask Atlas** buttons that auto-navigate, pre-fill filters, or run workflows without explicit user navigation.
 
@@ -139,19 +139,16 @@ Interaction contract ([#409](https://github.com/Caraway-Labs/one-health-lyme-gap
 
 ## Page jobs (do not merge destinations)
 
-Each primary destination has **one job**. Cross-links and shared context hand off work; they do not duplicate full workflows. Shell and route homes: [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406).
+Each primary destination has **one job**. Cross-links and shared context hand off work; they do not duplicate full workflows. The October 11, 2026 workspace is six destinations ([#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)). Shell and route homes: [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406).
 
 | Destination | Job | Owns | Must not become |
 | --- | --- | --- | --- |
-| **Review** | **Bounded national/state operating picture**: where am I looking; does anything warrant attention; why; how complete is the evidence; what to inspect next ([#395](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/395)). National scope gives state orientation plus a **bounded** county set—**no default nationwide county leaderboard** (never 3,000+ county rank table). Preserve distinct **no-signal** vs **insufficient-evidence** outcomes. | Scope selectors, explainable shortlist (not numeric leaderboard), map/list parity, entry to Investigate | Full county dossier, Compare workspace, Explore-style open exploration, or export hub |
-| **Explore** | **Discover patterns** geographically and across measures (maps, distributions, explorer views). | Map/table parity, filters, shareable URL state | County action plans, literature chat, Feed, or settings |
-| **Investigate** | **Deep read** on one geography’s evidence bundle and interpretation. | County evidence panels, methodology context, justified follow-up questions | National compare grid, Feed reader, or workspace administration |
-| **Compare** | **Two-county** aligned evidence comparison in Reset V1 ([#398](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/398), [#418](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/418)): similarities and differences, availability and limitations visible; no winner/loser scoreboard. Do not silently expand beyond two counties without an approved scope change. | Side-by-side aligned measure rows (canonical non-map), optional paired maps, shared release/methodology | Open-ended dashboard, silent multi-county compare, or second Explore |
-| **Action** | **Bounded follow-up** after investigation ([#399](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/399)) via exactly two Reset V1 workflows: **Surveillance Planning** and **Evidence Brief / Communication**. Context enters from Investigate; no autonomous intervention. | Workflow shells, source-backed justification, export where approved, outbound resources with publisher metadata | Clinician/public resource center, campaign tooling, or placeholder categories |
-| **Assistant (Ask Atlas)** | **Answer-only** grounded responses; user stays in control of navigation ([#426](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/426)). | Attributed answers, source lists, conversation in assistant shell | Auto-routing, changing filters/maps, or running workflows |
+| **Atlas Explorer** | **Bounded national/state operating picture** plus one county’s evidence and suggested follow-up ([#395](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/395), [#413](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/413)): where am I looking; does anything warrant attention; why; how complete is the evidence; what to inspect next. National scope gives state orientation plus a **bounded** county set—**no default nationwide county leaderboard** (never 3,000+ county rank table). Preserve distinct **no-signal** vs **insufficient-evidence** outcomes. County evidence and suggested follow-up stay on this URL (`mode=evidence`, `mode=follow-up`). Suggested follow-up keeps the two Reset V1 workflows **Surveillance Planning** and **Evidence Brief / Communication** ([#399](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/399)). | Scope selectors, explainable shortlist (not numeric leaderboard), map/list parity, in-page county evidence | Compare workspace, Ask Atlas, Feed, or a separate Investigate or Action destination |
+| **Compare** | **Two-county** aligned evidence comparison in Reset V1 ([#398](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/398), [#418](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/418)): similarities and differences, availability and limitations visible; no winner/loser scoreboard. Do not silently expand beyond two counties without an approved scope change. | Side-by-side aligned measure rows (canonical non-map), optional paired maps, shared release/methodology | Open-ended dashboard, silent multi-county compare, or a second Explorer |
+| **Ask Atlas** | **Answer-only** grounded responses on the dedicated page; user stays in control of navigation ([#426](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/426)). Entry opens that page, not a drawer or modal. | Attributed answers, source lists, conversation in the assistant page | Auto-routing, changing filters/maps, or running workflows |
 | **Feed (Intelligence Feed)** | **Trusted-source aggregation** ([#402](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/402)): scan recent CDC, PubMed/NIH-style items; **open authoritative external links**; no in-app article reader or investigation trigger required. | Normalized feed list, publisher/source labels, quiet empty states | Personalized news product, alerts, saved items, AI summaries, or scraping in the browser |
 | **Settings** | Account, preferences, data rights | Profile and governance utilities | Analytics configuration surface for epidemiology |
-| **Docs** | Stable product and trust documentation | Links to `/docs`, privacy, responsible use, technical reproducibility reference | Inline replacement for Investigate |
+| **Docs** | Stable product and trust documentation | Links to `/docs`, privacy, responsible use, technical reproducibility reference | Inline replacement for county evidence |
 
 **Assistant / Ask Atlas (Reset rule):** answer-only; **the user navigates**. Do not add assistant-driven page transitions, silent context mutation, or “do this for me” automation in Reset V1. Legacy launcher behavior remains documented in [assistant-entry-points.md](./assistant-entry-points.md) until reset assistant stories supersede it.
 
@@ -174,10 +171,10 @@ Before new Reset UI:
 
 ## Legacy vs Reset routes
 
-- **Legacy** production routes (for example `/`, `/geographic_explorer`, `/investigate`) remain available as reference until an explicit cutover.
-- **Reset** professional routes live under the agreed namespace (for example `/app/*`) and follow this constitution even when legacy behavior differs.
-- Do not delete or redirect legacy URLs as part of constitution or Phase 1 shell work.
-- **[#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550)** retired only `/variant_1`–`/variant_7`. Those URLs return HTTP 404, including query strings. `/investigate` and `/geographic_explorer` stay. Do not treat that retirement as approval to remove other legacy pages.
+- **Reset** professional routes live under `/app/*` and follow this constitution.
+- **[#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)** redirects the mapped aliases (`/app`, `/app/explore`, `/app/investigate`, `/app/action`, `/overview`, `/geographic_explorer`, `/investigate`, and `/` with a legacy analytical query) to Atlas Explorer with HTTP 307. Query preservation follows [ux-reset-six-page-route-mapping.md](./ux-reset-six-page-route-mapping.md). Invalid county input is omitted; Atlas does not invent a county.
+- Routes the map marks out of scope stay, including `/`, `/assistant`, `/knowledge-graph`, trust pages, and auth utilities.
+- **[#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550)** retired `/variant_1`–`/variant_7`. Those URLs return HTTP 404, including query strings. Do not revive them and do not redirect them.
 
 ## Checklist for new Reset stories
 

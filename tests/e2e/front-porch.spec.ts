@@ -136,7 +136,7 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
   ).toBeVisible();
 });
 
-test("sign-in stays on the approved screen and public overview stays open", async ({
+test("sign-in stays on the approved screen and an overview bookmark opens Atlas Explorer", async ({
   page,
 }) => {
   await page.goto("/auth/sign-in?next=%2Fapp%2Freview");
@@ -148,8 +148,11 @@ test("sign-in stays on the approved screen and public overview stays open", asyn
     page.getByRole("link", { name: "Continue without an account" })
   ).toHaveCount(0);
   await page.goto("/overview");
-  await expect(page).toHaveURL(/\/overview\/?$/);
+  await expect(page).toHaveURL(/\/app\/review\/?$/);
   await expect(page).not.toHaveURL(/sign-in/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+  ).toBeVisible();
   await expectNoCountyPreselection(page);
 });
 
@@ -191,6 +194,6 @@ test("signed-in review entry does not preselect a county", async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/review\/?$/);
   await expectNoCountyPreselection(page);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Review" })
+    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
   ).toBeVisible();
 });

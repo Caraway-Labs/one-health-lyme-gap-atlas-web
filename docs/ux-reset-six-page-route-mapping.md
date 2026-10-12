@@ -5,7 +5,7 @@
 **Machine-readable map:** `src/features/ux-reset/workspace-route-migration.ts` (`recordedWorkspaceMigration`)  
 **Canonical path constant:** `ATLAS_EXPLORER_PATH` in `src/features/ux-reset/routes.ts`
 
-This document records the compatibility map. It does not install redirects, rename navigation, or replace Review, Explore, Investigate, or Action. Cutover is [#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197), and only after the Explorer view ([#413](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/413)) and the dedicated Ask Atlas page ([#424](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/424)) exist. [#198](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/198) updates product links and docs after that.
+This document records the compatibility map. [#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197) installs it: the professional sidebar lists the six destinations below, and middleware applies these redirects with HTTP 307 after the auth guard. The Explorer view ([#413](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/413)) and the dedicated Ask Atlas page ([#424](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/424)) are the landing surfaces. [#198](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/198) updates remaining product links and docs after that.
 
 The October 11, 2026 workspace is six destinations: **Atlas Explorer, Compare, Ask Atlas, Feed, Settings, Docs**. Atlas Explorer is map-led review and exploration, expandable county evidence, and Suggested follow-up on one URL. There is no separate Overview, Review, Explore, Investigate, Action, or Assistant side panel in that destination list. This map does not add a seventh destination.
 
@@ -69,18 +69,18 @@ Shared Reset parsers in `src/features/ux-reset/context-params.ts` decide what is
 | --- | --- | --- |
 | `scope` | Present. `ALL` or `[A-Z]{2}` is kept. Any other token becomes explicit `scope=ALL`, matching `parseUxResetSharedContext`. | `scope` |
 | `state` | Present and `scope` is absent. Same validation as `scope`. Overview and Investigation Workspace use `state` for this. | `scope` |
-| `county` | Exactly one five-digit FIPS. Invalid or more than one distinct FIPS is omitted. | `county` |
+| `county` | Exactly one five-digit FIPS. Invalid or more than one distinct FIPS is omitted, and the redirect writes `selection=required` so Explorer browse does not substitute another county. A URL that never included `county` does not get that marker. | `county` |
 | `compare` | Valid FIPS, de-duplicated, capped at two (`UX_RESET_COMPARE_COUNTY_LIMIT`). | `compare` |
 | `selected` | From `/app/explore`, only when `compare` did not yield a pair. From `/geographic_explorer`, a non-empty `selected` list wins over `compare`, because that page reads and updates `selected`. Same two-county cap. | `compare` |
 | `dataset` | One value matching `^[A-Za-z0-9._-]{1,64}$`. This is the release id. | `dataset` |
 | `period` | One real `YYYY-MM-DD`. | `period` |
-| `metric` | Only from `/app/explore`, one token matching `^[A-Za-z0-9._-]{1,128}$`, excluding the Geographic Explorer enums `score` and `completeness`. | `metric` |
+| `metric` | Explore measure ids and Geographic Explorer view metrics (`score`, `completeness`). Atlas Explorer does not read a measure, so every `metric` value is dropped. | dropped |
 
 Omitted `scope` stays omitted. The redirect must not write `scope=ALL` just because the parser's default is national. A written `scope=ALL` is an explicit location and blocks the saved starting view.
 
 `compare` is preserved on the Explorer URL even though today's Review handoff acceptance drops it. #197 reconciles that acceptance when Explorer is the page. This story does not change `UX_RESET_HANDOFF_ACCEPTANCE`.
 
-Geographic Explorer `metric=score` and `metric=completeness` are view metrics, not governed measure ids. They are dropped. A measure id that is not in the loaded catalog must also be dropped at render time (#413). It must not be replaced with the first catalog measure. `resolveRequestedMeasureId` still substitutes a default on today's Explore page; the cutover must not copy that substitution into Explorer.
+Geographic Explorer `metric=score` and `metric=completeness` are view metrics, not governed measure ids. Atlas Explorer has no measure control, so the redirect drops every `metric` value, including a governed measure id such as `reported-cases`. It must not be replaced with the first catalog measure. `resolveRequestedMeasureId` still substitutes a default on today's Explore page; the cutover must not copy that substitution into Explorer.
 
 `selected` never becomes `county`. A five-county Geographic Explorer selection keeps the first two valid FIPS and records truncation. Later counties are not a five-county compare.
 
@@ -101,7 +101,7 @@ These are dropped when an alias redirects. They are not Explorer state:
 | `page` | Geographic Explorer and Review/Explore list position | Page-local. Not copied across routes. |
 | `sort` | Review list control | Stays on `/app/review` because that path does not redirect. Dropped from any alias. |
 | `map_scope` | Explore map framing | Must not overwrite Review `scope`. |
-| `plan`, `role` | Action. Only `plan` is parsed. `evidence-brief` is the one workflow id. `role` is unread. | Suggested follow-up is the destination. The evidence-brief deep link is not a seventh page. |
+| `plan`, `role` | Action. Only `plan` is parsed. `evidence-brief` is the one workflow id. `role` is unread. | Other Action links redirect to suggested follow-up and drop `plan`. One `plan=evidence-brief` stays on `/app/action` so the evidence brief remains reachable until that workflow renders in follow-up. |
 | `return` | Compare (`review` or `investigate`) | Stays on `/app/compare`. `return=review` already targets `/app/review`. `return=investigate` still targets `/app/investigate` until #197 points that return at `mode=evidence`. |
 | `conversation` | `/assistant`, `/app/assistant`, `/knowledge-graph` | Stays on the Assistant URLs. Not copied to Explorer. |
 | `page_ref` | `/app/assistant` | Validated Ask Atlas page reference. Not a shared key, not a chat request field, and not retrieved evidence. |
@@ -186,7 +186,7 @@ Already covered by `tests/ux-reset-workspace-route-migration.test.ts`:
 - Six destinations, canonical path `/app/review`, live destination ids unchanged.
 - No production file imports the map.
 - Every alias row above, including bare investigate/action without `06037`.
-- Unsupported keys, scope-versus-state, measure id versus geographic metric, two-county cap.
+- Unsupported keys, scope-versus-state, dropped measure ids, two-county cap, evidence-brief staying on Action, and `selection=required` for an invalid county.
 - Retired variants and `/ux-lab` stay unmapped.
 - One redirect then a fixed point.
 - 307 and history replace are the recorded install policy, with redirects not installed.
