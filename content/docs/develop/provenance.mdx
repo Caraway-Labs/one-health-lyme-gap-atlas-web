@@ -28,7 +28,6 @@ From the observation you received, keep:
 | `source_published_at`, `atlas_acquired_at`, `atlas_processed_at` | Timestamps when governed. Null is not inferred freshness |
 | `limitations` | Interpretation limits. Preserve the list |
 | `evidence` | `resource_type` and `resource_id`, plus optional source, provenance, version, release, and uri fields |
-| `metadata_revision_id` | Consumer-safe metadata revision when present. The schema says it is not private lineage |
 
 `evidence.resource_type` on the contract's synthetic observation example is `observation`, and `resource_id` repeats the observation id. `provenance_ref` on a checked case-floor row was the same string as `observation_id`. That equality is not a second citation format. It is the provenance identity returned for that row.
 
@@ -70,9 +69,9 @@ The contract states that response time is not publisher freshness. A generated o
 - `OBSERVED` is a nonzero value under the measure's unit and limitations.
 - `ZERO` is a published numeric zero. It remains bounded by the measure's coverage and method.
 - `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require a null `value`. `SUPPRESSED` means the value was withheld. `MISSING` and `UNAVAILABLE` are gaps.
-- `NO_COUNTY_LINKED_RECORD` and `NO_RECORDS` keep publisher literals. The schema says neither establishes biological absence.
+- `NO_COUNTY_LINKED_RECORD` retains the literal `no_county_linked_record`. The schema says this is not evidence of absence.
 
-`surveillance_context`, when a release supplies it, can include evidence, methodology comparison, and temporal alignment. The schema says comparison is case-definition scope only, and alignment is descriptive. Omitted or null context does not assert comparability. Surveillance floors and gap scores are not diagnoses, individual risk estimates, or causal claims.
+Surveillance floors and gap scores are not diagnoses, individual risk estimates, or causal claims. `environmental_context`, when an observation includes it, is descriptive weather coverage. A null `environmental_context` does not supply that coverage.
 
 The same interpretation for people using the Atlas screens is in [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) and [Releases and methodology labels](/docs/releases-and-methodology).
 
@@ -83,7 +82,7 @@ The same interpretation for people using the Atlas screens is in [Evidence, prov
 | Success | HTTP 200 and `data` for the id you asked for |
 | Empty collection | `GET /v1/sources` can return HTTP 200 and `data: []` when a page is exhausted. Detail routes identify one id, so exhaustion is not their empty state |
 | Not found | HTTP 404 `RESOURCE_NOT_FOUND` |
-| Invalid parameters | HTTP 400 `INVALID_REQUEST`, including a GET body (`413`) and an overlong query (`414`) |
+| Invalid parameters | HTTP 400 `INVALID_REQUEST` for a bad query value. HTTP 413 `INVALID_REQUEST` when a GET request has a body. HTTP 414 `INVALID_REQUEST` when the query string is too long |
 | Unsupported filter or strata | HTTP 400 `UNSUPPORTED_FILTER` or `UNSUPPORTED_STRATIFICATION` |
 | Query too broad | HTTP 400 `QUERY_TOO_BROAD` |
 | Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` |

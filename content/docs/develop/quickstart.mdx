@@ -37,13 +37,15 @@ Use this table for the quickstart URL and the same query with a different county
 | Success, observed value | HTTP 200, `data` has a row, `value_state` is `OBSERVED`, `value` is numeric | Record the value, unit, period, `release_id`, and `semantic_version` |
 | Success, explicit zero | HTTP 200 and `value_state` `ZERO` | Keep the zero. The schema defines `ZERO` as numeric zero |
 | Success, gap or withheld value | HTTP 200 and `value` null with `MISSING`, `SUPPRESSED`, or `UNAVAILABLE` | Leave the value null. Do not substitute zero |
-| Success, publisher literal | HTTP 200 and `NO_COUNTY_LINKED_RECORD` or `NO_RECORDS` | Keep the literal the schema describes. Neither state establishes biological absence |
+| Success, publisher literal | HTTP 200 and `value_state` `NO_COUNTY_LINKED_RECORD` | Keep the literal `no_county_linked_record`. The schema says this is not evidence of absence |
 | Success, empty collection | HTTP 200, `data` is `[]`, `next_page_token` is null | No row matched. This is not HTTP 404 |
 | Not found | HTTP 404, `application/problem+json`, `code` `RESOURCE_NOT_FOUND` | The operation declares this code. A missing measure id on `GET /v1/measures/{measure_id}` returned it with detail `Measure not found.` |
 | Invalid parameters | HTTP 400, `code` `INVALID_REQUEST` | Fix the query. Missing year and dates returns detail `Supply a year or both start_date and end_date.` Sending `year` together with both dates returns detail `Use year or a date range, not both.` `page_size=0` and `geography_type=tract` also return `INVALID_REQUEST`. `tract` includes an `errors` entry because `geography_type` must be `county` or `state` |
 | Unsupported filter | HTTP 400, `code` `UNSUPPORTED_FILTER`, detail `This query filter is not supported in V1.` | Remove the extra parameter. `sort`, `aggregation`, and unknown query names returned this code |
 | Unsupported stratification | HTTP 400, `code` `UNSUPPORTED_STRATIFICATION`, detail `This release has no governed strata.` | Omit `stratification`. The current release has no strata |
-| Query too broad | HTTP 400, `code` `QUERY_TOO_BROAD` | The contract declares this when the query exceeds the pre-execution logical-result ceiling of 10,000. Narrow the county list or period. The ceiling is not a truncated page |
+| Query too broad | HTTP 400, `code` `QUERY_TOO_BROAD` | The contract names this code and does not publish a numeric ceiling. Narrow the county list or period and request the first page again |
+| Request body | HTTP 413, `code` `INVALID_REQUEST` | Canonical GET routes reject a request body |
+| Overlong query | HTTP 414, `code` `INVALID_REQUEST` | Shorten the query string. This status is separate from HTTP 400 |
 | Rate limited | HTTP 429, `code` `RATE_LIMITED`, header `Retry-After` | Wait the number of seconds in `Retry-After` when the header is present, then retry the same request. The public document does not publish a numeric quota |
 | Server unavailable | HTTP 503, header `Retry-After` | Wait when `Retry-After` is present, then retry. Canonical problem bodies use `application/problem+json` |
 | Conditional detail | HTTP 304, empty body | This applies to supported detail resources after `If-None-Match`, not to this observation collection |

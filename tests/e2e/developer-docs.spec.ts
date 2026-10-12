@@ -117,3 +117,21 @@ test("keeps the developer quickstart usable at 375px", async ({ page }) => {
   });
   expect(supportOverflow).toBeLessThanOrEqual(1);
 });
+
+test("renders contract value states and separate 413 and 414 rows", async ({
+  page,
+}) => {
+  await page.goto("/docs/develop/resources");
+  await expect(page.getByText("NO_RECORDS")).toHaveCount(0);
+  await expect(
+    page.getByRole("cell", { exact: true, name: "NO_COUNTY_LINKED_RECORD" })
+  ).toBeVisible();
+
+  await page.goto("/docs/develop/rest");
+  await expect(
+    page.getByRole("row", { name: /413\s+INVALID_REQUEST/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("row", { name: /414\s+INVALID_REQUEST/ })
+  ).toBeVisible();
+});

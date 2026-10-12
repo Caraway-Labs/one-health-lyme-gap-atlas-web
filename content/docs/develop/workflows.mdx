@@ -30,10 +30,10 @@ County analytics and display scores are a different route, `GET /v1/counties/{fi
 | Invalid parameters | HTTP 400 `INVALID_REQUEST` when the period is missing, when `year` is combined with a date range, or when `geography_type` is not `county` or `state` |
 | Unsupported filter | HTTP 400 `UNSUPPORTED_FILTER` for `sort`, `aggregation`, or an unknown parameter |
 | Unsupported stratification | HTTP 400 `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD` above the logical ceiling of 10,000 |
+| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The contract does not publish a numeric ceiling |
 | Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` |
 | Server unavailable | HTTP 503 and `Retry-After` |
-| Unknown or limited data | HTTP 200 with `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, or `NO_RECORDS`. Checked for FIPS `08001`: `MISSING` and `value` null |
+| Unknown or limited data | HTTP 200 with `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`. Checked for FIPS `08001`: `MISSING` and `value` null |
 
 ## Compare geographies
 
@@ -95,9 +95,7 @@ FIPS `08001` is outside the selected land-cover geographies. That request return
 | Query too broad | HTTP 400 `QUERY_TOO_BROAD` |
 | Rate limited | HTTP 429 and `Retry-After` |
 | Server unavailable | HTTP 503 and `Retry-After` |
-| Unknown or limited data | `coverage_status` of `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`, a null area field, or a null context object |
-
-`surveillance_context` is also optional. The schema says it is supplied only through an admitted data release. Null surveillance context does not assert a case definition, a lag, or a comparison.
+| Unknown or limited data | `coverage_status` of `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`, a null area field, or a null `environmental_context` |
 
 ## Reproduce and cite an observation
 

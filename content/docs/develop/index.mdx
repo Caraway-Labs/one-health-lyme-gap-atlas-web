@@ -7,7 +7,7 @@ These guides take a developer from no Atlas context to one successful public RES
 
 ## Access
 
-Ordinary public reads are anonymous HTTPS GET requests. They require no API key, no signed-in session, no SDK, and no MCP server. The production server in the public contract is `https://api.onehealthatlas.org`. The HTTP contract is `/v1`. The OpenAPI `info.version` is a separate application version.
+Ordinary public reads are anonymous HTTPS GET requests. They require no API key, no signed-in session, no SDK, and no MCP server. These guides call the public API at `https://api.onehealthatlas.org`. The HTTP contract is `/v1`. The OpenAPI `info.version` is a separate application version.
 
 Send the request URL with its query string. A collection returns `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json`.
 
@@ -33,14 +33,14 @@ The generated reference for that contract uses `/docs/api-reference`, with `disc
 
 ## Two public route families
 
-The public OpenAPI document contains two families. Read the family you called.
+These guides cover two route families. Read the family you called.
 
 | Family | Routes | Error shape |
 | --- | --- | --- |
 | Canonical current-release resources | Indicators, measures, observations, sources, methodologies, and geography identity | Problem details with a stable `code` |
 | Legacy Atlas analytics and exports | County and state review, scores, display geometry, rankings, and PDF reports | Existing status codes, including `422`. A problem body may omit `code` |
 
-Account, feedback, and conversational routes are outside this public document. Do not call them from these examples.
+Account, feedback, and conversational routes are not part of these read examples.
 
 ## Geography used in examples
 
