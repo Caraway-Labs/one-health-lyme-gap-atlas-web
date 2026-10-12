@@ -81,10 +81,27 @@ function restoreMobileNavigationTrigger(
   };
 }
 
-export function ResetProfessionalShell({ children }: { children: ReactNode }) {
+/** Production preference key. Story frames must not share this key. */
+export const RESET_PRO_SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
+
+type ResetProfessionalShellProps = {
+  children: ReactNode;
+  /** Used when this browser has no saved value for `sidebarStorageKey`. */
+  sidebarDefaultOpen?: boolean;
+  sidebarStorageKey?: string;
+};
+
+export function ResetProfessionalShell({
+  children,
+  sidebarDefaultOpen = true,
+  sidebarStorageKey = RESET_PRO_SIDEBAR_STORAGE_KEY,
+}: ResetProfessionalShellProps) {
   return (
     <ExploreCommittedNavigationProvider>
-      <SidebarProvider defaultOpen storageKey="ux-reset-pro-sidebar">
+      <SidebarProvider
+        defaultOpen={sidebarDefaultOpen}
+        storageKey={sidebarStorageKey}
+      >
         <AskAtlasChromeProvider>
           <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
         </AskAtlasChromeProvider>

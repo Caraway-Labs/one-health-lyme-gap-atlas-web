@@ -1,13 +1,22 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/nextjs-vite";
 import { PathnameContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
-import { useLayoutEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   RESET_ACCESS_NAV,
   RESET_WORKSPACE_NAV,
 } from "@/features/ux-reset/paths";
-import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
+import {
+  RESET_PRO_SIDEBAR_STORAGE_KEY,
+  ResetProfessionalShell,
+} from "@/features/ux-reset/professional-shell";
 
 import { useDomClick } from "./support/use-dom-click";
 
@@ -19,6 +28,23 @@ const shellRouteHrefs = [
     (route) => route.href
   ),
 ];
+
+const SidebarStorageKeyContext = createContext(RESET_PRO_SIDEBAR_STORAGE_KEY);
+
+function WithStorySidebarKey(
+  Story: Parameters<Decorator>[0],
+  context: Parameters<Decorator>[1]
+) {
+  const storageKey = useMemo(
+    () => `${RESET_PRO_SIDEBAR_STORAGE_KEY}:${context.id}`,
+    [context.id]
+  );
+  return (
+    <SidebarStorageKeyContext.Provider value={storageKey}>
+      <Story />
+    </SidebarStorageKeyContext.Provider>
+  );
+}
 
 type ShellStoryProps = {
   route: string;
@@ -41,13 +67,11 @@ function ShellStory({ route, startCollapsed }: ShellStoryProps) {
 }
 
 function ShellFrame({ route, startCollapsed }: ShellStoryProps) {
+  const storageKey = useContext(SidebarStorageKeyContext);
   const [pathname, setPathname] = useState(route);
   useLayoutEffect(() => {
-    window.localStorage.setItem(
-      "ux-reset-pro-sidebar",
-      startCollapsed ? "false" : "true"
-    );
-  }, [startCollapsed]);
+    window.localStorage.setItem(storageKey, startCollapsed ? "false" : "true");
+  }, [startCollapsed, storageKey]);
   const frameRef = useDomClick((event) => {
     const target = event.target;
     if (!(target instanceof Element)) {
@@ -67,7 +91,10 @@ function ShellFrame({ route, startCollapsed }: ShellStoryProps) {
     <PathnameContext.Provider value={pathname}>
       <TooltipProvider>
         <div ref={frameRef}>
-          <ResetProfessionalShell>
+          <ResetProfessionalShell
+            sidebarDefaultOpen={!startCollapsed}
+            sidebarStorageKey={storageKey}
+          >
             <h1 className="sr-only">Reset professional shell</h1>
             <p>
               Synthetic workspace content for Adams County, Colorado (08001).
@@ -85,6 +112,7 @@ const meta = {
   title: "Navigation and Layout/Reset professional shell",
   component: ShellStory,
   args: { route: "/app/review", startCollapsed: false },
+  decorators: [WithStorySidebarKey],
   argTypes: {
     route: { control: "select", options: shellRouteHrefs },
     startCollapsed: { control: "boolean" },
@@ -99,7 +127,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Purpose: authenticated professional workspace chrome. Source: src/features/ux-reset/professional-shell.tsx. Limitations: the route control and sidebar clicks update a local pathname substitute. They do not open the app. Ask Atlas is a catalog substitute with no chat request, sign-out, or feedback transport. Sidebar preference uses an isolated storage key cleared between stories. The brand mark is the approved raster, bundled for the project subpath. Use Hide navigation or Show navigation on desktop. On a narrow viewport, use Open navigation, then Escape, Close navigation, or Dismiss navigation. Autodocs keeps each shell in its own frame.",
+          "Purpose: authenticated professional workspace chrome. Source: src/features/ux-reset/professional-shell.tsx. Limitations: the route control and sidebar clicks update a local pathname substitute. They do not open the app. Ask Atlas is a catalog substitute with no chat request, sign-out, or feedback transport. Each story seeds its own sidebar storage key to the declared open state and does not write the shared application key. The brand mark is the approved raster, bundled for the project subpath. Use Hide navigation or Show navigation on desktop. On a narrow viewport, use Open navigation, then Escape, Close navigation, or Dismiss navigation. Autodocs keeps each shell in its own frame.",
       },
       story: { inline: false },
     },

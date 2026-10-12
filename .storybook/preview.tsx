@@ -5,6 +5,15 @@ import "../src/app/globals.css";
 const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
 const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
 
+function clearStoragePrefix(prefix: string): void {
+  const keys = Object.keys(window.localStorage);
+  for (const key of keys) {
+    if (key === prefix || key.startsWith(`${prefix}:`)) {
+      window.localStorage.removeItem(key);
+    }
+  }
+}
+
 function storyParameter(
   parameters: Preview["parameters"],
   key: "atlasLandmark" | "atlasLayout"
@@ -39,7 +48,7 @@ const preview: Preview = {
   ],
   loaders: [
     async () => {
-      window.localStorage.removeItem(SIDEBAR_STORAGE_KEY);
+      clearStoragePrefix(SIDEBAR_STORAGE_KEY);
       window.localStorage.removeItem(CHAT_STORAGE_KEY);
     },
   ],
