@@ -1110,6 +1110,61 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("does not substitute a county when an invalid arrival requires a choice", async () => {
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          requireExplicitCountySelection
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Adams",
+                fips: "08001",
+                reasonText: "Adams was returned by the method.",
+              }),
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Boulder",
+                fips: "08013",
+                reasonText: "Boulder was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          onCountyChange={onCountyChange}
+        />
+      </QueryClientProvider>
+    );
+    const rows = await screen.findAllByTestId("review-candidate");
+    const picker =
+      screen.getByTestId("review-published-county-select").textContent ?? "";
+    expect({
+      asksForChoice: picker.includes("Select a published county"),
+      current: rows.map((row) => row.getAttribute("aria-current")),
+      fips: rows.map((row) => row.dataset.fips),
+      preview: screen.queryByTestId("review-county-preview"),
+      published: onCountyChange.mock.calls,
+    }).toStrictEqual({
+      asksForChoice: true,
+      current: [null, null],
+      fips: ["08001", "08013"],
+      preview: null,
+      published: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
+    expect(onCountyChange).toHaveBeenCalledWith("08013", "push");
+    view.unmount();
+  });
+
   it("clears the URL county when every candidate FIPS is out of scope", async () => {
     const onCountyChange =
       vi.fn<(fips: string | null, history: "push" | "replace") => void>();

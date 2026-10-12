@@ -211,7 +211,7 @@ function roleLabel(role: UserProfileWriteRole | null): string {
 }
 
 const STARTING_VIEW_SAVED =
-  "Starting view saved. It will apply the next time you open Review without a specific view.";
+  "Starting view saved. It will apply the next time you open Atlas Explorer without a specific view.";
 
 const STARTING_VIEW_OPTION_CLASS =
   "border-input has-[:checked]:border-ring has-[:checked]:bg-accent flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 text-sm font-medium";
@@ -604,7 +604,8 @@ export function SettingsProfileForm() {
             className="type-small text-muted-foreground"
             id="starting-view-hint"
           >
-            This applies the next time you open Review without a specific view.
+            This applies the next time you open Atlas Explorer without a
+            specific view.
           </p>
           <label
             className="grid gap-2 text-sm font-medium"

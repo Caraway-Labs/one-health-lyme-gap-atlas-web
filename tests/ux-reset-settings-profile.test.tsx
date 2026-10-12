@@ -172,7 +172,7 @@ describe("Settings profile form", () => {
         confirmed: true,
         role: "status",
         text: expect.stringContaining(
-          "Starting view saved. It will apply the next time you open Review without a specific view."
+          "Starting view saved. It will apply the next time you open Atlas Explorer without a specific view."
         ),
       });
     });

@@ -96,7 +96,10 @@ const stories: { id: string; text: string }[] = [
   { id: `${preview}--limited-qualification`, text: "Limited" },
   { id: `${preview}--missing-metadata`, text: "Unavailable" },
   { id: `${preview}--long-references`, text: "Synthetic candidate limitation" },
-  { id: `${preview}--dropped-context`, text: "Review sort stays on Review" },
+  {
+    id: `${preview}--dropped-context`,
+    text: "Sort stays on Atlas Explorer browse",
+  },
 ];
 
 const axeStories = [
@@ -375,9 +378,9 @@ test.describe("P0 evidence catalog", () => {
     await hide.click();
     const show = page.getByRole("button", { name: "Show navigation" });
     await expect(show).toBeVisible();
-    await page.getByRole("link", { name: "Investigate" }).click();
+    await page.getByRole("link", { name: "Compare" }).click();
     await expect(
-      page.getByText("Active catalog route: /app/investigate")
+      page.getByText("Active catalog route: /app/compare")
     ).toBeVisible();
     const launcher = page.getByTestId("ask-atlas-launcher");
     await expect(launcher).toHaveAttribute("href", "/app/assistant");

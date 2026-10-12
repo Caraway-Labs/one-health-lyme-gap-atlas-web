@@ -83,18 +83,18 @@ export function reviewHumanFloorEvidence(
 
 export function ReviewPublishedCountyPreview({
   county,
-  releaseId,
   href,
+  onOpen,
   onViewCountyEvidence,
   openRef,
-  onOpen,
+  releaseId,
 }: {
   county: ExploreCountyIdentity;
-  releaseId: string;
   href: string;
+  onOpen: (fips: string) => void;
   onViewCountyEvidence?: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
-  onOpen: (fips: string) => void;
+  releaseId: string;
 }) {
   const query = useQuery({
     queryKey: ["ux-reset-review-published-county", releaseId, county.fips],
@@ -153,12 +153,12 @@ export function ReviewPublishedCountyPreview({
           buttonVariants(),
           "ux-reset-review-open hover:bg-primary"
         )}
-        data-variant="primary"
         data-testid="review-investigate"
+        data-variant="primary"
         href={href}
         onClick={() => onOpen(county.fips)}
       >
-        Open Investigate
+        County evidence
       </Link>
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">

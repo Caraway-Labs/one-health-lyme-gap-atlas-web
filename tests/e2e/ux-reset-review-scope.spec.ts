@@ -235,7 +235,7 @@ test.describe("Review national and state scope controls", () => {
     await expect(handoff).toHaveAttribute("data-county", "08001");
     const investigateNav = page
       .getByRole("navigation", { name: "Professional workspace" })
-      .getByRole("link", { name: "Investigate" });
+      .getByRole("link", { name: "Compare" });
     if (testInfo.project.name.includes("mobile")) {
       await page.getByRole("button", { name: "Open navigation" }).click();
     }

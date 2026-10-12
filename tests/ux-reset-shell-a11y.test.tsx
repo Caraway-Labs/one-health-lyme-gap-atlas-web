@@ -89,7 +89,7 @@ describe("UX Reset shell accessibility", () => {
       navigation
         .querySelector('a[href="/app/review"]')
         ?.getAttribute("aria-label")
-    ).toBe("Review");
+    ).toBe("Atlas Explorer");
     expect(navigation.querySelector('a[href="/overview"]')).toBeNull();
     expect(
       screen.queryByRole("link", { name: "Open legacy Atlas" })

@@ -25,7 +25,7 @@ export function ResetPlaceholderPage({ routeId }: ResetPlaceholderPageProps) {
   const searchParams = useSearchParams();
   const route = resetRouteById(routeId);
   const destinationRoutes = RESET_ROUTES.filter(
-    (candidate) => candidate.id !== "overview" && !candidate.externalHref
+    (candidate) => candidate.navGroup !== "alias" && !candidate.externalHref
   );
   const siblingRoutes = destinationRoutes.filter(
     (candidate) => candidate.id !== route.id
@@ -58,14 +58,14 @@ export function ResetPlaceholderPage({ routeId }: ResetPlaceholderPageProps) {
         <Card>
           <CardHeader>
             <h2 className="type-card">
-              {route.id === "overview"
+              {route.navGroup === "alias"
                 ? "Workspace destinations"
                 : "Other workspace destinations"}
             </h2>
           </CardHeader>
           <CardContent>
             <ul className="ux-reset-destination-list">
-              {(route.id === "overview"
+              {(route.navGroup === "alias"
                 ? destinationRoutes
                 : siblingRoutes
               ).map((candidate) => (

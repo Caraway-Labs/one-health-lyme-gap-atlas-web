@@ -32,7 +32,7 @@ test("keeps the design-system gallery unlinked and keyboard-reachable", async ({
 
 test("honors reduced motion on the analytical shell", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/geographic_explorer");
+  await page.goto("/account");
   await expect(page.locator(".atlas-sidebar")).toHaveCSS(
     "transition-duration",
     "1e-05s"

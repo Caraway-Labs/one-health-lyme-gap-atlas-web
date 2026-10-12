@@ -306,7 +306,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(previewState.target).toContain("compare=08001");
     expect(previewState.target).toContain("08013");
     await expect(page.getByTestId("review-preview-dropped")).toContainText(
-      "Review sort stays on Review"
+      "Sort stays on Atlas Explorer browse"
     );
     await expect(page.getByTestId("review-preview-guardrail")).toContainText(
       "not a diagnosis"
@@ -314,7 +314,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(await rowVisibleInRankList(page, "36024")).toBe(true);
 
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36024/);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
@@ -322,15 +322,20 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page).not.toHaveURL(/sort=/);
     await expect(page).not.toHaveURL(/page=/);
     await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
       "36024"
     );
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-release",
       "alpha-2026"
     );
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Suffolk");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Atlas Explorer"
+    );
+    await expect(page.getByTestId("explorer-county-heading")).toHaveText(
+      "Suffolk"
+    );
 
     await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/\/app\/review/);
@@ -351,8 +356,8 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page.locator('button[data-fips="36024"]')).toBeFocused();
 
     await page.goForward({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/\/app\/investigate/);
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page).toHaveURL(/mode=evidence/);
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
       "36024"
     );
@@ -455,11 +460,16 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(listHref).toBe(mapHref);
 
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36003/);
     await expect(page).toHaveURL(/period=2023-01-01/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Orange");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Atlas Explorer"
+    );
+    await expect(page.getByTestId("explorer-county-heading")).toHaveText(
+      "Orange"
+    );
   });
 
   test("keeps a direct county link and reload on the preview", async ({
@@ -549,11 +559,11 @@ test.describe("Review county preview and Investigate handoff", () => {
       "36024"
     );
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(
       page.getByText("Governed measures could not be loaded.")
     ).toBeVisible();
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
       "36024"
     );

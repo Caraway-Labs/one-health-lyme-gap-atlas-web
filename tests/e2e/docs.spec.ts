@@ -301,7 +301,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   const reviewPath = "/app/review?scope=NY&county=36061&sort=score";
   await page.goto(reviewPath);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Review" })
+    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
   ).toBeVisible();
 
   if (testInfo.project.name.includes("mobile")) {
@@ -391,30 +391,27 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   expect(workspaceUrl.searchParams.get("county")).toBe("36061");
   expect(workspaceUrl.searchParams.get("sort")).toBe("score");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Review" })
+    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
   ).toBeVisible();
 });
 
-test("opens the configured docs destination from the analytical sidebar", async ({
+test("opens the configured docs destination from the workspace sidebar", async ({
   page,
 }, testInfo) => {
-  await page.goto("/overview");
+  await page.goto("/app/review");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
   const docsLink = page.getByRole("link", {
-    name: "Docs",
+    name: "Docs, opens in a new tab",
   });
 
-  await expect(docsLink).toHaveAttribute(
-    "href",
-    "https://onehealthatlas.org/docs"
-  );
+  await expect(docsLink).toHaveAttribute("href", "/docs");
   await expect(docsLink).toHaveAttribute("target", "_blank");
   await expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
 
   const newTab = page.waitForEvent("popup");
   await docsLink.click();
   const docsPage = await newTab;
-  await expect(docsPage).toHaveURL("https://onehealthatlas.org/docs");
+  await expect(docsPage).toHaveURL(/\/docs\/?$/);
 });

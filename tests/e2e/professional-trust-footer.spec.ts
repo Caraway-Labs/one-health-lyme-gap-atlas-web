@@ -192,9 +192,8 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
     await route.fulfill({ status: 200, body: "{}" });
   });
 
-  await page.goto("/app");
-  await page.goto("/overview");
-  await expect.poll(() => new URL(page.url()).pathname).toBe("/overview");
+  await page.goto("/");
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/");
 
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
@@ -210,21 +209,10 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
     localStorage.setItem("amplitude_unsent", "vendor-local");
   });
 
-  try {
-    await page.goBack({ timeout: 5_000, waitUntil: "commit" });
-  } catch (error) {
-    const message = String(error);
-    if (
-      !message.includes("Execution context was destroyed") &&
-      !message.includes("net::ERR_ABORTED") &&
-      !message.includes("frame was detached")
-    ) {
-      throw error;
-    }
-  }
+  await page.goto("/app/review");
   await expect
     .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
-    .toBe("/app");
+    .toBe("/app/review");
   await page.waitForLoadState("domcontentloaded");
 
   await expect

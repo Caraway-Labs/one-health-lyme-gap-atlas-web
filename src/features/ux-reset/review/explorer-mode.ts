@@ -8,6 +8,13 @@ export const EXPLORER_MODE_PARAM = "mode" as const;
 export const EXPLORER_EVIDENCE_MODE = "evidence" as const;
 export const EXPLORER_FOLLOW_UP_MODE = "follow-up" as const;
 
+/**
+ * Alias arrivals that named `county` but did not yield one FIPS.
+ * Browse must not substitute another county while this marker is present.
+ */
+export const EXPLORER_SELECTION_PARAM = "selection" as const;
+export const EXPLORER_SELECTION_REQUIRED = "required" as const;
+
 export const EXPLORER_COUNTY_MODES = [
   EXPLORER_EVIDENCE_MODE,
   EXPLORER_FOLLOW_UP_MODE,
@@ -28,6 +35,15 @@ export function parseExplorerCountyMode(
 ): ExplorerCountyMode | null {
   if (value === EXPLORER_EVIDENCE_MODE || value === EXPLORER_FOLLOW_UP_MODE) {
     return value;
+  }
+  return null;
+}
+
+export function parseExplorerCountySelection(
+  value: string
+): typeof EXPLORER_SELECTION_REQUIRED | null {
+  if (value === EXPLORER_SELECTION_REQUIRED) {
+    return EXPLORER_SELECTION_REQUIRED;
   }
   return null;
 }
@@ -76,16 +92,22 @@ export function hrefWithExplorerMode(
 }
 
 /**
- * Compare's return link restores expanded county evidence only when this
- * Compare URL carried one exact Explorer mode and the return target is Review.
- * Any other return target or mode token is left unchanged.
+ * Compare's return link restores expanded county evidence when this Compare
+ * URL carried one exact Explorer mode and the return target is Review.
+ * `return=investigate` always opens Atlas Explorer county evidence.
  */
 export function compareReturnHrefWithExplorerMode(input: {
   href: string | null;
   modeValues: readonly string[];
   returnTarget: string | null;
 }): string | null {
-  if (!(input.href && input.returnTarget === "review")) {
+  if (!input.href) {
+    return input.href;
+  }
+  if (input.returnTarget === "investigate") {
+    return hrefWithExplorerMode(input.href, EXPLORER_EVIDENCE_MODE);
+  }
+  if (input.returnTarget !== "review") {
     return input.href;
   }
   const query = resolveExplorerModeQuery(input.modeValues);
