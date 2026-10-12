@@ -96,7 +96,7 @@ const stories: { id: string; text: string }[] = [
   { id: `${preview}--limited-qualification`, text: "Limited" },
   { id: `${preview}--missing-metadata`, text: "Unavailable" },
   { id: `${preview}--long-references`, text: "Synthetic candidate limitation" },
-  { id: `${preview}--dropped-context`, text: "not low priority" },
+  { id: `${preview}--dropped-context`, text: "Review sort stays on Review" },
 ];
 
 const axeStories = [
@@ -283,22 +283,85 @@ test.describe("P0 evidence catalog", () => {
     expect(traffic.blocked).toEqual([]);
   });
 
-  test("review actions update the preview harness without a model request", async ({
+  test("review actions come from onOpen and keep the synthetic handoff", async ({
     page,
   }) => {
     const traffic = track(page);
     await openStory(page, `${preview}--rationale`);
-    await expect(page.getByText("Adams County, Colorado")).toBeVisible();
-    await page.getByRole("link", { name: "Compare" }).click();
     await expect(page.getByTestId("preview-action")).toHaveText(
-      "Last preview action: Compare for 08001"
+      "Last preview action: None"
     );
-    await page.getByRole("link", { name: "Open Investigate" }).click();
+    const investigate = page.getByTestId("review-investigate");
+    const compare = page.getByTestId("review-compare");
+    await expect(investigate).toHaveAttribute("href", /dataset=alpha-2026/);
+    await expect(investigate).toHaveAttribute("href", /county=08001/);
+    await expect(compare).toHaveAttribute("href", /dataset=alpha-2026/);
+    await compare.click();
     await expect(page.getByTestId("preview-action")).toHaveText(
-      "Last preview action: Open Investigate for 08001"
+      "Last preview action: Opened county 08001 (1)"
     );
-    await expect(page.getByTestId("tier1-surveillance-priority")).toBeVisible();
+    await investigate.click();
+    await expect(page.getByTestId("preview-action")).toHaveText(
+      "Last preview action: Opened county 08001 (2)"
+    );
+    await openStory(page, `${preview}--long-references`);
+    await expect(page.getByTestId("preview-action")).toHaveText(
+      "Last preview action: None"
+    );
+    await page.getByText("Inspect provenance").click();
+    const source = page.getByRole("link", { name: "Open source reference" });
+    await source.evaluate((anchor) => {
+      anchor.addEventListener(
+        "click",
+        (event) => {
+          event.preventDefault();
+        },
+        { capture: true }
+      );
+    });
+    await source.click();
+    await expect(page.getByTestId("preview-action")).toHaveText(
+      "Last preview action: None"
+    );
+    await page.getByText("Model and as-of details").click();
+    const details = page.getByTestId("tier1-model-details");
+    await expect(details).toContainText("alpha-2026");
+    await expect(details).not.toContainText("governed-2026-09-18");
+    await openStory(page, `${preview}--dropped-context`);
+    await expect(
+      page.getByTestId("tier1-surveillance-priority")
+    ).toHaveAttribute("data-tier", "HIGH");
+    await expect(page.getByText("not low priority")).toHaveCount(0);
     expect(traffic.blocked).toEqual([]);
+  });
+
+  test("normal tier and provenance use alpha-2026 while mismatch stays withheld", async ({
+    page,
+  }) => {
+    await openStory(page, `${tier1}--high-sufficient`);
+    await expect(page.getByTestId("tier1-synthetic-notice")).toContainText(
+      "relabeled"
+    );
+    await page.getByText("Model and as-of details").click();
+    const details = page.getByTestId("tier1-model-details");
+    await expect(details).toContainText("alpha-2026");
+    await expect(details).not.toContainText("governed-2026-09-18");
+    await openStory(page, `${tier1}--release-mismatch`);
+    const mismatch = page.getByTestId("tier1-surveillance-priority");
+    await expect(mismatch).toContainText("not low priority");
+    await expect(mismatch).not.toHaveAttribute("data-tier", "LOW");
+    await openStory(page, `${provenance}--full-reason`);
+    await page.getByText("Inspect provenance").click();
+    await page.getByText("Technical reproducibility identifiers").click();
+    await expect(page.getByText("alpha-2026")).toBeVisible();
+    await openStory(page, `${hierarchy}--with-model`);
+    await expect(
+      page.locator("[data-release='alpha-2026']").first()
+    ).toBeVisible();
+    await page.getByText("Model and as-of details").click();
+    await expect(page.getByTestId("tier1-model-details")).toContainText(
+      "alpha-2026"
+    );
   });
 
   test("desktop shell collapses, follows local routes, and keeps Ask Atlas local", async ({
@@ -379,6 +442,40 @@ test.describe("P0 evidence catalog", () => {
     await expect(page.locator("#ux-reset-pro-navigation")).toHaveCount(0);
     const frame = page.frameLocator("iframe").first();
     await expect(frame.locator("#ux-reset-pro-navigation")).toHaveCount(1);
+  });
+
+  test("shell docs keep each story's declared sidebar state together", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`iframe.html?id=${shell}--docs&viewMode=docs`);
+    const declared = [
+      { id: `${shell}--review`, label: "Hide navigation" },
+      { id: `${shell}--workspace-overview`, label: "Hide navigation" },
+      { id: `${shell}--investigate`, label: "Hide navigation" },
+      { id: `${shell}--collapsed`, label: "Show navigation" },
+    ] as const;
+    await expect
+      .poll(
+        () =>
+          declared.filter((story) =>
+            page
+              .frames()
+              .some((frame) => frame.url().includes(`id=${story.id}`))
+          ).length
+      )
+      .toBe(declared.length);
+    for (const story of declared) {
+      const frame = page
+        .frames()
+        .find((item) => item.url().includes(`id=${story.id}`));
+      if (!frame) {
+        throw new Error(`Missing shell frame for ${story.id}`);
+      }
+      await expect(
+        frame.getByRole("button", { name: story.label })
+      ).toBeVisible();
+    }
   });
 });
 
