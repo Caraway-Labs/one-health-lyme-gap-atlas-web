@@ -71,7 +71,7 @@ Shared Reset parsers in `src/features/ux-reset/context-params.ts` decide what is
 | `state` | Present and `scope` is absent. Same validation as `scope`. Overview and Investigation Workspace use `state` for this. | `scope` |
 | `county` | Exactly one five-digit FIPS. Invalid or more than one distinct FIPS is omitted. | `county` |
 | `compare` | Valid FIPS, de-duplicated, capped at two (`UX_RESET_COMPARE_COUNTY_LIMIT`). | `compare` |
-| `selected` | Only from `/app/explore` or `/geographic_explorer`, and only when `compare` did not yield a pair. Same two-county cap. | `compare` |
+| `selected` | From `/app/explore`, only when `compare` did not yield a pair. From `/geographic_explorer`, a non-empty `selected` list wins over `compare`, because that page reads and updates `selected`. Same two-county cap. | `compare` |
 | `dataset` | One value matching `^[A-Za-z0-9._-]{1,64}$`. This is the release id. | `dataset` |
 | `period` | One real `YYYY-MM-DD`. | `period` |
 | `metric` | Only from `/app/explore`, one token matching `^[A-Za-z0-9._-]{1,128}$`, excluding the Geographic Explorer enums `score` and `completeness`. | `metric` |

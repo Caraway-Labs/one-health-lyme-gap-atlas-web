@@ -279,36 +279,54 @@ function selectedMaySupplyCompare(pathname: string): boolean {
   );
 }
 
+function compareFromValues(
+  values: readonly string[],
+  source: CompareSource
+): { compare: string[]; source: CompareSource; truncated: boolean } | null {
+  const compare = mergeCompareQueryValues(values);
+  if (compare.length === 0) {
+    return null;
+  }
+  return {
+    compare,
+    source,
+    truncated: validFipsTokens(values).length > UX_RESET_COMPARE_COUNTY_LIMIT,
+  };
+}
+
+/**
+ * Geographic Explorer reads and updates `selected`. An inherited `compare`
+ * query can sit unused on that URL, so a non-empty `selected` list wins.
+ * `/app/explore` still keeps a parsed `compare` pair ahead of `selected`.
+ */
 function resolveCompare(
   pathname: string,
   searchParams: URLSearchParams
 ): { compare: string[]; source: CompareSource | null; truncated: boolean } {
-  const fromCompare = searchParams.has("compare")
-    ? mergeCompareQueryValues(searchParams.getAll("compare"))
+  const compareValues = searchParams.has("compare")
+    ? searchParams.getAll("compare")
     : [];
-  if (fromCompare.length > 0) {
-    return {
-      compare: fromCompare,
-      source: "compare",
-      truncated:
-        validFipsTokens(searchParams.getAll("compare")).length >
-        UX_RESET_COMPARE_COUNTY_LIMIT,
-    };
-  }
-  if (!selectedMaySupplyCompare(pathname) || !searchParams.has("selected")) {
-    return { compare: [], source: null, truncated: false };
-  }
-  const selected = mergeCompareQueryValues(searchParams.getAll("selected"));
-  if (selected.length === 0) {
-    return { compare: [], source: null, truncated: false };
-  }
-  return {
-    compare: selected,
-    source: "selected",
-    truncated:
-      validFipsTokens(searchParams.getAll("selected")).length >
-      UX_RESET_COMPARE_COUNTY_LIMIT,
+  const selectedValues =
+    selectedMaySupplyCompare(pathname) && searchParams.has("selected")
+      ? searchParams.getAll("selected")
+      : [];
+  const empty = {
+    compare: [],
+    source: null,
+    truncated: false,
   };
+  if (pathname === PUBLIC_GEOGRAPHIC_EXPLORER_PATH) {
+    return (
+      compareFromValues(selectedValues, "selected") ??
+      compareFromValues(compareValues, "compare") ??
+      empty
+    );
+  }
+  return (
+    compareFromValues(compareValues, "compare") ??
+    compareFromValues(selectedValues, "selected") ??
+    empty
+  );
 }
 
 function isLegacyGeographicMetric(value: string): boolean {

@@ -341,6 +341,23 @@ describe("six-page workspace route migration", () => {
     );
   });
 
+  it("prefers Geographic Explorer selected over an inherited compare list", () => {
+    expect(
+      redirectView(
+        migrate(
+          "/geographic_explorer",
+          "compare=06037,06059&selected=06001,06013"
+        )
+      )
+    ).toStrictEqual(
+      expectedRedirect({
+        droppedKeys: ["compare"],
+        mode: "browse",
+        query: { compare: "06001,06013" },
+      })
+    );
+  });
+
   it("caps a Geographic Explorer selection at two counties", () => {
     expect(
       redirectView(
