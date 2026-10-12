@@ -35,7 +35,7 @@ function UncertaintyStory({ preset }: { preset: UncertaintyPreset }) {
 const meta = {
   title: "County/Uncertainty panel",
   component: UncertaintyStory,
-  parameters: { layout: "padded" },
+  parameters: { atlasLandmark: "story", layout: "padded" },
   args: { preset: "complete" },
   argTypes: { preset: { control: "select", options: presets } },
 } satisfies Meta<typeof UncertaintyStory>;

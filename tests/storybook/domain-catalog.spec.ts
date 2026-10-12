@@ -27,7 +27,7 @@ const stories: { id: string; text: string }[] = [
   },
   {
     id: "overview-results-table--populated",
-    text: "Boulder County, Colorado",
+    text: "Boulder County, CO",
   },
   { id: "overview-results-table--empty", text: "Complete county list" },
   {
@@ -176,16 +176,18 @@ test.describe("Domain catalog rows 34-46", () => {
   }) => {
     const blocked = track(page);
     await openStory(page, "county-evidence-panel--published");
-    await page
-      .getByRole("button", { name: "Show community context and completeness" })
-      .click();
+    const community = page.locator("summary", {
+      hasText: "Show community context and completeness",
+    });
+    await community.focus();
+    await page.keyboard.press("Enter");
     await expect(page.getByText("42th percentile")).toBeVisible();
     await openStory(page, "atlas-evidence-snapshot--missing");
-    await page
-      .getByRole("button", {
-        name: "Technical release and methodology identifiers",
-      })
-      .click();
+    const technical = page.locator("summary", {
+      hasText: "Technical release and methodology identifiers",
+    });
+    await technical.focus();
+    await page.keyboard.press("Enter");
     await expect(page.getByText("Unavailable").first()).toBeVisible();
     expect(blocked).toEqual([]);
   });
@@ -215,17 +217,31 @@ test.describe("Domain catalog rows 34-46", () => {
     await page.getByRole("button", { name: "CO: 2 matching counties" }).click();
     await expect(page.getByText("Selected state CO")).toBeVisible();
     await openStory(page, "geographic-explorer-evidence-table--populated");
+    const evidence = page.getByRole("region", {
+      name: "County evidence values",
+    });
+    await evidence.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect
+      .poll(async () => evidence.evaluate((node) => node.scrollLeft > 0))
+      .toBe(true);
     await page.getByRole("button", { name: /Wake County, NC/ }).click();
     await expect(page.getByText("Selected Wake County (37183)")).toBeVisible();
     await openStory(page, "geographic-explorer-scatter-plot--points");
     const boulder = page.getByRole("button", {
-      name: /Select Boulder County, Colorado/,
+      name: /Select Boulder County, CO/,
     });
     await boulder.focus();
     await page.keyboard.press("Enter");
     await expect(
       page.getByText("Selected Boulder County (08013)")
     ).toBeVisible();
+    const adams = page.getByRole("button", {
+      name: /Select Adams County, CO/,
+    });
+    await adams.focus();
+    await page.keyboard.press("Space");
+    await expect(page.getByText("Selected Adams County (08001)")).toBeVisible();
     expect(blocked).toEqual([]);
   });
 
@@ -274,20 +290,32 @@ test.describe("Domain catalog rows 34-46", () => {
   });
 });
 
-test("mobile grid scrolls and the long county cell stays visible", async ({
+async function overflows(
+  locator: ReturnType<Page["locator"]>
+): Promise<boolean> {
+  return locator.evaluate((node) => node.scrollWidth > node.clientWidth);
+}
+
+test("mobile grid and tables scroll and the long county cell stays visible", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "Narrow coverage is mobile.");
   const blocked = track(page);
   await page.setViewportSize({ width: 320, height: 700 });
   await openStory(page, "geographic-explorer-state-grid--tiles");
-  const scroller = page.locator(".geo-grid-scroll");
-  await expect(scroller).toBeVisible();
-  const overflow = await scroller.evaluate((node) => node.scrollWidth > 320);
-  expect(overflow).toBe(true);
+  const grid = page.locator(".geo-grid-scroll");
+  await expect(grid).toBeVisible();
+  expect(await overflows(grid)).toBe(true);
+  await openStory(page, "geographic-explorer-evidence-table--populated");
+  const evidence = page.locator(".geo-table-scroll");
+  await expect(evidence).toBeVisible();
+  expect(await overflows(evidence)).toBe(true);
   await openStory(page, "overview-results-table--long-cell");
   await expect(
     page.getByText("Synthetic county with a long display name")
   ).toBeVisible();
+  const results = page.locator("[data-slot='table-container']");
+  await expect(results).toBeVisible();
+  expect(await overflows(results)).toBe(true);
   expect(blocked).toEqual([]);
 });

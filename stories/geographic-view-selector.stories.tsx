@@ -6,6 +6,8 @@ import {
   VIEW_LABELS,
   type View,
 } from "@/features/geographic-explorer/model";
+
+import "@/features/geographic-explorer/explorer.css";
 import { GeographicExplorerViewSelector } from "@/features/geographic-explorer/view-selector";
 
 const presets = ["tiles", "trends"] as const;

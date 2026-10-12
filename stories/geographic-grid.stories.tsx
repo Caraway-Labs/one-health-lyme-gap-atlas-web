@@ -3,6 +3,8 @@ import { useState } from "react";
 
 import { GeographicGrid } from "@/features/geographic-explorer/charts";
 
+import "@/features/geographic-explorer/explorer.css";
+
 import { storyChartCounties } from "./fixtures/story-counties";
 
 const gridPresets = ["none", "colorado"] as const;

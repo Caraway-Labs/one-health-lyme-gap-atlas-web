@@ -3,6 +3,8 @@ import { useState } from "react";
 
 import { ScatterPlot } from "@/features/geographic-explorer/charts";
 
+import "@/features/geographic-explorer/explorer.css";
+
 import { storyChartCounties } from "./fixtures/story-counties";
 
 const presets = ["none", "adams"] as const;

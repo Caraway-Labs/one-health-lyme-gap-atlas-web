@@ -3,6 +3,8 @@ import { useState } from "react";
 
 import { EvidenceTable } from "@/features/geographic-explorer/charts";
 
+import "@/features/geographic-explorer/explorer.css";
+
 import { storyChartCounties } from "./fixtures/story-counties";
 
 const presets = ["none", "boulder"] as const;
