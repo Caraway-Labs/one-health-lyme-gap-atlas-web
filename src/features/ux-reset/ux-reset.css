@@ -868,97 +868,82 @@
   scroll-padding: var(--space-2);
 }
 
-.ux-reset-ask-atlas-panel,
-.ux-reset-ask-atlas-modal {
+.ux-reset-ask-atlas-reference,
+.ux-reset-ask-atlas-storage,
+.ux-reset-ask-atlas-heading {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-ask-atlas-heading {
   display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--background);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ux-reset-ask-atlas-heading h1 {
+  margin: 0;
+}
+
+.ux-reset-ask-atlas-reference,
+.ux-reset-ask-atlas-storage {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
   color: var(--foreground);
 }
 
-.ux-reset-ask-atlas-panel {
-  position: relative;
-  top: auto;
-  flex: 0 0 22rem;
-  align-self: stretch;
-  width: 22rem;
-  min-height: 0;
-  max-height: 100%;
-  border-left: 1px solid var(--border);
-}
-
-.ux-reset-ask-atlas-modal {
-  position: fixed;
-  z-index: 40;
-  inset: 0;
-}
-
-.ux-reset-ask-atlas-toolbar {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 0.35rem var(--space-3);
-  border-bottom: 1px solid var(--border);
-}
-
-.ux-reset-ask-atlas-kicker {
+.ux-reset-ask-atlas-reference h2,
+.ux-reset-ask-atlas-reference p,
+.ux-reset-ask-atlas-storage p {
   margin: 0;
-  color: var(--muted-foreground);
+}
+
+.ux-reset-ask-atlas-reference h2,
+.ux-reset-ask-atlas-storage summary {
   font-size: var(--type-small-size);
   font-weight: 700;
 }
 
-.ux-reset-ask-atlas-body {
+.ux-reset-ask-atlas-reference-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.ux-reset-ask-atlas-reference-list div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.ux-reset-ask-atlas-reference-list dt {
+  color: var(--muted-foreground);
+  font-size: var(--type-small-size);
+}
+
+.ux-reset-ask-atlas-reference-list dd {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin: 0;
+}
+
+.ux-reset-ask-atlas-reference-actions {
   display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-.ux-reset-ask-atlas-body .evidence-chat {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
+.ux-reset-ask-atlas-more-topics {
+  margin-top: var(--space-2);
 }
 
-.ux-reset-ask-atlas-body .evidence-chat-drawer {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-.ux-reset-ask-atlas-body .evidence-chat-drawer .chat-panel {
-  flex: 1 1 auto;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  grid-template-rows: auto minmax(0, 2.4rem) minmax(1.75rem, 1fr) auto;
-}
-
-.ux-reset-ask-atlas-body .chat-panel-header,
-.ux-reset-ask-atlas-body .chat-form,
-.ux-reset-ask-atlas-body .chat-attribution {
-  padding-block: 0.35rem;
-}
-
-.ux-reset-ask-atlas-body .medical-notice {
-  max-height: 2.4rem;
-  overflow: auto;
-}
-
-.ux-reset-ask-atlas-body .chat-form textarea {
-  height: 2rem;
-  min-height: 0;
-  field-sizing: fixed;
+.ux-reset-ask-atlas-more-topics summary {
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: var(--type-small-size);
 }
 
 .ux-reset-ask-atlas-inherited {
@@ -1011,18 +996,10 @@
   padding: var(--space-3);
 }
 
-.ux-reset-ask-atlas-panel .chat-panel h2,
-.ux-reset-ask-atlas-modal .chat-panel h2 {
-  margin: 0.2rem 0 0;
-  color: var(--foreground);
-  font-family: var(--font-display);
-  font-size: var(--type-body-size);
-  font-weight: 500;
-}
-
-/* The workspace fills the main pane and the transcript scrolls inside it.
-   When notices and the composer exceed that pane, the pane scrolls so they
-   stay reachable without moving the sidebar or header. */
+/* The workspace fills the main pane. The page scrolls; the transcript does not
+   trap focus inside a second scroller. When notices and the composer exceed
+   that pane, the pane scrolls so they stay reachable without moving the
+   sidebar or header. */
 .ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-pro-main {
   display: flex;
   flex: 1 1 auto;
@@ -1082,10 +1059,9 @@
 }
 
 .ux-reset-ask-atlas-workspace .chat-transcript {
-  flex: 1 1 0%;
-  /* Floor keeps a readable strip; it must not include the message height. */
-  min-height: 4.5rem;
-  overflow-y: auto;
+  flex: none;
+  min-height: 0;
+  overflow: visible;
 }
 
 .ux-reset-ask-atlas-workspace .chat-panel-header,

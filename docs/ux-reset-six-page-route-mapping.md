@@ -104,6 +104,7 @@ These are dropped when an alias redirects. They are not Explorer state:
 | `plan`, `role` | Action. Only `plan` is parsed. `evidence-brief` is the one workflow id. `role` is unread. | Suggested follow-up is the destination. The evidence-brief deep link is not a seventh page. |
 | `return` | Compare (`review` or `investigate`) | Stays on `/app/compare`. `return=review` already targets `/app/review`. `return=investigate` still targets `/app/investigate` until #197 points that return at `mode=evidence`. |
 | `conversation` | `/assistant`, `/app/assistant`, `/knowledge-graph` | Stays on the Assistant URLs. Not copied to Explorer. |
+| `page_ref` | `/app/assistant` | Validated Ask Atlas page reference. Not a shared key, not a chat request field, and not retrieved evidence. |
 | `tab` | Named on Feed, not read | Feed does not redirect. |
 | `release` | Not a URL key. Release identity is `dataset`. | Dropped. Not aliased onto `dataset`. |
 | `layer` | Not a URL key. `/app/explore` uses `metric`. | Dropped. Not aliased onto `metric`. |

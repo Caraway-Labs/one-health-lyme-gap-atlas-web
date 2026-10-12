@@ -3,7 +3,7 @@
 import publicCopy from "@caraway-labs/one-health-lyme-gap-atlas-knowledge-graph/public-copy";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { EvidenceChatAnswerSources } from "@/components/evidence-chat-answer-sources";
@@ -11,6 +11,7 @@ import {
   ChatHistoryEmptyHint,
   ChatHistoryMobileToggle,
 } from "@/components/evidence-chat-history";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
@@ -22,15 +23,21 @@ import { AssistantStarterPrompts } from "./assistant-starter-prompts";
 import type { EvidenceChatConversationModel } from "./use-evidence-chat";
 
 export function EvidenceChatConversationContent({
+  emptyLead,
   headingLevel = 1,
+  leading,
   model,
+  presentation = "default",
   showCountyNotice = true,
   showStarterPrompts = true,
   showWorkspaceHandoff = true,
   workspaceHandoffHref,
 }: {
+  emptyLead?: ReactNode;
   headingLevel?: 1 | 2;
+  leading?: ReactNode;
   model: EvidenceChatConversationModel;
+  presentation?: "ask-atlas" | "default";
   showCountyNotice?: boolean;
   showStarterPrompts?: boolean;
   showWorkspaceHandoff?: boolean;
@@ -100,11 +107,13 @@ export function EvidenceChatConversationContent({
         );
   const charCountId = `chat-char-count-${mode}`;
   const ChatPanel = mode === "workspace" ? "section" : "div";
-  // Drawer chrome sits inside the reset sidecar landmark, so it cannot use
-  // header/footer. Those elements become nested banner and contentinfo landmarks.
+  // Drawer chrome cannot use header/footer. Those elements become nested
+  // banner and contentinfo landmarks.
   const PanelHeader = mode === "workspace" ? "header" : "div";
   const PanelFooter = mode === "workspace" ? "footer" : "div";
   const Heading = headingLevel === 2 ? "h2" : "h1";
+  const askAtlasPage = presentation === "ask-atlas";
+  const heading = askAtlasPage ? "Ask Atlas" : "Atlas Assistant";
 
   return (
     <ChatPanel
@@ -115,8 +124,12 @@ export function EvidenceChatConversationContent({
     >
       <PanelHeader className="chat-panel-header">
         <div>
-          <span className="kicker">Reviewed literature</span>
-          <Heading id={assistantHeadingId}>Atlas Assistant</Heading>
+          {askAtlasPage ? (
+            <Badge variant="outline">Reviewed literature</Badge>
+          ) : (
+            <span className="kicker">Reviewed literature</span>
+          )}
+          <Heading id={assistantHeadingId}>{heading}</Heading>
         </div>
         <div className="chat-panel-header-actions">
           {mode === "workspace" && (
@@ -137,150 +150,166 @@ export function EvidenceChatConversationContent({
           </Button>
         </div>
       </PanelHeader>
-      {mode === "workspace" && !hasSavedConversations && (
+      {mode === "workspace" && !hasSavedConversations && !askAtlasPage ? (
         <ChatHistoryEmptyHint />
-      )}
+      ) : null}
+      {leading}
       {showCountyNotice ? <AssistantCountyContextNotice /> : null}
-      <p
-        className="medical-notice"
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- height-capped notice can scroll in the sidecar
-        tabIndex={0}
-      >
-        {publicCopy.medical_notice}
-      </p>
-      {/* tabIndex satisfies axe scrollable-region-focusable for overflow transcript */}
-      <div
-        className="chat-transcript"
-        aria-label="Conversation transcript"
-        aria-live="polite"
-        ref={transcriptRef}
-        role="region"
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard access to scrollable transcript
-        tabIndex={0}
-      >
-        <div className="chat-transcript-flow">
-          {missingConversationId ? (
-            <div
-              className="chat-notice"
-              data-assistant-state="conversation_not_found"
-              role="status"
-            >
-              <p>
-                <strong>Conversation not found in this browser.</strong> This
-                link points to a chat that is not saved here. Start a new chat
-                to continue.
-              </p>
-              <div className="chat-state-actions">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => startNewChat()}
-                  {...analyticsControlAttributes("evidence_chat_new")}
-                >
-                  New chat
-                </Button>
-              </div>
-            </div>
-          ) : null}
-          {showEmptyState && (
-            <div className="chat-empty">
-              <strong>Start with a research question</strong>
-              <p>
-                Ask about surveillance, vectors and hosts, environmental
-                exposure, diagnostics, interventions, or outcomes.
-              </p>
-            </div>
-          )}
-          {(active?.turns ?? []).map((turn, index, turns) => {
-            const priorQuestion =
-              turn.role === "assistant" ? (turns[index - 1]?.text ?? "") : "";
-            const decision = turn.response
-              ? classifyKnowledgeChatResponse(turn.response)
-              : null;
-            const visibleAnswer =
-              turn.role === "assistant" &&
-              decision &&
-              decision.kind !== "closed" &&
-              turn.response
-                ? turn.response.answer
-                : "";
-            return (
-              <article className={`chat-turn ${turn.role}`} key={turn.id}>
-                <strong>
-                  {turn.role === "user" ? "You" : "Evidence assistant"}
-                </strong>
-                {turn.role === "user" && turn.text ? <p>{turn.text}</p> : null}
-                {visibleAnswer ? <p>{visibleAnswer}</p> : null}
-                {decision?.kind === "grounded" && turn.response ? (
-                  <EvidenceChatAnswerSources response={turn.response} />
-                ) : null}
-                {turn.response && decision && decision.kind !== "closed" ? (
-                  <AssistantOutcome
-                    actionable={turn.id === turns.at(-1)?.id}
-                    onEditQuestion={editQuestion}
-                    onRetry={ask}
-                    pending={pending}
-                    question={priorQuestion}
-                    response={turn.response}
-                  />
-                ) : null}
-                {decision?.kind === "closed" ? (
-                  <div
-                    className="chat-error"
-                    data-assistant-state="response_unverified"
-                    data-close-reason={decision.reason}
-                    role="alert"
-                  >
-                    <p>
-                      <strong>Response could not be verified.</strong> Evidence
-                      chat response could not be verified. Please try again
-                      later.
-                    </p>
-                  </div>
-                ) : null}
-              </article>
-            );
-          })}
-          {pending && (
-            <p role="status" className="processing">
-              Searching reviewed evidence…
-            </p>
-          )}
-          {failure && (
-            <div
-              ref={failureRegionRef}
-              role="alert"
-              className="chat-error"
-              data-assistant-state={failure.state}
-              data-close-reason={failure.reason}
-              tabIndex={-1}
-            >
-              <p>
-                <strong>{failure.title}</strong> {failure.message}
-              </p>
-              {failure.retry && retryQuestion ? (
+      {askAtlasPage ? null : (
+        <p
+          className="medical-notice"
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- height-capped notice can scroll in the public drawer
+          tabIndex={0}
+        >
+          {publicCopy.medical_notice}
+        </p>
+      )}
+      {askAtlasPage && showEmptyState ? null : (
+        /* Public drawer tabIndex=0 reaches a scrollable transcript. Ask Atlas
+           uses -1 so a restored conversation can be focused without a tab stop
+           or a nested scroll trap. */
+        <div
+          className="chat-transcript"
+          aria-label="Conversation transcript"
+          aria-live="polite"
+          ref={transcriptRef}
+          role="region"
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- programmatic focus target; the public drawer transcript also scrolls
+          tabIndex={askAtlasPage ? -1 : 0}
+        >
+          <div className="chat-transcript-flow">
+            {missingConversationId ? (
+              <div
+                className="chat-notice"
+                data-assistant-state="conversation_not_found"
+                role="status"
+              >
+                <p>
+                  <strong>Conversation not found in this browser.</strong> This
+                  link points to a chat that is not saved here. Start a new chat
+                  to continue.
+                </p>
                 <div className="chat-state-actions">
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => ask(retryQuestion)}
-                    disabled={pending}
-                    {...analyticsControlAttributes("evidence_chat_retry")}
+                    onClick={() => startNewChat()}
+                    {...analyticsControlAttributes("evidence_chat_new")}
                   >
-                    Retry
+                    New chat
                   </Button>
                 </div>
-              ) : null}
-            </div>
-          )}
+              </div>
+            ) : null}
+            {showEmptyState && !askAtlasPage ? (
+              <div className="chat-empty">
+                <strong>Start with a research question</strong>
+                <p>
+                  Ask about surveillance, vectors and hosts, environmental
+                  exposure, diagnostics, interventions, or outcomes.
+                </p>
+              </div>
+            ) : null}
+            {(active?.turns ?? []).map((turn, index, turns) => {
+              const priorQuestion =
+                turn.role === "assistant" ? (turns[index - 1]?.text ?? "") : "";
+              const decision = turn.response
+                ? classifyKnowledgeChatResponse(turn.response)
+                : null;
+              const visibleAnswer =
+                turn.role === "assistant" &&
+                decision &&
+                decision.kind !== "closed" &&
+                turn.response
+                  ? turn.response.answer
+                  : "";
+              return (
+                <article className={`chat-turn ${turn.role}`} key={turn.id}>
+                  <strong>
+                    {turn.role === "user" ? "You" : "Evidence assistant"}
+                  </strong>
+                  {turn.role === "user" && turn.text ? (
+                    <p>{turn.text}</p>
+                  ) : null}
+                  {visibleAnswer ? <p>{visibleAnswer}</p> : null}
+                  {decision?.kind === "grounded" && turn.response ? (
+                    <EvidenceChatAnswerSources response={turn.response} />
+                  ) : null}
+                  {turn.response && decision && decision.kind !== "closed" ? (
+                    <AssistantOutcome
+                      actionable={turn.id === turns.at(-1)?.id}
+                      onEditQuestion={editQuestion}
+                      onRetry={ask}
+                      pending={pending}
+                      question={priorQuestion}
+                      response={turn.response}
+                    />
+                  ) : null}
+                  {decision?.kind === "closed" ? (
+                    <div
+                      className="chat-error"
+                      data-assistant-state="response_unverified"
+                      data-close-reason={decision.reason}
+                      role="alert"
+                    >
+                      <p>
+                        <strong>Response could not be verified.</strong>{" "}
+                        Evidence chat response could not be verified. Please try
+                        again later.
+                      </p>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+            {pending && (
+              <p role="status" className="processing">
+                Searching reviewed evidence…
+              </p>
+            )}
+            {failure && (
+              <div
+                ref={failureRegionRef}
+                role="alert"
+                className="chat-error"
+                data-assistant-state={failure.state}
+                data-close-reason={failure.reason}
+                tabIndex={-1}
+              >
+                <p>
+                  <strong>{failure.title}</strong> {failure.message}
+                </p>
+                {failure.retry && retryQuestion ? (
+                  <div className="chat-state-actions">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => ask(retryQuestion)}
+                      disabled={pending}
+                      {...analyticsControlAttributes("evidence_chat_retry")}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <div className="chat-composer-dock">
-        <AssistantStarterPrompts
-          mode={mode}
-          onSelect={editQuestion}
-          visible={showEmptyState && showStarterPrompts}
-        />
+        {askAtlasPage ? (
+          emptyLead
+        ) : (
+          <AssistantStarterPrompts
+            mode={mode}
+            onSelect={editQuestion}
+            visible={showEmptyState && showStarterPrompts}
+          />
+        )}
+        {askAtlasPage ? (
+          <p className="medical-notice">{publicCopy.medical_notice}</p>
+        ) : null}
         <form className="chat-form" onSubmit={submit}>
           <label htmlFor={`chat-message-${mode}`}>Your question</label>
           <textarea

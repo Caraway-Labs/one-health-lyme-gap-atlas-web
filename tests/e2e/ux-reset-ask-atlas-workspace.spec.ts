@@ -98,12 +98,7 @@ async function installExploreMocks(page: Page) {
   });
 }
 
-async function openSidecar(page: Page) {
-  await page.getByTestId("ask-atlas-launcher").click();
-  await expect(page.getByTestId("ask-atlas-panel")).toBeVisible();
-}
-
-test("continues one sidecar request in the research workspace", async ({
+test("asks on the dedicated page and keeps that conversation in this browser", async ({
   page,
 }, testInfo) => {
   const requests: Record<string, unknown>[] = [];
@@ -120,33 +115,38 @@ test("continues one sidecar request in the research workspace", async ({
     );
   });
   await page.goto(EXPLORE_URL);
-  await openSidecar(page);
+  await expect(page.getByTestId("ask-atlas-launcher")).toHaveAttribute(
+    "href",
+    /page_ref=/
+  );
+  await page.getByTestId("ask-atlas-launcher").click();
+  await expect(page).toHaveURL(/\/app\/assistant\?/);
+  await expect(page).toHaveURL(/county=08001/);
+  await expect(page).toHaveURL(/page_ref=/);
+  await expect(page).not.toHaveURL(/conversation=/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Ask Atlas" })
+  ).toBeVisible();
+  await expect(page.getByText("Reviewed literature").first()).toBeVisible();
+  await expect(page.getByTestId("ask-atlas-page-reference")).toHaveAttribute(
+    "data-reference-state",
+    "validated"
+  );
+  await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
+  await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
   await page.getByLabel("Your question").fill(QUESTION);
   await page.getByRole("button", { name: "Ask", exact: true }).click();
-  const panel = page.getByTestId("ask-atlas-panel");
-  await expect(
-    panel.getByText("Reviewed studies describe exposure.")
-  ).toBeVisible();
-  await panel.getByRole("link", { name: "Open full workspace" }).click();
-  await expect(page).toHaveURL(
-    /\/app\/assistant\?county=08001&dataset=alpha-2026&conversation=conversation-1/
-  );
-  await expect(
-    page.getByRole("heading", { name: "Atlas Assistant" })
-  ).toBeVisible();
   await expect(
     page.getByText("Reviewed studies describe exposure.")
   ).toBeVisible();
-  await expect(
-    page.locator("[data-assistant-county-state='identified']")
-  ).toContainText("Adams");
-  await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
+  await expect(page).toHaveURL(/conversation=conversation-1/);
   expect(requests).toHaveLength(1);
   expect(Object.keys(requests[0] ?? {}).toSorted()).toEqual([
     "history",
     "message",
   ]);
   expect(JSON.stringify(requests)).not.toContain("must-not-persist");
+  expect(JSON.stringify(requests)).not.toContain("08001");
 
   await page.reload();
   await expect(
@@ -170,7 +170,9 @@ test("continues one sidecar request in the research workspace", async ({
   expect(stored).toContain("conversation-1");
   expect(stored).not.toContain("must-not-persist");
 
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await new AxeBuilder({ page })
+    .include("[data-testid='ask-atlas-workspace']")
+    .analyze();
   expect(results.violations).toEqual([]);
   expect(testInfo.project.name).toMatch(/desktop|mobile/);
 });
@@ -230,7 +232,9 @@ test("recovers an unknown conversation, a cleared history, and a failed request"
     .getByRole("dialog")
     .getByRole("button", { name: "Clear all" })
     .click();
-  await expect(page.getByText("Start with a research question")).toBeVisible();
+  await expect(
+    page.getByText("Ask a research question about reviewed literature.")
+  ).toBeVisible();
   await expect(page).not.toHaveURL(/conversation=/);
 
   await page.evaluate(() => {
@@ -256,15 +260,16 @@ test("keeps a county missing from the release out of the literature request", as
     );
   });
   await page.goto("/app/assistant?county=99999&dataset=alpha-2026");
-  await expect(
-    page.getByText("County unavailable in this release.")
-  ).toBeVisible();
-  await expect(page.getByText("99999")).toBeVisible();
+  await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+  await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
+  await expect(page.getByText("99999")).toHaveCount(0);
   await page
     .getByLabel("Your question")
     .fill("Question without county evidence");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
-  await expect(page.getByText("Literature only.")).toBeVisible();
+  await expect(
+    page.getByText("Literature only.", { exact: true })
+  ).toBeVisible();
   expect(requests[0]).toStrictEqual({
     history: [],
     message: "Question without county evidence",
@@ -411,9 +416,8 @@ test("keeps a saved county chat usable at a short landscape height", async ({
   await expect(
     page.getByText("County answer stays in the transcript.")
   ).toBeVisible();
-  await expect(
-    page.locator("[data-assistant-county-state='identified']")
-  ).toContainText("Adams");
+  await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
+  await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
   await expectComposerUsable(page);
 });
 
@@ -424,7 +428,9 @@ test("keeps an empty chat usable at a short landscape height", async ({
   await installExploreMocks(page);
   await installChatAnswer(page);
   await page.goto("/app/assistant");
-  await expect(page.getByText("Start with a research question")).toBeVisible();
+  await expect(
+    page.getByText("Ask a research question about reviewed literature.")
+  ).toBeVisible();
   await expectComposerUsable(page);
 });
 
@@ -446,9 +452,7 @@ test("keeps a saved county chat usable at 200% desktop zoom", async ({
     () => getComputedStyle(document.documentElement).fontSize
   );
   expect(rootFont).toBe("16px");
-  await expect(
-    page.locator("[data-assistant-county-state='identified']")
-  ).toContainText("Adams");
+  await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
   await expectComposerUsable(page);
 });
 
@@ -460,7 +464,9 @@ test("keeps an empty chat usable at 200% desktop zoom", async ({ page }) => {
   await installExploreMocks(page);
   await installChatAnswer(page);
   await page.goto("/app/assistant");
-  await expect(page.getByText("Start with a research question")).toBeVisible();
+  await expect(
+    page.getByText("Ask a research question about reviewed literature.")
+  ).toBeVisible();
   const rootFont = await page.evaluate(
     () => getComputedStyle(document.documentElement).fontSize
   );
@@ -468,7 +474,7 @@ test("keeps an empty chat usable at 200% desktop zoom", async ({ page }) => {
   await expectComposerUsable(page);
 });
 
-test("docks the composer when the research workspace has room", async ({
+test("scrolls the research page instead of trapping the transcript", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 900, width: 1280 });
@@ -478,32 +484,75 @@ test("docks the composer when the research workspace has room", async ({
   await expect(
     page.getByText("County answer stays in the transcript.")
   ).toBeVisible();
-  await expect(
-    page.locator("[data-assistant-county-state='identified']")
-  ).toContainText("Adams");
   const layout = await page.evaluate(() => {
-    const shell = document.querySelector(".ux-reset-pro-app");
-    const dock = document.querySelector(".chat-composer-dock");
+    const main = document.querySelector("main.ux-reset-pro-main");
     const transcript = document.querySelector(".chat-transcript");
-    if (!shell || !dock || !transcript) {
+    if (!main || !transcript) {
       return null;
     }
-    const dockBox = dock.getBoundingClientRect();
-    const transcriptBox = transcript.getBoundingClientRect();
+    const transcriptStyle = getComputedStyle(transcript);
     return {
-      composerInView:
-        dockBox.top >= 0 && dockBox.bottom <= window.innerHeight + 1,
-      shellFits: shell.scrollHeight <= shell.clientHeight + 1,
-      transcriptAboveComposer: transcriptBox.bottom <= dockBox.top + 8,
-      transcriptScrolls: transcript.scrollHeight > transcript.clientHeight,
+      mainScrolls: main.scrollHeight > main.clientHeight + 1,
+      transcriptOverflow: transcriptStyle.overflowY,
+      transcriptTraps:
+        /(auto|scroll)/.test(transcriptStyle.overflowY) &&
+        transcript.scrollHeight > transcript.clientHeight + 1,
     };
   });
   expect(layout).toEqual({
-    composerInView: true,
-    shellFits: true,
-    transcriptAboveComposer: true,
-    transcriptScrolls: true,
+    mainScrolls: true,
+    transcriptOverflow: "visible",
+    transcriptTraps: false,
   });
+  await expectControlReachable(page.getByLabel("Your question"));
+});
+
+test("focuses the transcript when a saved conversation link is opened from the keyboard", async ({
+  page,
+}) => {
+  await installExploreMocks(page);
+  await seedSavedCountyChat(page);
+  await page.goto(EXPLORE_URL);
+  await page.evaluate(() => {
+    const link = document.createElement("a");
+    link.dataset.testid = "saved-conversation-link";
+    link.href = "/app/assistant?conversation=conversation-county";
+    link.textContent = "Open saved conversation";
+    link.style.position = "fixed";
+    link.style.top = "0";
+    link.style.zIndex = "20";
+    document.body.append(link);
+  });
+  const link = page.getByTestId("saved-conversation-link");
+  await link.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/conversation=conversation-county/);
+  await expect(
+    page.getByText("County answer stays in the transcript.")
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        const transcript = document.querySelector(".chat-transcript");
+        if (
+          !(active instanceof HTMLElement) ||
+          !(transcript instanceof HTMLElement)
+        ) {
+          return null;
+        }
+        return {
+          focused: active === transcript,
+          overflowY: getComputedStyle(transcript).overflowY,
+          tabIndex: active.getAttribute("tabindex"),
+        };
+      })
+    )
+    .toEqual({
+      focused: true,
+      overflowY: "visible",
+      tabIndex: "-1",
+    });
 });
 
 test("ignores a late answer after a newer question is saved", async ({
