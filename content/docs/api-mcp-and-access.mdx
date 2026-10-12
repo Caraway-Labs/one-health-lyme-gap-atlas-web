@@ -14,8 +14,9 @@ Atlas publishes one public HTTP contract. Human guides on this site explain how 
 | API reference | Available now | [Generated API reference](/docs/api-reference) from that same public contract |
 | Interactive reference | Available now | [Swagger reference](https://api.onehealthatlas.org/docs) for approved public GET requests |
 | Read-only reference | Available now | [ReDoc reference](https://api.onehealthatlas.org/redoc) |
-| Development MCP smoke tools | Experimental/demo | `server_status` and `atlas_smoke_test` only, owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). A development endpoint and 2026-09-26 acceptance test are recorded there. This page does not re-check that the host is up. |
-| Atlas-data MCP | Not supported | Production MCP does not serve indicators, measures, observations, sources, or methodologies. Use the public REST API for Atlas data. |
+| Bounded public MCP evidence tools | Available now | Anonymous read-only `atlas_discover_indicators`, `atlas_get_county_profile`, and `atlas_get_evidence_provenance` on the production MCP service. The [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md) owns arguments and limits. |
+| MCP county identity | Available now | `atlas_resolve_geographies` resolves a county identity. Identity is not evidence availability, evidence adequacy, or comparability. |
+| MCP operational tools | Available now | `server_status` and `atlas_smoke_test` remain registered. They report status and a smoke message. They do not read Atlas evidence. |
 | User API keys in Settings | Not available | The public API does not use a key, and Settings does not create one |
 
 The OpenAPI application version and the `/v1` contract are different identifiers. Use the response fields below when you need to cite a result.
@@ -70,13 +71,29 @@ Save the request URL, measure id, county FIPS codes, period, `release_id`, `sema
 
 A practical attribution names Atlas, the public API V1, the measure id, county FIPS, period, release id, semantic version, retrieval date, and the upstream publisher and dataset from the source resource you received. Replace every example identifier with the values in your response.
 
+## Canonical evidence for API and MCP consumers
+
+Public REST reads return governed Atlas resources. Indicators, measures, observations, sources, and methodologies are that contract for current-release evidence. Clients are intended to use those resources rather than a schema that changes with each upstream source. The [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) remains authoritative for HTTP fields. The generated [API reference](/docs/api-reference) is rendered from the pinned public contract.
+
+MCP tool definitions stay in the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp) and its tests. The released evidence tools return the same canonical evidence and provenance, including source identity and value state, rather than a schema that changes with each source. [Sources and canonical evidence](/docs/sources-and-canonical-evidence) describes that design, the open-data boundary, and the clinical connections that are not released. [Provenance and evidence](/docs/develop/provenance) lists the fields to keep with a value.
+
 ## MCP
 
-The MCP server is owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). Its development deployment registers `server_status` and `atlas_smoke_test` in [`server.py`](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/src/atlas_lyme_mcp/server.py). Those tools report server status and a smoke message. They do not read Atlas data, connect to a database, or write.
+The MCP server is owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). [ADR 0003](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/adr/0003-public-evidence-tools.md) accepts three anonymous read-only evidence tools and supersedes the historical smoke-only exposure constraint for that bounded surface. The [production receipt](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/pull/21#issuecomment-6116902766) records deployment of SHA `d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9` and official-SDK discovery of exactly six tools at `https://mcp.onehealthatlas.org/mcp`. This guide does not re-invoke those tools.
 
-The [development deployment record](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/docs/operations/digitalocean-mcp.md) documents a development Streamable HTTP endpoint and a 2026-09-26 Cursor and official-SDK acceptance test of both tools. This guide does not re-verify that the development host is reachable, and it does not publish a production client configuration.
+| Tool | What the contract allows |
+| --- | --- |
+| `atlas_discover_indicators` | Published indicators and their associated measures. Discovery states published definitions. It is not county availability. |
+| `atlas_get_county_profile` | Published observations for one exact five-digit county FIPS and one to three explicit measure-period selections. An empty selection is not a missing row, a zero, biological absence, or proof of county identity. |
+| `atlas_get_evidence_provenance` | A published source or methodology for the expected current release. It does not resolve an arbitrary observation ID or a historical release. |
+| `atlas_resolve_geographies` | County identity only, from the CDC/ATSDR SVI 2022 county source. Identity does not establish observations, evidence adequacy, or comparability, and it is not a current legal-boundary file. |
+| `server_status`, `atlas_smoke_test` | Operational status and a smoke message. These tools do not read Atlas evidence. |
 
-REST remains the supported interface for current-release indicators, measures, observations, sources, and methodologies. Production MCP, including any tool that returns those Atlas resources, is not part of this contract.
+The [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md) is authoritative for arguments, bounds, and error codes. This page does not copy those schemas. Evidence tools keep canonical API value states, units, denominators, source identity, and limitations. They do not score, diagnose, compare scientifically, write, or accept private data or a caller-supplied URL. They are not a live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory connection.
+
+The [2026-09-26 development record](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/docs/operations/digitalocean-mcp.md) accepted `server_status` and `atlas_smoke_test` in [`server.py`](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/src/atlas_lyme_mcp/server.py). That smoke-only receipt is historical. It is not the current production tool list.
+
+REST remains the HTTP contract for the same canonical resources. OpenAPI remains authoritative for HTTP schemas. MCP does not replace that document.
 
 ## API keys
 

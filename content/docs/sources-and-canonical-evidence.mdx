@@ -1,0 +1,121 @@
+---
+title: Sources and canonical evidence
+description: How Atlas is designed to adapt governed sources into one canonical evidence model for the Web product, REST API, and MCP, and which of that design is released.
+---
+
+Public-health evidence arrives in different systems, formats, vintages, terminologies, geographies, and publication processes. Atlas is designed so a new governed source can be added without forcing epidemiologists, REST clients, or MCP clients to learn a separate data model for every source.
+
+The intended path is:
+
+`source system → source-specific adapter → terminology/semantic mapping → canonical Atlas evidence and provenance → REST API / MCP / product workflows`
+
+A shared model keeps provenance and uncertainty attached. It is not a claim that two sources measured the same thing, covered the same people or ticks, or can be compared without reading their limitations.
+
+## What is released and what is intent
+
+Use the same status labels as [current capabilities](/docs/current-capabilities).
+
+| Capability | Status | What you can rely on |
+| --- | --- | --- |
+| Open public evidence in the current release, read through the public product and the public REST API | Available now | Observations, sources, and methodologies use the published `/v1` resources. Start with [API, MCP, and access](/docs/api-mcp-and-access), the generated [API reference](/docs/api-reference), and [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). |
+| Source-specific adapters for additional governed sources, including CSV, XLSX, API, scientific-file, and other governed patterns | Planned | An adapter is written for that source. A file type or API shape is not, by itself, a released source. |
+| CDC Lyme/TBRD Message Mapping Guide (MMG) and PHIN VADS for surveillance concepts, where a governed mapping uses them | Planned | Selected direction for public-health surveillance semantics. Not evidence that every released source is already mapped, and not a certification. |
+| USCDI, FHIR R4 / US Core, Bulk FHIR, and LOINC for future authorized clinical or laboratory sources, where those standards apply to that source | Planned | Selected direction for future sources of that kind. Not a released clinical or laboratory feed. |
+| Live EHR connectivity, TEFCA, patient-level data, PHI, or production clinical-laboratory ingestion | Not supported | The current release does not include these connections. Naming a standard on this page does not grant access, legal authority, certification, or production connectivity. |
+| Bounded anonymous MCP evidence reads | Available now | Production MCP returns governed public evidence through `atlas_discover_indicators`, `atlas_get_county_profile`, and `atlas_get_evidence_provenance`. `atlas_resolve_geographies` resolves county identity and does not establish that evidence exists. Arguments and limits are in the [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md). See [API, MCP, and access](/docs/api-mcp-and-access). |
+
+The current MVP is open-data-first. The public product shows the governed evidence in the current release, and each result still names its source. This page does not publish a second source catalog.
+
+`server_status` and `atlas_smoke_test` remain operational tools. They do not read evidence. The September 2026 development receipt that covered smoke tools only is historical. [ADR 0003](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/adr/0003-public-evidence-tools.md) supersedes that exposure constraint for the bounded evidence tools above. Those tools are not a live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory connection.
+
+## Why this design matters
+
+Epidemiologists should be able to read a new governed source with the same questions they already use: who published it, which dataset and vintage, which geography and period, which method, and which limitations. API and MCP consumers should be able to keep calling a stable evidence contract when a source is added, instead of binding each integration to that source's native tables.
+
+The common contract does not make sources interchangeable. A county value from one publisher can remain missing, suppressed, unavailable, or uncertain after it is normalized. Those states stay visible so a shared shape cannot be mistaken for equal coverage or equal confidence.
+
+## How a source becomes Atlas evidence
+
+1. **Source system.** The publisher's own system, file, or feed. Atlas does not require that system to look like today's open-data release.
+2. **Source-specific adapter.** A governed adapter reads that source's pattern. Patterns the design allows include CSV, XLSX, an API, a scientific file, and other governed inputs. The adapter is not a universal parser, and it is not permission to collect the source.
+3. **Terminology and semantic mapping.** Where a mapping applies, it translates source concepts into stable Atlas concepts. The mapping annotates source meaning. It does not erase the original source identity, version, or limitations.
+4. **Canonical Atlas evidence and provenance.** Downstream readers receive governed Atlas observations, sources, and methodologies, with provenance still attached.
+5. **REST API, MCP, and product workflows.** The Web product, REST clients, and MCP clients consume that canonical evidence where the public contract supports the abstraction.
+
+Transport format and source authorization are separate. A format describes how records are carried. Authorization describes whether Atlas may receive and publish them. Support for a format, or alignment with a named standard, is not access, legal authority, interoperability certification, or a live connection.
+
+Bulk FHIR is one example of that split. It is a possible authorized population-scale transport for a future clinical or laboratory source. It is not automatic authority, and it is not a connection Atlas operates today.
+
+## What normalization preserves
+
+Heterogeneous source records are normalized into stable Atlas concepts and observations. The public contract does not expose a different downstream model for every source. These facts stay with the evidence:
+
+| Preserved fact | What it answers |
+| --- | --- |
+| Source and publisher | Who produced or published the input |
+| Dataset, version, and vintage | Which release of that dataset the value came from |
+| Geography | Which governed county or state the value describes |
+| Observation period | The inclusive period and grain, distinct from when Atlas loaded the release |
+| Units and denominators | The measure's unit and any governed denominator. A missing denominator is not invented |
+| Transformation and method | The methodology and version that produced the Atlas value |
+| Missing, suppressed, unavailable, and uncertain meaning | Whether a number was published, withheld, absent, or too limited to treat as a confident result |
+| Quality and limitations | Coverage, comparability, and other governed limits |
+| Lineage and provenance | How the row traces back to the source record and the Atlas release |
+
+Field names and types for the current release are defined by the public OpenAPI contract. Read them in [Provenance and evidence](/docs/develop/provenance), the generated [provenance reference](/docs/api-reference/provenance), and the generated [schemas](/docs/api-reference/schemas). This page does not copy those schemas.
+
+Product geography for the developer guides is the lower 48 states and the District of Columbia. See [Geography](/docs/develop/geography).
+
+## Missing, suppressed, unavailable, and uncertain
+
+Normalization keeps these states distinct. Do not collapse them into zero, and do not collapse them into one another.
+
+| State | What remains true after normalization |
+| --- | --- |
+| **Observed** | The source published a value or status for the stated geography and period. The public code is `OBSERVED`. |
+| **Zero** | The source published a numeric zero. The public code is `ZERO`. Coverage and method still bound that zero. |
+| **Missing** | No governed value was published for that geography and period. The public code is `MISSING`. Missing is not zero and not biological absence. |
+| **Suppressed** | The publisher withheld the value, including for privacy or a reporting rule. The public code is `SUPPRESSED`. Do not reconstruct a precise count. |
+| **Unavailable** | The source, field, geography, or period is not available in this release. The public code is `UNAVAILABLE`. Unavailable is an evidence gap. |
+| **No county-linked record** | No county-linked row is in the release. The public code is `NO_COUNTY_LINKED_RECORD`. The contract treats this as not evidence of absence. |
+| **Uncertain** | A governed limitation, sparse or incomplete coverage, a stale vintage, or disagreement between sources limits how far the value can be read. Uncertainty stays attached as that limitation. It is not rewritten into a confident number, and it is not an extra public value-state code. |
+
+`MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require a null value in the public contract. A null value is not zero. The signed-in workspace shows **Available**, **Limited**, and **Unavailable** after a successful response. **Suppressed** stays visible as suppression. Loading and request failures are not evidence states.
+
+The plain-language rules and the workspace labels are in [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). The contract table, in enum order, is in [Indicators, measures, and observations](/docs/develop/resources). Release time, source period, and methodology version stay separate in [Releases and methodology labels](/docs/releases-and-methodology).
+
+## Standards, where they apply
+
+These standards are selected directions for particular kinds of sources. They are not a universal data standard, and they are not a requirement that every Atlas source be FHIR.
+
+| Standard | Where it applies | What this page does not claim |
+| --- | --- | --- |
+| CDC Lyme/TBRD Message Mapping Guide (MMG) and the Public Health Information Network Vocabulary Access and Distribution System (PHIN VADS) | Public-health surveillance concepts, for a current or future source whose governed mapping uses them | That every released open-data source is mapped to the MMG, or that naming the MMG certifies the feed |
+| United States Core Data for Interoperability (USCDI) | A future clinical or laboratory data-element anchor | That clinical data elements are in the current release |
+| FHIR R4 and US Core | Future authorized clinical or laboratory resource semantics, when that source uses those resources | That every future source must be FHIR, or that Atlas has a live FHIR connection |
+| Bulk FHIR | A possible authorized population-scale transport | That transport is permission to access a source, or that a Bulk FHIR feed is operating |
+| LOINC (Logical Observation Identifiers Names and Codes) | Laboratory terminology for a source that already uses LOINC | That current open-data measures are LOINC-coded, or that a laboratory feed is in production |
+
+A standards mapping can sit beside the canonical observation as an annotation of source meaning. The observation still carries its own source, dataset, vintage, geography, period, method, value state, and limitations.
+
+## What Web, REST, and MCP consume
+
+Where the public contract already presents canonical evidence, consumers are intended to use that governed contract rather than an arbitrary source-specific schema.
+
+| Consumer | Authority | Current boundary |
+| --- | --- | --- |
+| Web product | The released Atlas experience, reading governed evidence and showing provenance beside the result | Open public evidence in the current release. Inspect provenance on the result. The [professional workspace](/docs/professional-workspace) and the public Explorer do not add a private clinical feed. |
+| REST API | The public OpenAPI document. The [API reference](/docs/api-reference) is generated from the pinned public contract and links the raw [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) | Anonymous current-release reads of indicators, measures, observations, sources, and methodologies. Legacy county and state analytics remain a separate route family, described in the [developer overview](/docs/develop). |
+| MCP | The [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md) and its tests in the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp) | Available now for a bounded anonymous read-only surface. `atlas_discover_indicators`, `atlas_get_county_profile`, and `atlas_get_evidence_provenance` return canonical public evidence and provenance. `atlas_resolve_geographies` returns county identity only. A schema that changes with each source is outside this contract. |
+
+Semantic and provenance meaning stays with the observation, source, and methodology resources. This site does not maintain a second HTTP schema, a second MCP tool list, or a second semantic contract.
+
+## Where to go next
+
+- [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) — how to read a result, including missing evidence and low observed signal.
+- [Releases and methodology labels](/docs/releases-and-methodology) — source period, release processing time, and methodology version.
+- [Provenance and evidence](/docs/develop/provenance) — the fields to keep with a value when you cite an API response.
+- [API reference: provenance](/docs/api-reference/provenance) — generated source and methodology operations.
+- [API reference: observations](/docs/api-reference/observations) — the observation query.
+- [API, MCP, and access](/docs/api-mcp-and-access) — what REST and MCP can do in this release.
+- [Current capabilities](/docs/current-capabilities) — the broader release boundary for the product.

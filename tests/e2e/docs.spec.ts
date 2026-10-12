@@ -23,6 +23,10 @@ const docsPages = [
     heading: "Evidence, provenance, and uncertainty",
   },
   {
+    path: "/docs/sources-and-canonical-evidence",
+    heading: "Sources and canonical evidence",
+  },
+  {
     path: "/docs/releases-and-methodology",
     heading: "Releases and methodology labels",
   },
@@ -246,6 +250,27 @@ test("keeps canonical product language and safety boundaries in the rendered gui
   ).toBeVisible();
   await expect(
     page.getByText(/The current release does not establish this/)
+  ).toBeVisible();
+
+  await page.goto("/docs/sources-and-canonical-evidence");
+  await expect(
+    page.getByRole("heading", {
+      name: "What is released and what is intent",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Available now", { exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Planned", { exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Not supported", { exact: true }).first()
+  ).toBeVisible();
+  await expect(page.getByText(/source-specific adapter/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "OpenAPI schema" })
   ).toBeVisible();
 });
 
