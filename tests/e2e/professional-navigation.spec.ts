@@ -90,7 +90,7 @@ test.describe("professional navigation desktop", () => {
     );
   });
 
-  for (const path of ["/app/review", "/app/explore"] as const) {
+  for (const path of ["/app/review", "/app/compare"] as const) {
     test(`${path} expanded header, active row, and compact density`, async ({
       page,
     }) => {
@@ -135,8 +135,23 @@ test.describe("professional navigation desktop", () => {
         await brand.locator("b").evaluate((element) => element.clientWidth + 1)
       );
 
-      const activeName = path === "/app/review" ? "Review" : "Explore";
-      const otherName = path === "/app/review" ? "Explore" : "Review";
+      const activeName = path === "/app/review" ? "Atlas Explorer" : "Compare";
+      const otherName = path === "/app/review" ? "Compare" : "Atlas Explorer";
+      await expect(nav.getByRole("link")).toHaveCount(6);
+      expect(
+        await nav
+          .locator("a")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => node.getAttribute("aria-label"))
+          )
+      ).toEqual([
+        "Atlas Explorer",
+        "Compare",
+        "Ask Atlas",
+        "Feed",
+        "Settings",
+        "Docs, opens in a new tab",
+      ]);
       const active = nav.getByRole("link", { exact: true, name: activeName });
       const other = nav.getByRole("link", { exact: true, name: otherName });
       await expect(active).toHaveAttribute("aria-current", "page");
@@ -260,16 +275,16 @@ test.describe("professional navigation desktop", () => {
       1
     );
 
-    const review = (await navigation(page)).getByRole("link", {
+    const explorer = (await navigation(page)).getByRole("link", {
       exact: true,
-      name: "Review",
+      name: "Atlas Explorer",
     });
-    expect(Math.abs((await box(review)).height - 38)).toBeLessThan(0.6);
-    await review.hover();
+    expect(Math.abs((await box(explorer)).height - 38)).toBeLessThan(0.6);
+    await explorer.hover();
     await expect(
       page
         .locator("[data-slot='tooltip-content']")
-        .filter({ hasText: "Review" })
+        .filter({ hasText: "Atlas Explorer" })
     ).toBeVisible();
     await show.hover();
     await expect(
@@ -286,12 +301,12 @@ test.describe("professional navigation desktop", () => {
         .evaluate((element) => getComputedStyle(element).borderTopWidth)
     ).toBe("1px");
 
-    await page.goto("/app/explore");
+    await page.goto("/app/compare");
     await expect(sidebar).toHaveAttribute("data-state", "collapsed");
     await expect(
       (await navigation(page)).getByRole("link", {
         exact: true,
-        name: "Explore",
+        name: "Compare",
       })
     ).toHaveAttribute("aria-current", "page");
 
@@ -307,7 +322,7 @@ test.describe("professional navigation desktop", () => {
     ).toBeVisible();
 
     await page.goto("/app/review");
-    await page.goto("/app/explore");
+    await page.goto("/app/compare");
     await page.goBack();
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
@@ -315,17 +330,17 @@ test.describe("professional navigation desktop", () => {
     await expect(
       (await navigation(page)).getByRole("link", {
         exact: true,
-        name: "Review",
+        name: "Atlas Explorer",
       })
     ).toHaveAttribute("aria-current", "page");
     await page.goForward();
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
-      .toBe("/app/explore");
+      .toBe("/app/compare");
     await expect(
       (await navigation(page)).getByRole("link", {
         exact: true,
-        name: "Explore",
+        name: "Compare",
       })
     ).toHaveAttribute("aria-current", "page");
     await expect(sidebar).toHaveAttribute("data-state", "expanded");
@@ -350,7 +365,7 @@ test.describe("professional navigation mobile", () => {
     );
   });
 
-  for (const path of ["/app/review", "/app/explore"] as const) {
+  for (const path of ["/app/review", "/app/compare"] as const) {
     test(`${path} drawer stays closed, then opens without desktop collapse chrome`, async ({
       page,
     }) => {
@@ -392,7 +407,21 @@ test.describe("professional navigation mobile", () => {
       expect(overlaps(brandBox, closeBox)).toBe(false);
       expect(brandBox.right).toBeLessThanOrEqual(closeBox.left);
 
-      const activeName = path === "/app/review" ? "Review" : "Explore";
+      expect(
+        await nav
+          .locator("a")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => node.getAttribute("aria-label"))
+          )
+      ).toEqual([
+        "Atlas Explorer",
+        "Compare",
+        "Ask Atlas",
+        "Feed",
+        "Settings",
+        "Docs, opens in a new tab",
+      ]);
+      const activeName = path === "/app/review" ? "Atlas Explorer" : "Compare";
       const active = nav.getByRole("link", { exact: true, name: activeName });
       await expect(active).toHaveAttribute("aria-current", "page");
       const activeStyle = await rowStyle(active);

@@ -64,7 +64,7 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("review-view-county-evidence")).toBeVisible();
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
       "href",
-      /\/app\/investigate/
+      /\/app\/review\?.*mode=evidence/
     );
 
     await page.getByTestId("review-view-county-evidence").click();

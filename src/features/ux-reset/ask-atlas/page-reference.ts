@@ -257,19 +257,19 @@ function returnPath(surface: AskAtlasSurface): string {
 export function askAtlasReturnLabel(surface: AskAtlasSurface): string {
   switch (surface) {
     case "action": {
-      return "Return to Action";
+      return "Return to suggested follow-up";
     }
     case "compare": {
       return "Return to Compare";
     }
     case "explore": {
-      return "Return to Explore";
+      return "Return to Atlas Explorer";
     }
     case "investigate": {
-      return "Return to Investigate";
+      return "Return to county evidence";
     }
     case "review": {
-      return "Return to Review";
+      return "Return to Atlas Explorer";
     }
     default: {
       const exhaustive: never = surface;

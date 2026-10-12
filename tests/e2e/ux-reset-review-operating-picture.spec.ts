@@ -94,9 +94,11 @@ test.describe("Review operating picture", () => {
     const href =
       (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
     expect(href).toContain("county=08001");
-    expect(href).toContain("/app/investigate");
+    expect(href).toContain("/app/review");
+    expect(href).toContain("mode=evidence");
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
 
     if (!testInfo.project.name.includes("mobile")) {

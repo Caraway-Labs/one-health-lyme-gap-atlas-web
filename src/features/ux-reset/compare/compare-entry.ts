@@ -10,8 +10,8 @@ import {
 } from "@/features/ux-reset/context-params";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import {
+  ATLAS_EXPLORER_PATH,
   RESET_COMPARE_PATH,
-  RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
 import { isCountyFips } from "@/lib/county-geography";
@@ -45,10 +45,10 @@ export function parseCompareReturnTarget(
 export function compareReturnLabel(target: CompareReturnTarget): string {
   switch (target) {
     case "review": {
-      return "Return to Review";
+      return "Return to Atlas Explorer";
     }
     case "investigate": {
-      return "Return to Investigate";
+      return "Return to county evidence";
     }
     default: {
       const exhaustive: never = target;
@@ -63,7 +63,7 @@ export function compareReturnPath(target: CompareReturnTarget): string {
       return RESET_REVIEW_PATH;
     }
     case "investigate": {
-      return RESET_INVESTIGATE_PATH;
+      return ATLAS_EXPLORER_PATH;
     }
     default: {
       const exhaustive: never = target;

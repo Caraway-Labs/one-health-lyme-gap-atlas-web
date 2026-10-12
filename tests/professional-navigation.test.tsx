@@ -156,23 +156,23 @@ describe("professional workspace navigation", () => {
       </ResetProfessionalShell>
     );
 
-    const review = screen.getByRole("link", { name: /^Review$/ });
-    const explore = screen.getByRole("link", { name: /^Explore$/ });
+    const explorer = screen.getByRole("link", { name: /^Atlas Explorer$/ });
+    const compare = screen.getByRole("link", { name: /^Compare$/ });
     const docs = screen.getByRole("link", { name: "Docs, opens in a new tab" });
     expect({
+      compareActive: compare.dataset.active ?? null,
+      compareCurrent: compare.getAttribute("aria-current") ?? null,
       docsRel: docs.getAttribute("rel"),
       docsTarget: docs.getAttribute("target"),
-      exploreActive: explore?.dataset.active ?? null,
-      exploreCurrent: explore?.getAttribute("aria-current") ?? null,
-      reviewActive: review?.dataset.active ?? null,
-      reviewCurrent: review?.getAttribute("aria-current") ?? null,
+      explorerActive: explorer.dataset.active ?? null,
+      explorerCurrent: explorer.getAttribute("aria-current") ?? null,
     }).toStrictEqual({
+      compareActive: null,
+      compareCurrent: null,
       docsRel: "noopener noreferrer",
       docsTarget: "_blank",
-      exploreActive: null,
-      exploreCurrent: null,
-      reviewActive: "true",
-      reviewCurrent: "page",
+      explorerActive: "true",
+      explorerCurrent: "page",
     });
   });
 

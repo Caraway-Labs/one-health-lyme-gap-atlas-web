@@ -727,11 +727,11 @@ export function ReviewOperatingPicture({
         {!preview && handoff && releaseId && selectedPublished ? (
           <ReviewPublishedCountyPreview
             county={selectedPublished}
-            releaseId={releaseId}
             href={handoff.href}
-            openRef={openRef}
             onOpen={markReviewReturnFocus}
             onViewCountyEvidence={onViewCountyEvidence}
+            openRef={openRef}
+            releaseId={releaseId}
           />
         ) : null}
         {preview && handoff ? (

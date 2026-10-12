@@ -257,9 +257,9 @@ test.describe("Chat and primitive catalog", () => {
   }) => {
     const blocked = track(page);
     await openStory(page, "navigation-and-layout-sidebar--expanded");
-    await page.getByRole("link", { name: "Investigate" }).click();
+    await page.getByRole("link", { name: "Compare" }).click();
     await expect(page.getByTestId("sidebar-active")).toHaveText(
-      "Active item Investigate"
+      "Active item Compare"
     );
     await page.getByRole("button", { name: "Open navigation" }).click();
     await expect(page.locator("[data-slot='sidebar']")).toHaveAttribute(

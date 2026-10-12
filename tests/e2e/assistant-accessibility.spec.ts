@@ -119,7 +119,7 @@ test("drawer assistant exposes one dialog landmark and returns focus on close", 
 }) => {
   await mockApi(page);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/geographic_explorer?state=CA&county=06085");
+  await page.goto("/account");
   const launcher = page.getByRole("button", { name: "Atlas Assistant" });
   await launcher.click();
   await expect(

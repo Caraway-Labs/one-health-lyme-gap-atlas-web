@@ -491,9 +491,9 @@ test.describe("two-county Compare", () => {
       "href",
       /\/app\/review/
     );
-    await expect(page.getByTestId("compare-return")).not.toHaveAttribute(
+    await expect(page.getByTestId("compare-return")).toHaveAttribute(
       "href",
-      /compare=/
+      /compare=08001(?!\d)/
     );
 
     await page.getByTestId("compare-slot-1").click();
@@ -507,7 +507,7 @@ test.describe("two-county Compare", () => {
       "href",
       /county=08001/
     );
-    await expect(page.getByTestId("compare-return")).not.toHaveAttribute(
+    await expect(page.getByTestId("compare-return")).toHaveAttribute(
       "href",
       /08013/
     );

@@ -35,6 +35,7 @@ vi.mock(
     }) as never
 );
 
+import { installedWorkspaceRedirect } from "@/features/ux-reset/workspace-route-migration";
 import { config as middlewareConfig, middleware } from "@/middleware";
 
 const SESSION_REQUEST_HEADER = `x-middleware-request-${FRONT_PORCH_SESSION_HEADER}`;
@@ -76,13 +77,46 @@ describe("front porch session middleware", () => {
       }
     );
 
-    const response = await middleware(
-      atlasRequest("/?county=08001&state=CO", true)
-    );
+    const response = await middleware(atlasRequest("/", true));
 
     expect(response.headers.get(SESSION_REQUEST_HEADER)).toBe("1");
     expect(response.cookies.get("sb-access")?.value).toBe("refreshed");
     expect(response.status).toBe(200);
+  });
+
+  it("redirects a legacy Front Porch analytical query to Atlas Explorer", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubEnv("ATLAS_E2E", "0");
+    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    createServerClient.mockImplementation(
+      (
+        _url: string,
+        _key: string,
+        options: {
+          cookies: {
+            getAll: () => unknown;
+            setAll: (cookies: CookieToSet[]) => void;
+          };
+        }
+      ) => {
+        options.cookies.getAll();
+        options.cookies.setAll([
+          { name: "sb-access", options: { path: "/" }, value: "refreshed" },
+        ]);
+        return { auth: { getUser } };
+      }
+    );
+
+    const response = await middleware(
+      atlasRequest("/?county=08001&state=CO", true)
+    );
+
+    expect(response.cookies.get("sb-access")?.value).toBe("refreshed");
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/app/review?scope=CO&county=08001"
+    );
   });
 
   it("treats a Front Porch refresh error as signed out", async () => {
@@ -145,6 +179,9 @@ describe("front porch session middleware", () => {
       "/",
       "/app",
       "/app/:path*",
+      "/overview",
+      "/geographic_explorer",
+      "/investigate",
     ]);
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
@@ -156,6 +193,89 @@ describe("front porch session middleware", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("keeps an unauthenticated alias on the sign-in return path", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubEnv("ATLAS_E2E", "0");
+    vi.stubEnv("NODE_ENV", "production");
+    getUser.mockResolvedValue({ data: { user: null } });
+    createServerClient.mockReturnValue({ auth: { getUser } });
+
+    const response = await middleware(
+      atlasRequest("/app/explore?scope=NY&county=36061&metric=lyme_cases")
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/auth/sign-in?next=%2Fapp%2Fexplore%3Fscope%3DNY%26county%3D36061%26metric%3Dlyme_cases"
+    );
+  });
+
+  it("redirects signed-in aliases once and does not loop or invent a county", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubEnv("ATLAS_E2E", "0");
+    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    createServerClient.mockReturnValue({ auth: { getUser } });
+
+    const cases = [
+      ["/app", "/app/review"],
+      [
+        "/app/explore?scope=NY&county=36061",
+        "/app/review?scope=NY&county=36061",
+      ],
+      [
+        "/app/investigate?county=08001",
+        "/app/review?county=08001&mode=evidence",
+      ],
+      ["/app/investigate", "/app/review"],
+      ["/app/action?county=08001", "/app/review?county=08001&mode=follow-up"],
+      ["/app/action", "/app/review"],
+      ["/overview?county=08001&state=CO", "/app/review?scope=CO&county=08001"],
+      [
+        "/geographic_explorer?selected=06037,06059",
+        "/app/review?compare=06037%2C06059",
+      ],
+      ["/investigate?county=not-a-county", "/app/review"],
+      ["/app/review?scope=CO&county=08001", null],
+      ["/app/compare?compare=08001,08013", null],
+      ["/app/assistant", null],
+      ["/app/feed", null],
+      ["/app/settings", null],
+      ["/variant_1", null],
+      ["/assistant?conversation=abc", null],
+    ] as const;
+
+    const observed = [];
+    for (const [path, target] of cases) {
+      const response = await middleware(atlasRequest(path));
+      const installed = installedWorkspaceRedirect({
+        pathname: path.split("?")[0] ?? path,
+        searchParams: new URLSearchParams(path.split("?")[1] ?? ""),
+      });
+      const followUp =
+        target === null ? null : await middleware(atlasRequest(target));
+      observed.push({
+        followUp: followUp?.status ?? null,
+        installedHref: installed?.href ?? null,
+        installedStatus: installed?.status ?? null,
+        location: response.headers.get("location"),
+        path,
+        status: response.status,
+      });
+    }
+    expect(observed).toStrictEqual(
+      cases.map(([path, target]) => ({
+        followUp: target === null ? null : 200,
+        installedHref: target,
+        installedStatus: target === null ? null : 307,
+        location: target === null ? null : `http://localhost${target}`,
+        path,
+        status: target === null ? 200 : 307,
+      }))
+    );
   });
 
   it("serves the Front Porch without Supabase configuration", async () => {

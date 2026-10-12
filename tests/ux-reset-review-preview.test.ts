@@ -300,8 +300,8 @@ describe("Review county preview", () => {
       county: "36103",
       dataset: "alpha-2026",
       notes: [
-        "The Review list page stays on Review. Browser Back returns to it.",
-        "Review sort stays on Review and is not copied to Investigate.",
+        "The list page stays on Atlas Explorer browse. Browser Back returns to it.",
+        "Sort stays on Atlas Explorer browse and is not copied into county evidence.",
       ],
       page: null,
       period: "2023-01-01",

@@ -1,9 +1,8 @@
 /**
  * Recorded six-page workspace route migration (issue 196).
  *
- * `recordedWorkspaceMigration` is the old→new map. It does not redirect,
- * rewrite history, or change navigation. Installing it is issue 197, after the
- * Explorer view (issue 413) and dedicated Ask Atlas page (issue 424) are ready.
+ * `recordedWorkspaceMigration` is the old→new map. Issue 197 installs it from
+ * middleware after the auth guard. Canonical destinations are fixed points.
  */
 
 import {
@@ -13,7 +12,7 @@ import {
   UX_RESET_COMPARE_COUNTY_LIMIT,
   type UxResetSharedContext,
   type UxResetSharedContextParamKey,
-} from "@/features/ux-reset/context-params";
+} from "@/features/ux-reset/context-shared";
 import {
   ATLAS_EXPLORER_PATH,
   DOCS_PATH,
@@ -85,7 +84,7 @@ export const WORKSPACE_MIGRATION_INSTALL = {
   explorerViewIssue: 413,
   /** Same-path query cleanup and cross-route redirects both replace history. */
   history: "replace",
-  redirectsInstalled: false,
+  redirectsInstalled: true,
   /** Temporary so a cutover can be reversed. Do not emit 308 in that change. */
   redirectStatus: 307,
 } as const;
@@ -526,4 +525,25 @@ export function recordedWorkspaceMigration(input: {
     return redirectResult(pathname, input.searchParams);
   }
   return { kind: "unchanged", pathname, reason: "out-of-scope" };
+}
+
+/**
+ * Installed compatibility redirect (issue 197). Auth must run first.
+ * Canonical destinations, the Front Porch, and the public Assistant return null.
+ */
+export function installedWorkspaceRedirect(input: {
+  pathname: string;
+  searchParams: URLSearchParams;
+}): {
+  href: string;
+  status: typeof WORKSPACE_MIGRATION_INSTALL.redirectStatus;
+} | null {
+  const result = recordedWorkspaceMigration(input);
+  if (result.kind !== "redirect") {
+    return null;
+  }
+  return {
+    href: result.href,
+    status: WORKSPACE_MIGRATION_INSTALL.redirectStatus,
+  };
 }

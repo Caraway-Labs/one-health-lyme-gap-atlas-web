@@ -425,7 +425,7 @@ describe("Storybook P0 evidence fixtures", () => {
         release={model.release}
       />
     );
-    clickLink(screen.getByRole("link", { name: "Open Investigate" }));
+    clickLink(screen.getByRole("link", { name: "County evidence" }));
     expect(onOpen).toHaveBeenCalledExactlyOnceWith(syntheticCounty.fips);
     clickLink(screen.getByRole("link", { name: "Compare" }));
     expect(onOpen).toHaveBeenCalledTimes(2);

@@ -394,7 +394,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       >
         <SidebarHeader>
           <Link
-            href={shellHref(resetRouteById("overview"))}
+            href={shellHref(resetRouteById("explorer"))}
             aria-label="One Health Atlas"
             className="ux-reset-pro-brand"
             onClick={closeMobileNavigation}

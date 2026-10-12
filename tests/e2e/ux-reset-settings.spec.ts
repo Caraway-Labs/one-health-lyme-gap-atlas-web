@@ -173,7 +173,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     await chooseJurisdiction(page, "United States");
     await page.getByTestId("settings-save-profile").click();
     await expect(page.getByTestId("settings-save-notice")).toContainText(
-      "Starting view saved. It will apply the next time you open Review without a specific view."
+      "Starting view saved. It will apply the next time you open Atlas Explorer without a specific view."
     );
     await expect(
       page.locator("[data-default-jurisdiction='ALL']")
@@ -197,7 +197,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     await expect(page.locator("#settings-role")).toContainText(
       "Prefer not to say"
     );
-    const reviewLink = page.getByRole("link", { name: "Review" });
+    const reviewLink = page.getByRole("link", { name: "Atlas Explorer" });
     if (!(await reviewLink.isVisible())) {
       await page.getByRole("button", { name: "Open navigation" }).click();
     }

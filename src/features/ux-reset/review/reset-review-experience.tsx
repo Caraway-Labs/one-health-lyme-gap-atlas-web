@@ -72,7 +72,7 @@ import {
 } from "@/lib/atlas-state-geography";
 
 function ResetReviewExperienceInner() {
-  const route = resetRouteById("review");
+  const route = resetRouteById("explorer");
   const router = useRouter();
   const [urlState, setUrlState] = useQueryStates(reviewSearchParams, {
     history: "push",

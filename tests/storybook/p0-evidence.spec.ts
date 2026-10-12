@@ -375,9 +375,9 @@ test.describe("P0 evidence catalog", () => {
     await hide.click();
     const show = page.getByRole("button", { name: "Show navigation" });
     await expect(show).toBeVisible();
-    await page.getByRole("link", { name: "Investigate" }).click();
+    await page.getByRole("link", { name: "Compare" }).click();
     await expect(
-      page.getByText("Active catalog route: /app/investigate")
+      page.getByText("Active catalog route: /app/compare")
     ).toBeVisible();
     const launcher = page.getByTestId("ask-atlas-launcher");
     await expect(launcher).toHaveAttribute("href", "/app/assistant");

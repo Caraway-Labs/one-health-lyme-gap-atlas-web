@@ -291,7 +291,7 @@ async function chooseMeasure(name: string) {
 }
 
 function navigationParams(
-  name: "Compare" | "Investigate" | "page-compare" | "page-investigate"
+  name: "Compare" | "Atlas Explorer" | "page-compare" | "page-investigate"
 ) {
   const element =
     name === "page-investigate"
@@ -311,7 +311,7 @@ function expectSharedNavigation(expected: {
   for (const name of [
     "page-investigate",
     "page-compare",
-    "Investigate",
+    "Atlas Explorer",
     "Compare",
   ] as const) {
     const params = navigationParams(name);
@@ -356,8 +356,13 @@ function expectDisplayedMeasure(input: {
 }
 
 function shellAssistantHref(): URL {
+  const navigation = screen.getByRole("navigation", {
+    name: "Professional workspace",
+  });
   return new URL(
-    screen.getByRole("link", { name: "Assistant" }).getAttribute("href") ?? "",
+    navigation
+      .querySelector('a[aria-label="Ask Atlas"]')
+      ?.getAttribute("href") ?? "",
     "http://localhost"
   );
 }

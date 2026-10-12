@@ -42,7 +42,7 @@ export const FIXTURE_ACCEPT_POLICY: Record<
   explore: ["scope", "county", "dataset", "period"],
   feed: [],
   investigate: FIXTURE_SHARED_KEYS,
-  review: ["scope", "county", "dataset", "period"],
+  review: ["scope", "county", "compare", "dataset", "period"],
   settings: [],
 };
 

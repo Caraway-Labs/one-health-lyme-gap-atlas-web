@@ -119,15 +119,29 @@ describe("six-page workspace route migration", () => {
     ]);
     expect({
       explorer: ATLAS_EXPLORER_PATH,
+      explorerRoute: RESET_ROUTES.find((route) => route.id === "explorer")
+        ?.href,
       frontPorch: frontPorchExploreHref(true),
       reviewConstant: RESET_REVIEW_PATH,
-      reviewRoute: RESET_ROUTES.find((route) => route.id === "review")?.href,
     }).toStrictEqual({
       explorer: "/app/review",
+      explorerRoute: "/app/review",
       frontPorch: "/app/review",
       reviewConstant: "/app/review",
-      reviewRoute: "/app/review",
     });
+    expect(
+      RESET_ROUTES.filter((route) => route.navGroup !== "alias").map(
+        (route) => ({
+          label: route.label,
+          path: route.href,
+        })
+      )
+    ).toStrictEqual(
+      WORKSPACE_DESTINATIONS.map((destination) => ({
+        label: destination.label,
+        path: destination.path,
+      }))
+    );
     expect([...UX_RESET_DESTINATION_IDS].sort()).toStrictEqual([
       "action",
       "assistant",
@@ -140,23 +154,26 @@ describe("six-page workspace route migration", () => {
     ]);
   });
 
-  it("records a reversible redirect policy and does not install it", () => {
+  it("installs the reversible redirect from middleware after auth", () => {
     expect(WORKSPACE_MIGRATION_INSTALL).toMatchObject({
       history: "replace",
-      redirectsInstalled: false,
+      redirectsInstalled: true,
       redirectStatus: 307,
     });
-    const offenders = sourceFiles("src").filter((file) => {
-      if (file.endsWith("workspace-route-migration.ts")) {
-        return false;
-      }
+    const importers = sourceFiles("src").filter((file) => {
       const source = readFileSync(file, "utf-8");
       return (
         source.includes("recordedWorkspaceMigration") ||
+        source.includes("installedWorkspaceRedirect") ||
         source.includes("workspace-route-migration")
       );
     });
-    expect(offenders).toStrictEqual([]);
+    expect(importers.sort()).toStrictEqual(
+      [
+        "src/features/ux-reset/workspace-route-migration.ts",
+        "src/middleware.ts",
+      ].sort()
+    );
   });
 
   it("does not revive retired variant or UX Lab URLs", () => {

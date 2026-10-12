@@ -76,16 +76,22 @@ export function hrefWithExplorerMode(
 }
 
 /**
- * Compare's return link restores expanded county evidence only when this
- * Compare URL carried one exact Explorer mode and the return target is Review.
- * Any other return target or mode token is left unchanged.
+ * Compare's return link restores expanded county evidence when this Compare
+ * URL carried one exact Explorer mode and the return target is Review.
+ * `return=investigate` always opens Atlas Explorer county evidence.
  */
 export function compareReturnHrefWithExplorerMode(input: {
   href: string | null;
   modeValues: readonly string[];
   returnTarget: string | null;
 }): string | null {
-  if (!(input.href && input.returnTarget === "review")) {
+  if (!input.href) {
+    return input.href;
+  }
+  if (input.returnTarget === "investigate") {
+    return hrefWithExplorerMode(input.href, EXPLORER_EVIDENCE_MODE);
+  }
+  if (input.returnTarget !== "review") {
     return input.href;
   }
   const query = resolveExplorerModeQuery(input.modeValues);

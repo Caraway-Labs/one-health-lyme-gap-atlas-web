@@ -5,8 +5,8 @@ import {
   FileText,
   GitCompare,
   LayoutDashboard,
+  Map,
   Microscope,
-  Search,
   Settings,
   Sparkles,
   Zap,
@@ -27,6 +27,7 @@ export {
 } from "@/features/ux-reset/routes";
 
 import {
+  ATLAS_EXPLORER_PATH,
   DOCS_PATH,
   RESET_ACTION_PATH,
   RESET_ASSISTANT_PATH,
@@ -34,14 +35,14 @@ import {
   RESET_EXPLORE_PATH,
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
-  RESET_REVIEW_PATH,
   RESET_SETTINGS_PATH,
   UX_RESET_APP_PREFIX,
 } from "@/features/ux-reset/routes";
 
 export type ResetRouteMatch = "exact" | "prefix";
 
-export type ResetNavGroup = "workspace" | "access";
+/** `alias` routes stay addressable for redirects and are not sidebar destinations. */
+export type ResetNavGroup = "workspace" | "access" | "alias";
 
 export type ResetRoute = {
   description: string;
@@ -60,54 +61,16 @@ export type ResetRoute = {
 export const RESET_ROUTES: readonly ResetRoute[] = [
   {
     description:
-      "Start from surveillance review priorities and county follow-up.",
-    href: UX_RESET_APP_PREFIX,
-    icon: LayoutDashboard,
-    id: "overview",
-    label: "Workspace overview",
-    match: "exact",
-    navGroup: "workspace",
-    pageDescription:
-      "Authenticated professional workspace for the One Health Lyme Gap Atlas.",
-    pageTitle: "Professional workspace | One Health Lyme Gap Atlas",
-  },
-  {
-    description:
-      "Review county surveillance evidence and follow-up priorities.",
-    href: RESET_REVIEW_PATH,
-    icon: Search,
-    id: "review",
-    label: "Review",
-    match: "prefix",
-    navGroup: "workspace",
-    pageDescription: "Placeholder for the professional Review destination.",
-    pageTitle: "Review | One Health Lyme Gap Atlas",
-  },
-  {
-    description:
-      "Discover geographic patterns across governed measures before a county investigation.",
-    href: RESET_EXPLORE_PATH,
-    icon: Compass,
-    id: "explore",
-    label: "Explore",
+      "Map, county evidence, and suggested follow-up for one governed release.",
+    href: ATLAS_EXPLORER_PATH,
+    icon: Map,
+    id: "explorer",
+    label: "Atlas Explorer",
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Map-led spatial discovery for governed measures, with the same values available without the map.",
-    pageTitle: "Explore | One Health Lyme Gap Atlas",
-  },
-  {
-    description:
-      "Read one county's evidence, uncertainty, context, and what to inspect next.",
-    href: RESET_INVESTIGATE_PATH,
-    icon: Microscope,
-    id: "investigate",
-    label: "Investigate",
-    match: "prefix",
-    navGroup: "workspace",
-    pageDescription:
-      "Single-county workspace for governed evidence, limitations, and the return path to Review.",
-    pageTitle: "Investigate | One Health Lyme Gap Atlas",
+      "Map-led review, expandable county evidence, and suggested follow-up. Not a separate Investigate or Action destination.",
+    pageTitle: "Atlas Explorer | One Health Lyme Gap Atlas",
   },
   {
     description: "Compare two counties on aligned governed measures.",
@@ -122,29 +85,67 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Compare | One Health Lyme Gap Atlas",
   },
   {
+    description: "Ask questions grounded in reviewed literature.",
+    href: RESET_ASSISTANT_PATH,
+    icon: Sparkles,
+    id: "assistant",
+    label: "Ask Atlas",
+    match: "prefix",
+    navGroup: "workspace",
+    pageDescription:
+      "Dedicated answer-only workspace for reviewed-literature questions. Explorer and Compare can hand a validated page reference here and return to that page.",
+    pageTitle: "Ask Atlas | One Health Lyme Gap Atlas",
+  },
+  {
     description:
-      "Carry one county's Investigate evidence into follow-up that exists today.",
+      "Authenticated professional workspace entry. Redirects to Atlas Explorer.",
+    href: UX_RESET_APP_PREFIX,
+    icon: LayoutDashboard,
+    id: "overview",
+    label: "Workspace overview",
+    match: "exact",
+    navGroup: "alias",
+    pageDescription:
+      "Authenticated professional workspace for the One Health Lyme Gap Atlas.",
+    pageTitle: "Professional workspace | One Health Lyme Gap Atlas",
+  },
+  {
+    description: "Alias for Atlas Explorer browse. Not a sidebar destination.",
+    href: RESET_EXPLORE_PATH,
+    icon: Compass,
+    id: "explore",
+    label: "Explore",
+    match: "prefix",
+    navGroup: "alias",
+    pageDescription:
+      "Map-led spatial discovery for governed measures, with the same values available without the map.",
+    pageTitle: "Explore | One Health Lyme Gap Atlas",
+  },
+  {
+    description:
+      "Alias for Atlas Explorer county evidence. Not a sidebar destination.",
+    href: RESET_INVESTIGATE_PATH,
+    icon: Microscope,
+    id: "investigate",
+    label: "Investigate",
+    match: "prefix",
+    navGroup: "alias",
+    pageDescription:
+      "Single-county workspace for governed evidence, limitations, and the return path to Atlas Explorer.",
+    pageTitle: "Investigate | One Health Lyme Gap Atlas",
+  },
+  {
+    description:
+      "Alias for Atlas Explorer suggested follow-up. Not a sidebar destination.",
     href: RESET_ACTION_PATH,
     icon: Zap,
     id: "action",
     label: "Action",
     match: "prefix",
-    navGroup: "workspace",
+    navGroup: "alias",
     pageDescription:
-      "Bounded follow-up for one county's validated Investigate evidence. No intervention is started from this page.",
+      "Bounded follow-up for one county's validated evidence. No intervention is started from this page.",
     pageTitle: "Action | One Health Lyme Gap Atlas",
-  },
-  {
-    description: "Ask questions grounded in reviewed literature.",
-    href: RESET_ASSISTANT_PATH,
-    icon: Sparkles,
-    id: "assistant",
-    label: "Assistant",
-    match: "prefix",
-    navGroup: "workspace",
-    pageDescription:
-      "Research workspace for reviewed-literature questions. Explorer and Compare can hand a validated page reference here and return to that page.",
-    pageTitle: "Assistant | One Health Lyme Gap Atlas",
   },
   {
     description: "Activity and updates across your professional workspace.",
@@ -167,7 +168,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "access",
     pageDescription:
-      "Save a national or state default for future Review sessions, plus optional profile details and account controls.",
+      "Save a national or state default for future Atlas Explorer sessions, plus optional profile details and account controls.",
     pageTitle: "Settings | One Health Lyme Gap Atlas",
   },
   {

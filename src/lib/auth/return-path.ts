@@ -1,5 +1,5 @@
+import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { isProfessionalAppPath } from "@/lib/auth/app-route-guard";
-import { ATLAS_OVERVIEW_PATH } from "@/lib/navigation";
 
 export function safeReturnPath(
   value: string | null,
@@ -17,14 +17,15 @@ export function safeReturnPath(
 }
 
 /**
- * Signed-in return paths may point at the professional workspace. The
- * account-free exit cannot, because middleware sends unauthenticated /app
- * requests back to sign-in.
+ * Signed-in return paths may point at the professional workspace. An
+ * account-free exit from a professional path lands on Atlas Explorer, which
+ * still requires a session. Public aliases such as `/overview` stay intact
+ * so the compatibility redirect can preserve their query.
  */
 export function accountFreeContinueHref(returnPath: string): string {
   const pathname = returnPath.split(/[?#]/, 1)[0] || "/";
   if (isProfessionalAppPath(pathname)) {
-    return ATLAS_OVERVIEW_PATH;
+    return ATLAS_EXPLORER_PATH;
   }
   return returnPath;
 }

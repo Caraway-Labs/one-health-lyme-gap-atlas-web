@@ -4,11 +4,11 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import ResetExplorePage from "@/app/app/explore/page";
+import ResetComparePage from "@/app/app/compare/page";
 import ResetWorkspaceOverviewPage from "@/app/app/page";
 import {
   RESET_APP_PATH,
-  RESET_EXPLORE_PATH,
+  RESET_COMPARE_PATH,
   RESET_REVIEW_PATH,
   isResetRouteActive,
 } from "@/features/ux-reset/paths";
@@ -59,13 +59,9 @@ describe("UX Reset professional workspace", () => {
 
   it("exposes all primary destinations in the route contract", () => {
     const labels = [
-      "Workspace overview",
-      "Review",
-      "Explore",
-      "Investigate",
+      "Atlas Explorer",
       "Compare",
-      "Action",
-      "Assistant",
+      "Ask Atlas",
       "Feed",
       "Settings",
       "Docs",
@@ -78,13 +74,25 @@ describe("UX Reset professional workspace", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",
     });
+    expect(
+      [...navigation.querySelectorAll("a")].map((link) =>
+        link.getAttribute("aria-label")
+      )
+    ).toStrictEqual([
+      "Atlas Explorer",
+      "Compare",
+      "Ask Atlas",
+      "Feed",
+      "Settings",
+      "Docs, opens in a new tab",
+    ]);
     for (const label of labels) {
       expect(navigation.textContent).toContain(label);
     }
   });
 
   it("marks the active destination without matching sibling prefixes", () => {
-    pathname = RESET_EXPLORE_PATH;
+    pathname = RESET_COMPARE_PATH;
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -92,7 +100,7 @@ describe("UX Reset professional workspace", () => {
       <QueryClientProvider client={client}>
         <NuqsTestingAdapter>
           <ResetProfessionalShell>
-            <ResetExplorePage />
+            <ResetComparePage />
           </ResetProfessionalShell>
         </NuqsTestingAdapter>
       </QueryClientProvider>
@@ -103,7 +111,7 @@ describe("UX Reset professional workspace", () => {
     });
     expect(
       navigation
-        .querySelector('a[href^="/app/explore"]')
+        .querySelector('a[href^="/app/compare"]')
         ?.getAttribute("aria-current")
     ).toBe("page");
     expect(
@@ -114,7 +122,7 @@ describe("UX Reset professional workspace", () => {
     expect(
       isResetRouteActive(
         { href: RESET_APP_PATH, match: "exact" },
-        RESET_EXPLORE_PATH
+        RESET_COMPARE_PATH
       )
     ).toBeFalsy();
     expect(

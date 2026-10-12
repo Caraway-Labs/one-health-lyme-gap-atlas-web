@@ -187,7 +187,7 @@ test.describe("professional shell scroll containment", () => {
     await page.goto("/app/review?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect(
-      page.getByRole("link", { exact: true, name: "Review" })
+      page.getByRole("link", { exact: true, name: "Atlas Explorer" })
     ).toHaveAttribute("aria-current", "page");
 
     const sidebar = page.locator("#ux-reset-pro-navigation");
@@ -247,7 +247,7 @@ test.describe("professional shell scroll containment", () => {
     expect(collapsed.top).toBe(0);
     expect(collapsed.width).toBeLessThan(sidebarBox.width);
     await expect(
-      page.getByRole("link", { exact: true, name: "Review" })
+      page.getByRole("link", { exact: true, name: "Atlas Explorer" })
     ).toHaveAttribute("aria-current", "page");
 
     await page.getByRole("button", { name: "Show navigation" }).click();
@@ -623,7 +623,9 @@ test.describe("professional shell scroll containment", () => {
         })
       )
       .toBe(true);
-    await page.getByRole("link", { exact: true, name: "Review" }).click();
+    await page
+      .getByRole("link", { exact: true, name: "Atlas Explorer" })
+      .click();
     await expect(page).toHaveURL(/\/app\/review/);
     await expect.poll(() => mainScrollTop(page)).toBe(0);
   });

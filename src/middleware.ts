@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { installedWorkspaceRedirect } from "@/features/ux-reset/workspace-route-migration";
 import {
   isSupabaseAuthConfigured,
   shouldRedirectUnauthenticatedAppRoute,
@@ -76,9 +77,31 @@ export async function middleware(request: NextRequest) {
     return redirect;
   }
 
+  const compatibility = installedWorkspaceRedirect({
+    pathname,
+    searchParams: request.nextUrl.searchParams,
+  });
+  if (compatibility) {
+    const redirect = NextResponse.redirect(
+      new URL(compatibility.href, request.url),
+      compatibility.status
+    );
+    for (const cookie of pendingCookies) {
+      redirect.cookies.set(cookie.name, cookie.value, cookie.options);
+    }
+    return redirect;
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/", "/app", "/app/:path*"],
+  matcher: [
+    "/",
+    "/app",
+    "/app/:path*",
+    "/overview",
+    "/geographic_explorer",
+    "/investigate",
+  ],
 };

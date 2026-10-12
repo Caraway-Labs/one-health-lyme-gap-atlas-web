@@ -93,7 +93,7 @@ describe("explorer county mode", () => {
         modeValues: ["follow-up"],
         returnTarget: "investigate",
       })
-    ).toBe(href);
+    ).toBe(`${href}&mode=evidence`);
     expect(
       compareReturnHrefWithExplorerMode({
         href,
