@@ -372,6 +372,36 @@ describe("workspace account menu", () => {
     expect(trigger.querySelector(".lucide-user-round")).toBeTruthy();
   });
 
+  it("conceals the shell before navigating home after sign-out", async () => {
+    auth.signOut.mockImplementation(async () => {
+      notify(null);
+      return { error: null };
+    });
+    renderMenu({
+      note: "Draft note for account A",
+      shell: true,
+    });
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    followWorkspaceHref.mockClear();
+    let concealedBeforeHome = false;
+    followWorkspaceHref.mockImplementation(() => {
+      concealedBeforeHome =
+        restoredWorkspaceConcealed() && restoredNoteHidden();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ada Lovelace" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    expect({
+      concealedBeforeHome,
+      stillConcealed: restoredWorkspaceConcealed(),
+    }).toStrictEqual({
+      concealedBeforeHome: true,
+      stillConcealed: true,
+    });
+  });
+
   it("signs out once, clears the saved profile cache, and leaves for the public home", async () => {
     auth.signOut.mockImplementation(async () => {
       notify(null);

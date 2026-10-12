@@ -1,10 +1,18 @@
 /**
- * Shared by the sidebar and Settings. Each sign-out attempt gets an epoch.
- * A later failure cannot clear an earlier success, and a stale failure cannot
- * clear a newer attempt. Success records that this document logged out. The
- * restored-workspace cover is applied synchronously, before any session read,
- * so a back-forward cache page does not show the previous account.
+ * Shared by every local sign-out. Each attempt gets an epoch. A later failure
+ * cannot clear an earlier success, and a stale failure cannot clear a newer
+ * attempt. Success records that this document logged out and conceals the
+ * professional shell before the caller navigates home. The restored-workspace
+ * cover is also applied synchronously, before any session read, so a
+ * back-forward cache page does not show the previous account.
  */
+import type { QueryClient } from "@tanstack/react-query";
+
+import {
+  endLocalAtlasSession,
+  type LocalSignOutResult,
+} from "@/features/ux-reset/profile/end-local-session";
+
 const RESTORE_COVER_ID = "workspace-restore-cover";
 const RESTORE_COVER_LABEL = "Checking session";
 
@@ -73,7 +81,30 @@ export function completeWorkspaceSignOut(epoch: number): void {
   loggedOutInPageLifetime = true;
   navigatingHome = true;
   signOutPending = true;
+  beginWorkspaceShellCheck();
+  concealRestoredWorkspace();
   notifySignOutListeners();
+}
+
+/**
+ * One local sign-out. A null result means another attempt already owns the
+ * lock. Failure aborts this epoch. Success conceals the shell before return,
+ * so the caller can navigate home without leaving account UI visible.
+ */
+export async function runWorkspaceSignOut(
+  queryClient: QueryClient | null
+): Promise<LocalSignOutResult | null> {
+  const epoch = beginWorkspaceSignOut();
+  if (epoch === null) {
+    return null;
+  }
+  const result = await endLocalAtlasSession(queryClient);
+  if (!result.ok) {
+    abortWorkspaceSignOut(epoch);
+    return result;
+  }
+  completeWorkspaceSignOut(epoch);
+  return result;
 }
 
 export function workspaceLoggedOutInPageLifetime(): boolean {

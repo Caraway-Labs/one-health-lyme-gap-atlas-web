@@ -1,8 +1,14 @@
 "use client";
 
+import { QueryClientContext } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { AccountDataRights } from "@/components/account-data-rights";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -14,6 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
+import {
+  runWorkspaceSignOut,
+  subscribeWorkspaceSignOut,
+  workspaceSignOutPending,
+} from "@/features/ux-reset/workspace-sign-out";
 import {
   getProfileV1MeProfileGet,
   saveProfileV1MeProfilePut,
@@ -99,7 +111,12 @@ const ROLE_UNSET = "unspecified";
 const STATE_UNSET = "none";
 
 export default function AccountPage() {
-  const router = useRouter();
+  const queryClient = useContext(QueryClientContext) ?? null;
+  const signOutPending = useSyncExternalStore(
+    subscribeWorkspaceSignOut,
+    workspaceSignOutPending,
+    () => false
+  );
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [form, setForm] = useState<UserProfileWrite>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -130,6 +147,19 @@ export default function AccountPage() {
     }
     void loadAccount();
   }, []);
+
+  async function signOut() {
+    const result = await runWorkspaceSignOut(queryClient);
+    if (result === null) {
+      return;
+    }
+    if (!result.ok) {
+      setNotice(result.notice);
+      return;
+    }
+    setNotice(null);
+    followWorkspaceHref("/");
+  }
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -310,14 +340,16 @@ export default function AccountPage() {
         )}
         <AccountDataRights />
         <Button
+          aria-busy={signOutPending || undefined}
           className="mt-6"
+          disabled={signOutPending}
+          type="button"
           variant="secondary"
-          onClick={async () => {
-            await createClient().auth.signOut();
-            router.push("/");
+          onClick={() => {
+            void signOut();
           }}
         >
-          Sign out
+          {signOutPending ? "Signing out" : "Sign out"}
         </Button>
       </section>
     </main>

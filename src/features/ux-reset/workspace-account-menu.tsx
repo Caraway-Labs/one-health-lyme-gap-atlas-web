@@ -27,10 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { explicitAccountLabel } from "@/features/ux-reset/account-display-label";
-import {
-  clearAccountSessionCache,
-  endLocalAtlasSession,
-} from "@/features/ux-reset/profile/end-local-session";
+import { clearAccountSessionCache } from "@/features/ux-reset/profile/end-local-session";
 import { useProfileSessionIdentity } from "@/features/ux-reset/profile/profile-session";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
@@ -41,10 +38,7 @@ import {
   type WorkspaceShellAction,
 } from "@/features/ux-reset/workspace-session-gate";
 import {
-  abortWorkspaceSignOut,
   beginWorkspaceShellCheck,
-  beginWorkspaceSignOut,
-  completeWorkspaceSignOut,
   concealRestoredWorkspace,
   invalidateWorkspaceShellCheck,
   noteWorkspaceDocumentUser,
@@ -53,6 +47,7 @@ import {
   workspaceDocumentUserId,
   workspaceLoggedOutInPageLifetime,
   workspaceRestoreConcealed,
+  runWorkspaceSignOut,
   workspaceShellCheckCurrent,
   workspaceSignOutPending,
   workspaceSignOutSuppressesExpiryRedirect,
@@ -390,18 +385,15 @@ export function WorkspaceAccountMenu() {
   }, [queryClient]);
 
   async function signOut() {
-    const epoch = beginWorkspaceSignOut();
-    if (epoch === null) {
+    const result = await runWorkspaceSignOut(queryClient);
+    if (result === null) {
       return;
     }
-    setNotice(null);
-    const result = await endLocalAtlasSession(queryClient);
     if (!result.ok) {
-      abortWorkspaceSignOut(epoch);
       setNotice(result.notice);
       return;
     }
-    completeWorkspaceSignOut(epoch);
+    setNotice(null);
     followWorkspaceHref("/");
   }
 

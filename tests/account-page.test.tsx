@@ -1,10 +1,30 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getProfile, getUser } = vi.hoisted(() => ({
-  getProfile: vi.fn<() => Promise<never>>(),
-  getUser: vi.fn<() => Promise<{ data: { user: null } }>>(),
-}));
+const { followWorkspaceHref, getProfile, getSession, getUser, signOut } =
+  vi.hoisted(() => ({
+    followWorkspaceHref: vi.fn<(href: string) => void>(),
+    getProfile: vi.fn<() => Promise<never>>(),
+    getSession: vi.fn<
+      () => Promise<{
+        data: { session: { user: { id: string } } | null };
+        error: null;
+      }>
+    >(),
+    getUser: vi.fn<() => Promise<{ data: { user: { id: string } | null } }>>(),
+    signOut:
+      vi.fn<
+        (options?: {
+          scope?: string;
+        }) => Promise<{ error: { message: string } | null }>
+      >(),
+  }));
 
 vi.mock(
   import("next/navigation"),
@@ -16,9 +36,14 @@ vi.mock(
 vi.mock(import("../src/lib/supabase/client"), () => ({
   createClient: () => ({
     auth: {
+      getSession,
       getUser,
+      signOut,
     },
   }),
+}));
+vi.mock(import("../src/features/ux-reset/workspace-navigation"), () => ({
+  followWorkspaceHref,
 }));
 vi.mock(import("../src/generated/atlas"), () => ({
   getProfileV1MeProfileGet: getProfile,
@@ -31,14 +56,24 @@ vi.mock(import("../src/generated/atlas"), () => ({
 }));
 
 import AccountPage from "../src/app/account/page";
+import {
+  resetWorkspaceSignOutStateForTests,
+  workspaceSignOutSuppressesExpiryRedirect,
+} from "../src/features/ux-reset/workspace-sign-out";
 
 describe("account page", () => {
   beforeEach(() => {
+    resetWorkspaceSignOutStateForTests();
+    followWorkspaceHref.mockReset();
+    getSession.mockReset();
+    signOut.mockReset();
+    signOut.mockResolvedValue({ error: null });
     getUser.mockResolvedValue({ data: { user: null } });
   });
 
   afterEach(() => {
     cleanup();
+    resetWorkspaceSignOutStateForTests();
     getProfile.mockReset();
     getUser.mockReset();
   });
@@ -84,5 +119,29 @@ describe("account page", () => {
     expect(
       screen.getByRole("button", { name: "Remove all data" })
     ).toBeTruthy();
+  });
+
+  it("signs out through the shared workspace flow", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    getProfile.mockResolvedValue({
+      data: { profile: null },
+      status: 200,
+    } as never);
+
+    render(<AccountPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    expect({
+      scope: signOut.mock.calls,
+      suppressing: workspaceSignOutSuppressesExpiryRedirect(),
+    }).toStrictEqual({
+      scope: [[{ scope: "local" }]],
+      suppressing: true,
+    });
   });
 });

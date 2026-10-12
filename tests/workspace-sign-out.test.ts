@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   abortWorkspaceSignOut,
+  beginWorkspaceShellCheck,
   beginWorkspaceSignOut,
   completeWorkspaceSignOut,
   resetWorkspaceSignOutStateForTests,
   workspaceLoggedOutInPageLifetime,
+  workspaceShellCheckCurrent,
   workspaceSignOutPending,
   workspaceSignOutSuppressesExpiryRedirect,
 } from "@/features/ux-reset/workspace-sign-out";
@@ -46,6 +48,30 @@ describe("workspace sign-out epochs", () => {
     abortWorkspaceSignOut(epoch);
     expect(workspaceSignOutPending()).toBeFalsy();
     expect(workspaceSignOutSuppressesExpiryRedirect()).toBeFalsy();
+  });
+
+  it("conceals the shell when sign-out succeeds and leaves a failed attempt visible", () => {
+    const shell = document.createElement("div");
+    shell.className = "ux-reset-pro-app";
+    document.body.append(shell);
+    const failed = startedEpoch();
+    abortWorkspaceSignOut(failed);
+    const visibleAfterAbort = shell.hidden;
+    const generation = beginWorkspaceShellCheck();
+    const epoch = startedEpoch();
+    completeWorkspaceSignOut(epoch);
+    shell.remove();
+    expect({
+      concealed: document.documentElement.dataset.workspaceRestore,
+      priorCheckCurrent: workspaceShellCheckCurrent(generation),
+      successHidden: shell.hidden,
+      visibleAfterAbort,
+    }).toStrictEqual({
+      concealed: "concealed",
+      priorCheckCurrent: false,
+      successHidden: true,
+      visibleAfterAbort: false,
+    });
   });
 
   it("does not let the successful attempt abort its own suppression", () => {

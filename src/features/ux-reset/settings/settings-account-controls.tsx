@@ -5,12 +5,9 @@ import { useState, useSyncExternalStore } from "react";
 
 import { AccountDataRights } from "@/components/account-data-rights";
 import { Button } from "@/components/ui/button";
-import { endLocalAtlasSession } from "@/features/ux-reset/profile/end-local-session";
 import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
 import {
-  abortWorkspaceSignOut,
-  beginWorkspaceSignOut,
-  completeWorkspaceSignOut,
+  runWorkspaceSignOut,
   subscribeWorkspaceSignOut,
   workspaceSignOutPending,
 } from "@/features/ux-reset/workspace-sign-out";
@@ -28,19 +25,16 @@ export function SettingsAccountControls() {
   );
 
   async function signOut() {
-    const epoch = beginWorkspaceSignOut();
-    if (epoch === null) {
+    const result = await runWorkspaceSignOut(queryClient);
+    if (result === null) {
+      return;
+    }
+    if (!result.ok) {
+      setNotice(result.notice);
       return;
     }
     setNotice(null);
-    const result = await endLocalAtlasSession(queryClient);
-    if (result.ok) {
-      completeWorkspaceSignOut(epoch);
-      followWorkspaceHref("/");
-      return;
-    }
-    abortWorkspaceSignOut(epoch);
-    setNotice(result.notice);
+    followWorkspaceHref("/");
   }
 
   return (

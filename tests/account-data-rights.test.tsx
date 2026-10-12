@@ -13,14 +13,28 @@ const {
   confirmPrivacyRequest,
   createPrivacyRequest,
   downloadPrivacyExport,
+  followWorkspaceHref,
+  getSession,
   push,
   signOut,
 } = vi.hoisted(() => ({
   createPrivacyRequest: vi.fn<() => Promise<unknown>>(),
   confirmPrivacyRequest: vi.fn<() => Promise<unknown>>(),
   downloadPrivacyExport: vi.fn<() => Promise<unknown>>(),
+  followWorkspaceHref: vi.fn<(href: string) => void>(),
+  getSession: vi.fn<
+    () => Promise<{
+      data: { session: { user: { id: string } } | null };
+      error: { message: string } | null;
+    }>
+  >(),
   push: vi.fn<(href: string) => void>(),
-  signOut: vi.fn<() => Promise<void>>(),
+  signOut:
+    vi.fn<
+      (options?: {
+        scope?: string;
+      }) => Promise<{ error: { message: string } | null }>
+    >(),
 }));
 
 vi.mock(
@@ -32,8 +46,14 @@ vi.mock(
 );
 vi.mock(import("../src/lib/supabase/client"), () => ({
   createClient: () => ({
-    auth: { signOut },
+    auth: {
+      getSession,
+      signOut,
+    },
   }),
+}));
+vi.mock(import("../src/features/ux-reset/workspace-navigation"), () => ({
+  followWorkspaceHref,
 }));
 vi.mock(
   import("../src/generated/atlas"),
@@ -48,9 +68,21 @@ vi.mock(
 );
 
 import { AccountDataRights } from "../src/components/account-data-rights";
+import { SIGN_OUT_STILL_ACTIVE } from "../src/features/ux-reset/profile/end-local-session";
+import {
+  beginWorkspaceSignOut,
+  resetWorkspaceSignOutStateForTests,
+  workspaceSignOutPending,
+  workspaceSignOutSuppressesExpiryRedirect,
+} from "../src/features/ux-reset/workspace-sign-out";
 
 describe("account data rights", () => {
   beforeEach(() => {
+    resetWorkspaceSignOutStateForTests();
+    followWorkspaceHref.mockReset();
+    getSession.mockReset();
+    signOut.mockReset();
+    signOut.mockResolvedValue({ error: null });
     createPrivacyRequest.mockResolvedValue({
       status: 200,
       data: {
@@ -78,6 +110,8 @@ describe("account data rights", () => {
 
   afterEach(() => {
     cleanup();
+    document.querySelector(".ux-reset-pro-app")?.remove();
+    resetWorkspaceSignOutStateForTests();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
   });
@@ -172,6 +206,96 @@ describe("account data rights", () => {
       expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Faccount");
     });
     expect(signOut).not.toHaveBeenCalled();
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("does not replace an in-flight home navigation when removal is unauthorized", async () => {
+    beginWorkspaceSignOut();
+    createPrivacyRequest.mockRejectedValueOnce(
+      new AtlasApiError("stale", "/v1/me/privacy-requests", 401, null)
+    );
+
+    render(<AccountDataRights returnPath="/app/settings" />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
+    );
+
+    await waitFor(() => {
+      expect(createPrivacyRequest).toHaveBeenCalledOnce();
+    });
+    expect({
+      home: followWorkspaceHref.mock.calls,
+      signIn: push.mock.calls,
+      signOutCalls: signOut.mock.calls.length,
+    }).toStrictEqual({
+      home: [],
+      signIn: [],
+      signOutCalls: 0,
+    });
+  });
+
+  it("removes account data through the shared sign-out before leaving for home", async () => {
+    const shell = document.createElement("div");
+    shell.className = "ux-reset-pro-app";
+    shell.textContent = "Settings account";
+    document.body.append(shell);
+    let concealedBeforeHome = false;
+    followWorkspaceHref.mockImplementation(() => {
+      concealedBeforeHome =
+        document.documentElement.dataset.workspaceRestore === "concealed" &&
+        shell.hidden;
+    });
+
+    render(<AccountDataRights returnPath="/app/settings" />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
+    );
+
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    expect({
+      concealedBeforeHome,
+      scope: signOut.mock.calls,
+      signIn: push.mock.calls,
+      suppressing: workspaceSignOutSuppressesExpiryRedirect(),
+    }).toStrictEqual({
+      concealedBeforeHome: true,
+      scope: [[{ scope: "local" }]],
+      signIn: [],
+      suppressing: true,
+    });
+  });
+
+  it("keeps Settings visible when removal sign-out does not end the session", async () => {
+    signOut.mockResolvedValue({ error: { message: "remote failed" } });
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-a" } } },
+      error: null,
+    });
+
+    render(<AccountDataRights returnPath="/app/settings" />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toContain(
+        SIGN_OUT_STILL_ACTIVE
+      );
+    });
+    expect({
+      home: followWorkspaceHref.mock.calls,
+      pending: workspaceSignOutPending(),
+      suppressing: workspaceSignOutSuppressesExpiryRedirect(),
+    }).toStrictEqual({
+      home: [],
+      pending: false,
+      suppressing: false,
+    });
   });
 
   it("returns a Settings privacy failure to Settings", async () => {
