@@ -40,6 +40,7 @@ import {
   type ResetRoute,
 } from "@/features/ux-reset/paths";
 import { useProfessionalMainScroll } from "@/features/ux-reset/professional-main-scroll";
+import { insetShouldScrollWithRoute } from "@/features/ux-reset/professional-shell-chrome";
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 
@@ -133,9 +134,49 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const pageInert = mobileDrawerActive || askAtlas.pageInert;
   const sidebarInert = mobileDrawerClosed || askAtlas.pageInert;
   const sidebarRef = useRef<HTMLElement>(null);
+  const insetRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   useProfessionalMainScroll(mainRef, pathname, searchParams.toString());
+
+  useLayoutEffect(() => {
+    const inset = insetRef.current;
+    if (!inset) {
+      return;
+    }
+    const apply = () => {
+      const header = inset.querySelector<HTMLElement>(":scope > .app-header");
+      const footer = inset.querySelector<HTMLElement>(":scope > footer");
+      const scrollsWithRoute = insetShouldScrollWithRoute(
+        header?.offsetHeight ?? 0,
+        footer?.offsetHeight ?? 0,
+        inset.clientHeight
+      );
+      if (scrollsWithRoute) {
+        inset.dataset.chromeOverflow = "true";
+      } else {
+        delete inset.dataset.chromeOverflow;
+      }
+    };
+    apply();
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver(apply);
+    observer.observe(inset);
+    const header = inset.querySelector<HTMLElement>(":scope > .app-header");
+    const footer = inset.querySelector<HTMLElement>(":scope > footer");
+    if (header) {
+      observer.observe(header);
+    }
+    if (footer) {
+      observer.observe(footer);
+    }
+    return () => {
+      observer.disconnect();
+      delete inset.dataset.chromeOverflow;
+    };
+  }, []);
 
   const closeMobileNavigation = useCallback(
     () => setMobileOpen(false),
@@ -388,6 +429,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         aria-hidden={pageInert || undefined}
         className="app-inset"
         inert={pageInert || undefined}
+        ref={insetRef}
       >
         <header className="app-header">
           <SidebarTrigger
