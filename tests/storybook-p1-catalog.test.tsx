@@ -134,6 +134,30 @@ describe("Storybook P1 catalog fixtures", () => {
     ).toBe("ready");
   });
 
+  it("resets orientation interaction when the phase changes", () => {
+    const view = render(<StateOrientationStory phase="boundary-failed" />);
+    fireEvent.change(screen.getByTestId("review-state-search"), {
+      target: { value: "Colorado" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "CO, Colorado" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry map" }));
+    expect(screen.getByTestId("orientation-opened").textContent).toBe(
+      "Opened state CO"
+    );
+    expect(screen.getByTestId("orientation-retries").textContent).toBe(
+      "Map retries 1"
+    );
+    view.rerender(<StateOrientationStory phase="ready" />);
+    expect(screen.getByTestId("orientation-opened").textContent).toBe(
+      "Opened state none"
+    );
+    expect(screen.getByTestId("orientation-retries").textContent).toBe(
+      "Map retries 0"
+    );
+    const search = screen.getByTestId("review-state-search");
+    expect(search instanceof HTMLInputElement && search.value).toBe("");
+  });
+
   it("returns synthetic Adams County geometry without a service call", async () => {
     setStoryGeometryMode("ready");
     const ready = await fetchCountyDisplayGeometry();
