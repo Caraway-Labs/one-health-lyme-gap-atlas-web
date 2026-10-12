@@ -54,7 +54,17 @@ function optionsFor(preset: SelectPreset): readonly StoryOption[] {
   return shortOptions;
 }
 
-function SelectStory({
+export function SelectStory({
+  preset,
+  size,
+}: {
+  preset: SelectPreset;
+  size: "default" | "sm";
+}) {
+  return <SelectPreview key={preset} preset={preset} size={size} />;
+}
+
+function SelectPreview({
   preset,
   size,
 }: {
@@ -67,7 +77,7 @@ function SelectStory({
   );
   const selectedLabel = options.find((option) => option.value === value)?.label;
   return (
-    <div className="grid max-w-sm gap-3" key={`${preset}:${size}`}>
+    <div className="grid max-w-sm gap-3">
       <p className="type-small">
         Synthetic Select. Options are lower-48 counties and the District of
         Columbia. Changing the value stays in this preview.
@@ -104,6 +114,7 @@ function SelectStory({
 const meta = {
   title: "Primitives/Select",
   component: SelectStory,
+  excludeStories: ["SelectStory"],
   args: { preset: "placeholder", size: "default" },
   argTypes: {
     preset: { control: "select", options: [...selectPresets] },

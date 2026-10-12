@@ -246,6 +246,23 @@ describe("Action evidence brief stories", () => {
     });
   });
 
+  it("resets the local note when the brief preset changes", () => {
+    const view = render(
+      <ActionEvidenceBriefStory exportMode="succeed" preset="ready" />
+    );
+    fireEvent.change(screen.getByTestId("action-brief-local-context"), {
+      target: { value: "Edited in this preview." },
+    });
+    view.rerender(
+      <ActionEvidenceBriefStory exportMode="succeed" preset="over-limit" />
+    );
+    const field = screen.getByTestId(
+      "action-brief-local-context"
+    ) as HTMLTextAreaElement;
+    expect(field.value).toBe(syntheticLocalNoteOverLimit);
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+  });
+
   it("keeps the PDF substitute from saving a file", async () => {
     const context: InvestigatePdfContext = {
       caveats: [],

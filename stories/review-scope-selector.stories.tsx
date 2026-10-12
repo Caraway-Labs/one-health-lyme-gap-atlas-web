@@ -22,9 +22,11 @@ function initialScope(preset: ScopePreset): ReviewScope {
     case "national": {
       return "ALL";
     }
-    case "colorado":
-    case "long-label": {
+    case "colorado": {
       return "CO";
+    }
+    case "long-label": {
+      return "DC";
     }
     case "unlisted": {
       return "WY";
@@ -36,10 +38,14 @@ function initialScope(preset: ScopePreset): ReviewScope {
   }
 }
 
-function ScopeStory({ preset }: { preset: ScopePreset }) {
+export function ScopeStory({ preset }: { preset: ScopePreset }) {
+  return <ScopePreview key={preset} preset={preset} />;
+}
+
+function ScopePreview({ preset }: { preset: ScopePreset }) {
   const [scope, setScope] = useState<ReviewScope>(initialScope(preset));
   return (
-    <div className="grid gap-3" key={preset}>
+    <div className="grid gap-3">
       <p className="type-small">
         Synthetic Review scope. Options are lower-48 states and the District of
         Columbia. Selecting a state does not write a profile or call the API.
@@ -57,6 +63,7 @@ function ScopeStory({ preset }: { preset: ScopePreset }) {
 const meta = {
   title: "Review/Scope selector",
   component: ScopeStory,
+  excludeStories: ["ScopeStory"],
   args: { preset: "national" },
   argTypes: {
     preset: { control: "select", options: [...scopePresets] },
@@ -65,7 +72,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Purpose: choose United States or one supported state for Review. Source: src/features/ux-reset/review/review-scope-selector.tsx. Limitations: options are synthetic Colorado, New York, North Carolina, and the District of Columbia. An unlisted lower-48 code such as WY renders as the raw code. Alaska and Hawaii are not options. The control does not write a profile.",
+          "Purpose: choose United States or one supported state for Review. Source: src/features/ux-reset/review/review-scope-selector.tsx. Limitations: options are synthetic Colorado, New York, North Carolina, and the District of Columbia. The long-label preset starts on District of Columbia. An unlisted lower-48 code such as WY renders as the raw code. Alaska and Hawaii are not options. Changing the preset remounts the controlled scope. The control does not write a profile.",
       },
     },
   },

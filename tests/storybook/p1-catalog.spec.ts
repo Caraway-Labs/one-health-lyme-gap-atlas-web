@@ -189,6 +189,37 @@ test.describe("P1 Storybook catalog", () => {
     expect(traffic.downloads).toEqual([]);
   });
 
+  test("controls reset scope and select when the preset changes", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name === "mobile",
+      "Controls live in the desktop manager."
+    );
+    await page.goto("?path=/story/review-scope-selector--national");
+    const canvas = page.frameLocator("#storybook-preview-iframe");
+    await expect(canvas.getByTestId("review-scope-selected")).toHaveText(
+      "Selected scope ALL"
+    );
+    await page.getByRole("tab", { name: /Controls/ }).click();
+    await page.locator("#control-preset").selectOption("unlisted");
+    await expect(canvas.getByTestId("review-scope-selected")).toHaveText(
+      "Selected scope WY"
+    );
+    await page.locator("#control-preset").selectOption("long-label");
+    await expect(canvas.getByText("District of Columbia (DC)")).toBeVisible();
+    await page.goto("?path=/story/primitives-select--placeholder");
+    await page.getByRole("tab", { name: /Controls/ }).click();
+    await page.locator("#control-preset").selectOption("selected");
+    await expect(canvas.getByTestId("select-current")).toHaveText(
+      "Selected 08013"
+    );
+    await page.locator("#control-preset").selectOption("disabled");
+    await expect(canvas.getByTestId("select-current")).toHaveText(
+      "Selected none"
+    );
+  });
+
   test("scope selection updates the controlled value", async ({ page }) => {
     const traffic = track(page);
     await openStory(page, "review-scope-selector--national");

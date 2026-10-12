@@ -98,7 +98,7 @@ function geometryFor(preset: PicturePreset): StoryGeometryMode {
   }
 }
 
-function OperatingPictureStory({
+export function OperatingPictureStory({
   geometry,
   preset,
 }: {
@@ -166,6 +166,7 @@ function OperatingPicturePreview({
 const meta = {
   title: "Review/Operating picture",
   component: OperatingPictureStory,
+  excludeStories: ["OperatingPictureStory"],
   args: { geometry: "ready", preset: "candidates" },
   argTypes: {
     geometry: { control: "select", options: [...storyGeometryModes] },

@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import type { ReadonlyURLSearchParams } from "next/navigation";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { reviewStateNavigationEntries } from "@/features/ux-reset/review/review-state-navigation";
 
@@ -10,11 +11,21 @@ import {
   syntheticCounty,
   syntheticReleaseId,
 } from "../stories/fixtures/synthetic-county";
+import { OperatingPictureStory } from "../stories/review-operating-picture.stories";
+import { ScopeStory } from "../stories/review-scope-selector.stories";
 import { StateOrientationStory } from "../stories/review-state-orientation.stories";
+import { SelectStory } from "../stories/select.stories";
 import {
   fetchCountyDisplayGeometry,
   setStoryGeometryMode,
 } from "../stories/support/county-geography-substitute";
+
+vi.mock(import("next/navigation"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  usePathname: () => "/app/review",
+  useSearchParams: (): ReadonlyURLSearchParams =>
+    new URLSearchParams() as unknown as ReadonlyURLSearchParams,
+}));
 
 describe("Storybook P1 catalog fixtures", () => {
   afterEach(() => {
@@ -57,6 +68,70 @@ describe("Storybook P1 catalog fixtures", () => {
     });
     expect(headerModel("no-county").countyLabel).toBeNull();
     expect(headerModel("resolved").countyLabel).toBe("Adams County");
+  });
+
+  it("resets review scope when the preset control changes", () => {
+    const view = render(<ScopeStory preset="national" />);
+    expect(screen.getByTestId("review-scope-selected").textContent).toBe(
+      "Selected scope ALL"
+    );
+    view.rerender(<ScopeStory preset="colorado" />);
+    expect(screen.getByTestId("review-scope-selected").textContent).toBe(
+      "Selected scope CO"
+    );
+    view.rerender(<ScopeStory preset="unlisted" />);
+    expect(screen.getByTestId("review-scope-selected").textContent).toBe(
+      "Selected scope WY"
+    );
+    view.rerender(<ScopeStory preset="long-label" />);
+    expect(screen.getByText("District of Columbia (DC)")).toBeTruthy();
+    expect(screen.getByTestId("review-scope-selected").textContent).toBe(
+      "Selected scope DC"
+    );
+  });
+
+  it("resets the select value when the preset control changes", () => {
+    const view = render(<SelectStory preset="placeholder" size="default" />);
+    expect(screen.getByTestId("select-current").textContent).toBe(
+      "Selected none"
+    );
+    view.rerender(<SelectStory preset="selected" size="default" />);
+    expect(screen.getByTestId("select-current").textContent).toBe(
+      "Selected 08013"
+    );
+    expect(screen.getByText("Boulder County, Colorado")).toBeTruthy();
+    view.rerender(<SelectStory preset="disabled" size="default" />);
+    expect(screen.getByTestId("select-current").textContent).toBe(
+      "Selected none"
+    );
+    expect(screen.getByRole("combobox", { name: "County" })).toHaveProperty(
+      "disabled",
+      true
+    );
+  });
+
+  it("resets the selected county when the operating-picture preset changes", () => {
+    const view = render(
+      <OperatingPictureStory geometry="ready" preset="selected" />
+    );
+    expect(screen.getByTestId("operating-selected").textContent).toBe(
+      "Selected county 08001"
+    );
+    view.rerender(<OperatingPictureStory geometry="ready" preset="none" />);
+    expect(screen.getByTestId("operating-selected").textContent).toBe(
+      "Selected county none"
+    );
+  });
+
+  it("follows the orientation phase control", () => {
+    const view = render(<StateOrientationStory phase="boundary-failed" />);
+    expect(
+      screen.getByTestId("review-state-navigation-map").dataset.mapPhase
+    ).toBe("boundary-failed");
+    view.rerender(<StateOrientationStory phase="ready" />);
+    expect(
+      screen.getByTestId("review-state-navigation-map").dataset.mapPhase
+    ).toBe("ready");
   });
 
   it("returns synthetic Adams County geometry without a service call", async () => {
