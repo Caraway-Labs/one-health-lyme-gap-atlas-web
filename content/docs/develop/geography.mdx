@@ -1,0 +1,64 @@
+---
+title: Geography
+description: Identify Atlas counties by FIPS, stay within the lower 48 and DC, and see which geography payloads the API withholds.
+---
+
+Atlas joins public records on geography identity. Identity is a type plus an id. It is independent of map polygons.
+
+## Identity
+
+`GeographyIdentity` has two required fields:
+
+| Field | Values |
+| --- | --- |
+| `geography_type` | `county` or `state` |
+| `geography_id` | FIPS string with leading zeros. Five digits for a county. Two digits for a state |
+
+`GeographyType` does not include tracts, ZCTAs, or other units. `geography_type=tract` on the observations query returned HTTP 400 `INVALID_REQUEST`.
+
+These guides use the lower 48 states and the District of Columbia. Keep FIPS in a string so a leading zero survives JSON and CSV.
+
+| Example id | Place | Role in these guides |
+| --- | --- | --- |
+| `36061` | New York County, New York | Quickstart observation |
+| `08001` | Adams County, Colorado | Comparison row that can be `MISSING` while another county is `OBSERVED` |
+| `09110` | Capitol Planning Region, Connecticut | Selected land-cover geography named by that measure |
+| `51013` | Arlington County, Virginia | The other selected land-cover geography named by that measure |
+
+`09110` is a Connecticut planning-region geography. The land-cover measure limitations say it has no historical Connecticut county crosswalk. Use the FIPS the measure names. Do not rewrite it to an older county id.
+
+## Observations are county queries
+
+`GET /v1/observations` requires `geography_type=county` and 1 to 500 `geography_id` values. Repeat the parameter once per county. The service orders rows by measure id, county FIPS, period start, and observation id. It does not accept a caller sort.
+
+A five-digit id that matches no row can still return HTTP 200 and `data: []`. That happened for `geography_id=99999` with `case_count_floor_2023` and `year=2023`. Empty is a successful query with no observation.
+
+## Geography resource delivery is unavailable
+
+The public contract declares:
+
+```text
+GET /v1/geographies/{geography_type}/{geography_id}
+```
+
+The operation summary is "Get geography identity (delivery pending)". The description says the route validates a county or state FIPS and currently returns `503` `CANONICAL_DATA_UNAVAILABLE`. No geometry is returned. The success schema exists on the operation for a later delivery. Callers do not receive a `Geography` label or parent from this route today.
+
+A request to `/v1/geographies/county/08001` on 12 October 2026 returned an HTML error page. The origin status was `503`. The client status line was `504`. There was no `Geography` JSON body and no `Retry-After` header on that response. Treat geography identity delivery as unavailable. Do not parse the HTML page as a resource, and do not invent a label from the FIPS.
+
+The same operation still declares the canonical problem statuses, including `400`, `404` `RESOURCE_NOT_FOUND`, `429` with `Retry-After`, `413`, `414`, and `503` with `Retry-After`.
+
+## Polygons are a different resource
+
+Observation and geography payloads do not embed analysis polygons. Display geometry is a legacy Atlas route:
+
+```text
+GET /v1/atlas/geometry
+```
+
+The contract describes that response as display GeoJSON, EPSG:4326, with an immutable cache and an `ETag`. It is a generalized display boundary for maps. It is not the FIPS join key and it is not the analysis geometry used to build measures. `environmental_context.geometry_version`, when that object is present, names analysis geometry and still contains no polygons.
+
+County analytics, including `in_contiguous_tick_scope`, are on `GET /v1/counties/{fips}` together with release metadata. That route is separate from `GET /v1/observations`. Its `404` body can omit `code`. Score query parameters on that route belong to the legacy county operation; they are not observation filters.
+
+## State ids
+
+`state` is a legal `geography_type` for geography identity. The observations query documented here asks for county FIPS. The measure `state_unallocated_records_2023` uses state geography semantics and keeps records that are not assigned to a county. Read that measure's own definition before treating it as a county total. County-linked values and state-unallocated records stay separate.

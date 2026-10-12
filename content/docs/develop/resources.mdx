@@ -1,0 +1,82 @@
+---
+title: Indicators, measures, and observations
+description: Discover current-release indicators and measures, then query county observations with explicit value states.
+---
+
+An indicator groups measures. A measure defines one variable. An observation is that variable for one geography and period, with a value state. Discover ids from the API. Do not hard-code a catalog from this page beyond the examples the contract and the current release identify.
+
+## Discover
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/indicators?page_size=100'
+curl -fsS 'https://api.onehealthatlas.org/v1/measures?indicator_id=human_disease_burden&page_size=100'
+curl -fsS 'https://api.onehealthatlas.org/v1/measures/case_count_floor_2023'
+```
+
+Indicator collection filters are optional `indicator_id`, `page_size`, and `page_token`. Measure collection filters are optional `measure_id`, `indicator_id`, `geography_type`, `page_size`, and `page_token`. Unknown path ids return HTTP 404 `RESOURCE_NOT_FOUND`.
+
+On 12 October 2026 the indicator collection returned seven indicators and `next_page_token` null at `page_size=20`. The human-disease indicator id was `human_disease_burden`. Its measure ids included `case_count_floor_2023`, `human_status`, `incidence_floor_2023`, and `state_unallocated_records_2023`. A later release can add or remove ids. Page until `next_page_token` is null, then use the ids you received.
+
+Required measure fields include `measure_id`, `indicator_id`, `label`, `definition`, and `semantic_version`. Read `unit`, `denominator`, `geography_semantics`, `temporal_semantics`, `missingness_semantics`, `allowed_value_states`, `allowed_strata`, `methodology_id`, `source_ids`, and `limitations` when they are present. A null `denominator` means the contract did not supply one. Do not invent a population denominator.
+
+## Query observations
+
+`GET /v1/observations` requires:
+
+| Parameter | Rule |
+| --- | --- |
+| `measure_id` | Exact measure id from discovery |
+| `geography_type` | `county` for this query |
+| `geography_id` | Repeat for 1 to 500 five-digit county FIPS strings |
+| `year` | Integer from 1900 through 2100, or omit it and send both dates |
+| `start_date` and `end_date` | Inclusive dates. Send both, and omit `year` |
+| `stratification` | Optional. The current release has no strata, and sending one fails |
+| `page_size` | Optional. 1 to 500. Default 100 |
+| `page_token` | Optional opaque token from the previous page |
+
+The published annual surveillance period for `case_count_floor_2023` is 2023. Land-cover measures in the current catalog use temporal semantics `2025`. Read `temporal_semantics` on the measure you selected. The observations operation also says only the annual 2023 period is the published surveillance period, and that separately enabled series can use other labeled periods.
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023'
+```
+
+The equivalent inclusive range, without `year`, returned the same kind of HTTP 200 row for this county and measure:
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&start_date=2023-01-01&end_date=2023-12-31'
+```
+
+There is no caller sort and no aggregation. `sort=value`, `aggregation=sum`, and an unknown parameter each returned HTTP 400 `UNSUPPORTED_FILTER`.
+
+## Read value_state
+
+`value` is a number, a string, or null. The schema says null never means zero. `value_state` is one of:
+
+| State | Contract meaning |
+| --- | --- |
+| `OBSERVED` | Nonzero observed value |
+| `ZERO` | Numeric zero |
+| `MISSING` | Gap. `value` is null |
+| `SUPPRESSED` | Withheld. `value` is null |
+| `UNAVAILABLE` | Unavailable. `value` is null |
+| `NO_COUNTY_LINKED_RECORD` | The literal `no_county_linked_record`. The schema says this is not evidence of absence |
+
+`strata` on a checked case-floor row was an empty object. An empty object is not a breakdown.
+
+Each observation also carries period, unit, denominator, source, methodology, `semantic_version`, `release_id`, `provenance_ref`, `limitations`, and `evidence`. `environmental_context` is optional and present only for reviewed environmental context. `surveillance_context` is also optional. The schema supplies it only through an admitted Data release and supported slice. Omitted or null carries no evidence-state, comparability, or lag claim. Comparison is case-definition scope only, and alignment is descriptive. When the object is present it has `evidence`, `methodology_comparison`, and `temporal_alignment`. The observations operation says `normalized_state` preserves Data semantics and the publisher value remains `value`. Missing context does not establish absence or temporal comparability. The field list and types are in the generated [schema reference](/docs/api-reference/schemas).
+
+## States for the discovery and observation routes
+
+| State | Discovery | Observations |
+| --- | --- | --- |
+| Success | HTTP 200 and a `data` array. Detail routes return one resource in `data` | HTTP 200 and a `data` array of observations |
+| Empty | HTTP 200 and `data: []` when no id matches the filter | HTTP 200 and `data: []` when no observation matches. Checked with FIPS `99999` |
+| Not found | HTTP 404 `RESOURCE_NOT_FOUND` for an unknown path id | HTTP 404 `RESOURCE_NOT_FOUND` is declared. An unmatched county filter can be an empty page instead |
+| Invalid parameters | HTTP 400 `INVALID_REQUEST`, including `page_size` below 1 | HTTP 400 `INVALID_REQUEST` for a missing period, for `year` plus a date range, for `page_size` below 1, and for a `geography_type` outside `county` and `state` |
+| Unsupported filter or strata | HTTP 400 with the declared filter and stratification codes | Checked: `UNSUPPORTED_FILTER` and `UNSUPPORTED_STRATIFICATION` |
+| Query too broad | Declared as HTTP 400 `QUERY_TOO_BROAD` | Same code. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
+| Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` | Same |
+| Server unavailable | HTTP 503 and `Retry-After` | Same |
+| Unknown or limited data | Null definition, denominator, methodology, or source list fields stay null | `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, a null `environmental_context`, and a null or omitted `surveillance_context` stay as returned |
+
+Detail resources also return HTTP 304 with an empty body when `If-None-Match` matches the current `ETag`.
