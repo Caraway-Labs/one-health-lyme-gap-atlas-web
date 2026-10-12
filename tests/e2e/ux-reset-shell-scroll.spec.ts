@@ -197,9 +197,7 @@ test.describe("professional shell scroll containment", () => {
     const headerBox = await box(header);
     expect(sidebarBox.top).toBe(0);
     expect(headerBox.top).toBe(0);
-    await expect(
-      header.getByRole("button", { name: "Ask Atlas" })
-    ).toBeVisible();
+    await expect(header.getByRole("link", { name: "Ask Atlas" })).toBeVisible();
     expect(await mainScrollTop(page)).toBe(0);
     expect(
       await main.evaluate(

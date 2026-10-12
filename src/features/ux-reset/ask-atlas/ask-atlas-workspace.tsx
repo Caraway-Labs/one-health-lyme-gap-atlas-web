@@ -2,7 +2,10 @@
 
 import { EvidenceChatWorkspaceShell } from "@/components/evidence-chat/evidence-chat-layout-shell";
 import { useEvidenceChat } from "@/components/evidence-chat/use-evidence-chat";
+import { Badge } from "@/components/ui/badge";
+import { AskAtlasLiteraturePrompts } from "@/features/ux-reset/ask-atlas/ask-atlas-literature-prompts";
 import { AskAtlasUnavailableNotice } from "@/features/ux-reset/ask-atlas/ask-atlas-unavailable";
+import { AskAtlasPageReferenceStrip } from "@/features/ux-reset/ask-atlas/page-reference-strip";
 import { isAtlasAssistantLiteratureEnabled } from "@/lib/assistant-entry-points";
 
 const ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID =
@@ -21,21 +24,14 @@ export function AskAtlasWorkspace({
       data-testid="ask-atlas-workspace"
     >
       {requestsEnabled ? (
-        <>
-          <p className="ux-reset-ask-atlas-mode-note">
-            Saved chats stay in this browser. Structured and Both modes are not
-            available.
-          </p>
-          <AskAtlasWorkspaceChat
-            initialConversationId={initialConversationId}
-          />
-        </>
+        <AskAtlasWorkspaceChat initialConversationId={initialConversationId} />
       ) : (
         <>
-          <header className="ux-reset-page-header">
-            <p className="eyebrow">Ask Atlas</p>
-            <h1>Assistant</h1>
+          <header className="ux-reset-ask-atlas-heading">
+            <h1>Ask Atlas</h1>
+            <Badge variant="outline">Reviewed literature</Badge>
           </header>
+          <AskAtlasPageReferenceStrip />
           <AskAtlasUnavailableNotice
             headingId={ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID}
           />
@@ -55,5 +51,44 @@ function AskAtlasWorkspaceChat({
     mode: "workspace",
     requestsEnabled: true,
   });
-  return <EvidenceChatWorkspaceShell model={model} />;
+  const handleSelectPrompt = (question: string) => {
+    model.editQuestion(question);
+  };
+  return (
+    <EvidenceChatWorkspaceShell
+      emptyLead={
+        <AskAtlasLiteraturePrompts
+          onSelect={handleSelectPrompt}
+          visible={model.showEmptyState}
+        />
+      }
+      leading={
+        <>
+          <AskAtlasPageReferenceStrip />
+          <p
+            className="ux-reset-ask-atlas-mode-note"
+            data-testid="ask-atlas-literature-only"
+          >
+            Answers use reviewed literature only. Structured and Both modes are
+            not available. A page reference is not sent with the question, and
+            showing a comparison does not run a county comparison.
+          </p>
+          {/* Native disclosure: there is no shared Disclosure primitive. */}
+          <details
+            className="ux-reset-ask-atlas-storage"
+            data-testid="ask-atlas-browser-storage"
+          >
+            <summary>Saved in this browser</summary>
+            <p>
+              Up to five conversations stay in this browser for 30 days. Nothing
+              is stored until a response is saved. Deleting a chat removes that
+              local copy only.
+            </p>
+          </details>
+        </>
+      }
+      model={model}
+      presentation="ask-atlas"
+    />
+  );
 }
