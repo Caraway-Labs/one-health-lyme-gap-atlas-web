@@ -4,7 +4,7 @@ Status: approved design contract; consent-gated Browser SDK is implemented again
 
 Owner: Atlas product, engineering, and privacy leads
 
-Last reviewed: 2026-09-11
+Last reviewed: 2026-10-12
 
 ## Product purpose and boundary
 
@@ -157,6 +157,18 @@ Live confirmation that events land in projects `856061` and `860994` requires va
 4. Invalid event name, unknown enum, free-text property, raw URL, and direct SDK import outside the boundary fail tests or lint/CI checks.
 5. The public privacy notice accurately lists Amplitude, its purpose, the 90-day retention, session-scoped identity, opt-out, and no-sale/no-ads commitments before activation.
 6. A synthetic data-rights test proves the documented behavior for any future approved account linkage before that linkage is enabled.
+
+## Retired identifiers
+
+These `control_id` values are no longer in the typed allowlist. Historical Amplitude events may still contain them. Do not reuse a retired ID for a new control or a new meaning.
+
+| Retired `control_id` | Former emitter | Why it left the allowlist |
+| --- | --- | --- |
+| `nav_home`, `nav_atlas`, `nav_scoring`, `nav_methods`, `nav_variants`, `nav_variant_link` | `SiteNav`, removed when the shell moved to route metadata (#203) | No remaining emitter or consumer |
+| `summary_copy` | Never emitted. The live copy control is `county_summary_copy`, and the copy event remains `atlas_summary_copied` | Orphan catalogue entry |
+| `assistant_demo_send`, `assistant_demo_stop` | Assistant demo composer, removed with the unreferenced demo fixture (#563) | No remaining emitter or consumer |
+
+`route_id` `atlas_variant` stays. Numbered `/variant_*` URLs return HTTP 404 and are not registered routes, but unmatched paths still use the analytical shell, which records a consented `atlas_route_viewed` event. Classifying that view as `atlas_variant` keeps it distinct from Overview (`atlas_home`).
 
 ## Change control
 
