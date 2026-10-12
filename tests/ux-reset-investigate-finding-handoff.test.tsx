@@ -151,7 +151,7 @@ function emptyBundle(): CountyEvidenceBundle {
 
 function observedFindingExpectation(): FindingExpectation {
   return {
-    actionOffer: "Continue to Action",
+    actionOffer: "Suggested follow-up",
     askPeriod: "2023",
     availability: "available",
     catalogFailure: false,
@@ -210,7 +210,7 @@ function expectationFor(scenario: FindingScenario): FindingExpectation {
     }
     case "published-only": {
       return {
-        actionOffer: "Continue to Action",
+        actionOffer: "Suggested follow-up",
         askPeriod: null,
         availability: "available",
         catalogFailure: false,
@@ -225,7 +225,7 @@ function expectationFor(scenario: FindingScenario): FindingExpectation {
     }
     case "neither": {
       return {
-        actionOffer: "Continue to Action",
+        actionOffer: "Suggested follow-up",
         askPeriod: null,
         availability: "",
         catalogFailure: false,

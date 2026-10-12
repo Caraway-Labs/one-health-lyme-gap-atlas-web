@@ -159,7 +159,9 @@ describe("front porch view", () => {
         .getAttribute("href")
     ).toBe(RESET_REVIEW_PATH);
     expect(
-      screen.getByRole("link", { name: "Open Review" }).getAttribute("href")
+      screen
+        .getByRole("link", { name: "Open Atlas Explorer" })
+        .getAttribute("href")
     ).toBe(RESET_REVIEW_PATH);
   });
 

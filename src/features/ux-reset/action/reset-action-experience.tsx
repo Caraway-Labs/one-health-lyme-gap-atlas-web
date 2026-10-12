@@ -44,8 +44,12 @@ import {
 import type { InvestigateRecovery } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import { useInvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import {
+  EXPLORER_EVIDENCE_MODE,
+  hrefWithExplorerMode,
+} from "@/features/ux-reset/review/explorer-mode";
+import {
+  ATLAS_EXPLORER_PATH,
   RESET_ACTION_PATH,
-  RESET_INVESTIGATE_PATH,
 } from "@/features/ux-reset/routes";
 import { cn } from "@/lib/utils";
 
@@ -129,10 +133,13 @@ function ActionExperienceInner() {
     workspace.requestedFips,
     workspace.scope,
   ]);
-  const returnHref = uxResetShellHandoffHref(
-    RESET_INVESTIGATE_PATH,
-    RESET_ACTION_PATH,
-    handoffParams
+  const returnHref = hrefWithExplorerMode(
+    uxResetShellHandoffHref(
+      ATLAS_EXPLORER_PATH,
+      RESET_ACTION_PATH,
+      handoffParams
+    ),
+    EXPLORER_EVIDENCE_MODE
   );
   const bundle = workspace.bundle;
   const hierarchy = settledInvestigateHierarchy({
@@ -268,7 +275,7 @@ function ActionExperienceInner() {
           data-variant="primary"
           href={returnHref}
         >
-          Return to Investigate
+          Return to county evidence
         </Link>
       </header>
 

@@ -4151,7 +4151,6 @@ select:focus-visible {
   }
   .front-porch-sign-in {
     padding-inline: 10px;
-    white-space: nowrap;
   }
 }
 

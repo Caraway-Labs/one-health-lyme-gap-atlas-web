@@ -1,5 +1,7 @@
 # Atlas navigation contract
 
+The signed-in professional workspace lists six destinations: Atlas Explorer (`/app/review`), Compare, Ask Atlas (`/app/assistant`), Feed, Settings, and Docs. The compatibility map is [ux-reset-six-page-route-mapping.md](./ux-reset-six-page-route-mapping.md). `/overview`, `/geographic_explorer`, `/investigate`, `/app`, `/app/explore`, `/app/investigate`, and `/app/action` redirect to Atlas Explorer. They are not current sidebar destinations. The inventory below remains the public-shell metadata for routes that still render, including the Front Porch, `/assistant`, Account, and trust pages.
+
 ## Scope
 
 This contract owns primary movement between Atlas workflows and the route metadata used by the application shell. It is implemented by `src/lib/navigation.ts` and consumed by the desktop sidebar, collapsed icon rail, mobile drawer, route chrome, page metadata, and global footer. It does not own page-local filters, tabs, score controls, map controls, or in-page anchors.

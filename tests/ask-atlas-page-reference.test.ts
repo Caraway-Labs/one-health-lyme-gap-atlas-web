@@ -117,7 +117,7 @@ describe("Ask Atlas page reference", () => {
       periodOnAskUrl: null,
       requestFields: false,
       returnHref:
-        "/app/explore?scope=CO&county=08001&dataset=alpha-2026&period=2023-01-01&metric=reported-cases&map_scope=CO",
+        "/app/review?scope=CO&county=08001&dataset=alpha-2026&period=2023-01-01",
       surface: "explore",
     });
     expect(state.reference.context.fields.geography).toMatchObject({

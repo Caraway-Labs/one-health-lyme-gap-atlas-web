@@ -15,7 +15,7 @@ The October 11, 2026 workspace is six destinations: **Atlas Explorer, Compare, A
 
 Review is the existing map, ranked list, and county-preview route. Signed-in Front Porch entry already uses it (`frontPorchExploreHref`). Settings default jurisdiction already applies to a Review open that omits `scope` and `county`. Compare's `return=review` already resolves to this path. `/app` is still the placeholder workspace home, not the map. `/app/explore` is the measure browser that Explorer will absorb. A new `/app/explorer` path is not part of this map.
 
-The display name Atlas Explorer does not require a different path. Live shell labels stay as they are until #197.
+The display name Atlas Explorer does not require a different path. The live shell labels are the six destinations in the table below.
 
 ## Destination inventory
 
@@ -46,7 +46,7 @@ These are not workspace destinations and this map does not retarget them:
 
 Browse is the current Review surface: map, list, and compact preview when `county` is a single valid FIPS. `mode` is omitted.
 
-`mode=evidence` is expanded county evidence. `mode=follow-up` is that same expanded county opened at Suggested follow-up. `/app/review` reads one exact token and renders that view. An invalid or repeated `mode` is removed. The aliases below still render their current pages until #197.
+`mode=evidence` is expanded county evidence. `mode=follow-up` is that same expanded county opened at Suggested follow-up. `/app/review` reads one exact token and renders that view. An invalid or repeated `mode` is removed. Middleware redirects the aliases below. They do not render their old pages.
 
 | Source | Recorded target | State |
 | --- | --- | --- |
@@ -102,7 +102,7 @@ These are dropped when an alias redirects. They are not Explorer state:
 | `sort` | Review list control | Stays on `/app/review` because that path does not redirect. Dropped from any alias. |
 | `map_scope` | Explore map framing | Must not overwrite Review `scope`. |
 | `plan`, `role` | Action. Only `plan` is parsed. `evidence-brief` is the one workflow id. `role` is unread. | Other Action links redirect to suggested follow-up and drop `plan`. One `plan=evidence-brief` stays on `/app/action` so the evidence brief remains reachable until that workflow renders in follow-up. |
-| `return` | Compare (`review` or `investigate`) | Stays on `/app/compare`. `return=review` already targets `/app/review`. `return=investigate` still targets `/app/investigate` until #197 points that return at `mode=evidence`. |
+| `return` | Compare (`review` or `investigate`) | Stays on `/app/compare`. `return=review` targets `/app/review`. `return=investigate` targets Atlas Explorer `mode=evidence`. |
 | `conversation` | `/assistant`, `/app/assistant`, `/knowledge-graph` | Stays on the Assistant URLs. Not copied to Explorer. |
 | `page_ref` | `/app/assistant` | Validated Ask Atlas page reference. Not a shared key, not a chat request field, and not retrieved evidence. |
 | `tab` | Named on Feed, not read | Feed does not redirect. |
@@ -125,25 +125,24 @@ Compare entry: `compare-entry.ts` (`buildCompareEntryHref`, `return`).
 
 Arrival: `resolve-review-scope.ts`, `use-apply-profile-starting-scope.ts`, `profile/default-jurisdiction-contract.ts`.
 
-Link consumers that still point at pre-cutover paths:
+Product links after #197 and #198:
 
-| Consumer | Paths it builds |
+| Consumer | Where it goes |
 | --- | --- |
-| `paths.ts` `RESET_ROUTES` | Shell entries for `/app`, Review, Explore, Investigate, Compare, Action, Assistant, Feed, Settings, Docs |
-| `professional-shell.tsx` | Those shell links, including the workspace mark to `/app` |
-| `front-porch-copy.ts` | Signed-in entry to `/app/review` |
-| `review-county-preview.ts` | Open Investigate |
-| `reset-investigate-experience.tsx` | Return to Review, Compare, Continue to Action |
-| `reset-explore-experience.tsx`, `explore-committed-navigation.tsx` | Investigate and Review |
-| `reset-action-experience.tsx` | Return to Investigate |
-| `compare-entry.ts`, `use-compare-workspace.ts` | Compare entry and Investigate return |
-| `settings-account-controls.tsx` | Account return `/app/settings` |
-| `middleware.ts` | Unauthenticated `/app` → sign-in `next` |
-| `app/page.tsx` | `/` plus a legacy analytical query → `/overview` |
-| `knowledge-graph/page.tsx` | `/knowledge-graph` → `/assistant` |
-| `return-path.ts` `accountFreeContinueHref` | Professional paths → `/overview` for the account-free exit |
+| `paths.ts` `RESET_ROUTES` | Sidebar: Atlas Explorer, Compare, Ask Atlas, Feed, Settings, Docs. Explore, Investigate, and Action stay alias metadata, not sidebar entries. |
+| `professional-shell.tsx` | Those six destinations. |
+| `front-porch-copy.ts` | Signed-in entry to `/app/review`. |
+| `review-county-preview.ts` | County evidence on `/app/review` with `mode=evidence`. |
+| `reset-explore-experience.tsx` | **View county evidence** on `/app/review?mode=evidence`. Compare stays `/app/compare`. |
+| `reset-investigate-experience.tsx` | **Return to Atlas Explorer** for browse. **Suggested follow-up** is `/app/review?mode=follow-up`. |
+| `reset-action-experience.tsx` | **Return to county evidence** on `/app/review?mode=evidence`. The evidence brief itself stays on `plan=evidence-brief`. |
+| `ask-atlas/page-reference.ts` | Return links run through this map, so an Explore, Investigate, or Action reference opens the Explorer state above. |
+| `compare-entry.ts`, `use-compare-workspace.ts` | Compare stays dedicated. `return=investigate` opens `mode=evidence`. |
+| `settings-account-controls.tsx` | Account return `/app/settings`. |
+| `middleware.ts` | Unauthenticated `/app` → sign-in `next`, then this map. |
+| `return-path.ts` `accountFreeContinueHref` | Professional paths → `/app/review`. |
 
-#197 has to retarget those consumers. #198 retargets prose. This story leaves them in place.
+#198 retargets those product links and the user docs. It does not add a redirect.
 
 ## Auth, arrival, and failure
 
@@ -156,7 +155,7 @@ Order at cutover: the existing auth guard runs first. `shouldRedirectUnauthentic
 | Incomplete profile | `profile: null` or an unrecognized state code is incomplete. The start is the United States fallback, not a saved national default and not a chosen county. |
 | Session or profile failure | Existing generation, 401, and unavailable-list rules stay. A pending or failed profile must not clear an explicit URL and must not select a county. An unavailable state list uses the national fallback only when the URL has no explicit location. |
 
-Account-free continue still sends professional paths to `/overview` until #197 points that helper at Explorer.
+Account-free continue sends professional paths to Atlas Explorer. Public aliases such as `/overview` stay intact so the compatibility redirect can preserve their query.
 
 ## History, focus, and loops
 

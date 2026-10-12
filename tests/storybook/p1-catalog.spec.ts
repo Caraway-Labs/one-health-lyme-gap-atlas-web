@@ -367,7 +367,7 @@ test("mobile header and footer reflow without a service request", async ({
     "county-investigation-county-intelligence-header--long-label"
   );
   await expect(
-    page.getByRole("link", { name: "Return to Review" })
+    page.getByRole("link", { name: "Return to Atlas Explorer" })
   ).toBeVisible();
   await openStory(
     page,

@@ -30,7 +30,7 @@ export function CountyIntelligenceHeader({
       data-scope={model.scopeLabel}
       data-testid="investigate-header"
     >
-      <p className="eyebrow">Investigate</p>
+      <p className="eyebrow">County evidence</p>
       <h1>{title}</h1>
       <p className="type-body" data-testid="investigate-origin">
         {model.fips ? (
@@ -50,7 +50,7 @@ export function CountyIntelligenceHeader({
         data-variant="primary"
         href={model.returnHref}
       >
-        Return to Review
+        Return to Atlas Explorer
       </Link>
     </header>
   );

@@ -53,7 +53,7 @@ describe("Investigate continue destination", () => {
       }),
     }).toStrictEqual({
       empty: null,
-      loaded: { label: "Continue to Action" },
+      loaded: { label: "Suggested follow-up" },
       missingRelease: null,
       withheld: null,
     });
