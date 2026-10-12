@@ -35,6 +35,18 @@ const docsPages = [
     heading: "API, MCP, and access",
   },
   {
+    path: "/docs/api-reference",
+    heading: "API reference",
+  },
+  {
+    path: "/docs/api-reference/observations",
+    heading: "Observations",
+  },
+  {
+    path: "/docs/api-reference/schemas",
+    heading: "Schemas",
+  },
+  {
     path: "/docs/faq-and-troubleshooting",
     heading: "FAQ and troubleshooting",
   },
@@ -88,15 +100,108 @@ test("keeps every HelpDocs route reachable and accessible", async ({
     expect(blockingViolations, docsPage.path).toEqual([]);
   }
 
-  if (testInfo.project.name === "desktop") {
-    const sidebar = page.locator("#nd-sidebar");
-    await expect(
-      sidebar.getByRole("link", { name: "Developer overview" })
-    ).toBeVisible();
-    await expect(
-      sidebar.getByRole("link", { name: "FAQ and troubleshooting" })
-    ).toBeVisible();
+  const sidebar =
+    testInfo.project.name === "desktop"
+      ? page.locator("#nd-sidebar")
+      : page.locator("#nd-sidebar-mobile");
+  if (testInfo.project.name !== "desktop") {
+    await page.getByRole("button", { name: "Open Sidebar" }).click();
   }
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "Developer overview" })
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "FAQ and troubleshooting" })
+  ).toBeVisible();
+  const apiReferenceFolder = sidebar.getByRole("button", {
+    name: "API reference",
+  });
+  await expect(apiReferenceFolder).toBeVisible();
+  await apiReferenceFolder.click();
+  await expect(
+    sidebar.getByRole("link", { name: "Observations" })
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { name: "API, MCP, and access" })
+  ).toBeVisible();
+});
+
+test("renders the generated observations reference with version, source, and raw spec", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/docs/api-reference");
+  await expect(
+    page.getByRole("heading", { name: "API reference", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText("OpenAPI version", { exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Application version", { exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "25cd3ec90a9b330c620f02ca012576fd98b3f4ab" })
+  ).toBeVisible();
+  const rawSpec = page.getByRole("link", { name: "OpenAPI schema" });
+  await expect(rawSpec).toHaveAttribute(
+    "href",
+    "https://api.onehealthatlas.org/openapi.json"
+  );
+
+  await page.goto("/docs/api-reference/observations");
+  await expect(
+    page.getByRole("heading", {
+      name: "Query county observations",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText("observations_v1_observations_get", { exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("case_count_floor_2023").first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "400", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText("application/problem+json").first()
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "429", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "503", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Retry-After", exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Seconds before retry when supplied by the service.").first()
+  ).toBeVisible();
+  const schemaLink = page.getByRole("link", { name: "ProblemDetails" }).first();
+  await expect(schemaLink).toHaveAttribute(
+    "href",
+    "/docs/api-reference/schemas#schema-problemdetails"
+  );
+  await schemaLink.click();
+  await expect(page).toHaveURL(
+    /\/docs\/api-reference\/schemas#schema-problemdetails$/
+  );
+  await expect(
+    page.getByRole("heading", { name: "ProblemDetails", exact: true })
+  ).toBeVisible();
+
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth >
+      document.documentElement.clientWidth + 1
+  );
+  expect(overflow, testInfo.project.name).toBe(false);
+
+  const results = await new AxeBuilder({ page }).include("main").analyze();
+  const blockingViolations = results.violations.filter((violation) =>
+    ["critical", "serious"].includes(violation.impact ?? "")
+  );
+  expect(blockingViolations).toEqual([]);
 });
 
 test("keeps canonical product language and safety boundaries in the rendered guides", async ({

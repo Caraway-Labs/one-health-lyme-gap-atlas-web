@@ -81,8 +81,24 @@ describe("developer documentation guides", () => {
       (phrase) => !developText.includes(phrase)
     );
 
+    const referenceLinks = [
+      "](/docs/api-reference)",
+      "](/docs/api-reference/discovery)",
+      "](/docs/api-reference/observations)",
+      "](/docs/api-reference/provenance)",
+      "](/docs/api-reference/geographies)",
+      "](/docs/api-reference/atlas)",
+      "](/docs/api-reference/counties)",
+      "](/docs/api-reference/states)",
+      "](/docs/api-reference/schemas)",
+    ];
+    const missingLinks = referenceLinks.filter(
+      (link) => !developText.includes(link)
+    );
+
     expect(missingPhrases).toStrictEqual([]);
-    expect(developText).not.toContain("](/docs/api-reference");
+    expect(missingLinks).toStrictEqual([]);
+    expect(developText).not.toContain("`/docs/api-reference");
   });
 
   it("does not invent credentials, SDKs, quotas, or out-of-scope states", () => {

@@ -43,7 +43,7 @@ Use this table for the quickstart URL and the same query with a different county
 | Invalid parameters | HTTP 400, `code` `INVALID_REQUEST` | Fix the query. Missing year and dates returns detail `Supply a year or both start_date and end_date.` Sending `year` together with both dates returns detail `Use year or a date range, not both.` `page_size=0` and `geography_type=tract` also return `INVALID_REQUEST`. `tract` includes an `errors` entry because `geography_type` must be `county` or `state` |
 | Unsupported filter | HTTP 400, `code` `UNSUPPORTED_FILTER`, detail `This query filter is not supported in V1.` | Remove the extra parameter. `sort`, `aggregation`, and unknown query names returned this code |
 | Unsupported stratification | HTTP 400, `code` `UNSUPPORTED_STRATIFICATION`, detail `This release has no governed strata.` | Omit `stratification`. The current release has no strata |
-| Query too broad | HTTP 400, `code` `QUERY_TOO_BROAD` | The contract names this code and does not publish a numeric ceiling. Narrow the county list or period and request the first page again |
+| Query too broad | HTTP 400, `code` `QUERY_TOO_BROAD` | Narrow the county list or period and request the first page again |
 | Request body | HTTP 413, `code` `INVALID_REQUEST` | Canonical GET routes reject a request body |
 | Overlong query | HTTP 414, `code` `INVALID_REQUEST` | Shorten the query string. This status is separate from HTTP 400 |
 | Rate limited | HTTP 429, `code` `RATE_LIMITED`, header `Retry-After` | Wait the number of seconds in `Retry-After` when the header is present, then retry the same request. The public document does not publish a numeric quota |

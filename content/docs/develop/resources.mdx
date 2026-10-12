@@ -63,7 +63,7 @@ There is no caller sort and no aggregation. `sort=value`, `aggregation=sum`, and
 
 `strata` on a checked case-floor row was an empty object. An empty object is not a breakdown.
 
-Each observation also carries period, unit, denominator, source, methodology, `semantic_version`, `release_id`, `provenance_ref`, `limitations`, and `evidence`. `environmental_context` is optional and present only for reviewed environmental context. The field list and types are in the generated schema page under `/docs/api-reference/schemas`.
+Each observation also carries period, unit, denominator, source, methodology, `semantic_version`, `release_id`, `provenance_ref`, `limitations`, and `evidence`. `environmental_context` is optional and present only for reviewed environmental context. The field list and types are in the generated [schema reference](/docs/api-reference/schemas).
 
 ## States for the discovery and observation routes
 
@@ -74,7 +74,7 @@ Each observation also carries period, unit, denominator, source, methodology, `s
 | Not found | HTTP 404 `RESOURCE_NOT_FOUND` for an unknown path id | HTTP 404 `RESOURCE_NOT_FOUND` is declared. An unmatched county filter can be an empty page instead |
 | Invalid parameters | HTTP 400 `INVALID_REQUEST`, including `page_size` below 1 | HTTP 400 `INVALID_REQUEST` for a missing period, for `year` plus a date range, for `page_size` below 1, and for a `geography_type` outside `county` and `state` |
 | Unsupported filter or strata | HTTP 400 with the declared filter and stratification codes | Checked: `UNSUPPORTED_FILTER` and `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | Declared as HTTP 400 `QUERY_TOO_BROAD` | Same code. The contract names the code and does not publish a numeric ceiling |
+| Query too broad | Declared as HTTP 400 `QUERY_TOO_BROAD` | Same code |
 | Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` | Same |
 | Server unavailable | HTTP 503 and `Retry-After` | Same |
 | Unknown or limited data | Null definition, denominator, methodology, or source list fields stay null | `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, and a null `environmental_context` stay as returned |

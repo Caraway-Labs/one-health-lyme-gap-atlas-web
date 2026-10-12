@@ -3,7 +3,7 @@ title: REST API
 description: Call the anonymous Atlas HTTP contract, page collections, and handle the declared errors, cache headers, and version fields.
 ---
 
-Public Atlas reads are GET requests to `https://api.onehealthatlas.org`. The contract path prefix is `/v1`. No API key is used. The machine-readable parameters and schemas are in the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and the generated `/docs/api-reference` pages.
+Public Atlas reads are GET requests to `https://api.onehealthatlas.org`. The contract path prefix is `/v1`. No API key is used. The machine-readable parameters and schemas are in the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and the generated [API reference](/docs/api-reference).
 
 ## Collections and resources
 
@@ -44,7 +44,7 @@ Canonical errors use RFC 9457 `application/problem+json`. Required problem field
 | 400 | `INVALID_REQUEST` | The query is incomplete or a value fails validation |
 | 400 | `UNSUPPORTED_FILTER` | The query contains a filter V1 does not accept, including unknown parameters, `sort`, and `aggregation` |
 | 400 | `UNSUPPORTED_STRATIFICATION` | `stratification` is sent. The current release has no strata |
-| 400 | `QUERY_TOO_BROAD` | The contract rejects the query as too broad. It names this code and does not publish a numeric ceiling |
+| 400 | `QUERY_TOO_BROAD` | The contract rejects the query as too broad |
 | 404 | `RESOURCE_NOT_FOUND` | The canonical resource id is unknown |
 | 413 | `INVALID_REQUEST` | A GET request includes a body. Canonical routes reject that body |
 | 414 | `INVALID_REQUEST` | The query string is too long |

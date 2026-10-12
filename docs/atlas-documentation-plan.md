@@ -67,7 +67,7 @@ The launch priority is one page, `Start with Atlas`, covering purpose, quick sta
 | Methodology | Approved Atlas methodology and web/data owners | Describe the released method/version without adding unsupported claims. |
 | Privacy | Approved web privacy contract and policy | Link to the approved `/privacy` surface; no new retention or identity promises. |
 | AI ethics and limitations | `src/lib/ai-ethics-content.ts` and `/ai-ethics` | Link to the approved page; do not duplicate unresolved policy commitments. |
-| REST API/OpenAPI | Atlas API repository | Link to the live OpenAPI artifact and generated references when the API story releases them. |
+| REST API/OpenAPI | Atlas API repository public `openapi.json` | Generate the Fumadocs reference from the pinned public contract, label its version and source, and link the raw spec. Do not hand-maintain a second endpoint catalog. |
 | MCP tools/resources/compatibility | Owning MCP/API contracts and tests | Publish only supported guidance; do not infer capability from internal prototypes. |
 | Release notes | Web repository release workflow and linked service releases | Summarize material released changes and link to the source change. |
 
