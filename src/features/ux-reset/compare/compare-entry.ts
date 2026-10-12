@@ -292,8 +292,12 @@ export function compareRecoveryMessages(input: {
       `County ${fips} is not in the published county list for this release.`
     );
   }
-  if (input.entry.pair.length === 0 || input.entry.pair.length === 1) {
-    return messages;
+  if (input.entry.pair.length === 0) {
+    messages.push(
+      "Choose two counties to compare. Atlas will not select counties for you."
+    );
+  } else if (input.entry.pair.length === 1) {
+    messages.push("One county is selected. Choose a second county to compare.");
   }
   return messages;
 }
