@@ -684,30 +684,37 @@ test.describe("professional shell scroll containment", () => {
     await expect
       .poll(() => page.evaluate(() => history.scrollRestoration))
       .toBe("auto");
-    const scrolled = await page.evaluate(() => {
-      const spacer = document.createElement("div");
-      spacer.style.height = "2400px";
-      document.body.append(spacer);
+    await page
+      .getByRole("link", { name: "One Health Lyme Gap Atlas home" })
+      .click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect
+      .poll(() => page.evaluate(() => history.scrollRestoration))
+      .toBe("auto");
+    const leaving = await page.evaluate(() => {
       const scroller = document.scrollingElement;
       if (!(scroller instanceof HTMLElement)) {
         return 0;
       }
       scroller.style.scrollBehavior = "auto";
-      scroller.scrollTop = 640;
+      scroller.scrollTop = scroller.scrollHeight;
       return scroller.scrollTop;
     });
-    expect(scrolled).toBeGreaterThan(400);
-    await page
-      .getByRole("link", { name: "One Health Lyme Gap Atlas home" })
-      .click();
-    await expect(page).toHaveURL(/\/$/);
-    await page.goBack();
-    await expect(page).toHaveURL(/\/privacy$/);
+    expect(leaving).toBeGreaterThan(400);
     await expect
       .poll(() =>
         page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
       )
-      .toBeGreaterThan(400);
+      .toBe(leaving);
+    await page.getByRole("link", { name: "Resources" }).click();
+    await expect(page).toHaveURL(/\/docs/);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
+      )
+      .toBeGreaterThan(leaving - 80);
   });
 
   test("prints the professional shell without clipping the route", async ({
