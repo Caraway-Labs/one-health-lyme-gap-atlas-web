@@ -308,12 +308,18 @@ function ResetReviewExperienceInner() {
       if (!county) {
         return;
       }
+      // The state review was loaded for this release. Pin it so county
+      // evidence does not request a newer current release.
       void setUrlState(
-        { county, mode: EXPLORER_EVIDENCE_MODE },
+        {
+          county,
+          mode: EXPLORER_EVIDENCE_MODE,
+          ...(confirmedRelease === null ? {} : { dataset: confirmedRelease }),
+        },
         { history: "push" }
       );
     },
-    [scope, setUrlState]
+    [confirmedRelease, scope, setUrlState]
   );
   const backToMap = useCallback(() => {
     if (reviewCounty) {

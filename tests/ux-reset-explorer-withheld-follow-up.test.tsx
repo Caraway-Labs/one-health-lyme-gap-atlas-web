@@ -1,6 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -113,7 +119,13 @@ function stubDesktopMatchMedia() {
   );
 }
 
-function renderReview(search: string) {
+function renderReview(
+  search: string,
+  onUrlUpdate?: (update: {
+    history: "push" | "replace";
+    queryString: string;
+  }) => void
+) {
   mockedSearch = search.startsWith("?") ? search.slice(1) : search;
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -122,6 +134,9 @@ function renderReview(search: string) {
     <QueryClientProvider client={client}>
       <NuqsTestingAdapter
         hasMemory
+        onUrlUpdate={({ options, queryString }) =>
+          onUrlUpdate?.({ history: options.history, queryString })
+        }
         searchParams={
           new URL(`http://localhost/app/review?${mockedSearch}`).search
         }
@@ -169,6 +184,37 @@ describe("withheld Explorer follow-up", () => {
       expect(seen).not.toMatch(withheldRecommendation);
     }
   );
+
+  it("pins the reviewed release when opening county evidence", async () => {
+    stubDesktopMatchMedia();
+    reviewResult.resultState = "candidates_found";
+    const updates: { history: "push" | "replace"; queryString: string }[] = [];
+    renderReview("?scope=CO&county=08001", (update) => {
+      updates.push(update);
+    });
+    fireEvent.click(await screen.findByTestId("review-view-county-evidence"));
+    await waitFor(() => {
+      const pinned = updates.find(
+        (update) =>
+          new URLSearchParams(update.queryString).get("mode") === "evidence"
+      );
+      if (!pinned) {
+        throw new Error("county evidence did not write mode");
+      }
+      const params = new URLSearchParams(pinned.queryString);
+      expect({
+        county: params.get("county"),
+        dataset: params.get("dataset"),
+        history: pinned.history,
+        mode: params.get("mode"),
+      }).toStrictEqual({
+        county: "08001",
+        dataset: "alpha-2026",
+        history: "push",
+        mode: "evidence",
+      });
+    });
+  });
 
   it("shows the same candidate when the result state agrees", async () => {
     stubDesktopMatchMedia();
