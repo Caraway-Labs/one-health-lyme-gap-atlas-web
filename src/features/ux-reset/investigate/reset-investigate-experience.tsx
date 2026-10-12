@@ -405,7 +405,10 @@ function InvestigateExperienceInner() {
           modelAssisted={modelAssisted}
           retrying={workspace.evidenceFetching}
           onRetryFailures={
-            bundle && bundle.measureFailures.length > 0
+            bundle &&
+            bundle.measureFailures.some(
+              (failure) => failure.retryable !== false
+            )
               ? workspace.retryEvidence
               : undefined
           }

@@ -12,8 +12,8 @@ import {
   useState,
 } from "react";
 
-import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -29,6 +29,11 @@ import {
   type EvidenceProvenanceModel,
 } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import {
+  explorerMapLayerById,
+  paintExplorerMapLayer,
+  type ExplorerMapLayerId,
+} from "@/features/ux-reset/review/explorer-map-layers";
 import {
   buildReviewCandidatePreview,
   reviewCandidateExplanation,
@@ -61,6 +66,7 @@ import {
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
+import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { DataGap, StateReview } from "@/generated/models";
@@ -98,6 +104,7 @@ type ReviewOperatingPictureProps = {
   county?: string | null;
   /** Keep the map mounted without writing a county into the URL. */
   freezeCountySelection?: boolean;
+  mapLayer?: ExplorerMapLayerId;
   onCountyChange?: (fips: string | null, history: ReviewCountyHistory) => void;
   onViewCountyEvidence?: (fips: string) => void;
   period?: string | null;
@@ -107,7 +114,19 @@ type ReviewOperatingPictureProps = {
   scopeCode: string;
   stateName: string;
   tierRelease?: Tier1ActiveRelease;
+  countyQuery?: string;
 };
+
+function resolveExplorerPaintColor(color: string | undefined): string | undefined {
+  if (!color?.startsWith("var(") || typeof document === "undefined") {
+    return color;
+  }
+  const token = color.slice(4, -1).trim();
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(token)
+    .trim();
+  return value || undefined;
+}
 
 function visibleLines(values: readonly string[]): string[] {
   const lines: string[] = [];
@@ -236,6 +255,7 @@ function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
 export function ReviewOperatingPicture({
   county = null,
   freezeCountySelection = false,
+  mapLayer = "gap_score",
   onCountyChange,
   onViewCountyEvidence,
   period = null,
@@ -244,6 +264,7 @@ export function ReviewOperatingPicture({
   scopeCode,
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
+  countyQuery = "",
 }: ReviewOperatingPictureProps) {
   const scopedCandidates = useMemo(
     () => scopedReviewCandidates(review.review_candidates, scopeCode),
@@ -350,14 +371,57 @@ export function ReviewOperatingPicture({
       ) ?? [],
     [geometryQuery.data]
   );
+  const scoresQuery = useExplorerMapScores(releaseId, mapLayer);
+  const mapPaint = useMemo(() => {
+    const layer = explorerMapLayerById(mapLayer);
+    const counties = (scoresQuery.data?.counties ?? []).filter(
+      (county) => county.state === scopeCode
+    );
+    const scoresStatus = layer.needsScores
+      ? !releaseId || scoresQuery.isError
+        ? "error"
+        : scoresQuery.isPending
+          ? "loading"
+          : "ready"
+      : "ready";
+    return paintExplorerMapLayer({
+      counties,
+      layerId: layer.id,
+      scoresStatus,
+    });
+  }, [
+    mapLayer,
+    releaseId,
+    scopeCode,
+    scoresQuery.data,
+    scoresQuery.isError,
+    scoresQuery.isPending,
+  ]);
   const mapCounties = useMemo(
     () =>
       reviewMapCounties({
         geometryFips,
         scopeCode,
-      }),
-    [geometryFips, scopeCode]
+      }).map((county) => ({
+        ...county,
+        color: resolveExplorerPaintColor(mapPaint.colorsByFips.get(county.fips)),
+      })),
+    [geometryFips, mapPaint.colorsByFips, scopeCode]
   );
+  const [fitSignal, setFitSignal] = useState(0);
+  const publishedScoreByFips = useMemo(() => {
+    const scores = new Map<string, { priority: string; score: number }>();
+    for (const county of scoresQuery.data?.counties ?? []) {
+      if (county.state !== scopeCode) {
+        continue;
+      }
+      scores.set(county.fips, {
+        priority: county.priority.trim(),
+        score: county.score.score,
+      });
+    }
+    return scores;
+  }, [scopeCode, scoresQuery.data]);
   const selectCounty = useCallback(
     (fips: string, _surface: GeographySelectionSurface) => {
       if (!directory.counties.some((entry) => entry.fips === fips)) {
@@ -448,6 +512,20 @@ export function ReviewOperatingPicture({
   }, [focusReturnedCounty, freezeCountySelection, selectedFips]);
 
   const geometryError = Boolean(geometryQuery.isError);
+  const countyQueryText = countyQuery.trim().toLowerCase();
+  const countyMatchesQuery = (name: string, fips: string) =>
+    countyQueryText.length === 0 ||
+    name.toLowerCase().includes(countyQueryText) ||
+    fips.includes(countyQueryText);
+  const visibleDirectory = directory.counties.filter((entry) =>
+    countyMatchesQuery(entry.county, entry.fips)
+  );
+  const visibleCandidates = candidates.filter((candidate) =>
+    countyMatchesQuery(
+      reviewCandidateCountyLabel(candidate.countyName),
+      candidate.countyFips
+    )
+  );
   const geometryReady = Boolean(geometryQuery.data) && !geometryError;
   // A disabled geometry query stays pending in React Query v5. An unusable
   // release never starts that request, so it is unavailable rather than loading.
@@ -477,7 +555,8 @@ export function ReviewOperatingPicture({
       data-result-state={pictureState ?? "unavailable"}
       data-testid="review-state-panel"
     >
-      <div className="ux-reset-review-result">
+      <details className="ux-reset-review-result">
+        <summary>Score and methodology</summary>
         <h2 className="type-card">Review result</h2>
         <p data-testid="review-result-summary">
           {pictureState
@@ -541,225 +620,319 @@ export function ReviewOperatingPicture({
             ))}
           </ul>
         ) : null}
-      </div>
+      </details>
 
-      <Card className="ux-reset-review-operating-map map-card gap-0 py-0">
-        <AtlasSectionHeader
-          className="card-title-row"
-          eyebrow="State review scope"
-          headingLevel="h2"
-          title={`Counties in ${stateName}`}
-        />
-        <div
-          className="map-wrap"
-          data-testid="review-state-map-region"
-          aria-busy={
-            geometryPending ||
-            (geometryReady &&
-              hasMapCounties &&
-              settledMapContext !== mapContext)
-          }
-        >
-          {geometryReady && hasMapCounties ? (
-            <AtlasMap
-              key={mapContext}
-              ariaLabel={`Map of ${stateName}. Select a published county or use the Published county picker.`}
-              cameraFrameState={scopeCode}
-              geometry={geometryQuery.data as never}
-              scores={mapCounties}
-              selectedFips={selectedFips}
-              selectedState={scopeCode}
-              onSelect={selectCounty}
-              onIdle={() => setSettledMapContext(mapContext)}
-            />
-          ) : geometryError ? (
-            <AtlasStatusMessage
-              className="map-loading"
-              data-testid="review-state-map-error"
-              tone="error"
-            >
+      <div className="ux-reset-explorer-browse" data-testid="explorer-browse">
+        <Card className="ux-reset-explorer-map ux-reset-review-operating-map map-card gap-0 py-0">
+          <div className="ux-reset-explorer-map-heading">
+            <div>
+              <h2>{mapPaint.title}</h2>
               <p>
-                The map is temporarily unavailable. Use the county list to
-                inspect the same review result.
+                {period
+                  ? `Period ${period}`
+                  : "Source periods vary by evidence"}
+                {review.data_release_version.trim()
+                  ? ` · Release ${review.data_release_version.trim()}`
+                  : ""}
               </p>
-            </AtlasStatusMessage>
-          ) : geometryUnavailable ? (
-            <AtlasStatusMessage
-              className="map-loading"
-              data-testid="review-state-map-unavailable"
-              tone="empty"
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setFitSignal((value) => value + 1);
+              }}
             >
-              <p data-testid="review-state-map-unavailable">
-                The map is unavailable. This result did not include a release
-                Atlas can request.
-              </p>
-            </AtlasStatusMessage>
-          ) : !hasMapCounties && !geometryPending ? (
-            <AtlasStatusMessage className="map-loading" tone="empty">
-              <p data-testid="review-state-map-empty">
-                No county shapes were returned to draw for this result.
-              </p>
-            </AtlasStatusMessage>
-          ) : (
-            <AtlasStatusMessage
-              className="map-loading"
-              data-testid="review-state-map-loading"
-              tone="loading"
+              Fit {stateName}
+            </Button>
+          </div>
+          <div
+            className="map-wrap"
+            data-testid="review-state-map-region"
+            aria-busy={
+              geometryPending ||
+              (geometryReady &&
+                hasMapCounties &&
+                settledMapContext !== mapContext)
+            }
+          >
+            {geometryReady && hasMapCounties ? (
+              <AtlasMap
+                key={mapContext}
+                ariaLabel={`Map of ${stateName}. Select a published county or use the Published county picker.`}
+                cameraFrameState={scopeCode}
+                fitSignal={fitSignal}
+                geometry={geometryQuery.data as never}
+                scores={mapCounties}
+                selectedFips={selectedFips}
+                selectedState={scopeCode}
+                onSelect={selectCounty}
+                onIdle={() => setSettledMapContext(mapContext)}
+              />
+            ) : geometryError ? (
+              <AtlasStatusMessage
+                className="map-loading"
+                data-testid="review-state-map-error"
+                tone="error"
+              >
+                <p>
+                  The map is temporarily unavailable. Use the county list to
+                  inspect the same review result.
+                </p>
+              </AtlasStatusMessage>
+            ) : geometryUnavailable ? (
+              <AtlasStatusMessage
+                className="map-loading"
+                data-testid="review-state-map-unavailable"
+                tone="empty"
+              >
+                <p data-testid="review-state-map-unavailable">
+                  The map is unavailable. This result did not include a release
+                  Atlas can request.
+                </p>
+              </AtlasStatusMessage>
+            ) : !hasMapCounties && !geometryPending ? (
+              <AtlasStatusMessage className="map-loading" tone="empty">
+                <p data-testid="review-state-map-empty">
+                  No county shapes were returned to draw for this result.
+                </p>
+              </AtlasStatusMessage>
+            ) : (
+              <AtlasStatusMessage
+                className="map-loading"
+                data-testid="review-state-map-loading"
+                tone="loading"
+              >
+                Loading map…
+              </AtlasStatusMessage>
+            )}
+          </div>
+          <div
+            className="ux-reset-explorer-legend"
+            data-testid="explorer-map-legend"
+          >
+            <p className="type-small">{mapPaint.note}</p>
+            {mapPaint.entries.length > 0 ? (
+              <ul>
+                {mapPaint.entries.map((entry) => (
+                  <li key={`${entry.label}-${entry.color}`}>
+                    <span
+                      aria-hidden="true"
+                      style={{ background: entry.color }}
+                    />
+                    {entry.label}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </Card>
+
+        <div className="ux-reset-explorer-list">
+          <Card className="gap-0 p-3">
+            <h2 className="type-card">
+              {candidates.length > 0 ? "Ranked counties" : "Counties"}
+            </h2>
+            <p className="type-small">
+              {candidates.length > 0
+                ? stateName
+                : `${directory.counties.length} published counties. Alphabetical order; no recommendation ranking. Missing rank is not low priority.`}
+              {authoritativeResultState === "unsupported"
+                ? " Review recommendations are unavailable for this jurisdiction in the current release. You can still explore published county evidence."
+                : ""}
+            </p>
+            {directory.isLoading ? (
+              <AtlasStatusMessage tone="loading">
+                Loading published counties…
+              </AtlasStatusMessage>
+            ) : null}
+            {directory.isError ? (
+              <AtlasStatusMessage tone="error">
+                Published counties could not be loaded. Reload to retry; this is
+                a request failure, not missing evidence.
+              </AtlasStatusMessage>
+            ) : null}
+            {directory.isSuccess && directory.counties.length === 0 ? (
+              <AtlasStatusMessage tone="empty">
+                No published counties were returned for this state and release.
+              </AtlasStatusMessage>
+            ) : null}
+            <Select
+              value={selectedFips || null}
+              onValueChange={(fips) => {
+                if (fips) {
+                  selectCounty(fips, "ranked_list");
+                }
+              }}
             >
-              Loading map…
-            </AtlasStatusMessage>
+              <SelectTrigger
+                aria-label="Published county"
+                className="h-9 w-full"
+                disabled={!directory.counties.length}
+                data-testid="review-published-county-select"
+              >
+                <SelectValue>
+                  {selectedPublished?.county ?? "Select a published county"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {directory.counties.map((entry) => (
+                  <SelectItem key={entry.fips} value={entry.fips}>
+                    {entry.county}, {scopeCode} · {entry.fips}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {omittedOutOfScopeCount > 0 ? (
+              <p className="type-small" data-testid="review-omitted-candidates">
+                {omittedOutOfScopeCount === 1
+                  ? `1 candidate was omitted because its county FIPS is not in ${stateName}.`
+                  : `${omittedOutOfScopeCount} candidates were omitted because their county FIPS is not in ${stateName}.`}
+              </p>
+            ) : null}
+            {omittedDuplicateCount > 0 ? (
+              <p
+                className="type-small"
+                data-testid="review-omitted-duplicate-candidates"
+              >
+                {omittedDuplicateCount === 1
+                  ? "1 candidate was omitted because its county FIPS was already listed."
+                  : `${omittedDuplicateCount} candidates were omitted because their county FIPS was already listed.`}
+              </p>
+            ) : null}
+            {!suppressCandidates &&
+            candidates.length === 0 &&
+            omittedOutOfScopeCount === 0 &&
+            omittedDuplicateCount === 0 ? (
+              <p className="type-small" data-testid="review-no-candidates">
+                No counties were returned in review candidates.
+              </p>
+            ) : null}
+            {countyQueryText &&
+            visibleCandidates.length === 0 &&
+            visibleDirectory.length === 0 ? (
+              <p>No counties match that name or FIPS.</p>
+            ) : null}
+            {candidates.length > 0 ? (
+              <div
+                aria-label="Counties suggested for review"
+                className="ux-reset-review-candidate-list"
+                role="list"
+              >
+                {visibleCandidates.map((candidate) => {
+                  const published = publishedScoreByFips.get(
+                    candidate.countyFips
+                  );
+                  return (
+                    <div key={candidate.countyFips} role="listitem">
+                      <button
+                        aria-current={
+                          candidate.countyFips === selectedFips
+                            ? "true"
+                            : undefined
+                        }
+                        className="ux-reset-review-candidate"
+                        data-fips={candidate.countyFips}
+                        data-testid="review-candidate"
+                        type="button"
+                        onClick={() =>
+                          selectCounty(candidate.countyFips, "ranked_list")
+                        }
+                      >
+                        <strong>
+                          {reviewCandidateCountyLabel(candidate.countyName)},{" "}
+                          {scopeCode}
+                        </strong>
+                        <small>
+                          {published?.priority
+                            ? `${published.priority}. `
+                            : null}
+                          {reviewCandidateExplanation(candidate.candidate)}
+                        </small>
+                        {published ? (
+                          <span className="ux-reset-explorer-county-score">
+                            Published score {published.score}
+                          </span>
+                        ) : null}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+            {candidates.length === 0 && visibleDirectory.length > 0 ? (
+              <div
+                aria-label="Published counties"
+                className="ux-reset-review-candidate-list"
+                role="list"
+              >
+                {visibleDirectory.map((entry) => (
+                  <div key={entry.fips} role="listitem">
+                    <button
+                      aria-current={
+                        entry.fips === selectedFips ? "true" : undefined
+                      }
+                      className="ux-reset-review-candidate"
+                      data-fips={entry.fips}
+                      data-testid="review-published-county"
+                      type="button"
+                      onClick={() => selectCounty(entry.fips, "results_table")}
+                    >
+                      <strong>
+                        {entry.county}, {scopeCode}
+                      </strong>
+                      <small>
+                        Review category unavailable. Published county record.
+                      </small>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </Card>
+        </div>
+        <div className="ux-reset-explorer-preview">
+          {!preview && handoff && releaseId && selectedPublished ? (
+            <ReviewPublishedCountyPreview
+              compareHref={handoff.compareHref}
+              county={selectedPublished}
+              href={handoff.href}
+              onOpen={markReviewReturnFocus}
+              onViewCountyEvidence={onViewCountyEvidence}
+              openRef={openRef}
+              releaseId={releaseId}
+            />
+          ) : null}
+          {preview && handoff ? (
+            <ReviewCountyPreviewPanel
+              compareHref={handoff.compareHref}
+              droppedNotes={handoff.droppedNotes}
+              href={handoff.href}
+              openRef={openRef}
+              preview={preview}
+              categoryLabel={
+                authoritativeResultState === "candidates_found"
+                  ? "Returned for review"
+                  : authoritativeResultState
+                    ? reviewResultStateLabel(authoritativeResultState)
+                    : "Review category unavailable"
+              }
+              release={tierRelease}
+              onOpen={markReviewReturnFocus}
+              onViewCountyEvidence={onViewCountyEvidence}
+            />
+          ) : null}
+          {preview || (handoff && releaseId && selectedPublished) ? null : (
+            <p className="type-body" data-testid="explorer-preview-empty">
+              No county is selected. Choose one from the list or the map.
+            </p>
           )}
         </div>
-        <p className="type-small">
-          The map shows place. It does not color counties by a risk score.
-          Suggestions are the review list.
-        </p>
-      </Card>
-
-      <div className="ux-reset-review-operating-side">
-        <Card className="gap-0 p-4">
-          <h2 className="type-card">Published county exploration</h2>
-          <p className="type-body">
-            Factual county evidence is separate from review recommendations.
-            Select a county to inspect its published record.
-          </p>
-          {directory.isLoading ? (
-            <AtlasStatusMessage tone="loading">
-              Loading published counties…
-            </AtlasStatusMessage>
-          ) : null}
-          {directory.isError ? (
-            <AtlasStatusMessage tone="error">
-              Published counties could not be loaded. Reload to retry; this is a
-              request failure, not missing evidence.
-            </AtlasStatusMessage>
-          ) : null}
-          {directory.isSuccess && directory.counties.length === 0 ? (
-            <AtlasStatusMessage tone="empty">
-              No published counties were returned for this state and release.
-            </AtlasStatusMessage>
-          ) : null}
-          <Select
-            value={selectedFips || null}
-            onValueChange={(fips) => {
-              if (fips) {
-                selectCounty(fips, "ranked_list");
-              }
-            }}
-          >
-            <SelectTrigger
-              aria-label="Published county"
-              className="h-11 w-full"
-              disabled={!directory.counties.length}
-              data-testid="review-published-county-select"
-            >
-              <SelectValue>
-                {selectedPublished?.county ?? "Select a published county"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {directory.counties.map((entry) => (
-                <SelectItem key={entry.fips} value={entry.fips}>
-                  {entry.county}, {scopeCode} · {entry.fips}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="type-small">
-            {directory.counties.length} published counties. Alphabetical order;
-            no recommendation ranking.
-          </p>
-        </Card>
-        <Card className="gap-0 py-0">
-          <AtlasSectionHeader
-            className="card-title-row compact"
-            eyebrow="Authoritative suggestions"
-            headingLevel="h3"
-            title="Counties to inspect"
-          />
-          {omittedOutOfScopeCount > 0 ? (
-            <p className="type-body" data-testid="review-omitted-candidates">
-              {omittedOutOfScopeCount === 1
-                ? `1 candidate was omitted because its county FIPS is not in ${stateName}.`
-                : `${omittedOutOfScopeCount} candidates were omitted because their county FIPS is not in ${stateName}.`}
-            </p>
-          ) : null}
-          {omittedDuplicateCount > 0 ? (
-            <p
-              className="type-body"
-              data-testid="review-omitted-duplicate-candidates"
-            >
-              {omittedDuplicateCount === 1
-                ? "1 candidate was omitted because its county FIPS was already listed."
-                : `${omittedDuplicateCount} candidates were omitted because their county FIPS was already listed.`}
-            </p>
-          ) : null}
-          {!suppressCandidates &&
-          candidates.length === 0 &&
-          omittedOutOfScopeCount === 0 &&
-          omittedDuplicateCount === 0 ? (
-            <p data-testid="review-no-candidates">
-              No counties were returned in review candidates.
-            </p>
-          ) : null}
-          {candidates.length > 0 ? (
-            <div
-              aria-label="Counties suggested for review"
-              className="ux-reset-review-candidate-list"
-              role="list"
-            >
-              {candidates.map((candidate) => (
-                <div key={candidate.countyFips} role="listitem">
-                  <button
-                    aria-current={
-                      candidate.countyFips === selectedFips ? "true" : undefined
-                    }
-                    className="ux-reset-review-candidate"
-                    data-fips={candidate.countyFips}
-                    data-testid="review-candidate"
-                    type="button"
-                    onClick={() =>
-                      selectCounty(candidate.countyFips, "ranked_list")
-                    }
-                  >
-                    <strong>
-                      {reviewCandidateCountyLabel(candidate.countyName)},{" "}
-                      {scopeCode}
-                    </strong>
-                    <small>
-                      {reviewCandidateExplanation(candidate.candidate)}
-                    </small>
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </Card>
-        {!preview && handoff && releaseId && selectedPublished ? (
-          <ReviewPublishedCountyPreview
-            county={selectedPublished}
-            href={handoff.href}
-            onOpen={markReviewReturnFocus}
-            onViewCountyEvidence={onViewCountyEvidence}
-            openRef={openRef}
-            releaseId={releaseId}
-          />
-        ) : null}
-        {preview && handoff ? (
-          <ReviewCountyPreviewPanel
-            compareHref={handoff.compareHref}
-            droppedNotes={handoff.droppedNotes}
-            href={handoff.href}
-            openRef={openRef}
-            preview={preview}
-            release={tierRelease}
-            onOpen={markReviewReturnFocus}
-            onViewCountyEvidence={onViewCountyEvidence}
-          />
-        ) : null}
       </div>
 
       {gapModel ? (
+        <details className="ux-reset-review-result">
+        <summary>Data gaps</summary>
         <section
           aria-label="Data gaps"
           className="ux-reset-review-gaps"
@@ -791,6 +964,7 @@ export function ReviewOperatingPicture({
             ))}
           </ul>
         </section>
+        </details>
       ) : null}
       {omittedGapCount > 0 && !gapModel ? (
         <p className="type-body" data-testid="review-omitted-gaps">

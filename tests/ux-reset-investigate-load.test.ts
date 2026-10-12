@@ -514,4 +514,33 @@ describe("county evidence loading", () => {
       requestedBoulder: true,
     });
   });
+
+  it("records a 404 observation as missing evidence without a retry", async () => {
+    calls.length = 0;
+    transientStatus = 404;
+    transientRemaining.set("measure-0", 1);
+    const bundle = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identityFromPublishedCounty({
+        county: "Denver",
+        fips: "08001",
+        state: "CO",
+      }),
+      indicators: [],
+      measures: measures(1),
+      period: null,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    expect(calls).toStrictEqual(["measure-0"]);
+    expect(bundle.measureFailures).toMatchObject([
+      {
+        measureId: "measure-0",
+        message: "No published data for this release.",
+        retryable: false,
+        retryAtMs: null,
+      },
+    ]);
+  });
 });

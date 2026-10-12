@@ -173,7 +173,7 @@ test.describe("Published Review county exploration", () => {
     await expect(page).not.toHaveURL(/county=/);
     await choose(page, "01001");
     await page
-      .getByRole("combobox", { name: "Review scope", exact: true })
+      .getByRole("combobox", { name: "Jurisdiction", exact: true })
       .click();
     await page
       .getByRole("option", { name: "Colorado (CO)", exact: true })

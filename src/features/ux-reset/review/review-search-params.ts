@@ -1,12 +1,17 @@
 import { createParser } from "nuqs";
 
 import { uxResetSharedContextParsers } from "@/features/ux-reset/context-params";
+import { parseExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import {
   parseExplorerCountyMode,
   parseExplorerCountySelection,
 } from "@/features/ux-reset/review/explorer-mode";
 
 const reviewLocalParsers = {
+  layer: createParser({
+    parse: (value) => parseExplorerMapLayerId(value),
+    serialize: (value) => value,
+  }).withDefault("gap_score"),
   mode: createParser({
     parse: (value) => parseExplorerCountyMode(value),
     serialize: (value) => value,
