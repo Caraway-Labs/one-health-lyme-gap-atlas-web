@@ -37,7 +37,9 @@ import {
   abortWorkspaceSignOut,
   beginWorkspaceSignOut,
   completeWorkspaceSignOut,
+  concealRestoredWorkspace,
   noteWorkspaceDocumentUser,
+  revealRestoredWorkspace,
   workspaceDocumentUserId,
   workspaceLoggedOutInPageLifetime,
   workspaceSignOutSuppressesExpiryRedirect,
@@ -67,14 +69,18 @@ function browserReturnPath(): string {
   );
 }
 
+function professionalPath(path: string): boolean {
+  const pathname = path.split("?")[0] ?? path;
+  return isProfessionalAppPath(pathname);
+}
+
 async function denyWorkspacePage(input: {
   cancelled: () => boolean;
   navigation: WorkspaceSessionNavigation;
   path: string;
   queryClient: QueryClient | null;
 }): Promise<void> {
-  const pathname = input.path.split("?")[0] ?? input.path;
-  if (!isProfessionalAppPath(pathname)) {
+  if (!professionalPath(input.path)) {
     return;
   }
   const snapshot = await readWorkspaceSession();
@@ -88,6 +94,28 @@ async function denyWorkspacePage(input: {
     read: snapshot.read,
     sessionUserId: snapshot.userId,
   });
+  switch (input.navigation) {
+    case "bfcache": {
+      const sameAccount =
+        snapshot.read === "present" &&
+        snapshot.userId !== null &&
+        snapshot.userId === workspaceDocumentUserId();
+      if (decision === "keep" && sameAccount) {
+        revealRestoredWorkspace();
+        return;
+      }
+      break;
+    }
+    case "fresh": {
+      break;
+    }
+    default: {
+      const exhaustive: never = input.navigation;
+      throw new Error(
+        `Unsupported workspace navigation: ${String(exhaustive)}`
+      );
+    }
+  }
   switch (decision) {
     case "keep": {
       return;
@@ -251,19 +279,38 @@ export function WorkspaceAccountMenu() {
   }, [identity, queryClient, returnPath]);
 
   useEffect(() => {
+    const concealIfProfessional = (path: string) => {
+      if (!professionalPath(path)) {
+        return false;
+      }
+      concealRestoredWorkspace();
+      return true;
+    };
+    const onPageHide = (event: PageTransitionEvent) => {
+      if (!event.persisted) {
+        return;
+      }
+      concealIfProfessional(browserReturnPath());
+    };
     const onPageShow = (event: PageTransitionEvent) => {
       if (!event.persisted) {
+        return;
+      }
+      const path = browserReturnPath();
+      if (!concealIfProfessional(path)) {
         return;
       }
       void denyWorkspacePage({
         cancelled: () => false,
         navigation: "bfcache",
-        path: browserReturnPath(),
+        path,
         queryClient,
       });
     };
+    window.addEventListener("pagehide", onPageHide);
     window.addEventListener("pageshow", onPageShow);
     return () => {
+      window.removeEventListener("pagehide", onPageHide);
       window.removeEventListener("pageshow", onPageShow);
     };
   }, [queryClient]);
@@ -273,18 +320,18 @@ export function WorkspaceAccountMenu() {
       return;
     }
     pendingRef.current = true;
-    beginWorkspaceSignOut();
+    const epoch = beginWorkspaceSignOut();
     setPending(true);
     setNotice(null);
     const result = await endLocalAtlasSession(queryClient);
     if (!result.ok) {
-      abortWorkspaceSignOut();
+      abortWorkspaceSignOut(epoch);
       pendingRef.current = false;
       setPending(false);
       setNotice(result.notice);
       return;
     }
-    completeWorkspaceSignOut();
+    completeWorkspaceSignOut(epoch);
     followWorkspaceHref("/");
   }
 

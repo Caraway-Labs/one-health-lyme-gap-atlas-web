@@ -790,6 +790,26 @@ describe("saved profile account isolation", () => {
     expect(auth.push).not.toHaveBeenCalled();
   });
 
+  it("ignores a second Settings sign-out click while the first is pending", async () => {
+    const gate = Promise.withResolvers<{ error: null }>();
+    auth.signOut.mockReturnValue(gate.promise);
+    renderSettings();
+    const button = await screen.findByRole("button", { name: "Sign out" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(auth.signOut).toHaveBeenCalledOnce();
+    expect(
+      (
+        (await screen.findByRole("button", {
+          name: "Signing out",
+        })) as HTMLButtonElement
+      ).disabled
+    ).toBeTruthy();
+    gate.resolve({ error: null });
+    await waitFor(() => expect(followWorkspaceHref).toHaveBeenCalledWith("/"));
+    expect(auth.signOut).toHaveBeenCalledOnce();
+  });
+
   it("leaves after a sign-out error once the local session is gone", async () => {
     auth.signOut.mockImplementation(async () => {
       switchSession(null);

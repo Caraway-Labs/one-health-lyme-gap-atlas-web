@@ -3,7 +3,13 @@
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import type { MouseEvent, ReactNode } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
@@ -42,6 +48,10 @@ import {
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu";
+import {
+  subscribeWorkspaceRestore,
+  workspaceRestoreConcealed,
+} from "@/features/ux-reset/workspace-sign-out";
 
 const MOBILE_TRIGGER_RESTORE_FRAMES = 12;
 
@@ -142,6 +152,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const { mobileOpen, open, setMobileOpen } = useSidebar();
   const isMobileViewport = useMobileViewport();
   const askAtlas = useAskAtlasChrome();
+  const restoreConcealed = useSyncExternalStore(
+    subscribeWorkspaceRestore,
+    workspaceRestoreConcealed,
+    () => false
+  );
   const mobileDrawerActive = isMobileViewport && mobileOpen;
   const mobileDrawerClosed = isMobileViewport && !mobileOpen;
   const pageInert = mobileDrawerActive || askAtlas.pageInert;
@@ -297,7 +312,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const navigationToggleLabel = open ? "Hide navigation" : "Show navigation";
 
   return (
-    <div className="app-shell ux-reset-pro-app">
+    <div
+      className="app-shell ux-reset-pro-app"
+      hidden={restoreConcealed || undefined}
+      inert={restoreConcealed || undefined}
+    >
       <Sidebar
         id="ux-reset-pro-navigation"
         ref={sidebarRef}

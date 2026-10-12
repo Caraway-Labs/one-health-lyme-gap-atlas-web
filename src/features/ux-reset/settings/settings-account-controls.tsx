@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { AccountDataRights } from "@/components/account-data-rights";
 import { Button } from "@/components/ui/button";
@@ -13,20 +13,32 @@ import {
   completeWorkspaceSignOut,
 } from "@/features/ux-reset/workspace-sign-out";
 
+const SIGN_OUT_LABEL = "Sign out";
+const SIGNING_OUT_LABEL = "Signing out";
+
 export function SettingsAccountControls() {
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
 
   async function signOut() {
+    if (pendingRef.current) {
+      return;
+    }
+    pendingRef.current = true;
+    setPending(true);
     setNotice(null);
-    beginWorkspaceSignOut();
+    const epoch = beginWorkspaceSignOut();
     const result = await endLocalAtlasSession(queryClient);
     if (result.ok) {
-      completeWorkspaceSignOut();
+      completeWorkspaceSignOut(epoch);
       followWorkspaceHref("/");
       return;
     }
-    abortWorkspaceSignOut();
+    abortWorkspaceSignOut(epoch);
+    pendingRef.current = false;
+    setPending(false);
     setNotice(result.notice);
   }
 
@@ -38,14 +50,16 @@ export function SettingsAccountControls() {
         data-rights actions.
       </p>
       <Button
+        aria-busy={pending || undefined}
         className="mt-4"
+        disabled={pending}
         type="button"
         variant="secondary"
         onClick={() => {
           void signOut();
         }}
       >
-        Sign out
+        {pending ? SIGNING_OUT_LABEL : SIGN_OUT_LABEL}
       </Button>
       {notice ? (
         <p

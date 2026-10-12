@@ -1081,3 +1081,13 @@
 .ux-reset-ask-atlas-workspace .chat-turn p {
   margin-block: 0.4rem 0;
 }
+
+/* A restored professional document stays hidden until its account is confirmed. */
+html[data-workspace-restore="concealed"] .ux-reset-pro-app {
+  display: none;
+}
+
+.workspace-restore-cover {
+  padding: var(--space-6);
+  color: var(--foreground);
+}
