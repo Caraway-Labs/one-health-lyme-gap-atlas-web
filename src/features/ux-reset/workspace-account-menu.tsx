@@ -1,6 +1,6 @@
 "use client";
 
-import { QueryClientContext } from "@tanstack/react-query";
+import { QueryClientContext, type QueryClient } from "@tanstack/react-query";
 import { DoorOpen, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -21,13 +21,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { explicitAccountLabel } from "@/features/ux-reset/account-display-label";
-import { endLocalAtlasSession } from "@/features/ux-reset/profile/end-local-session";
 import {
-  readProfileSessionIdentity,
-  useProfileSessionIdentity,
-} from "@/features/ux-reset/profile/profile-session";
+  clearAccountSessionCache,
+  endLocalAtlasSession,
+} from "@/features/ux-reset/profile/end-local-session";
+import { useProfileSessionIdentity } from "@/features/ux-reset/profile/profile-session";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
+import {
+  readWorkspaceSession,
+  workspaceSessionDecision,
+  type WorkspaceSessionNavigation,
+} from "@/features/ux-reset/workspace-session-gate";
 import { isProfessionalAppPath } from "@/lib/auth/app-route-guard";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { createClient } from "@/lib/supabase/client";
@@ -46,24 +51,38 @@ function workspaceReturnPath(pathname: string, search: string): string {
   return `${pathname}?${search}`;
 }
 
-async function denyPersistedSignedOutPage(
-  event: PageTransitionEvent
-): Promise<void> {
-  if (!event.persisted) {
-    return;
-  }
-  const next = await readProfileSessionIdentity();
-  if (next.kind !== "signed-out") {
-    return;
-  }
-  if (!isProfessionalAppPath(window.location.pathname)) {
-    return;
-  }
-  const path = workspaceReturnPath(
+function browserReturnPath(): string {
+  return workspaceReturnPath(
     window.location.pathname,
     window.location.search.replace(/^\?/, "")
   );
-  followWorkspaceHref(signInHrefForReturnPath(path), "replace");
+}
+
+async function denyWorkspacePage(input: {
+  cancelled: () => boolean;
+  loggedOutInPageLifetime: boolean;
+  navigation: WorkspaceSessionNavigation;
+  path: string;
+  queryClient: QueryClient | null;
+}): Promise<void> {
+  const pathname = input.path.split("?")[0] ?? input.path;
+  if (!isProfessionalAppPath(pathname)) {
+    return;
+  }
+  const read = await readWorkspaceSession();
+  if (input.cancelled()) {
+    return;
+  }
+  const decision = workspaceSessionDecision({
+    loggedOutInPageLifetime: input.loggedOutInPageLifetime,
+    navigation: input.navigation,
+    read,
+  });
+  if (decision === "keep") {
+    return;
+  }
+  clearAccountSessionCache(input.queryClient);
+  followWorkspaceHref(signInHrefForReturnPath(input.path), "replace");
 }
 
 function WithAccountTooltip({
@@ -114,7 +133,10 @@ export function WorkspaceAccountMenu() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
+  // Suppresses a fresh sign-in replace while this click is navigating home.
   const leaveInProgressRef = useRef(false);
+  // Survives a back-forward cache restore of this document.
+  const loggedOutInPageLifetimeRef = useRef(false);
   const showTooltip = !(open || isMobileViewport);
   const returnPath = workspaceReturnPath(pathname, searchParams.toString());
   const signInHref = signInHrefForReturnPath(returnPath);
@@ -155,21 +177,40 @@ export function WorkspaceAccountMenu() {
     if (identity?.kind !== "signed-out" || leaveInProgressRef.current) {
       return;
     }
-    if (!isProfessionalAppPath(pathname)) {
-      return;
-    }
-    followWorkspaceHref(signInHref, "replace");
-  }, [identity, pathname, signInHref]);
+    let cancelled = false;
+    const denyFreshSignedOutPage = async () => {
+      await denyWorkspacePage({
+        cancelled: () => cancelled,
+        loggedOutInPageLifetime: loggedOutInPageLifetimeRef.current,
+        navigation: "fresh",
+        path: returnPath,
+        queryClient,
+      });
+    };
+    void denyFreshSignedOutPage();
+    return () => {
+      cancelled = true;
+    };
+  }, [identity, queryClient, returnPath]);
 
   useEffect(() => {
     const onPageShow = (event: PageTransitionEvent) => {
-      void denyPersistedSignedOutPage(event);
+      if (!event.persisted) {
+        return;
+      }
+      void denyWorkspacePage({
+        cancelled: () => false,
+        loggedOutInPageLifetime: loggedOutInPageLifetimeRef.current,
+        navigation: "bfcache",
+        path: browserReturnPath(),
+        queryClient,
+      });
     };
     window.addEventListener("pageshow", onPageShow);
     return () => {
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, []);
+  }, [queryClient]);
 
   async function signOut() {
     if (pendingRef.current) {
@@ -187,6 +228,7 @@ export function WorkspaceAccountMenu() {
       setNotice(result.notice);
       return;
     }
+    loggedOutInPageLifetimeRef.current = true;
     followWorkspaceHref("/");
   }
 

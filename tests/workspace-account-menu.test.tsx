@@ -36,6 +36,7 @@ const auth = vi.hoisted(() => {
     configured: true,
     listeners,
     pause: null as Promise<unknown> | null,
+    reads: 0,
     session: null as Session,
     sessionRead: null as "throw" | { error: { message: string } } | null,
     signOut:
@@ -68,6 +69,7 @@ vi.mock(import("@/lib/supabase/client"), () => ({
     return {
       auth: {
         getSession: async () => {
+          auth.reads += 1;
           if (auth.pause) {
             await auth.pause;
           }
@@ -100,6 +102,13 @@ vi.mock(import("@/lib/supabase/client"), () => ({
     };
   },
 }));
+
+function persistedPageShow() {
+  window.history.pushState({}, "", "/app/review?scope=CO");
+  const event = new Event("pageshow");
+  Object.defineProperty(event, "persisted", { value: true });
+  window.dispatchEvent(event);
+}
 
 function notify(session: Session) {
   auth.session = session;
@@ -188,6 +197,7 @@ describe("workspace account menu", () => {
     auth.configured = true;
     auth.listeners.clear();
     auth.pause = null;
+    auth.reads = 0;
     auth.session = userSession({ full_name: "Ada Lovelace" });
     auth.sessionRead = null;
     auth.signOut.mockReset();
@@ -432,6 +442,81 @@ describe("workspace account menu", () => {
     });
     followWorkspaceHref.mockClear();
     window.dispatchEvent(new Event("pageshow"));
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("keeps an authenticated page when the session read returns an error", async () => {
+    auth.sessionRead = { error: { message: "read failed" } };
+    renderMenu();
+    await screen.findByRole("link", { name: "Sign in" });
+    await waitFor(() => {
+      expect(auth.reads).toBeGreaterThanOrEqual(2);
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("keeps a restored page when the read fails and this page has not logged out", async () => {
+    renderMenu();
+    await screen.findByRole("button", { name: "Ada Lovelace" });
+    const readsBeforeRestore = auth.reads;
+    auth.sessionRead = { error: { message: "read failed" } };
+    persistedPageShow();
+    await waitFor(() => {
+      expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("sends a restored page to sign-in after logout when the read throws", async () => {
+    auth.signOut.mockImplementation(async () => {
+      notify(null);
+      return { error: null };
+    });
+    const { client } = renderMenu();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ada Lovelace" })
+    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    followWorkspaceHref.mockClear();
+    client.setQueryData([...savedProfileQueryRoot(), "user-a"], {
+      organization: "CDPHE",
+    });
+    auth.sessionRead = "throw";
+    persistedPageShow();
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "replace"
+      );
+    });
+    expect(
+      client.getQueryCache().findAll({ queryKey: savedProfileQueryRoot() })
+    ).toStrictEqual([]);
+  });
+
+  it("keeps a restored page when a session is confirmed after logout", async () => {
+    auth.signOut.mockImplementation(async () => {
+      notify(null);
+      return { error: null };
+    });
+    renderMenu();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ada Lovelace" })
+    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    followWorkspaceHref.mockClear();
+    auth.session = userSession({ full_name: "Ada Lovelace" });
+    const readsBeforeRestore = auth.reads;
+    persistedPageShow();
+    await waitFor(() => {
+      expect(auth.reads).toBeGreaterThan(readsBeforeRestore);
+    });
     expect(followWorkspaceHref).not.toHaveBeenCalled();
   });
 

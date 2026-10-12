@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import { savedProfileQueryRoot } from "@/features/ux-reset/profile/use-saved-profile";
+import { readWorkspaceSession } from "@/features/ux-reset/workspace-session-gate";
 import { createClient } from "@/lib/supabase/client";
 
 export const SIGN_OUT_STILL_ACTIVE =
@@ -11,26 +12,20 @@ export const SIGN_OUT_UNAVAILABLE =
 
 export type LocalSignOutResult = { notice: string; ok: false } | { ok: true };
 
-function clearAccountQueries(queryClient: QueryClient | null): void {
+export function clearAccountSessionCache(
+  queryClient: QueryClient | null
+): void {
   queryClient?.removeQueries({ queryKey: savedProfileQueryRoot() });
 }
 
 /**
  * A failed sign-out is finished only when getSession succeeds and reports
- * no user. Thrown reads and returned errors stay indeterminate — including
- * the unconfigured outcome from a configured client — so local credentials
- * are not treated as removed.
+ * no user. Thrown reads, returned errors, and an unconfigured client stay
+ * indeterminate, so local credentials are not treated as removed.
  */
 async function sessionReadConfirmsAbsence(): Promise<boolean> {
-  try {
-    const { data, error } = await createClient().auth.getSession();
-    if (error) {
-      return false;
-    }
-    return !data?.session?.user.id;
-  } catch {
-    return false;
-  }
+  const read = await readWorkspaceSession();
+  return read === "absent";
 }
 
 async function finishAfterSignOutError(
@@ -39,7 +34,7 @@ async function finishAfterSignOutError(
   if (!(await sessionReadConfirmsAbsence())) {
     return { notice: SIGN_OUT_STILL_ACTIVE, ok: false };
   }
-  clearAccountQueries(queryClient);
+  clearAccountSessionCache(queryClient);
   return { ok: true };
 }
 
@@ -52,7 +47,7 @@ export async function endLocalAtlasSession(
     if (error) {
       return await finishAfterSignOutError(queryClient);
     }
-    clearAccountQueries(queryClient);
+    clearAccountSessionCache(queryClient);
     return { ok: true };
   } catch {
     try {
