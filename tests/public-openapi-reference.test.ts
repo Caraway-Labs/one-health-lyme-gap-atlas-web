@@ -444,6 +444,235 @@ describe("public OpenAPI reference", () => {
       failureCode(() => syncPublicApiReference({ check: true, root }))
     ).toBe("stale_reference");
   });
+
+  it("renders referenced path items, servers, and security", () => {
+    const pinned = pin(documentWithPathItemReference());
+    const pages = renderPublicApiReference(
+      loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+    );
+    const page = requiredFile(pages, "discovery.mdx");
+    const indicators = between(page, "## Referenced indicators", "## Health");
+    const health = between(page, "## Health", "## Read measures");
+    const measures = between(page, "## Read measures", "## Submit measures");
+
+    expect(
+      missingPhrases(indicators, [
+        "indicators_v1_indicators_get",
+        "Alias summary",
+        "Alias path.",
+        "Outer county.",
+        "county_fips",
+        "08001",
+        "Local indicators.",
+        "Public edge",
+        "X-Atlas-Key",
+        "Public key",
+        "[Indicator](/docs/api-reference/schemas#schema-indicator)",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      indicators.includes("#### limit") ||
+        indicators.includes("Reusable indicators.") ||
+        indicators.includes("Upstream origin") ||
+        indicators.includes("Colorado county.") ||
+        indicators.includes("Origin key")
+    ).toBeFalsy();
+    expect(missingPhrases(health, ["health_get", "Ready."])).toStrictEqual([]);
+    expect(health.includes("Hidden path server")).toBeFalsy();
+    expect(
+      missingPhrases(measures, [
+        "https://measures.onehealthatlas.org",
+        "Operation server",
+      ])
+    ).toStrictEqual([]);
+  });
+
+  it("uses path-item security and servers only when the operation omits them", () => {
+    const pinned = pin(documentWithPathItemReference());
+    const pages = renderPublicApiReference(
+      loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+    );
+    const page = requiredFile(pages, "discovery.mdx");
+    const measures = between(page, "## Read measures", "## Submit measures");
+    const submitted = between(page, "## Submit measures", "\n## ");
+
+    expect(measures.includes("X-Atlas-Key")).toBeFalsy();
+    expect(measures.includes("Path server")).toBeFalsy();
+    expect(
+      missingPhrases(submitted, [
+        "measures_post",
+        "Measure county.",
+        "Path server",
+        "X-Atlas-Key",
+        "Public key",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      missingPhrases(requiredFile(pages, "index.mdx"), [
+        "`https://api.onehealthatlas.org/` (Public edge)",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      requiredFile(pages, "index.mdx").includes("Upstream origin")
+    ).toBeFalsy();
+  });
+
+  it("lets a path-item sibling operation override the referenced operation", () => {
+    const document = documentWithPathItemReference();
+    const paths = document.paths as {
+      "/v1/indicators": Record<string, unknown>;
+    };
+    paths["/v1/indicators"].get = {
+      operationId: "outer_indicators_get",
+      responses: { "204": { description: "Outer operation." } },
+      summary: "Outer indicators",
+      tags: ["discovery"],
+    };
+    const pinned = pin(document);
+    const page = requiredFile(
+      renderPublicApiReference(
+        loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+      ),
+      "discovery.mdx"
+    );
+
+    expect(page).toContain("outer_indicators_get");
+    expect(page).toContain("Outer operation.");
+    expect(page.includes("indicators_v1_indicators_get")).toBeFalsy();
+  });
+
+  it("treats a dropped path-item operation as a stale reference", () => {
+    const pinned = pin(documentWithPathItemReference());
+    const root = makeRoot();
+    writeFileSync(
+      path.join(root, PUBLIC_OPENAPI_RELATIVE_PATH),
+      pinned.specBytes
+    );
+    writeFileSync(
+      path.join(root, PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH),
+      pinned.manifestText
+    );
+    syncPublicApiReference({ check: false, root });
+    const pagePath = path.join(
+      root,
+      API_REFERENCE_RELATIVE_DIR,
+      "discovery.mdx"
+    );
+    const page = readFileSync(pagePath, "utf-8");
+
+    expect(
+      failureCode(() => syncPublicApiReference({ check: true, root }))
+    ).toBe("did-not-fail");
+    expect(page).toContain("indicators_v1_indicators_get");
+    expect(page).toContain("health_get");
+    writeFileSync(
+      pagePath,
+      page.replace("indicators_v1_indicators_get", "omitted_operation")
+    );
+    expect(
+      failureCode(() => syncPublicApiReference({ check: true, root }))
+    ).toBe("stale_reference");
+  });
+
+  it("fails the reference check for a bad path item or callback reference", () => {
+    expect(failureText(() => checkDocument(missingPathItemRef()))).toContain(
+      "Unresolved OpenAPI reference #/components/pathItems/Missing"
+    );
+    expect(failureText(() => checkDocument(circularPathItemRefs()))).toContain(
+      "Circular OpenAPI reference"
+    );
+    expect(failureText(() => checkDocument(nonObjectPathItemRef()))).toContain(
+      "must point to an object"
+    );
+    expect(failureText(() => checkDocument(schemaPathItemRef()))).toContain(
+      "must point to components.pathItems"
+    );
+    expect(
+      failureText(() => checkDocument(documentWithCallbackRef()))
+    ).toContain("callbacks are not rendered");
+  });
+
+  it("fails the reference check for webhooks and unresolved server references", () => {
+    expect(failureText(() => checkDocument(documentWithWebhooks()))).toContain(
+      "webhooks are not rendered"
+    );
+    expect(failureText(() => checkDocument(missingServerRef()))).toContain(
+      "Unresolved OpenAPI reference #/components/servers/Missing"
+    );
+    expect(failureText(() => checkDocument(circularServerRefs()))).toContain(
+      "Circular OpenAPI reference"
+    );
+    expect(failureText(() => checkDocument(schemaServerRef()))).toContain(
+      "must point to components.servers"
+    );
+    expect(
+      failureText(() => checkDocument(securityRequirementRef()))
+    ).toContain("security requirements must be objects");
+  });
+
+  it("fails the reference check for security schemes and server shape", () => {
+    expect(failureText(() => checkDocument(missingSecurityScheme()))).toContain(
+      "Unresolved OpenAPI reference #/components/securitySchemes/Missing"
+    );
+    expect(
+      failureText(() => checkDocument(circularSecuritySchemes()))
+    ).toContain("Circular OpenAPI reference");
+    expect(
+      failureText(() => checkDocument(operationServersNotAnArray()))
+    ).toContain("servers must be an array");
+    expect(failureText(() => checkDocument(serverMissingUrl()))).toContain(
+      "is missing a url"
+    );
+    expect(failureText(() => checkDocument(httpServerDocument()))).toContain(
+      "source_mismatch: Public OpenAPI server URL must be HTTPS"
+    );
+  });
+
+  it("rejects cross-type references instead of rendering them as empty fields", () => {
+    expect(failureText(() => checkDocument(numericResponseRef()))).toContain(
+      "OpenAPI $ref must be a non-empty string"
+    );
+    expect(failureText(() => checkDocument(schemaExampleRef()))).toContain(
+      "Unsupported OpenAPI reference #/components/schemas/Indicator"
+    );
+    expect(failureText(() => checkDocument(parameterHeaderRef()))).toContain(
+      "Unsupported OpenAPI reference #/components/parameters/County"
+    );
+    expect(failureText(() => checkDocument(securityNotAnArray()))).toContain(
+      "security must be an array"
+    );
+    expect(failureText(() => checkDocument(nonObjectServerRef()))).toContain(
+      "must point to an object"
+    );
+  });
+
+  it("rejects empty refs, empty server lists, and non-object components", () => {
+    expect(failureText(() => checkDocument(blankServerRef()))).toContain(
+      "OpenAPI $ref must be a non-empty string"
+    );
+    expect(failureText(() => checkDocument(serverDocument([])))).toContain(
+      "must declare an HTTPS server"
+    );
+    expect(
+      failureText(() =>
+        checkDocument(serverDocument({ url: "https://api.onehealthatlas.org" }))
+      )
+    ).toContain("must declare an HTTPS server");
+    expect(
+      failureText(() =>
+        checkDocument(serverDocument(["https://api.onehealthatlas.org"]))
+      )
+    ).toContain("Document server 1 must be an object");
+    expect(
+      failureText(() => checkDocument(inlineNonObjectResponse()))
+    ).toContain("response 200 must be an object");
+  });
+
+  it("rejects a security scheme reference that is not a security scheme", () => {
+    expect(failureText(() => checkDocument(schemaSecurityScheme()))).toContain(
+      "must point to components.securitySchemes"
+    );
+  });
 });
 
 function failureCode(
@@ -453,6 +682,18 @@ function failureCode(
     action();
   } catch (error) {
     if (error instanceof PublicOpenApiContractError) return error.code;
+    throw new Error("Unexpected public OpenAPI failure.", { cause: error });
+  }
+  return "did-not-fail";
+}
+
+function failureText(action: () => void): string {
+  try {
+    action();
+  } catch (error) {
+    if (error instanceof PublicOpenApiContractError) {
+      return `${error.code}: ${error.message}`;
+    }
     throw new Error("Unexpected public OpenAPI failure.", { cause: error });
   }
   return "did-not-fail";
@@ -951,6 +1192,383 @@ function documentWithRequestBody(): Record<string, unknown> {
       },
     },
   };
+}
+
+function documentWithPathItemReference(): Record<string, unknown> {
+  const base = minimalDocument();
+  return {
+    ...base,
+    components: {
+      ...(base.components as Record<string, unknown>),
+      parameters: {
+        County: {
+          description: "Colorado county.",
+          in: "query",
+          name: "county_fips",
+          required: true,
+          schema: { example: "08001", type: "string" },
+        },
+        Limit: {
+          in: "query",
+          name: "limit",
+          schema: { type: "integer" },
+        },
+      },
+      pathItems: {
+        Alias: {
+          $ref: "#/components/pathItems/Indicators",
+          description: "Alias path.",
+          summary: "Alias summary",
+        },
+        Indicators: {
+          get: {
+            operationId: "indicators_v1_indicators_get",
+            responses: {
+              "200": {
+                $ref: "#/components/responses/IndicatorOk",
+                description: "Local indicators.",
+              },
+            },
+            summary: "Referenced indicators",
+            tags: ["discovery"],
+          },
+          parameters: [
+            { in: "query", name: "limit", schema: { type: "integer" } },
+          ],
+        },
+      },
+      responses: {
+        IndicatorOk: {
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Indicator" },
+            },
+          },
+          description: "Reusable indicators.",
+        },
+      },
+      securitySchemes: {
+        Alias: {
+          $ref: "#/components/securitySchemes/ApiKey",
+          description: "Public key",
+        },
+        ApiKey: {
+          description: "Origin key",
+          in: "header",
+          name: "X-Atlas-Key",
+          type: "apiKey",
+        },
+      },
+      servers: {
+        Alias: {
+          $ref: "#/components/servers/Production",
+          description: "Public edge",
+        },
+        Production: {
+          description: "Upstream origin",
+          url: "https://api.onehealthatlas.org/",
+        },
+      },
+    },
+    paths: {
+      "/v1/indicators": {
+        $ref: "#/components/pathItems/Alias",
+        parameters: [
+          {
+            $ref: "#/components/parameters/County",
+            description: "Outer county.",
+          },
+        ],
+        security: [{ Alias: [] }],
+        servers: [{ $ref: "#/components/servers/Alias" }],
+      },
+      "/v1/health": {
+        get: {
+          operationId: "health_get",
+          responses: { "204": { description: "Ready." } },
+          servers: [],
+          summary: "Health",
+          tags: ["discovery"],
+        },
+        servers: [
+          {
+            description: "Hidden path server",
+            url: "https://api.onehealthatlas.org",
+          },
+        ],
+      },
+      "/v1/measures": {
+        get: {
+          operationId: "measures_get",
+          responses: { "204": { description: "No content." } },
+          security: [],
+          servers: [
+            {
+              description: "Operation server",
+              url: "https://measures.onehealthatlas.org",
+            },
+          ],
+          summary: "Read measures",
+          tags: ["discovery"],
+        },
+        parameters: [
+          {
+            $ref: "#/components/parameters/County",
+            description: "Measure county.",
+          },
+        ],
+        post: {
+          operationId: "measures_post",
+          responses: { "204": { description: "Accepted." } },
+          summary: "Submit measures",
+          tags: ["discovery"],
+        },
+        security: [{ Alias: [] }],
+        servers: [
+          {
+            description: "Path server",
+            url: "https://api.onehealthatlas.org",
+          },
+        ],
+      },
+    },
+    servers: [{ $ref: "#/components/servers/Alias" }],
+  };
+}
+
+function documentWithCallbackRef(): Record<string, unknown> {
+  const document = documentWithPathItemReference();
+  const components = document.components as {
+    callbacks?: Record<string, unknown>;
+    pathItems: { Indicators: { get: Record<string, unknown> } };
+  };
+  components.callbacks = {
+    OnData: {
+      "{$request.query.callbackUrl}": {
+        post: {
+          operationId: "callback_post",
+          responses: { "200": { description: "Ack." } },
+        },
+      },
+    },
+  };
+  components.pathItems.Indicators.get.callbacks = {
+    onData: { $ref: "#/components/callbacks/OnData" },
+  };
+  return document;
+}
+
+function documentWithWebhooks(): Record<string, unknown> {
+  return {
+    ...minimalDocument(),
+    webhooks: {
+      indicatorReady: {
+        post: {
+          operationId: "indicator_ready",
+          responses: { "200": { description: "Ack." } },
+        },
+      },
+    },
+  };
+}
+
+function pathItemDocument(
+  pathItems: Record<string, unknown>,
+  ref: string
+): Record<string, unknown> {
+  const document = documentWithPathItemReference();
+  const components = document.components as {
+    pathItems: Record<string, unknown>;
+  };
+  components.pathItems = pathItems;
+  const paths = document.paths as Record<string, unknown>;
+  paths["/v1/indicators"] = { $ref: ref };
+  return document;
+}
+
+function missingPathItemRef(): Record<string, unknown> {
+  return pathItemDocument({}, "#/components/pathItems/Missing");
+}
+
+function circularPathItemRefs(): Record<string, unknown> {
+  return pathItemDocument(
+    {
+      LoopA: { $ref: "#/components/pathItems/LoopB" },
+      LoopB: { $ref: "#/components/pathItems/LoopA" },
+    },
+    "#/components/pathItems/LoopA"
+  );
+}
+
+function nonObjectPathItemRef(): Record<string, unknown> {
+  return pathItemDocument(
+    { Broken: "not-an-object" },
+    "#/components/pathItems/Broken"
+  );
+}
+
+function schemaPathItemRef(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as Record<string, unknown>;
+  paths["/v1/indicators"] = { $ref: "#/components/schemas/Indicator" };
+  return document;
+}
+
+function serverDocument(
+  servers: unknown,
+  componentsServers: Record<string, unknown> = {}
+): Record<string, unknown> {
+  const document = minimalDocument();
+  const components = document.components as Record<string, unknown>;
+  components.servers = componentsServers;
+  document.servers = servers;
+  return document;
+}
+
+function missingServerRef(): Record<string, unknown> {
+  return serverDocument([{ $ref: "#/components/servers/Missing" }]);
+}
+
+function circularServerRefs(): Record<string, unknown> {
+  return serverDocument([{ $ref: "#/components/servers/LoopA" }], {
+    LoopA: { $ref: "#/components/servers/LoopB" },
+    LoopB: { $ref: "#/components/servers/LoopA" },
+  });
+}
+
+function schemaServerRef(): Record<string, unknown> {
+  return serverDocument([{ $ref: "#/components/schemas/Indicator" }]);
+}
+
+function nonObjectServerRef(): Record<string, unknown> {
+  return serverDocument([{ $ref: "#/components/servers/Broken" }], {
+    Broken: "not-an-object",
+  });
+}
+
+function serverMissingUrl(): Record<string, unknown> {
+  return serverDocument([{ description: "Production" }]);
+}
+
+function httpServerDocument(): Record<string, unknown> {
+  return serverDocument([{ url: "http://api.onehealthatlas.org" }]);
+}
+
+function operationServersNotAnArray(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": { get: { servers?: unknown } };
+  };
+  paths["/v1/indicators"].get.servers = {
+    url: "https://api.onehealthatlas.org",
+  };
+  return document;
+}
+
+function withSecurity(
+  security: unknown,
+  schemes: Record<string, unknown> = {}
+): Record<string, unknown> {
+  const document = minimalDocument();
+  const components = document.components as Record<string, unknown>;
+  components.securitySchemes = schemes;
+  const paths = document.paths as {
+    "/v1/indicators": { get: { security?: unknown } };
+  };
+  paths["/v1/indicators"].get.security = security;
+  return document;
+}
+
+function securityRequirementRef(): Record<string, unknown> {
+  return withSecurity([{ $ref: "#/components/securitySchemes/ApiKey" }], {
+    ApiKey: { in: "header", name: "X-Atlas-Key", type: "apiKey" },
+  });
+}
+
+function missingSecurityScheme(): Record<string, unknown> {
+  return withSecurity([{ Missing: [] }]);
+}
+
+function circularSecuritySchemes(): Record<string, unknown> {
+  return withSecurity([{ LoopA: [] }], {
+    LoopA: { $ref: "#/components/securitySchemes/LoopB" },
+    LoopB: { $ref: "#/components/securitySchemes/LoopA" },
+  });
+}
+
+function securityNotAnArray(): Record<string, unknown> {
+  return withSecurity(
+    { ApiKey: [] },
+    {
+      ApiKey: { in: "header", name: "X-Atlas-Key", type: "apiKey" },
+    }
+  );
+}
+
+function blankServerRef(): Record<string, unknown> {
+  return serverDocument([{ $ref: " " }]);
+}
+
+function inlineNonObjectResponse(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": { get: { responses: Record<string, unknown> } };
+  };
+  paths["/v1/indicators"].get.responses["200"] = "not-an-object";
+  return document;
+}
+
+function schemaSecurityScheme(): Record<string, unknown> {
+  return withSecurity([{ Alias: [] }], {
+    Alias: { $ref: "#/components/schemas/Indicator" },
+  });
+}
+
+function numericResponseRef(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": { get: { responses: Record<string, unknown> } };
+  };
+  paths["/v1/indicators"].get.responses["200"] = { $ref: 1 };
+  return document;
+}
+
+function schemaExampleRef(): Record<string, unknown> {
+  const document = minimalDocument();
+  const paths = document.paths as {
+    "/v1/indicators": {
+      get: {
+        responses: {
+          "200": { content: { "application/json": { examples?: unknown } } };
+        };
+      };
+    };
+  };
+  paths["/v1/indicators"].get.responses["200"].content[
+    "application/json"
+  ].examples = { sample: { $ref: "#/components/schemas/Indicator" } };
+  return document;
+}
+
+function parameterHeaderRef(): Record<string, unknown> {
+  const document = minimalDocument();
+  const components = document.components as Record<string, unknown>;
+  components.parameters = {
+    County: {
+      in: "query",
+      name: "county_fips",
+      schema: { type: "string" },
+    },
+  };
+  const paths = document.paths as {
+    "/v1/indicators": {
+      get: { responses: { "200": { headers?: unknown } } };
+    };
+  };
+  paths["/v1/indicators"].get.responses["200"].headers = {
+    ETag: { $ref: "#/components/parameters/County" },
+  };
+  return document;
 }
 
 function minimalDocument(): Record<string, unknown> {
