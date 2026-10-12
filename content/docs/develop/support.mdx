@@ -1,0 +1,66 @@
+---
+title: OpenAPI, GitHub, and support
+description: Open the public Atlas contract, the GitHub repositories that own it, and the fields to include when you ask for help.
+---
+
+These guides explain how to call the public API. The contract itself stays in the owning service.
+
+## OpenAPI
+
+| Surface | Status | URL |
+| --- | --- | --- |
+| Production API | Available | `https://api.onehealthatlas.org` |
+| OpenAPI schema | Available | [openapi.json](https://api.onehealthatlas.org/openapi.json) |
+| Swagger reference | Available | [Swagger reference](https://api.onehealthatlas.org/docs) |
+| ReDoc reference | Available | [ReDoc reference](https://api.onehealthatlas.org/redoc) |
+| Generated reference in this site | Rendered from the pinned public spec | [API reference](/docs/api-reference) |
+
+The generated section uses these paths:
+
+| Path | Contents |
+| --- | --- |
+| [API reference](/docs/api-reference) | Document version, source commit, and the operation index |
+| [Discovery](/docs/api-reference/discovery) | Indicators and measures |
+| [Observations](/docs/api-reference/observations) | Observation query |
+| [Provenance](/docs/api-reference/provenance) | Sources and methodologies |
+| [Geographies](/docs/api-reference/geographies) | Geography identity |
+| [Atlas](/docs/api-reference/atlas) | Legacy metadata, scores, geometry, and ranking export |
+| [Counties](/docs/api-reference/counties) | Legacy county analytics and reports |
+| [States](/docs/api-reference/states) | Legacy state review and reports |
+| [Schemas](/docs/api-reference/schemas) | Component schemas, including `ProblemDetails` |
+
+Use those pages for parameters, schemas, and the contract's own examples. Use [the developer overview](/docs/develop) when you need the task and the meaning of a field.
+
+`/v1` is the HTTP contract. OpenAPI `info.version` is the application version. They are different identifiers.
+
+## GitHub
+
+| Repository | What it owns |
+| --- | --- |
+| [one-health-lyme-gap-atlas-api](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api) | The public HTTP contract and `openapi.json` |
+| [one-health-lyme-gap-atlas-web](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web) | This documentation site and the Atlas web application |
+| [one-health-lyme-gap-atlas-mcp](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp) | The MCP server. It is not required for public REST reads |
+
+Contract questions belong with the API repository. Guide wording belongs with the web repository. [API, MCP, and access](/docs/api-mcp-and-access) records the current MCP boundary: development smoke tools do not read Atlas data, and production MCP is not the data interface.
+
+## Support
+
+Include these items when you report a failed or surprising read:
+
+- The full request URL, without an Authorization header. Public reads do not use one.
+- The HTTP status and `content-type`.
+- `request_id` from the problem body.
+- `Retry-After` when the status is `429` or `503`.
+- For a successful observation, `measure_id`, `geography_id`, period, `value_state`, `release_id`, and `semantic_version`.
+
+There is no API key to rotate and no SDK version to report.
+
+## Unavailable in this contract
+
+| Item | Status |
+| --- | --- |
+| Numeric rate-limit quota and concurrency cap | Not published in the public OpenAPI document. Honor `Retry-After` |
+| Geography identity payload | Declared route currently returns `503` `CANONICAL_DATA_UNAVAILABLE` and no geometry |
+| Daily environmental measure id | Described on the observations operation. Not present in the current measures catalog. Read `environmental_context` only when an observation includes it |
+| API keys, required SDKs, and required MCP tools | Not part of anonymous public reads |
+| Account, feedback, conversational AI, and literature retrieval | Excluded from the public OpenAPI document |
