@@ -38,7 +38,10 @@ import {
   searchParamsWithCommittedExploreContext,
   useExploreCommittedNavigation,
 } from "@/features/ux-reset/explore-committed-navigation";
-import { trustedMobileTriggerRestoreShouldStop } from "@/features/ux-reset/mobile-trigger-restore";
+import {
+  escapeStillClosingNavigation,
+  trustedMobileTriggerRestoreShouldStop,
+} from "@/features/ux-reset/mobile-trigger-restore";
 import {
   RESET_ACCESS_NAV,
   RESET_WORKSPACE_NAV,
@@ -87,6 +90,8 @@ function restoreMobileNavigationTrigger(trigger: HTMLElement): () => void {
   let frame = 0;
   let frames = 0;
   let restoring = true;
+  // Captured before focus(), so a keydown redispatched onto the trigger
+  // still counts as the press that closed the drawer.
   const startedAt = performance.now();
   const restore = () => {
     if (!restoring || !trigger.isConnected) {
@@ -109,6 +114,9 @@ function restoreMobileNavigationTrigger(trigger: HTMLElement): () => void {
     }
   };
   const stopForUserAction = (event: Event) => {
+    if (escapeStillClosingNavigation(event, startedAt)) {
+      return;
+    }
     if (trustedMobileTriggerRestoreShouldStop(event, trigger)) {
       restoring = false;
     }
