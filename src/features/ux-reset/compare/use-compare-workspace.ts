@@ -13,7 +13,10 @@ import {
   rememberCompareCatalogCooldown,
   waitForCompareCatalogCooldown,
 } from "@/features/ux-reset/compare/compare-catalog-cooldown";
-import type { CompareProfileAlignment } from "@/features/ux-reset/compare/compare-county-profile";
+import {
+  alignCompareCountyProfiles,
+  type CompareProfileAlignment,
+} from "@/features/ux-reset/compare/compare-county-profile";
 import {
   classifyCompareEntry,
   compareCountyOptionLabel,
@@ -34,7 +37,10 @@ import {
   preservedCompareMeasures,
   shouldRetryCompareRequest,
 } from "@/features/ux-reset/compare/load-compare-evidence";
-import { loadCompareCountyProfiles } from "@/features/ux-reset/compare/load-compare-profile";
+import {
+  compareProfileCoolingDown,
+  loadCompareCountyProfiles,
+} from "@/features/ux-reset/compare/load-compare-profile";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import {
   parseCompareFipsList,
@@ -53,7 +59,7 @@ import {
   RESET_INVESTIGATE_PATH,
 } from "@/features/ux-reset/routes";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
-import type { AtlasMetadata } from "@/generated/models";
+import type { AtlasMetadata, Measure } from "@/generated/models";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -64,6 +70,7 @@ import {
 } from "@/lib/atlas-state-geography";
 
 const EMPTY_COUNTY_DIRECTORY: readonly ExploreCountyIdentity[] = [];
+const EMPTY_MEASURES: readonly Measure[] = [];
 
 export type CompareRecoveryState =
   | "directory"
@@ -99,6 +106,7 @@ export type CompareWorkspace = {
   pairIssue: string;
   period: string | null;
   profile: CompareProfileAlignment | null;
+  profileCoolingDown: boolean;
   profileError: string | null;
   profileLoading: boolean;
   profileRetrying: boolean;
@@ -307,7 +315,7 @@ export function useCompareWorkspace(): CompareWorkspace {
         queryClient.getDefaultOptions().queries?.retryDelay
       ),
   });
-  const measures = measuresQuery.data ?? [];
+  const measures = measuresQuery.data ?? EMPTY_MEASURES;
   const measureIds = measures.map((measure) => measure.measure_id);
   const leftFips = entry.pair[0] ?? "";
   const rightFips = entry.pair[1] ?? "";
@@ -399,6 +407,12 @@ export function useCompareWorkspace(): CompareWorkspace {
     queryKey: ["ux-reset-compare-profile", releaseId, leftFips, rightFips],
     retry: (failureCount, error) =>
       shouldRetryCompareRequest(failureCount, error, retrySetting),
+    retryDelay: (failureCount, error) =>
+      compareCatalogRetryDelay(
+        failureCount,
+        error,
+        queryClient.getDefaultOptions().queries?.retryDelay
+      ),
   });
   const retryProfile = () => {
     void profileQuery.refetch();
@@ -477,6 +491,25 @@ export function useCompareWorkspace(): CompareWorkspace {
     pairLength: entry.pair.length,
     unknownCount: unknownFips.length,
   });
+  const profileRecords =
+    recoveryState === "ready" &&
+    profileQuery.data?.leftFips === leftFips &&
+    profileQuery.data.rightFips === rightFips
+      ? profileQuery.data
+      : null;
+  const profile = useMemo(
+    () =>
+      profileRecords
+        ? alignCompareCountyProfiles({
+            left: profileRecords.left,
+            leftFips: profileRecords.leftFips,
+            measures: measuresQuery.isSuccess ? measures : EMPTY_MEASURES,
+            right: profileRecords.right,
+            rightFips: profileRecords.rightFips,
+          })
+        : null,
+    [measures, measuresQuery.isSuccess, profileRecords]
+  );
 
   return {
     alignment:
@@ -525,12 +558,10 @@ export function useCompareWorkspace(): CompareWorkspace {
     options,
     pairIssue: pairIssue(entry),
     period: urlState.period,
-    profile:
-      recoveryState === "ready" &&
-      profileQuery.data?.leftFips === leftFips &&
-      profileQuery.data.rightFips === rightFips
-        ? profileQuery.data
-        : null,
+    profile,
+    profileCoolingDown: compareProfileCoolingDown(
+      profileQuery.failureCount >= 0 ? releaseId : null
+    ),
     profileError:
       recoveryState === "ready" && profileQuery.isError
         ? "Published county records did not load for these two counties."

@@ -19,6 +19,16 @@ import {
 } from "@/features/ux-reset/compare/compare-county-profile";
 import { EvidenceObject } from "@/features/ux-reset/evidence";
 
+function profileRetryLabel(coolingDown: boolean, retrying: boolean): string {
+  if (coolingDown && retrying) {
+    return "Waiting for the server retry window…";
+  }
+  if (retrying) {
+    return "Retrying county records…";
+  }
+  return "Retry county records";
+}
+
 function ProfileCellView({
   cell,
   fips,
@@ -79,6 +89,7 @@ function ProfileCellView({
 
 export function CompareCountyProfileSection({
   alignment,
+  coolingDown = false,
   error,
   leftLabel,
   loading,
@@ -88,6 +99,7 @@ export function CompareCountyProfileSection({
   rightLabel,
 }: {
   alignment: CompareProfileAlignment | null;
+  coolingDown?: boolean;
   error: string | null;
   leftLabel: string;
   loading: boolean;
@@ -123,18 +135,41 @@ export function CompareCountyProfileSection({
           </p>
         </AtlasStatusMessage>
       ) : null}
+      {coolingDown && !error ? (
+        <AtlasStatusMessage
+          action={
+            <Button
+              aria-busy
+              data-testid="compare-retry-profile"
+              data-waiting="true"
+              disabled
+              type="button"
+              variant="secondary"
+            >
+              Waiting for the server retry window…
+            </Button>
+          }
+          tone="loading"
+        >
+          <p data-testid="compare-profile-wait">
+            Waiting for the server retry window before requesting county records
+            again.
+          </p>
+        </AtlasStatusMessage>
+      ) : null}
       {error ? (
         <AtlasStatusMessage
           action={
             <Button
               aria-busy={retrying}
               data-testid="compare-retry-profile"
+              data-waiting={coolingDown && retrying ? "true" : "false"}
               disabled={retrying}
               type="button"
               variant="secondary"
               onClick={onRetry}
             >
-              {retrying ? "Retrying county records…" : "Retry county records"}
+              {profileRetryLabel(coolingDown, retrying)}
             </Button>
           }
           tone="error"
@@ -153,7 +188,7 @@ export function CompareCountyProfileSection({
               variant="secondary"
               onClick={onRetry}
             >
-              {retrying ? "Retrying county records…" : "Retry county records"}
+              {profileRetryLabel(coolingDown, retrying)}
             </Button>
           }
           tone="error"

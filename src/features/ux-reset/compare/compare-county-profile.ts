@@ -14,7 +14,7 @@ import {
   type GovernedPublishedState,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-published-county-preview";
-import type { CountyDetail, SourceMetadata } from "@/generated/models";
+import type { CountyDetail, Measure, SourceMetadata } from "@/generated/models";
 import {
   plainPriority,
   reviewReasonsFor,
@@ -483,10 +483,13 @@ export function compareIncidenceFloorEvidence(
   };
 }
 
-function hierarchyById(detail: CountyDetail): Map<string, EvidenceObjectModel> {
+function hierarchyById(
+  detail: CountyDetail,
+  measures: readonly Measure[]
+): Map<string, EvidenceObjectModel> {
   const record = publishedCountyRecordFromDetail(detail);
   const hierarchy = publishedCountyHierarchy({
-    measures: [],
+    measures,
     observedMeasureIds: [],
     record,
   });
@@ -658,13 +661,19 @@ function cellsFor(
 export function alignCompareCountyProfiles(input: {
   left: CompareCountySide;
   leftFips: string;
+  measures?: readonly Measure[];
   right: CompareCountySide;
   rightFips: string;
 }): CompareProfileAlignment {
+  const measures = input.measures ?? [];
   const leftHierarchy =
-    input.left.status === "ready" ? hierarchyById(input.left.detail) : null;
+    input.left.status === "ready"
+      ? hierarchyById(input.left.detail, measures)
+      : null;
   const rightHierarchy =
-    input.right.status === "ready" ? hierarchyById(input.right.detail) : null;
+    input.right.status === "ready"
+      ? hierarchyById(input.right.detail, measures)
+      : null;
   const rows: CompareProfileRow[] = PROFILE_ROW_IDS.map((id) => ({
     id,
     label: ROW_LABELS[id],

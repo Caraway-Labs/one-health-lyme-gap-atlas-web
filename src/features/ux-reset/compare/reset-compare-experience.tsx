@@ -449,6 +449,7 @@ function CompareExperienceInner() {
 
       <CompareCountyProfileSection
         alignment={workspace.profile}
+        coolingDown={workspace.profileCoolingDown}
         error={workspace.profileError}
         leftLabel={leftOption?.label ?? leftFips}
         loading={workspace.profileLoading}

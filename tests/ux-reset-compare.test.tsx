@@ -16,8 +16,10 @@ import { clearCompareCatalogRetryDeadlines } from "@/features/ux-reset/compare/c
 import { alignCompareCountyProfiles } from "@/features/ux-reset/compare/compare-county-profile";
 import { CompareCountyProfileSection } from "@/features/ux-reset/compare/compare-county-profile-section";
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
+import { clearCompareProfileRetryDeadlines } from "@/features/ux-reset/compare/load-compare-profile";
 import { ResetCompareExperience } from "@/features/ux-reset/compare/reset-compare-experience";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
+import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
   COMPARE_CANOPY_MEASURE_ID,
@@ -40,6 +42,9 @@ const observationFailureBudgets = new Map<string, number>();
 let catalogFailureStatus = 503;
 let catalogFailuresRemaining = 0;
 let catalogRetryAfter: string | null = null;
+const countyRecordRequests: string[] = [];
+let countyRateLimitRemaining = 0;
+let countyRetryAfterSeconds: number | null = null;
 let navigationSearchParams = new URLSearchParams();
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
@@ -55,6 +60,17 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     countyV1CountiesFipsGet: vi.fn<
       typeof import("@/generated/atlas").countyV1CountiesFipsGet
     >(async (fips) => {
+      countyRecordRequests.push(fips);
+      if (countyRateLimitRemaining > 0) {
+        countyRateLimitRemaining -= 1;
+        throw new AtlasApiError(
+          "The published county record could not be loaded.",
+          `/v1/counties/${fips}`,
+          429,
+          null,
+          countyRetryAfterSeconds
+        );
+      }
       if (fips === "08013") {
         return {
           data: null,
@@ -242,6 +258,10 @@ describe("two-county aligned comparison", () => {
     catalogRequests.length = 0;
     catalogRetryAfter = null;
     clearCompareCatalogRetryDeadlines();
+    clearCompareProfileRetryDeadlines();
+    countyRateLimitRemaining = 0;
+    countyRecordRequests.length = 0;
+    countyRetryAfterSeconds = null;
     vi.useRealTimers();
     observationFailureBudgets.clear();
     observationRequests.length = 0;
@@ -600,6 +620,36 @@ describe("two-county aligned comparison", () => {
       recovery: "ready",
       samePair: true,
     });
+  });
+
+  it("waits out Retry-After before another county-record request", async () => {
+    countyRateLimitRemaining = 2;
+    countyRetryAfterSeconds = 60;
+    vi.useFakeTimers();
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    await flushCompare(
+      () =>
+        countyRecordRequests.length === 2 &&
+        screen.queryByTestId("compare-retry-profile") !== null
+    );
+    fireEvent.click(screen.getByTestId("compare-retry-profile"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(59_000);
+    });
+    const waiting = screen.getByTestId("compare-retry-profile");
+    expect({
+      calls: countyRecordRequests.length,
+      waiting: waiting.dataset.waiting,
+    }).toStrictEqual({
+      calls: 2,
+      waiting: "true",
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await flushCompare(() => countyRecordRequests.length === 4);
+    expect(screen.getByTestId("compare-profile")).toBeTruthy();
+    expect(screen.queryByTestId("compare-profile-error")).toBeNull();
   });
 
   it("waits out Retry-After before a manual catalog retry", async () => {

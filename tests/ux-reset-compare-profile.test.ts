@@ -10,6 +10,7 @@ import {
 } from "@/features/ux-reset/compare/compare-county-profile";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { InvestigateContractError } from "@/features/ux-reset/investigate/county-evidence";
+import type { Measure } from "@/generated/models";
 
 import {
   COMPARE_LEFT_FIPS,
@@ -243,6 +244,43 @@ describe("compare county profile", () => {
       unavailable: "Unavailable",
       unfamiliar: "Priority 3 — Review",
       unknown: "Unavailable",
+    });
+  });
+
+  it("uses catalog metadata for a matching published field", () => {
+    const populationMeasure: Measure = {
+      definition: "Resident population.",
+      indicator_id: "population",
+      label: "Population",
+      limitations: ["Population is a 2022 estimate."],
+      measure_id: "population_2022",
+      measure_type: "count",
+      semantic_version: "1.0.0",
+    };
+    const withCatalog = alignCompareCountyProfiles({
+      left: ready(COMPARE_LEFT_FIPS),
+      leftFips: COMPARE_LEFT_FIPS,
+      measures: [populationMeasure],
+      right: ready(COMPARE_RIGHT_FIPS),
+      rightFips: COMPARE_RIGHT_FIPS,
+    });
+    const catalogCell = withCatalog.rows.find(
+      (row) => row.id === "population_2022"
+    )?.left;
+    if (catalogCell?.kind !== "evidence") {
+      throw new Error("Population row did not use catalog metadata.");
+    }
+    const withoutCatalog = evidenceFor(COMPARE_LEFT_FIPS, "population_2022");
+    expect({
+      catalogLimit: catalogCell.evidence.provenance.limitations,
+      catalogType: catalogCell.evidence.provenance.evidenceType,
+      plainLimit: withoutCatalog.provenance.limitations,
+      plainType: withoutCatalog.provenance.evidenceType,
+    }).toStrictEqual({
+      catalogLimit: ["Population is a 2022 estimate.", "Percentile context."],
+      catalogType: "Count",
+      plainLimit: ["Percentile context."],
+      plainType: "Unavailable",
     });
   });
 
