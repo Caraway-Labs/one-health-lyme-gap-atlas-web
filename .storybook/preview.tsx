@@ -5,6 +5,7 @@ import "../src/app/globals.css";
 const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
 const PRIMITIVE_SIDEBAR_STORAGE_KEY = "atlas-sidebar-open";
 const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
+const REVIEW_RETURN_FOCUS_KEY = "ux-reset-review-return-focus";
 
 function clearStoragePrefix(prefix: string): void {
   const keys = Object.keys(window.localStorage);
@@ -52,6 +53,7 @@ const preview: Preview = {
       clearStoragePrefix(SIDEBAR_STORAGE_KEY);
       clearStoragePrefix(PRIMITIVE_SIDEBAR_STORAGE_KEY);
       window.localStorage.removeItem(CHAT_STORAGE_KEY);
+      window.sessionStorage.removeItem(REVIEW_RETURN_FOCUS_KEY);
     },
   ],
   parameters: {
