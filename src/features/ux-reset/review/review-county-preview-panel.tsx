@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Ref } from "react";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
@@ -19,6 +19,7 @@ type ReviewCountyPreviewPanelProps = {
   droppedNotes: readonly string[];
   href: string;
   onOpen: (fips: string) => void;
+  onViewCountyEvidence?: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   preview: ReviewCountyPreviewModel;
   release: Tier1ActiveRelease;
@@ -29,6 +30,7 @@ export function ReviewCountyPreviewPanel({
   droppedNotes,
   href,
   onOpen,
+  onViewCountyEvidence,
   openRef,
   preview,
   release,
@@ -123,6 +125,18 @@ export function ReviewCountyPreviewPanel({
         </ul>
       ) : null}
       <div className="ux-reset-review-preview-actions">
+        {onViewCountyEvidence ? (
+          <Button
+            data-county={preview.fips}
+            data-testid="review-view-county-evidence"
+            type="button"
+            onClick={() => {
+              onViewCountyEvidence(preview.fips);
+            }}
+          >
+            View county evidence
+          </Button>
+        ) : null}
         <Link
           ref={openRef}
           className={cn(buttonVariants(), "ux-reset-review-open")}

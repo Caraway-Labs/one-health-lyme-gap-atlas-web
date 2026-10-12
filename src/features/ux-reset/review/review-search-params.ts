@@ -1,8 +1,13 @@
 import { createParser } from "nuqs";
 
 import { uxResetSharedContextParsers } from "@/features/ux-reset/context-params";
+import { parseExplorerCountyMode } from "@/features/ux-reset/review/explorer-mode";
 
 const reviewLocalParsers = {
+  mode: createParser({
+    parse: (value) => parseExplorerCountyMode(value),
+    serialize: (value) => value,
+  }),
   page: createParser({
     parse: (value) => value,
     serialize: String,

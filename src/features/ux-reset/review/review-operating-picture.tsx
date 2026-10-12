@@ -47,10 +47,10 @@ import {
 import {
   isGovernedReviewResultState,
   reviewCandidateCountyLabel,
+  reviewCandidatesWithheld,
   reviewMapCounties,
   reviewPictureState,
   reviewPictureSummary,
-  reviewResultPayloadConsistent,
   reviewResultStateLabel,
   scopedReviewCandidates,
   scopedReviewGaps,
@@ -96,7 +96,10 @@ type ReviewCountyHistory = "push" | "replace";
 
 type ReviewOperatingPictureProps = {
   county?: string | null;
+  /** Keep the map mounted without writing a county into the URL. */
+  freezeCountySelection?: boolean;
   onCountyChange?: (fips: string | null, history: ReviewCountyHistory) => void;
+  onViewCountyEvidence?: (fips: string) => void;
   period?: string | null;
   review: StateReview;
   scopeCode: string;
@@ -230,7 +233,9 @@ function reviewResultProvenance(review: StateReview): EvidenceProvenanceModel {
 
 export function ReviewOperatingPicture({
   county = null,
+  freezeCountySelection = false,
   onCountyChange,
+  onViewCountyEvidence,
   period = null,
   review,
   scopeCode,
@@ -248,17 +253,10 @@ export function ReviewOperatingPicture({
   const resultState = isGovernedReviewResultState(review.result_state)
     ? review.result_state
     : null;
-  const payloadConsistent =
-    resultState !== null &&
-    reviewResultPayloadConsistent({
-      data_gaps: review.data_gaps,
-      result_state: resultState,
-      review_candidates: review.review_candidates,
-    });
-  const authoritativeResultState = payloadConsistent ? resultState : null;
   // An ungoverned state still shows returned rows. A governed state that
   // contradicts its candidate list publishes none of them.
-  const suppressCandidates = resultState !== null && !payloadConsistent;
+  const suppressCandidates = reviewCandidatesWithheld(review);
+  const authoritativeResultState = suppressCandidates ? null : resultState;
   const candidates = useMemo(
     () => (suppressCandidates ? [] : scopedCandidates.candidates),
     [scopedCandidates.candidates, suppressCandidates]
@@ -299,7 +297,7 @@ export function ReviewOperatingPicture({
     period: period ?? null,
   });
   useEffect(() => {
-    if (!directory.isSuccess) {
+    if (freezeCountySelection || !directory.isSuccess) {
       return;
     }
     if (selectedFips) {
@@ -312,7 +310,13 @@ export function ReviewOperatingPicture({
     if (county) {
       onCountyChange?.(null, "replace");
     }
-  }, [county, directory.isSuccess, onCountyChange, selectedFips]);
+  }, [
+    county,
+    directory.isSuccess,
+    freezeCountySelection,
+    onCountyChange,
+    selectedFips,
+  ]);
 
   const geometryQuery = useQuery({
     enabled: Boolean(releaseId),
@@ -400,8 +404,11 @@ export function ReviewOperatingPicture({
   }
   const focusReturnedCounty =
     returnFocusMatches || latchedReturnFips === selectedFips;
+  // County evidence keeps this picture mounted but parked. A focus call there
+  // does not move the keyboard, and consuming the target would skip the
+  // visible browse surface when the user comes back.
   useLayoutEffect(() => {
-    if (!(focusReturnedCounty && selectedFips)) {
+    if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
       return;
     }
     const row = layoutRef.current?.querySelector<HTMLButtonElement>(
@@ -427,7 +434,7 @@ export function ReviewOperatingPicture({
         ?.focus({ preventScroll: true });
     }
     consumeReviewReturnFocus(selectedFips);
-  }, [focusReturnedCounty, selectedFips]);
+  }, [focusReturnedCounty, freezeCountySelection, selectedFips]);
 
   const geometryError = Boolean(geometryQuery.isError);
   const geometryReady = Boolean(geometryQuery.data) && !geometryError;
@@ -724,6 +731,7 @@ export function ReviewOperatingPicture({
             href={handoff.href}
             openRef={openRef}
             onOpen={markReviewReturnFocus}
+            onViewCountyEvidence={onViewCountyEvidence}
           />
         ) : null}
         {preview && handoff ? (
@@ -735,6 +743,7 @@ export function ReviewOperatingPicture({
             preview={preview}
             release={tierRelease}
             onOpen={markReviewReturnFocus}
+            onViewCountyEvidence={onViewCountyEvidence}
           />
         ) : null}
       </div>

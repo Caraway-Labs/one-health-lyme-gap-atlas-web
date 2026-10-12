@@ -38,7 +38,7 @@ export const PUBLIC_INVESTIGATE_PATH = "/investigate" as const;
 export const PUBLIC_ASSISTANT_PATH = "/assistant" as const;
 export const PUBLIC_KNOWLEDGE_GRAPH_PATH = "/knowledge-graph" as const;
 
-/** Query name for Explorer county mode. Omitted for browse. Not read yet. */
+/** Query name for Explorer county mode. Omitted for browse. Read on Review. */
 export const EXPLORER_MODE_PARAM = "mode" as const;
 export const EXPLORER_EVIDENCE_MODE = "evidence" as const;
 export const EXPLORER_FOLLOW_UP_MODE = "follow-up" as const;

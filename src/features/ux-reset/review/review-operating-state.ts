@@ -50,6 +50,17 @@ export function reviewResultPayloadConsistent(
 }
 
 /**
+ * A governed result that contradicts its candidate list is not a recommendation.
+ * An ungoverned state still leaves returned rows available to the picture.
+ */
+export function reviewCandidatesWithheld(review: ReviewPictureInput): boolean {
+  if (!isGovernedReviewResultState(review.result_state)) {
+    return false;
+  }
+  return !reviewResultPayloadConsistent(review);
+}
+
+/**
  * Headline for a successful review response.
  * Data-gap-only is the unsupported result that lists gaps and no candidates.
  * `data_gaps` must already be counties in the requested state. Other backend
