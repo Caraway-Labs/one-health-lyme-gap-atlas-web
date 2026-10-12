@@ -43,7 +43,16 @@ const items = [
   ["Investigate", "/app/investigate"],
 ] as const;
 
-function SidebarStory({ startCollapsed }: { startCollapsed: boolean }) {
+export function SidebarStory({ startCollapsed }: { startCollapsed: boolean }) {
+  return (
+    <SidebarPreview
+      key={String(startCollapsed)}
+      startCollapsed={startCollapsed}
+    />
+  );
+}
+
+function SidebarPreview({ startCollapsed }: { startCollapsed: boolean }) {
   const storageKey = useContext(SidebarKeyContext);
   const [active, setActive] = useState("Review");
   useLayoutEffect(() => {
@@ -95,6 +104,7 @@ function SidebarStory({ startCollapsed }: { startCollapsed: boolean }) {
 const meta = {
   title: "Navigation and layout/Sidebar",
   component: SidebarStory,
+  excludeStories: ["SidebarStory"],
   args: { startCollapsed: false },
   decorators: [WithStorySidebarKey],
   parameters: {

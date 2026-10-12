@@ -49,7 +49,7 @@ function responseFor(preset: OutcomePreset): KnowledgeChatResponse {
   }
 }
 
-function OutcomeStory({ preset }: { preset: OutcomePreset }) {
+export function OutcomeStory({ preset }: { preset: OutcomePreset }) {
   const [action, setAction] = useState("No local action yet.");
   const pending = preset === "pending";
   return (
@@ -80,6 +80,7 @@ function OutcomeStory({ preset }: { preset: OutcomePreset }) {
 const meta = {
   title: "Ask Atlas/Assistant outcome",
   component: OutcomeStory,
+  excludeStories: ["OutcomeStory"],
   args: { preset: "corpus" },
   argTypes: {
     preset: { control: "select", options: [...outcomePresets] },

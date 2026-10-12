@@ -82,7 +82,7 @@ const stories: { id: string; text?: string; name?: string }[] = [
   },
   { id: "primitives-table--populated", text: "Adams County" },
   { id: "primitives-table--empty", text: "No rows in this preview" },
-  { id: "primitives-tooltip--focus", text: "Review" },
+  { id: "primitives-tooltip--focus", name: "Review" },
 ];
 
 function track(page: Page): string[] {
@@ -235,7 +235,7 @@ test.describe("Chat and primitive catalog", () => {
   test("search input accepts a local geography", async ({ page }) => {
     const blocked = track(page);
     await openStory(page, "primitives-input--search");
-    const field = page.getByRole("textbox", { name: "Geography" });
+    const field = page.getByRole("searchbox", { name: "Geography" });
     await field.fill("Wake County");
     await expect(field).toHaveValue("Wake County");
     expect(blocked).toEqual([]);

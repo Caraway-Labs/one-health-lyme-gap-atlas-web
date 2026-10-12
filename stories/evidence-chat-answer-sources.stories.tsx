@@ -50,7 +50,7 @@ function responseFor(preset: SourcePreset): KnowledgeChatResponse {
   }
 }
 
-function SourcesStory({ preset }: { preset: SourcePreset }) {
+export function SourcesStory({ preset }: { preset: SourcePreset }) {
   const response = responseFor(preset);
   return (
     <div className="grid gap-3">
@@ -69,6 +69,7 @@ function SourcesStory({ preset }: { preset: SourcePreset }) {
 const meta = {
   title: "Ask Atlas/Answer sources",
   component: SourcesStory,
+  excludeStories: ["SourcesStory"],
   args: { preset: "one" },
   argTypes: {
     preset: { control: "select", options: [...sourcePresets] },

@@ -18,10 +18,14 @@ const presets = [
   "near-limit",
 ] as const satisfies readonly StoryChatPreset[];
 
-function ConversationStory({ preset }: { preset: StoryChatPreset }) {
+export function ConversationStory({ preset }: { preset: StoryChatPreset }) {
+  return <ConversationPreview key={preset} preset={preset} />;
+}
+
+function ConversationPreview({ preset }: { preset: StoryChatPreset }) {
   const model = useStoryChatModel(preset, corpusGapResponse());
   return (
-    <div className="grid gap-3" key={preset}>
+    <div className="grid gap-3">
       <p className="type-small" data-testid="chat-story-notice">
         Synthetic literature preview. No evidence service is called. The local
         note is not saved.
@@ -42,6 +46,7 @@ function ConversationStory({ preset }: { preset: StoryChatPreset }) {
 const meta = {
   title: "Ask Atlas/Evidence chat conversation",
   component: ConversationStory,
+  excludeStories: ["ConversationStory"],
   args: { preset: "empty" },
   argTypes: {
     preset: { control: "select", options: [...presets] },
