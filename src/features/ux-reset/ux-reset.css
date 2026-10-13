@@ -1429,6 +1429,10 @@
   background: var(--card);
 }
 
+.ux-reset-explorer-list > .gap-0 {
+  min-height: 0;
+}
+
 .ux-reset-explorer-map {
   width: 100%;
   min-height: 20rem;
@@ -1487,6 +1491,7 @@
 
 .ux-reset-explorer-list .ux-reset-review-candidate-list {
   max-height: min(28rem, calc(100dvh - 22rem));
+  min-height: 0;
   overflow: auto;
 }
 

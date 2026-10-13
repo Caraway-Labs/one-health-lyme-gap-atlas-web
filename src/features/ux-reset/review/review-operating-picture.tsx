@@ -572,24 +572,37 @@ export function ReviewOperatingPicture({
       const list = row?.closest(".ux-reset-review-candidate-list");
       if (
         !(row instanceof HTMLButtonElement) ||
-        !(list instanceof HTMLElement)
+        !(list instanceof HTMLElement) ||
+        list.clientHeight === 0
       ) {
         return;
       }
       const rowBox = row.getBoundingClientRect();
       const listBox = list.getBoundingClientRect();
-      if (
-        rowBox.height === 0 ||
-        (rowBox.top >= listBox.top - 1 && rowBox.bottom <= listBox.bottom + 1)
-      ) {
+      const inside =
+        rowBox.height > 0 &&
+        rowBox.top >= listBox.top - 1 &&
+        rowBox.bottom <= listBox.bottom + 1;
+      if (inside) {
         return;
       }
       list.scrollTop += rowBox.top - listBox.top - 8;
     };
     alignSelectedRow();
     const frame = requestAnimationFrame(alignSelectedRow);
+    const list = layoutRef.current?.querySelector(
+      ".ux-reset-review-candidate-list"
+    );
+    const observer =
+      list instanceof HTMLElement && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(alignSelectedRow)
+        : null;
+    if (list instanceof HTMLElement) {
+      observer?.observe(list);
+    }
     return () => {
       cancelAnimationFrame(frame);
+      observer?.disconnect();
     };
   }, [freezeCountySelection, selectedFips, visibleCandidateCount]);
   const geometryReady = Boolean(geometryQuery.data) && !geometryError;
