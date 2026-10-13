@@ -3559,7 +3559,9 @@ describe("Reset Review scope UI", () => {
         screen.getByTestId("tier1-surveillance-priority").dataset.state
       ).toBe("release-unaligned")
     );
-    const pageText = document.body.textContent ?? "";
+    const legend =
+      screen.queryByTestId("explorer-ml-priority-legend")?.textContent ?? "";
+    const pageText = (document.body.textContent ?? "").replace(legend, "");
     expect({
       high: /\bHIGH\b/.test(pageText),
       insufficient: /\bINSUFFICIENT\b/.test(pageText),

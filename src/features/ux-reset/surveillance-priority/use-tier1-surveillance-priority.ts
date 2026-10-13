@@ -1,6 +1,11 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
 
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { countyTier1SurveillancePriorityGet } from "@/generated/atlas";
@@ -43,15 +48,19 @@ export function tier1SurveillancePriorityRetryDelay(
   );
 }
 
-export function useTier1SurveillancePriority(
+export function tier1SurveillancePriorityQueryOptions(
   fips: string,
-  release: Tier1ActiveRelease
-) {
-  const queryClient = useQueryClient();
-  const releaseId = release.status === "ready" ? release.releaseId : null;
-  return useQuery({
-    enabled: COUNTY_FIPS.test(fips) && releaseId !== null,
-    queryFn: async ({ signal }): Promise<Tier1CountyPriority> => {
+  releaseId: string | null,
+  queryClient: QueryClient,
+  enabled = true
+): UseQueryOptions<Tier1CountyPriority, Error> {
+  return {
+    enabled: enabled && COUNTY_FIPS.test(fips) && releaseId !== null,
+    queryFn: async ({
+      signal,
+    }: {
+      signal: AbortSignal;
+    }): Promise<Tier1CountyPriority> => {
       const response = await countyTier1SurveillancePriorityGet(fips, {
         signal,
       });
@@ -69,18 +78,33 @@ export function useTier1SurveillancePriority(
         response.data
       );
     },
-    queryKey: ["ux-reset-tier1-surveillance-priority", fips, releaseId],
-    retry: (failureCount, error) => {
+    queryKey: [
+      "ux-reset-tier1-surveillance-priority",
+      fips,
+      releaseId,
+    ] as const,
+    retry: (failureCount: number, error: unknown) => {
       if (error instanceof AtlasApiError && error.status === 404) {
         return false;
       }
       return failureCount < 2;
     },
-    retryDelay: (failureCount, error) =>
+    retryDelay: (failureCount: number, error: unknown) =>
       tier1SurveillancePriorityRetryDelay(
         failureCount,
         error,
         queryClient.getDefaultOptions().queries?.retryDelay
       ),
-  });
+  };
+}
+
+export function useTier1SurveillancePriority(
+  fips: string,
+  release: Tier1ActiveRelease
+) {
+  const queryClient = useQueryClient();
+  const releaseId = release.status === "ready" ? release.releaseId : null;
+  return useQuery(
+    tier1SurveillancePriorityQueryOptions(fips, releaseId, queryClient)
+  );
 }

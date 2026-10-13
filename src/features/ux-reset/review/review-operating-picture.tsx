@@ -35,6 +35,10 @@ import {
   type ExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
 import {
+  ExplorerCountyRowContent,
+  ExplorerMlPriorityLegend,
+} from "@/features/ux-reset/review/explorer-ml-priority";
+import {
   buildReviewCandidatePreview,
   reviewCandidateExplanation,
 } from "@/features/ux-reset/review/review-candidate-preview";
@@ -66,8 +70,10 @@ import {
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
+import { useExplorerCountyMlPriorities } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
+import { EXPLORER_ML_PRIORITY_UNAVAILABLE } from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { DataGap, StateReview } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
@@ -561,6 +567,11 @@ export function ReviewOperatingPicture({
     )
   );
   const visibleCandidateCount = visibleCandidates.length;
+  const listedFips =
+    candidates.length > 0
+      ? visibleCandidates.map((candidate) => candidate.countyFips)
+      : visibleDirectory.map((entry) => entry.fips);
+  const mlPriorities = useExplorerCountyMlPriorities(listedFips, tierRelease);
   useEffect(() => {
     if (freezeCountySelection || !selectedFips || visibleCandidateCount === 0) {
       return;
@@ -892,6 +903,7 @@ export function ReviewOperatingPicture({
             visibleDirectory.length === 0 ? (
               <p>No counties match that name or FIPS.</p>
             ) : null}
+            <ExplorerMlPriorityLegend />
             {candidates.length > 0 ? (
               <div
                 aria-label="Counties suggested for review"
@@ -902,6 +914,9 @@ export function ReviewOperatingPicture({
                   const published = publishedScoreByFips.get(
                     candidate.countyFips
                   );
+                  const classification =
+                    mlPriorities.get(candidate.countyFips) ??
+                    EXPLORER_ML_PRIORITY_UNAVAILABLE;
                   return (
                     <div key={candidate.countyFips} role="listitem">
                       <button
@@ -912,27 +927,22 @@ export function ReviewOperatingPicture({
                         }
                         className="ux-reset-review-candidate"
                         data-fips={candidate.countyFips}
+                        data-ml-tier={classification.tier}
                         data-testid="review-candidate"
                         type="button"
                         onClick={() =>
                           selectCounty(candidate.countyFips, "ranked_list")
                         }
                       >
-                        <strong>
-                          {reviewCandidateCountyLabel(candidate.countyName)},{" "}
-                          {scopeCode}
-                        </strong>
-                        <small>
-                          {published?.priority
-                            ? `${published.priority}. `
-                            : null}
-                          {reviewCandidateExplanation(candidate.candidate)}
-                        </small>
-                        {published ? (
-                          <span className="ux-reset-explorer-county-score">
-                            Published score {published.score}
-                          </span>
-                        ) : null}
+                        <ExplorerCountyRowContent
+                          classification={classification}
+                          explanation={reviewCandidateExplanation(
+                            candidate.candidate
+                          )}
+                          name={`${reviewCandidateCountyLabel(candidate.countyName)}, ${scopeCode}`}
+                          publishedCategory={published?.priority || undefined}
+                          publishedScore={published?.score}
+                        />
                       </button>
                     </div>
                   );
@@ -945,27 +955,37 @@ export function ReviewOperatingPicture({
                 className="ux-reset-review-candidate-list"
                 role="list"
               >
-                {visibleDirectory.map((entry) => (
-                  <div key={entry.fips} role="listitem">
-                    <button
-                      aria-current={
-                        entry.fips === selectedFips ? "true" : undefined
-                      }
-                      className="ux-reset-review-candidate"
-                      data-fips={entry.fips}
-                      data-testid="review-published-county"
-                      type="button"
-                      onClick={() => selectCounty(entry.fips, "results_table")}
-                    >
-                      <strong>
-                        {entry.county}, {scopeCode}
-                      </strong>
-                      <small>
-                        Review category unavailable. Published county record.
-                      </small>
-                    </button>
-                  </div>
-                ))}
+                {visibleDirectory.map((entry) => {
+                  const published = publishedScoreByFips.get(entry.fips);
+                  const classification =
+                    mlPriorities.get(entry.fips) ??
+                    EXPLORER_ML_PRIORITY_UNAVAILABLE;
+                  return (
+                    <div key={entry.fips} role="listitem">
+                      <button
+                        aria-current={
+                          entry.fips === selectedFips ? "true" : undefined
+                        }
+                        className="ux-reset-review-candidate"
+                        data-fips={entry.fips}
+                        data-ml-tier={classification.tier}
+                        data-testid="review-published-county"
+                        type="button"
+                        onClick={() =>
+                          selectCounty(entry.fips, "results_table")
+                        }
+                      >
+                        <ExplorerCountyRowContent
+                          classification={classification}
+                          explanation="Review category unavailable. Published county record."
+                          name={`${entry.county}, ${scopeCode}`}
+                          publishedCategory={published?.priority || undefined}
+                          publishedScore={published?.score}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             ) : null}
           </Card>
