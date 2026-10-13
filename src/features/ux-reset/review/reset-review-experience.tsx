@@ -60,6 +60,11 @@ import {
   reviewDatasetText,
   reviewText,
 } from "@/features/ux-reset/review/review-governed-values";
+import {
+  explicitNationalCountyFromHistory,
+  nationalHistoryCountyMatches,
+  stampExplicitNationalCounty,
+} from "@/features/ux-reset/review/review-national-county-choice";
 import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
@@ -276,6 +281,7 @@ function ResetReviewExperienceInner() {
   const [chosenNationalFips, setChosenNationalFips] = useState<string | null>(
     null
   );
+  const nationalChoiceGenerationRef = useRef(0);
   if (scope !== "ALL" && chosenNationalFips !== null) {
     setChosenNationalFips(null);
   }
@@ -283,10 +289,33 @@ function ResetReviewExperienceInner() {
     (fips: string | null, history: "push" | "replace") => {
       const county =
         fips === null ? null : reviewCountyFipsForScope(fips, scope);
-      if (scope === "ALL") {
+      const recordNationalChoice = scope === "ALL";
+      if (recordNationalChoice) {
+        nationalChoiceGenerationRef.current += 1;
         setChosenNationalFips(county);
       }
-      void setUrlState({ county }, { history });
+      const generation = nationalChoiceGenerationRef.current;
+      // nuqs pushes the next entry inside a throttled transition and passes
+      // null history state. Stamp this choice only after that write, and only
+      // onto the entry whose URL still shows it.
+      void (async () => {
+        try {
+          await setUrlState({ county }, { history });
+        } catch {
+          // A failed history write leaves the entry unstamped, so Back withholds it.
+          return;
+        }
+        if (
+          !(
+            recordNationalChoice &&
+            nationalChoiceGenerationRef.current === generation &&
+            nationalHistoryCountyMatches(county)
+          )
+        ) {
+          return;
+        }
+        stampExplicitNationalCounty(county);
+      })();
     },
     [scope, setUrlState]
   );
@@ -332,8 +361,9 @@ function ResetReviewExperienceInner() {
     );
   }, [availableData, countyQuery, countyReference.counties, scope]);
 
-  // Shallow scope updates do not emit popstate. Bind the in-session choice to
-  // the history entry that is current after Back/Forward, and only then.
+  // Shallow scope updates do not emit popstate. Bind the in-session scope
+  // choice and the explicit national county to the history entry that is
+  // current after Back/Forward, and only then.
   useEffect(() => {
     const syncChoiceWithHistory = () => {
       const historyChoseScope = hasExplicitReviewScopeParam(
@@ -341,6 +371,7 @@ function ResetReviewExperienceInner() {
       );
       userChoseScopeRef.current = historyChoseScope;
       setUserChoseScope(historyChoseScope);
+      setChosenNationalFips(explicitNationalCountyFromHistory());
     };
     window.addEventListener("popstate", syncChoiceWithHistory);
     return () => {

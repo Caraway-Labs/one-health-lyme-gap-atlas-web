@@ -1,6 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
+  ASK_ATLAS_PAGE_REFERENCE_PARAM,
+  readAskAtlasPageReference,
+} from "@/features/ux-reset/ask-atlas/page-reference";
+
+import {
   LOWER_48_DC_CAMERA_BOUNDS,
   reviewNationalCameraContains,
   reviewNationalNavigationCamera,
@@ -101,6 +106,48 @@ async function installReviewApi(
     });
   }
   return profileMethods;
+}
+
+function publishedAskHandoff(href: string | null) {
+  const url = new URL(href ?? "", "http://127.0.0.1");
+  const state = readAskAtlasPageReference(url.pathname, url.searchParams);
+  const geography =
+    state.kind === "validated"
+      ? state.reference.context.fields.geography
+      : null;
+  const returnHref = state.kind === "validated" ? state.returnHref : "";
+  return {
+    county: url.searchParams.get("county"),
+    geography: geography?.state === "validated" ? geography.id : null,
+    pageRef: url.searchParams.get(ASK_ATLAS_PAGE_REFERENCE_PARAM) !== null,
+    returnCounty: new URL(returnHref, "http://127.0.0.1").searchParams.get(
+      "county"
+    ),
+  };
+}
+
+async function expectPublishedNationalCounty(page: Page, fips: string) {
+  const expected = {
+    county: fips,
+    geography: fips,
+    pageRef: true,
+    returnCounty: fips,
+  };
+  await expect(
+    page.getByTestId("review-published-county-preview")
+  ).toHaveAttribute("data-fips", fips);
+  await expect
+    .poll(async () => {
+      const [launcher, preview] = await Promise.all([
+        page.getByTestId("ask-atlas-launcher").getAttribute("href"),
+        page.getByTestId("review-ask-atlas").getAttribute("href"),
+      ]);
+      return {
+        launcher: publishedAskHandoff(launcher),
+        preview: publishedAskHandoff(preview),
+      };
+    })
+    .toEqual({ launcher: expected, preview: expected });
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -253,6 +300,29 @@ test.describe("Review national geographic navigation", () => {
     await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page).not.toHaveURL(/county=08001/);
+  });
+
+  test("restores the explicit national county on Back and Forward", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL");
+    await page.getByTestId("national-browse-state").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    await page.getByRole("button", { name: /Denver, CO/ }).click();
+    await expect(page).toHaveURL(/county=08001/);
+    await expectPublishedNationalCounty(page, "08001");
+    await page.getByRole("button", { name: /Boulder, CO/ }).click();
+    await expect(page).toHaveURL(/county=08013/);
+    await expectPublishedNationalCounty(page, "08013");
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).not.toHaveURL(/county=08013/);
+    await expectPublishedNationalCounty(page, "08001");
+    await page.goForward({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/county=08013/);
+    await expectPublishedNationalCounty(page, "08013");
   });
 
   test("keeps a selected-county deep link on the national map", async ({
