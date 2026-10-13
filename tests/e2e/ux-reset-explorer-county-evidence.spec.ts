@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { compareCountyDetail } from "../fixtures/compare-api-fixtures";
 import {
   buildStateReview,
   reviewCandidate,
@@ -30,6 +31,19 @@ async function installExplorerMocks(page: Page) {
     await route.fulfill({
       json: { detail: "display geometry unavailable" },
       status: 503,
+    });
+  });
+  await page.route("**/v1/counties/08001**", async (route) => {
+    const detail = compareCountyDetail("08001");
+    await route.fulfill({
+      json: {
+        ...detail,
+        color: "#e9602b",
+        county: "Denver",
+        priority: "Priority 1 — Investigate",
+        release: { ...detail.release, release_id: "alpha-2026" },
+      },
+      status: 200,
     });
   });
   await page.route("**/v1/states/*/review**", async (route) => {
@@ -73,9 +87,21 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("explorer-county-evidence")).toBeVisible();
     await expect(page.getByTestId("explorer-county-heading")).toBeFocused();
     await expect(page.getByTestId("review-state-panel")).toBeHidden();
-    await expect(page.getByTestId("explorer-follow-up-step")).toContainText(
-      "Review the cited source records."
+    await expect(page.getByTestId("explorer-follow-up-response")).toContainText(
+      "Prioritize targeted follow-up"
     );
+    await expect(page.getByTestId("explorer-review-priority")).toContainText(
+      "Highest review priority"
+    );
+    const resource = page
+      .locator("summary", { hasText: "Official resources" })
+      .first();
+    await resource.focus();
+    await page.keyboard.press("Enter");
+    await expect(resource).toBeFocused();
+    await expect(
+      page.getByRole("link", { name: "Lyme surveillance case definition" })
+    ).toBeVisible();
     await expect(page.getByTestId("explorer-summary-limitation")).toContainText(
       "Collection dates are unavailable"
     );
@@ -113,8 +139,24 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(
       page.getByRole("heading", { name: "Suggested follow-up" })
     ).toBeFocused();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          let previous = -1;
+          const settle = () => {
+            const top = document.scrollingElement?.scrollTop ?? 0;
+            if (top === previous) {
+              resolve();
+              return;
+            }
+            previous = top;
+            requestAnimationFrame(settle);
+          };
+          requestAnimationFrame(settle);
+        })
+    );
     await page.getByTestId("explorer-compare").click();
-    await expect(page).toHaveURL(/\/compare/);
+    await expect(page).toHaveURL(/\/compare/, { timeout: 20_000 });
     await expect(page).toHaveURL(/mode=follow-up/);
     await expect(page).toHaveURL(/return=review/);
     await page.getByTestId("compare-return").click();

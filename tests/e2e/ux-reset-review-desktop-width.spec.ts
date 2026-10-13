@@ -15,6 +15,8 @@ const RELEASE_ID = baldwin.release.release_id;
 const COUNTY_FIPS = "01083";
 const REVIEW_PATH = `/explore?scope=AL&dataset=${RELEASE_ID}&layer=tick_status&county=${COUNTY_FIPS}`;
 const EDGE_TOLERANCE_PX = 1;
+/** Same key as `RESET_PRO_SIDEBAR_STORAGE_KEY` in the professional shell. */
+const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
 /** 4.25rem compact shell at a 16px root. */
 const COLLAPSED_SIDEBAR_PX = 68;
 /** 16rem shell at a 16px root. */
@@ -201,18 +203,52 @@ async function installLimestoneReview(page: Page): Promise<void> {
   );
 }
 
+function sidebarStorageValue(state: SidebarState): "false" | "true" {
+  return state === "expanded" ? "true" : "false";
+}
+
+function sidebarToggleName(
+  state: SidebarState
+): "Hide navigation" | "Show navigation" {
+  return state === "collapsed" ? "Hide navigation" : "Show navigation";
+}
+
+async function writeSidebarPreference(
+  page: Page,
+  state: SidebarState
+): Promise<void> {
+  const stored = sidebarStorageValue(state);
+  await page.evaluate(
+    ([key, value]) => {
+      window.localStorage.setItem(key, value);
+    },
+    [SIDEBAR_STORAGE_KEY, stored] as const
+  );
+}
+
 async function settleSidebar(page: Page, state: SidebarState): Promise<void> {
   const sidebar = page.locator("#ux-reset-pro-navigation");
   const targetWidth =
     state === "collapsed" ? COLLAPSED_SIDEBAR_PX : EXPANDED_SIDEBAR_PX;
-  if ((await sidebar.getAttribute("data-state")) !== state) {
-    await page
-      .getByRole("button", {
-        name: state === "collapsed" ? "Hide navigation" : "Show navigation",
-      })
-      .click();
-  }
-  await expect(sidebar).toHaveAttribute("data-state", state);
+  // The trigger always toggles. Storage hydration also sets the state once,
+  // after the first paint. A single click sampled while the sidebar is still
+  // expanded can land after that read and open it again, then the preference
+  // effect saves "true". Each attempt writes the supported preference and
+  // clicks only while the named control for this state is still present.
+  await expect(async () => {
+    await writeSidebarPreference(page, state);
+    if ((await sidebar.getAttribute("data-state")) !== state) {
+      await page
+        .getByRole("button", { exact: true, name: sidebarToggleName(state) })
+        .click({ timeout: 1_000 });
+    }
+    await expect(sidebar).toHaveAttribute("data-state", state, {
+      timeout: 1_000,
+    });
+  }).toPass({
+    intervals: [50, 100, 250, 500],
+    timeout: 15_000,
+  });
   await expect
     .poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0))
     .toBe(targetWidth);
@@ -399,9 +435,9 @@ test("desktop browse grid fills the main content edge", async ({
   });
   await installLimestoneReview(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.addInitScript(() => {
-    window.localStorage.setItem("ux-reset-pro-sidebar", "false");
-  });
+  await page.addInitScript((key) => {
+    window.localStorage.setItem(key, "false");
+  }, SIDEBAR_STORAGE_KEY);
   await page.setViewportSize({ height: 800, width: 1280 });
   await page.goto(REVIEW_PATH);
   await expect(page.getByTestId("review-state-panel")).toHaveAttribute(

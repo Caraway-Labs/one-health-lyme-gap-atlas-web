@@ -152,9 +152,10 @@ async function openedFollowUp(mode: "evidence" | "follow-up"): Promise<string> {
   await screen.findByTestId("explorer-follow-up");
   await waitFor(
     () => {
-      const current = screen.getByTestId("explorer-follow-up");
-      if (current.dataset.followUp === "loading") {
-        throw new Error("review follow-up is still loading");
+      const text =
+        screen.getByTestId("explorer-county-evidence").textContent ?? "";
+      if (text.includes("Review category is loading")) {
+        throw new Error("review category is still loading");
       }
     },
     { timeout: 4000 }
@@ -178,9 +179,8 @@ describe("withheld Explorer follow-up", () => {
       stubDesktopMatchMedia();
       reviewResult.resultState = resultState;
       const seen = `${await openedFollowUp("evidence")}\n${await openedFollowUp("follow-up")}`;
-      expect(seen).toContain("evidence:withheld:");
-      expect(seen).toContain("follow-up:withheld:");
-      expect(seen.split("Suggested follow-up is withheld")).toHaveLength(3);
+      expect(seen.split("Review category is withheld")).toHaveLength(3);
+      expect(seen).not.toContain("Suggested follow-up is withheld");
       expect(seen).not.toMatch(withheldRecommendation);
     }
   );
@@ -221,10 +221,9 @@ describe("withheld Explorer follow-up", () => {
     reviewResult.resultState = "candidates_found";
     const evidence = await openedFollowUp("evidence");
     const followUp = await openedFollowUp("follow-up");
-    expect(evidence).toContain("evidence:candidate:");
-    expect(followUp).toContain("follow-up:candidate:");
-    expect(evidence).toContain(NEXT_CHECK);
-    expect(followUp).toContain(NEXT_CHECK);
     expect(evidence).toContain(REASON);
+    expect(followUp).toContain(REASON);
+    expect(evidence).not.toContain(NEXT_CHECK);
+    expect(followUp).not.toContain(NEXT_CHECK);
   });
 });
