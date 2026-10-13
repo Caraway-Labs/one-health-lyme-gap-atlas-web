@@ -217,10 +217,7 @@ export function matchesExplorerEvidence(
   county: CountyScoreSummary,
   view: EvidenceView
 ) {
-  // Alpha source: round(usable / 6 * 100); five of six inputs rounds to 83%.
-  return view === "complete"
-    ? county.evidence_completeness >= 83
-    : matchesEvidence(county, view);
+  return matchesEvidence(county, view);
 }
 export function rankCounties(counties: CountyScoreSummary[], metric: Metric) {
   return [...counties].sort(

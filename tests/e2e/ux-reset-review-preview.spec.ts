@@ -335,7 +335,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       "alpha-2026"
     );
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Atlas Explorer"
+      "Explore the evidence behind every county."
     );
     await expect(page.getByTestId("explorer-county-heading")).toHaveText(
       "Suffolk"
@@ -469,7 +469,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page).toHaveURL(/period=2023-01-01/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Atlas Explorer"
+      "Explore the evidence behind every county."
     );
     await expect(page.getByTestId("explorer-county-heading")).toHaveText(
       "Orange"

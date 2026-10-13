@@ -89,7 +89,30 @@ describe("atlas UI rules", () => {
     expect(matchesEvidence(county, "all")).toBeTruthy();
     expect(matchesEvidence(county, "ecological")).toBeTruthy();
     expect(matchesEvidence(county, "human")).toBeFalsy();
-    expect(matchesEvidence(county, "complete")).toBeTruthy();
+    expect(matchesEvidence(county, "complete")).toBeFalsy();
+  });
+
+  it("treats most-data-fields completeness as a percent of six inputs", () => {
+    const complete = (evidenceCompleteness: number) =>
+      matchesEvidence(
+        { ...county, evidence_completeness: evidenceCompleteness },
+        "complete"
+      );
+    expect({
+      eighty: complete(80),
+      eightyTwo: complete(82),
+      eightyThree: complete(83),
+      five: complete(5),
+      hundred: complete(100),
+      six: complete(6),
+    }).toStrictEqual({
+      eighty: false,
+      eightyTwo: false,
+      eightyThree: true,
+      five: false,
+      hundred: true,
+      six: false,
+    });
   });
 
   it("keeps missing human records distinct from zero cases", () => {

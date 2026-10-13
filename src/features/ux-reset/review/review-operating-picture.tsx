@@ -30,6 +30,15 @@ import {
 } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import {
+  countyPassesAvailableData,
+  EXPLORER_AVAILABLE_DATA_EMPTY,
+  EXPLORER_AVAILABLE_DATA_ERROR,
+  EXPLORER_AVAILABLE_DATA_LOADING,
+  EXPLORER_AVAILABLE_DATA_OPEN,
+  type ExplorerAvailableDataGate,
+} from "@/features/ux-reset/review/explorer-county-reference";
+import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
+import {
   explorerMapLayerById,
   paintExplorerMapLayer,
   type ExplorerMapLayerId,
@@ -115,6 +124,13 @@ type ReviewOperatingPictureProps = {
   stateName: string;
   tierRelease?: Tier1ActiveRelease;
   countyQuery?: string;
+  /**
+   * Available-data gate. Open keeps every county. Ready limits the list and
+   * map to that FIPS set. Loading and error hide counties instead of showing
+   * the unfiltered set under a restrictive toolbar filter.
+   */
+  availableDataGate?: ExplorerAvailableDataGate;
+  onMapLayerChange?: (layerId: ExplorerMapLayerId) => void;
 };
 
 function resolveExplorerPaintColor(
@@ -267,6 +283,8 @@ export function ReviewOperatingPicture({
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
   countyQuery = "",
+  availableDataGate = EXPLORER_AVAILABLE_DATA_OPEN,
+  onMapLayerChange,
 }: ReviewOperatingPictureProps) {
   const scopedCandidates = useMemo(
     () => scopedReviewCandidates(review.review_candidates, scopeCode),
@@ -399,7 +417,7 @@ export function ReviewOperatingPicture({
     scoresQuery.isError,
     scoresQuery.isPending,
   ]);
-  const mapCounties = useMemo(
+  const inStateMapCounties = useMemo(
     () =>
       reviewMapCounties({
         geometryFips,
@@ -412,6 +430,26 @@ export function ReviewOperatingPicture({
       })),
     [geometryFips, mapPaint.colorsByFips, scopeCode]
   );
+  const mapCounties = useMemo(() => {
+    switch (availableDataGate.kind) {
+      case "open": {
+        return inStateMapCounties;
+      }
+      case "ready": {
+        return inStateMapCounties.filter((county) =>
+          availableDataGate.fips.has(county.fips)
+        );
+      }
+      case "loading":
+      case "error": {
+        return [];
+      }
+      default: {
+        const exhaustive: never = availableDataGate;
+        return exhaustive;
+      }
+    }
+  }, [availableDataGate, inStateMapCounties]);
   const [fitSignal, setFitSignal] = useState(0);
   const publishedScoreByFips = useMemo(() => {
     const scores = new Map<string, { priority: string; score: number }>();
@@ -431,9 +469,12 @@ export function ReviewOperatingPicture({
       if (!directory.counties.some((entry) => entry.fips === fips)) {
         return;
       }
+      if (!countyPassesAvailableData(availableDataGate, fips)) {
+        return;
+      }
       onCountyChange?.(fips, "push");
     },
-    [directory.counties, onCountyChange]
+    [availableDataGate, directory.counties, onCountyChange]
   );
   const searchParams = useSearchParams();
   const searchKey = searchParams.toString();
@@ -547,18 +588,44 @@ export function ReviewOperatingPicture({
 
   const geometryError = Boolean(geometryQuery.isError);
   const countyQueryText = countyQuery.trim().toLowerCase();
-  const countyMatchesQuery = (name: string, fips: string) =>
-    countyQueryText.length === 0 ||
-    name.toLowerCase().includes(countyQueryText) ||
-    fips.includes(countyQueryText);
-  const visibleDirectory = directory.counties.filter((entry) =>
+  const countyMatchesQuery = (name: string, fips: string) => {
+    if (countyQueryText.length === 0) {
+      return true;
+    }
+    const normalizedName = name.trim().toLowerCase();
+    if (
+      normalizedName.includes(countyQueryText) ||
+      fips.includes(countyQueryText)
+    ) {
+      return true;
+    }
+    return (
+      normalizedName.length > 0 &&
+      countyQueryText.includes(fips) &&
+      countyQueryText.includes(normalizedName)
+    );
+  };
+  const passesAvailableData = (fips: string) =>
+    countyPassesAvailableData(availableDataGate, fips);
+  const availableDirectory = directory.counties.filter((entry) =>
+    passesAvailableData(entry.fips)
+  );
+  const visibleDirectory = availableDirectory.filter((entry) =>
     countyMatchesQuery(entry.county, entry.fips)
   );
-  const visibleCandidates = candidates.filter((candidate) =>
-    countyMatchesQuery(
-      reviewCandidateCountyLabel(candidate.countyName),
-      candidate.countyFips
-    )
+  const publishedPickerCounties =
+    availableDataGate.kind === "ready" &&
+    selectedPublished &&
+    !availableDirectory.some((entry) => entry.fips === selectedPublished.fips)
+      ? [selectedPublished, ...availableDirectory]
+      : availableDirectory;
+  const visibleCandidates = candidates.filter(
+    (candidate) =>
+      passesAvailableData(candidate.countyFips) &&
+      countyMatchesQuery(
+        reviewCandidateCountyLabel(candidate.countyName),
+        candidate.countyFips
+      )
   );
   const visibleCandidateCount = visibleCandidates.length;
   useEffect(() => {
@@ -725,23 +792,49 @@ export function ReviewOperatingPicture({
               Fit {stateName}
             </Button>
           </div>
+          {onMapLayerChange ? (
+            <div className="ux-reset-explorer-map-layer">
+              <ExplorerMapLayerControl
+                layerId={mapLayer}
+                onLayerChange={onMapLayerChange}
+              />
+            </div>
+          ) : null}
           <div
             className="map-wrap"
+            data-include-unscored={
+              availableDataGate.kind === "open" ? "true" : "false"
+            }
+            data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
             data-testid="review-state-map-region"
             aria-busy={
+              availableDataGate.kind === "loading" ||
               geometryPending ||
               (geometryReady &&
                 hasMapCounties &&
                 settledMapContext !== mapContext)
             }
           >
-            {geometryReady && hasMapCounties ? (
+            {availableDataGate.kind === "loading" ? (
+              <AtlasStatusMessage className="map-loading" tone="loading">
+                <p data-testid="explorer-map-available-data-loading">
+                  {EXPLORER_AVAILABLE_DATA_LOADING}
+                </p>
+              </AtlasStatusMessage>
+            ) : availableDataGate.kind === "error" ? (
+              <AtlasStatusMessage className="map-loading" tone="error">
+                <p data-testid="explorer-map-available-data-error">
+                  {EXPLORER_AVAILABLE_DATA_ERROR}
+                </p>
+              </AtlasStatusMessage>
+            ) : geometryReady && hasMapCounties ? (
               <AtlasMap
                 key={mapContext}
                 ariaLabel={`Map of ${stateName}. Select a published county or use the Published county picker.`}
                 cameraFrameState={scopeCode}
                 fitSignal={fitSignal}
                 geometry={geometryQuery.data as never}
+                includeUnscoredCounties={availableDataGate.kind === "open"}
                 scores={mapCounties}
                 selectedFips={selectedFips}
                 selectedState={scopeCode}
@@ -768,6 +861,14 @@ export function ReviewOperatingPicture({
                 <p data-testid="review-state-map-unavailable">
                   The map is unavailable. This result did not include a release
                   Atlas can request.
+                </p>
+              </AtlasStatusMessage>
+            ) : availableDataGate.kind === "ready" &&
+              geometryReady &&
+              inStateMapCounties.length > 0 ? (
+              <AtlasStatusMessage className="map-loading" tone="empty">
+                <p data-testid="explorer-map-available-data-empty">
+                  {EXPLORER_AVAILABLE_DATA_EMPTY}
                 </p>
               </AtlasStatusMessage>
             ) : !hasMapCounties && !geometryPending ? (
@@ -815,7 +916,7 @@ export function ReviewOperatingPicture({
             <p className="type-small">
               {candidates.length > 0
                 ? stateName
-                : `${directory.counties.length} published counties. Alphabetical order; no recommendation ranking. Missing rank is not low priority.`}
+                : `${availableDirectory.length} published counties. Alphabetical order; no recommendation ranking. Missing rank is not low priority.`}
               {authoritativeResultState === "unsupported"
                 ? " Review recommendations are unavailable for this jurisdiction in the current release. You can still explore published county evidence."
                 : ""}
@@ -836,6 +937,28 @@ export function ReviewOperatingPicture({
                 No published counties were returned for this state and release.
               </AtlasStatusMessage>
             ) : null}
+            {availableDataGate.kind === "loading" ? (
+              <AtlasStatusMessage tone="loading">
+                <p data-testid="explorer-available-data-loading">
+                  {EXPLORER_AVAILABLE_DATA_LOADING}
+                </p>
+              </AtlasStatusMessage>
+            ) : null}
+            {availableDataGate.kind === "error" ? (
+              <AtlasStatusMessage tone="error">
+                <p data-testid="explorer-available-data-error">
+                  {EXPLORER_AVAILABLE_DATA_ERROR}
+                </p>
+              </AtlasStatusMessage>
+            ) : null}
+            {availableDataGate.kind === "ready" &&
+            directory.isSuccess &&
+            directory.counties.length > 0 &&
+            availableDirectory.length === 0 ? (
+              <p data-testid="explorer-available-data-empty">
+                {EXPLORER_AVAILABLE_DATA_EMPTY}
+              </p>
+            ) : null}
             <Select
               value={selectedFips || null}
               onValueChange={(fips) => {
@@ -847,7 +970,7 @@ export function ReviewOperatingPicture({
               <SelectTrigger
                 aria-label="Published county"
                 className="h-9 w-full"
-                disabled={!directory.counties.length}
+                disabled={publishedPickerCounties.length === 0}
                 data-testid="review-published-county-select"
               >
                 <SelectValue>
@@ -855,7 +978,7 @@ export function ReviewOperatingPicture({
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {directory.counties.map((entry) => (
+                {publishedPickerCounties.map((entry) => (
                   <SelectItem key={entry.fips} value={entry.fips}>
                     {entry.county}, {scopeCode} · {entry.fips}
                   </SelectItem>
@@ -887,7 +1010,9 @@ export function ReviewOperatingPicture({
                 No counties were returned in review candidates.
               </p>
             ) : null}
-            {countyQueryText &&
+            {(availableDataGate.kind === "open" ||
+              availableDataGate.kind === "ready") &&
+            countyQueryText &&
             visibleCandidates.length === 0 &&
             visibleDirectory.length === 0 ? (
               <p>No counties match that name or FIPS.</p>
