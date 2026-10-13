@@ -63,7 +63,7 @@ const auth = vi.hoisted(() => {
   };
 });
 
-let pathname = "/app/review";
+let pathname = "/explore";
 let searchParams = new URLSearchParams("scope=CO");
 
 vi.mock(import("next/navigation"), async (importOriginal) => {
@@ -147,7 +147,7 @@ vi.mock(import("@/lib/supabase/client"), () => ({
 }));
 
 function pageTransition(type: "pagehide" | "pageshow", persisted: boolean) {
-  window.history.pushState({}, "", "/app/review?scope=CO");
+  window.history.pushState({}, "", "/explore?scope=CO");
   const event = new Event(type);
   Object.defineProperty(event, "persisted", { value: persisted });
   window.dispatchEvent(event);
@@ -268,7 +268,7 @@ describe("explicit account label", () => {
 
 describe("workspace account menu", () => {
   beforeEach(() => {
-    pathname = "/app/review";
+    pathname = "/explore";
     searchParams = new URLSearchParams("scope=CO");
     auth.configured = true;
     auth.deferredReads = [];
@@ -343,7 +343,7 @@ describe("workspace account menu", () => {
     renderMenu();
     const signIn = screen.getByRole("link", { name: "Sign in" });
     expect(signIn.getAttribute("href")).toBe(
-      "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO"
+      "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO"
     );
     expect(signIn.querySelector(".lucide-user-round")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
@@ -357,7 +357,7 @@ describe("workspace account menu", () => {
     expect(screen.queryByRole("menuitem", { name: "Sign out" })).toBeNull();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO",
         "replace"
       );
     });
@@ -527,7 +527,7 @@ describe("workspace account menu", () => {
     notify(null);
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO",
         "replace"
       );
     });
@@ -543,7 +543,7 @@ describe("workspace account menu", () => {
     expect(restoredWorkspaceConcealed()).toBeTruthy();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO",
         "replace"
       );
     });
@@ -571,7 +571,7 @@ describe("workspace account menu", () => {
     persistedPageShow();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -605,7 +605,7 @@ describe("workspace account menu", () => {
     expect(restoredWorkspaceConcealed()).toBeTruthy();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO",
         "replace"
       );
     });
@@ -701,7 +701,7 @@ describe("workspace account menu", () => {
     expect(restoredWorkspaceConcealed()).toBeTruthy();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO",
         "replace"
       );
     });
@@ -725,7 +725,7 @@ describe("workspace account menu", () => {
     notify(null);
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO",
         "replace"
       );
     });
@@ -751,7 +751,7 @@ describe("workspace account menu", () => {
     expect(restoredWorkspaceConcealed()).toBeTruthy();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -782,7 +782,7 @@ describe("workspace account menu", () => {
     });
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -872,7 +872,7 @@ describe("workspace account menu", () => {
     persistedPageShow();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -898,7 +898,7 @@ describe("workspace account menu", () => {
     persistedPageShow();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -923,7 +923,7 @@ describe("workspace account menu", () => {
     persistedPageShow();
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -984,7 +984,7 @@ describe("workspace account menu", () => {
     });
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -1024,7 +1024,7 @@ describe("workspace account menu", () => {
     gate.resolve(true);
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/app/review?scope=CO",
+        "/explore?scope=CO",
         "replace"
       );
     });
@@ -1147,7 +1147,7 @@ describe("workspace account menu", () => {
     ).toBe(SIGN_OUT_STILL_ACTIVE);
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith(
-        "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO",
+        "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO",
         "replace"
       );
     });

@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Review, Explore, Investigate, and Compare under `/app/*` must present governed evidence with the same availability vocabulary, provenance cues, and progressive disclosure. The shared implementation lives in `src/features/ux-reset/evidence/`.
+Atlas Explorer, Compare, and the compatibility aliases that redirect to Explorer must present governed evidence with the same availability vocabulary, provenance cues, and progressive disclosure. The shared implementation lives in `src/features/ux-reset/evidence/`.
 
 ## Top-level availability
 

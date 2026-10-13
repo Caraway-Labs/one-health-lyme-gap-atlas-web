@@ -238,7 +238,7 @@ test.describe("Review national geographic navigation", () => {
   }, testInfo) => {
     const profileMethods = await installReviewApi(page);
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(
       page.getByRole("heading", { name: "State orientation" })
     ).toBeVisible();
@@ -291,7 +291,7 @@ test.describe("Review national geographic navigation", () => {
       body: { detail: "geometry unavailable" },
       status: 500,
     });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(
       page.getByTestId("review-state-navigation-status")
     ).toContainText(
@@ -331,7 +331,7 @@ test.describe("Review national geographic navigation", () => {
       ? { height: 844, width: 390 }
       : { height: 900, width: 1440 };
     await page.setViewportSize(viewport);
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(
       page.getByTestId("review-state-navigation-status")
     ).toContainText("The map could not start. Choose a state from the list.");
@@ -357,7 +357,7 @@ test.describe("Review national geographic navigation", () => {
       coastalRelease
     );
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(
       page.getByTestId("review-state-navigation-status")
     ).toContainText("The map is ready.");
@@ -412,7 +412,7 @@ test.describe("Review national geographic navigation", () => {
   }) => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     const live = page.getByTestId("review-state-navigation-live");
     await expect(live).toContainText(
       "Map status: The map is ready. Focused state: none."
@@ -447,7 +447,7 @@ test.describe("Review national geographic navigation", () => {
   }) => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     const live = page.getByTestId("review-state-navigation-live");
     const status = page.getByTestId("review-state-navigation-status");
     await expect(live).toContainText("The map is ready.");
@@ -480,7 +480,7 @@ test.describe("Review national geographic navigation", () => {
   test("fits the national map at tablet width", async ({ page }, testInfo) => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1024, width: 768 });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.locator(".ux-reset-review-state-grid")).toHaveCount(0);
     await expect(

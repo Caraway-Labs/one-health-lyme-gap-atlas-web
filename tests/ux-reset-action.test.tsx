@@ -368,8 +368,7 @@ describe("Action evidence handoff", () => {
       returnCompare: returnHref.includes("compare=08001%2C08013"),
       returnCounty: returnHref.includes("county=08001"),
       returnPath:
-        returnHref.includes("/app/review") &&
-        returnHref.includes("mode=evidence"),
+        returnHref.includes("/explore") && returnHref.includes("mode=evidence"),
       returnPeriod: returnHref.includes("period=2023-01-01"),
       returnPlan: returnHref.includes("plan="),
       briefOffer: screen

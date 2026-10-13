@@ -190,7 +190,7 @@ test.describe("Explorer and Compare introductions", () => {
   }) => {
     await installExplorer(page);
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=AL");
+    await page.goto("/explore?scope=AL");
     const explorer = PAGE_INTRODUCTION_COPY.explorer;
     await expect(
       page.getByRole("heading", { level: 1, name: explorer.headline })
@@ -273,7 +273,7 @@ test.describe("Explorer and Compare introductions", () => {
   test("uses the Compare introduction only on Compare", async ({ page }) => {
     await installExplorer(page);
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/compare");
+    await page.goto("/compare");
     const compare = PAGE_INTRODUCTION_COPY.compare;
     await expect(
       page.getByRole("heading", { level: 1, name: compare.headline })
@@ -295,7 +295,7 @@ test.describe("Explorer and Compare introductions", () => {
       path: "/opt/cursor/artifacts/after-compare-1920.png",
     });
 
-    await page.goto("/app/assistant");
+    await page.goto("/askatlas");
     await expect(page.getByTestId("page-introduction-explorer")).toHaveCount(0);
     await expect(page.getByTestId("page-introduction-compare")).toHaveCount(0);
     await expect(page.getByText(compare.headline)).toHaveCount(0);

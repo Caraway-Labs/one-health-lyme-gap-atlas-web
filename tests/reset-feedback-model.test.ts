@@ -76,7 +76,7 @@ describe("reset feedback model", () => {
   });
 
   it("maps reset pages onto the closed route enum and an allowlisted label", () => {
-    expect(resetFeedbackPage("/app/review")).toMatchObject({
+    expect(resetFeedbackPage("/explore")).toMatchObject({
       includeGeography: true,
       pageLabel: "Atlas Explorer",
       routeId: "overview",
@@ -85,7 +85,7 @@ describe("reset feedback model", () => {
       pageLabel: "Explore",
       routeId: "geographic_explorer",
     });
-    expect(resetFeedbackPage("/app/assistant")).toMatchObject({
+    expect(resetFeedbackPage("/askatlas")).toMatchObject({
       pageLabel: "Ask Atlas",
       routeId: "assistant",
     });
@@ -103,7 +103,7 @@ describe("reset feedback model", () => {
 
   it("keeps allowlisted geography and drops search text, period, Alaska, and Hawaii", () => {
     const context = buildResetFeedbackContext(
-      "/app/review",
+      "/explore",
       new URLSearchParams(
         "scope=CO&county=08031&compare=08031,08001&dataset=rel-2026&period=2024-01-01&q=secret-search&conversation=private"
       )
@@ -116,7 +116,7 @@ describe("reset feedback model", () => {
         new URLSearchParams("scope=AK&county=02020&compare=15003")
       ),
       dc: buildResetFeedbackContext(
-        "/app/review",
+        "/explore",
         new URLSearchParams("scope=DC&county=11001")
       ),
       review: context,
@@ -155,7 +155,7 @@ describe("reset feedback model", () => {
           usefulness: "It fills a county gap for this release.",
         },
       }),
-      pathname: "/app/review",
+      pathname: "/explore",
       searchParams: new URLSearchParams("scope=CO&county=08031"),
       submissionToken: TOKEN,
     });
@@ -183,7 +183,7 @@ describe("reset feedback model", () => {
             usefulness: "It fills a county gap for this release.",
           },
         }),
-        pathname: "/app/review",
+        pathname: "/explore",
         searchParams: new URLSearchParams(),
         submissionToken: TOKEN,
       }).ok;
@@ -196,7 +196,7 @@ describe("reset feedback model", () => {
           usefulness: "It fills a county gap for this release.",
         },
       }),
-      pathname: "/app/review",
+      pathname: "/explore",
       searchParams: new URLSearchParams(),
       submissionToken: TOKEN,
     });
@@ -226,7 +226,7 @@ describe("reset feedback model", () => {
           usefulness: "It fills a county gap for this release.",
         },
       }),
-      pathname: "/app/review",
+      pathname: "/explore",
       searchParams: new URLSearchParams(),
       submissionToken: TOKEN,
     });
@@ -239,7 +239,7 @@ describe("reset feedback model", () => {
           outcome: "I could return to the same pair later.",
         },
       }),
-      pathname: "/app/compare",
+      pathname: "/compare",
       searchParams: new URLSearchParams(),
       submissionToken: TOKEN,
     });

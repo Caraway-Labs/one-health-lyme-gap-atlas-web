@@ -7,7 +7,7 @@ test.describe("Explore bookmarks open Atlas Explorer browse", () => {
     await page.goto(
       "/app/explore?scope=CO&county=08001&period=2025-01-01&metric=reported-cases"
     );
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/scope=CO/);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).toHaveURL(/period=2025-01-01/);

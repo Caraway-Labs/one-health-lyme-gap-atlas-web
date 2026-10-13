@@ -40,14 +40,14 @@ test.describe("workspace account footer desktop", () => {
     page,
   }) => {
     await page.setViewportSize(DESKTOP);
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     const footer = page.locator("[data-slot='sidebar-footer']");
     await expect(footer).toBeVisible();
     const signIn = footer.getByRole("link", { name: "Sign in" });
     await expect(signIn).toBeVisible();
     await expect(signIn).toHaveAttribute(
       "href",
-      "/auth/sign-in?next=%2Fapp%2Freview%3Fscope%3DCO"
+      "/auth/sign-in?next=%2Fexplore%3Fscope%3DCO"
     );
     await expect(footer.locator(".lucide-user-round")).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(0);
@@ -75,7 +75,7 @@ test.describe("workspace account footer desktop", () => {
     ).toBeVisible();
     await signIn.focus();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fexplore/);
   });
 
   test("keeps the account footer in view while navigation content scrolls", async ({

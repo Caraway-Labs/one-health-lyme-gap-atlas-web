@@ -83,7 +83,7 @@ test.describe("UX Reset feedback modal", () => {
     });
 
     await page.setViewportSize(DESKTOP);
-    await page.goto("/app/review?scope=CO&county=08031&q=secret-search");
+    await page.goto("/explore?scope=CO&county=08031&q=secret-search");
     const trigger = page.getByRole("button", { name: "Give feedback" });
     await expect(trigger.locator("svg")).toHaveClass(/message-square-plus/);
 

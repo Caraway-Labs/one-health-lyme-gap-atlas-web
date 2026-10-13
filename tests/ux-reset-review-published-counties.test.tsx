@@ -27,7 +27,7 @@ import {
 
 vi.mock(import("next/navigation"), async (original) => ({
   ...(await original()),
-  usePathname: () => "/app/review",
+  usePathname: () => "/explore",
   useSearchParams: () =>
     new URLSearchParams("scope=AL") as ReadonlyURLSearchParams,
 }));

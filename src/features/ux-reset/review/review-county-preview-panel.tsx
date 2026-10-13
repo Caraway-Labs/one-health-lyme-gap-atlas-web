@@ -12,7 +12,7 @@ import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
-import { RESET_REVIEW_PATH } from "@/features/ux-reset/routes";
+import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export function ReviewCountyPreviewPanel({
   const stateCode = preview.stateCode.trim() || "Unavailable";
   const fipsLabel = preview.fips.trim() || "Unavailable";
   const title = `${countyName}, ${stateName}`;
-  const pathname = usePathname() ?? RESET_REVIEW_PATH;
+  const pathname = usePathname() ?? ATLAS_EXPLORER_PATH;
   const searchParams = useSearchParams() ?? new URLSearchParams();
   const askContext = useAskAtlasInheritedContext();
   const askHref = askAtlasEntryHref({

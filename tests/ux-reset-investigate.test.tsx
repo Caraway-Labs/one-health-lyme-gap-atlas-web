@@ -599,7 +599,7 @@ describe("County Investigate workspace", () => {
         request.includes("08013")
       ),
       returnCounty: snapshot.returnHref.includes("county=08001"),
-      returnReview: snapshot.returnHref.includes("/app/review"),
+      returnReview: snapshot.returnHref.includes("/explore"),
       returnScope: snapshot.returnHref.includes("scope=CO"),
       unavailable: snapshot.environmental.includes("Unavailable"),
       zero: snapshot.environmental.includes("0 percent"),
@@ -988,7 +988,7 @@ describe("County Investigate workspace", () => {
 
   it("keeps the requested dataset on return links until the release resolves", async () => {
     const requested =
-      "/app/review?scope=CO&county=08013&dataset=beta-2026&period=2023-01-01";
+      "/explore?scope=CO&county=08013&dataset=beta-2026&period=2023-01-01";
     controls.holdMetadata = true;
     renderInvestigate(
       "?county=08013&scope=CO&dataset=beta-2026&period=2023-01-01"
@@ -1178,7 +1178,7 @@ describe("County Investigate workspace", () => {
     expect({
       actionCounty: actionHref.includes("county=08001"),
       actionPath:
-        actionHref.includes("/app/review") &&
+        actionHref.includes("/explore") &&
         actionHref.includes("mode=follow-up"),
       continuePath: screen.queryByTestId("investigate-continue"),
       emptyFamily: screen.getByTestId("investigate-family-vector_pathogen")
@@ -1238,7 +1238,7 @@ describe("County Investigate workspace", () => {
     expect({
       actionCounty: actionHref.includes("county=08001"),
       actionPath:
-        actionHref.includes("/app/review") &&
+        actionHref.includes("/explore") &&
         actionHref.includes("mode=follow-up"),
       actionPeriod: actionHref.includes("period=2023-01-01"),
       actionRelease: actionHref.includes("dataset=alpha-2026"),
@@ -1257,7 +1257,7 @@ describe("County Investigate workspace", () => {
       release: context.dataset.release,
       returnReview: (
         screen.getByTestId("investigate-return").getAttribute("href") ?? ""
-      ).includes("/app/review"),
+      ).includes("/explore"),
       sources: context.dataset.sources,
     }).toStrictEqual({
       actionCounty: true,
@@ -1316,11 +1316,11 @@ describe("County Investigate workspace", () => {
       actionCounty: actionHref.includes("county=08001"),
       actionPair: actionHref.includes("compare=08001%2C08013"),
       actionPath:
-        actionHref.includes("/app/review") &&
+        actionHref.includes("/explore") &&
         actionHref.includes("mode=follow-up"),
       county: screen.getByTestId("investigate-export-context").dataset.county,
       destination: link.dataset.destination,
-      hrefCompare: href.includes("/app/compare"),
+      hrefCompare: href.includes("/compare"),
       hrefCounty: href.includes("county=08001"),
       hrefPair: href.includes("compare=08001%2C08013"),
       hrefReturn: href.includes("return=investigate"),
@@ -1362,7 +1362,7 @@ describe("County Investigate workspace", () => {
       compare: "08001",
       county: "08001",
       label: "Compare",
-      path: "/app/compare",
+      path: "/compare",
       period: "2023-01-01",
       returnTo: "investigate",
       scope: "CO",
@@ -1372,7 +1372,7 @@ describe("County Investigate workspace", () => {
     expect({
       county: actionHref.includes("county=08001"),
       path:
-        actionHref.includes("/app/review") &&
+        actionHref.includes("/explore") &&
         actionHref.includes("mode=follow-up"),
       period: actionHref.includes("period=2023-01-01"),
     }).toStrictEqual({

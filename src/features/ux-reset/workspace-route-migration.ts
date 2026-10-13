@@ -1,8 +1,10 @@
 /**
- * Recorded six-page workspace route migration (issue 196).
+ * Recorded six-page workspace route migration (issues 196, 608).
  *
  * `recordedWorkspaceMigration` is the old→new map. Issue 197 installs it from
- * middleware after the auth guard. Canonical destinations are fixed points.
+ * middleware after the auth guard. Issue 608 moves Atlas Explorer, Compare,
+ * and Ask Atlas to `/explore`, `/compare`, and `/askatlas` and makes those
+ * redirects permanent. Canonical destinations are fixed points.
  */
 
 import { ACTION_EVIDENCE_BRIEF_PLAN_ID } from "@/features/ux-reset/action/evidence-brief";
@@ -11,6 +13,8 @@ import {
   parseUxResetSharedContext,
   sharedContextToSearchParams,
   UX_RESET_COMPARE_COUNTY_LIMIT,
+  UX_RESET_HANDOFF_ACCEPTANCE,
+  UX_RESET_PAGE_LOCAL_PARAM_KEYS,
   type UxResetSharedContext,
   type UxResetSharedContextParamKey,
 } from "@/features/ux-reset/context-shared";
@@ -21,12 +25,15 @@ import {
 import {
   ATLAS_EXPLORER_PATH,
   DOCS_PATH,
+  LEGACY_ASSISTANT_PATH,
+  LEGACY_COMPARE_PATH,
   RESET_ACTION_PATH,
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
   RESET_EXPLORE_PATH,
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
   RESET_SETTINGS_PATH,
   UX_RESET_APP_PREFIX,
 } from "@/features/ux-reset/routes";
@@ -48,9 +55,12 @@ export const EXPLORER_EVIDENCE_MODE = "evidence" as const;
 export const EXPLORER_FOLLOW_UP_MODE = "follow-up" as const;
 
 /**
- * Keys the recorded map never copies onto Atlas Explorer.
+ * Keys historical aliases do not copy onto Atlas Explorer.
  * `state` and `selected` are not listed: they map to `scope` and `compare`
  * when those targets are empty. `metric` is dropped. Explorer does not read it.
+ * The former Review, Compare, and Ask Atlas paths are same-surface moves and
+ * keep the keys those pages already read, including Review `sort`, `page`,
+ * and `layer`.
  */
 export const WORKSPACE_MIGRATION_UNSUPPORTED_KEYS = [
   "breakpoint",
@@ -79,8 +89,12 @@ export const WORKSPACE_MIGRATION_INSTALL = {
   /** Same-path query cleanup and cross-route redirects both replace history. */
   history: "replace",
   redirectsInstalled: true,
-  /** Temporary so a cutover can be reversed. Do not emit 308 in that change. */
-  redirectStatus: 307,
+  /**
+   * Issue 608 permanent canonical URLs. Browsers may cache 308.
+   * Middleware keeps unauthenticated sign-in redirects at 307 so a missing
+   * session is never cached as the destination.
+   */
+  redirectStatus: 308,
 } as const;
 
 export const WORKSPACE_DESTINATIONS = [
@@ -134,8 +148,11 @@ export type RecordedWorkspaceMigration =
       compareTruncated: boolean;
       droppedKeys: readonly string[];
       href: string;
-      mode: ExplorerMigrationMode;
-      pathname: typeof ATLAS_EXPLORER_PATH;
+      mode: ExplorerMigrationMode | null;
+      pathname:
+        | typeof ATLAS_EXPLORER_PATH
+        | typeof RESET_COMPARE_PATH
+        | typeof RESET_ASSISTANT_PATH;
       search: string;
       sourcePathname: string;
     }
@@ -470,6 +487,116 @@ function explorerQuery(
   };
 }
 
+type SameSurfaceDestination = "assistant" | "compare" | "review";
+
+const SAME_SURFACE_REDIRECTS: readonly {
+  destination: SameSurfaceDestination;
+  from: string;
+  to:
+    | typeof ATLAS_EXPLORER_PATH
+    | typeof RESET_ASSISTANT_PATH
+    | typeof RESET_COMPARE_PATH;
+}[] = [
+  {
+    destination: "review",
+    from: RESET_REVIEW_PATH,
+    to: ATLAS_EXPLORER_PATH,
+  },
+  {
+    destination: "compare",
+    from: LEGACY_COMPARE_PATH,
+    to: RESET_COMPARE_PATH,
+  },
+  {
+    destination: "assistant",
+    from: LEGACY_ASSISTANT_PATH,
+    to: RESET_ASSISTANT_PATH,
+  },
+];
+
+function supportedSurfaceKeys(
+  destination: SameSurfaceDestination
+): readonly string[] {
+  return [
+    ...UX_RESET_HANDOFF_ACCEPTANCE[destination],
+    ...UX_RESET_PAGE_LOCAL_PARAM_KEYS[destination],
+  ];
+}
+
+/**
+ * Former canonical pages move path and keep the query their own parsers read.
+ * Unsupported keys are dropped so a bookmark cannot invent state the page
+ * does not have. Historical aliases still use `explorerQuery` instead.
+ */
+function preservedSurfaceSearch(
+  searchParams: URLSearchParams,
+  supportedKeys: readonly string[]
+): { droppedKeys: readonly string[]; search: string } {
+  const allowed = new Set<string>(supportedKeys);
+  const next = new URLSearchParams();
+  const seen = new Set<string>();
+  for (const key of searchParams.keys()) {
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    if (!allowed.has(key)) {
+      continue;
+    }
+    for (const value of searchParams.getAll(key)) {
+      next.append(key, value);
+    }
+  }
+  return {
+    droppedKeys: [...seen].filter((key) => !allowed.has(key)).sort(),
+    search: next.toString(),
+  };
+}
+
+function explorerModeFromSearch(search: string): ExplorerMigrationMode {
+  const modes = new URLSearchParams(search).getAll(EXPLORER_MODE_PARAM);
+  if (modes.length !== 1) {
+    return "browse";
+  }
+  if (modes[0] === EXPLORER_EVIDENCE_MODE) {
+    return "evidence";
+  }
+  if (modes[0] === EXPLORER_FOLLOW_UP_MODE) {
+    return "follow-up";
+  }
+  return "browse";
+}
+
+function sameSurfaceRedirect(
+  sourcePathname: string,
+  searchParams: URLSearchParams
+): RecordedWorkspaceMigration | null {
+  const match = SAME_SURFACE_REDIRECTS.find(
+    (candidate) => candidate.from === sourcePathname
+  );
+  if (!match || match.from === match.to) {
+    return null;
+  }
+  const preserved = preservedSurfaceSearch(
+    searchParams,
+    supportedSurfaceKeys(match.destination)
+  );
+  const href = preserved.search ? `${match.to}?${preserved.search}` : match.to;
+  return {
+    compareTruncated: false,
+    droppedKeys: preserved.droppedKeys,
+    href,
+    kind: "redirect",
+    mode:
+      match.destination === "review"
+        ? explorerModeFromSearch(preserved.search)
+        : null,
+    pathname: match.to,
+    search: preserved.search,
+    sourcePathname,
+  };
+}
+
 function redirectResult(
   sourcePathname: string,
   searchParams: URLSearchParams
@@ -506,6 +633,10 @@ export function recordedWorkspaceMigration(input: {
   const reason = unchangedReason(pathname, input.searchParams);
   if (reason) {
     return { kind: "unchanged", pathname, reason };
+  }
+  const sameSurface = sameSurfaceRedirect(pathname, input.searchParams);
+  if (sameSurface) {
+    return sameSurface;
   }
   if (shouldRedirect(pathname, input.searchParams)) {
     return redirectResult(pathname, input.searchParams);

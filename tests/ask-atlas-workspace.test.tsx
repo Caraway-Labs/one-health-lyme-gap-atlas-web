@@ -104,13 +104,13 @@ async function ask(question: string) {
 
 describe("Ask Atlas research workspace", () => {
   beforeEach(() => {
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
     localStorage.clear();
     chatRequest.mockReset();
     stubMatchMedia(false);
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
   });
 
   afterEach(() => {
@@ -127,9 +127,9 @@ describe("Ask Atlas research workspace", () => {
         "conversation-1"
       )
     );
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams("county=08001");
-    window.history.replaceState({}, "", "/app/assistant?county=08001");
+    window.history.replaceState({}, "", "/askatlas?county=08001");
     const first = render(<AskAtlasWorkspace />);
     expect(
       screen.getByRole("heading", { level: 1, name: "Ask Atlas" })
@@ -155,7 +155,7 @@ describe("Ask Atlas research workspace", () => {
     window.history.replaceState(
       {},
       "",
-      "/app/assistant?conversation=conversation-1"
+      "/askatlas?conversation=conversation-1"
     );
     render(<AskAtlasWorkspace initialConversationId="conversation-1" />);
     await screen.findByText("Reviewed studies describe exposure.");
@@ -173,11 +173,7 @@ describe("Ask Atlas research workspace", () => {
   });
 
   it("recovers a direct link when the conversation is not in this browser", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/app/assistant?conversation=missing-id"
-    );
+    window.history.replaceState({}, "", "/askatlas?conversation=missing-id");
     render(<AskAtlasWorkspace initialConversationId="missing-id" />);
     const notice = await screen.findByText(
       "Conversation not found in this browser."
@@ -195,9 +191,9 @@ describe("Ask Atlas research workspace", () => {
     chatRequest.mockResolvedValue(
       chatResult("Saved answer.", "request-clear", "conversation-clear")
     );
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Question to clear");
     await screen.findByText("Saved answer.");
@@ -214,7 +210,7 @@ describe("Ask Atlas research workspace", () => {
     window.history.pushState(
       {},
       "",
-      "/app/assistant?conversation=conversation-clear"
+      "/askatlas?conversation=conversation-clear"
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
     await screen.findByText("Conversation not found in this browser.");
@@ -229,9 +225,9 @@ describe("Ask Atlas research workspace", () => {
       .mockResolvedValueOnce(
         chatResult("Second saved answer.", "request-b", "conversation-b")
       );
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("First question");
     await screen.findByText("First saved answer.");
@@ -239,11 +235,7 @@ describe("Ask Atlas research workspace", () => {
     await ask("Second question");
     await screen.findByText("Second saved answer.");
 
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-a"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-a");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(document.querySelector(".chat-transcript")?.textContent).toContain(
@@ -254,11 +246,7 @@ describe("Ask Atlas research workspace", () => {
       document.querySelector(".chat-transcript")?.textContent
     ).not.toContain("Second saved answer.");
 
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-b"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-b");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(document.querySelector(".chat-transcript")?.textContent).toContain(
@@ -277,8 +265,8 @@ describe("Ask Atlas research workspace", () => {
           "conversation-up"
         )
       );
-    pathname = "/app/assistant";
-    window.history.replaceState({}, "", "/app/assistant");
+    pathname = "/askatlas";
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("What does the evidence say?");
     const alert = await screen.findByRole("alert");
@@ -296,8 +284,8 @@ describe("Ask Atlas research workspace", () => {
         pubmedUrl: "https://example.com/not-pubmed",
       })
     );
-    pathname = "/app/assistant";
-    window.history.replaceState({}, "", "/app/assistant");
+    pathname = "/askatlas";
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Show the source");
     await screen.findByText("Cited answer.");
@@ -312,12 +300,12 @@ describe("Ask Atlas research workspace", () => {
     chatRequest.mockResolvedValue(
       chatResult("Literature only.", "request-stale", "conversation-stale")
     );
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams("county=12abc&dataset=alpha-2026");
     window.history.replaceState(
       {},
       "",
-      "/app/assistant?county=12abc&dataset=alpha-2026"
+      "/askatlas?county=12abc&dataset=alpha-2026"
     );
     render(<AskAtlasWorkspace />);
     expect(document.querySelector("[data-assistant-county-state]")).toBeNull();
@@ -428,11 +416,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the popped conversation when a late success arrives", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-a"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-a");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
@@ -457,11 +441,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the popped conversation when a late error arrives", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-a"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-a");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
@@ -581,9 +561,9 @@ describe("Ask Atlas research workspace", () => {
     const second = Promise.withResolvers<unknown>();
     chatRequest.mockReturnValueOnce(first.promise);
     chatRequest.mockReturnValueOnce(second.promise);
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Old question");
     fireEvent.click(screen.getAllByRole("button", { name: "New chat" })[0]);
@@ -613,7 +593,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("shows unavailable without a composer or a request when literature chat is off", () => {
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "false");
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     render(<AskAtlasWorkspace />);
     expect(screen.getByTestId("ask-atlas-disabled").textContent).toContain(
       "service availability state"
@@ -644,8 +624,8 @@ describe("Ask Atlas research workspace", () => {
         }
       )
     );
-    pathname = "/app/assistant";
-    window.history.replaceState({}, "", "/app/assistant");
+    pathname = "/askatlas";
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Question during an outage");
     await screen.findByText("Service could not finish.");

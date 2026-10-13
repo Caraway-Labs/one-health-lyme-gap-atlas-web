@@ -51,7 +51,7 @@ let navigationSearchParams = new URLSearchParams();
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/app/compare",
+  usePathname: () => "/compare",
   useSearchParams: () => navigationSearchParams as ReadonlyURLSearchParams,
 }));
 
@@ -395,7 +395,7 @@ describe("two-county aligned comparison", () => {
       left: caseRequest?.includes("08001"),
       pair: investigate.includes("compare=08001%2C08013"),
       path:
-        investigate.includes("/app/review") &&
+        investigate.includes("/explore") &&
         investigate.includes("mode=evidence"),
       right: caseRequest?.includes("08013"),
     }).toStrictEqual({
@@ -973,7 +973,7 @@ describe("two-county aligned comparison", () => {
       county: openedHref.includes("county=08001"),
       label: screen.getByTestId("compare-return").textContent,
       pair: openedHref.includes("compare="),
-      path: openedHref.includes("/app/review"),
+      path: openedHref.includes("/explore"),
       returnParam: openedHref.includes("return="),
     }).toStrictEqual({
       county: true,
@@ -1030,7 +1030,7 @@ describe("two-county aligned comparison", () => {
     expect({
       county: href.includes("county=08001"),
       pair: href.includes("compare=08001%2C36001"),
-      path: href.includes("/app/review") && href.includes("mode=evidence"),
+      path: href.includes("/explore") && href.includes("mode=evidence"),
       period: href.includes("period=2023-01-01"),
       returnParam: href.includes("return="),
     }).toStrictEqual({

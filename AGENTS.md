@@ -41,7 +41,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## UX Reset constitution (coding agents)
 
-For **UX Reset Phase 1** work (authenticated professional workspace under `/app/*` and related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation except the numbered `/variant_1`–`/variant_7` URLs retired by #550) unless an owner-approved issue or ADR explicitly changes them.
+For **UX Reset Phase 1** work (authenticated professional workspace at `/explore`, `/compare`, `/askatlas`, and the remaining `/app/*` destinations, plus related stories), read and follow the canonical [docs/UX_RESET_CONSTITUTION.md](docs/UX_RESET_CONSTITUTION.md). **Do not reopen settled product decisions** named there (evidence states, page jobs, Ask Atlas answer-only, no contextual help in Reset V1, lean scope, legacy route preservation except the numbered `/variant_1`–`/variant_7` URLs retired by #550) unless an owner-approved issue or ADR explicitly changes them.
 
 - Run `npm run check:ux-reset` with other quality gates when touching Reset UI or this guidance.
 - Use [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) tokens and `src/components/ui` primitives first; do not invent a parallel Reset design system.

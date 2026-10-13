@@ -201,7 +201,7 @@ test.describe("professional shell scroll containment", () => {
   }) => {
     await page.setViewportSize(DESKTOP);
     await installArizonaReview(page);
-    await page.goto("/app/review?scope=AZ");
+    await page.goto("/explore?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect(
       page.getByRole("link", { exact: true, name: "Atlas Explorer" })
@@ -281,7 +281,7 @@ test.describe("professional shell scroll containment", () => {
   }) => {
     await page.setViewportSize(DESKTOP);
     await installArizonaReview(page);
-    await page.goto("/app/review?scope=AZ");
+    await page.goto("/explore?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     const parked = await setMainScroll(page, 640);
     expect(parked).toBeGreaterThan(80);
@@ -293,7 +293,7 @@ test.describe("professional shell scroll containment", () => {
     await expect(page.locator(".ux-reset-pro-app .app-header")).toBeVisible();
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/app\/review\?scope=AZ/);
+    await expect(page).toHaveURL(/\/explore\?scope=AZ/);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(parked - 40);
     expect(
@@ -433,9 +433,9 @@ test.describe("professional shell scroll containment", () => {
     for (const path of [
       "/app/explore",
       "/app/investigate",
-      "/app/compare",
+      "/compare",
       "/app/action",
-      "/app/assistant",
+      "/askatlas",
       "/app/feed",
       "/app/settings",
     ]) {
@@ -501,7 +501,7 @@ test.describe("professional shell scroll containment", () => {
   }) => {
     await page.setViewportSize(DESKTOP);
     await installArizonaReview(page);
-    await page.goto("/app/review?scope=AZ");
+    await page.goto("/explore?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     const parked = await setMainScroll(page, 640);
     expect(parked).toBeGreaterThan(80);
@@ -573,7 +573,7 @@ test.describe("professional shell scroll containment", () => {
   }) => {
     await page.setViewportSize(DESKTOP);
     await installArizonaReview(page);
-    await page.goto("/app/review?scope=AZ");
+    await page.goto("/explore?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     const max = await mainScrollMax(page);
     const low = Math.min(180, Math.max(80, Math.floor(max * 0.4)));
@@ -640,7 +640,7 @@ test.describe("professional shell scroll containment", () => {
     await page
       .getByRole("link", { exact: true, name: "Atlas Explorer" })
       .click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect.poll(() => mainScrollTop(page)).toBe(0);
   });
 
@@ -780,7 +780,7 @@ test.describe("professional shell scroll containment mobile", () => {
     }) => {
       await page.setViewportSize(viewport);
       await installArizonaReview(page);
-      await page.goto("/app/review?scope=AZ");
+      await page.goto("/explore?scope=AZ");
       await expect(page.getByTestId("review-state-panel")).toBeVisible();
       const sidebar = page.locator("#ux-reset-pro-navigation");
       await expect(sidebar).toHaveAttribute("inert", "");

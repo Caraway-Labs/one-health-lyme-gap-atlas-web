@@ -12,7 +12,6 @@ import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-
 import {
   ATLAS_EXPLORER_PATH,
   RESET_COMPARE_PATH,
-  RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
 import { isCountyFips } from "@/lib/county-geography";
 
@@ -60,7 +59,7 @@ export function compareReturnLabel(target: CompareReturnTarget): string {
 export function compareReturnPath(target: CompareReturnTarget): string {
   switch (target) {
     case "review": {
-      return RESET_REVIEW_PATH;
+      return ATLAS_EXPLORER_PATH;
     }
     case "investigate": {
       return ATLAS_EXPLORER_PATH;

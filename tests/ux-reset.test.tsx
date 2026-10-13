@@ -4,8 +4,8 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import ResetComparePage from "@/app/app/compare/page";
 import ResetWorkspaceOverviewPage from "@/app/app/page";
+import ResetComparePage from "@/app/compare/page";
 import {
   RESET_APP_PATH,
   RESET_COMPARE_PATH,
@@ -111,12 +111,12 @@ describe("UX Reset professional workspace", () => {
     });
     expect(
       navigation
-        .querySelector('a[href^="/app/compare"]')
+        .querySelector('a[href^="/compare"]')
         ?.getAttribute("aria-current")
     ).toBe("page");
     expect(
       navigation
-        .querySelector('a[href^="/app/review"]')
+        .querySelector('a[href^="/explore"]')
         ?.getAttribute("aria-current")
     ).toBeNull();
     expect(

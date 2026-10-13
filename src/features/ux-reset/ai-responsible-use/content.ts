@@ -165,9 +165,9 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     summary:
       "Ask Atlas opens a dedicated page for reviewed PubMed and PMC Open Access literature when that service is enabled. The answer includes cited evidence or an explicit unavailable-evidence outcome. Explorer and Compare can show a validated page reference with a return link. That reference is not sent with the question.",
     boundary:
-      "The request is a message plus optional conversation history. There is no Structured mode and no mixed mode over Atlas geography or scores. When literature chat is off, /app/assistant says Ask Atlas is unavailable. That is a service state, not the evidence label Unavailable. Ask Atlas does not change filters or maps on its own, and it does not run a workflow. The public /assistant route uses the same literature service when the same switch is on. Saved chats stay in this browser.",
+      "The request is a message plus optional conversation history. There is no Structured mode and no mixed mode over Atlas geography or scores. When literature chat is off, /askatlas says Ask Atlas is unavailable. That is a service state, not the evidence label Unavailable. Ask Atlas does not change filters or maps on its own, and it does not run a workflow. The public /assistant route uses the same literature service when the same switch is on. Saved chats stay in this browser.",
     statusBasis:
-      "The dedicated /app/assistant page is gated by the literature-chat switch. Product docs classify it as experimental, not as a general release.",
+      "The dedicated /askatlas page is gated by the literature-chat switch. Product docs classify it as experimental, not as a general release.",
     support:
       "Dedicated page and launcher: src/features/ux-reset/ask-atlas/ask-atlas-chrome.tsx, src/features/ux-reset/ask-atlas/ask-atlas-workspace.tsx, gate NEXT_PUBLIC_KG_CHAT_ENABLED, API POST /v1/knowledge-graph/chat. Contract: content/docs/professional-workspace.mdx (Ask Atlas); content/docs/ai-enabled-decision-intelligence.mdx (Experimental/demo); constitution issue 426 answer-only rule. The feature gate and docs keep this Experimental.",
     docHref: "/docs/professional-workspace",
@@ -180,7 +180,7 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     summary:
       "Questions that combine governed Atlas data with literature, or that use a structured answer mode, are part of the product direction.",
     boundary:
-      "The /app/assistant page does not query live Atlas geography or scores, and it does not offer a Structured or Both mode. It is not an autonomous assistant. A comparison page reference is not a county comparison.",
+      "The /askatlas page does not query live Atlas geography or scores, and it does not offer a Structured or Both mode. It is not an autonomous assistant. A comparison page reference is not a county comparison.",
     statusBasis:
       "Docs list the broader Atlas evidence assistant as planned. The deployed research page documents the absence of Structured and Both modes.",
     support:

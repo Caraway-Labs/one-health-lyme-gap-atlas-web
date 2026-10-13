@@ -11,6 +11,8 @@ import {
 
 import { serializeCompareFipsList } from "@/features/ux-reset/context-params";
 import {
+  ATLAS_EXPLORER_PATH,
+  LEGACY_COMPARE_PATH,
   RESET_COMPARE_PATH,
   RESET_EXPLORE_PATH,
   RESET_INVESTIGATE_PATH,
@@ -121,6 +123,7 @@ function normalizePath(pathname: string): string {
 }
 
 const COMMITTED_SHELL_PATHS = new Set<string>([
+  ATLAS_EXPLORER_PATH,
   RESET_EXPLORE_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
@@ -140,8 +143,9 @@ export function searchParamsWithCommittedExploreContext(
 ): Pick<URLSearchParams, "get" | "getAll" | "has"> {
   const path = normalizePath(pathname);
   const onCommittedShell = COMMITTED_SHELL_PATHS.has(path);
-  const comparePair =
-    path === RESET_COMPARE_PATH ? committed?.compare : undefined;
+  const onComparePath =
+    path === RESET_COMPARE_PATH || path === LEGACY_COMPARE_PATH;
+  const comparePair = onComparePath ? committed?.compare : undefined;
   if (!(onCommittedShell || comparePair !== undefined) || !committed) {
     return searchParams;
   }
@@ -163,7 +167,7 @@ export function searchParamsWithCommittedExploreContext(
       params.delete("county");
     }
   }
-  if (path === RESET_COMPARE_PATH && committed.dataset) {
+  if (onComparePath && committed.dataset) {
     params.set("dataset", committed.dataset);
   }
   if (comparePair !== undefined) {

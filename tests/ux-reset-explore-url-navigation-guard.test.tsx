@@ -96,12 +96,12 @@ describe("Explore URL navigation guard", () => {
 
     view.unmount();
     await Promise.resolve();
-    originalReplaceState(null, "", "/app/review?scope=CO");
+    originalReplaceState(null, "", "/explore?scope=CO");
     window.dispatchEvent(new PopStateEvent("popstate"));
-    nuqsReplace("/app/review?scope=CO&county=08001");
+    nuqsReplace("/explore?scope=CO&county=08001");
 
     expect({ afterLeave: locationHref(), whileMounted }).toStrictEqual({
-      afterLeave: "/app/review?scope=CO&county=08001",
+      afterLeave: "/explore?scope=CO&county=08001",
       whileMounted: "/app/investigate?county=08001",
     });
   });
