@@ -52,17 +52,35 @@ export type ScenarioScoreParts = {
   tickSignal: number;
 };
 
+/**
+ * A county whose adjusted result is a definite score.
+ * `adjusted` recomputes that score. `unchanged` keeps the governed score,
+ * priority, and map color because the moved slider does not affect the county.
+ * `limited` has no definite score, category, or rank: the published incidence
+ * is not available, so a higher threshold must not be invented as zero.
+ */
 export type AdjustedCountyScenario = {
-  colorToken: string;
   governedPriority: string;
   governedScore: number;
-  humanWeakness: number;
-  /** Published incidence is at or above the governed threshold, so a higher threshold cannot be applied from the scores collection. */
-  limitedBreakpoint: boolean;
-  priority: string;
-  rank: number;
-  score: number;
-};
+} & (
+  | {
+      colorToken: string;
+      humanWeakness: number;
+      kind: "adjusted";
+      priority: string;
+      rank: number;
+      score: number;
+    }
+  | {
+      kind: "limited";
+    }
+  | {
+      kind: "unchanged";
+      priority: string;
+      rank: number;
+      score: number;
+    }
+);
 
 function clamp(value: number, minimum = 0, maximum = 100): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -219,36 +237,86 @@ export function scoreCounty(
   };
 }
 
+/**
+ * Incidence is not on the scores collection. A fixture or a future payload
+ * may still include `incidence_floor_2023` on a county row; keep that exact
+ * input and ignore every other extra field.
+ */
+export function exactIncidenceFromScoresPayload(
+  payload: unknown
+): Readonly<Record<string, number>> {
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("counties" in payload)
+  ) {
+    return {};
+  }
+  const counties = payload.counties;
+  if (!Array.isArray(counties)) {
+    return {};
+  }
+  const exact: Record<string, number> = {};
+  for (const county of counties) {
+    if (typeof county !== "object" || county === null) {
+      continue;
+    }
+    if (!("fips" in county) || typeof county.fips !== "string") {
+      continue;
+    }
+    if (!("incidence_floor_2023" in county)) {
+      continue;
+    }
+    const incidence = county.incidence_floor_2023;
+    if (
+      typeof incidence === "number" &&
+      Number.isFinite(incidence) &&
+      incidence >= 0
+    ) {
+      exact[county.fips] = incidence;
+    }
+  }
+  return exact;
+}
+
+/**
+ * Published human signal for the scenario.
+ * Exact incidence is used only when the threshold moved. A governed signal of
+ * 0 hides every incidence at or above the baseline threshold, so raising that
+ * threshold without an exact incidence is limited rather than a new zero.
+ */
 function scenarioHuman(
   county: CountyScoreSummary,
   settings: ScoreSettings,
-  baseline: ScoreSettings
-): { human: number; limitedBreakpoint: boolean } {
+  baseline: ScoreSettings,
+  exactIncidence: number | undefined
+): number | "limited" {
   if (county.human_status !== PUBLISHED_HUMAN_STATUS) {
-    return {
-      human: settings.missing_human_weakness,
-      limitedBreakpoint: false,
-    };
+    return settings.missing_human_weakness;
   }
   const governedHuman = county.score.human_weakness;
-  if (governedHuman <= 0) {
-    return {
-      human: 0,
-      limitedBreakpoint:
-        settings.low_incidence_breakpoint > baseline.low_incidence_breakpoint,
-    };
+  const breakpointChanged =
+    settings.low_incidence_breakpoint !== baseline.low_incidence_breakpoint;
+  if (!breakpointChanged) {
+    return governedHuman;
   }
-  if (governedHuman >= 100) {
-    return { human: 100, limitedBreakpoint: false };
+  if (typeof exactIncidence === "number") {
+    return (
+      100 * clamp(1 - exactIncidence / settings.low_incidence_breakpoint, 0, 1)
+    );
   }
-  if (settings.low_incidence_breakpoint === baseline.low_incidence_breakpoint) {
-    return { human: governedHuman, limitedBreakpoint: false };
+  if (
+    governedHuman <= 0 &&
+    settings.low_incidence_breakpoint > baseline.low_incidence_breakpoint
+  ) {
+    return "limited";
+  }
+  if (governedHuman <= 0 || governedHuman >= 100) {
+    return governedHuman;
   }
   const incidence =
     baseline.low_incidence_breakpoint * (1 - governedHuman / 100);
-  const human =
-    100 * clamp(1 - incidence / settings.low_incidence_breakpoint, 0, 1);
-  return { human: round1(human), limitedBreakpoint: false };
+  return 100 * clamp(1 - incidence / settings.low_incidence_breakpoint, 0, 1);
 }
 
 function scenarioScore(
@@ -271,44 +339,140 @@ function scenarioScore(
  * Returns null when the sliders still match that collection, so callers keep
  * the governed score, priority, and color untouched.
  */
+type ScenarioDraft =
+  | {
+      kind: "adjusted";
+      colorToken: string;
+      humanWeakness: number;
+      priority: string;
+      score: number;
+    }
+  | { kind: "limited" }
+  | { kind: "unchanged" };
+
+function scenarioDraft(
+  county: CountyScoreSummary,
+  settings: ScoreSettings,
+  baseline: ScoreSettings,
+  exactIncidence: number | undefined
+): ScenarioDraft {
+  const rawHuman = scenarioHuman(county, settings, baseline, exactIncidence);
+  if (rawHuman === "limited") {
+    return { kind: "limited" };
+  }
+  const human = round1(rawHuman);
+  const governedHuman = round1(county.score.human_weakness);
+  const shareChanged = settings.ecological_share !== baseline.ecological_share;
+  const shareAffectsScore = shareChanged && human !== 0;
+  if (!shareAffectsScore && human === governedHuman) {
+    return { kind: "unchanged" };
+  }
+  const score = scenarioScore(county, settings, rawHuman);
+  return {
+    colorToken: scenarioColorToken(score, county.in_contiguous_tick_scope),
+    humanWeakness: human,
+    kind: "adjusted",
+    priority: priorityLabel(score),
+    score,
+  };
+}
+
 export function adjustCountyScenarios(
   counties: readonly CountyScoreSummary[],
   settings: ScoreSettings,
-  baseline: ScoreSettings = SCENARIO_SCORE_DEFAULTS
+  baseline: ScoreSettings = SCENARIO_SCORE_DEFAULTS,
+  exactIncidenceByFips: Readonly<Record<string, number>> = {}
 ): ReadonlyMap<string, AdjustedCountyScenario> | null {
   if (scenarioSettingsEqual(settings, baseline)) {
     return null;
   }
-  const pending = counties.map((county) => {
-    const human = scenarioHuman(county, settings, baseline);
-    const score = scenarioScore(county, settings, human.human);
-    return {
-      colorToken: scenarioColorToken(score, county.in_contiguous_tick_scope),
-      fips: county.fips,
-      governedPriority: county.priority,
-      governedScore: county.score.score,
-      humanWeakness: human.human,
-      limitedBreakpoint: human.limitedBreakpoint,
-      priority: priorityLabel(score),
-      score,
-    };
-  });
-  pending.sort(
-    (left, right) =>
-      right.score - left.score || left.fips.localeCompare(right.fips)
+  const pending = counties.map((county) => ({
+    county,
+    draft: scenarioDraft(
+      county,
+      settings,
+      baseline,
+      exactIncidenceByFips[county.fips]
+    ),
+  }));
+  const scenarioActive = pending.some(
+    (entry) => entry.draft.kind === "adjusted" || entry.draft.kind === "limited"
   );
-  const ranked = new Map<string, AdjustedCountyScenario>();
-  for (const [index, entry] of pending.entries()) {
-    ranked.set(entry.fips, {
-      colorToken: entry.colorToken,
-      governedPriority: entry.governedPriority,
-      governedScore: entry.governedScore,
-      humanWeakness: entry.humanWeakness,
-      limitedBreakpoint: entry.limitedBreakpoint,
-      priority: entry.priority,
-      rank: index + 1,
-      score: entry.score,
+  if (!scenarioActive) {
+    return null;
+  }
+  const rankable = pending
+    .filter(
+      (
+        entry
+      ): entry is {
+        county: CountyScoreSummary;
+        draft: Exclude<ScenarioDraft, { kind: "limited" }>;
+      } => entry.draft.kind !== "limited"
+    )
+    .toSorted((left, right) => {
+      const leftScore =
+        left.draft.kind === "adjusted"
+          ? left.draft.score
+          : left.county.score.score;
+      const rightScore =
+        right.draft.kind === "adjusted"
+          ? right.draft.score
+          : right.county.score.score;
+      return (
+        rightScore - leftScore ||
+        left.county.fips.localeCompare(right.county.fips)
+      );
     });
+  const rankByFips = new Map<string, number>();
+  for (const [index, entry] of rankable.entries()) {
+    rankByFips.set(entry.county.fips, index + 1);
+  }
+  const ranked = new Map<string, AdjustedCountyScenario>();
+  const rankFor = (fips: string): number => {
+    const value = rankByFips.get(fips);
+    if (value === undefined) {
+      throw new Error(`Scenario rank missing for county ${fips}.`);
+    }
+    return value;
+  };
+  for (const entry of pending) {
+    const governedPriority = entry.county.priority;
+    const governedScore = entry.county.score.score;
+    switch (entry.draft.kind) {
+      case "adjusted": {
+        ranked.set(entry.county.fips, {
+          ...entry.draft,
+          governedPriority,
+          governedScore,
+          rank: rankFor(entry.county.fips),
+        });
+        break;
+      }
+      case "limited": {
+        ranked.set(entry.county.fips, {
+          governedPriority,
+          governedScore,
+          kind: "limited",
+        });
+        break;
+      }
+      case "unchanged": {
+        ranked.set(entry.county.fips, {
+          governedPriority,
+          governedScore,
+          kind: "unchanged",
+          priority: governedPriority,
+          rank: rankFor(entry.county.fips),
+          score: governedScore,
+        });
+        break;
+      }
+      default: {
+        const exhaustive: never = entry.draft;
+        return exhaustive;
+      }
+    }
   }
   return ranked;
 }

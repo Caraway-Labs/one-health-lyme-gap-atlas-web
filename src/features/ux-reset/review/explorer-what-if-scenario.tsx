@@ -112,10 +112,11 @@ export function ExplorerWhatIfScenario({
         </p>
         <p>
           County list scores update with these assumptions. Map colors update on
-          the Atlas gap score layer. Raising the published-record threshold
-          leaves a governed human signal of 0 unchanged, because a published
-          incidence at or above the governed threshold is not on the scores
-          collection.
+          the Atlas gap score layer. When a published incidence is available,
+          the threshold uses that incidence. When it is not on the scores
+          collection, raising the threshold leaves the adjusted result
+          unavailable and the governed score stays in place. A missing incidence
+          is not treated as zero.
         </p>
         <div className="ux-reset-explorer-scenario-controls">
           <ScenarioControl
@@ -171,6 +172,24 @@ export function ExplorerWhatIfScenario({
   );
 }
 
+export function explorerScenarioSelectionText(
+  scenario: AdjustedCountyScenario
+): string {
+  switch (scenario.kind) {
+    case "adjusted":
+    case "unchanged": {
+      return `Governed score ${scenario.governedScore}. Adjusted scenario ${scenario.score}. ${scenario.priority}. This follow-up priority scenario keeps the governed score and is not personal disease risk.`;
+    }
+    case "limited": {
+      return `Governed score ${scenario.governedScore}. Adjusted scenario unavailable. Published incidence is not on this collection, so this change is limited. The governed score stays in place. This follow-up priority scenario is not personal disease risk.`;
+    }
+    default: {
+      const exhaustive: never = scenario;
+      return exhaustive;
+    }
+  }
+}
+
 export function ExplorerAdjustedScenarioLine({
   scenario,
 }: {
@@ -179,13 +198,36 @@ export function ExplorerAdjustedScenarioLine({
   if (!scenario) {
     return null;
   }
-  return (
-    <span
-      className="ux-reset-explorer-scenario-result"
-      data-testid="explorer-scenario-score"
-    >
-      Adjusted scenario {scenario.score}. {scenario.priority}. Scenario rank{" "}
-      {scenario.rank}.
-    </span>
-  );
+  switch (scenario.kind) {
+    case "adjusted":
+    case "unchanged": {
+      return (
+        <span
+          className="ux-reset-explorer-scenario-result"
+          data-scenario={scenario.kind}
+          data-testid="explorer-scenario-score"
+        >
+          Adjusted scenario {scenario.score}. {scenario.priority}. Scenario rank{" "}
+          {scenario.rank}.
+        </span>
+      );
+    }
+    case "limited": {
+      return (
+        <span
+          className="ux-reset-explorer-scenario-result"
+          data-scenario="limited"
+          data-testid="explorer-scenario-score"
+        >
+          Adjusted scenario unavailable. Published incidence is not on this
+          collection, so this change is limited. The governed score stays in
+          place.
+        </span>
+      );
+    }
+    default: {
+      const exhaustive: never = scenario;
+      return exhaustive;
+    }
+  }
 }

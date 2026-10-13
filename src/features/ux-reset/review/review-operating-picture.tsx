@@ -48,7 +48,10 @@ import {
   SCENARIO_SCORE_DEFAULTS,
   scoreSettingsFromCollection,
 } from "@/features/ux-reset/review/explorer-scenario-score";
-import { ExplorerAdjustedScenarioLine } from "@/features/ux-reset/review/explorer-what-if-scenario";
+import {
+  ExplorerAdjustedScenarioLine,
+  explorerScenarioSelectionText,
+} from "@/features/ux-reset/review/explorer-what-if-scenario";
 import {
   buildReviewCandidatePreview,
   reviewCandidateExplanation,
@@ -401,7 +404,7 @@ export function ReviewOperatingPicture({
       ) ?? [],
     [geometryQuery.data]
   );
-  const scoresQuery = useExplorerMapScores(releaseId, mapLayer);
+  const scoresQuery = useExplorerMapScores(releaseId);
   const scenarioBaseline = useMemo(
     () => scoreSettingsFromCollection(scoresQuery.data?.settings),
     [scoresQuery.data?.settings]
@@ -413,9 +416,16 @@ export function ReviewOperatingPicture({
           (county) => county.state === scopeCode
         ),
         scenarioSettings,
-        scenarioBaseline
+        scenarioBaseline,
+        scoresQuery.data?.exactIncidenceByFips
       ),
-    [scenarioBaseline, scenarioSettings, scopeCode, scoresQuery.data?.counties]
+    [
+      scenarioBaseline,
+      scenarioSettings,
+      scopeCode,
+      scoresQuery.data?.counties,
+      scoresQuery.data?.exactIncidenceByFips,
+    ]
   );
   const mapPaint = useMemo(() => {
     const layer = explorerMapLayerById(mapLayer);
@@ -423,17 +433,35 @@ export function ReviewOperatingPicture({
       (county) => county.state === scopeCode
     );
     const scenarioColors = scenarioByFips !== null && layer.id === "gap_score";
+    let hasAdjustedColor = false;
+    let hasLimitedScenario = false;
     if (scenarioColors && scenarioByFips) {
       counties = counties.map((county) => {
         const scenario = scenarioByFips.get(county.fips);
         if (!scenario) {
           return county;
         }
-        return {
-          ...county,
-          color: scenario.colorToken,
-          priority: `Adjusted scenario · ${scenario.priority}`,
-        };
+        switch (scenario.kind) {
+          case "adjusted": {
+            hasAdjustedColor = true;
+            return {
+              ...county,
+              color: scenario.colorToken,
+              priority: `Adjusted scenario · ${scenario.priority}`,
+            };
+          }
+          case "limited": {
+            hasLimitedScenario = true;
+            return county;
+          }
+          case "unchanged": {
+            return county;
+          }
+          default: {
+            const exhaustive: never = scenario;
+            return exhaustive;
+          }
+        }
       });
     }
     const scoresStatus = layer.needsScores
@@ -451,9 +479,15 @@ export function ReviewOperatingPicture({
     if (!scenarioColors || scoresStatus !== "ready") {
       return paint;
     }
+    if (!hasAdjustedColor && !hasLimitedScenario) {
+      return paint;
+    }
+    const limitedNote = hasLimitedScenario
+      ? " Counties without a published incidence on this collection keep the governed score and color."
+      : "";
     return {
       ...paint,
-      note: "Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.",
+      note: `Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.${limitedNote}`,
       title: "Adjusted scenario",
     };
   }, [
@@ -856,6 +890,9 @@ export function ReviewOperatingPicture({
             data-include-unscored={
               availableDataGate.kind === "open" ? "true" : "false"
             }
+            data-map-colors={mapCounties
+              .map((county) => `${county.fips}:${county.color ?? ""}`)
+              .join(" ")}
             data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
             data-testid="review-state-map-region"
             aria-busy={
@@ -1155,10 +1192,7 @@ export function ReviewOperatingPicture({
         <div className="ux-reset-explorer-preview">
           {selectedScenario ? (
             <p className="type-small" data-testid="explorer-scenario-selected">
-              Governed score {selectedScenario.governedScore}. Adjusted scenario{" "}
-              {selectedScenario.score}. {selectedScenario.priority}. This
-              follow-up priority scenario keeps the governed score and is not
-              personal disease risk.
+              {explorerScenarioSelectionText(selectedScenario)}
             </p>
           ) : null}
           {!preview && handoff && releaseId && selectedPublished ? (
