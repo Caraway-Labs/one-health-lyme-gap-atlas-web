@@ -13,7 +13,10 @@ npm run storybook
 npm run build-storybook
 npx playwright install chromium
 npm run test:storybook
+npm run test:storybook:mobile
 ```
+
+`npm run test:storybook` runs the desktop Chromium project. `npm run test:storybook:mobile` is the opt-in Pixel 7 project and is not part of pull-request or `main` CI. See [CI and production deployment](ci.md).
 
 The static artifact is `storybook-static/`. To inspect it under the actual project subpath, run `node scripts/serve-storybook.mjs` and open `http://127.0.0.1:6007/one-health-lyme-gap-atlas-web/`. Use HTTP, not `file://`. The browser works independently of the Atlas app on Windows, macOS and mobile.
 

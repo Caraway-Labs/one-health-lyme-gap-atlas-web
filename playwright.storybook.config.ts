@@ -1,14 +1,15 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
+
+import { atlasBrowserProjects } from "./scripts/playwright-projects";
 
 export default defineConfig({
   testDir: "./tests/storybook",
   outputDir: "test-results/storybook",
   timeout: 60_000,
   workers: 1,
-  projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
-  ],
+  // Desktop Chromium is the release project. Pixel 7 is added only for
+  // `--project=mobile` or ATLAS_E2E_MOBILE=1. See docs/ci.md.
+  projects: atlasBrowserProjects(),
   use: {
     baseURL: "http://127.0.0.1:6007/one-health-lyme-gap-atlas-web/",
     trace: "retain-on-failure",
