@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -142,6 +144,21 @@ function PriorityLabelProbe({ fips }: { fips: string }) {
       {classification?.label}
     </p>
   );
+}
+
+function PriorityListProbe({ fipsList }: { fipsList: readonly string[] }) {
+  useExplorerCountyMlPriorities(fipsList, release);
+  return null;
+}
+
+const APP_STALE_TIME_MS = 300_000;
+
+function tier1QueryKey(fips: string) {
+  return [
+    "ux-reset-tier1-surveillance-priority",
+    fips,
+    tier1LowInsufficientFixture.release_id,
+  ] as const;
 }
 
 function rowLabel(fips: string): string {
@@ -474,6 +491,173 @@ describe("Explorer county rows show ML surveillance priority", () => {
     for (const resolve of pending) {
       resolve({
         data: tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
+        headers: new Headers(),
+        status: 200 as const,
+      });
+    }
+  });
+
+  it("recovers a Could not load row after remount when the API returns HIGH", async () => {
+    vi.useFakeTimers();
+    tier1Get.mockImplementation(async (fips) => {
+      throw new AtlasApiError(
+        "Temporarily unavailable",
+        `/v1/counties/${fips}/tier1-surveillance-priority`,
+        503,
+        null,
+        0
+      );
+    });
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { gcTime: 60_000, retry: false },
+      },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <PriorityLabelProbe fips="08031" />
+      </QueryClientProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+    expect(screen.getByTestId("priority-label").textContent).toBe(
+      EXPLORER_ML_PRIORITY_FAILED_LABEL
+    );
+    const exhaustedAttempts = tier1Get.mock.calls.length;
+    tier1Get.mockImplementation(async (fips) => ({
+      data: tier1PriorityForCounty(tier1HighSufficientFixture, fips),
+      headers: new Headers(),
+      status: 200 as const,
+    }));
+    view.unmount();
+    render(
+      <QueryClientProvider client={client}>
+        <PriorityLabelProbe fips="08031" />
+      </QueryClientProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    for (let step = 0; step < 5; step += 1) {
+      if (screen.getByTestId("priority-label").textContent === "HIGH") {
+        break;
+      }
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+    }
+    expect({
+      label: screen.getByTestId("priority-label").textContent,
+      recovered: tier1Get.mock.calls.length > exhaustedAttempts,
+      tier: screen.getByTestId("priority-label").dataset.tier,
+    }).toStrictEqual({
+      label: "HIGH",
+      recovered: true,
+      tier: "HIGH",
+    });
+  });
+
+  it("refetches a stale success and leaves a fresh success unrequested", async () => {
+    const staleClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: APP_STALE_TIME_MS },
+      },
+    });
+    staleClient.setQueryData(
+      tier1QueryKey("08001"),
+      tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
+      { updatedAt: Date.now() - APP_STALE_TIME_MS - 1000 }
+    );
+    tier1Get.mockImplementation(async (fips) => ({
+      data: tier1PriorityForCounty(tier1HighSufficientFixture, fips),
+      headers: new Headers(),
+      status: 200 as const,
+    }));
+    render(
+      <QueryClientProvider client={staleClient}>
+        <PriorityLabelProbe fips="08001" />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("priority-label").textContent).toBe("HIGH");
+    });
+    expect(tier1Get).toHaveBeenCalledOnce();
+
+    cleanup();
+    tier1Get.mockClear();
+    const freshClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: APP_STALE_TIME_MS },
+      },
+    });
+    freshClient.setQueryData(
+      tier1QueryKey("08013"),
+      tier1PriorityForCounty(tier1LowInsufficientFixture, "08013")
+    );
+    render(
+      <QueryClientProvider client={freshClient}>
+        <PriorityLabelProbe fips="08013" />
+      </QueryClientProvider>
+    );
+    await act(async () => {
+      await delay(20);
+    });
+    expect({
+      calls: tier1Get.mock.calls.length,
+      label: screen.getByTestId("priority-label").textContent,
+    }).toStrictEqual({
+      calls: 0,
+      label: "LOW",
+    });
+    await freshClient.invalidateQueries({ queryKey: tier1QueryKey("08013") });
+    await waitFor(() => {
+      expect(screen.getByTestId("priority-label").textContent).toBe("HIGH");
+    });
+    expect(tier1Get).toHaveBeenCalledOnce();
+  });
+
+  it("refreshes stale rows four at a time", async () => {
+    const fipsList = ["08001", "08003", "08005", "08007", "08009", "08011"];
+    const pending: ((value: {
+      data: ReturnType<typeof tier1PriorityForCounty>;
+      headers: Headers;
+      status: 200;
+    }) => void)[] = [];
+    tier1Get.mockImplementation(() => {
+      const deferred = Promise.withResolvers<{
+        data: ReturnType<typeof tier1PriorityForCounty>;
+        headers: Headers;
+        status: 200;
+      }>();
+      pending.push(deferred.resolve);
+      return deferred.promise;
+    });
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: APP_STALE_TIME_MS },
+      },
+    });
+    for (const fips of fipsList) {
+      client.setQueryData(
+        tier1QueryKey(fips),
+        tier1PriorityForCounty(tier1LowInsufficientFixture, fips),
+        { updatedAt: Date.now() - APP_STALE_TIME_MS - 1000 }
+      );
+    }
+    const view = render(
+      <QueryClientProvider client={client}>
+        <PriorityListProbe fipsList={fipsList} />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+    });
+    expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+    view.unmount();
+    for (const resolve of pending) {
+      resolve({
+        data: tier1PriorityForCounty(tier1HighSufficientFixture, "08001"),
         headers: new Headers(),
         status: 200 as const,
       });

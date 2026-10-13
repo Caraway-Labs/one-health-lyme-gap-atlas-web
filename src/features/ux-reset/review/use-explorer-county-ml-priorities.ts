@@ -1,9 +1,12 @@
 "use client";
 
 import {
+  CancelledError,
   useQueries,
   useQueryClient,
   type QueryClient,
+  type QueryFunctionContext,
+  type UseQueryOptions,
   type UseQueryResult,
 } from "@tanstack/react-query";
 
@@ -77,9 +80,130 @@ function tier1QueryState(
   ]);
 }
 
+type SlotWaiter = {
+  done: boolean;
+  onAbort: () => void;
+  start: () => void;
+};
+
+type SlotGate = {
+  active: number;
+  waiters: SlotWaiter[];
+};
+
+const slotGates = new WeakMap<QueryClient, SlotGate>();
+
+function slotGateFor(queryClient: QueryClient): SlotGate {
+  const existing = slotGates.get(queryClient);
+  if (existing) {
+    return existing;
+  }
+  const created: SlotGate = { active: 0, waiters: [] };
+  slotGates.set(queryClient, created);
+  return created;
+}
+
+function acquireExplorerMlPrioritySlot(
+  queryClient: QueryClient,
+  signal: AbortSignal
+): Promise<boolean> {
+  if (signal.aborted) {
+    return Promise.reject(new CancelledError({ revert: true }));
+  }
+  const gate = slotGateFor(queryClient);
+  if (gate.active < EXPLORER_ML_PRIORITY_FETCH_LIMIT) {
+    gate.active += 1;
+    return Promise.resolve(true);
+  }
+  const deferred = Promise.withResolvers<boolean>();
+  const waiter: SlotWaiter = {
+    done: false,
+    onAbort: () => {
+      if (waiter.done) {
+        return;
+      }
+      waiter.done = true;
+      const index = gate.waiters.indexOf(waiter);
+      if (index !== -1) {
+        gate.waiters.splice(index, 1);
+      }
+      deferred.reject(new CancelledError({ revert: true }));
+    },
+    start: () => {
+      if (waiter.done) {
+        return;
+      }
+      waiter.done = true;
+      signal.removeEventListener("abort", waiter.onAbort);
+      deferred.resolve(true);
+    },
+  };
+  gate.waiters.push(waiter);
+  signal.addEventListener("abort", waiter.onAbort, { once: true });
+  return deferred.promise;
+}
+
+function releaseExplorerMlPrioritySlot(queryClient: QueryClient): void {
+  const gate = slotGates.get(queryClient);
+  if (!gate) {
+    return;
+  }
+  while (gate.waiters.length > 0) {
+    const next = gate.waiters.shift();
+    if (next && !next.done) {
+      next.start();
+      return;
+    }
+  }
+  gate.active -= 1;
+}
+
+function tier1QuerySettled(
+  queryClient: QueryClient,
+  fips: string,
+  releaseId: string | null
+): boolean {
+  const state = tier1QueryState(queryClient, fips, releaseId);
+  return state?.status === "success" || state?.status === "error";
+}
+
+function boundedTier1QueryOptions(
+  fips: string,
+  releaseId: string | null,
+  queryClient: QueryClient,
+  enabled: boolean
+): UseQueryOptions<Tier1CountyPriority, Error> {
+  const options = tier1SurveillancePriorityQueryOptions(
+    fips,
+    releaseId,
+    queryClient,
+    enabled
+  );
+  const queryFn = options.queryFn;
+  if (typeof queryFn !== "function") {
+    return options;
+  }
+  return {
+    ...options,
+    queryFn: async (context: QueryFunctionContext) => {
+      await acquireExplorerMlPrioritySlot(queryClient, context.signal);
+      try {
+        if (context.signal.aborted) {
+          throw new CancelledError({ revert: true });
+        }
+        return await queryFn(context);
+      } finally {
+        releaseExplorerMlPrioritySlot(queryClient);
+      }
+    },
+  };
+}
+
 /**
- * Lower-48 counties that may fetch now. Settled rows stay out of the window
- * so a finished read is not started again. In-flight rows keep their slot.
+ * Lower-48 counties that may start a fetch now. In-flight reads keep their
+ * slot. A settled success or error does not take one, so the next unfetched
+ * county can start. The hook still leaves that settled observer enabled, and
+ * the shared slot gate keeps a later refresh to the same limit.
  */
 export function explorerMlPriorityFetchTargets(
   fipsList: readonly string[],
@@ -137,14 +261,20 @@ export function useExplorerCountyMlPriorities(
       ? explorerMlPriorityFetchTargets(fipsList, queryClient, releaseId)
       : new Set<string>();
   const queries: PriorityResult[] = useQueries({
-    queries: fipsList.map((fips) =>
-      tier1SurveillancePriorityQueryOptions(
+    queries: fipsList.map((fips) => {
+      const inScope = release.status === "ready" && isLower48CountyFips(fips);
+      // A finished read stays enabled so mount, focus, and invalidation can
+      // refresh it. Enabling only the active window left 503s and stale
+      // successes disabled for the rest of the cache lifetime.
+      const keepSettledObserver =
+        inScope && tier1QuerySettled(queryClient, fips, releaseId);
+      return boundedTier1QueryOptions(
         fips,
         releaseId,
         queryClient,
-        fetchTargets.has(fips)
-      )
-    ),
+        keepSettledObserver || fetchTargets.has(fips)
+      );
+    }),
   });
   const classifications = new Map<string, ExplorerMlListClassification>();
   for (const [index, fips] of fipsList.entries()) {

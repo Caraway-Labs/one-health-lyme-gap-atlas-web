@@ -69,4 +69,29 @@ describe("Explorer ML priority fetch window", () => {
     expect(next.has("02013")).toBeFalsy();
     expect(next.size).toBe(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
   });
+
+  it("does not let a settled failure take a slot from the next counties", async () => {
+    const directory = countyFips(8);
+    const failed = directory[0];
+    if (!failed) {
+      throw new TypeError("Directory must include a Texas county.");
+    }
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    await client
+      .fetchQuery({
+        queryFn: () => Promise.reject(new Error("503")),
+        queryKey: ["ux-reset-tier1-surveillance-priority", failed, releaseId],
+        retry: false,
+      })
+      .catch(() => {});
+    const targets = explorerMlPriorityFetchTargets(
+      directory,
+      client,
+      releaseId
+    );
+    expect(targets.has(failed)).toBeFalsy();
+    expect(targets.size).toBe(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+  });
 });
