@@ -1,6 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+import {
+  feedbackPhoneViewport,
+  releaseViewportRuns,
+} from "./release-phone-viewport";
+
 const feedbackId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 
 type FeedbackMock = (route: Route) => Promise<void>;
@@ -211,8 +216,12 @@ test.describe("in-product feedback dialog", () => {
 
   test("works on a mobile viewport with accessible dialog chrome", async ({
     page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, feedbackPhoneViewport.width),
+      "Phone-width feedback runs on the mobile project."
+    );
+    await page.setViewportSize(feedbackPhoneViewport);
     await mockAtlasApi(page, async (route) => {
       await route.fulfill({
         status: 200,

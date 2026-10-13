@@ -5,13 +5,11 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type TestInfo } from "@playwright/test";
 
 import { FRONT_PORCH_HERO_SUPPORT } from "../../src/features/front-porch/front-porch-copy";
-
-const viewports = [
-  { width: 1440, height: 900 },
-  { width: 1280, height: 800 },
-  { width: 390, height: 844 },
-  { width: 320, height: 700 },
-];
+import {
+  frontPorchBoundaryWidths,
+  frontPorchCompositionViewports,
+  releaseViewportRuns,
+} from "./release-phone-viewport";
 
 test.use({ deviceScaleFactor: 1, isMobile: false });
 
@@ -21,11 +19,15 @@ async function attachImage(testInfo: TestInfo, name: string, body: Buffer) {
   await testInfo.attach(name, { path: imagePath, contentType: "image/png" });
 }
 
-for (const viewport of viewports) {
+for (const viewport of frontPorchCompositionViewports) {
   test(`approved Front Porch composition ${viewport.width}`, async ({
     page,
     context,
   }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, viewport.width),
+      "Phone-width Front Porch checks run on the mobile project."
+    );
     const runtimeErrors: string[] = [];
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
     await page.setViewportSize(viewport);
@@ -282,14 +284,17 @@ for (const viewport of viewports) {
 
 test("signed-in header and responsive boundary widths remain readable", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto("/");
   // Same server-rendered account label and href as the signed-in session.
   await page.locator(".front-porch-sign-in").evaluate((element) => {
     element.textContent = "Open Atlas Explorer";
     element.setAttribute("href", "/app/review");
   });
-  for (const width of [320, 390, 768, 800, 801, 850, 851, 1024, 1440]) {
+  for (const width of frontPorchBoundaryWidths) {
+    if (!releaseViewportRuns(testInfo.project.name, width)) {
+      continue;
+    }
     await page.setViewportSize({ width, height: 900 });
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth)

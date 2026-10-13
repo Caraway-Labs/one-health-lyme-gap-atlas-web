@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { releaseViewportRuns } from "./release-phone-viewport";
+
 function response(
   status: string,
   evidence_state: string,
@@ -345,8 +347,18 @@ test("network failure, corpus edit, keyboard focus, and mobile overflow stay dis
 
 test("assistant workspace keeps a docked composer and scrollable transcript", async ({
   page,
-}) => {
-  await page.setViewportSize({ width: 1600, height: 900 });
+}, testInfo) => {
+  const desktop = releaseViewportRuns(testInfo.project.name, 1600);
+  const phone = releaseViewportRuns(testInfo.project.name, 375);
+  test.skip(
+    !desktop && !phone,
+    "Composer checks run on the desktop or mobile project."
+  );
+  if (desktop) {
+    await page.setViewportSize({ width: 1600, height: 900 });
+  } else {
+    await page.setViewportSize({ width: 375, height: 667 });
+  }
   await page.route("**/v1/knowledge-graph/chat", async (route) => {
     const payload = route.request().postDataJSON() as { message?: string };
     const index = payload.message?.includes("second") ? 2 : 1;
@@ -387,17 +399,23 @@ test("assistant workspace keeps a docked composer and scrollable transcript", as
       transcriptAboveComposer: viewportBox.bottom <= dockBox.top + 8,
     };
   });
-  expect(layout?.dockVisible).toBe(true);
-  expect(layout?.transcriptScrollable).toBe(true);
-  expect(layout?.transcriptAboveComposer).toBe(true);
-  expect(layout?.assistantMeasure).toBeLessThanOrEqual(768);
-  expect(layout?.assistantMeasure).toBeLessThan(
-    (layout?.panelWidth ?? 0) * 0.9
-  );
-  await page.setViewportSize({ width: 375, height: 667 });
-  await expect(
-    composer.getByRole("button", { name: "Ask", exact: true })
-  ).toBeVisible();
-  await expect(composer).toBeInViewport();
-  await expect(transcript).toBeVisible();
+  if (desktop) {
+    expect(layout?.dockVisible).toBe(true);
+    expect(layout?.transcriptScrollable).toBe(true);
+    expect(layout?.transcriptAboveComposer).toBe(true);
+    expect(layout?.assistantMeasure).toBeLessThanOrEqual(768);
+    expect(layout?.assistantMeasure).toBeLessThan(
+      (layout?.panelWidth ?? 0) * 0.9
+    );
+  }
+  if (phone) {
+    if (desktop) {
+      await page.setViewportSize({ width: 375, height: 667 });
+    }
+    await expect(
+      composer.getByRole("button", { name: "Ask", exact: true })
+    ).toBeVisible();
+    await expect(composer).toBeInViewport();
+    await expect(transcript).toBeVisible();
+  }
 });

@@ -20,6 +20,7 @@ import {
   reviewCandidate,
   stateReviewResponseForUrl,
 } from "../fixtures/review-operating-picture-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 async function installCompareMocks(page: Page, requested: string[]) {
   const fulfill = async (route: Route, body: unknown, status = 200) => {
@@ -636,7 +637,11 @@ test.describe("two-county Compare", () => {
 
   test("keeps a direct Compare link usable without a return target", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, 390),
+      "Phone-width Compare checks run on the mobile project."
+    );
     await installCompareMocks(page, []);
     await page.setViewportSize({ height: 800, width: 390 });
     await page.goto("/app/compare?compare=08001,not-a-fips&return=assistant");

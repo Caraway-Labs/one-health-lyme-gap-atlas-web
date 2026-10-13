@@ -31,7 +31,7 @@ Expected elapsed time becomes the slower of the general quality job and the long
 
 Pull-request, `main`, and deploy-required workflows run Playwright's `desktop` project (`Desktop Chrome` on Chromium). The `mobile` project (`Pixel 7`) remains in the Playwright configs for a deliberate local run. It is not a CI job, matrix entry, or selected project.
 
-`quality-gates` (auth shells and Front Porch visuals), each `Playwright shard N/3`, `npm run test:e2e`, and `npm run test:storybook` pass `--project=desktop`. The Pixel 7 project is registered only when the command passes `--project=mobile` or sets `ATLAS_E2E_MOBILE=1`, so a bare `npx playwright test` does not schedule it. Opt in with `npm run test:e2e:mobile` or `npm run test:storybook:mobile`. Specs, fixtures, and snapshots stay in git.
+`quality-gates` (auth shells and Front Porch visuals), each `Playwright shard N/3`, `npm run test:e2e`, and `npm run test:storybook` pass `--project=desktop` and do not set `ATLAS_E2E_MOBILE`. The Pixel 7 project is registered only when that variable is `1`. Playwright workers reload the config without the parent CLI arguments, so a `--project=mobile` flag alone does not keep the project in the worker. `npm run test:e2e:mobile` and `npm run test:storybook:mobile` set `ATLAS_E2E_MOBILE=1` before Playwright starts. Specs, fixtures, and snapshots stay in git.
 
 Both projects use Chromium. CI still runs `npx playwright install --with-deps chromium` for desktop. There is no WebKit, Firefox, or other mobile-only browser install to remove.
 
@@ -47,7 +47,31 @@ These mobile-only bodies already skip on the desktop project, and CI no longer r
 | UX Reset feedback | Opening the modal from the mobile navigation drawer |
 | Storybook | Header/footer reflow, sidebar and table reflow, narrow grid/table scroll, shell drawer focus, ready-brief reflow |
 
-Desktop Chromium still runs the rest of each spec, including desktop axe. Tests that set their own viewport stay on that project. Front Porch production visuals still compare 1440, 1280, 390, and 320. Public trust pages still walk their width matrix. The in-product feedback dialog still includes its 390px case. Those are viewport overrides inside the desktop project, not the Pixel 7 project.
+Desktop Chromium still runs the rest of each spec, including desktop axe and the desktop widths inside mixed loops. Phone widths are 320, 375, and 390. A case at one of those widths runs only on the mobile project:
+
+| Path | Left out of required CI | Still required on desktop |
+| --- | --- | --- |
+| Front Porch composition visuals and axe | 390 and 320 | 1440 and 1280 |
+| Front Porch signed-in boundary loop | 320 and 390 | 768, 800, 801, 850, 851, 1024, and 1440 |
+| Public trust width matrix | 320 and 390 | 768, 1280, and 1440 |
+| In-product feedback | "works on a mobile viewport" at 390×844 | The other feedback dialog cases |
+| Assistant axe, keyboard, and 200% text | 375 | 768, 1280, 1600, and the 1280 drawer landmark |
+| Developer quickstart and support | 375 | The other developer-doc cases |
+| Evidence chat composer | 375 | 1600 composer, transcript, and measure assertions |
+| Ask Atlas narrow page | 390 | Context, launcher, and page-reference cases |
+| Compare direct link | 390 | Invalid, partial, duplicate, and return=review URL checks |
+| Review state list without WebGL | 390 | The same fallback and list selection at 1440 |
+| Review coastal map | 390 refit | 1440 framing and map clicks |
+| Storybook narrow evidence strips | 320 and 390 | The rest of the P0 catalog, including the 1440 shell |
+
+These widths below 768 stay on desktop because they are zoom or short-landscape checks, not phone portraits:
+
+| Path                             | Width | Why it stays                      |
+| -------------------------------- | ----- | --------------------------------- |
+| Ask Atlas 200% desktop zoom      | 640   | Half of the 1280×720 window       |
+| Ask Atlas short landscape height | 740   | Short height at a landscape width |
+
+Tablet width 768 stays on desktop, including the assistant matrix, the Front Porch boundary, public trust, and the national review map. `tests/release-phone-viewport.test.ts` scans every `setViewportSize` in `tests/e2e` and `tests/storybook`. A new width below 768 has to be one of the phone widths behind that guard, or one of the two retained desktop widths above.
 
 Still required: Vitest unit and integration tests, typecheck, lint, design-system and UX Reset guards, OpenAPI generation drift, docs check, desktop Chromium E2E shards, the existing soft-fail auth e2e shells, Front Porch visual comparisons, desktop Storybook browser tests, production build, Docker build, dependency audit, and secret scan.
 

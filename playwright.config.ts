@@ -12,8 +12,8 @@ export default defineConfig({
     : "test-results/playwright",
   timeout: 60_000,
   workers: 1,
-  // Desktop Chromium is the release project. Pixel 7 is added only for
-  // `--project=mobile` or ATLAS_E2E_MOBILE=1. See docs/ci.md.
+  // Desktop Chromium is the release project. Pixel 7 is added only when
+  // ATLAS_E2E_MOBILE=1. See docs/ci.md.
   projects: atlasBrowserProjects(),
   testDir: "./tests/e2e",
   testIgnore: productionVisuals ? undefined : "**/front-porch-visual.spec.ts",
