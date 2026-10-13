@@ -131,6 +131,19 @@ export function isLower48ReviewScope(scopeCode: string): boolean {
   );
 }
 
+const LOWER_48_COUNTY_FIPS_PREFIXES = new Set(
+  (Object.entries(STATE_FIPS_PREFIX) as [ReviewStatePostal, string][])
+    .filter(([postal]) => isLower48ReviewScope(postal))
+    .map(([, prefix]) => prefix)
+);
+
+/** Five-digit county FIPS in the lower 48 or the District of Columbia. */
+export function isLower48CountyFips(fips: string): boolean {
+  return (
+    /^\d{5}$/.test(fips) && LOWER_48_COUNTY_FIPS_PREFIXES.has(fips.slice(0, 2))
+  );
+}
+
 export function lower48ReviewPostalCodes(): ReviewStatePostal[] {
   return (Object.keys(STATE_FIPS_PREFIX) as ReviewStatePostal[])
     .filter((code) => isLower48ReviewScope(code))

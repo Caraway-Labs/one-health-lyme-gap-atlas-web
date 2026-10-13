@@ -44,6 +44,10 @@ import {
   type ExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
 import {
+  ExplorerCountyRowContent,
+  ExplorerMlPriorityLegend,
+} from "@/features/ux-reset/review/explorer-ml-priority";
+import {
   adjustCountyScenarios,
   SCENARIO_SCORE_DEFAULTS,
   scoreSettingsFromCollection,
@@ -84,8 +88,14 @@ import {
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
+import {
+  EXPLORER_ML_PRIORITY_PAGE_SIZE,
+  explorerMlListedFips,
+  useExplorerCountyMlPriorities,
+} from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
+import { EXPLORER_ML_PRIORITY_UNAVAILABLE } from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { DataGap, StateReview } from "@/generated/models";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
@@ -706,6 +716,23 @@ export function ReviewOperatingPicture({
       )
   );
   const visibleCandidateCount = visibleCandidates.length;
+  const directoryWindowKey = `${scopeCode}\u0000${countyQueryText}\u0000${availableDataGate.kind}`;
+  const [directoryWindow, setDirectoryWindow] = useState({
+    count: EXPLORER_ML_PRIORITY_PAGE_SIZE,
+    key: "",
+  });
+  const shownDirectoryCount =
+    directoryWindow.key === directoryWindowKey
+      ? directoryWindow.count
+      : EXPLORER_ML_PRIORITY_PAGE_SIZE;
+  const listedFips = explorerMlListedFips({
+    candidateFips: visibleCandidates.map((candidate) => candidate.countyFips),
+    directoryFips: visibleDirectory.map((entry) => entry.fips),
+    selectedFips,
+    shownDirectoryCount,
+  });
+  const listedFipsSet = new Set(listedFips);
+  const mlPriorities = useExplorerCountyMlPriorities(listedFips, tierRelease);
   useEffect(() => {
     if (freezeCountySelection || !selectedFips || visibleCandidateCount === 0) {
       return;
@@ -1098,6 +1125,7 @@ export function ReviewOperatingPicture({
             visibleDirectory.length === 0 ? (
               <p>No counties match that name or FIPS.</p>
             ) : null}
+            <ExplorerMlPriorityLegend />
             {candidates.length > 0 ? (
               <div
                 aria-label="Counties suggested for review"
@@ -1108,6 +1136,9 @@ export function ReviewOperatingPicture({
                   const published = publishedScoreByFips.get(
                     candidate.countyFips
                   );
+                  const classification =
+                    mlPriorities.get(candidate.countyFips) ??
+                    EXPLORER_ML_PRIORITY_UNAVAILABLE;
                   return (
                     <div key={candidate.countyFips} role="listitem">
                       <button
@@ -1118,27 +1149,22 @@ export function ReviewOperatingPicture({
                         }
                         className="ux-reset-review-candidate"
                         data-fips={candidate.countyFips}
+                        data-ml-tier={classification.tier}
                         data-testid="review-candidate"
                         type="button"
                         onClick={() =>
                           selectCounty(candidate.countyFips, "ranked_list")
                         }
                       >
-                        <strong>
-                          {reviewCandidateCountyLabel(candidate.countyName)},{" "}
-                          {scopeCode}
-                        </strong>
-                        <small>
-                          {published?.priority
-                            ? `${published.priority}. `
-                            : null}
-                          {reviewCandidateExplanation(candidate.candidate)}
-                        </small>
-                        {published ? (
-                          <span className="ux-reset-explorer-county-score">
-                            Published score {published.score}
-                          </span>
-                        ) : null}
+                        <ExplorerCountyRowContent
+                          classification={classification}
+                          explanation={reviewCandidateExplanation(
+                            candidate.candidate
+                          )}
+                          name={`${reviewCandidateCountyLabel(candidate.countyName)}, ${scopeCode}`}
+                          publishedCategory={published?.priority || undefined}
+                          publishedScore={published?.score}
+                        />
                         <ExplorerAdjustedScenarioLine
                           scenario={scenarioByFips?.get(candidate.countyFips)}
                         />
@@ -1154,31 +1180,62 @@ export function ReviewOperatingPicture({
                 className="ux-reset-review-candidate-list"
                 role="list"
               >
-                {visibleDirectory.map((entry) => (
-                  <div key={entry.fips} role="listitem">
-                    <button
-                      aria-current={
-                        entry.fips === selectedFips ? "true" : undefined
-                      }
-                      className="ux-reset-review-candidate"
-                      data-fips={entry.fips}
-                      data-testid="review-published-county"
-                      type="button"
-                      onClick={() => selectCounty(entry.fips, "results_table")}
-                    >
-                      <strong>
-                        {entry.county}, {scopeCode}
-                      </strong>
-                      <small>
-                        Review category unavailable. Published county record.
-                      </small>
-                      <ExplorerAdjustedScenarioLine
-                        scenario={scenarioByFips?.get(entry.fips)}
-                      />
-                    </button>
-                  </div>
-                ))}
+                {visibleDirectory
+                  .filter((entry) => listedFipsSet.has(entry.fips))
+                  .map((entry) => {
+                    const published = publishedScoreByFips.get(entry.fips);
+                    const classification =
+                      mlPriorities.get(entry.fips) ??
+                      EXPLORER_ML_PRIORITY_UNAVAILABLE;
+                    return (
+                      <div key={entry.fips} role="listitem">
+                        <button
+                          aria-current={
+                            entry.fips === selectedFips ? "true" : undefined
+                          }
+                          className="ux-reset-review-candidate"
+                          data-fips={entry.fips}
+                          data-ml-tier={classification.tier}
+                          data-testid="review-published-county"
+                          type="button"
+                          onClick={() =>
+                            selectCounty(entry.fips, "results_table")
+                          }
+                        >
+                          <ExplorerCountyRowContent
+                            classification={classification}
+                            explanation="Review category unavailable. Published county record."
+                            name={`${entry.county}, ${scopeCode}`}
+                            publishedCategory={published?.priority || undefined}
+                            publishedScore={published?.score}
+                          />
+                          <ExplorerAdjustedScenarioLine
+                            scenario={scenarioByFips?.get(entry.fips)}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })}
               </div>
+            ) : null}
+            {candidates.length === 0 &&
+            shownDirectoryCount < visibleDirectory.length ? (
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid="explorer-ml-priority-more"
+                onClick={() => {
+                  setDirectoryWindow({
+                    count: shownDirectoryCount + EXPLORER_ML_PRIORITY_PAGE_SIZE,
+                    key: directoryWindowKey,
+                  });
+                }}
+              >
+                {`Show ${Math.min(
+                  EXPLORER_ML_PRIORITY_PAGE_SIZE,
+                  visibleDirectory.length - shownDirectoryCount
+                )} more counties`}
+              </Button>
             ) : null}
           </Card>
         </div>

@@ -1,3 +1,4 @@
+import { QueryClient } from "@tanstack/react-query";
 import {
   cleanup,
   fireEvent,
@@ -39,6 +40,7 @@ import {
 import { tier1StoryView } from "../stories/fixtures/tier1-views";
 import {
   Tier1StoryQueryProvider,
+  tier1SurveillancePriorityQueryOptions,
   useTier1SurveillancePriority,
 } from "../stories/support/tier1-hook-substitute";
 import { tier1HighSufficientFixture } from "./fixtures/tier1-surveillance-priority";
@@ -408,6 +410,53 @@ describe("Storybook P0 evidence fixtures", () => {
       </Tier1StoryQueryProvider>
     );
     expect(screen.getByText("settled")).toBeTruthy();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("resolves list query options from the story fixture without fetching", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const queryClient = new QueryClient();
+    const idleOptions = tier1SurveillancePriorityQueryOptions(
+      syntheticCounty.fips,
+      syntheticReleaseId,
+      queryClient
+    );
+    expect(idleOptions.enabled).toBeFalsy();
+
+    let enabled = false;
+    function Probe() {
+      const options = tier1SurveillancePriorityQueryOptions(
+        syntheticCounty.fips,
+        syntheticReleaseId,
+        queryClient
+      );
+      enabled = options.enabled === true;
+      return null;
+    }
+    render(
+      <Tier1StoryQueryProvider value={reviewPreviewPreset("rationale").query}>
+        <Probe />
+      </Tier1StoryQueryProvider>
+    );
+    const options = tier1SurveillancePriorityQueryOptions(
+      syntheticCounty.fips,
+      syntheticReleaseId,
+      queryClient
+    );
+    const { queryFn, queryKey } = options;
+    if (typeof queryFn !== "function" || !Array.isArray(queryKey)) {
+      throw new TypeError("Story query options must include queryFn.");
+    }
+    const data = await queryFn({
+      client: queryClient,
+      meta: undefined,
+      queryKey,
+      signal: new AbortController().signal,
+    });
+    expect(enabled).toBeTruthy();
+    expect(data.county_fips).toBe(syntheticCounty.fips);
+    expect(data.priority_tier).toBe("HIGH");
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
