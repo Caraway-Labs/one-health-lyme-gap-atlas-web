@@ -31,9 +31,11 @@ import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map
 import {
   explorerMapLayerById,
   paintExplorerMapLayer,
+  resolveExplorerMapColor,
   type ExplorerMapLayerId,
-  type ExplorerMapLegendEntry,
+  type ExplorerMapLegendSource,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import { ExplorerCountyRowContent } from "@/features/ux-reset/review/explorer-ml-priority";
 import {
   buildReviewCompareHandoff,
@@ -66,8 +68,8 @@ import {
   fetchCountyDisplayGeometry,
 } from "@/lib/county-geography";
 
-const NO_PUBLISHED_VALUE = "No published value";
 const NO_PUBLISHED_VALUE_TOKEN = "--explorer-boundary";
+const NO_LEGEND_SOURCES: readonly ExplorerMapLegendSource[] = [];
 
 type ReviewNationalPictureProps = {
   availableDataGate?: ExplorerAvailableDataGate;
@@ -83,31 +85,12 @@ type ReviewNationalPictureProps = {
   period: string | null;
   releaseId: string;
   releaseStates: readonly AtlasStateOption[];
+  sources?: readonly ExplorerMapLegendSource[];
   tierRelease: Tier1ActiveRelease;
 };
 
-function resolvedPaintColor(color: string | undefined): string | undefined {
-  if (!color) {
-    return undefined;
-  }
-  if (!color.startsWith("var(") || typeof document === "undefined") {
-    return color;
-  }
-  const token = color.slice(4, -1).trim();
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-  return value || undefined;
-}
-
 function noPublishedValueColor(): string | undefined {
-  if (typeof document === "undefined") {
-    return undefined;
-  }
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(NO_PUBLISHED_VALUE_TOKEN)
-    .trim();
-  return value || undefined;
+  return resolveExplorerMapColor(`var(${NO_PUBLISHED_VALUE_TOKEN})`);
 }
 
 function postalForFips(fips: string): string | null {
@@ -116,38 +99,6 @@ function postalForFips(fips: string): string | null {
   }
   const postal = postalCodeForStateFips(fips.slice(0, 2));
   return postal && isLower48ReviewScope(postal) ? postal : null;
-}
-
-function nationalLegend(
-  entries: readonly ExplorerMapLegendEntry[],
-  layerId: ExplorerMapLayerId
-): ExplorerMapLegendEntry[] {
-  if (layerId === "boundaries") {
-    return [...entries];
-  }
-  if (entries.some((entry) => entry.label === NO_PUBLISHED_VALUE)) {
-    return [...entries];
-  }
-  return [
-    ...entries,
-    {
-      color: `var(${NO_PUBLISHED_VALUE_TOKEN})`,
-      label: NO_PUBLISHED_VALUE,
-    },
-  ];
-}
-
-function nationalPaintNote(note: string, layerId: ExplorerMapLayerId): string {
-  const ranking = "The county list stays the review ranking.";
-  const noData =
-    "Counties without a published value use the no-data color. That color is not zero or low priority.";
-  if (note.includes(ranking)) {
-    return note.replace(ranking, noData);
-  }
-  if (layerId === "boundaries") {
-    return note;
-  }
-  return `${note} ${noData}`;
 }
 
 export function ReviewNationalPicture({
@@ -164,6 +115,7 @@ export function ReviewNationalPicture({
   period,
   releaseId,
   releaseStates,
+  sources = NO_LEGEND_SOURCES,
   tierRelease,
 }: ReviewNationalPictureProps) {
   const searchParams = useSearchParams();
@@ -203,18 +155,17 @@ export function ReviewNationalPicture({
         ? "loading"
         : "ready"
     : "ready";
-  const mapPaint = useMemo(() => {
-    const paint = paintExplorerMapLayer({
-      counties: scoreCounties,
-      layerId: layer.id,
-      scoresStatus,
-    });
-    return {
-      ...paint,
-      entries: nationalLegend(paint.entries, layer.id),
-      note: nationalPaintNote(paint.note, layer.id),
-    };
-  }, [layer.id, scoreCounties, scoresStatus]);
+  const mapPaint = useMemo(
+    () =>
+      paintExplorerMapLayer({
+        counties: scoreCounties,
+        layerId: layer.id,
+        releaseId,
+        scoresStatus,
+        sources,
+      }),
+    [layer.id, releaseId, scoreCounties, scoresStatus, sources]
+  );
   const geometryFeatures = useMemo(
     () =>
       (geometryQuery.data?.features ?? []).filter(
@@ -244,7 +195,7 @@ export function ReviewNationalPicture({
       ) {
         return [];
       }
-      const painted = resolvedPaintColor(mapPaint.colorsByFips.get(fips));
+      const painted = resolveExplorerMapColor(mapPaint.colorsByFips.get(fips));
       return [
         {
           color: painted ?? missingColor,
@@ -440,6 +391,9 @@ export function ReviewNationalPicture({
         <div
           aria-busy={geometryPending || valuesPending}
           className="map-wrap"
+          data-map-colors={mapCounties
+            .map((entry) => `${entry.fips}:${entry.color ?? ""}`)
+            .join(" ")}
           data-map-fips={mapCounties.map((entry) => entry.fips).join(" ")}
           data-testid="review-national-map-region"
         >
@@ -505,25 +459,7 @@ export function ReviewNationalPicture({
             </AtlasStatusMessage>
           )}
         </div>
-        <div
-          className="ux-reset-explorer-legend"
-          data-testid="explorer-map-legend"
-        >
-          <p className="type-small">{mapPaint.note}</p>
-          {mapPaint.entries.length > 0 ? (
-            <ul>
-              {mapPaint.entries.map((entry) => (
-                <li key={`${entry.label}-${entry.color}`}>
-                  <span
-                    aria-hidden="true"
-                    style={{ background: entry.color }}
-                  />
-                  {entry.label}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+        <ExplorerMapLegend paint={mapPaint} />
       </Card>
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">

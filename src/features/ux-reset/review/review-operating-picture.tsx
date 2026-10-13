@@ -41,8 +41,11 @@ import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map
 import {
   explorerMapLayerById,
   paintExplorerMapLayer,
+  resolveExplorerMapColor,
   type ExplorerMapLayerId,
+  type ExplorerMapLegendSource,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
   ExplorerCountyRowContent,
   ExplorerMlPriorityLegend,
@@ -126,6 +129,7 @@ const AtlasMap = dynamic(
 );
 
 const UNKNOWN_TIER_RELEASE: Tier1ActiveRelease = { status: "unknown" };
+const NO_LEGEND_SOURCES: readonly ExplorerMapLegendSource[] = [];
 
 type ReviewCountyHistory = "push" | "replace";
 
@@ -143,6 +147,7 @@ type ReviewOperatingPictureProps = {
   scopeCode: string;
   /** Browser what-if. Defaults leave the governed score, priority, and map color in place. */
   scenarioSettings?: ScoreSettings;
+  sources?: readonly ExplorerMapLegendSource[];
   stateName: string;
   tierRelease?: Tier1ActiveRelease;
   countyQuery?: string;
@@ -154,19 +159,6 @@ type ReviewOperatingPictureProps = {
   availableDataGate?: ExplorerAvailableDataGate;
   onMapLayerChange?: (layerId: ExplorerMapLayerId) => void;
 };
-
-function resolveExplorerPaintColor(
-  color: string | undefined
-): string | undefined {
-  if (!color?.startsWith("var(") || typeof document === "undefined") {
-    return color;
-  }
-  const token = color.slice(4, -1).trim();
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-  return value || undefined;
-}
 
 function visibleLines(values: readonly string[]): string[] {
   const lines: string[] = [];
@@ -303,6 +295,7 @@ export function ReviewOperatingPicture({
   review,
   scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   scopeCode,
+  sources = NO_LEGEND_SOURCES,
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
   countyQuery = "",
@@ -451,6 +444,10 @@ export function ReviewOperatingPicture({
               ...county,
               color: scenario.colorToken,
               priority: `Adjusted scenario · ${scenario.priority}`,
+              score: {
+                ...county.score,
+                score: scenario.score,
+              },
             };
           }
           case "limited": {
@@ -477,7 +474,9 @@ export function ReviewOperatingPicture({
     const paint = paintExplorerMapLayer({
       counties,
       layerId: layer.id,
+      releaseId,
       scoresStatus,
+      sources,
     });
     if (!scenarioColors || scoresStatus !== "ready") {
       return paint;
@@ -492,6 +491,7 @@ export function ReviewOperatingPicture({
       ...paint,
       note: `Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.${limitedNote}`,
       title: "Adjusted scenario",
+      unit: "adjusted review-priority score",
     };
   }, [
     mapLayer,
@@ -501,6 +501,7 @@ export function ReviewOperatingPicture({
     scoresQuery.data,
     scoresQuery.isError,
     scoresQuery.isPending,
+    sources,
   ]);
   const inStateMapCounties = useMemo(
     () =>
@@ -509,9 +510,7 @@ export function ReviewOperatingPicture({
         scopeCode,
       }).map((county) => ({
         ...county,
-        color: resolveExplorerPaintColor(
-          mapPaint.colorsByFips.get(county.fips)
-        ),
+        color: resolveExplorerMapColor(mapPaint.colorsByFips.get(county.fips)),
       })),
     [geometryFips, mapPaint.colorsByFips, scopeCode]
   );
@@ -995,25 +994,7 @@ export function ReviewOperatingPicture({
               </AtlasStatusMessage>
             )}
           </div>
-          <div
-            className="ux-reset-explorer-legend"
-            data-testid="explorer-map-legend"
-          >
-            <p className="type-small">{mapPaint.note}</p>
-            {mapPaint.entries.length > 0 ? (
-              <ul>
-                {mapPaint.entries.map((entry) => (
-                  <li key={`${entry.label}-${entry.color}`}>
-                    <span
-                      aria-hidden="true"
-                      style={{ background: entry.color }}
-                    />
-                    {entry.label}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+          <ExplorerMapLegend paint={mapPaint} />
         </Card>
 
         <div className="ux-reset-explorer-list">
