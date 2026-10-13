@@ -60,3 +60,32 @@ export function explicitNationalCountyFromHistory(): string | null {
   }
   return reviewCountyFipsForScope(marked, "ALL");
 }
+
+/**
+ * nuqs pushes the next Explorer entry with null history state. Copy the
+ * explicit county onto that entry when the new URL still shows it. A push
+ * that drops, replaces, or never had the county leaves the new entry blank.
+ */
+export function installExplicitNationalCountyCarry(): () => void {
+  if (typeof history === "undefined") {
+    return () => {};
+  }
+  const previous = history.pushState.bind(history);
+  const carriedPush: History["pushState"] = (data, unused, url) => {
+    const marked = historyRecord()?.[EXPLICIT_NATIONAL_COUNTY_KEY];
+    previous(data, unused, url);
+    if (typeof marked !== "string") {
+      return;
+    }
+    const county = reviewCountyFipsForScope(marked, "ALL");
+    if (county && nationalHistoryCountyMatches(county)) {
+      stampExplicitNationalCounty(county);
+    }
+  };
+  history.pushState = carriedPush;
+  return () => {
+    if (history.pushState === carriedPush) {
+      history.pushState = previous;
+    }
+  };
+}

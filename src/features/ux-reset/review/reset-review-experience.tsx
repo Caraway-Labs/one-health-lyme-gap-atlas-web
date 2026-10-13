@@ -62,6 +62,7 @@ import {
 } from "@/features/ux-reset/review/review-governed-values";
 import {
   explicitNationalCountyFromHistory,
+  installExplicitNationalCountyCarry,
   nationalHistoryCountyMatches,
   stampExplicitNationalCounty,
 } from "@/features/ux-reset/review/review-national-county-choice";
@@ -363,7 +364,13 @@ function ResetReviewExperienceInner() {
 
   // Shallow scope updates do not emit popstate. Bind the in-session scope
   // choice and the explicit national county to the history entry that is
-  // current after Back/Forward, and only then.
+  // current after Back/Forward. Explorer is unmounted while another workspace
+  // route is showing, so the same read also runs when this screen mounts.
+  useLayoutEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- hydrate the browser history marker once on mount. It is absent during SSR.
+    setChosenNationalFips(explicitNationalCountyFromHistory());
+  }, []);
+  useEffect(() => installExplicitNationalCountyCarry(), []);
   useEffect(() => {
     const syncChoiceWithHistory = () => {
       const historyChoseScope = hasExplicitReviewScopeParam(

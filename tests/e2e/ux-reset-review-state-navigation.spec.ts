@@ -325,6 +325,55 @@ test.describe("Review national geographic navigation", () => {
     await expectPublishedNationalCounty(page, "08013");
   });
 
+  test("restores the explicit national county when Explorer remounts", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL");
+    await page.getByTestId("national-browse-state").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    await page.getByRole("button", { name: /Denver, CO/ }).click();
+    await expect(page).toHaveURL(/county=08001/);
+    await expectPublishedNationalCounty(page, "08001");
+    await page
+      .getByRole("navigation", { name: "Professional workspace" })
+      .getByRole("link", { name: "Settings" })
+      .click();
+    await expect(
+      page.getByTestId("settings-default-jurisdiction")
+    ).toBeVisible();
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expectPublishedNationalCounty(page, "08001");
+  });
+
+  test("keeps the explicit national county when the map layer changes", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL");
+    await page.getByTestId("national-browse-state").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    await page.getByRole("button", { name: /Denver, CO/ }).click();
+    await expect(page).toHaveURL(/county=08001/);
+    await expectPublishedNationalCounty(page, "08001");
+    await page.getByTestId("explorer-map-layer").click();
+    await page.getByRole("option", { name: "County boundaries" }).click();
+    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/county=08001/);
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).not.toHaveURL(/layer=boundaries/);
+    await expectPublishedNationalCounty(page, "08001");
+    await page.goForward({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expectPublishedNationalCounty(page, "08001");
+  });
+
   test("keeps a selected-county deep link on the national map", async ({
     page,
   }) => {
@@ -437,6 +486,22 @@ test.describe("Review national geographic navigation", () => {
       "County boundaries"
     );
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect
+      .poll(async () => {
+        const handoff = publishedAskHandoff(
+          await page.getByTestId("ask-atlas-launcher").getAttribute("href")
+        );
+        return {
+          county: handoff.county,
+          geography: handoff.geography,
+          returnCounty: handoff.returnCounty,
+        };
+      })
+      .toEqual({
+        county: null,
+        geography: null,
+        returnCounty: null,
+      });
   });
 
   test("fits California, DC, New York, and the country extents at desktop widths", async ({
