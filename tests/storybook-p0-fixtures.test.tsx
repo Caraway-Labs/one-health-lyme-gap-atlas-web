@@ -444,13 +444,14 @@ describe("Storybook P0 evidence fixtures", () => {
       syntheticReleaseId,
       queryClient
     );
-    if (!options.queryFn) {
-      throw new Error("Story query options must include queryFn.");
+    const { queryFn, queryKey } = options;
+    if (typeof queryFn !== "function" || !Array.isArray(queryKey)) {
+      throw new TypeError("Story query options must include queryFn.");
     }
-    const data = await options.queryFn({
+    const data = await queryFn({
       client: queryClient,
       meta: undefined,
-      queryKey: options.queryKey,
+      queryKey,
       signal: new AbortController().signal,
     });
     expect(enabled).toBeTruthy();
