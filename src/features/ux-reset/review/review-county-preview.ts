@@ -20,7 +20,7 @@ import {
   hrefWithExplorerMode,
 } from "@/features/ux-reset/review/explorer-mode";
 import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
-import { reviewCandidateFipsForScope } from "@/features/ux-reset/review/review-operating-state";
+import { reviewCountyFipsForScope } from "@/features/ux-reset/review/review-operating-state";
 import { approvedFollowUpTitleForColor } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { ValueState, type CountyScoreSummary } from "@/generated/models";
@@ -242,7 +242,7 @@ function writeReviewHandoffCounty(
   selectedFips: string,
   scopeCode: string
 ): string | null {
-  const county = reviewCandidateFipsForScope(selectedFips, scopeCode);
+  const county = reviewCountyFipsForScope(selectedFips, scopeCode);
   if (county) {
     source.set("county", county);
     return county;

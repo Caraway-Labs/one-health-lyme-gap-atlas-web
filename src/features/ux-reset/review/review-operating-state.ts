@@ -2,7 +2,11 @@ import type { Candidate, DataGap, StateReview } from "@/generated/models";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
 
 import { REVIEW_FIELD_UNAVAILABLE } from "./review-governed-values";
-import { isLower48ReviewScope, stateFipsPrefix } from "./review-state-fips";
+import {
+  isLower48CountyFips,
+  isLower48ReviewScope,
+  stateFipsPrefix,
+} from "./review-state-fips";
 
 export const reviewPictureStateValues = {
   candidatesFound: "candidates_found",
@@ -195,7 +199,7 @@ const REVIEW_COUNTY_FIPS_PATTERN = /^\d{5}$/;
 /**
  * Review URL county after one normalization. Unsupported scopes drop it.
  * A lower-48 or DC scope keeps it only when the FIPS prefix matches.
- * National scope is not a state prefix check.
+ * National scope keeps a lower-48 or DC county and drops Alaska and Hawaii.
  */
 export function normalizeReviewCounty(
   scopeCode: string,
@@ -203,6 +207,9 @@ export function normalizeReviewCounty(
 ): string | null {
   if (county === null || isUnsupportedReviewScope(scopeCode)) {
     return null;
+  }
+  if (scopeCode === "ALL") {
+    return reviewCountyFipsForScope(county, scopeCode);
   }
   if (!isLower48ReviewScope(scopeCode)) {
     return county;
@@ -235,6 +242,18 @@ export function reviewCandidateFipsForScope(
     return null;
   }
   return trimmed;
+}
+
+/** County FIPS a national or state Explorer selection may keep. */
+export function reviewCountyFipsForScope(
+  fips: string,
+  scopeCode: string
+): string | null {
+  const trimmed = fips.trim();
+  if (scopeCode === "ALL") {
+    return isLower48CountyFips(trimmed) ? trimmed : null;
+  }
+  return reviewCandidateFipsForScope(trimmed, scopeCode);
 }
 
 export type ScopedReviewCandidate = {

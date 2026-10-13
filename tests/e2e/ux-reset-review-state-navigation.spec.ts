@@ -1,15 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
+  LOWER_48_DC_CAMERA_BOUNDS,
   reviewNationalCameraContains,
-  type ReviewNationalCamera,
+  reviewNationalNavigationCamera,
 } from "../../src/features/ux-reset/review/review-national-camera";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
-import { releaseViewportRuns } from "./release-phone-viewport";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/v1/atlas/scores**", (route) => {
@@ -50,7 +50,7 @@ function box(
 
 const navigationGeometry = {
   features: [
-    box("08001", -109.1, 36.9, -102, 41.1),
+    box("08001", -109.05, 37, -102.05, 41),
     box("08013", -105.7, 39.9, -105.05, 40.26),
     box("36001", -79.8, 40.5, -71.8, 45.1),
     box("11001", -77.12, 38.79, -76.91, 38.995),
@@ -75,11 +75,23 @@ async function installReviewApi(
     });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
-    await route.fulfill({ json: metadata, status: 200 });
+    const releaseId =
+      new URL(route.request().url()).searchParams.get("dataset_version") ??
+      metadata.release_id;
+    await route.fulfill({
+      json: { ...metadata, release_id: releaseId },
+      status: 200,
+    });
   });
   await page.route("**/v1/states/*/review**", async (route) => {
+    const releaseId =
+      new URL(route.request().url()).searchParams.get("dataset_version") ??
+      metadata.release_id;
     await route.fulfill({
-      json: stateReviewResponseForUrl(route.request().url()),
+      json: {
+        ...stateReviewResponseForUrl(route.request().url()),
+        data_release_version: releaseId,
+      },
       status: 200,
     });
   });
@@ -100,214 +112,210 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
-const coastalNavigationGeometry = {
-  features: [
-    box("06037", -124.4, 32.5, -114.1, 42),
-    box("36001", -79.8, 40.5, -71.8, 45.1),
-    box("11001", -77.6, 38.3, -76.4, 39.3),
-  ],
-  type: "FeatureCollection" as const,
-};
-
-const coastalRelease = {
-  ...reviewScopeMetadataFixture,
-  states: [
-    { code: "CA", name: "California" },
-    { code: "DC", name: "District of Columbia" },
-    { code: "NY", name: "New York" },
-  ],
-};
-
-const coastalPlaces = [
-  {
-    code: "CA",
-    label: "CA, California",
-    latitude: 37,
-    longitude: -120,
-  },
-  {
-    code: "NY",
-    label: "NY, New York",
-    latitude: 43,
-    longitude: -75,
-  },
-  {
-    code: "DC",
-    label: "DC, District of Columbia",
-    latitude: 38.8,
-    longitude: -77,
-  },
-] as const;
-
-async function readNationalCamera(page: Page) {
-  return page
-    .getByTestId("review-state-navigation-map-canvas")
-    .evaluate((element) => ({
-      height: element.clientHeight,
-      latitude: Number(element.dataset.reviewCameraLat),
-      longitude: Number(element.dataset.reviewCameraLng),
-      width: element.clientWidth,
-      zoom: Number(element.dataset.reviewCameraZoom),
-    }));
+async function chooseState(page: Page, name: string) {
+  await page.getByTestId("review-scope-select").click();
+  await page.getByRole("option", { name }).click();
 }
 
-function cameraFromReading(reading: {
-  latitude: number;
-  longitude: number;
+type NationalCameraReading = {
+  height: number;
+  lat: number;
+  lng: number;
+  width: number;
   zoom: number;
-}): ReviewNationalCamera {
-  return {
-    center: [reading.longitude, reading.latitude],
+};
+
+async function readNationalCamera(page: Page): Promise<NationalCameraReading> {
+  return page.locator(".maplibre-atlas").evaluate((element) => ({
+    height: element.clientHeight,
+    lat: Number(element.dataset.mapCameraLat),
+    lng: Number(element.dataset.mapCameraLng),
+    width: element.clientWidth,
+    zoom: Number(element.dataset.mapCameraZoom),
+  }));
+}
+
+function nationalExtentReport(reading: NationalCameraReading) {
+  const view = {
+    center: [reading.lng, reading.lat] as [number, number],
     zoom: reading.zoom,
+  };
+  const contains = (longitude: number, latitude: number) =>
+    reviewNationalCameraContains(
+      view,
+      reading.width,
+      reading.height,
+      longitude,
+      latitude
+    );
+  const fitted = reviewNationalNavigationCamera(reading.width, reading.height);
+  return {
+    california: contains(-124.2, 37),
+    dc: contains(-77.0369, 38.9072),
+    east: contains(LOWER_48_DC_CAMERA_BOUNDS.east, 39),
+    fitted:
+      fitted !== null &&
+      Math.abs(reading.zoom - fitted.zoom) < 0.02 &&
+      Math.abs(reading.lng - fitted.center[0]) < 0.02 &&
+      Math.abs(reading.lat - fitted.center[1]) < 0.02,
+    north: contains(-98, LOWER_48_DC_CAMERA_BOUNDS.north),
+    ny: contains(-74, 43),
+    south: contains(-98, LOWER_48_DC_CAMERA_BOUNDS.south),
+    west: contains(LOWER_48_DC_CAMERA_BOUNDS.west, 39),
   };
 }
 
-function coastalPlacesAreFramed(reading: {
-  height: number;
-  latitude: number;
-  longitude: number;
-  width: number;
-  zoom: number;
-}) {
-  const camera = cameraFromReading(reading);
-  return Object.fromEntries(
-    coastalPlaces.map((place) => [
-      place.code,
-      reviewNationalCameraContains(
-        camera,
-        reading.width,
-        reading.height,
-        place.longitude,
-        place.latitude
-      ),
-    ])
-  );
+const VISIBLE_NATIONAL_EXTENTS = {
+  california: true,
+  dc: true,
+  east: true,
+  fitted: true,
+  north: true,
+  ny: true,
+  south: true,
+  west: true,
+};
+
+async function expectNationalExtentsVisible(page: Page) {
+  await expect
+    .poll(async () => nationalExtentReport(await readNationalCamera(page)))
+    .toStrictEqual(VISIBLE_NATIONAL_EXTENTS);
 }
 
-async function clickMappedState(
-  page: Page,
-  code: string,
-  longitude: number,
-  latitude: number
-) {
-  const canvas = page.getByTestId("review-state-navigation-map-canvas");
-  const point = await canvas.evaluate(
-    (element, place) => {
-      const map = Reflect.get(element, "reviewNavigationMap") as
-        | {
-            project: (lngLat: [number, number]) => { x: number; y: number };
-            queryRenderedFeatures: (
-              geometry: [number, number],
-              options: { layers: string[] }
-            ) => { properties?: { code?: unknown } }[];
-          }
-        | undefined;
-      if (!map) {
-        return null;
-      }
-      const projected = map.project([place.longitude, place.latitude]);
-      const rendered = (x: number, y: number) =>
-        map
-          .queryRenderedFeatures([x, y], { layers: ["review-states-fill"] })
-          .some((feature) => feature.properties?.code === place.code);
-      if (rendered(projected.x, projected.y)) {
-        return { x: projected.x, y: projected.y };
-      }
-      for (let y = 4; y < element.clientHeight; y += 6) {
-        for (let x = 4; x < element.clientWidth; x += 6) {
-          if (rendered(x, y)) {
-            return { x, y };
-          }
-        }
-      }
-      return null;
-    },
-    { code, latitude, longitude }
-  );
-  if (!point) {
-    throw new Error(`No rendered ${code} feature is available to click.`);
-  }
-  await canvas.locator("canvas").click({
-    position: { x: point.x, y: point.y },
-  });
+async function waitForStableZoom(page: Page) {
+  let previous = Number.NaN;
+  await expect
+    .poll(async () => {
+      const zoom = (await readNationalCamera(page)).zoom;
+      const stable = Math.abs(zoom - previous) < 0.01;
+      previous = zoom;
+      return stable;
+    })
+    .toBe(true);
 }
 
 test.describe("Review national geographic navigation", () => {
-  test("selects a state from the list, keeps history, and does not write Settings", async ({
+  test("shows national county values, zoom, and a bounded county column", async ({
     page,
-  }, testInfo) => {
+  }) => {
     const profileMethods = await installReviewApi(page);
-    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
+    const national = page.getByTestId("review-national-orientation");
+    await expect(national).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Atlas gap score" })
+    ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-legend")).toContainText(
+      "published score colors"
+    );
+    await expect(page.getByTestId("explorer-map-legend")).toContainText(
+      "No published value"
+    );
+    await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
+    await expect(page.getByLabel("Zoom in")).toBeVisible();
+    await expect(page.getByLabel("Zoom out")).toBeVisible();
+    await expect(page.getByText(/49 of 49 states/)).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "State orientation" })
-    ).toBeVisible();
-    await expect(page.locator(".ux-reset-review-state-grid")).toHaveCount(0);
-    await expect(
-      page.getByTestId("review-state-navigation-status")
-    ).toContainText(
-      /The map is ready\.|The map could not start\. Choose a state from the list\.|The map could not load\. Choose a state from the list\./
-    );
-    await expect(
-      page.getByRole("button", { name: "DC, not in this release" })
-    ).toBeDisabled();
-    await page.getByTestId("review-state-search").fill("Colorado");
-    await expect(
-      page.getByRole("button", { name: "NY, New York" })
     ).toHaveCount(0);
-    await expect(
-      page.getByTestId("review-state-navigation-status")
-    ).toContainText("Showing 1 of 49 states.");
-    await page.getByRole("button", { name: "CO, Colorado" }).click();
-    await expect(page).toHaveURL(/scope=CO/);
-    await expect(page.getByTestId("review-state-panel")).toBeVisible();
-    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
-      0
-    );
+    const mapBox = await page.locator(".ux-reset-explorer-map").boundingBox();
+    const listBox = await page.locator(".ux-reset-explorer-list").boundingBox();
+    expect(mapBox).not.toBeNull();
+    expect(listBox).not.toBeNull();
+    if (mapBox && listBox) {
+      expect(Math.abs(listBox.y - mapBox.y)).toBeLessThan(8);
+      expect(listBox.y + listBox.height).toBeLessThanOrEqual(
+        mapBox.y + mapBox.height + 8
+      );
+    }
+    await expectNoHorizontalOverflow(page);
     expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
       []
     );
+  });
 
+  test("browses a state and selects a county without leaving the United States", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL");
+    await page.getByTestId("national-browse-state").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    await page.getByRole("button", { name: /Denver, CO/ }).click();
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(
+      page.getByTestId("review-published-county-preview")
+    ).toContainText("Denver");
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page).not.toHaveURL(/county=08001/);
+  });
+
+  test("keeps a selected-county deep link on the national map", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1673 });
+    await page.goto("/explore?scope=ALL&county=08001&dataset=alpha-2026");
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect(
+      page.getByTestId("review-published-county-preview")
+    ).toContainText("Denver");
+    await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page).toHaveURL(/county=08001/);
+  });
+
+  test("switches between national and state scope without losing history", async ({
+    page,
+  }) => {
+    const profileMethods = await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL");
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await chooseState(page, "Colorado (CO)");
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    await expect(page.getByLabel("Zoom in")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Fit Colorado" })
+    ).toBeVisible();
     await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await page.reload();
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
-    await expect(
-      page.getByTestId("review-state-navigation-status")
-    ).toContainText(
-      /The map is ready\.|The map could not start\. Choose a state from the list\.|The map could not load\. Choose a state from the list\./
+    expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
+      []
     );
     await expectNoHorizontalOverflow(page);
-    await page.screenshot({
-      fullPage: true,
-      path: `/opt/cursor/artifacts/review-national-1440-${testInfo.project.name}.png`,
-    });
   });
 
-  test("keeps the state list usable when boundaries fail", async ({ page }) => {
+  test("keeps county browsing usable when the map cannot load", async ({
+    page,
+  }) => {
     await installReviewApi(page, {
       body: { detail: "geometry unavailable" },
       status: 500,
     });
+    await page.setViewportSize({ height: 1000, width: 1280 });
     await page.goto("/explore?scope=ALL");
-    await expect(
-      page.getByTestId("review-state-navigation-status")
-    ).toContainText(
-      "State boundaries are unavailable. Choose a state from the list."
+    await expect(page.getByTestId("review-national-map-region")).toContainText(
+      "temporarily unavailable"
     );
-    await page.getByTestId("review-state-search").fill("New York");
-    await page.getByRole("button", { name: "NY, New York" }).click();
-    await expect(page).toHaveURL(/scope=NY/);
-    await expect(page.getByTestId("review-scope-status")).toContainText(
-      "New York"
-    );
+    await page.getByTestId("national-browse-state").click();
+    await page.getByRole("option", { name: "New York (NY)" }).click();
+    await page.getByRole("button", { name: /Albany, NY/ }).click();
+    await expect(page).toHaveURL(/county=36001/);
+    await expect(page).toHaveURL(/scope=ALL/);
   });
 
-  test("keeps the state list usable without WebGL", async ({
-    page,
-  }, testInfo) => {
+  test("keeps county browsing usable without WebGL", async ({ page }) => {
     await page.addInitScript(() => {
       const prototype = HTMLCanvasElement.prototype;
       const original = prototype.getContext;
@@ -326,172 +334,69 @@ test.describe("Review national geographic navigation", () => {
       } as typeof prototype.getContext;
     });
     await installReviewApi(page);
-    const phone = releaseViewportRuns(testInfo.project.name, 390);
-    const viewport = phone
-      ? { height: 844, width: 390 }
-      : { height: 900, width: 1440 };
-    await page.setViewportSize(viewport);
+    await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
+    await expect(page.getByTestId("review-national-map-region")).toContainText(
+      "temporarily unavailable"
+    );
+    await page.getByTestId("national-browse-state").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
     await expect(
-      page.getByTestId("review-state-navigation-status")
-    ).toContainText("The map could not start. Choose a state from the list.");
-    await expect(page.locator(".ux-reset-review-state-grid")).toHaveCount(0);
+      page.getByRole("button", { name: /Denver, CO/ })
+    ).toBeVisible();
     await expectNoHorizontalOverflow(page);
-    await page.screenshot({
-      fullPage: true,
-      path: `/opt/cursor/artifacts/review-national-${viewport.width}-no-webgl-${testInfo.project.name}.png`,
-    });
-    const search = page.getByTestId("review-state-search");
-    await search.fill("Colorado");
-    await search.press("Enter");
-    await expect(page).toHaveURL(/scope=CO/);
-    await expect(page.getByTestId("review-state-panel")).toBeVisible();
   });
 
-  test("frames coastal states on a wide map, refits when narrowed, and opens them from the map", async ({
-    page,
-  }, testInfo) => {
-    await installReviewApi(
-      page,
-      { body: coastalNavigationGeometry, status: 200 },
-      coastalRelease
-    );
-    await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/explore?scope=ALL");
-    await expect(
-      page.getByTestId("review-state-navigation-status")
-    ).toContainText("The map is ready.");
-    for (const place of coastalPlaces) {
-      await expect(
-        page.getByRole("button", { name: place.label })
-      ).toBeEnabled();
-    }
-    const wide = await readNationalCamera(page);
-    expect(coastalPlacesAreFramed(wide)).toStrictEqual({
-      CA: true,
-      DC: true,
-      NY: true,
-    });
-    if (releaseViewportRuns(testInfo.project.name, 390)) {
-      await page.setViewportSize({ height: 844, width: 390 });
-      await expect
-        .poll(async () => (await readNationalCamera(page)).zoom)
-        .toBeLessThan(wide.zoom);
-      const narrow = await readNationalCamera(page);
-      expect(coastalPlacesAreFramed(narrow)).toStrictEqual({
-        CA: true,
-        DC: true,
-        NY: true,
-      });
-      await page.screenshot({
-        fullPage: true,
-        path: `/opt/cursor/artifacts/review-national-390-webgl-${testInfo.project.name}.png`,
-      });
-    }
-    for (const place of coastalPlaces) {
-      await clickMappedState(page, place.code, place.longitude, place.latitude);
-      await expect(page).toHaveURL(new RegExp(`scope=${place.code}`));
-      await expect(page.getByTestId("review-national-orientation")).toHaveCount(
-        0
-      );
-      await expect(page.getByTestId("review-scope-status")).toContainText(
-        place.label.split(", ")[1] ?? place.code
-      );
-      if (place.code !== "DC") {
-        await page.goBack({ waitUntil: "commit" });
-        await expect(page).toHaveURL(/scope=ALL/);
-        await expect(
-          page.getByTestId("review-state-navigation-status")
-        ).toContainText("The map is ready.");
-      }
-    }
-  });
-
-  test("announces the focused state as keyboard focus moves on the map and in the list", async ({
+  test("switches the national layer without dropping the county", async ({
     page,
   }) => {
     await installReviewApi(page);
-    await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/explore?scope=ALL");
-    const live = page.getByTestId("review-state-navigation-live");
-    await expect(live).toContainText(
-      "Map status: The map is ready. Focused state: none."
-    );
-    const map = page.getByTestId("review-state-navigation-map");
-    await map.focus();
-    await map.press("ArrowRight");
-    await expect(live).toContainText(
-      "Focused state: Colorado (CO), available."
-    );
-    await map.press("ArrowRight");
-    await expect(live).toContainText(
-      "Focused state: New York (NY), available."
-    );
-    const colorado = page.getByRole("button", { name: "CO, Colorado" });
-    await colorado.focus();
-    await expect(live).toContainText(
-      "Focused state: Colorado (CO), available."
-    );
-    await colorado.press("ArrowDown");
-    await expect(live).toContainText(
-      "Focused state: New York (NY), available."
-    );
+    await page.setViewportSize({ height: 1000, width: 1920 });
+    await page.goto("/explore?scope=ALL&county=08013");
     await expect(
-      page.getByRole("button", { name: "DC, not in this release" })
-    ).toBeDisabled();
-    await expect(page).toHaveURL(/scope=ALL/);
-  });
-
-  test("starts at the last state when reversing and clears focus after leaving the map", async ({
-    page,
-  }) => {
-    await installReviewApi(page);
-    await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/explore?scope=ALL");
-    const live = page.getByTestId("review-state-navigation-live");
-    const status = page.getByTestId("review-state-navigation-status");
-    await expect(live).toContainText("The map is ready.");
-    const map = page.getByTestId("review-state-navigation-map");
-    await map.focus();
-    await map.press("ArrowLeft");
-    await expect(live).toContainText(
-      "Focused state: New York (NY), available."
+      page.getByRole("heading", { name: "Atlas gap score" })
+    ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-legend")).toContainText(
+      "No published value"
     );
-    await expect(status).toContainText("Focused state: New York (NY).");
-    await map.press("Home");
-    await expect(status).toContainText("Focused state: Colorado (CO).");
-    await map.press("End");
-    await expect(status).toContainText("Focused state: New York (NY).");
-    await map.press("Escape");
-    await expect(live).toContainText("Focused state: none.");
-    await map.press("ArrowRight");
-    await expect(status).toContainText("Focused state: Colorado (CO).");
-    await page.getByTestId("review-state-search").focus();
-    await expect(status).toContainText("Focused state: none.");
-    await expect(live).toContainText("Focused state: none.");
-    await map.focus();
-    await map.press("ArrowUp");
-    await expect(live).toContainText(
-      "Focused state: New York (NY), available."
+    await page.getByTestId("explorer-map-layer").click();
+    await page.getByRole("option", { name: "County boundaries" }).click();
+    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page.getByTestId("explorer-map-legend")).toContainText(
+      "County boundaries"
     );
-    await expect(page).toHaveURL(/scope=ALL/);
-  });
-
-  test("fits the national map at tablet width", async ({ page }, testInfo) => {
-    await installReviewApi(page);
-    await page.setViewportSize({ height: 1024, width: 768 });
-    await page.goto("/explore?scope=ALL");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
-    await expect(page.locator(".ux-reset-review-state-grid")).toHaveCount(0);
-    await expect(
-      page.getByTestId("review-state-navigation-status")
-    ).toContainText(
-      /The map is ready\.|The map could not start\. Choose a state from the list\.|The map could not load\. Choose a state from the list\./
-    );
-    await expectNoHorizontalOverflow(page);
-    await page.screenshot({
-      fullPage: true,
-      path: `/opt/cursor/artifacts/review-national-768-${testInfo.project.name}.png`,
-    });
+  });
+
+  test("fits California, DC, New York, and the country extents at desktop widths", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1920 });
+    await page.goto("/explore?scope=ALL");
+    await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
+    await expect(page.getByLabel("Zoom in")).toBeVisible();
+    for (const width of [1280, 1440, 1673, 1920]) {
+      await page.setViewportSize({ height: 1000, width });
+      await page.getByTestId("explorer-fit-national").click();
+      await expectNationalExtentsVisible(page);
+    }
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.getByTestId("explorer-fit-national").click();
+    await expectNationalExtentsVisible(page);
+    const overview = await readNationalCamera(page);
+    await page.getByLabel("Zoom in").click();
+    await waitForStableZoom(page);
+    const zoomed = await readNationalCamera(page);
+    expect(zoomed.zoom).toBeGreaterThan(overview.zoom + 0.4);
+    await page.setViewportSize({ height: 1000, width: 1280 });
+    await waitForStableZoom(page);
+    const afterResize = await readNationalCamera(page);
+    expect(afterResize.zoom).toBeGreaterThan(overview.zoom + 0.4);
+    await page.getByTestId("explorer-fit-national").click();
+    await expectNationalExtentsVisible(page);
+    await page.setViewportSize({ height: 1000, width: 1920 });
+    await expectNationalExtentsVisible(page);
   });
 });

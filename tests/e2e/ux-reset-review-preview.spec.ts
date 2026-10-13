@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { reviewNationalCameraPoint } from "../../src/features/ux-reset/review/review-national-camera";
 import {
   investigateIndicatorsFixture,
   investigateMeasuresFixture,
@@ -107,6 +108,53 @@ const reviewSequenceCounties = [
     })
   ),
 ];
+
+async function mappedCountyPoint(
+  page: Page,
+  longitude: number,
+  latitude: number
+) {
+  const map = page.locator(".maplibre-atlas");
+  let previousZoom = Number.NaN;
+  const readPoint = async () => {
+    const box = await map.boundingBox();
+    const camera = await map.evaluate((element) => ({
+      height: element.clientHeight,
+      lat: Number(element.dataset.mapCameraLat),
+      lng: Number(element.dataset.mapCameraLng),
+      width: element.clientWidth,
+      zoom: Number(element.dataset.mapCameraZoom),
+    }));
+    const zoomSettled = Math.abs(camera.zoom - previousZoom) < 0.01;
+    previousZoom = camera.zoom;
+    if (!zoomSettled || !box || !(camera.width > 0) || !(camera.height > 0)) {
+      return null;
+    }
+    const projected = reviewNationalCameraPoint(
+      { center: [camera.lng, camera.lat], zoom: camera.zoom },
+      camera.width,
+      camera.height,
+      longitude,
+      latitude
+    );
+    if (
+      !projected ||
+      projected.x < 0 ||
+      projected.y < 0 ||
+      projected.x > camera.width ||
+      projected.y > camera.height
+    ) {
+      return null;
+    }
+    return { x: box.x + projected.x, y: box.y + projected.y };
+  };
+  await expect.poll(readPoint).not.toBeNull();
+  const point = await readPoint();
+  if (!point) {
+    throw new Error("expected the county to be inside the map");
+  }
+  return point;
+}
 
 async function installPreviewMocks(
   page: Page,
@@ -415,29 +463,8 @@ test.describe("Review county preview and Investigate handoff", () => {
     await canvas.scrollIntoViewIfNeeded();
     // The state frame shows both counties. Selecting from the list afterwards
     // can zoom the camera onto that county, so the map click happens first.
-    await page.waitForTimeout(1500);
-    const box = await canvas.boundingBox();
-    expect(box).toBeTruthy();
-    if (!box) {
-      return;
-    }
-    const mapPoints = [
-      [0.72, 0.5],
-      [0.82, 0.46],
-      [0.64, 0.58],
-    ] as const;
-    for (const [xFraction, yFraction] of mapPoints) {
-      await page.mouse.click(
-        box.x + box.width * xFraction,
-        box.y + box.height * yFraction
-      );
-      const selected = await page
-        .getByTestId("review-county-preview")
-        .getAttribute("data-fips");
-      if (selected === "36003") {
-        break;
-      }
-    }
+    const orange = await mappedCountyPoint(page, -74, 43);
+    await page.mouse.click(orange.x, orange.y);
     const mapPreview = page.getByTestId("review-county-preview");
     await expect(mapPreview).toHaveAttribute("data-fips", "36003");
     await expect(page).toHaveURL(/\/explore/);

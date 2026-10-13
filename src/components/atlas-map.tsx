@@ -9,6 +9,7 @@ import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Ref } from "react";
 
+import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   CONTIGUOUS_US_INITIAL_VIEW,
@@ -173,6 +174,13 @@ export function AtlasMap({
   const previousFramedState = useRef<string | null>(null);
   const previousFitSignal = useRef(fitSignal);
   const cameraFitGeneration = useRef(0);
+  const resetNationalViewRef = useRef(resetNationalView);
+  const cameraFrameStateRef = useRef(cameraFrameState);
+  const userAdjustedNationalRef = useRef(false);
+  const initialNationalFitRef = useRef(false);
+  const fitNationalViewRef = useRef<(instance: MapLibreMap) => boolean>(
+    () => false
+  );
   const [mapReady, setMapReady] = useState(false);
   const selectRef = useRef(onSelect);
   const onMoveRef = useRef(onMove);
@@ -183,7 +191,31 @@ export function AtlasMap({
     onMoveRef.current = onMove;
     onIdleRef.current = onIdle;
     onErrorRef.current = onError;
+    resetNationalViewRef.current = resetNationalView;
+    cameraFrameStateRef.current = cameraFrameState;
   });
+  fitNationalViewRef.current = (instance) => {
+    const element = container.current;
+    if (!element) {
+      return false;
+    }
+    const camera = reviewNationalNavigationCamera(
+      element.clientWidth,
+      element.clientHeight
+    );
+    if (!camera) {
+      return false;
+    }
+    applyingExternalMove.current = true;
+    instance.stop();
+    instance.jumpTo({ center: camera.center, zoom: camera.zoom });
+    applyingExternalMove.current = false;
+    const center = instance.getCenter();
+    element.dataset.mapCameraLat = String(center.lat);
+    element.dataset.mapCameraLng = String(center.lng);
+    element.dataset.mapCameraZoom = String(instance.getZoom());
+    return true;
+  };
 
   useImperativeHandle(ref, () => ({
     getMap: () => {
@@ -241,7 +273,7 @@ export function AtlasMap({
         container: container.current,
         style: { layers: [], sources: {}, version: 8 },
         ...CONTIGUOUS_US_INITIAL_VIEW,
-        minZoom: 2,
+        minZoom: resetNationalView ? 0 : 2,
         maxZoom: 8,
         attributionControl: false,
       });
@@ -269,11 +301,23 @@ export function AtlasMap({
     instance.on("error", () => {
       onErrorRef.current?.();
     });
-    instance.on("move", () => {
+    instance.on("move", (event) => {
+      const center = instance.getCenter();
+      const element = container.current;
+      if (element) {
+        element.dataset.mapCameraLat = String(center.lat);
+        element.dataset.mapCameraLng = String(center.lng);
+        element.dataset.mapCameraZoom = String(instance.getZoom());
+      }
       if (applyingExternalMove.current) {
         return;
       }
-      const center = instance.getCenter();
+      const frame = cameraFrameStateRef.current;
+      const nationallyFramed =
+        resetNationalViewRef.current && (!frame || frame === "ALL");
+      if (event?.originalEvent && nationallyFramed) {
+        userAdjustedNationalRef.current = true;
+      }
       onMoveRef.current?.({
         center: { lng: center.lng, lat: center.lat },
         zoom: instance.getZoom(),
@@ -346,6 +390,13 @@ export function AtlasMap({
       observed && typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(() => {
             instance.resize();
+            const frame = cameraFrameStateRef.current;
+            const nationallyFramed =
+              resetNationalViewRef.current && (!frame || frame === "ALL");
+            if (!nationallyFramed || userAdjustedNationalRef.current) {
+              return;
+            }
+            fitNationalViewRef.current(instance);
           })
         : null;
     resizeObserver?.observe(observed as HTMLElement);
@@ -393,21 +444,39 @@ export function AtlasMap({
     if (!mapReady || !instance?.getLayer("selected-outline")) {
       return;
     }
-    if (previousFitSignal.current !== fitSignal) {
+    const fitRequested = previousFitSignal.current !== fitSignal;
+    if (fitRequested) {
       previousFitSignal.current = fitSignal;
-      previousFramedState.current = null;
     }
     const frameState =
       cameraFrameState && cameraFrameState !== "ALL" ? cameraFrameState : null;
+    if (fitRequested && resetNationalView && !frameState) {
+      userAdjustedNationalRef.current = false;
+      fitNationalViewRef.current(instance);
+      previousFramedState.current = null;
+      previousSelectedFips.current = selectedFips;
+      return;
+    }
+    if (fitRequested) {
+      previousFramedState.current = null;
+    }
     if (!frameState) {
       const shouldResetNational =
         resetNationalView && previousFramedState.current !== null;
       previousFramedState.current = null;
       if (shouldResetNational) {
-        applyingExternalMove.current = true;
-        instance.stop();
-        instance.jumpTo(CONTIGUOUS_US_INITIAL_VIEW);
-        applyingExternalMove.current = false;
+        userAdjustedNationalRef.current = false;
+        fitNationalViewRef.current(instance);
+        previousSelectedFips.current = selectedFips;
+        return;
+      }
+      if (
+        resetNationalView &&
+        !userAdjustedNationalRef.current &&
+        !initialNationalFitRef.current &&
+        fitNationalViewRef.current(instance)
+      ) {
+        initialNationalFitRef.current = true;
         previousSelectedFips.current = selectedFips;
         return;
       }

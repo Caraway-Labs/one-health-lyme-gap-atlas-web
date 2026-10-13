@@ -2024,10 +2024,60 @@
 
 @media (min-width: 1200px) {
   .ux-reset-explorer-browse {
+    align-items: stretch;
     grid-template-columns: minmax(14.5rem, 16.25rem) minmax(0, 1fr) minmax(
         18rem,
         20.5rem
       );
+    height: min(44rem, calc(100svh - 31.5rem));
+    min-height: 20rem;
+  }
+
+  .ux-reset-explorer-list,
+  .ux-reset-explorer-map,
+  .ux-reset-explorer-preview {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ux-reset-explorer-list,
+  .ux-reset-explorer-preview {
+    overflow: auto;
+  }
+
+  .ux-reset-explorer-map {
+    overflow: hidden;
+  }
+
+  .ux-reset-explorer-map {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ux-reset-explorer-map .ux-reset-explorer-map-heading,
+  .ux-reset-explorer-map .ux-reset-explorer-map-layer,
+  .ux-reset-explorer-map .ux-reset-explorer-legend {
+    flex: 0 0 auto;
+  }
+
+  .ux-reset-explorer-map .map-wrap {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 8rem;
+    overflow: hidden;
+  }
+
+  .ux-reset-explorer-map .maplibre-atlas {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ux-reset-explorer-map .ux-reset-explorer-legend {
+    padding: 0.35rem 0.9rem 0.75rem;
+  }
+
+  .ux-reset-explorer-preview {
+    overflow: auto;
   }
 
   .ux-reset-explorer-list {
@@ -2035,8 +2085,7 @@
     grid-row: 1;
   }
 
-  .ux-reset-explorer-map,
-  .ux-reset-explorer-browse .ux-reset-review-state-map {
+  .ux-reset-explorer-map {
     grid-column: 2;
     grid-row: 1;
   }
@@ -2046,13 +2095,33 @@
     grid-row: 1;
   }
 
-  .ux-reset-explorer-list.ux-reset-review-state-nav {
-    display: contents;
+  /* State orientation keeps the map and state list in one column. The
+     national picture's fixed row would crush that list under the map. */
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav) {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+    height: auto;
+    min-height: 0;
   }
 
-  .ux-reset-explorer-list.ux-reset-review-state-nav
-    > :not(.ux-reset-review-state-map) {
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    > .ux-reset-explorer-list,
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    > .ux-reset-explorer-preview {
+    height: auto;
+    overflow: visible;
+  }
+
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    > .ux-reset-review-state-nav {
     grid-column: 1;
+    grid-row: 1;
+  }
+
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    > .ux-reset-explorer-preview {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .ux-reset-evidence-columns {
@@ -2069,8 +2138,7 @@
     grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
   }
 
-  .ux-reset-explorer-map,
-  .ux-reset-explorer-browse .ux-reset-review-state-map {
+  .ux-reset-explorer-map {
     grid-column: 1 / -1;
     grid-row: 1;
   }

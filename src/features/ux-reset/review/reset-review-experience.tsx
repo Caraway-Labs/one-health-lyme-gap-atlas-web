@@ -60,13 +60,13 @@ import {
   reviewDatasetText,
   reviewText,
 } from "@/features/ux-reset/review/review-governed-values";
-import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
+import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
   isUnsupportedReviewScope,
   normalizeReviewCounty,
   REVIEW_REQUEST_FAILURE_MESSAGE,
-  reviewCandidateFipsForScope,
+  reviewCountyFipsForScope,
   unsupportedReviewScopeMessage,
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
@@ -89,6 +89,47 @@ import {
   reviewScopeLabel,
 } from "@/lib/atlas-state-geography";
 import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
+
+type ReviewInheritedCounty = {
+  county: string;
+  fips: string;
+  stateName: string;
+};
+
+function reviewInheritedIdentities(input: {
+  chosenNationalFips: string | null;
+  directoryCounties: readonly ReviewInheritedCounty[];
+  nationalCounties: readonly ReviewInheritedCounty[];
+  nationalScope: boolean;
+  ready: boolean;
+  selectedFips: string | null;
+}): { county: string; fips: string; state_name: string }[] {
+  let fips: string | null = null;
+  if (input.ready) {
+    fips = input.selectedFips;
+  } else if (
+    input.nationalScope &&
+    input.chosenNationalFips &&
+    input.chosenNationalFips === input.selectedFips
+  ) {
+    fips = input.chosenNationalFips;
+  }
+  if (!fips) {
+    return [];
+  }
+  const source = input.ready ? input.directoryCounties : input.nationalCounties;
+  const entry = source.find((county) => county.fips === fips);
+  if (!entry) {
+    return [];
+  }
+  return [
+    {
+      county: entry.county,
+      fips: entry.fips,
+      state_name: entry.stateName,
+    },
+  ];
+}
 
 function ResetReviewExperienceInner() {
   const route = resetRouteById("explorer");
@@ -232,10 +273,19 @@ function ResetReviewExperienceInner() {
     },
     [setUrlState]
   );
+  const [chosenNationalFips, setChosenNationalFips] = useState<string | null>(
+    null
+  );
+  if (scope !== "ALL" && chosenNationalFips !== null) {
+    setChosenNationalFips(null);
+  }
   const setCounty = useCallback(
     (fips: string | null, history: "push" | "replace") => {
       const county =
-        fips === null ? null : reviewCandidateFipsForScope(fips, scope);
+        fips === null ? null : reviewCountyFipsForScope(fips, scope);
+      if (scope === "ALL") {
+        setChosenNationalFips(county);
+      }
       void setUrlState({ county }, { history });
     },
     [scope, setUrlState]
@@ -385,16 +435,14 @@ function ResetReviewExperienceInner() {
     userChoseScope,
   });
   const scopeViewReady = !startingScopePending;
-  const reviewIdentities =
-    scopeViewReady && reviewReady
-      ? publishedDirectory.counties
-          .filter((entry) => entry.fips === reviewCounty)
-          .map((entry) => ({
-            county: entry.county,
-            fips: entry.fips,
-            state_name: entry.stateName,
-          }))
-      : [];
+  const reviewIdentities = reviewInheritedIdentities({
+    chosenNationalFips,
+    directoryCounties: publishedDirectory.counties,
+    nationalCounties: countyReference.counties,
+    nationalScope: scope === "ALL",
+    ready: scopeViewReady && reviewReady,
+    selectedFips: reviewCounty,
+  });
   const reviewAskContext = scopeViewReady
     ? inheritedContextFromReview({
         rankedCounties: reviewIdentities,
@@ -409,7 +457,7 @@ function ResetReviewExperienceInner() {
   const pictureActive = Boolean(reviewReady && stateReview.review);
   const openCountyEvidence = useCallback(
     (fips: string) => {
-      const county = reviewCandidateFipsForScope(fips, scope);
+      const county = reviewCountyFipsForScope(fips, scope);
       if (!county) {
         return;
       }
@@ -586,12 +634,21 @@ function ResetReviewExperienceInner() {
             data-testid="review-scope-results"
           >
             {nationalReady && presentationQuery.metadata ? (
-              <ReviewNationalOrientation
+              <ReviewNationalPicture
+                availableDataGate={availableDataGate}
+                counties={countyReference.counties}
+                countiesError={countyReference.isError}
+                countiesLoading={countyReference.isLoading}
+                county={reviewCounty}
+                countyQuery={countyQuery}
+                mapLayer={mapLayer}
+                period={urlState.period}
                 releaseId={presentationQuery.metadata.release_id}
-                releaseStates={releaseStates}
-                onOpenState={(stateCode) => {
-                  setScope(stateCode);
-                }}
+                releaseStates={stateOptions}
+                tierRelease={tierRelease}
+                onCountyChange={setCounty}
+                onMapLayerChange={setMapLayer}
+                onViewCountyEvidence={openCountyEvidence}
               />
             ) : null}
             {reviewReady && stateReview.review ? (

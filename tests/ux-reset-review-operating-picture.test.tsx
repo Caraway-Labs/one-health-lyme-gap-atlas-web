@@ -174,7 +174,9 @@ describe("Review operating picture state", () => {
   it("keeps a review county only when its prefix matches a lower-48 scope", () => {
     expect({
       all: normalizeReviewCounty("ALL", "08001"),
+      alaska: normalizeReviewCounty("ALL", "02013"),
       blank: normalizeReviewCounty("CO", null),
+      hawaii: normalizeReviewCounty("ALL", "15001"),
       dcMatch: normalizeReviewCounty("DC", "11001"),
       dcMismatch: normalizeReviewCounty("DC", "08001"),
       match: normalizeReviewCounty("NY", "36001"),
@@ -183,7 +185,9 @@ describe("Review operating picture state", () => {
       unsupported: normalizeReviewCounty("PR", "08001"),
     }).toStrictEqual({
       all: "08001",
+      alaska: null,
       blank: null,
+      hawaii: null,
       dcMatch: "11001",
       dcMismatch: null,
       match: "36001",
