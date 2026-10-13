@@ -38,6 +38,76 @@ export const EXPLORER_AVAILABLE_DATA_OPTIONS = [
 export const EXPLORER_COUNTY_EXPORT_NOTE =
   "Download includes counties matching the current State, county name or FIPS search, and Available data filters. Columns are five-digit FIPS, county name, and state. Scores are not included.";
 
+export const EXPLORER_AVAILABLE_DATA_EMPTY =
+  "No published counties match the Available data filter.";
+
+export const EXPLORER_AVAILABLE_DATA_LOADING =
+  "Checking counties for the Available data filter…";
+
+export const EXPLORER_AVAILABLE_DATA_ERROR =
+  "Available data could not be applied. Counties stay hidden until the filter can be checked.";
+
+/** Open shows every county. Ready is the filtered FIPS set. Loading and error must not fall open. */
+export type ExplorerAvailableDataGate =
+  | { kind: "open" }
+  | { kind: "loading" }
+  | { kind: "error" }
+  | { kind: "ready"; fips: ReadonlySet<string> };
+
+export const EXPLORER_AVAILABLE_DATA_OPEN: ExplorerAvailableDataGate = {
+  kind: "open",
+};
+
+export function explorerAvailableDataGate(input: {
+  availableData: EvidenceView;
+  counties: readonly ExplorerCountyReference[];
+  isError: boolean;
+  isSuccess: boolean;
+  scope: string;
+}): ExplorerAvailableDataGate {
+  if (input.availableData === "all") {
+    return EXPLORER_AVAILABLE_DATA_OPEN;
+  }
+  if (input.isError) {
+    return { kind: "error" };
+  }
+  if (!input.isSuccess) {
+    return { kind: "loading" };
+  }
+  return {
+    fips: new Set(
+      filterExplorerCountyReference(input.counties, {
+        evidence: input.availableData,
+        query: "",
+        scope: input.scope,
+      }).map((county) => county.fips)
+    ),
+    kind: "ready",
+  };
+}
+
+export function countyPassesAvailableData(
+  gate: ExplorerAvailableDataGate,
+  fips: string
+): boolean {
+  switch (gate.kind) {
+    case "open": {
+      return true;
+    }
+    case "ready": {
+      return gate.fips.has(fips);
+    }
+    case "loading":
+    case "error": {
+      return false;
+    }
+    default: {
+      const exhaustive: never = gate;
+      return exhaustive;
+    }
+  }
+}
+
 const COUNTY_OPTION_LIMIT = 8;
 const CSV_NEWLINE = "\r\n";
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   countyReferenceFromScoreSummaries,
   countyReferenceMatchesQuery,
+  explorerAvailableDataGate,
   explorerCountyListCsv,
   explorerCountyListFilename,
   filterExplorerCountyReference,
@@ -114,6 +115,78 @@ describe("explorer county reference", () => {
         scope: "CO",
       })
     ).toStrictEqual([]);
+  });
+
+  it("requires five of six inputs before most data fields matches", () => {
+    const counties = [
+      autauga,
+      { ...autauga, evidenceCompleteness: 83, fips: "01005" },
+    ];
+    expect({
+      atThreshold: filterExplorerCountyReference(
+        [{ ...autauga, evidenceCompleteness: 83 }],
+        {
+          evidence: "complete",
+          query: "",
+          scope: "AL",
+        }
+      ).map((county) => county.fips),
+      dropsEightyPercent: filterExplorerCountyReference(counties, {
+        evidence: "complete",
+        query: "",
+        scope: "AL",
+      }).map((county) => county.fips),
+    }).toStrictEqual({
+      atThreshold: ["01001"],
+      dropsEightyPercent: ["01005"],
+    });
+  });
+
+  it("keeps a restrictive filter closed while the county reference is loading or failed", () => {
+    const loading = explorerAvailableDataGate({
+      availableData: "complete",
+      counties: [autauga],
+      isError: false,
+      isSuccess: false,
+      scope: "AL",
+    });
+    const failed = explorerAvailableDataGate({
+      availableData: "human",
+      counties: [autauga],
+      isError: true,
+      isSuccess: false,
+      scope: "AL",
+    });
+    const open = explorerAvailableDataGate({
+      availableData: "all",
+      counties: [],
+      isError: true,
+      isSuccess: false,
+      scope: "AL",
+    });
+    const ready = explorerAvailableDataGate({
+      availableData: "complete",
+      counties: [
+        autauga,
+        { ...autauga, evidenceCompleteness: 83, fips: "01005" },
+      ],
+      isError: false,
+      isSuccess: true,
+      scope: "AL",
+    });
+    expect({
+      failed,
+      loading,
+      open,
+      readyFips: ready.kind === "ready" ? [...ready.fips] : [],
+      readyKind: ready.kind,
+    }).toStrictEqual({
+      failed: { kind: "error" },
+      loading: { kind: "loading" },
+      open: { kind: "open" },
+      readyFips: ["01005"],
+      readyKind: "ready",
+    });
   });
 
   it("matches a selected county label that contains the name and FIPS", () => {

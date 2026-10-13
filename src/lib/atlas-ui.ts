@@ -9,6 +9,13 @@ export const EVIDENCE_VIEWS = new Set([
 
 export type EvidenceView = "all" | "ecological" | "human" | "complete";
 
+/**
+ * `evidence_completeness` is a whole percent of six scored inputs.
+ * Five of six rounds to 83. A threshold of 5 would treat that percent as a
+ * field count and let low-percent counties through “Most data fields available”.
+ */
+export const MOST_DATA_FIELDS_COMPLETENESS_PERCENT = 83;
+
 export interface ScoreSettings {
   ecological_share: number;
   low_incidence_breakpoint: number;
@@ -90,7 +97,9 @@ export function matchesEvidence(
     return county.human_status === "published_count_floor";
   }
   if (evidence === "complete") {
-    return county.evidence_completeness >= 5;
+    return (
+      county.evidence_completeness >= MOST_DATA_FIELDS_COMPLETENESS_PERCENT
+    );
   }
   return true;
 }

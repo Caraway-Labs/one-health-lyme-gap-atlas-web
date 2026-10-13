@@ -24,6 +24,7 @@ import { resetRouteById } from "@/features/ux-reset/paths";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import {
   downloadExplorerCountyList,
+  explorerAvailableDataGate,
   explorerCountyListCsv,
   explorerCountyListFilename,
   filterExplorerCountyReference,
@@ -207,23 +208,23 @@ function ResetReviewExperienceInner() {
     },
     [scope, setUrlState]
   );
-  const eligibleFips = useMemo(() => {
-    if (availableData === "all" || !countyReference.isSuccess) {
-      return null;
-    }
-    return new Set(
-      filterExplorerCountyReference(countyReference.counties, {
-        evidence: availableData,
-        query: "",
+  const availableDataGate = useMemo(
+    () =>
+      explorerAvailableDataGate({
+        availableData,
+        counties: countyReference.counties,
+        isError: countyReference.isError,
+        isSuccess: countyReference.isSuccess,
         scope,
-      }).map((county) => county.fips)
-    );
-  }, [
-    availableData,
-    countyReference.counties,
-    countyReference.isSuccess,
-    scope,
-  ]);
+      }),
+    [
+      availableData,
+      countyReference.counties,
+      countyReference.isError,
+      countyReference.isSuccess,
+      scope,
+    ]
+  );
   const selectToolbarCounty = useCallback(
     (county: { fips: string; state: string }) => {
       if (scope === county.state) {
@@ -557,8 +558,8 @@ function ResetReviewExperienceInner() {
             {reviewReady && stateReview.review ? (
               <ReviewOperatingPicture
                 county={reviewCounty}
+                availableDataGate={availableDataGate}
                 countyQuery={countyQuery}
-                eligibleFips={eligibleFips}
                 freezeCountySelection={explorerMode !== null}
                 mapLayer={mapLayer}
                 period={urlState.period}
