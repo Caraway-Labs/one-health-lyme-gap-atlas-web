@@ -1,8 +1,7 @@
 "use client";
 
-import { Zap } from "lucide-react";
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
@@ -32,6 +31,12 @@ import {
   hrefWithExplorerMode,
   type ExplorerCountyMode,
 } from "@/features/ux-reset/review/explorer-mode";
+import {
+  ExplorerReviewPriority,
+  ExplorerSuggestedFollowUpPanel,
+  type SuggestedFollowUpPanelStatus,
+} from "@/features/ux-reset/review/explorer-suggested-follow-up-panel";
+import { selectSuggestedFollowUp } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { RESET_REVIEW_PATH } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
@@ -110,136 +115,27 @@ function recoveryMessage(
   }
 }
 
-function FollowUpChecklist({
-  limitations,
-}: {
-  limitations: readonly string[];
-}) {
-  const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
-  return (
-    <div data-testid="explorer-follow-up-checklist">
-      <p className="type-small">
-        Checking a line is a reading aid on this page. It is not saved,
-        assigned, or sent.
-      </p>
-      <ul className="ux-reset-explorer-checklist">
-        {limitations.map((limitation) => (
-          <li key={limitation}>
-            <label>
-              <input
-                checked={checked.has(limitation)}
-                type="checkbox"
-                onChange={(event) => {
-                  setChecked((current) => {
-                    const next = new Set(current);
-                    if (event.target.checked) {
-                      next.add(limitation);
-                    } else {
-                      next.delete(limitation);
-                    }
-                    return next;
-                  });
-                }}
-              />
-              <span>{limitation}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function SuggestedFollowUp({
-  countyFips,
-  followUp,
-  headingRef,
-}: {
-  countyFips: string | null;
-  followUp: ExplorerFollowUpState;
-  headingRef: RefObject<HTMLHeadingElement | null>;
-}) {
-  const status = followUp.status;
-  return (
-    <section
-      aria-label="Suggested follow-up"
-      className="ux-reset-explorer-follow-up"
-      data-follow-up={status}
-      data-testid="explorer-follow-up"
-      id={EXPLORER_SECTION_IDS.followUp}
-    >
-      <h2 ref={headingRef} tabIndex={-1}>
-        <Zap aria-hidden="true" /> Suggested follow-up
-      </h2>
-      {status === "loading" ? (
-        <AtlasStatusMessage tone="loading">
-          Loading the review result for suggested follow-up…
-        </AtlasStatusMessage>
-      ) : null}
-      {status === "request-failed" ? (
-        <AtlasStatusMessage tone="error">
-          The review result could not be loaded, so suggested follow-up is not
-          shown. That is a request failure, not a decision that no follow-up
-          exists.
-        </AtlasStatusMessage>
-      ) : null}
-      {status === "not-in-scope" ? (
-        <AtlasStatusMessage tone="empty">
-          Suggested follow-up is read from a state review result. This scope did
-          not load that result, so no next step is shown.
-        </AtlasStatusMessage>
-      ) : null}
-      {status === "factual" ? (
-        <AtlasStatusMessage tone="empty">
-          {countyFips
-            ? "No suggested follow-up was returned for this county. Atlas does not invent a rationale or a next step."
-            : "Choose a county before reading suggested follow-up. Atlas will not pick one."}
-        </AtlasStatusMessage>
-      ) : null}
-      {status === "withheld" ? (
-        <AtlasStatusMessage tone="empty">
-          Suggested follow-up is withheld. This review result does not publish a
-          recommendation, so Atlas is not showing the records that arrived with
-          it.
-        </AtlasStatusMessage>
-      ) : null}
-      {status === "candidate" ? (
-        <>
-          <p className="type-small">
-            {followUp.category
-              ? `Review category ${followUp.category}.`
-              : "No review category was returned for this county."}
-          </p>
-          <p className="type-body" data-testid="explorer-follow-up-step">
-            {followUp.firstStep ??
-              "The review result did not include a next check."}
-          </p>
-          <p className="type-body" data-testid="explorer-follow-up-rationale">
-            {followUp.rationale ??
-              "The review result did not include a reason for this county."}
-          </p>
-          {followUp.limitations.length > 0 ? (
-            <FollowUpChecklist
-              key={countyFips ?? "none"}
-              limitations={followUp.limitations}
-            />
-          ) : (
-            <p className="type-body">
-              No local verification questions were returned for this county.
-            </p>
-          )}
-          <details className="ux-reset-explorer-disclosure">
-            <summary>Partner roles and official resources</summary>
-            <p className="type-body">
-              Atlas does not assign a partner, a deadline, or a local owner.
-              Official resources are the sources shown with this county&apos;s
-              evidence. Responsibility and timing stay with the jurisdiction.
-            </p>
-          </details>
-        </>
-      ) : null}
-    </section>
-  );
+function followUpPanelStatus(input: {
+  countyRecordAbsent: boolean;
+  countyRecordError: string | null;
+  countyRecordLoading: boolean;
+  hasEvidence: boolean;
+  recovery: InvestigateRecovery | null;
+  requestedFips: string | null;
+}): SuggestedFollowUpPanelStatus {
+  if (!input.requestedFips || input.recovery) {
+    return "waiting";
+  }
+  if (input.countyRecordLoading) {
+    return "loading";
+  }
+  if (input.countyRecordError) {
+    return "error";
+  }
+  if (input.countyRecordAbsent || !input.hasEvidence) {
+    return "absent";
+  }
+  return "ready";
 }
 
 export function ExplorerCountyEvidence({
@@ -327,6 +223,18 @@ export function ExplorerCountyEvidence({
       : (workspace.requestedFips ?? "Choose a county");
   const leadLimitation =
     followUp.status === "candidate" ? (followUp.limitations[0] ?? null) : null;
+  const followUpStatus = followUpPanelStatus({
+    countyRecordAbsent: workspace.countyRecordAbsent,
+    countyRecordError: workspace.countyRecordError,
+    countyRecordLoading: workspace.countyRecordLoading,
+    hasEvidence: workspace.suggestedFollowUpEvidence !== null,
+    recovery: workspace.recovery,
+    requestedFips: workspace.requestedFips,
+  });
+  const followUpSelection =
+    followUpStatus === "ready" && workspace.suggestedFollowUpEvidence
+      ? selectSuggestedFollowUp(workspace.suggestedFollowUpEvidence)
+      : null;
   usePublishAskAtlasInheritedContext(
     inheritedContextFromInvestigate({
       bundle: workspace.bundle,
@@ -378,6 +286,9 @@ export function ExplorerCountyEvidence({
           {workspace.stateLabel ? ` · ${workspace.stateLabel}` : null}
           {workspace.releaseId ? ` · Release ${workspace.releaseId}` : null}
         </p>
+        {followUpSelection ? (
+          <ExplorerReviewPriority selection={followUpSelection} />
+        ) : null}
         <h3>Why review this county?</h3>
         <p className="type-body" data-testid="explorer-review-category">
           {reviewCategoryCopy(followUp)}
@@ -579,10 +490,11 @@ export function ExplorerCountyEvidence({
         </section>
       )}
 
-      <SuggestedFollowUp
+      <ExplorerSuggestedFollowUpPanel
         countyFips={workspace.requestedFips}
-        followUp={followUp}
         headingRef={followUpRef}
+        selection={followUpSelection}
+        status={followUpStatus}
       />
 
       <section
