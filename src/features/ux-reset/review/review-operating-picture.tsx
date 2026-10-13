@@ -560,6 +560,38 @@ export function ReviewOperatingPicture({
       candidate.countyFips
     )
   );
+  const visibleCandidateCount = visibleCandidates.length;
+  useEffect(() => {
+    if (freezeCountySelection || !selectedFips || visibleCandidateCount === 0) {
+      return;
+    }
+    const alignSelectedRow = () => {
+      const row = layoutRef.current?.querySelector<HTMLButtonElement>(
+        `button[data-fips="${selectedFips}"]`
+      );
+      const list = row?.closest(".ux-reset-review-candidate-list");
+      if (
+        !(row instanceof HTMLButtonElement) ||
+        !(list instanceof HTMLElement)
+      ) {
+        return;
+      }
+      const rowBox = row.getBoundingClientRect();
+      const listBox = list.getBoundingClientRect();
+      if (
+        rowBox.height === 0 ||
+        (rowBox.top >= listBox.top - 1 && rowBox.bottom <= listBox.bottom + 1)
+      ) {
+        return;
+      }
+      list.scrollTop += rowBox.top - listBox.top - 8;
+    };
+    alignSelectedRow();
+    const frame = requestAnimationFrame(alignSelectedRow);
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [freezeCountySelection, selectedFips, visibleCandidateCount]);
   const geometryReady = Boolean(geometryQuery.data) && !geometryError;
   // A disabled geometry query stays pending in React Query v5. An unusable
   // release never starts that request, so it is unavailable rather than loading.
