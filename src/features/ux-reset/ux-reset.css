@@ -1490,9 +1490,8 @@
 }
 
 .ux-reset-explorer-list .ux-reset-review-candidate-list {
-  max-height: min(28rem, calc(100dvh - 22rem));
-  min-height: 0;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .ux-reset-explorer-list .ux-reset-review-candidate strong {
