@@ -422,7 +422,7 @@ describe("Review county preview", () => {
     const second = buildReviewCountyPreview(east);
     expect(first.countyName).toBe(second.countyName);
     expect(first.fips).not.toBe(second.fips);
-    expect(second.followUp).toBe("Conduct targeted follow-up");
+    expect(second.followUp).toBe("Verify with local information");
     expect(second.why).toContain("Moderate review priority");
   });
 });

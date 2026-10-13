@@ -200,6 +200,19 @@ export const SUGGESTED_FOLLOW_UP_BY_COLOR = {
 
 export type ReviewPriorityColor = keyof typeof SUGGESTED_FOLLOW_UP_BY_COLOR;
 
+/**
+ * Published score colors from lowest to highest band. Same values as
+ * SUGGESTED_FOLLOW_UP_BY_COLOR so follow-up content can reuse the palette.
+ */
+export const REVIEW_SCORE_RAMP_COLORS = [
+  "#a9d2db",
+  "#55a8a3",
+  "#87b982",
+  "#efc64a",
+  "#f49a32",
+  "#e9602b",
+] as const satisfies readonly ReviewPriorityColor[];
+
 const DEFAULT_REVIEW_PRIORITY_COLOR: ReviewPriorityColor = "#55a8a3";
 
 export function suggestedFollowUpForColor(color: string): string {

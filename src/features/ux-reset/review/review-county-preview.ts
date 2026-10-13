@@ -21,12 +21,13 @@ import {
 } from "@/features/ux-reset/review/explorer-mode";
 import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
 import { reviewCandidateFipsForScope } from "@/features/ux-reset/review/review-operating-state";
+import { approvedFollowUpTitleForColor } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
   ATLAS_EXPLORER_PATH,
   RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
 import { ValueState, type CountyScoreSummary } from "@/generated/models";
-import { plainPriority, suggestedFollowUpForColor } from "@/lib/atlas-ui";
+import { plainPriority } from "@/lib/atlas-ui";
 
 const ABSENT_COUNTY_STATUSES = new Set([
   "",
@@ -189,7 +190,7 @@ export function buildReviewCountyPreview(
     caveat: reviewCountyPreviewCaveat(county),
     countyName: county.county,
     fips: county.fips,
-    followUp: suggestedFollowUpForColor(county.color),
+    followUp: approvedFollowUpTitleForColor(county.color),
     qualification: reviewCountyPreviewQualification(county),
     reasonCodes: [],
     stateCode: county.state,

@@ -12,6 +12,7 @@ import {
 import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import type { ExplorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
+import type { SuggestedFollowUpEvidence } from "@/features/ux-reset/review/suggested-follow-up-content";
 
 const workspace = vi.hoisted(() => ({
   current: null as InvestigateWorkspace | null,
@@ -95,6 +96,30 @@ function baseWorkspace(
     selection: { kind: "missing" },
     setCounty: vi.fn<(fips: string) => void>(),
     stateLabel: null,
+    suggestedFollowUpEvidence: null,
+    ...overrides,
+  };
+}
+
+function publishedFollowUp(
+  overrides: Partial<SuggestedFollowUpEvidence> = {}
+): SuggestedFollowUpEvidence {
+  return {
+    burgdorferiStatus: "Present",
+    caseCountFloor2023: 4,
+    color: "#e9602b",
+    comparableReportingPeriods: null,
+    humanStatus: "published_count_floor",
+    incidenceFloor2023: 20,
+    lowIncidenceBreakpoint: 10,
+    pacificusStatus: "No records",
+    priority: "Priority 1 — Investigate",
+    rucc2023: null,
+    scapularisStatus: "Established",
+    sviPercentile: null,
+    tickStatus: "Established",
+    uninsuredPercent: null,
+    uninsuredPercentile: null,
     ...overrides,
   };
 }
@@ -162,13 +187,14 @@ describe("Explorer county evidence", () => {
     ).not.toMatch(/\b0 cases\b/);
   });
 
-  it("focuses suggested follow-up and clears local checks when the county changes", () => {
+  it("focuses suggested follow-up and keeps the published response free of deadlines", () => {
     workspace.current = baseWorkspace({
       identity: { fips: "08001", label: "Denver", stateCode: "CO" },
       recovery: null,
       releaseId: "alpha-2026",
       requestedFips: "08001",
       stateLabel: "Colorado (CO)",
+      suggestedFollowUpEvidence: publishedFollowUp(),
     });
     render(
       <ExplorerCountyEvidence
@@ -181,52 +207,78 @@ describe("Explorer county evidence", () => {
     expect(
       screen.getByRole("heading", { name: "Suggested follow-up" })
     ).toHaveFocus();
-    expect(screen.getByTestId("explorer-follow-up-step")).toHaveTextContent(
-      "Review the cited source records."
+    expect(screen.getByTestId("explorer-follow-up-response")).toHaveTextContent(
+      "Prioritize targeted follow-up"
+    );
+    expect(screen.getByTestId("explorer-review-priority")).toHaveTextContent(
+      "Highest review priority"
+    );
+    expect(screen.getByTestId("explorer-summary-reason")).toHaveTextContent(
+      "Denver is included because the review method returned it."
     );
     expect(screen.getByTestId("explorer-follow-up").textContent).not.toMatch(
-      /2 weeks|within 60/i
+      /2 weeks|within 60|Conduct targeted follow-up|Coordinate a local assessment/i
     );
   });
 
-  it("clears a local verification check when the county changes", () => {
+  it("updates the follow-up response when the selected county changes", () => {
     workspace.current = baseWorkspace({
       identity: { fips: "08001", label: "Denver", stateCode: "CO" },
       recovery: null,
       releaseId: "alpha-2026",
       requestedFips: "08001",
       stateLabel: "Colorado (CO)",
+      suggestedFollowUpEvidence: publishedFollowUp({
+        color: "#a9d2db",
+        priority: "Lower Atlas priority — Not a safety finding",
+      }),
     });
     const view = render(
       <ExplorerCountyEvidence
         followUp={candidateFollowUp()}
         methodologyLabel={null}
-        mode="follow-up"
+        mode="evidence"
         onBackToMap={vi.fn<() => void>()}
       />
     );
-    const box = screen.getByRole("checkbox");
-    fireEvent.click(box);
-    expect(box).toBeChecked();
+    expect(screen.getByTestId("explorer-follow-up-response")).toHaveTextContent(
+      "Continue routine review"
+    );
     workspace.current = baseWorkspace({
       identity: { fips: "08013", label: "Boulder", stateCode: "CO" },
       recovery: null,
       releaseId: "alpha-2026",
       requestedFips: "08013",
       stateLabel: "Colorado (CO)",
+      suggestedFollowUpEvidence: publishedFollowUp({
+        color: "#87b982",
+        humanStatus: "no_county_linked_record",
+        incidenceFloor2023: null,
+        priority: "Watch — Monitor signals",
+      }),
     });
     view.rerender(
       <ExplorerCountyEvidence
         followUp={candidateFollowUp("Boulder limitation stays on Boulder.")}
         methodologyLabel={null}
-        mode="follow-up"
+        mode="evidence"
         onBackToMap={vi.fn<() => void>()}
       />
     );
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
-    expect(
-      screen.getByLabelText("Boulder limitation stays on Boulder.")
-    ).toBeVisible();
+    expect({
+      conflict: screen.getByTestId("explorer-review-priority").dataset
+        .categoryConflict,
+      county: screen.getByTestId("explorer-follow-up").dataset.county,
+      priority: screen.getByTestId("explorer-review-priority").textContent,
+      reason: screen.getByTestId("explorer-summary-limitation").textContent,
+      response: screen.getByTestId("explorer-follow-up-response").textContent,
+    }).toStrictEqual({
+      conflict: "true",
+      county: "08013",
+      priority: "Review priority: Monitor for changes",
+      reason: "Boulder limitation stays on Boulder.",
+      response: "Monitor the pattern",
+    });
   });
 
   it("carries the county into Compare and Ask Atlas without copying mode to Ask Atlas", () => {
@@ -373,5 +425,144 @@ describe("Explorer county evidence", () => {
       "loading"
     );
     expect(screen.queryByTestId("investigate-evidence")).toBeNull();
+  });
+
+  it("keeps every governed limitation through mode and county changes", () => {
+    const denverLimitations = [
+      "Cumulative status only",
+      "Collection date unavailable",
+      "Pathogen/vector species attribution unavailable",
+    ];
+    workspace.current = baseWorkspace({
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+      stateLabel: "Colorado (CO)",
+      suggestedFollowUpEvidence: publishedFollowUp(),
+    });
+    const denverFollowUp = {
+      ...candidateFollowUp(denverLimitations[0]),
+      limitations: denverLimitations,
+    };
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={denverFollowUp}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const limitationText = () =>
+      screen.getByTestId("explorer-review-limitations").textContent;
+    expect({
+      disclosure: limitationText(),
+      summary: screen.getByTestId("explorer-summary-limitation").textContent,
+    }).toStrictEqual({
+      disclosure: `Review limitations${denverLimitations.join("")}`,
+      summary: denverLimitations[0],
+    });
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={denverFollowUp}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(limitationText()).toBe(
+      `Review limitations${denverLimitations.join("")}`
+    );
+    workspace.current = baseWorkspace({
+      identity: { fips: "08013", label: "Boulder", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08013",
+      stateLabel: "Colorado (CO)",
+      suggestedFollowUpEvidence: publishedFollowUp({
+        color: "#87b982",
+        priority: "Watch — Monitor signals",
+      }),
+    });
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={candidateFollowUp("Boulder limitation stays on Boulder.")}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(limitationText()).toBe(
+      "Review limitationsBoulder limitation stays on Boulder."
+    );
+  });
+
+  it("keeps an unstarted county read distinct from a missing record", () => {
+    const viewFor = (overrides: Partial<InvestigateWorkspace>) => {
+      workspace.current = baseWorkspace({
+        identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+        recovery: null,
+        releaseId: "alpha-2026",
+        requestedFips: "08001",
+        stateLabel: "Colorado (CO)",
+        ...overrides,
+      });
+    };
+    const mark = (text: string) => {
+      if (text.includes("Loading suggested follow-up")) {
+        return "loading";
+      }
+      if (text.includes("required request failed")) {
+        return "error";
+      }
+      if (text.includes("No published county record")) {
+        return "absent";
+      }
+      if (text.includes("Choose a county")) {
+        return "waiting";
+      }
+      return "other";
+    };
+    viewFor({ metadataLoading: true });
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const states = [
+      mark(screen.getByTestId("explorer-follow-up").textContent ?? ""),
+    ];
+    for (const overrides of [
+      { directoryLoading: true },
+      { metadataError: "Release metadata could not be loaded." },
+      {
+        directoryError: "The published county list could not be loaded.",
+        recovery: "directory" as const,
+      },
+      { countyRecordAbsent: true },
+    ]) {
+      viewFor(overrides);
+      view.rerender(
+        <ExplorerCountyEvidence
+          followUp={{ status: "factual" }}
+          methodologyLabel={null}
+          mode="follow-up"
+          onBackToMap={vi.fn<() => void>()}
+        />
+      );
+      states.push(
+        mark(screen.getByTestId("explorer-follow-up").textContent ?? "")
+      );
+    }
+    expect(states).toStrictEqual([
+      "loading",
+      "loading",
+      "error",
+      "error",
+      "absent",
+    ]);
   });
 });
