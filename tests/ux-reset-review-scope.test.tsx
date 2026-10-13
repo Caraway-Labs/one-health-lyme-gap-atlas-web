@@ -3819,6 +3819,61 @@ describe("Reset Review scope UI", () => {
     expect(screen.queryByTestId("review-state-panel")).toBeTruthy();
   });
 
+  it("keeps the selected national county on the Ask Atlas link", async () => {
+    const search = "scope=ALL&county=08001&dataset=alpha-2026";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter hasMemory searchParams={`?${search}`}>
+          <ResetProfessionalShell>
+            <ResetReviewExperience />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      const href =
+        screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
+      if (!href.includes("county=08001")) {
+        throw new Error(href);
+      }
+    });
+    const previewAsk =
+      screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
+    const { href, state } = askAtlasLauncherReference();
+    const geography =
+      state.kind === "validated"
+        ? state.reference.context.fields.geography
+        : null;
+    expect({
+      geography,
+      launcherCounty: href.searchParams.get("county"),
+      previewAskCounty: new URL(
+        previewAsk,
+        "http://localhost"
+      ).searchParams.get("county"),
+      previewFips: screen.getByTestId("review-published-county-preview").dataset
+        .fips,
+      returnCounty:
+        state.kind === "validated"
+          ? state.returnHref.includes("county=08001")
+          : false,
+    }).toStrictEqual({
+      geography: {
+        id: "08001",
+        label: "Denver, Colorado (08001)",
+        state: "validated",
+      },
+      launcherCounty: "08001",
+      previewAskCounty: "08001",
+      previewFips: "08001",
+      returnCounty: true,
+    });
+  });
+
   it("keeps a national county selection on the United States map", async () => {
     const { fetchCountyDisplayGeometry } =
       await import("@/lib/county-geography");

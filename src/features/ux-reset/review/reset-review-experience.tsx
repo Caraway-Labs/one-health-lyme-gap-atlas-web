@@ -90,6 +90,41 @@ import {
 } from "@/lib/atlas-state-geography";
 import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
 
+type ReviewInheritedCounty = {
+  county: string;
+  fips: string;
+  stateName: string;
+};
+
+function reviewInheritedIdentities(input: {
+  directoryCounties: readonly ReviewInheritedCounty[];
+  nationalCounties: readonly ReviewInheritedCounty[];
+  nationalScope: boolean;
+  ready: boolean;
+  selectedFips: string | null;
+}): { county: string; fips: string; state_name: string }[] {
+  if (!input.selectedFips) {
+    return [];
+  }
+  let source: readonly ReviewInheritedCounty[] = [];
+  if (input.ready) {
+    source = input.directoryCounties;
+  } else if (input.nationalScope) {
+    source = input.nationalCounties;
+  }
+  const entry = source.find((county) => county.fips === input.selectedFips);
+  if (!entry) {
+    return [];
+  }
+  return [
+    {
+      county: entry.county,
+      fips: entry.fips,
+      state_name: entry.stateName,
+    },
+  ];
+}
+
 function ResetReviewExperienceInner() {
   const route = resetRouteById("explorer");
   const router = useRouter();
@@ -385,16 +420,13 @@ function ResetReviewExperienceInner() {
     userChoseScope,
   });
   const scopeViewReady = !startingScopePending;
-  const reviewIdentities =
-    scopeViewReady && reviewReady
-      ? publishedDirectory.counties
-          .filter((entry) => entry.fips === reviewCounty)
-          .map((entry) => ({
-            county: entry.county,
-            fips: entry.fips,
-            state_name: entry.stateName,
-          }))
-      : [];
+  const reviewIdentities = reviewInheritedIdentities({
+    directoryCounties: publishedDirectory.counties,
+    nationalCounties: countyReference.counties,
+    nationalScope: scope === "ALL",
+    ready: scopeViewReady && reviewReady,
+    selectedFips: reviewCounty,
+  });
   const reviewAskContext = scopeViewReady
     ? inheritedContextFromReview({
         rankedCounties: reviewIdentities,

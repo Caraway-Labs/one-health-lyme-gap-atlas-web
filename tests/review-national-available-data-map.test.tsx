@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, render, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -50,6 +50,11 @@ const engine = vi.hoisted(() => {
         handler(payload);
       }
     }
+    clickCounty(fips: string) {
+      for (const handler of this.handlers.get("click:counties-fill") ?? []) {
+        handler({ features: [{ properties: { fips } }] });
+      }
+    }
     once(event: string, handler: (event?: unknown) => void) {
       this.on(event, handler);
     }
@@ -89,6 +94,17 @@ const engine = vi.hoisted(() => {
     getPitch() {
       return this.pitch;
     }
+    getBounds() {
+      const west = this.center.lng - 20;
+      const south = this.center.lat - 10;
+      return {
+        getEast: () => west + 40,
+        getNorth: () => south + 20,
+        getSouth: () => south,
+        getWest: () => west,
+      };
+    }
+    fitBounds = vi.fn<() => void>();
     getCanvas() {
       return { style: { cursor: this.removed ? "" : "" } };
     }
@@ -182,7 +198,14 @@ function sourceFips(): string[] {
     .toSorted();
 }
 
-function nationalPicture(availableData: "all" | "human", client: QueryClient) {
+function nationalPicture(
+  availableData: "all" | "human",
+  client: QueryClient,
+  options: {
+    county?: string | null;
+    onCountyChange?: (fips: string | null, history: "push" | "replace") => void;
+  } = {}
+) {
   const counties = countyReferenceFromScoreSummaries(scoreCounties);
   return (
     <QueryClientProvider client={client}>
@@ -197,7 +220,7 @@ function nationalPicture(availableData: "all" | "human", client: QueryClient) {
         counties={counties}
         countiesError={false}
         countiesLoading={false}
-        county={null}
+        county={options.county ?? null}
         countyQuery=""
         mapLayer="gap_score"
         period={null}
@@ -207,7 +230,7 @@ function nationalPicture(availableData: "all" | "human", client: QueryClient) {
           { code: "NY", name: "New York" },
         ]}
         tierRelease={{ status: "unknown" }}
-        onCountyChange={() => {}}
+        onCountyChange={options.onCountyChange ?? (() => {})}
         onMapLayerChange={() => {}}
       />
     </QueryClientProvider>
@@ -215,9 +238,15 @@ function nationalPicture(availableData: "all" | "human", client: QueryClient) {
 }
 
 describe("national available-data map source", () => {
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
     engine.instances.length = 0;
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [box("08001", -105), box("36001", -74)],
+      type: "FeatureCollection",
+    });
   });
 
   it("omits a county that fails the published Lyme case gate and restores it when the gate opens", async () => {
@@ -241,5 +270,54 @@ describe("national available-data map source", () => {
     await waitFor(() => {
       expect(sourceFips()).toStrictEqual(["08001", "36001"]);
     });
+  });
+
+  it("leaves a geometry-only county drawn and refuses a published preview", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+      features: [box("08001", -105), box("08005", -104)],
+      type: "FeatureCollection",
+    });
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(nationalPicture("all", client, { county: "08005", onCountyChange }));
+    await waitFor(() => {
+      expect(engine.instances.length).toBeGreaterThan(0);
+    });
+    act(() => {
+      const map = engine.instances.at(-1);
+      map?.emit("load");
+      map?.emit("idle");
+    });
+    await waitFor(() => {
+      expect(sourceFips()).toStrictEqual(["08001", "08005"]);
+    });
+
+    act(() => {
+      engine.instances.at(-1)?.clickCounty("08005");
+    });
+    expect({
+      compare: screen.queryByTestId("review-compare"),
+      evidence: screen.queryByText("Published county evidence is available"),
+      investigate: screen.queryByTestId("review-investigate"),
+      preview: screen.queryByTestId("review-published-county-preview"),
+      selection: onCountyChange.mock.calls,
+    }).toStrictEqual({
+      compare: null,
+      evidence: null,
+      investigate: null,
+      preview: null,
+      selection: [],
+    });
+    expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
+
+    act(() => {
+      engine.instances.at(-1)?.clickCounty("08001");
+    });
+    expect(onCountyChange).toHaveBeenCalledWith("08001", "push");
   });
 });

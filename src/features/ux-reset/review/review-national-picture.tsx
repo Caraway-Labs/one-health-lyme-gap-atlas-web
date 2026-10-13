@@ -344,25 +344,8 @@ export function ReviewNationalPicture({
     shownDirectoryCount,
   });
   const mlPriorities = useExplorerCountyMlPriorities(listedFips, tierRelease);
-  const identityFor = (fips: string): ExploreCountyIdentity | null => {
-    const known = identityByFips.get(fips);
-    if (known) {
-      return known;
-    }
-    const postal = postalForFips(fips);
-    if (
-      !postal ||
-      !geometryFeatures.some((feature) => feature.properties.fips === fips)
-    ) {
-      return null;
-    }
-    return {
-      county: `County ${fips}`,
-      fips,
-      state: postal,
-      stateName: lower48ReviewStateName(postal) ?? postal,
-    };
-  };
+  const identityFor = (fips: string): ExploreCountyIdentity | null =>
+    identityByFips.get(fips) ?? null;
   const selectedIdentity = selectedFips ? identityFor(selectedFips) : null;
   usePublishExploreCommittedNavigation({
     county: selectedFips || null,
