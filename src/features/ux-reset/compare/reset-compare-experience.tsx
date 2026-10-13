@@ -65,6 +65,7 @@ import {
 } from "@/features/ux-reset/evidence";
 import { releaseEvidenceLoadStateValues } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { PageIntroduction } from "@/features/ux-reset/page-introduction";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/paths";
 import { RESET_COMPARE_PATH } from "@/features/ux-reset/routes";
 import { cn } from "@/lib/utils";
@@ -271,10 +272,7 @@ function CompareExperienceInner() {
       data-testid="compare-workspace"
     >
       <header className="ux-reset-compare-header">
-        <div>
-          <h1>Compare counties</h1>
-          <p>Inspect two county evidence profiles side by side.</p>
-        </div>
+        <PageIntroduction page="compare" />
         <Link
           className={cn(
             buttonVariants({ variant: "secondary" }),

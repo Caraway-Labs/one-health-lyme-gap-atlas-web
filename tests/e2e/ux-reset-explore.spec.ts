@@ -15,7 +15,10 @@ test.describe("Explore bookmarks open Atlas Explorer browse", () => {
     await expect(page.getByTestId("explore-measure-select")).toHaveCount(0);
     await expect(page.getByTestId("explore-workspace")).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     expect(new URL(page.url()).searchParams.get("county")).not.toBe("06037");
   });
