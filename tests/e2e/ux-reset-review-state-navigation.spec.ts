@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  LOWER_48_DC_CAMERA_BOUNDS,
+  reviewNationalCameraContains,
+  reviewNationalNavigationCamera,
+} from "../../src/features/ux-reset/review/review-national-camera";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 import {
   reviewScopeMetadataFixture,
@@ -110,6 +115,83 @@ async function expectNoHorizontalOverflow(page: Page) {
 async function chooseState(page: Page, name: string) {
   await page.getByTestId("review-scope-select").click();
   await page.getByRole("option", { name }).click();
+}
+
+type NationalCameraReading = {
+  height: number;
+  lat: number;
+  lng: number;
+  width: number;
+  zoom: number;
+};
+
+async function readNationalCamera(page: Page): Promise<NationalCameraReading> {
+  return page.locator(".maplibre-atlas").evaluate((element) => ({
+    height: element.clientHeight,
+    lat: Number(element.dataset.mapCameraLat),
+    lng: Number(element.dataset.mapCameraLng),
+    width: element.clientWidth,
+    zoom: Number(element.dataset.mapCameraZoom),
+  }));
+}
+
+function nationalExtentReport(reading: NationalCameraReading) {
+  const view = {
+    center: [reading.lng, reading.lat] as [number, number],
+    zoom: reading.zoom,
+  };
+  const contains = (longitude: number, latitude: number) =>
+    reviewNationalCameraContains(
+      view,
+      reading.width,
+      reading.height,
+      longitude,
+      latitude
+    );
+  const fitted = reviewNationalNavigationCamera(reading.width, reading.height);
+  return {
+    california: contains(-124.2, 37),
+    dc: contains(-77.0369, 38.9072),
+    east: contains(LOWER_48_DC_CAMERA_BOUNDS.east, 39),
+    fitted:
+      fitted !== null &&
+      Math.abs(reading.zoom - fitted.zoom) < 0.02 &&
+      Math.abs(reading.lng - fitted.center[0]) < 0.02 &&
+      Math.abs(reading.lat - fitted.center[1]) < 0.02,
+    north: contains(-98, LOWER_48_DC_CAMERA_BOUNDS.north),
+    ny: contains(-74, 43),
+    south: contains(-98, LOWER_48_DC_CAMERA_BOUNDS.south),
+    west: contains(LOWER_48_DC_CAMERA_BOUNDS.west, 39),
+  };
+}
+
+const VISIBLE_NATIONAL_EXTENTS = {
+  california: true,
+  dc: true,
+  east: true,
+  fitted: true,
+  north: true,
+  ny: true,
+  south: true,
+  west: true,
+};
+
+async function expectNationalExtentsVisible(page: Page) {
+  await expect
+    .poll(async () => nationalExtentReport(await readNationalCamera(page)))
+    .toStrictEqual(VISIBLE_NATIONAL_EXTENTS);
+}
+
+async function waitForStableZoom(page: Page) {
+  let previous = Number.NaN;
+  await expect
+    .poll(async () => {
+      const zoom = (await readNationalCamera(page)).zoom;
+      const stable = Math.abs(zoom - previous) < 0.01;
+      previous = zoom;
+      return stable;
+    })
+    .toBe(true);
 }
 
 test.describe("Review national geographic navigation", () => {
@@ -285,5 +367,36 @@ test.describe("Review national geographic navigation", () => {
       "County boundaries"
     );
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+  });
+
+  test("fits California, DC, New York, and the country extents at desktop widths", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1920 });
+    await page.goto("/explore?scope=ALL");
+    await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
+    await expect(page.getByLabel("Zoom in")).toBeVisible();
+    for (const width of [1280, 1440, 1673, 1920]) {
+      await page.setViewportSize({ height: 1000, width });
+      await page.getByTestId("explorer-fit-national").click();
+      await expectNationalExtentsVisible(page);
+    }
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.getByTestId("explorer-fit-national").click();
+    await expectNationalExtentsVisible(page);
+    const overview = await readNationalCamera(page);
+    await page.getByLabel("Zoom in").click();
+    await waitForStableZoom(page);
+    const zoomed = await readNationalCamera(page);
+    expect(zoomed.zoom).toBeGreaterThan(overview.zoom + 0.4);
+    await page.setViewportSize({ height: 1000, width: 1280 });
+    await waitForStableZoom(page);
+    const afterResize = await readNationalCamera(page);
+    expect(afterResize.zoom).toBeGreaterThan(overview.zoom + 0.4);
+    await page.getByTestId("explorer-fit-national").click();
+    await expectNationalExtentsVisible(page);
+    await page.setViewportSize({ height: 1000, width: 1920 });
+    await expectNationalExtentsVisible(page);
   });
 });

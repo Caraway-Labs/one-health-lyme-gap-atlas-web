@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AtlasDashboard } from "@/components/atlas-dashboard";
 import { AtlasMap } from "@/components/atlas-map";
+import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { CountyScoreSummary } from "@/generated/models";
-import { CONTIGUOUS_US_INITIAL_VIEW } from "@/lib/atlas-geometry";
 import { estimatedFitZoom } from "@/lib/atlas-map-camera";
 
 const engine = vi.hoisted(() => {
@@ -30,6 +30,7 @@ const engine = vi.hoisted(() => {
       }
     );
     stop = vi.fn<() => void>();
+    resize = vi.fn<() => void>();
     fitBounds = vi.fn<
       (
         bounds: [number, number, number, number],
@@ -236,6 +237,40 @@ function loadMap() {
     map?.emit("idle");
   });
   return map;
+}
+
+function setMapBox(width: number, height: number) {
+  const element = document.querySelector(".maplibre-atlas");
+  if (!element) {
+    throw new Error("expected a map container");
+  }
+  Object.defineProperty(element, "clientWidth", {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(element, "clientHeight", {
+    configurable: true,
+    value: height,
+  });
+}
+
+type RecordedResizeObserver = {
+  disconnect: () => void;
+  observe: (target: Element) => void;
+  onResize: () => void;
+};
+
+function recordedResizeObserver(instances: RecordedResizeObserver[]) {
+  function ResizeObserver(onResize: () => void) {
+    const record: RecordedResizeObserver = {
+      disconnect() {},
+      observe() {},
+      onResize,
+    };
+    instances.push(record);
+    return record;
+  }
+  return ResizeObserver;
 }
 
 describe("AtlasMap county camera", () => {
@@ -479,6 +514,7 @@ describe("AtlasMap county camera", () => {
     );
     const map = loadMap();
     expect(map?.zoom).toBe(8);
+    setMapBox(480, 220);
     view.rerender(
       <AtlasMap
         cameraFrameState={null}
@@ -490,13 +526,18 @@ describe("AtlasMap county camera", () => {
         onSelect={onSelect}
       />
     );
-    expect(map?.jumpTo).toHaveBeenCalledWith(CONTIGUOUS_US_INITIAL_VIEW);
-    expect(map?.zoom).toBe(CONTIGUOUS_US_INITIAL_VIEW.zoom);
-    expect(map?.center).toStrictEqual({
-      lat: CONTIGUOUS_US_INITIAL_VIEW.center[1],
-      lng: CONTIGUOUS_US_INITIAL_VIEW.center[0],
+    const camera = reviewNationalNavigationCamera(480, 220);
+    expect({
+      center: map?.center,
+      fitBounds: map?.fitBounds.mock.calls.length,
+      jump: map?.jumpTo.mock.calls.at(-1)?.[0],
+      zoom: map?.zoom,
+    }).toStrictEqual({
+      center: { lat: camera?.center[1], lng: camera?.center[0] },
+      fitBounds: 1,
+      jump: { center: camera?.center, zoom: camera?.zoom },
+      zoom: camera?.zoom,
     });
-    expect(map?.fitBounds).toHaveBeenCalledOnce();
   });
 
   it("fits the contiguous United States when the national fit control repeats", () => {
@@ -514,8 +555,10 @@ describe("AtlasMap county camera", () => {
         onSelect={onSelect}
       />
     );
+    setMapBox(480, 220);
     const map = loadMap();
     act(() => {
+      map?.emit("move", { originalEvent: new Event("wheel") });
       map?.jumpTo({ center: [-105, 39.7], zoom: 6 });
     });
     view.rerender(
@@ -530,8 +573,57 @@ describe("AtlasMap county camera", () => {
         onSelect={onSelect}
       />
     );
-    expect(map?.jumpTo).toHaveBeenCalledWith(CONTIGUOUS_US_INITIAL_VIEW);
-    expect(map?.zoom).toBe(CONTIGUOUS_US_INITIAL_VIEW.zoom);
+    const camera = reviewNationalNavigationCamera(480, 220);
+    expect(map?.jumpTo).toHaveBeenLastCalledWith({
+      center: camera?.center,
+      zoom: camera?.zoom,
+    });
+    expect(map?.zoom).toBe(camera?.zoom);
+  });
+
+  it("fits the national camera to the pane and keeps a deliberate pan on resize", () => {
+    stubPrefersReducedMotion(false);
+    const observers: RecordedResizeObserver[] = [];
+    vi.stubGlobal("ResizeObserver", recordedResizeObserver(observers));
+    render(
+      <AtlasMap
+        cameraFrameState={null}
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    setMapBox(420, 240);
+    const map = loadMap();
+    if (!map) {
+      throw new Error("expected a map instance");
+    }
+    const narrow = reviewNationalNavigationCamera(420, 240);
+    setMapBox(720, 240);
+    act(() => {
+      observers[0]?.onResize();
+    });
+    const wide = reviewNationalNavigationCamera(720, 240);
+    act(() => {
+      map.emit("move", { originalEvent: new Event("wheel") });
+    });
+    setMapBox(360, 240);
+    act(() => {
+      observers[0]?.onResize();
+    });
+    expect({
+      jumps: map.jumpTo.mock.calls.map((call) => call[0]),
+      resizes: map.resize.mock.calls.length,
+    }).toStrictEqual({
+      jumps: [
+        { center: narrow?.center, zoom: narrow?.zoom },
+        { center: wide?.center, zoom: wide?.zoom },
+      ],
+      resizes: 2,
+    });
   });
 
   it("leaves the camera in place when a national frame is not opted in", () => {

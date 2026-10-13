@@ -477,7 +477,7 @@ export function ReviewNationalPicture({
                 ...geometryQuery.data,
                 features: geometryFeatures,
               }}
-              includeUnscoredCounties
+              includeUnscoredCounties={availableDataGate.kind === "open"}
               resetNationalView
               scores={mapCounties}
               selectedFips={selectedFips}
