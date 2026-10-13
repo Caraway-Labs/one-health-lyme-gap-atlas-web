@@ -1,4 +1,8 @@
-const phoneReleaseWidths = [320, 390] as const;
+export const phoneReleaseWidths = [320, 375, 390] as const;
+
+// These stay on desktop. 640 is half of the 1280px Ask Atlas window (200% zoom).
+// 740 is the short landscape height check, not a phone portrait.
+export const desktopRetainedNarrowWidths = [640, 740] as const;
 
 export const frontPorchCompositionViewports = [
   { height: 900, width: 1440 },

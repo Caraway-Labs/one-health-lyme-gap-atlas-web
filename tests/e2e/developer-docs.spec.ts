@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { releaseViewportRuns } from "./release-phone-viewport";
+
 const developerPages = [
   { path: "/docs/develop", heading: "Developer overview" },
   { path: "/docs/develop/quickstart", heading: "Quickstart" },
@@ -83,7 +85,13 @@ test("follows the quickstart county request from the developer overview", async 
   ).toBeVisible();
 });
 
-test("keeps the developer quickstart usable at 375px", async ({ page }) => {
+test("keeps the developer quickstart usable at 375px", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 375),
+    "Phone-width developer docs run on the mobile project."
+  );
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/docs/develop/quickstart");
   await expect(

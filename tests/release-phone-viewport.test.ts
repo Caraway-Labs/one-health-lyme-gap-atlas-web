@@ -3,13 +3,16 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  desktopRetainedNarrowWidths,
   feedbackPhoneViewport,
   frontPorchBoundaryWidths,
   frontPorchCompositionViewports,
   isPhoneReleaseViewport,
+  phoneReleaseWidths,
   publicTrustViewports,
   releaseViewportRuns,
 } from "./e2e/release-phone-viewport";
+import { scanPhoneViewportCalls } from "./release-phone-viewport-scan";
 
 function widths(viewports: readonly { width: number }[]): number[] {
   return viewports.map((viewport) => viewport.width);
@@ -48,6 +51,7 @@ describe("phone viewport release gate", () => {
 
   it("keeps phone widths off the desktop project", () => {
     expect(releaseViewportRuns("desktop", 320)).toBeFalsy();
+    expect(releaseViewportRuns("desktop", 375)).toBeFalsy();
     expect(releaseViewportRuns("desktop", 390)).toBeFalsy();
     expect(releaseViewportRuns("desktop", 768)).toBeTruthy();
     expect(releaseViewportRuns("desktop", 1440)).toBeTruthy();
@@ -108,5 +112,66 @@ describe("phone viewport release gate", () => {
     expect(trustViewport).toBeGreaterThan(trustGuard);
     expect(feedbackGuard).toBeGreaterThanOrEqual(0);
     expect(feedbackViewport).toBeGreaterThan(feedbackGuard);
+  });
+});
+
+describe("default E2E and Storybook phone viewport sweep", () => {
+  it("treats 375 as a phone width and keeps zoom widths on desktop", () => {
+    expect(phoneReleaseWidths).toStrictEqual([320, 375, 390]);
+    expect(isPhoneReleaseViewport(375)).toBeTruthy();
+    expect(desktopRetainedNarrowWidths).toStrictEqual([640, 740]);
+    expect(isPhoneReleaseViewport(640)).toBeFalsy();
+    expect(releaseViewportRuns("mobile", 375)).toBeTruthy();
+  });
+
+  it("guards every phone setViewportSize in the default specs", () => {
+    const calls = scanPhoneViewportCalls();
+    const phone = calls.filter((call) => isPhoneReleaseViewport(call.width));
+    const retained = calls.filter((call) =>
+      desktopRetainedNarrowWidths.some((width) => width === call.width)
+    );
+    const unknown = calls.filter(
+      (call) =>
+        !isPhoneReleaseViewport(call.width) &&
+        !desktopRetainedNarrowWidths.some((width) => width === call.width)
+    );
+    const unguarded = phone
+      .filter((call) => !call.guarded)
+      .map((call) => `${call.file}:${call.line} ${call.width}`);
+    const phoneFiles = [...new Set(phone.map((call) => call.file))].sort();
+    expect(phoneFiles).toStrictEqual([
+      "tests/e2e/assistant-accessibility.spec.ts",
+      "tests/e2e/developer-docs.spec.ts",
+      "tests/e2e/evidence-chat.spec.ts",
+      "tests/e2e/feedback.spec.ts",
+      "tests/e2e/front-porch-visual.spec.ts",
+      "tests/e2e/professional-navigation.spec.ts",
+      "tests/e2e/public-trust-pages.spec.ts",
+      "tests/e2e/reset-feedback.spec.ts",
+      "tests/e2e/ux-reset-ask-atlas.spec.ts",
+      "tests/e2e/ux-reset-compare.spec.ts",
+      "tests/e2e/ux-reset-review-state-navigation.spec.ts",
+      "tests/e2e/ux-reset-shell-scroll.spec.ts",
+      "tests/e2e/ux-reset.spec.ts",
+      "tests/e2e/workspace-account-menu.spec.ts",
+      "tests/storybook/action-brief.spec.ts",
+      "tests/storybook/chat-and-primitives.spec.ts",
+      "tests/storybook/domain-catalog.spec.ts",
+      "tests/storybook/p0-evidence.spec.ts",
+      "tests/storybook/p1-catalog.spec.ts",
+    ]);
+    expect(unguarded).toStrictEqual([]);
+    expect(unknown).toStrictEqual([]);
+    expect(retained.map((call) => `${call.file} ${call.width}`)).toStrictEqual([
+      "tests/e2e/ux-reset-ask-atlas-workspace.spec.ts 740",
+      "tests/e2e/ux-reset-ask-atlas-workspace.spec.ts 740",
+      "tests/e2e/ux-reset-ask-atlas-workspace.spec.ts 640",
+      "tests/e2e/ux-reset-ask-atlas-workspace.spec.ts 640",
+    ]);
+    expect(
+      phone.every(
+        (call) => releaseViewportRuns("desktop", call.width) === false
+      )
+    ).toBeTruthy();
   });
 });

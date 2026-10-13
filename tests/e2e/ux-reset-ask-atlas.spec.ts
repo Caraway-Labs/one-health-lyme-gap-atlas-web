@@ -22,6 +22,7 @@ import {
 } from "../fixtures/investigate-api-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 const EXPLORE_URL = "/app/explore?county=08001&metric=reported-cases&scope=ALL";
 const QUESTION = "How do reviewed studies describe tick exposure?";
@@ -586,7 +587,13 @@ test.describe("Ask Atlas dedicated page", () => {
     expect(action.state.kind).toBe("validated");
   });
 
-  test("uses the same page on a narrow viewport", async ({ page }) => {
+  test("uses the same page on a narrow viewport", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, 390),
+      "Phone-width Ask Atlas checks run on the mobile project."
+    );
     await installExploreMocks(page);
     await page.setViewportSize({ height: 800, width: 390 });
     await page.goto(EXPLORE_URL);

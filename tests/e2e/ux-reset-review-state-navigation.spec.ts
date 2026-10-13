@@ -9,6 +9,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/v1/atlas/scores**", (route) => {
@@ -325,7 +326,11 @@ test.describe("Review national geographic navigation", () => {
       } as typeof prototype.getContext;
     });
     await installReviewApi(page);
-    await page.setViewportSize({ height: 844, width: 390 });
+    const phone = releaseViewportRuns(testInfo.project.name, 390);
+    const viewport = phone
+      ? { height: 844, width: 390 }
+      : { height: 900, width: 1440 };
+    await page.setViewportSize(viewport);
     await page.goto("/app/review?scope=ALL");
     await expect(
       page.getByTestId("review-state-navigation-status")
@@ -334,7 +339,7 @@ test.describe("Review national geographic navigation", () => {
     await expectNoHorizontalOverflow(page);
     await page.screenshot({
       fullPage: true,
-      path: `/opt/cursor/artifacts/review-national-390-no-webgl-${testInfo.project.name}.png`,
+      path: `/opt/cursor/artifacts/review-national-${viewport.width}-no-webgl-${testInfo.project.name}.png`,
     });
     const search = page.getByTestId("review-state-search");
     await search.fill("Colorado");
@@ -367,20 +372,22 @@ test.describe("Review national geographic navigation", () => {
       DC: true,
       NY: true,
     });
-    await page.setViewportSize({ height: 844, width: 390 });
-    await expect
-      .poll(async () => (await readNationalCamera(page)).zoom)
-      .toBeLessThan(wide.zoom);
-    const narrow = await readNationalCamera(page);
-    expect(coastalPlacesAreFramed(narrow)).toStrictEqual({
-      CA: true,
-      DC: true,
-      NY: true,
-    });
-    await page.screenshot({
-      fullPage: true,
-      path: `/opt/cursor/artifacts/review-national-390-webgl-${testInfo.project.name}.png`,
-    });
+    if (releaseViewportRuns(testInfo.project.name, 390)) {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await expect
+        .poll(async () => (await readNationalCamera(page)).zoom)
+        .toBeLessThan(wide.zoom);
+      const narrow = await readNationalCamera(page);
+      expect(coastalPlacesAreFramed(narrow)).toStrictEqual({
+        CA: true,
+        DC: true,
+        NY: true,
+      });
+      await page.screenshot({
+        fullPage: true,
+        path: `/opt/cursor/artifacts/review-national-390-webgl-${testInfo.project.name}.png`,
+      });
+    }
     for (const place of coastalPlaces) {
       await clickMappedState(page, place.code, place.longitude, place.latitude);
       await expect(page).toHaveURL(new RegExp(`scope=${place.code}`));

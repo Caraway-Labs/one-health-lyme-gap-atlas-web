@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { releaseViewportRuns } from "../e2e/release-phone-viewport";
+
 const evidenceObject = "data-and-evidence-evidence-object";
 const evidenceStrip = "data-and-evidence-evidence-state-strip";
 const releaseStrip = "data-and-evidence-release-evidence-state-strip";
@@ -245,25 +247,6 @@ test.describe("P0 evidence catalog", () => {
     await expect(page.getByText("Available")).toHaveCount(0);
   });
 
-  test("narrow evidence strips stay within 320px", async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 800 });
-    await openStory(page, `${evidenceStrip}--narrow`);
-    await expect(page.getByText("Limited")).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth
-      )
-    ).toBe(true);
-    await page.setViewportSize({ width: 390, height: 800 });
-    await openStory(page, `${releaseStrip}--narrow`);
-    await expect(page.getByText("Synthetic limitation")).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth
-      )
-    ).toBe(true);
-  });
-
   test("withheld priority is not labeled low", async ({ page }) => {
     await openStory(page, `${tier1}--unavailable`);
     const panel = page.getByTestId("tier1-surveillance-priority");
@@ -490,6 +473,29 @@ test.describe("P0 evidence catalog", () => {
       ).toBeVisible();
     }
   });
+});
+
+test("narrow evidence strips stay within 320px", async ({ page }, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 320),
+    "Phone-width evidence strips run on the mobile project."
+  );
+  await page.setViewportSize({ width: 320, height: 800 });
+  await openStory(page, `${evidenceStrip}--narrow`);
+  await expect(page.getByText("Limited")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth
+    )
+  ).toBe(true);
+  await page.setViewportSize({ width: 390, height: 800 });
+  await openStory(page, `${releaseStrip}--narrow`);
+  await expect(page.getByText("Synthetic limitation")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth
+    )
+  ).toBe(true);
 });
 
 test("mobile shell opens, dismisses, and returns focus", async ({
