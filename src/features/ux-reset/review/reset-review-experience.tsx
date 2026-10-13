@@ -60,13 +60,13 @@ import {
   reviewDatasetText,
   reviewText,
 } from "@/features/ux-reset/review/review-governed-values";
-import { ReviewNationalOrientation } from "@/features/ux-reset/review/review-national-orientation";
+import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
   isUnsupportedReviewScope,
   normalizeReviewCounty,
   REVIEW_REQUEST_FAILURE_MESSAGE,
-  reviewCandidateFipsForScope,
+  reviewCountyFipsForScope,
   unsupportedReviewScopeMessage,
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
@@ -235,7 +235,7 @@ function ResetReviewExperienceInner() {
   const setCounty = useCallback(
     (fips: string | null, history: "push" | "replace") => {
       const county =
-        fips === null ? null : reviewCandidateFipsForScope(fips, scope);
+        fips === null ? null : reviewCountyFipsForScope(fips, scope);
       void setUrlState({ county }, { history });
     },
     [scope, setUrlState]
@@ -409,7 +409,7 @@ function ResetReviewExperienceInner() {
   const pictureActive = Boolean(reviewReady && stateReview.review);
   const openCountyEvidence = useCallback(
     (fips: string) => {
-      const county = reviewCandidateFipsForScope(fips, scope);
+      const county = reviewCountyFipsForScope(fips, scope);
       if (!county) {
         return;
       }
@@ -586,12 +586,21 @@ function ResetReviewExperienceInner() {
             data-testid="review-scope-results"
           >
             {nationalReady && presentationQuery.metadata ? (
-              <ReviewNationalOrientation
+              <ReviewNationalPicture
+                availableDataGate={availableDataGate}
+                counties={countyReference.counties}
+                countiesError={countyReference.isError}
+                countiesLoading={countyReference.isLoading}
+                county={reviewCounty}
+                countyQuery={countyQuery}
+                mapLayer={mapLayer}
+                period={urlState.period}
                 releaseId={presentationQuery.metadata.release_id}
-                releaseStates={releaseStates}
-                onOpenState={(stateCode) => {
-                  setScope(stateCode);
-                }}
+                releaseStates={stateOptions}
+                tierRelease={tierRelease}
+                onCountyChange={setCounty}
+                onMapLayerChange={setMapLayer}
+                onViewCountyEvidence={openCountyEvidence}
               />
             ) : null}
             {reviewReady && stateReview.review ? (

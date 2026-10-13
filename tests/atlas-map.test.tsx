@@ -499,6 +499,41 @@ describe("AtlasMap county camera", () => {
     expect(map?.fitBounds).toHaveBeenCalledOnce();
   });
 
+  it("fits the contiguous United States when the national fit control repeats", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        cameraFrameState={null}
+        fitSignal={0}
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    act(() => {
+      map?.jumpTo({ center: [-105, 39.7], zoom: 6 });
+    });
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        fitSignal={1}
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.jumpTo).toHaveBeenCalledWith(CONTIGUOUS_US_INITIAL_VIEW);
+    expect(map?.zoom).toBe(CONTIGUOUS_US_INITIAL_VIEW.zoom);
+  });
+
   it("leaves the camera in place when a national frame is not opted in", () => {
     stubPrefersReducedMotion(false);
     const onSelect = vi.fn<(fips: string, surface: string) => void>();

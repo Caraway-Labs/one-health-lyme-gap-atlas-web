@@ -393,12 +393,24 @@ export function AtlasMap({
     if (!mapReady || !instance?.getLayer("selected-outline")) {
       return;
     }
-    if (previousFitSignal.current !== fitSignal) {
+    const fitRequested = previousFitSignal.current !== fitSignal;
+    if (fitRequested) {
       previousFitSignal.current = fitSignal;
-      previousFramedState.current = null;
     }
     const frameState =
       cameraFrameState && cameraFrameState !== "ALL" ? cameraFrameState : null;
+    if (fitRequested && resetNationalView && !frameState) {
+      applyingExternalMove.current = true;
+      instance.stop();
+      instance.jumpTo(CONTIGUOUS_US_INITIAL_VIEW);
+      applyingExternalMove.current = false;
+      previousFramedState.current = null;
+      previousSelectedFips.current = selectedFips;
+      return;
+    }
+    if (fitRequested) {
+      previousFramedState.current = null;
+    }
     if (!frameState) {
       const shouldResetNational =
         resetNationalView && previousFramedState.current !== null;

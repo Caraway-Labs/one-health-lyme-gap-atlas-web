@@ -531,26 +531,28 @@ describe("Reset Review scope UI", () => {
     };
     const read = async (search: string) => {
       const view = renderReview(search);
-      await waitFor(() => {
-        if (search.includes("scope=ALL")) {
-          if (!screen.queryByRole("button", { name: "CO, Colorado" })) {
-            throw new Error("lower 48 scope was not offered");
+      if (search.includes("scope=ALL")) {
+        fireEvent.click(await screen.findByTestId("national-browse-state"));
+        await screen.findByRole("option", { name: "Colorado (CO)" });
+      } else {
+        await waitFor(() => {
+          if (!screen.queryByTestId("review-scope-unsupported")) {
+            throw new Error("unsupported scope message did not render");
           }
-          return;
-        }
-        if (!screen.queryByTestId("review-scope-unsupported")) {
-          throw new Error("unsupported scope message did not render");
-        }
-      });
+        });
+      }
       const snapshot = {
         colorado: Boolean(
+          screen.queryByRole("option", { name: "Colorado (CO)" }) ||
           screen.queryByRole("button", { name: "CO, Colorado" })
         ),
         map: Boolean(screen.queryByTestId("mock-atlas-map")),
         offeredAlaska: Boolean(
+          screen.queryByRole("option", { name: "Alaska (AK)" }) ||
           screen.queryByRole("button", { name: "AK, Alaska" })
         ),
         offeredHawaii: Boolean(
+          screen.queryByRole("option", { name: "Hawaii (HI)" }) ||
           screen.queryByRole("button", { name: "HI, Hawaii" })
         ),
         picture: Boolean(screen.queryByTestId("review-state-panel")),
@@ -3801,28 +3803,119 @@ describe("Reset Review scope UI", () => {
     }
   });
 
-  it("opens a listed state from national orientation without writing Settings", async () => {
+  it("opens a listed state from the scope control without writing Settings", async () => {
     const { saveProfileV1MeProfilePut } = await import("@/generated/atlas");
     const save = vi.mocked(saveProfileV1MeProfilePut);
     save.mockClear();
     renderReview("?scope=ALL");
-    const colorado = await screen.findByRole("button", {
-      name: "CO, Colorado",
-    });
-    await waitFor(() => {
-      expect(
-        screen.getByTestId("review-state-navigation-status").textContent
-      ).toBe(
-        "Map status: No state boundaries are available for this release. Choose a state from the list. Highlighted state: none. Focused state: none. Selected state: none. Showing 49 of 49 states."
-      );
-    });
-    fireEvent.click(colorado);
+    await screen.findByTestId("review-national-orientation");
+    expect(screen.queryByText(/49 of 49 states/)).toBeNull();
+    await chooseReviewScopeOption("Colorado (CO)");
     await waitFor(() => {
       expect(renderedReviewScope()).toBe("CO");
     });
     expect(save).not.toHaveBeenCalled();
     expect(screen.queryByTestId("review-national-orientation")).toBeNull();
     expect(screen.queryByTestId("review-state-panel")).toBeTruthy();
+  });
+
+  it("keeps a national county selection on the United States map", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const geometry = vi.mocked(fetchCountyDisplayGeometry);
+    geometry.mockResolvedValue({
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-105, 39],
+                [-104, 39],
+                [-104, 40],
+                [-105, 40],
+                [-105, 39],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-74, 42],
+                [-73, 42],
+                [-73, 43],
+                [-74, 43],
+                [-74, 42],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-150, 60],
+                [-149, 60],
+                [-149, 61],
+                [-150, 61],
+                [-150, 60],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "02013" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const updates: string[] = [];
+    try {
+      renderReview("?scope=ALL", {
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      await waitFor(() => {
+        const fips =
+          screen.getByTestId("mock-atlas-map").dataset.mapScoreFips ?? "";
+        expect(fips).toContain("08001");
+        expect(fips).toContain("36001");
+        expect(fips).not.toContain("02013");
+      });
+      expect(screen.getByTestId("explorer-map-legend").textContent).toContain(
+        "published score colors"
+      );
+      expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
+      expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
+      fireEvent.click(screen.getByTestId("mock-map-select-ny"));
+      await waitFor(() => {
+        expect(
+          updates.some((query) => query.includes("county=36001"))
+        ).toBeTruthy();
+      });
+      expect({
+        national: Boolean(screen.queryByTestId("review-national-orientation")),
+        rendered: renderedReviewScope(),
+        scope: updates.some((query) => query.includes("scope=NY")),
+      }).toStrictEqual({
+        national: true,
+        rendered: "ALL",
+        scope: false,
+      });
+    } finally {
+      geometry.mockResolvedValue({
+        features: [],
+        type: "FeatureCollection",
+      });
+    }
   });
 });
 
