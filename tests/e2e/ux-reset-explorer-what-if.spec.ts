@@ -151,6 +151,12 @@ test.describe("Explorer what-if scenario", () => {
     await expect(missing).toBeVisible();
     await missing.focus();
     await missing.fill("40");
+    await expect(page).toHaveURL(/[?&]missing=40(?:&|$)/);
+    const historyLength = await page.evaluate(() => history.length);
+    await missing.fill("50");
+    await expect(page).toHaveURL(/[?&]missing=50(?:&|$)/);
+    expect(await page.evaluate(() => history.length)).toBe(historyLength);
+    await missing.fill("40");
 
     const candidate = page.getByTestId("review-candidate");
     await expect(candidate).toContainText("Published score 22.9");
@@ -170,7 +176,14 @@ test.describe("Explorer what-if scenario", () => {
       path: "/opt/cursor/artifacts/what-if-county-adjusted.png",
     });
 
+    await page.reload();
+    await expect(candidate).toContainText("Adjusted scenario 12.2");
+    await expect(panel).not.toHaveAttribute("open", "");
+    await summary.click();
+    await expect(missing).toHaveValue("40");
+
     await page.getByTestId("explorer-scenario-reset").click();
+    await expect(page).not.toHaveURL(/[?&]missing=/);
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
     await expect(candidate).toContainText("Published score 22.9");
     await expect(missing).toHaveValue("75");
@@ -193,7 +206,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("review-scope-unsupported")).toBeVisible();
   });
 
-  test("uses exact incidence for a higher threshold and keeps a clamped county limited", async ({
+  test("ignores undeclared incidence and keeps a raised threshold limited", async ({
     page,
   }) => {
     const lower = "Lower Atlas priority — Not a safety finding";
@@ -277,6 +290,7 @@ test.describe("Explorer what-if scenario", () => {
       name: "Published-record threshold",
     });
     await threshold.fill("20");
+    await expect(page).toHaveURL(/[?&]breakpoint=20(?:&|$)/);
 
     const twelve = page.locator(
       "[data-testid='review-candidate'][data-fips='08012']"
@@ -288,27 +302,26 @@ test.describe("Explorer what-if scenario", () => {
       "[data-testid='review-candidate'][data-fips='08001']"
     );
     await expect(twelve).toContainText("Published score 0");
-    await expect(twelve).toContainText("Adjusted scenario 40");
-    await expect(twelve).toContainText("Watch — Monitor signals");
-    await expect(twelve).toContainText("Scenario rank 1");
-    await expect(thirty).toContainText("Adjusted scenario 0.");
-    await expect(thirty).toContainText("Scenario rank 2");
+    await expect(twelve).toContainText("Adjusted scenario unavailable");
+    await expect(twelve).not.toContainText("Scenario rank");
+    await expect(thirty).toContainText("Adjusted scenario unavailable");
+    await expect(thirty).not.toContainText("Scenario rank");
     await expect(clamped).toContainText("Adjusted scenario unavailable");
     await expect(clamped).not.toContainText("Scenario rank");
-    await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
-      "Adjusted scenario 40"
-    );
-
-    await thirty.click();
-    await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
-      "Adjusted scenario 0."
-    );
-    await clamped.click();
     await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
       "Adjusted scenario unavailable"
     );
     await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
       "Governed score 0"
+    );
+
+    await thirty.click();
+    await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
+      "Adjusted scenario unavailable"
+    );
+    await clamped.click();
+    await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
+      "Adjusted scenario unavailable"
     );
 
     await expect(
@@ -320,17 +333,17 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
       "keep the governed score and color"
     );
-    await expect(map).toHaveAttribute("data-map-colors", /08012:#87b982/i);
+    await expect(map).toHaveAttribute("data-map-colors", /08012:#a9d2db/i);
     await expect(map).toHaveAttribute("data-map-colors", /08030:#a9d2db/i);
     await expect(map).toHaveAttribute("data-map-colors", /08001:#a9d2db/i);
 
-    await panel.locator("summary").click();
+    await page.reload();
     await expect(panel).not.toHaveAttribute("open", "");
     await expect(page.getByRole("slider")).toHaveCount(0);
-    await expect(twelve).toContainText("Adjusted scenario 40");
-    await expect(thirty).toContainText("Scenario rank 2");
+    await expect(twelve).toContainText("Adjusted scenario unavailable");
+    await expect(thirty).not.toContainText("Scenario rank");
     await expect(clamped).toContainText("Adjusted scenario unavailable");
-    await expect(map).toHaveAttribute("data-map-colors", /08012:#87b982/i);
+    await expect(map).toHaveAttribute("data-map-colors", /08012:#a9d2db/i);
   });
 
   test("loads scenario inputs on a boundaries cold arrival, then switches layers and resets", async ({
@@ -372,10 +385,28 @@ test.describe("Explorer what-if scenario", () => {
     await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
 
     await page.getByTestId("explorer-scenario-reset").click();
+    await expect(page).not.toHaveURL(/[?&]missing=/);
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Atlas gap score" })
     ).toBeVisible();
     await expect(map).toHaveAttribute("data-map-colors", /08021:#55a8a3/i);
+  });
+
+  test("drops invalid scenario params back to the governed defaults", async ({
+    page,
+  }) => {
+    await installExplorer(page);
+    await page.goto("/app/review?scope=CO&missing=41&eco=39");
+    await expect(page).not.toHaveURL(/[?&]missing=/);
+    await expect(page).not.toHaveURL(/[?&]eco=/);
+    await page.getByTestId("explorer-what-if-summary").click();
+    await expect(
+      page.getByRole("slider", { name: "Missing county-record value" })
+    ).toHaveValue("75");
+    await expect(
+      page.getByRole("slider", { name: "Tick and pathogen share" })
+    ).toHaveValue("65");
+    await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
   });
 });

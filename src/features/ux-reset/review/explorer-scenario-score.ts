@@ -238,52 +238,12 @@ export function scoreCounty(
 }
 
 /**
- * Incidence is not on the scores collection. A fixture or a future payload
- * may still include `incidence_floor_2023` on a county row; keep that exact
- * input and ignore every other extra field.
- */
-export function exactIncidenceFromScoresPayload(
-  payload: unknown
-): Readonly<Record<string, number>> {
-  if (
-    typeof payload !== "object" ||
-    payload === null ||
-    !("counties" in payload)
-  ) {
-    return {};
-  }
-  const counties = payload.counties;
-  if (!Array.isArray(counties)) {
-    return {};
-  }
-  const exact: Record<string, number> = {};
-  for (const county of counties) {
-    if (typeof county !== "object" || county === null) {
-      continue;
-    }
-    if (!("fips" in county) || typeof county.fips !== "string") {
-      continue;
-    }
-    if (!("incidence_floor_2023" in county)) {
-      continue;
-    }
-    const incidence = county.incidence_floor_2023;
-    if (
-      typeof incidence === "number" &&
-      Number.isFinite(incidence) &&
-      incidence >= 0
-    ) {
-      exact[county.fips] = incidence;
-    }
-  }
-  return exact;
-}
-
-/**
  * Published human signal for the scenario.
- * Exact incidence is used only when the threshold moved. A governed signal of
- * 0 hides every incidence at or above the baseline threshold, so raising that
- * threshold without an exact incidence is limited rather than a new zero.
+ * A caller may pass a typed incidence when the threshold moved. The scores
+ * collection does not declare incidence, so the UI does not read one from
+ * that payload. A governed signal of 0 hides every incidence at or above the
+ * baseline threshold, and raising that threshold without a typed incidence is
+ * limited rather than a new zero.
  */
 function scenarioHuman(
   county: CountyScoreSummary,
@@ -377,6 +337,10 @@ function scenarioDraft(
   };
 }
 
+/**
+ * `exactIncidenceByFips` is an optional typed input for callers that already
+ * hold incidence. The scores response is not one of those callers.
+ */
 export function adjustCountyScenarios(
   counties: readonly CountyScoreSummary[],
   settings: ScoreSettings,

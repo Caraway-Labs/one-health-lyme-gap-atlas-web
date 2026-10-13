@@ -2182,13 +2182,6 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   font-variant-numeric: tabular-nums;
 }
 
-.ux-reset-explorer-scenario-control input[type="range"] {
-  width: 100%;
-  height: 1.25rem;
-  margin: 0;
-  accent-color: var(--primary);
-}
-
 .ux-reset-explorer-scenario-result {
   display: block;
 }

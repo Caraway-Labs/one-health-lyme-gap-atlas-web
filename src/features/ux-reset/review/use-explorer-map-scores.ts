@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { exactIncidenceFromScoresPayload } from "@/features/ux-reset/review/explorer-scenario-score";
 import { scoresV1AtlasScoresGet } from "@/generated/atlas";
 import { ScoresV1AtlasScoresGetResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -26,14 +25,11 @@ export function useExplorerMapScores(releaseId: string | null) {
         { dataset_version: releaseId, ...EXPLORER_SCORE_SETTINGS },
         { signal }
       );
-      return {
-        ...validateApiResponse(
-          "Atlas scores",
-          ScoresV1AtlasScoresGetResponse,
-          response.data
-        ),
-        exactIncidenceByFips: exactIncidenceFromScoresPayload(response.data),
-      };
+      return validateApiResponse(
+        "Atlas scores",
+        ScoresV1AtlasScoresGetResponse,
+        response.data
+      );
     },
     queryKey: ["ux-reset-review-scores", releaseId, EXPLORER_SCORE_SETTINGS],
   });

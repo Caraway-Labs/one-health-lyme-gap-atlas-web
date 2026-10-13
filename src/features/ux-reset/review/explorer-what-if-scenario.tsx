@@ -2,6 +2,7 @@
 
 import { ScoringCalculationPreview } from "@/components/scoring-calculation-preview";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import {
   SCENARIO_CONTROL_RANGES,
   SCENARIO_SCORE_DEFAULTS,
@@ -41,14 +42,13 @@ function ScenarioControl({
     <label className="ux-reset-explorer-scenario-control">
       <span>{label}</span>
       <strong>{valueLabel}</strong>
-      <input
+      <Slider
         aria-describedby={noteId}
         aria-label={label}
         aria-valuetext={valueLabel}
         max={max}
         min={min}
         step={step}
-        type="range"
         value={value}
         onChange={(event) => {
           onChange(Number(event.target.value));
@@ -112,11 +112,11 @@ export function ExplorerWhatIfScenario({
         </p>
         <p>
           County list scores update with these assumptions. Map colors update on
-          the Atlas gap score layer. When a published incidence is available,
-          the threshold uses that incidence. When it is not on the scores
-          collection, raising the threshold leaves the adjusted result
-          unavailable and the governed score stays in place. A missing incidence
-          is not treated as zero.
+          the Atlas gap score layer. This scores collection does not include
+          published incidence. Raising the threshold leaves counties whose
+          governed human signal is already 0 with an unavailable adjusted
+          result, and the governed score stays in place. A missing incidence is
+          not treated as zero.
         </p>
         <div className="ux-reset-explorer-scenario-controls">
           <ScenarioControl

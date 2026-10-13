@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   adjustCountyScenarios,
-  exactIncidenceFromScoresPayload,
   priorityLabel,
   SCENARIO_SCORE_DEFAULTS,
   scoreCounty,
@@ -414,18 +413,3 @@ function missingRecord(): CountyScoreSummary {
     },
   });
 }
-
-describe(exactIncidenceFromScoresPayload, () => {
-  it("keeps a finite incidence and ignores counties that do not publish one", () => {
-    expect(
-      exactIncidenceFromScoresPayload({
-        counties: [
-          { fips: "08012", incidence_floor_2023: 12 },
-          { fips: "08030", incidence_floor_2023: 30 },
-          { fips: "08001" },
-          { fips: "08002", incidence_floor_2023: null },
-        ],
-      })
-    ).toStrictEqual({ "08012": 12, "08030": 30 });
-  });
-});

@@ -416,16 +416,9 @@ export function ReviewOperatingPicture({
           (county) => county.state === scopeCode
         ),
         scenarioSettings,
-        scenarioBaseline,
-        scoresQuery.data?.exactIncidenceByFips
+        scenarioBaseline
       ),
-    [
-      scenarioBaseline,
-      scenarioSettings,
-      scopeCode,
-      scoresQuery.data?.counties,
-      scoresQuery.data?.exactIncidenceByFips,
-    ]
+    [scenarioBaseline, scenarioSettings, scopeCode, scoresQuery.data?.counties]
   );
   const mapPaint = useMemo(() => {
     const layer = explorerMapLayerById(mapLayer);

@@ -75,4 +75,17 @@ describe(ExplorerWhatIfScenario, () => {
     expect(screen.getByText(/not a diagnosis/i)).toBeTruthy();
     expect(screen.queryByText(/personal disease risk/i)).toBeNull();
   });
+
+  it("renders the shared slider primitive", () => {
+    render(
+      <ExplorerWhatIfScenario
+        settings={SCENARIO_SCORE_DEFAULTS}
+        onChange={vi.fn<() => void>()}
+      />
+    );
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const [slider] = screen.getAllByRole("slider");
+    expect(slider?.dataset.slot).toBe("slider");
+    expect(slider?.tagName).toBe("INPUT");
+  });
 });

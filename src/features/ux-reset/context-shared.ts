@@ -33,7 +33,16 @@ export const UX_RESET_PAGE_LOCAL_PARAM_KEYS = {
   explore: ["view", "metric", "page", "selected", "map_scope"] as const,
   feed: ["tab"] as const,
   investigate: ["evidence", "eco", "breakpoint", "missing", "q"] as const,
-  review: ["sort", "page", "mode", "selection", "layer"] as const,
+  review: [
+    "sort",
+    "page",
+    "mode",
+    "selection",
+    "layer",
+    "eco",
+    "breakpoint",
+    "missing",
+  ] as const,
   settings: [] as const,
 } as const;
 
