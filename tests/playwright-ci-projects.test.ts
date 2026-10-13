@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
@@ -9,14 +10,34 @@ const workflowPaths = [
   ".github/workflows/storybook-pages.yml",
 ] as const;
 
-function projectNames(argv: readonly string[], mobileFlag?: string): string[] {
+function projectNames(mobileFlag?: string): string[] {
   const env: NodeJS.ProcessEnv = {
     NODE_ENV: "test",
     ...(mobileFlag === undefined ? {} : { ATLAS_E2E_MOBILE: mobileFlag }),
   };
-  return atlasBrowserProjects(argv, env).flatMap((project) =>
+  return atlasBrowserProjects(env).flatMap((project) =>
     project.name === undefined ? [] : [project.name]
   );
+}
+
+function workerProjectNames(env: NodeJS.ProcessEnv): string[] {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--experimental-strip-types",
+      "--input-type=module",
+      "-e",
+      "import { atlasBrowserProjects } from './scripts/playwright-projects.ts'; process.stdout.write(atlasBrowserProjects().map((project) => project.name).join(','));",
+    ],
+    {
+      encoding: "utf-8",
+      env,
+    }
+  );
+  if (result.status !== 0) {
+    throw new Error(result.stderr || "Worker config reload failed.");
+  }
+  return result.stdout.split(",").filter((name) => name.length > 0);
 }
 
 function readText(path: string): string {
@@ -24,26 +45,19 @@ function readText(path: string): string {
 }
 
 describe("Playwright release projects", () => {
-  it("schedules only desktop Chromium by default", () => {
-    expect(projectNames([])).toStrictEqual(["desktop"]);
-    expect(projectNames(["--project=desktop"])).toStrictEqual(["desktop"]);
-    expect(projectNames(["tests/e2e/mobile-viewport.spec.ts"])).toStrictEqual([
-      "desktop",
-    ]);
-    expect(projectNames([], "true")).toStrictEqual(["desktop"]);
-    expect(projectNames(["--project=mobile-extra"])).toStrictEqual(["desktop"]);
+  it("schedules only desktop Chromium unless the mobile env var is set", () => {
+    expect(projectNames()).toStrictEqual(["desktop"]);
+    expect(projectNames("true")).toStrictEqual(["desktop"]);
+    expect(projectNames("1")).toStrictEqual(["desktop", "mobile"]);
   });
 
-  it("adds Pixel 7 only for an explicit mobile request", () => {
-    expect(projectNames(["--project=mobile"])).toStrictEqual([
-      "desktop",
-      "mobile",
-    ]);
-    expect(projectNames(["--project", "mobile"])).toStrictEqual([
-      "desktop",
-      "mobile",
-    ]);
-    expect(projectNames([], "1")).toStrictEqual(["desktop", "mobile"]);
+  it("keeps the mobile project when a worker reloads config without CLI flags", () => {
+    const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: "test" };
+    delete env.ATLAS_E2E_MOBILE;
+    expect(workerProjectNames(env)).toStrictEqual(["desktop"]);
+    expect(workerProjectNames({ ...env, ATLAS_E2E_MOBILE: "1" })).toStrictEqual(
+      ["desktop", "mobile"]
+    );
   });
 
   it("keeps the standard npm scripts on desktop and the opt-in scripts on Pixel 7", () => {
@@ -51,14 +65,18 @@ describe("Playwright release projects", () => {
       string,
       string
     >;
+    const runner = readText("scripts/run-playwright-mobile.mjs");
     expect(scripts["test:e2e"]).toBe("playwright test --project=desktop");
-    expect(scripts["test:e2e:mobile"]).toBe("playwright test --project=mobile");
+    expect(scripts["test:e2e:mobile"]).toBe(
+      "node scripts/run-playwright-mobile.mjs"
+    );
     expect(scripts["test:storybook"]).toBe(
       "playwright test --config playwright.storybook.config.ts --project=desktop"
     );
     expect(scripts["test:storybook:mobile"]).toBe(
-      "playwright test --config playwright.storybook.config.ts --project=mobile"
+      "node scripts/run-playwright-mobile.mjs --storybook"
     );
+    expect(runner).toContain('ATLAS_E2E_MOBILE: "1"');
   });
 
   it("selects desktop in every CI Playwright command", () => {
