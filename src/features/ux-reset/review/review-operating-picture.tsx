@@ -29,6 +29,7 @@ import {
   type EvidenceProvenanceModel,
 } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
   explorerMapLayerById,
   paintExplorerMapLayer,
@@ -115,6 +116,9 @@ type ReviewOperatingPictureProps = {
   stateName: string;
   tierRelease?: Tier1ActiveRelease;
   countyQuery?: string;
+  /** Published FIPS that match Available data. Null keeps every county. */
+  eligibleFips?: ReadonlySet<string> | null;
+  onMapLayerChange?: (layerId: ExplorerMapLayerId) => void;
 };
 
 function resolveExplorerPaintColor(
@@ -267,6 +271,8 @@ export function ReviewOperatingPicture({
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
   countyQuery = "",
+  eligibleFips = null,
+  onMapLayerChange,
 }: ReviewOperatingPictureProps) {
   const scopedCandidates = useMemo(
     () => scopedReviewCandidates(review.review_candidates, scopeCode),
@@ -404,13 +410,15 @@ export function ReviewOperatingPicture({
       reviewMapCounties({
         geometryFips,
         scopeCode,
-      }).map((county) => ({
-        ...county,
-        color: resolveExplorerPaintColor(
-          mapPaint.colorsByFips.get(county.fips)
-        ),
-      })),
-    [geometryFips, mapPaint.colorsByFips, scopeCode]
+      })
+        .map((county) => ({
+          ...county,
+          color: resolveExplorerPaintColor(
+            mapPaint.colorsByFips.get(county.fips)
+          ),
+        }))
+        .filter((county) => !eligibleFips || eligibleFips.has(county.fips)),
+    [eligibleFips, geometryFips, mapPaint.colorsByFips, scopeCode]
   );
   const [fitSignal, setFitSignal] = useState(0);
   const publishedScoreByFips = useMemo(() => {
@@ -547,18 +555,43 @@ export function ReviewOperatingPicture({
 
   const geometryError = Boolean(geometryQuery.isError);
   const countyQueryText = countyQuery.trim().toLowerCase();
-  const countyMatchesQuery = (name: string, fips: string) =>
-    countyQueryText.length === 0 ||
-    name.toLowerCase().includes(countyQueryText) ||
-    fips.includes(countyQueryText);
-  const visibleDirectory = directory.counties.filter((entry) =>
+  const countyMatchesQuery = (name: string, fips: string) => {
+    if (countyQueryText.length === 0) {
+      return true;
+    }
+    const normalizedName = name.trim().toLowerCase();
+    if (
+      normalizedName.includes(countyQueryText) ||
+      fips.includes(countyQueryText)
+    ) {
+      return true;
+    }
+    return (
+      normalizedName.length > 0 &&
+      countyQueryText.includes(fips) &&
+      countyQueryText.includes(normalizedName)
+    );
+  };
+  const passesAvailableData = (fips: string) =>
+    eligibleFips === null || eligibleFips.has(fips);
+  const availableDirectory = directory.counties.filter((entry) =>
+    passesAvailableData(entry.fips)
+  );
+  const visibleDirectory = availableDirectory.filter((entry) =>
     countyMatchesQuery(entry.county, entry.fips)
   );
-  const visibleCandidates = candidates.filter((candidate) =>
-    countyMatchesQuery(
-      reviewCandidateCountyLabel(candidate.countyName),
-      candidate.countyFips
-    )
+  const publishedPickerCounties =
+    selectedPublished &&
+    !availableDirectory.some((entry) => entry.fips === selectedPublished.fips)
+      ? [selectedPublished, ...availableDirectory]
+      : availableDirectory;
+  const visibleCandidates = candidates.filter(
+    (candidate) =>
+      passesAvailableData(candidate.countyFips) &&
+      countyMatchesQuery(
+        reviewCandidateCountyLabel(candidate.countyName),
+        candidate.countyFips
+      )
   );
   const visibleCandidateCount = visibleCandidates.length;
   useEffect(() => {
@@ -725,6 +758,14 @@ export function ReviewOperatingPicture({
               Fit {stateName}
             </Button>
           </div>
+          {onMapLayerChange ? (
+            <div className="ux-reset-explorer-map-layer">
+              <ExplorerMapLayerControl
+                layerId={mapLayer}
+                onLayerChange={onMapLayerChange}
+              />
+            </div>
+          ) : null}
           <div
             className="map-wrap"
             data-testid="review-state-map-region"
@@ -815,7 +856,7 @@ export function ReviewOperatingPicture({
             <p className="type-small">
               {candidates.length > 0
                 ? stateName
-                : `${directory.counties.length} published counties. Alphabetical order; no recommendation ranking. Missing rank is not low priority.`}
+                : `${availableDirectory.length} published counties. Alphabetical order; no recommendation ranking. Missing rank is not low priority.`}
               {authoritativeResultState === "unsupported"
                 ? " Review recommendations are unavailable for this jurisdiction in the current release. You can still explore published county evidence."
                 : ""}
@@ -836,6 +877,13 @@ export function ReviewOperatingPicture({
                 No published counties were returned for this state and release.
               </AtlasStatusMessage>
             ) : null}
+            {directory.isSuccess &&
+            directory.counties.length > 0 &&
+            availableDirectory.length === 0 ? (
+              <p data-testid="explorer-available-data-empty">
+                No published counties match the Available data filter.
+              </p>
+            ) : null}
             <Select
               value={selectedFips || null}
               onValueChange={(fips) => {
@@ -847,7 +895,7 @@ export function ReviewOperatingPicture({
               <SelectTrigger
                 aria-label="Published county"
                 className="h-9 w-full"
-                disabled={!directory.counties.length}
+                disabled={publishedPickerCounties.length === 0}
                 data-testid="review-published-county-select"
               >
                 <SelectValue>
@@ -855,7 +903,7 @@ export function ReviewOperatingPicture({
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {directory.counties.map((entry) => (
+                {publishedPickerCounties.map((entry) => (
                   <SelectItem key={entry.fips} value={entry.fips}>
                     {entry.county}, {scopeCode} · {entry.fips}
                   </SelectItem>

@@ -71,7 +71,13 @@ export function numericParam(
 }
 
 export function matchesEvidence(
-  county: CountyScoreSummary,
+  county: Pick<
+    CountyScoreSummary,
+    | "burgdorferi_status"
+    | "evidence_completeness"
+    | "human_status"
+    | "tick_status"
+  >,
   evidence: EvidenceView
 ) {
   if (evidence === "ecological") {

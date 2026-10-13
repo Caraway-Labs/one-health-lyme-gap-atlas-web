@@ -38,7 +38,10 @@ test.describe("retired Geographic Explorer bookmarks", () => {
       await page.goto(bookmark.start);
       await expect(page).toHaveURL(bookmark.landed);
       await expect(
-        page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+        page.getByRole("heading", {
+          level: 1,
+          name: "Explore the evidence behind every county.",
+        })
       ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "Geographic explorer", exact: true })

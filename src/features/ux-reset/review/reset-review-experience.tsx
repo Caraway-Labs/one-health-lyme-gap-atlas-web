@@ -19,14 +19,21 @@ import {
   type AskAtlasInheritedContext,
 } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { PageIntroduction } from "@/features/ux-reset/page-introduction";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
+import {
+  downloadExplorerCountyList,
+  explorerCountyListCsv,
+  explorerCountyListFilename,
+  filterExplorerCountyReference,
+} from "@/features/ux-reset/review/explorer-county-reference";
+import { ExplorerCountyToolbar } from "@/features/ux-reset/review/explorer-county-toolbar";
 import {
   explorerFollowUpSelection,
   explorerFollowUpState,
   explorerReviewLoad,
 } from "@/features/ux-reset/review/explorer-follow-up";
-import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
   explorerMapLayerById,
   type ExplorerMapLayerId,
@@ -62,10 +69,10 @@ import {
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
-import { ReviewScopeSelector } from "@/features/ux-reset/review/review-scope-selector";
 import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
 import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
+import { useExplorerCountyReference } from "@/features/ux-reset/review/use-explorer-county-reference";
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
 import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
@@ -76,6 +83,7 @@ import {
   atlasStateOptionsFromMetadata,
   reviewScopeLabel,
 } from "@/lib/atlas-state-geography";
+import type { EvidenceView } from "@/lib/atlas-ui";
 
 function ResetReviewExperienceInner() {
   const route = resetRouteById("explorer");
@@ -96,6 +104,7 @@ function ResetReviewExperienceInner() {
   const userChoseScopeRef = useRef(false);
   const [userChoseScope, setUserChoseScope] = useState(false);
   const [countyQuery, setCountyQuery] = useState("");
+  const [availableData, setAvailableData] = useState<EvidenceView>("all");
   const [countyQueryScope, setCountyQueryScope] = useState(scope);
   if (countyQueryScope !== scope) {
     setCountyQueryScope(scope);
@@ -127,6 +136,9 @@ function ResetReviewExperienceInner() {
       : null;
   const stateReview = useStateReview(
     scope,
+    scopeUnsupported ? null : confirmedRelease
+  );
+  const countyReference = useExplorerCountyReference(
     scopeUnsupported ? null : confirmedRelease
   );
 
@@ -195,6 +207,47 @@ function ResetReviewExperienceInner() {
     },
     [scope, setUrlState]
   );
+  const eligibleFips = useMemo(() => {
+    if (availableData === "all" || !countyReference.isSuccess) {
+      return null;
+    }
+    return new Set(
+      filterExplorerCountyReference(countyReference.counties, {
+        evidence: availableData,
+        query: "",
+        scope,
+      }).map((county) => county.fips)
+    );
+  }, [
+    availableData,
+    countyReference.counties,
+    countyReference.isSuccess,
+    scope,
+  ]);
+  const selectToolbarCounty = useCallback(
+    (county: { fips: string; state: string }) => {
+      if (scope === county.state) {
+        setCountyQuery(county.fips);
+        setCounty(county.fips, "push");
+        return;
+      }
+      userChoseScopeRef.current = true;
+      setUserChoseScope(true);
+      void setUrlState({ county: county.fips, scope: county.state });
+    },
+    [scope, setCounty, setUrlState]
+  );
+  const downloadCountyList = useCallback(() => {
+    const rows = filterExplorerCountyReference(countyReference.counties, {
+      evidence: availableData,
+      query: countyQuery,
+      scope,
+    });
+    downloadExplorerCountyList(
+      explorerCountyListCsv(rows),
+      explorerCountyListFilename(scope)
+    );
+  }, [availableData, countyQuery, countyReference.counties, scope]);
 
   // Shallow scope updates do not emit popstate. Bind the in-session choice to
   // the history entry that is current after Back/Forward, and only then.
@@ -408,48 +461,30 @@ function ResetReviewExperienceInner() {
       {explorerMode ? null : (
         <ReviewAskAtlasPublisher context={reviewAskContext} />
       )}
-      <header className="ux-reset-explorer-heading">
-        <h1>{route.label}</h1>
-        <p>Explore county surveillance evidence and what to verify next.</p>
-      </header>
+      <PageIntroduction page="explorer" />
 
-      <div className="ux-reset-explorer-toolbar">
-        <ReviewScopeSelector
-          scope={scope}
-          stateOptions={stateOptions}
-          onScopeChange={setScope}
-        />
-        <ExplorerMapLayerControl
-          layerId={mapLayer}
-          onLayerChange={setMapLayer}
-        />
-        {scope !== "ALL" && !scopeUnsupported ? (
-          <label
-            className="ux-reset-review-scope-field"
-            htmlFor="explorer-county-search"
-          >
-            County or FIPS
-            <input
-              id="explorer-county-search"
-              placeholder="Search counties"
-              type="search"
-              value={countyQuery}
-              onChange={(event) => {
-                setCountyQuery(event.target.value);
-              }}
-            />
-          </label>
-        ) : null}
-        {scopeViewReady ? (
-          <p
-            className="sr-only"
-            data-request-scope={renderedScope}
-            data-testid="review-scope-status"
-          >
-            Showing results for {scopeLabel}
-          </p>
-        ) : null}
-      </div>
+      <ExplorerCountyToolbar
+        availableData={availableData}
+        counties={countyReference.counties}
+        countyQuery={countyQuery}
+        downloadDisabled={!countyReference.isSuccess}
+        scope={scope}
+        stateOptions={stateOptions}
+        onAvailableDataChange={setAvailableData}
+        onCountyQueryChange={setCountyQuery}
+        onCountySelect={selectToolbarCounty}
+        onDownload={downloadCountyList}
+        onScopeChange={setScope}
+      />
+      {scopeViewReady ? (
+        <p
+          className="sr-only"
+          data-request-scope={renderedScope}
+          data-testid="review-scope-status"
+        >
+          Showing results for {scopeLabel}
+        </p>
+      ) : null}
 
       {metadataLoading || startingScopePending ? (
         <AtlasStatusMessage tone="loading">
@@ -522,9 +557,10 @@ function ResetReviewExperienceInner() {
             {reviewReady && stateReview.review ? (
               <ReviewOperatingPicture
                 county={reviewCounty}
+                countyQuery={countyQuery}
+                eligibleFips={eligibleFips}
                 freezeCountySelection={explorerMode !== null}
                 mapLayer={mapLayer}
-                countyQuery={countyQuery}
                 period={urlState.period}
                 requireExplicitCountySelection={
                   urlState.selection === EXPLORER_SELECTION_REQUIRED
@@ -534,6 +570,7 @@ function ResetReviewExperienceInner() {
                 stateName={stateName}
                 tierRelease={tierRelease}
                 onCountyChange={setCounty}
+                onMapLayerChange={setMapLayer}
                 onViewCountyEvidence={openCountyEvidence}
               />
             ) : null}
