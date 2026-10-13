@@ -302,6 +302,13 @@ export function AtlasMap({
       onErrorRef.current?.();
     });
     instance.on("move", (event) => {
+      const center = instance.getCenter();
+      const element = container.current;
+      if (element) {
+        element.dataset.mapCameraLat = String(center.lat);
+        element.dataset.mapCameraLng = String(center.lng);
+        element.dataset.mapCameraZoom = String(instance.getZoom());
+      }
       if (applyingExternalMove.current) {
         return;
       }
@@ -310,13 +317,6 @@ export function AtlasMap({
         resetNationalViewRef.current && (!frame || frame === "ALL");
       if (event?.originalEvent && nationallyFramed) {
         userAdjustedNationalRef.current = true;
-      }
-      const center = instance.getCenter();
-      const element = container.current;
-      if (element) {
-        element.dataset.mapCameraLat = String(center.lat);
-        element.dataset.mapCameraLng = String(center.lng);
-        element.dataset.mapCameraZoom = String(instance.getZoom());
       }
       onMoveRef.current?.({
         center: { lng: center.lng, lat: center.lat },
