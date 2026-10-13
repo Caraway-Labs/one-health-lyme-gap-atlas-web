@@ -41,6 +41,7 @@ import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map
 import {
   explorerMapLayerById,
   paintExplorerMapLayer,
+  resolveExplorerMapColor,
   type ExplorerMapLayerId,
   type ExplorerMapLegendSource,
 } from "@/features/ux-reset/review/explorer-map-layers";
@@ -158,19 +159,6 @@ type ReviewOperatingPictureProps = {
   availableDataGate?: ExplorerAvailableDataGate;
   onMapLayerChange?: (layerId: ExplorerMapLayerId) => void;
 };
-
-function resolveExplorerPaintColor(
-  color: string | undefined
-): string | undefined {
-  if (!color?.startsWith("var(") || typeof document === "undefined") {
-    return color;
-  }
-  const token = color.slice(4, -1).trim();
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-  return value || undefined;
-}
 
 function visibleLines(values: readonly string[]): string[] {
   const lines: string[] = [];
@@ -522,9 +510,7 @@ export function ReviewOperatingPicture({
         scopeCode,
       }).map((county) => ({
         ...county,
-        color: resolveExplorerPaintColor(
-          mapPaint.colorsByFips.get(county.fips)
-        ),
+        color: resolveExplorerMapColor(mapPaint.colorsByFips.get(county.fips)),
       })),
     [geometryFips, mapPaint.colorsByFips, scopeCode]
   );

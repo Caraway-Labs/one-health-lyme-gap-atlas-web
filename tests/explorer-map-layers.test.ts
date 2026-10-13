@@ -346,13 +346,17 @@ describe("Explorer map layers", () => {
     );
     const extraColors = extras.map((status) => byLabel.get(status) ?? "");
     expect({
-      detected: extraColors[0],
+      detected: extraColors[0]?.startsWith("hsl(") ?? false,
       distinct: new Set(extraColors).size,
+      paintable: extraColors.every(
+        (color) => color.startsWith("hsl(") && !color.includes("color-mix")
+      ),
       reserved: extraColors.some((color) => reserved.has(color)),
       unknown: byLabel.get("Unknown (not zero, not confirmed absence)"),
     }).toStrictEqual({
-      detected: "var(--ink)",
+      detected: true,
       distinct: extras.length,
+      paintable: true,
       reserved: false,
       unknown: "var(--navy-2)",
     });

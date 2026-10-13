@@ -31,6 +31,7 @@ import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map
 import {
   explorerMapLayerById,
   paintExplorerMapLayer,
+  resolveExplorerMapColor,
   type ExplorerMapLayerId,
   type ExplorerMapLegendSource,
 } from "@/features/ux-reset/review/explorer-map-layers";
@@ -88,28 +89,8 @@ type ReviewNationalPictureProps = {
   tierRelease: Tier1ActiveRelease;
 };
 
-function resolvedPaintColor(color: string | undefined): string | undefined {
-  if (!color) {
-    return undefined;
-  }
-  if (!color.startsWith("var(") || typeof document === "undefined") {
-    return color;
-  }
-  const token = color.slice(4, -1).trim();
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-  return value || undefined;
-}
-
 function noPublishedValueColor(): string | undefined {
-  if (typeof document === "undefined") {
-    return undefined;
-  }
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(NO_PUBLISHED_VALUE_TOKEN)
-    .trim();
-  return value || undefined;
+  return resolveExplorerMapColor(`var(${NO_PUBLISHED_VALUE_TOKEN})`);
 }
 
 function postalForFips(fips: string): string | null {
@@ -214,7 +195,7 @@ export function ReviewNationalPicture({
       ) {
         return [];
       }
-      const painted = resolvedPaintColor(mapPaint.colorsByFips.get(fips));
+      const painted = resolveExplorerMapColor(mapPaint.colorsByFips.get(fips));
       return [
         {
           color: painted ?? missingColor,
@@ -410,6 +391,9 @@ export function ReviewNationalPicture({
         <div
           aria-busy={geometryPending || valuesPending}
           className="map-wrap"
+          data-map-colors={mapCounties
+            .map((entry) => `${entry.fips}:${entry.color ?? ""}`)
+            .join(" ")}
           data-map-fips={mapCounties.map((entry) => entry.fips).join(" ")}
           data-testid="review-national-map-region"
         >

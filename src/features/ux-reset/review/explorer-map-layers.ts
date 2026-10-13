@@ -115,18 +115,18 @@ const RESERVED_STATUS_COLORS = new Set<string>([
   "var(--teal)",
 ]);
 /**
- * Hues for published categories the legend does not already name. None of
- * these are a neutral status color or a known category color.
+ * Concrete colors for published categories the legend does not already name.
+ * MapLibre can paint hsl/rgb/hex, and it cannot resolve var() or color-mix.
+ * None of these are a neutral status color or a known category color.
  */
 const EXTRA_CATEGORY_COLORS = [
-  "var(--ink)",
-  "var(--atlas-action-primary)",
-  "var(--atlas-action-primary-foreground)",
-  "color-mix(in srgb, var(--ink) 28%, var(--atlas-action-primary))",
-  "color-mix(in srgb, var(--ink) 55%, var(--atlas-action-primary))",
-  "color-mix(in srgb, var(--atlas-action-primary) 40%, var(--white))",
-  "color-mix(in srgb, var(--ink) 80%, var(--white))",
+  "hsl(262,46%,42%)",
+  "hsl(328,58%,48%)",
+  "hsl(78,38%,36%)",
 ] as const;
+
+/** Static extra-category colors. Further categories use the generated hues. */
+export const EXPLORER_STATIC_EXTRA_COLOR_COUNT = EXTRA_CATEGORY_COLORS.length;
 
 function neutralStatusColor(normalized: string): string {
   switch (normalized) {
@@ -334,19 +334,56 @@ function legendPeriod(input: PaintInput, layerId: ExplorerMapLayerId): string {
   return release ? `${release}. ${listed}` : listed;
 }
 
+function dynamicExtraColor(step: number): string {
+  const hue = (step * 29 + 11) % 360;
+  const lightness = 28 + (step % 4) * 10;
+  return `hsl(${hue},57%,${lightness}%)`;
+}
+
 function nextExtraColor(used: ReadonlySet<string>): string {
   for (const candidate of EXTRA_CATEGORY_COLORS) {
     if (!used.has(candidate)) {
       return candidate;
     }
   }
-  let amount = 24;
-  let mixed = `color-mix(in srgb, var(--ink) ${amount}%, var(--atlas-action-primary))`;
-  while (used.has(mixed)) {
-    amount += 7;
-    mixed = `color-mix(in srgb, var(--ink) ${amount}%, var(--atlas-action-primary))`;
+  for (let step = 0; step < 1440; step += 1) {
+    const color = dynamicExtraColor(step);
+    if (!used.has(color)) {
+      return color;
+    }
   }
-  return mixed;
+  return dynamicExtraColor(0);
+}
+
+/**
+ * Value MapLibre can paint. Known status tokens resolve from CSS variables.
+ * Expressions such as color-mix are dropped instead of being sent to the map.
+ */
+export function resolveExplorerMapColor(
+  color: string | undefined
+): string | undefined {
+  if (!color) {
+    return undefined;
+  }
+  const trimmed = color.trim();
+  if (trimmed.startsWith("var(")) {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+    const token = trimmed.slice(4, -1).trim();
+    const value = getComputedStyle(document.documentElement)
+      .getPropertyValue(token)
+      .trim();
+    return paintableMapColor(value);
+  }
+  return paintableMapColor(trimmed);
+}
+
+function paintableMapColor(value: string): string | undefined {
+  if (!value || value.startsWith("var(") || value.includes("color-mix(")) {
+    return undefined;
+  }
+  return value;
 }
 
 function boundaryPaint(
