@@ -507,13 +507,38 @@ export function ReviewOperatingPicture({
       focusPublishedSelect();
     } else if (row) {
       const list = row.closest(".ux-reset-review-candidate-list");
-      if (list instanceof HTMLElement) {
+      const alignRow = () => {
+        if (!(list instanceof HTMLElement) || !row.isConnected) {
+          return;
+        }
         const rowBox = row.getBoundingClientRect();
         const listBox = list.getBoundingClientRect();
-        const topWithinList = rowBox.top - listBox.top + list.scrollTop;
-        list.scrollTop = Math.max(0, topWithinList - 8);
-      }
+        list.scrollTop = Math.max(
+          0,
+          rowBox.top - listBox.top + list.scrollTop - 8
+        );
+      };
+      alignRow();
       row.focus({ preventScroll: true });
+      const fips = selectedFips;
+      requestAnimationFrame(() => {
+        const current = layoutRef.current?.querySelector<HTMLButtonElement>(
+          `button[data-fips="${fips}"]`
+        );
+        const currentList = current?.closest(".ux-reset-review-candidate-list");
+        if (
+          !(current instanceof HTMLButtonElement) ||
+          !(currentList instanceof HTMLElement)
+        ) {
+          return;
+        }
+        const rowBox = current.getBoundingClientRect();
+        const listBox = currentList.getBoundingClientRect();
+        currentList.scrollTop = Math.max(
+          0,
+          rowBox.top - listBox.top + currentList.scrollTop - 8
+        );
+      });
     } else {
       focusPublishedSelect();
     }
