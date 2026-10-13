@@ -13,7 +13,7 @@ import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures"
  */
 const RELEASE_ID = baldwin.release.release_id;
 const COUNTY_FIPS = "01083";
-const REVIEW_PATH = `/app/review?scope=AL&dataset=${RELEASE_ID}&layer=tick_status&county=${COUNTY_FIPS}`;
+const REVIEW_PATH = `/explore?scope=AL&dataset=${RELEASE_ID}&layer=tick_status&county=${COUNTY_FIPS}`;
 const EDGE_TOLERANCE_PX = 1;
 /** Same key as `RESET_PRO_SIDEBAR_STORAGE_KEY` in the professional shell. */
 const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";

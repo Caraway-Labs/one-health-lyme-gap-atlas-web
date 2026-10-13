@@ -2,6 +2,8 @@ import {
   parseUxResetSharedContext,
   readExploreSelectedFips,
   sharedContextToSearchParams,
+  UX_RESET_HANDOFF_ACCEPTANCE,
+  UX_RESET_HANDOFF_EXPORT,
   UX_RESET_PAGE_LOCAL_PARAM_KEYS,
   UX_RESET_SHARED_CONTEXT_PARAM_KEYS,
   type UxResetSharedContext,
@@ -16,41 +18,10 @@ import {
 
 type SearchParamSource = Pick<URLSearchParams, "get" | "getAll" | "has">;
 
-/**
- * Shared keys each destination may receive during cross-page handoff.
- * Keys omitted here are dropped explicitly when entering that route.
- */
-export const UX_RESET_HANDOFF_ACCEPTANCE: Record<
-  UxResetDestinationId,
-  readonly UxResetSharedContextParamKey[]
-> = {
-  action: ["scope", "county", "compare", "dataset", "period"],
-  assistant: ["county", "dataset"],
-  compare: ["scope", "county", "compare", "dataset", "period"],
-  explore: ["scope", "county", "dataset", "period"],
-  feed: [],
-  investigate: ["scope", "county", "compare", "dataset", "period"],
-  review: ["scope", "county", "compare", "dataset", "period"],
-  settings: [],
-};
-
-/**
- * Shared keys each source route may export during handoff.
- * Feed and Settings export nothing even if the URL contains query params.
- */
-export const UX_RESET_HANDOFF_EXPORT: Record<
-  UxResetDestinationId,
-  readonly UxResetSharedContextParamKey[]
-> = {
-  action: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
-  assistant: ["county", "dataset"],
-  compare: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
-  explore: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
-  feed: [],
-  investigate: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
-  review: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
-  settings: [],
-};
+export {
+  UX_RESET_HANDOFF_ACCEPTANCE,
+  UX_RESET_HANDOFF_EXPORT,
+} from "@/features/ux-reset/context-params";
 
 export type UxResetHandoffResult = {
   /** Query keys copied onto the destination URL. */

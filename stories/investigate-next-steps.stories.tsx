@@ -50,8 +50,8 @@ function NextStepsStory({ preset }: { preset: NextStepPreset }) {
         compare={preset === "return-compare" ? ["08001", "08013"] : []}
         compareHref={
           preset === "return-compare"
-            ? "/app/compare?compare=08001,08013&dataset=alpha-2026"
-            : "/app/compare?county=08001&dataset=alpha-2026"
+            ? "/compare?compare=08001,08013&dataset=alpha-2026"
+            : "/compare?county=08001&dataset=alpha-2026"
         }
         countyFips={syntheticCounty.fips}
         finding={preset === "inspect-finding" ? finding : null}

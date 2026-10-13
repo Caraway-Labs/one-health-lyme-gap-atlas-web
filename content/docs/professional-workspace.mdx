@@ -21,14 +21,14 @@ To resume the review, return to the original workspace tab. Its address still ha
 
 | Destination | Address | Status | What you can do |
 | --- | --- | --- | --- |
-| Atlas Explorer | [/app/review](/app/review) | Available now | See a national or one-state picture, with the map and county list together. Open county evidence or suggested follow-up on that same address. |
-| Compare | [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures. Availability stays visible. The page does not rank a winner. |
-| Ask Atlas | [/app/assistant](/app/assistant) | Experimental | Ask reviewed-literature questions when that service is enabled. A validated Explorer or Compare reference can be shown and changed, with a return link. |
+| Atlas Explorer | [/explore](/explore) | Available now | See a national or one-state picture, with the map and county list together. Open county evidence or suggested follow-up on that same address. |
+| Compare | [/compare](/compare) | Available now | Compare two counties on aligned measures. Availability stays visible. The page does not rank a winner. |
+| Ask Atlas | [/askatlas](/askatlas) | Experimental | Ask reviewed-literature questions when that service is enabled. A validated Explorer or Compare reference can be shown and changed, with a return link. |
 | Feed | [/app/feed](/app/feed) | Present, empty | The destination is in the navigation. It does not yet list items, alerts, or a saved-article library. |
 | Settings | [/app/settings](/app/settings) | Available now | Save a default jurisdiction and optional profile details, then use account sign-out, export, and removal. |
 | Docs | [/docs](/docs) | Available now | Open this reference in a new tab from the workspace navigation. |
 
-Older addresses such as `/overview`, `/geographic_explorer`, `/investigate`, `/app/explore`, `/app/investigate`, and `/app/action` are not extra destinations. After sign-in they open Atlas Explorer. A valid county on an old investigation address opens county evidence. A valid county on an old action address opens suggested follow-up. An address with no county opens that scope's picture. On a state picture, Atlas Explorer then selects the first published review candidate and writes that county into the address. An address that names a county which does not validate opens with `selection=required` and does not substitute another county.
+`/app/review`, `/app/compare`, and `/app/assistant` permanently open `/explore`, `/compare`, and `/askatlas`. Supported details on those addresses stay. Older addresses such as `/overview`, `/geographic_explorer`, `/investigate`, `/app/explore`, `/app/investigate`, and `/app/action` are not extra destinations. After sign-in they open Atlas Explorer. A valid county on an old investigation address opens county evidence. A valid county on an old action address opens suggested follow-up. An address with no county opens that scope's picture. On a state picture, Atlas Explorer then selects the first published review candidate and writes that county into the address. An address that names a county which does not validate opens with `selection=required` and does not substitute another county.
 
 One saved evidence-brief address, `plan=evidence-brief` on `/app/action`, still opens that brief. It is not a navigation destination. **Return to county evidence** goes back to Atlas Explorer with the county, scope, release, and period that brief was using. Surveillance planning is not a released workflow.
 
@@ -99,7 +99,7 @@ Settings does not generate, display, or revoke an API key. It does not manage sa
 
 ## Ask Atlas
 
-Atlas Explorer and Compare include an **Ask Atlas** control. It opens the [Ask Atlas page](/app/assistant). It does not open a side panel or a dialog.
+Atlas Explorer and Compare include an **Ask Atlas** control. It opens the [Ask Atlas page](/askatlas). It does not open a side panel or a dialog.
 
 When reviewed-literature chat is enabled for that deployment, that page asks the literature service and shows cited evidence or an explicit unavailable-evidence outcome. Explorer and Compare can carry a validated page reference. That reference is labeled on the page, can be changed or cleared, and is not a citation or retrieved surveillance evidence. The return link restores Atlas Explorer or the Compare pair, including the relevant geography, period, and release. An address that does not verify is not shown as evidence.
 

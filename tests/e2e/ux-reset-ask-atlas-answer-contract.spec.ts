@@ -11,7 +11,7 @@ import {
 } from "../fixtures/explore-api-fixtures";
 
 const WORKSPACE_URL =
-  "/app/assistant?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL";
+  "/askatlas?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL";
 
 function literatureAnswer(answer: string, requestId: string) {
   return {
@@ -319,7 +319,7 @@ test("workspace enforces the answer contract without changing filters", async ({
   await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
   await expectAnswerContract(page);
   const url = new URL(page.url());
-  expect(url.pathname).toBe("/app/assistant");
+  expect(url.pathname).toBe("/askatlas");
   expect(preservedFilters(page.url())).toStrictEqual(
     preservedFilters(WORKSPACE_URL)
   );

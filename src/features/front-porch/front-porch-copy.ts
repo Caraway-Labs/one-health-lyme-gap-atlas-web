@@ -1,4 +1,4 @@
-import { RESET_REVIEW_PATH } from "@/features/ux-reset/routes";
+import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 
 export const FRONT_PORCH_HERO_HEADLINE =
@@ -103,9 +103,9 @@ export const FRONT_PORCH_BEATS: readonly FrontPorchBeat[] = [
 
 export function frontPorchExploreHref(signedIn: boolean): string {
   if (signedIn) {
-    return RESET_REVIEW_PATH;
+    return ATLAS_EXPLORER_PATH;
   }
-  return signInHrefForReturnPath(RESET_REVIEW_PATH);
+  return signInHrefForReturnPath(ATLAS_EXPLORER_PATH);
 }
 
 const FRONT_PORCH_FORBIDDEN_HREF_PATTERN =

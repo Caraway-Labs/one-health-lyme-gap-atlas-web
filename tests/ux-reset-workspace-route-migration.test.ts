@@ -109,11 +109,11 @@ function sourceFiles(directory: string): string[] {
 }
 
 describe("six-page workspace route migration", () => {
-  it("reuses Review as the only canonical Explorer path", () => {
+  it("uses the canonical Explorer, Compare, and Ask Atlas paths", () => {
     expect(WORKSPACE_DESTINATIONS).toStrictEqual([
-      { id: "explorer", label: "Atlas Explorer", path: "/app/review" },
-      { id: "compare", label: "Compare", path: "/app/compare" },
-      { id: "ask-atlas", label: "Ask Atlas", path: "/app/assistant" },
+      { id: "explorer", label: "Atlas Explorer", path: "/explore" },
+      { id: "compare", label: "Compare", path: "/compare" },
+      { id: "ask-atlas", label: "Ask Atlas", path: "/askatlas" },
       { id: "feed", label: "Feed", path: "/app/feed" },
       { id: "settings", label: "Settings", path: "/app/settings" },
       { id: "docs", label: "Docs", path: "/docs" },
@@ -125,9 +125,9 @@ describe("six-page workspace route migration", () => {
       frontPorch: frontPorchExploreHref(true),
       reviewConstant: RESET_REVIEW_PATH,
     }).toStrictEqual({
-      explorer: "/app/review",
-      explorerRoute: "/app/review",
-      frontPorch: "/app/review",
+      explorer: "/explore",
+      explorerRoute: "/explore",
+      frontPorch: "/explore",
       reviewConstant: "/app/review",
     });
     expect(
@@ -159,7 +159,7 @@ describe("six-page workspace route migration", () => {
     expect(WORKSPACE_MIGRATION_INSTALL).toMatchObject({
       history: "replace",
       redirectsInstalled: true,
-      redirectStatus: 307,
+      redirectStatus: 308,
     });
     const importers = sourceFiles("src").filter((file) => {
       const source = readFileSync(file, "utf-8");
@@ -510,38 +510,96 @@ describe("six-page workspace route migration", () => {
   });
 
   it("leaves canonical workspace destinations unchanged", () => {
-    expect(
-      migrate("/app/review", "county=06037&sort=score&page=2")
-    ).toStrictEqual({
-      kind: "unchanged",
-      pathname: "/app/review",
-      reason: "canonical-destination",
-    });
-    expect(migrate("/app/review/", "mode=evidence&county=06037")).toStrictEqual(
+    expect(migrate("/explore", "county=06037&sort=score&page=2")).toStrictEqual(
       {
         kind: "unchanged",
-        pathname: "/app/review",
+        pathname: "/explore",
         reason: "canonical-destination",
       }
     );
-    expect(
-      migrate("/app/compare", "return=investigate&compare=06037,06059")
-    ).toStrictEqual({
+    expect(migrate("/explore/", "mode=evidence&county=06037")).toStrictEqual({
       kind: "unchanged",
-      pathname: "/app/compare",
+      pathname: "/explore",
       reason: "canonical-destination",
     });
     expect(
-      migrate("/app/assistant", "conversation=abc&county=06037")
+      migrate("/compare", "return=investigate&compare=06037,06059")
     ).toStrictEqual({
       kind: "unchanged",
-      pathname: "/app/assistant",
+      pathname: "/compare",
       reason: "canonical-destination",
     });
+    expect(migrate("/askatlas", "conversation=abc&county=06037")).toStrictEqual(
+      {
+        kind: "unchanged",
+        pathname: "/askatlas",
+        reason: "canonical-destination",
+      }
+    );
     expect(migrate("/docs/what-is-atlas")).toStrictEqual({
       kind: "unchanged",
       pathname: "/docs/what-is-atlas",
       reason: "canonical-destination",
+    });
+  });
+
+  it("permanently moves the former workspace pages and keeps supported query keys", () => {
+    expect(
+      redirectView(
+        migrate("/app/review", "county=06037&sort=score&page=2&tab=old")
+      )
+    ).toStrictEqual({
+      compareTruncated: false,
+      droppedKeys: ["tab"],
+      href: "/explore?county=06037&sort=score&page=2",
+      kind: "redirect",
+      mode: "browse",
+      pathname: "/explore",
+      query: { county: "06037", page: "2", sort: "score" },
+    });
+    expect(
+      redirectView(migrate("/app/review/", "mode=evidence&county=06037"))
+    ).toStrictEqual({
+      compareTruncated: false,
+      droppedKeys: [],
+      href: "/explore?mode=evidence&county=06037",
+      kind: "redirect",
+      mode: "evidence",
+      pathname: "/explore",
+      query: { county: "06037", mode: "evidence" },
+    });
+    expect(
+      redirectView(
+        migrate(
+          "/app/compare",
+          "return=investigate&compare=06037,06059&mode=evidence&conversation=abc"
+        )
+      )
+    ).toStrictEqual({
+      compareTruncated: false,
+      droppedKeys: ["conversation"],
+      href: "/compare?return=investigate&compare=06037%2C06059&mode=evidence",
+      kind: "redirect",
+      mode: null,
+      pathname: "/compare",
+      query: {
+        compare: "06037,06059",
+        mode: "evidence",
+        return: "investigate",
+      },
+    });
+    expect(
+      redirectView(
+        migrate("/app/assistant", "conversation=abc&county=06037&sort=score")
+      )
+    ).toStrictEqual({
+      compareTruncated: false,
+      droppedKeys: ["sort"],
+      href: "/askatlas?conversation=abc&county=06037",
+      kind: "redirect",
+      mode: null,
+      pathname: "/askatlas",
+      query: { conversation: "abc", county: "06037" },
     });
   });
 

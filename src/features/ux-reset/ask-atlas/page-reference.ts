@@ -6,11 +6,11 @@ import {
   serializeCompareFipsList,
 } from "@/features/ux-reset/context-params";
 import {
+  ATLAS_EXPLORER_PATH,
   RESET_ACTION_PATH,
   RESET_COMPARE_PATH,
   RESET_EXPLORE_PATH,
   RESET_INVESTIGATE_PATH,
-  RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
 import { recordedWorkspaceMigration } from "@/features/ux-reset/workspace-route-migration";
 import { isCountyFips } from "@/lib/county-geography";
@@ -246,7 +246,7 @@ function returnPath(surface: AskAtlasSurface): string {
       return RESET_INVESTIGATE_PATH;
     }
     case "review": {
-      return RESET_REVIEW_PATH;
+      return ATLAS_EXPLORER_PATH;
     }
     default: {
       const exhaustive: never = surface;

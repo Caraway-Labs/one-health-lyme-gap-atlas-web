@@ -23,6 +23,8 @@ export {
   serializeCompareFipsList,
   sharedContextToSearchParams,
   UX_RESET_COMPARE_COUNTY_LIMIT,
+  UX_RESET_HANDOFF_ACCEPTANCE,
+  UX_RESET_HANDOFF_EXPORT,
   UX_RESET_PAGE_LOCAL_PARAM_KEYS,
   UX_RESET_SHARED_CONTEXT_PARAM_KEYS,
   uxResetSharedContextSchema,

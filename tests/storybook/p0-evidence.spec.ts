@@ -374,10 +374,10 @@ test.describe("P0 evidence catalog", () => {
     await expect(show).toBeVisible();
     await page.getByRole("link", { name: "Compare" }).click();
     await expect(
-      page.getByText("Active catalog route: /app/compare")
+      page.getByText("Active catalog route: /compare")
     ).toBeVisible();
     const launcher = page.getByTestId("ask-atlas-launcher");
-    await expect(launcher).toHaveAttribute("href", "/app/assistant");
+    await expect(launcher).toHaveAttribute("href", "/askatlas");
     await expect(page.getByTestId("ask-atlas-panel")).toHaveCount(0);
     await expect(page.getByRole("dialog")).toHaveCount(0);
     const inset = page.locator(".app-inset");

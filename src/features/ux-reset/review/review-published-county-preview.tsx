@@ -20,7 +20,7 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
-import { RESET_REVIEW_PATH } from "@/features/ux-reset/routes";
+import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import type { CountyDetail } from "@/generated/models";
 import { cn } from "@/lib/utils";
 
@@ -102,7 +102,7 @@ export function ReviewPublishedCountyPreview({
   openRef?: Ref<HTMLAnchorElement>;
   releaseId: string;
 }) {
-  const pathname = usePathname() ?? RESET_REVIEW_PATH;
+  const pathname = usePathname() ?? ATLAS_EXPLORER_PATH;
   const searchParams = useSearchParams() ?? new URLSearchParams();
   const askContext = useAskAtlasInheritedContext();
   const askHref = askAtlasEntryHref({

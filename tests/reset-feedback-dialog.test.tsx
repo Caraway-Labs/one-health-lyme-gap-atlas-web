@@ -23,7 +23,7 @@ const {
   trackSubmitted,
 } = vi.hoisted(() => ({
   getSession: vi.fn<() => Promise<{ data: { session: unknown } }>>(),
-  pathname: { current: "/app/review" },
+  pathname: { current: "/explore" },
   searchParams: {
     current: new URLSearchParams(
       "scope=CO&county=08031&q=secret-search&period=2024-01-01"
@@ -103,7 +103,7 @@ function fillDataset(reference = "CDC tick file") {
 
 describe("reset feedback dialog", () => {
   beforeEach(() => {
-    pathname.current = "/app/review";
+    pathname.current = "/explore";
     searchParams.current = new URLSearchParams(
       "scope=CO&county=08031&q=secret-search&period=2024-01-01"
     );

@@ -37,7 +37,7 @@ import {
   type SuggestedFollowUpPanelStatus,
 } from "@/features/ux-reset/review/explorer-suggested-follow-up-panel";
 import { selectSuggestedFollowUp } from "@/features/ux-reset/review/suggested-follow-up-content";
-import { RESET_REVIEW_PATH } from "@/features/ux-reset/routes";
+import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import { cn } from "@/lib/utils";
@@ -229,12 +229,15 @@ export function ExplorerCountyEvidence({
       period: workspace.period,
       returnTo: "review",
       scope: workspace.scope,
-      sourcePath: RESET_REVIEW_PATH,
+      sourcePath: ATLAS_EXPLORER_PATH,
       sourceSearchParams: handoffParams,
     }),
     mode
   );
-  const askHref = resetAskAtlasWorkspaceHref(RESET_REVIEW_PATH, handoffParams);
+  const askHref = resetAskAtlasWorkspaceHref(
+    ATLAS_EXPLORER_PATH,
+    handoffParams
+  );
   const pdfContext =
     observationsLoaded === countyEvidenceLoadStates.loaded && workspace.bundle
       ? investigatePdfContext(workspace.bundle, workspace.period)

@@ -1,11 +1,18 @@
-import { RESET_ASSISTANT_PATH } from "@/features/ux-reset/routes";
-
-const LEGACY_ASSISTANT_PATH = "/assistant";
-
-/** Legacy `/assistant` and the reset research workspace share one local conversation id. */
-const ASSISTANT_WORKSPACE_PATHS = new Set<string>([
+import {
   LEGACY_ASSISTANT_PATH,
   RESET_ASSISTANT_PATH,
+} from "@/features/ux-reset/routes";
+
+const PUBLIC_ASSISTANT_PATH = "/assistant";
+
+/**
+ * Public `/assistant`, canonical `/askatlas`, and the former `/app/assistant`
+ * path share one local conversation id. The former path redirects before paint.
+ */
+const ASSISTANT_WORKSPACE_PATHS = new Set<string>([
+  PUBLIC_ASSISTANT_PATH,
+  RESET_ASSISTANT_PATH,
+  LEGACY_ASSISTANT_PATH,
 ]);
 
 function assistantWorkspacePath(href: string): string | null {
@@ -32,9 +39,9 @@ export function readAssistantConversationId(
 
 export function assistantConversationHref(conversationId?: string): string {
   if (!conversationId) {
-    return LEGACY_ASSISTANT_PATH;
+    return PUBLIC_ASSISTANT_PATH;
   }
-  return `${LEGACY_ASSISTANT_PATH}?conversation=${encodeURIComponent(conversationId)}`;
+  return `${PUBLIC_ASSISTANT_PATH}?conversation=${encodeURIComponent(conversationId)}`;
 }
 
 /**

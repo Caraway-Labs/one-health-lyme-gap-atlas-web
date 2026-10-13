@@ -61,7 +61,7 @@ const reviewReleaseControls: {
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/app/review",
+  usePathname: () => "/explore",
   useRouter: () => reviewRouter,
   useSearchParams: () =>
     new URLSearchParams(mockedSearch) as ReadonlyURLSearchParams,
@@ -244,7 +244,7 @@ function renderReview(
         onUrlUpdate={({ options: updateOptions, queryString }) =>
           options.onUrlUpdate?.(queryString, updateOptions.history)
         }
-        searchParams={new URL(`http://localhost/app/review${search}`).search}
+        searchParams={new URL(`http://localhost/explore${search}`).search}
       >
         <ResetReviewExperience />
       </NuqsTestingAdapter>
@@ -258,7 +258,7 @@ function renderReview(
         <QueryClientProvider client={client}>
           <NuqsTestingAdapter
             hasMemory
-            searchParams={new URL(`http://localhost/app/review${next}`).search}
+            searchParams={new URL(`http://localhost/explore${next}`).search}
           >
             <ResetReviewExperience />
           </NuqsTestingAdapter>
@@ -371,7 +371,7 @@ async function observeSettledStartup(input: {
               status: 200,
             })) as never
   );
-  window.history.replaceState(null, "", "/app/review");
+  window.history.replaceState(null, "", "/explore");
   const view = renderReview("", {
     client,
     onUrlUpdate: (query, history) => {
@@ -383,7 +383,7 @@ async function observeSettledStartup(input: {
   }
   if (input.pick && input.back) {
     await chooseReviewScopeOption(input.pick);
-    window.history.replaceState(null, "", "/app/review");
+    window.history.replaceState(null, "", "/explore");
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
   held?.resolve({
@@ -410,7 +410,7 @@ async function observeSettledStartup(input: {
       .every((update) => scopeToken(update.query) === input.settledScope);
   const rendered = renderedReviewScope();
   if (input.forwardScope) {
-    window.history.pushState(null, "", "/app/review?scope=NY");
+    window.history.pushState(null, "", "/explore?scope=NY");
     window.dispatchEvent(new PopStateEvent("popstate"));
     view.rerenderSearch("?scope=NY");
     await waitForRenderedScope(input.forwardScope);
@@ -466,10 +466,10 @@ describe("Reset Review scope UI", () => {
 
   it("follows Investigate when a malformed Review URL is still canonicalizing", async () => {
     const search = "?scope=state&county=bad&period=2024&dataset=alpha";
-    window.history.pushState(null, "", `/app/review${search}`);
+    window.history.pushState(null, "", `/explore${search}`);
     const destination = uxResetDestinationHref(
       "investigate",
-      "/app/review",
+      "/explore",
       new URLSearchParams(search.slice(1))
     );
     renderReview(search);
@@ -695,7 +695,7 @@ describe("Reset Review scope UI", () => {
       picture: false,
       reviewCalls: 0,
       shellCompare: false,
-      shellAsk: "/app/assistant?dataset=alpha-2026",
+      shellAsk: "/askatlas?dataset=alpha-2026",
     });
   });
 
@@ -777,7 +777,7 @@ describe("Reset Review scope UI", () => {
         picture: false,
         reviewCalls: 0,
         shellCompare: false,
-        shellAsk: `/app/assistant?dataset=alpha-2026`,
+        shellAsk: `/askatlas?dataset=alpha-2026`,
       }))
     );
   });
@@ -1468,7 +1468,7 @@ describe("Reset Review scope UI", () => {
           geography.label.includes(", Colorado ("),
         returnCounty:
           state.kind === "validated" &&
-          state.returnHref.includes("/app/review?") &&
+          state.returnHref.includes("/explore?") &&
           state.returnHref.includes("county=08001"),
       }).toStrictEqual({
         askCounty: true,
@@ -1655,7 +1655,7 @@ describe("Reset Review scope UI", () => {
       data: { profile: { state_code: "CO" } },
       status: 200,
     } as never);
-    window.history.replaceState(null, "", "/app/review?county=08001");
+    window.history.replaceState(null, "", "/explore?county=08001");
     renderReview("?county=08001", {
       onUrlUpdate: (query) => {
         updates.push(query);
@@ -1838,7 +1838,7 @@ describe("Reset Review scope UI", () => {
   });
 
   it("writes the saved state again when a scope-less entry reverts to national", async () => {
-    window.history.replaceState(null, "", "/app/review");
+    window.history.replaceState(null, "", "/explore");
     mockedSearch = "";
     const writes: string[] = [];
     const onSetScope = (scope: "ALL" | string) => {
@@ -1899,7 +1899,7 @@ describe("Reset Review scope UI", () => {
         screen.getByTestId("review-scope-results").dataset.renderedScope
       ).toBe("NY")
     );
-    window.history.replaceState(null, "", "/app/review");
+    window.history.replaceState(null, "", "/explore");
     window.dispatchEvent(new PopStateEvent("popstate"));
     profileGate.resolve({
       data: { profile: { state_code: "CO" } },
@@ -2714,7 +2714,7 @@ describe("Reset Review scope UI", () => {
       dossier: null,
       heading: "Boulder, Colorado",
       href: expect.stringMatching(
-        /\/app\/review\?.*county=08013.*mode=evidence.*period=2023-01-01.*scope=CO|scope=CO.*county=08013.*period=2023-01-01.*mode=evidence/
+        /\/explore\?.*county=08013.*mode=evidence.*period=2023-01-01.*scope=CO|scope=CO.*county=08013.*period=2023-01-01.*mode=evidence/
       ),
       label: "County evidence",
       panel: true,
@@ -3212,11 +3212,11 @@ describe("Reset Review scope UI", () => {
         ? `scope=CO&county=${county}&dataset=${releaseId}&period=${period}`
         : `scope=CO&dataset=${releaseId}&period=${period}`;
       const ask = county
-        ? `/app/assistant?county=${county}&dataset=${releaseId}`
-        : `/app/assistant?dataset=${releaseId}`;
+        ? `/askatlas?county=${county}&dataset=${releaseId}`
+        : `/askatlas?dataset=${releaseId}`;
       return {
         ask,
-        compare: `/app/compare?${query}`,
+        compare: `/compare?${query}`,
         feed: "/app/feed",
         settings: "/app/settings",
       };
@@ -3302,9 +3302,7 @@ describe("Reset Review scope UI", () => {
       const view = render(
         <QueryClientProvider client={client}>
           <NuqsTestingAdapter
-            searchParams={
-              new URL(`http://localhost/app/review?${search}`).search
-            }
+            searchParams={new URL(`http://localhost/explore?${search}`).search}
           >
             <ResetProfessionalShell>
               <ResetReviewExperience />
@@ -3401,14 +3399,14 @@ describe("Reset Review scope UI", () => {
         unsupportedWithGaps: linksFor("release-a", "08001"),
         unsupportedWithoutGaps: linksFor("release-a", "08001"),
         whileFailed: {
-          ask: "/app/assistant?county=08001",
-          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
+          ask: "/askatlas?county=08001",
+          compare: `/compare?scope=CO&county=08001&period=${period}`,
           feed: "/app/feed",
           settings: "/app/settings",
         },
         whileLoading: {
-          ask: "/app/assistant?county=08001",
-          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
+          ask: "/askatlas?county=08001",
+          compare: `/compare?scope=CO&county=08001&period=${period}`,
           feed: "/app/feed",
           settings: "/app/settings",
         },

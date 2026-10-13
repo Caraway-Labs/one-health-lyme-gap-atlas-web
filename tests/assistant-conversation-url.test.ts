@@ -31,6 +31,11 @@ describe("assistant conversation URL helpers", () => {
     ).toBe("abc");
     expect(
       readAssistantConversationId(
+        "https://atlas.example/askatlas?conversation=abc"
+      )
+    ).toBe("abc");
+    expect(
+      readAssistantConversationId(
         "https://atlas.example/app/assistant?conversation=abc"
       )
     ).toBe("abc");
@@ -39,7 +44,7 @@ describe("assistant conversation URL helpers", () => {
     ).toBeNull();
     expect(
       readAssistantConversationId(
-        "https://atlas.example/app/review?conversation=abc"
+        "https://atlas.example/explore?conversation=abc"
       )
     ).toBeNull();
   });
@@ -103,12 +108,12 @@ describe("assistant conversation URL helpers", () => {
     replaceState.mockClear();
     synchronizeAssistantConversationUrl(
       "conversation-2",
-      `${origin}/app/assistant?county=08001&conversation=conversation-1`
+      `${origin}/askatlas?county=08001&conversation=conversation-1`
     );
     expect(replaceState).toHaveBeenCalledWith(
       window.history.state,
       "",
-      `${origin}/app/assistant?county=08001&conversation=conversation-2`
+      `${origin}/askatlas?county=08001&conversation=conversation-2`
     );
   });
 });

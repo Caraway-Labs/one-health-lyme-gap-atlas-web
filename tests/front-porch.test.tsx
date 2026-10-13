@@ -24,7 +24,7 @@ import {
 import { FrontPorchView } from "@/features/front-porch/front-porch-view";
 import {
   ABOUT_CARAWAY_LABS_PATH,
-  RESET_REVIEW_PATH,
+  ATLAS_EXPLORER_PATH,
 } from "@/features/ux-reset/routes";
 import { ANALYTICS_PREFERENCE_KEY } from "@/lib/analytics-consent";
 
@@ -66,10 +66,8 @@ describe("front porch copy", () => {
   });
 
   it("routes the professional CTA to Review without a county", () => {
-    expect(frontPorchExploreHref(true)).toBe(RESET_REVIEW_PATH);
-    expect(frontPorchExploreHref(false)).toBe(
-      "/auth/sign-in?next=%2Fapp%2Freview"
-    );
+    expect(frontPorchExploreHref(true)).toBe(ATLAS_EXPLORER_PATH);
+    expect(frontPorchExploreHref(false)).toBe("/auth/sign-in?next=%2Fexplore");
     expect(
       frontPorchExploreHrefSelectsCounty(frontPorchExploreHref(true))
     ).toBeFalsy();
@@ -101,7 +99,7 @@ describe("front porch view", () => {
       screen
         .getByRole("link", { name: FRONT_PORCH_EXPLORE_LABEL })
         .getAttribute("href")
-    ).toBe("/auth/sign-in?next=%2Fapp%2Freview");
+    ).toBe("/auth/sign-in?next=%2Fexplore");
   });
 
   it("keeps the signed-out professional path and footer free of county claims", () => {
@@ -114,7 +112,7 @@ describe("front porch view", () => {
     ]).toStrictEqual([FRONT_PORCH_EXPLORE_SUPPORT, "Privacy settings"]);
     expect(
       screen.getByRole("link", { name: "Sign in" }).getAttribute("href")
-    ).toBe("/auth/sign-in?next=%2Fapp%2Freview");
+    ).toBe("/auth/sign-in?next=%2Fexplore");
     expect([
       image?.getAttribute("src"),
       image?.getAttribute("alt"),
@@ -157,12 +155,12 @@ describe("front porch view", () => {
       screen
         .getByRole("link", { name: FRONT_PORCH_EXPLORE_LABEL })
         .getAttribute("href")
-    ).toBe(RESET_REVIEW_PATH);
+    ).toBe(ATLAS_EXPLORER_PATH);
     expect(
       screen
         .getByRole("link", { name: "Open Atlas Explorer" })
         .getAttribute("href")
-    ).toBe(RESET_REVIEW_PATH);
+    ).toBe(ATLAS_EXPLORER_PATH);
   });
 
   it("uses the approved trust footer for signed-out and signed-in visitors", () => {

@@ -21,7 +21,7 @@ const headerPresets = [
 
 type HeaderPreset = (typeof headerPresets)[number];
 
-const RETURN_HREF = "/app/review?scope=CO&dataset=alpha-2026";
+const RETURN_HREF = "/explore?scope=CO&dataset=alpha-2026";
 
 export function headerModel(
   preset: HeaderPreset
@@ -52,7 +52,7 @@ export function headerModel(
         countyLabel: null,
         fips: null,
         releaseId: null,
-        returnHref: "/app/review?scope=ALL",
+        returnHref: "/explore?scope=ALL",
         scopeLabel: "United States",
         stateLabel: null,
       };

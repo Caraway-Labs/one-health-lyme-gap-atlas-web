@@ -8,7 +8,7 @@ test("retired Geographic Explorer view bookmarks open Atlas Explorer browse", as
     "/geographic_explorer?county=08001&view=maps",
   ]) {
     await page.goto(start);
-    await expect(page).toHaveURL(/\/app\/review\?.*county=08001/);
+    await expect(page).toHaveURL(/\/explore\?.*county=08001/);
     expect(new URL(page.url()).searchParams.get("view")).toBeNull();
     await expect(
       page.getByRole("heading", {

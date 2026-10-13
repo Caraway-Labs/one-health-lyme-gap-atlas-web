@@ -22,10 +22,7 @@ import {
 import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
 import { reviewCandidateFipsForScope } from "@/features/ux-reset/review/review-operating-state";
 import { approvedFollowUpTitleForColor } from "@/features/ux-reset/review/suggested-follow-up-content";
-import {
-  ATLAS_EXPLORER_PATH,
-  RESET_REVIEW_PATH,
-} from "@/features/ux-reset/routes";
+import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { ValueState, type CountyScoreSummary } from "@/generated/models";
 import { plainPriority } from "@/lib/atlas-ui";
 
@@ -292,14 +289,14 @@ export function buildReviewInvestigateHandoff(input: {
   writeReviewHandoffDataset(source, input.releaseId);
   writeReviewHandoffPeriod(source, input.period);
   const handoff = uxResetContextHandoffSearchParams(
-    RESET_REVIEW_PATH,
+    ATLAS_EXPLORER_PATH,
     ATLAS_EXPLORER_PATH,
     source
   );
   return {
     droppedNotes: reviewInvestigateDropNotes(handoff.dropped),
     href: hrefWithExplorerMode(
-      uxResetShellHandoffHref(ATLAS_EXPLORER_PATH, RESET_REVIEW_PATH, source),
+      uxResetShellHandoffHref(ATLAS_EXPLORER_PATH, ATLAS_EXPLORER_PATH, source),
       EXPLORER_EVIDENCE_MODE
     ),
   };
@@ -331,7 +328,7 @@ export function buildReviewCompareHandoff(input: {
     period: input.period,
     returnTo: "review",
     scope: input.scopeCode,
-    sourcePath: RESET_REVIEW_PATH,
+    sourcePath: ATLAS_EXPLORER_PATH,
     sourceSearchParams: source,
   });
 }

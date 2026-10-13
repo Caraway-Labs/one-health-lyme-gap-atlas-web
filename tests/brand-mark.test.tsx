@@ -12,7 +12,7 @@ describe("canonical product mark", () => {
 
   it("serves the approved raster unchanged and leaves the product text accessible", () => {
     const { container } = render(
-      <Link href="/app/review" aria-label="One Health Atlas">
+      <Link href="/explore" aria-label="One Health Atlas">
         <BrandMark size={32} />
       </Link>
     );

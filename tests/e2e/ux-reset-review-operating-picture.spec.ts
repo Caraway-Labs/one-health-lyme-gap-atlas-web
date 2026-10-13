@@ -81,7 +81,7 @@ test.describe("Review operating picture", () => {
         "candidates_found"
       );
       const landed = new URL(page.url());
-      expect(landed.pathname).toBe("/app/review");
+      expect(landed.pathname).toBe("/explore");
       expect(landed.searchParams.get("county")).toBeNull();
       expect(landed.searchParams.get("scope")).toBe("CO");
       expect(landed.searchParams.get("selection")).toBe("required");
@@ -125,10 +125,10 @@ test.describe("Review operating picture", () => {
       })
     );
 
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page).toHaveURL(/county=08013/);
     const omitted = new URL(page.url());
-    expect(omitted.pathname).toBe("/app/review");
+    expect(omitted.pathname).toBe("/explore");
     expect({
       county: omitted.searchParams.get("county"),
       scope: omitted.searchParams.get("scope"),
@@ -151,7 +151,7 @@ test.describe("Review operating picture", () => {
     await expect(page.getByTestId("review-candidate")).toHaveCount(3);
     await expect(publishedCounty).toContainText("Select a published county");
     const invalid = new URL(page.url());
-    expect(invalid.pathname).toBe("/app/review");
+    expect(invalid.pathname).toBe("/explore");
     expect({
       county: invalid.searchParams.get("county"),
       scope: invalid.searchParams.get("scope"),
@@ -191,7 +191,7 @@ test.describe("Review operating picture", () => {
         state,
       })
     );
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "candidates_found"
@@ -213,10 +213,10 @@ test.describe("Review operating picture", () => {
     const href =
       (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
     expect(href).toContain("county=08001");
-    expect(href).toContain("/app/review");
+    expect(href).toContain("/explore");
     expect(href).toContain("mode=evidence");
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
 
@@ -245,7 +245,7 @@ test.describe("Review operating picture", () => {
         status: 503,
       });
     });
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.locator("[data-atlas-status='error']")).toContainText(
       "temporarily unavailable"
     );
@@ -269,7 +269,7 @@ test.describe("Review operating picture", () => {
         state,
       })
     );
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "insufficient_evidence"
@@ -302,7 +302,7 @@ test.describe("Review operating picture", () => {
         state,
       })
     );
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "data_gap_only"
@@ -339,7 +339,7 @@ test.describe("Review operating picture", () => {
         state,
       });
     });
-    await page.goto("/app/review?scope=CO&county=08001");
+    await page.goto("/explore?scope=CO&county=08001");
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
       "data-county",
       "08001"
@@ -376,7 +376,7 @@ test.describe("Review operating picture", () => {
         status: 200,
       });
     });
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByText("Loading review results…")).toBeVisible();
     await expect(page.getByText("Nothing stands out")).toHaveCount(0);
     releaseReview();
@@ -554,7 +554,7 @@ test.describe("Review operating picture", () => {
       return provenance;
     };
 
-    await page.goto("/app/review?scope=CO&dataset=alpha-2026");
+    await page.goto("/explore?scope=CO&dataset=alpha-2026");
     const methodology = page.getByTestId("review-methodology");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
@@ -649,7 +649,7 @@ test.describe("Review operating picture", () => {
     await expect(methodology).toContainText("1.1.0");
     await expect(methodology).toContainText("Human snapshot 2022");
 
-    await page.goto("/app/review?scope=CO&dataset=release-insufficient");
+    await page.goto("/explore?scope=CO&dataset=release-insufficient");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "insufficient_evidence"
@@ -669,7 +669,7 @@ test.describe("Review operating picture", () => {
       insufficientHash
     );
 
-    await page.goto("/app/review?scope=CO&dataset=release-unsupported");
+    await page.goto("/explore?scope=CO&dataset=release-unsupported");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "data_gap_only"

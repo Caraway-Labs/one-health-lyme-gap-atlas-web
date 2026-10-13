@@ -193,7 +193,7 @@ test.describe("Explorer available data", () => {
       });
     });
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=AL");
+    await page.goto("/explore?scope=AL");
     await expect(page.getByTestId("review-candidate")).toHaveCount(3);
 
     await chooseAvailableData(page, "Most data fields available");
@@ -221,7 +221,7 @@ test.describe("Explorer available data", () => {
       await route.fulfill({ json: scoresBody(counties), status: 200 });
     });
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=AL");
+    await page.goto("/explore?scope=AL");
     await chooseAvailableData(page, "Most data fields available");
     await expect(
       page.getByTestId("explorer-map-available-data-empty")
@@ -254,7 +254,7 @@ test.describe("Explorer available data", () => {
         });
       });
       await page.setViewportSize({ height: 900, width: 1440 });
-      await page.goto("/app/review?scope=AL");
+      await page.goto("/explore?scope=AL");
       await expect(page.getByTestId("review-candidate")).toHaveCount(3);
 
       await chooseAvailableData(page, "Published Lyme case count available");
@@ -293,7 +293,7 @@ test.describe("Explorer available data", () => {
       });
     });
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto("/app/review?scope=AL");
+    await page.goto("/explore?scope=AL");
     await expect(page.getByTestId("review-candidate")).toHaveCount(3);
 
     await chooseAvailableData(page, "Published Lyme case count available");

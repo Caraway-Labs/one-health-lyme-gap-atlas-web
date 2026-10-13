@@ -226,7 +226,7 @@ test.describe("Settings profile and default jurisdiction", () => {
       page.locator("[data-default-jurisdiction='CO']")
     ).toBeVisible();
 
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO"
@@ -241,7 +241,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     ).toBeVisible();
     await page.keyboard.press("Escape");
 
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "NY"
@@ -286,7 +286,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     ).toBeVisible();
 
     const reviewUrl =
-      "/app/review?county=08001&dataset=alpha-2026&period=2023-01-01";
+      "/explore?county=08001&dataset=alpha-2026&period=2023-01-01";
     const getsBeforeReview = api.completedProfileGets();
     api.holdProfileGets();
     await page.goto(reviewUrl);

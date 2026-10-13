@@ -186,7 +186,7 @@ test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages",
   page,
 }) => {
   await page.goto("/overview");
-  await expect(page).toHaveURL(/\/app\/review$/);
+  await expect(page).toHaveURL(/\/explore$/);
   await expect(
     page.getByRole("heading", {
       level: 1,
@@ -273,7 +273,7 @@ test("TC22: approved favicon is shared by public and professional routes", async
   ];
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
-    for (const path of ["/", "/app/review"]) {
+    for (const path of ["/", "/explore"]) {
       await page.goto(path);
       await expect(page).toHaveURL(new RegExp(`${path === "/" ? "/$" : path}`));
       for (const refresh of [false, true]) {
@@ -418,7 +418,7 @@ test("retired public analytical bookmarks open Atlas Explorer", async ({
 
   for (const item of cases) {
     await page.goto(item.start);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(
       page.getByRole("heading", {
         level: 1,
