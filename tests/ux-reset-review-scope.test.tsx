@@ -3819,7 +3819,7 @@ describe("Reset Review scope UI", () => {
     expect(screen.queryByTestId("review-state-panel")).toBeTruthy();
   });
 
-  it("keeps the selected national county on the Ask Atlas link", async () => {
+  it("keeps a chosen national county on Ask Atlas and leaves a bookmark county off it", async () => {
     const search = "scope=ALL&county=08001&dataset=alpha-2026";
     mockedSearch = search;
     const client = new QueryClient({
@@ -3835,9 +3835,39 @@ describe("Reset Review scope UI", () => {
       </QueryClientProvider>
     );
     await waitFor(() => {
+      expect(
+        screen.getByTestId("review-published-county-preview").dataset.fips
+      ).toBe("08001");
+    });
+    const bookmarkedAsk =
+      screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
+    const bookmarked = askAtlasLauncherReference();
+    const bookmarkedGeography =
+      bookmarked.state.kind === "validated"
+        ? bookmarked.state.reference.context.fields.geography
+        : null;
+    expect({
+      bookmarkGeography: bookmarkedGeography,
+      bookmarkPreviewCounty: new URL(
+        bookmarkedAsk,
+        "http://localhost"
+      ).searchParams.get("county"),
+    }).toStrictEqual({
+      bookmarkGeography: { state: "absent" },
+      bookmarkPreviewCounty: null,
+    });
+
+    const boulder = screen
+      .getAllByTestId("national-published-county")
+      .find((row) => row.dataset.fips === "08013");
+    if (!boulder) {
+      throw new Error("Boulder was not in the national county list");
+    }
+    fireEvent.click(boulder);
+    await waitFor(() => {
       const href =
         screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
-      if (!href.includes("county=08001")) {
+      if (!href.includes("county=08013")) {
         throw new Error(href);
       }
     });
@@ -3857,20 +3887,15 @@ describe("Reset Review scope UI", () => {
       ).searchParams.get("county"),
       previewFips: screen.getByTestId("review-published-county-preview").dataset
         .fips,
-      returnCounty:
-        state.kind === "validated"
-          ? state.returnHref.includes("county=08001")
-          : false,
     }).toStrictEqual({
       geography: {
-        id: "08001",
-        label: "Denver, Colorado (08001)",
+        id: "08013",
+        label: "Boulder, Colorado (08013)",
         state: "validated",
       },
-      launcherCounty: "08001",
-      previewAskCounty: "08001",
-      previewFips: "08001",
-      returnCounty: true,
+      launcherCounty: "08013",
+      previewAskCounty: "08013",
+      previewFips: "08013",
     });
   });
 

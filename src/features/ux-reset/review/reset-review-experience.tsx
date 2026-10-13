@@ -97,22 +97,28 @@ type ReviewInheritedCounty = {
 };
 
 function reviewInheritedIdentities(input: {
+  chosenNationalFips: string | null;
   directoryCounties: readonly ReviewInheritedCounty[];
   nationalCounties: readonly ReviewInheritedCounty[];
   nationalScope: boolean;
   ready: boolean;
   selectedFips: string | null;
 }): { county: string; fips: string; state_name: string }[] {
-  if (!input.selectedFips) {
+  let fips: string | null = null;
+  if (input.ready) {
+    fips = input.selectedFips;
+  } else if (
+    input.nationalScope &&
+    input.chosenNationalFips &&
+    input.chosenNationalFips === input.selectedFips
+  ) {
+    fips = input.chosenNationalFips;
+  }
+  if (!fips) {
     return [];
   }
-  let source: readonly ReviewInheritedCounty[] = [];
-  if (input.ready) {
-    source = input.directoryCounties;
-  } else if (input.nationalScope) {
-    source = input.nationalCounties;
-  }
-  const entry = source.find((county) => county.fips === input.selectedFips);
+  const source = input.ready ? input.directoryCounties : input.nationalCounties;
+  const entry = source.find((county) => county.fips === fips);
   if (!entry) {
     return [];
   }
@@ -267,10 +273,19 @@ function ResetReviewExperienceInner() {
     },
     [setUrlState]
   );
+  const [chosenNationalFips, setChosenNationalFips] = useState<string | null>(
+    null
+  );
+  if (scope !== "ALL" && chosenNationalFips !== null) {
+    setChosenNationalFips(null);
+  }
   const setCounty = useCallback(
     (fips: string | null, history: "push" | "replace") => {
       const county =
         fips === null ? null : reviewCountyFipsForScope(fips, scope);
+      if (scope === "ALL") {
+        setChosenNationalFips(county);
+      }
       void setUrlState({ county }, { history });
     },
     [scope, setUrlState]
@@ -421,6 +436,7 @@ function ResetReviewExperienceInner() {
   });
   const scopeViewReady = !startingScopePending;
   const reviewIdentities = reviewInheritedIdentities({
+    chosenNationalFips,
     directoryCounties: publishedDirectory.counties,
     nationalCounties: countyReference.counties,
     nationalScope: scope === "ALL",
