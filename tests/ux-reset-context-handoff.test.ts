@@ -124,6 +124,22 @@ describe("UX Reset cross-page context contract", () => {
     expect(dropped).not.toContain("county");
   });
 
+  it("drops Review scenario assumptions on handoff to Compare", () => {
+    const source = new URLSearchParams(
+      "scope=CO&county=08021&eco=40&breakpoint=20&missing=40"
+    );
+    const { dropped, params } = uxResetContextHandoffSearchParams(
+      UX_RESET_ROUTE_PATHS.review,
+      UX_RESET_ROUTE_PATHS.compare,
+      source
+    );
+    expect(params.get("scope")).toBe("CO");
+    expect(params.get("county")).toBe("08021");
+    expect(params.has("eco")).toBeFalsy();
+    expect(dropped).toContain("breakpoint");
+    expect(dropped).toContain("missing");
+  });
+
   it("maps Explore selected counties into compare when entering Compare (max two)", () => {
     const source = new URLSearchParams(
       "scope=ALL&county=06037&selected=06085,06037,08001&view=compare&metric=score"

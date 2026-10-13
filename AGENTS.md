@@ -28,7 +28,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | Rank-row county buttons | `src/components/ranked-counties.tsx` | Domain list rows with score-color encoding, not generic actions |
 | Review candidate rows | `src/features/ux-reset/review/review-operating-picture.tsx` | Authoritative suggestion rows with reason text, not generic actions and not a score column |
 | Investigation Workspace county-list rows | `src/components/experiment-atlas.tsx` | Domain list rows with score-color encoding on `/investigate`, not generic actions |
-| Scoring range inputs | `src/components/experiment-atlas.tsx` | Native `input type="range"`; no shared Slider primitive |
+| Scoring range inputs | `src/components/experiment-atlas.tsx`, `src/components/scoring-lab.tsx` | Legacy workbench ranges stay local. Explorer what-if uses the shared `Slider` primitive |
 | Sidebar scrim | `src/components/app-shell.tsx` | Full-viewport dismiss hit target, not a chrome Button |
 | Chat launcher / close / history | `src/components/chat-launcher.tsx`, `src/components/evidence-chat.tsx` | Conversational UI chrome; class-only Button used only for shared actions (New chat, Ask) |
 | `.priority-pill` on `Badge` | `src/components/atlas-priority-badge.tsx` | Domain severity colors composed through Badge, not a second badge system |

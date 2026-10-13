@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import {
   EvidenceObject,
   evidenceObjectFromObservation,
@@ -128,6 +129,13 @@ export function DesignSystemGallery() {
             </CardHeader>
             <CardContent className="grid gap-3">
               <Input aria-label="Example county search" placeholder="Search" />
+              <Slider
+                aria-label="Example assumption"
+                defaultValue={65}
+                max={85}
+                min={40}
+                step={5}
+              />
               <Select defaultValue="all">
                 <SelectTrigger aria-label="Example filter">
                   <SelectValue />

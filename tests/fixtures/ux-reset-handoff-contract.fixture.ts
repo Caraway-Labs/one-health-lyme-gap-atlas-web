@@ -146,6 +146,9 @@ export function fixtureRichSourceQuery(
 
   switch (source) {
     case "review": {
+      params.set("breakpoint", "20");
+      params.set("eco", "40");
+      params.set("missing", "40");
       params.set("sort", "score");
       break;
     }

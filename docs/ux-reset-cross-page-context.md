@@ -40,22 +40,26 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 
 ## Page-local keys (never copied)
 
-| Destination | Local keys (dropped on navigation)                |
-| ----------- | ------------------------------------------------- |
-| Review      | `sort`, `page`, `mode`, `selection`               |
-| Explore     | `view`, `metric`, `page`, `selected`, `map_scope` |
-| Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q`   |
-| Compare     | `metric`, `return`                                |
-| Action      | `plan`, `role`                                    |
-| Assistant   | `conversation`, `page_ref`                        |
-| Feed        | `tab`                                             |
-| Settings    | _(none)_                                          |
+| Destination | Local keys (dropped on navigation) |
+| --- | --- |
+| Review | `sort`, `page`, `mode`, `selection`, `layer`, `eco`, `breakpoint`, `missing` |
+| Explore | `view`, `metric`, `page`, `selected`, `map_scope` |
+| Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q` |
+| Compare | `metric`, `return` |
+| Action | `plan`, `role` |
+| Assistant | `conversation`, `page_ref` |
+| Feed | `tab` |
+| Settings | _(none)_ |
 
 Explore `selected` maps into `compare` **only** when the destination accepts `compare` and `compare` is not already set.
 
 Review `mode` is the in-page Atlas Explorer county view. Omitted means browse. `evidence` opens county evidence. `follow-up` opens that same view at Suggested follow-up. Any other token is removed. Handoff does not copy `mode`. Compare copies one exact `mode` onto a Review return link when that Compare URL already carried it.
 
 Review `selection=required` marks an alias that named `county` but did not yield one FIPS. Browse does not select a county until the user chooses one. Handoff does not copy `selection`.
+
+Review `layer` selects the map layer. Omitted means the Atlas gap score layer.
+
+Review `eco`, `breakpoint`, and `missing` are the what-if scenario assumptions (tick and pathogen share, published-record threshold, and missing county-record value). Omitted values are the governed defaults 65, 10, and 75. A value outside the slider range or step is invalid and falls back to that default. Handoff does not copy them, and they are not written to the release.
 
 ## Route-to-route handoff matrix
 

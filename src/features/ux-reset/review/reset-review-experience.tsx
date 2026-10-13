@@ -44,6 +44,7 @@ import {
   EXPLORER_SELECTION_REQUIRED,
   resolveExplorerModeQuery,
 } from "@/features/ux-reset/review/explorer-mode";
+import { ExplorerWhatIfScenario } from "@/features/ux-reset/review/explorer-what-if-scenario";
 import {
   hasExplicitReviewLocation,
   hasExplicitReviewScopeParam,
@@ -70,7 +71,10 @@ import {
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
-import { reviewSearchParams } from "@/features/ux-reset/review/review-search-params";
+import {
+  reviewSearchParams,
+  scenarioSearchParamPatch,
+} from "@/features/ux-reset/review/review-search-params";
 import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useExplorerCountyReference } from "@/features/ux-reset/review/use-explorer-county-reference";
@@ -84,7 +88,7 @@ import {
   atlasStateOptionsFromMetadata,
   reviewScopeLabel,
 } from "@/lib/atlas-state-geography";
-import type { EvidenceView } from "@/lib/atlas-ui";
+import type { EvidenceView, ScoreSettings } from "@/lib/atlas-ui";
 
 function ResetReviewExperienceInner() {
   const route = resetRouteById("explorer");
@@ -104,6 +108,34 @@ function ResetReviewExperienceInner() {
   );
   const userChoseScopeRef = useRef(false);
   const [userChoseScope, setUserChoseScope] = useState(false);
+  const scenarioSettings = useMemo<ScoreSettings>(
+    () => ({
+      ecological_share: urlState.eco,
+      low_incidence_breakpoint: urlState.breakpoint,
+      missing_human_weakness: urlState.missing,
+    }),
+    [urlState.breakpoint, urlState.eco, urlState.missing]
+  );
+  const setScenarioSettings = useCallback(
+    (next: ScoreSettings) => {
+      void setUrlState(
+        {
+          breakpoint: next.low_incidence_breakpoint,
+          eco: next.ecological_share,
+          missing: next.missing_human_weakness,
+        },
+        { history: "replace" }
+      );
+    },
+    [setUrlState]
+  );
+  useEffect(() => {
+    const patch = scenarioSearchParamPatch(searchParams);
+    if (!patch) {
+      return;
+    }
+    void setUrlState(patch, { history: "replace" });
+  }, [searchParams, setUrlState]);
   const [countyQuery, setCountyQuery] = useState("");
   const [availableData, setAvailableData] = useState<EvidenceView>("all");
   const [countyQueryScope, setCountyQueryScope] = useState(scope);
@@ -487,6 +519,13 @@ function ResetReviewExperienceInner() {
         </p>
       ) : null}
 
+      {isLower48ReviewScope(scope) && !scopeUnsupported && !explorerMode ? (
+        <ExplorerWhatIfScenario
+          settings={scenarioSettings}
+          onChange={setScenarioSettings}
+        />
+      ) : null}
+
       {metadataLoading || startingScopePending ? (
         <AtlasStatusMessage tone="loading">
           Loading review scope…
@@ -563,6 +602,7 @@ function ResetReviewExperienceInner() {
                 freezeCountySelection={explorerMode !== null}
                 mapLayer={mapLayer}
                 period={urlState.period}
+                scenarioSettings={scenarioSettings}
                 requireExplicitCountySelection={
                   urlState.selection === EXPLORER_SELECTION_REQUIRED
                 }
