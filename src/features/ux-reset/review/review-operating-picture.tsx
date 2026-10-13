@@ -44,6 +44,12 @@ import {
   type ExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
 import {
+  adjustCountyScenarios,
+  SCENARIO_SCORE_DEFAULTS,
+  scoreSettingsFromCollection,
+} from "@/features/ux-reset/review/explorer-scenario-score";
+import { ExplorerAdjustedScenarioLine } from "@/features/ux-reset/review/explorer-what-if-scenario";
+import {
   buildReviewCandidatePreview,
   reviewCandidateExplanation,
 } from "@/features/ux-reset/review/review-candidate-preview";
@@ -85,6 +91,7 @@ import {
   parseAtlasDateTime,
   parseConfigurationSha256,
 } from "@/lib/atlas-evidence-metadata";
+import type { ScoreSettings } from "@/lib/atlas-ui";
 import {
   countyDisplayGeometryQueryKey,
   fetchCountyDisplayGeometry,
@@ -121,6 +128,8 @@ type ReviewOperatingPictureProps = {
   requireExplicitCountySelection?: boolean;
   review: StateReview;
   scopeCode: string;
+  /** Browser what-if. Defaults leave the governed score, priority, and map color in place. */
+  scenarioSettings?: ScoreSettings;
   stateName: string;
   tierRelease?: Tier1ActiveRelease;
   countyQuery?: string;
@@ -279,6 +288,7 @@ export function ReviewOperatingPicture({
   period = null,
   requireExplicitCountySelection = false,
   review,
+  scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   scopeCode,
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
@@ -392,11 +402,40 @@ export function ReviewOperatingPicture({
     [geometryQuery.data]
   );
   const scoresQuery = useExplorerMapScores(releaseId, mapLayer);
+  const scenarioBaseline = useMemo(
+    () => scoreSettingsFromCollection(scoresQuery.data?.settings),
+    [scoresQuery.data?.settings]
+  );
+  const scenarioByFips = useMemo(
+    () =>
+      adjustCountyScenarios(
+        (scoresQuery.data?.counties ?? []).filter(
+          (county) => county.state === scopeCode
+        ),
+        scenarioSettings,
+        scenarioBaseline
+      ),
+    [scenarioBaseline, scenarioSettings, scopeCode, scoresQuery.data?.counties]
+  );
   const mapPaint = useMemo(() => {
     const layer = explorerMapLayerById(mapLayer);
-    const counties = (scoresQuery.data?.counties ?? []).filter(
+    let counties = (scoresQuery.data?.counties ?? []).filter(
       (county) => county.state === scopeCode
     );
+    const scenarioColors = scenarioByFips !== null && layer.id === "gap_score";
+    if (scenarioColors && scenarioByFips) {
+      counties = counties.map((county) => {
+        const scenario = scenarioByFips.get(county.fips);
+        if (!scenario) {
+          return county;
+        }
+        return {
+          ...county,
+          color: scenario.colorToken,
+          priority: `Adjusted scenario · ${scenario.priority}`,
+        };
+      });
+    }
     const scoresStatus = layer.needsScores
       ? !releaseId || scoresQuery.isError
         ? "error"
@@ -404,14 +443,23 @@ export function ReviewOperatingPicture({
           ? "loading"
           : "ready"
       : "ready";
-    return paintExplorerMapLayer({
+    const paint = paintExplorerMapLayer({
       counties,
       layerId: layer.id,
       scoresStatus,
     });
+    if (!scenarioColors || scoresStatus !== "ready") {
+      return paint;
+    }
+    return {
+      ...paint,
+      note: "Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.",
+      title: "Adjusted scenario",
+    };
   }, [
     mapLayer,
     releaseId,
+    scenarioByFips,
     scopeCode,
     scoresQuery.data,
     scoresQuery.isError,
@@ -483,6 +531,9 @@ export function ReviewOperatingPicture({
   const selectedPublished = directory.counties.find(
     (entry) => entry.fips === selectedFips
   );
+  const selectedScenario = selectedFips
+    ? scenarioByFips?.get(selectedFips)
+    : null;
   const selected = candidates.find(
     (entry) => entry.countyFips === selectedFips
   );
@@ -1058,6 +1109,9 @@ export function ReviewOperatingPicture({
                             Published score {published.score}
                           </span>
                         ) : null}
+                        <ExplorerAdjustedScenarioLine
+                          scenario={scenarioByFips?.get(candidate.countyFips)}
+                        />
                       </button>
                     </div>
                   );
@@ -1088,6 +1142,9 @@ export function ReviewOperatingPicture({
                       <small>
                         Review category unavailable. Published county record.
                       </small>
+                      <ExplorerAdjustedScenarioLine
+                        scenario={scenarioByFips?.get(entry.fips)}
+                      />
                     </button>
                   </div>
                 ))}
@@ -1096,6 +1153,14 @@ export function ReviewOperatingPicture({
           </Card>
         </div>
         <div className="ux-reset-explorer-preview">
+          {selectedScenario ? (
+            <p className="type-small" data-testid="explorer-scenario-selected">
+              Governed score {selectedScenario.governedScore}. Adjusted scenario{" "}
+              {selectedScenario.score}. {selectedScenario.priority}. This
+              follow-up priority scenario keeps the governed score and is not
+              personal disease risk.
+            </p>
+          ) : null}
           {!preview && handoff && releaseId && selectedPublished ? (
             <ReviewPublishedCountyPreview
               compareHref={handoff.compareHref}
