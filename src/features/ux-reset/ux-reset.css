@@ -1540,6 +1540,11 @@
   color: var(--muted-foreground);
 }
 
+.ux-reset-ml-priority.priority-pill[data-tier="failed"] {
+  background: color-mix(in srgb, var(--destructive) 8%, var(--white));
+  color: var(--destructive);
+}
+
 .ux-reset-ml-priority-legend {
   display: grid;
   gap: var(--space-2);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { isLower48CountyFips } from "@/features/ux-reset/review/review-state-fips";
 import {
+  EXPLORER_ML_PRIORITY_FAILED_LABEL,
   EXPLORER_ML_PRIORITY_LEGEND,
   EXPLORER_ML_PRIORITY_LOADING_LABEL,
   EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
@@ -71,21 +72,40 @@ describe("Explorer county list ML classification", () => {
     expect(label).not.toBe("LOW");
   });
 
-  it("does not recode a missing or failed result as LOW", () => {
+  it("keeps a missing result Not available and a failed request Could not load", () => {
+    const incoherent: Tier1CountyPriority = {
+      ...tier1HighSufficientFixture,
+      priority_percentile: null,
+      priority_tier: null,
+      raw_model_score: null,
+    };
     expect({
-      failed: classify(null, { errorStatus: 503, status: "error" }).label,
+      incoherent: classify(incoherent).label,
       missing: classify(null, { errorStatus: 404, status: "error" }).label,
+      network: classify(null, { errorStatus: null, status: "error" }).label,
+      rateLimit: classify(null, { errorStatus: 429, status: "error" }).label,
       stale: classify(
         tier1PriorityForCounty(tier1HighSufficientFixture, "01003"),
         {
           fips: "01001",
         }
       ).label,
+      unavailableService: classify(null, { errorStatus: 503, status: "error" })
+        .label,
     }).toStrictEqual({
-      failed: EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
+      incoherent: EXPLORER_ML_PRIORITY_FAILED_LABEL,
       missing: EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
+      network: EXPLORER_ML_PRIORITY_FAILED_LABEL,
+      rateLimit: EXPLORER_ML_PRIORITY_FAILED_LABEL,
       stale: EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
+      unavailableService: EXPLORER_ML_PRIORITY_FAILED_LABEL,
     });
+    expect(
+      classify(null, { errorStatus: 503, status: "error" }).label
+    ).not.toBe("LOW");
+    expect(classify(null, { errorStatus: 503, status: "error" }).tier).toBe(
+      "failed"
+    );
   });
 
   it("withholds a tier from a different release", () => {
@@ -104,12 +124,14 @@ describe("Explorer county list ML classification", () => {
         release: { status: "pending" },
       }).label,
       request: classify(null, { status: "loading" }).label,
+      retryAfter: classify(null, { errorStatus: 429, status: "loading" }).label,
       unknownRelease: classify(tier1HighSufficientFixture, {
         release: { status: "unknown" },
       }).label,
     }).toStrictEqual({
       pendingRelease: EXPLORER_ML_PRIORITY_LOADING_LABEL,
       request: EXPLORER_ML_PRIORITY_LOADING_LABEL,
+      retryAfter: EXPLORER_ML_PRIORITY_LOADING_LABEL,
       unknownRelease: EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
     });
   });

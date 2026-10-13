@@ -8,6 +8,7 @@ import {
   type ExplorerMlListClassification,
   type ExplorerMlListTier,
 } from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
+import { TIER1_FAILED_MESSAGE } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { cn } from "@/lib/utils";
 
 function priorityToneClass(tier: ExplorerMlListTier): string | undefined {
@@ -22,7 +23,8 @@ function priorityToneClass(tier: ExplorerMlListTier): string | undefined {
       return "lower";
     }
     case "unavailable":
-    case "loading": {
+    case "loading":
+    case "failed": {
       return undefined;
     }
     default: {
@@ -45,8 +47,14 @@ export function ExplorerMlPriorityBadge({
       )}
       data-testid="explorer-ml-priority"
       data-tier={classification.tier}
+      title={
+        classification.tier === "failed" ? TIER1_FAILED_MESSAGE : undefined
+      }
     >
       {classification.label}
+      {classification.tier === "failed" ? (
+        <span className="sr-only">{` ${TIER1_FAILED_MESSAGE}`}</span>
+      ) : null}
     </Badge>
   );
 }

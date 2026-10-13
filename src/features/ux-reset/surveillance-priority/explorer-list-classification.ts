@@ -12,25 +12,29 @@ export const EXPLORER_ML_PRIORITY_LEGEND =
   "ML surveillance priority — counties flagged for review, not personal Lyme disease risk";
 
 export const EXPLORER_ML_PRIORITY_NOTE =
-  "HIGH, MEDIUM, and LOW are persisted Tier 1 surveillance-review labels for this release. They support follow-up review. They are not personal Lyme disease risk. A missing or unknown result stays Not available and is not shown as LOW.";
+  "HIGH, MEDIUM, and LOW are persisted Tier 1 surveillance-review labels for this release. They support follow-up review. They are not personal Lyme disease risk. A missing or unknown result stays Not available and is not shown as LOW. A request that could not be loaded stays Could not load and is not shown as Not available or LOW.";
 
 export const EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL = "Not available";
 
 export const EXPLORER_ML_PRIORITY_LOADING_LABEL = "Loading";
+
+export const EXPLORER_ML_PRIORITY_FAILED_LABEL = "Could not load";
 
 export type ExplorerMlListTier =
   | "HIGH"
   | "MEDIUM"
   | "LOW"
   | "unavailable"
-  | "loading";
+  | "loading"
+  | "failed";
 
 export type ExplorerMlListLabel =
   | "HIGH"
   | "MEDIUM"
   | "LOW"
   | typeof EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL
-  | typeof EXPLORER_ML_PRIORITY_LOADING_LABEL;
+  | typeof EXPLORER_ML_PRIORITY_LOADING_LABEL
+  | typeof EXPLORER_ML_PRIORITY_FAILED_LABEL;
 
 export type ExplorerMlListClassification = {
   label: ExplorerMlListLabel;
@@ -42,12 +46,18 @@ export const EXPLORER_ML_PRIORITY_UNAVAILABLE: ExplorerMlListClassification = {
   tier: "unavailable",
 };
 
+export const EXPLORER_ML_PRIORITY_FAILED: ExplorerMlListClassification = {
+  label: EXPLORER_ML_PRIORITY_FAILED_LABEL,
+  tier: "failed",
+};
+
 export const EXPLORER_ML_PRIORITY_LEGEND_ITEMS: readonly ExplorerMlListClassification[] =
   [
     { label: "HIGH", tier: "HIGH" },
     { label: "MEDIUM", tier: "MEDIUM" },
     { label: "LOW", tier: "LOW" },
     EXPLORER_ML_PRIORITY_UNAVAILABLE,
+    EXPLORER_ML_PRIORITY_FAILED,
   ];
 
 type PriorityQueryStatus = "error" | "loading" | "success";
@@ -65,8 +75,10 @@ function classificationForView(
     case "result": {
       return { label: view.tier, tier: view.tier };
     }
+    case "failed": {
+      return EXPLORER_ML_PRIORITY_FAILED;
+    }
     case "unavailable":
-    case "failed":
     case "stale":
     case "release-unaligned":
     case "not-estimable": {
@@ -85,7 +97,8 @@ function classificationForView(
  * model-native anomaly score, and the contract does not define HIGH as a
  * detected outlier, so this label never adds one.
  * Counties outside the lower 48 and DC stay Not available.
- * Null, unknown, withheld, and incoherent tiers stay Not available, never LOW.
+ * Null, unknown, withheld, and not-estimable results stay Not available, never LOW.
+ * A failed request stays Could not load. It is not recoded as Not available or LOW.
  */
 export function explorerMlListClassification(input: {
   errorStatus: number | null;
