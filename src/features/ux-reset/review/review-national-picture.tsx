@@ -32,8 +32,9 @@ import {
   explorerMapLayerById,
   paintExplorerMapLayer,
   type ExplorerMapLayerId,
-  type ExplorerMapLegendEntry,
+  type ExplorerMapLegendSource,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import { ExplorerCountyRowContent } from "@/features/ux-reset/review/explorer-ml-priority";
 import {
   buildReviewCompareHandoff,
@@ -66,8 +67,8 @@ import {
   fetchCountyDisplayGeometry,
 } from "@/lib/county-geography";
 
-const NO_PUBLISHED_VALUE = "No published value";
 const NO_PUBLISHED_VALUE_TOKEN = "--explorer-boundary";
+const NO_LEGEND_SOURCES: readonly ExplorerMapLegendSource[] = [];
 
 type ReviewNationalPictureProps = {
   availableDataGate?: ExplorerAvailableDataGate;
@@ -83,6 +84,7 @@ type ReviewNationalPictureProps = {
   period: string | null;
   releaseId: string;
   releaseStates: readonly AtlasStateOption[];
+  sources?: readonly ExplorerMapLegendSource[];
   tierRelease: Tier1ActiveRelease;
 };
 
@@ -118,38 +120,6 @@ function postalForFips(fips: string): string | null {
   return postal && isLower48ReviewScope(postal) ? postal : null;
 }
 
-function nationalLegend(
-  entries: readonly ExplorerMapLegendEntry[],
-  layerId: ExplorerMapLayerId
-): ExplorerMapLegendEntry[] {
-  if (layerId === "boundaries") {
-    return [...entries];
-  }
-  if (entries.some((entry) => entry.label === NO_PUBLISHED_VALUE)) {
-    return [...entries];
-  }
-  return [
-    ...entries,
-    {
-      color: `var(${NO_PUBLISHED_VALUE_TOKEN})`,
-      label: NO_PUBLISHED_VALUE,
-    },
-  ];
-}
-
-function nationalPaintNote(note: string, layerId: ExplorerMapLayerId): string {
-  const ranking = "The county list stays the review ranking.";
-  const noData =
-    "Counties without a published value use the no-data color. That color is not zero or low priority.";
-  if (note.includes(ranking)) {
-    return note.replace(ranking, noData);
-  }
-  if (layerId === "boundaries") {
-    return note;
-  }
-  return `${note} ${noData}`;
-}
-
 export function ReviewNationalPicture({
   availableDataGate = EXPLORER_AVAILABLE_DATA_OPEN,
   counties,
@@ -164,6 +134,7 @@ export function ReviewNationalPicture({
   period,
   releaseId,
   releaseStates,
+  sources = NO_LEGEND_SOURCES,
   tierRelease,
 }: ReviewNationalPictureProps) {
   const searchParams = useSearchParams();
@@ -203,18 +174,17 @@ export function ReviewNationalPicture({
         ? "loading"
         : "ready"
     : "ready";
-  const mapPaint = useMemo(() => {
-    const paint = paintExplorerMapLayer({
-      counties: scoreCounties,
-      layerId: layer.id,
-      scoresStatus,
-    });
-    return {
-      ...paint,
-      entries: nationalLegend(paint.entries, layer.id),
-      note: nationalPaintNote(paint.note, layer.id),
-    };
-  }, [layer.id, scoreCounties, scoresStatus]);
+  const mapPaint = useMemo(
+    () =>
+      paintExplorerMapLayer({
+        counties: scoreCounties,
+        layerId: layer.id,
+        releaseId,
+        scoresStatus,
+        sources,
+      }),
+    [layer.id, releaseId, scoreCounties, scoresStatus, sources]
+  );
   const geometryFeatures = useMemo(
     () =>
       (geometryQuery.data?.features ?? []).filter(
@@ -505,25 +475,7 @@ export function ReviewNationalPicture({
             </AtlasStatusMessage>
           )}
         </div>
-        <div
-          className="ux-reset-explorer-legend"
-          data-testid="explorer-map-legend"
-        >
-          <p className="type-small">{mapPaint.note}</p>
-          {mapPaint.entries.length > 0 ? (
-            <ul>
-              {mapPaint.entries.map((entry) => (
-                <li key={`${entry.label}-${entry.color}`}>
-                  <span
-                    aria-hidden="true"
-                    style={{ background: entry.color }}
-                  />
-                  {entry.label}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+        <ExplorerMapLegend paint={mapPaint} />
       </Card>
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">

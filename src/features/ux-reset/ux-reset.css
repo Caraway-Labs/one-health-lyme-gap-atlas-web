@@ -1694,6 +1694,24 @@
   height: min(32rem, calc(100dvh - 16rem));
 }
 
+.ux-reset-explorer-legend {
+  overflow-wrap: anywhere;
+}
+
+.ux-reset-explorer-legend p {
+  margin: 0;
+}
+
+.ux-reset-explorer-legend p + p,
+.ux-reset-explorer-legend ul {
+  margin-top: 0.35rem;
+}
+
+.ux-reset-explorer-legend:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 2px;
+}
+
 .ux-reset-explorer-legend ul,
 .ux-reset-layer-availability ul {
   display: grid;
@@ -1709,11 +1727,16 @@
   align-items: center;
 }
 
-.ux-reset-explorer-legend li span {
+.ux-reset-explorer-legend li > span:first-child {
   width: 0.8rem;
   height: 0.8rem;
+  flex: none;
   border: 1px solid var(--line);
   border-radius: 2px;
+}
+
+.ux-reset-explorer-legend li > span:last-child {
+  min-width: 0;
 }
 
 .ux-reset-review-candidate[aria-current="true"] {
@@ -2029,7 +2052,8 @@
         18rem,
         20.5rem
       );
-    height: min(44rem, calc(100svh - 31.5rem));
+    /* The map keeps an 8rem floor. The extra row height is the layer legend. */
+    height: min(44rem, calc(100svh - 28.5rem));
     min-height: 20rem;
   }
 
@@ -2055,9 +2079,15 @@
   }
 
   .ux-reset-explorer-map .ux-reset-explorer-map-heading,
-  .ux-reset-explorer-map .ux-reset-explorer-map-layer,
-  .ux-reset-explorer-map .ux-reset-explorer-legend {
+  .ux-reset-explorer-map .ux-reset-explorer-map-layer {
     flex: 0 0 auto;
+  }
+
+  .ux-reset-explorer-map .ux-reset-explorer-legend {
+    flex: 3 1 12rem;
+    max-height: 62%;
+    min-height: 0;
+    overflow: auto;
   }
 
   .ux-reset-explorer-map .map-wrap {

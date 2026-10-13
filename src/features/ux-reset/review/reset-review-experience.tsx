@@ -683,6 +683,7 @@ function ResetReviewExperienceInner() {
                 period={urlState.period}
                 releaseId={presentationQuery.metadata.release_id}
                 releaseStates={stateOptions}
+                sources={presentationQuery.metadata.sources}
                 tierRelease={tierRelease}
                 onCountyChange={setCounty}
                 onMapLayerChange={setMapLayer}
@@ -698,6 +699,7 @@ function ResetReviewExperienceInner() {
                 mapLayer={mapLayer}
                 period={urlState.period}
                 scenarioSettings={scenarioSettings}
+                sources={presentationQuery.metadata?.sources}
                 requireExplicitCountySelection={
                   urlState.selection === EXPLORER_SELECTION_REQUIRED
                 }

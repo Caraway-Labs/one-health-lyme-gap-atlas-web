@@ -1,3 +1,4 @@
+import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyScoreSummary } from "@/generated/models";
 
 /**
@@ -19,7 +20,7 @@ export const EXPLORER_MAP_LAYERS = [
     needsScores: false,
     selectable: false,
     unavailableReason:
-      "No map collection supplies the published incidence floor for every county. County evidence still shows a county's own floor when that record exists.",
+      "No map collection supplies the published incidence floor for every county. A published incidence floor is a lower bound, not an exact incidence estimate. County evidence still shows a county's own floor when that record exists.",
   },
   {
     id: "tick_status",
@@ -80,26 +81,95 @@ export type ExplorerMapLayerId = (typeof EXPLORER_MAP_LAYERS)[number]["id"];
 
 export type ExplorerMapLayer = (typeof EXPLORER_MAP_LAYERS)[number];
 
+export type ExplorerMapLegendSource = {
+  key: string;
+  label: string;
+  vintage: string;
+};
+
 const BOUNDARY_COLOR = "var(--explorer-boundary)";
-const STATUS_COLORS = [
-  "var(--map-ramp-2)",
-  "var(--map-ramp-3)",
-  "var(--map-ramp-4)",
-  "var(--map-ramp-5)",
-  "var(--map-ramp-6)",
-  "var(--teal)",
-] as const;
+const NO_PUBLISHED_VALUE = "No published value";
+
+/**
+ * Category hues stay off the review-priority ramp. A heat ramp would read as
+ * severity for a status that is only a published category.
+ */
+const POSITIVE_STATUS_COLOR: Readonly<Record<string, string>> = {
+  established: "var(--teal)",
+  present: "var(--teal)",
+  reported: "var(--navy)",
+};
+const OBSERVED_ZERO_COLOR = "var(--teal-dark)";
+const NEUTRAL_STATUS_COLOR = "var(--atlas-muted-text)";
+const EXTRA_CATEGORY_COLORS = ["var(--navy-2)", "var(--mint)"] as const;
+
+function neutralStatusColor(normalized: string): string {
+  switch (normalized) {
+    case "no records": {
+      return "var(--atlas-muted-text)";
+    }
+    case "unknown": {
+      return "var(--navy-2)";
+    }
+    case "missing":
+    case "not ranked":
+    case "not supplied":
+    case "suppressed":
+    case "unavailable": {
+      return "var(--mint)";
+    }
+    default: {
+      return NEUTRAL_STATUS_COLOR;
+    }
+  }
+}
+
+const CATEGORY_SOURCE_KEYS: Partial<
+  Record<ExplorerMapLayerId, readonly string[]>
+> = {
+  gap_score: ["human", "tick", "pathogen", "context_svi", "context_rucc"],
+  pathogen_status: ["pathogen"],
+  tick_status: ["tick"],
+};
+
+type LegendKind =
+  | "boundaries"
+  | "categorical"
+  | "choropleth"
+  | "loading"
+  | "unavailable";
 
 export type ExplorerMapLegendEntry = {
   color: string;
+  detail: string | null;
   label: string;
 };
 
 export type ExplorerMapPaint = {
   colorsByFips: ReadonlyMap<string, string>;
   entries: readonly ExplorerMapLegendEntry[];
+  kind: LegendKind;
+  layerId: ExplorerMapLayerId;
   note: string;
+  period: string;
   title: string;
+  unit: string | null;
+};
+
+type PaintInput = {
+  counties: readonly CountyScoreSummary[];
+  layerId: ExplorerMapLayerId;
+  releaseId?: string | null;
+  scoresStatus: "error" | "loading" | "ready";
+  sources?: readonly ExplorerMapLegendSource[];
+};
+
+type ScoreBand = (typeof SCORE_COLOR_BANDS)[number];
+
+type GapColorGroup = {
+  color: string;
+  priorities: Map<string, number>;
+  scores: number[];
 };
 
 export function explorerMapLayerById(
@@ -121,8 +191,273 @@ export function parseExplorerMapLayerId(
   return layer.id;
 }
 
-function neutralStatus(value: string): boolean {
-  return /no records|missing|unknown|unavailable|not supplied/i.test(value);
+function noPublishedValueEntry(): ExplorerMapLegendEntry {
+  return {
+    color: BOUNDARY_COLOR,
+    detail: "Not zero, not low priority, and not confirmed absence",
+    label: NO_PUBLISHED_VALUE,
+  };
+}
+
+function formatScore(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function observedScoreLabel(scores: readonly number[]): string {
+  if (scores.length === 0) {
+    return "Published score color";
+  }
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+  if (min === max) {
+    return `Published score ${formatScore(min)}`;
+  }
+  return `Published scores ${formatScore(min)}–${formatScore(max)}`;
+}
+
+function bandThreshold(band: ScoreBand): string {
+  if (band.maxExclusive === null) {
+    return `${band.minInclusive} or higher`;
+  }
+  return `${band.minInclusive} to less than ${band.maxExclusive}`;
+}
+
+function scoreFitsBand(score: number, band: ScoreBand): boolean {
+  if (score < band.minInclusive) {
+    return false;
+  }
+  if (band.maxExclusive === null) {
+    return true;
+  }
+  return score < band.maxExclusive;
+}
+
+/**
+ * A governed band is claimed only when the painted color is that band's
+ * published color and every painted score already falls inside it. Other
+ * colors keep the observed score endpoints.
+ */
+function governedBandForColor(color: string): ScoreBand | null {
+  const normalized = color.trim().toLowerCase();
+  const byHex = SCORE_COLOR_BANDS.find(
+    (band) => band.color.toLowerCase() === normalized
+  );
+  if (byHex) {
+    return byHex;
+  }
+  const token = /^var\((?<token>--map-ramp-[1-6])\)$/.exec(normalized);
+  const bandToken = token?.groups?.token;
+  if (!bandToken) {
+    return null;
+  }
+  return SCORE_COLOR_BANDS.find((band) => band.token === bandToken) ?? null;
+}
+
+function legendPeriod(input: PaintInput, layerId: ExplorerMapLayerId): string {
+  if (layerId === "boundaries") {
+    return "County boundaries are not an evidence layer.";
+  }
+  const release = input.releaseId?.trim()
+    ? `Release ${input.releaseId.trim()}`
+    : null;
+  const keys = CATEGORY_SOURCE_KEYS[layerId] ?? [];
+  const vintages: string[] = [];
+  for (const key of keys) {
+    const source = input.sources?.find((entry) => entry.key === key);
+    const label = source?.label.trim() ?? "";
+    const vintage = source?.vintage.trim() ?? "";
+    if (!label || !vintage) {
+      continue;
+    }
+    vintages.push(`${label} ${vintage}`);
+  }
+  if (vintages.length === 0) {
+    return release
+      ? `${release}. Source vintage unavailable.`
+      : "Source vintage unavailable.";
+  }
+  const listed = vintages.join(" · ");
+  return release ? `${release}. ${listed}` : listed;
+}
+
+function boundaryPaint(
+  input: PaintInput,
+  note: string,
+  title: string,
+  kind: LegendKind
+): ExplorerMapPaint {
+  const layer = explorerMapLayerById(input.layerId);
+  return {
+    colorsByFips: new Map(),
+    entries: [
+      { color: BOUNDARY_COLOR, detail: null, label: "County boundary" },
+    ],
+    kind,
+    layerId: layer.id,
+    note,
+    period: legendPeriod(
+      input,
+      layer.id === "boundaries" ? "boundaries" : layer.id
+    ),
+    title,
+    unit: null,
+  };
+}
+
+function unavailablePaint(input: PaintInput): ExplorerMapPaint {
+  const layer = explorerMapLayerById(input.layerId);
+  return {
+    colorsByFips: new Map(),
+    entries: [],
+    kind: "unavailable",
+    layerId: layer.id,
+    note:
+      layer.unavailableReason ??
+      "This layer has no published map color scale. The map shows county boundaries only.",
+    period: "Source vintage unavailable.",
+    title: layer.label,
+    unit: null,
+  };
+}
+
+function gapScorePaint(input: PaintInput): ExplorerMapPaint {
+  const layer = explorerMapLayerById(input.layerId);
+  const groups = new Map<string, GapColorGroup>();
+  const colorsByFips = new Map<string, string>();
+  for (const county of input.counties) {
+    const color = county.color.trim();
+    if (!color) {
+      continue;
+    }
+    colorsByFips.set(county.fips, color);
+    let group = groups.get(color);
+    if (!group) {
+      group = { color, priorities: new Map(), scores: [] };
+      groups.set(color, group);
+    }
+    const value = county.score.score;
+    if (!Number.isFinite(value)) {
+      continue;
+    }
+    group.scores.push(value);
+    const priority =
+      county.priority.trim() || "Published priority label unavailable";
+    const current = group.priorities.get(priority);
+    if (current === undefined || value < current) {
+      group.priorities.set(priority, value);
+    }
+  }
+  const entries: ExplorerMapLegendEntry[] = [...groups.values()]
+    .toSorted((left, right) => {
+      const leftScore = left.scores.length > 0 ? Math.min(...left.scores) : 0;
+      const rightScore =
+        right.scores.length > 0 ? Math.min(...right.scores) : 0;
+      return leftScore - rightScore || left.color.localeCompare(right.color);
+    })
+    .map((group) => {
+      const band = governedBandForColor(group.color);
+      const fits =
+        band !== null &&
+        group.scores.length > 0 &&
+        group.scores.every((score) => scoreFitsBand(score, band));
+      const priorities = [...group.priorities.entries()].toSorted(
+        (left, right) => left[1] - right[1] || left[0].localeCompare(right[0])
+      );
+      return {
+        color: group.color,
+        detail:
+          priorities.map(([label]) => label).join("; ") ||
+          "Published priority label unavailable",
+        label:
+          fits && band ? bandThreshold(band) : observedScoreLabel(group.scores),
+      };
+    });
+  entries.push(noPublishedValueEntry());
+  return {
+    colorsByFips,
+    entries,
+    kind: "choropleth",
+    layerId: layer.id,
+    note: "Colors are the published score colors. A band is shown only when every score painted in that color already falls inside it. Priority labels can span more than one color. This is surveillance review priority, not personal disease risk and not an ML surveillance label. A missing color is not zero or low priority. The county list stays the review ranking.",
+    period: legendPeriod(input, layer.id),
+    title: "Atlas gap score",
+    unit: "review-priority score",
+  };
+}
+
+type StatusKind = "category" | "neutral" | "observed-zero";
+
+function statusKind(value: string): StatusKind {
+  const normalized = value.trim().toLowerCase();
+  if (
+    /^(?:0|zero|none|not detected|negative|absent|no detection)$/.test(
+      normalized
+    )
+  ) {
+    return "observed-zero";
+  }
+  if (
+    /no records|missing|unknown|unavailable|not supplied|suppressed|not ranked/.test(
+      normalized
+    )
+  ) {
+    return "neutral";
+  }
+  return "category";
+}
+
+function statusLabel(status: string, kind: StatusKind): string {
+  switch (kind) {
+    case "category": {
+      return status;
+    }
+    case "neutral": {
+      return `${status} (not zero, not confirmed absence)`;
+    }
+    case "observed-zero": {
+      return `${status} (observed zero or negative finding)`;
+    }
+    default: {
+      const exhaustive: never = kind;
+      return exhaustive;
+    }
+  }
+}
+
+function statusSortKey(status: string, kind: StatusKind): string {
+  const normalized = status.trim().toLowerCase();
+  switch (kind) {
+    case "category": {
+      const preferred = ["established", "reported", "present"].indexOf(
+        normalized
+      );
+      return preferred === -1
+        ? `1-${normalized}`
+        : `0-${String(preferred).padStart(2, "0")}`;
+    }
+    case "observed-zero": {
+      return `2-${normalized}`;
+    }
+    case "neutral": {
+      const preferred = [
+        "no records",
+        "unknown",
+        "missing",
+        "unavailable",
+        "suppressed",
+        "not ranked",
+        "not supplied",
+      ].indexOf(normalized);
+      return preferred === -1
+        ? `4-${normalized}`
+        : `3-${String(preferred).padStart(2, "0")}`;
+    }
+    default: {
+      const exhaustive: never = kind;
+      return exhaustive;
+    }
+  }
 }
 
 function statusLegend(
@@ -131,24 +466,60 @@ function statusLegend(
 ): { colors: Map<string, string>; entries: ExplorerMapLegendEntry[] } {
   const statuses = [
     ...new Set(counties.map((county) => read(county).trim() || "Unavailable")),
-  ].toSorted((left, right) => left.localeCompare(right));
+  ].toSorted((left, right) =>
+    statusSortKey(left, statusKind(left)).localeCompare(
+      statusSortKey(right, statusKind(right))
+    )
+  );
   const colors = new Map<string, string>();
-  let ramp = 0;
+  let extra = 0;
   for (const status of statuses) {
-    const color = neutralStatus(status)
-      ? BOUNDARY_COLOR
-      : STATUS_COLORS[ramp % STATUS_COLORS.length];
-    if (!neutralStatus(status)) {
-      ramp += 1;
+    const kind = statusKind(status);
+    const normalized = status.trim().toLowerCase();
+    let color = POSITIVE_STATUS_COLOR[normalized];
+    if (kind === "neutral") {
+      color = neutralStatusColor(normalized);
+    } else if (kind === "observed-zero") {
+      color = OBSERVED_ZERO_COLOR;
+    } else if (!color) {
+      color = EXTRA_CATEGORY_COLORS[extra % EXTRA_CATEGORY_COLORS.length];
+      extra += 1;
     }
-    colors.set(status, color);
+    colors.set(status, color ?? NEUTRAL_STATUS_COLOR);
   }
   return {
     colors,
     entries: statuses.map((status) => ({
-      color: colors.get(status) ?? BOUNDARY_COLOR,
-      label: neutralStatus(status) ? `${status} (not zero)` : status,
+      color: colors.get(status) ?? NEUTRAL_STATUS_COLOR,
+      detail: null,
+      label: statusLabel(status, statusKind(status)),
     })),
+  };
+}
+
+function categoricalPaint(
+  input: PaintInput,
+  read: (county: CountyScoreSummary) => string
+): ExplorerMapPaint {
+  const layer = explorerMapLayerById(input.layerId);
+  const legend = statusLegend(input.counties, read);
+  const colorsByFips = new Map<string, string>();
+  for (const county of input.counties) {
+    const status = read(county).trim() || "Unavailable";
+    colorsByFips.set(
+      county.fips,
+      legend.colors.get(status) ?? NEUTRAL_STATUS_COLOR
+    );
+  }
+  return {
+    colorsByFips,
+    entries: [...legend.entries, noPublishedValueEntry()],
+    kind: "categorical",
+    layerId: layer.id,
+    note: "Colors are separate published status categories, not a continuous risk gradient or a severity ranking. No records is not absence. An observed zero stays distinct from a missing status.",
+    period: legendPeriod(input, layer.id),
+    title: layer.label,
+    unit: "published status category",
   };
 }
 
@@ -157,85 +528,55 @@ function statusLegend(
  * scores response. Status colors only distinguish published status strings.
  * A percent without a published color scale is not painted.
  */
-export function paintExplorerMapLayer(input: {
-  counties: readonly CountyScoreSummary[];
-  layerId: ExplorerMapLayerId;
-  scoresStatus: "error" | "loading" | "ready";
-}): ExplorerMapPaint {
+export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
   const layer = explorerMapLayerById(input.layerId);
-  if (!layer.selectable || layer.id === "boundaries") {
-    return {
-      colorsByFips: new Map(),
-      entries: [{ color: BOUNDARY_COLOR, label: "County boundary" }],
-      note: "County boundaries only. This map is not colored by Atlas gap score.",
-      title: "County boundaries",
-    };
+  if (layer.id === "boundaries") {
+    return boundaryPaint(
+      input,
+      "County boundaries only. This map is not colored by Atlas gap score.",
+      "County boundaries",
+      "boundaries"
+    );
+  }
+  if (!layer.selectable) {
+    return unavailablePaint(input);
   }
   if (input.scoresStatus === "loading") {
     return {
       colorsByFips: new Map(),
       entries: [],
+      kind: "loading",
+      layerId: layer.id,
       note: `Loading ${layer.label} from the published scores collection.`,
+      period: legendPeriod(input, layer.id),
       title: layer.label,
+      unit:
+        layer.id === "gap_score"
+          ? "review-priority score"
+          : "published status category",
     };
   }
   if (input.scoresStatus === "error" || input.counties.length === 0) {
-    return {
-      colorsByFips: new Map(),
-      entries: [{ color: BOUNDARY_COLOR, label: "County boundary" }],
-      note: `${layer.label} could not be loaded from the scores collection. The map shows county boundaries only.`,
-      title: "County boundaries",
-    };
+    return boundaryPaint(
+      input,
+      `${layer.label} could not be loaded from the scores collection. The map shows county boundaries only.`,
+      "County boundaries",
+      "unavailable"
+    );
   }
 
-  if (layer.id === "gap_score") {
-    const colorsByFips = new Map<string, string>();
-    const entries = new Map<string, string>();
-    for (const county of input.counties) {
-      const color = county.color.trim();
-      if (!color) {
-        continue;
-      }
-      colorsByFips.set(county.fips, color);
-      entries.set(county.priority.trim() || "Published score color", color);
+  switch (layer.id) {
+    case "gap_score": {
+      return gapScorePaint(input);
     }
-    return {
-      colorsByFips,
-      entries: [...entries.entries()].map(([label, color]) => ({
-        color,
-        label,
-      })),
-      note: "Colors are the published score colors. A missing color is not zero. The county list stays the review ranking.",
-      title: "Atlas gap score",
-    };
-  }
-
-  if (layer.id === "tick_status" || layer.id === "pathogen_status") {
-    const read =
-      layer.id === "tick_status"
-        ? (county: CountyScoreSummary) => county.tick_status
-        : (county: CountyScoreSummary) => county.burgdorferi_status;
-    const legend = statusLegend(input.counties, read);
-    const colorsByFips = new Map<string, string>();
-    for (const county of input.counties) {
-      const status = read(county).trim() || "Unavailable";
-      colorsByFips.set(
-        county.fips,
-        legend.colors.get(status) ?? BOUNDARY_COLOR
-      );
+    case "tick_status": {
+      return categoricalPaint(input, (county) => county.tick_status);
     }
-    return {
-      colorsByFips,
-      entries: legend.entries,
-      note: "Colors distinguish published status categories. They are not a severity ranking, and no records is not absence.",
-      title: layer.label,
-    };
+    case "pathogen_status": {
+      return categoricalPaint(input, (county) => county.burgdorferi_status);
+    }
+    default: {
+      return layer satisfies never;
+    }
   }
-
-  return {
-    colorsByFips: new Map(),
-    entries: [{ color: BOUNDARY_COLOR, label: "County boundary" }],
-    note: "This layer has no published map color scale. The map shows county boundaries only.",
-    title: "County boundaries",
-  };
 }
