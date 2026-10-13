@@ -170,9 +170,8 @@ export function ExplorerSuggestedFollowUpPanel({
       ) : null}
       {status === "error" ? (
         <AtlasStatusMessage tone="error">
-          The published county record could not be loaded, so suggested
-          follow-up is not shown. That is a request failure, not a decision that
-          no follow-up exists.
+          Suggested follow-up is not shown because a required request failed.
+          That is not a decision that no follow-up exists.
         </AtlasStatusMessage>
       ) : null}
       {status === "waiting" ? (

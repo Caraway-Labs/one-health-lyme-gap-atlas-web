@@ -119,21 +119,43 @@ function followUpPanelStatus(input: {
   countyRecordAbsent: boolean;
   countyRecordError: string | null;
   countyRecordLoading: boolean;
+  directoryError: string | null;
+  directoryLoading: boolean;
   hasEvidence: boolean;
+  metadataError: string | null;
+  metadataLoading: boolean;
   recovery: InvestigateRecovery | null;
   requestedFips: string | null;
 }): SuggestedFollowUpPanelStatus {
-  if (!input.requestedFips || input.recovery) {
+  const countyNotChosen =
+    !input.requestedFips ||
+    input.recovery === "missing" ||
+    input.recovery === "malformed";
+  if (countyNotChosen) {
     return "waiting";
   }
-  if (input.countyRecordLoading) {
+  const prerequisitesPending = input.metadataLoading || input.directoryLoading;
+  if (prerequisitesPending) {
     return "loading";
+  }
+  const prerequisitesFailed =
+    Boolean(input.metadataError) ||
+    Boolean(input.directoryError) ||
+    input.recovery === "directory";
+  if (prerequisitesFailed) {
+    return "error";
+  }
+  if (input.recovery) {
+    return "waiting";
   }
   if (input.countyRecordError) {
     return "error";
   }
-  if (input.countyRecordAbsent || !input.hasEvidence) {
+  if (input.countyRecordAbsent) {
     return "absent";
+  }
+  if (input.countyRecordLoading || !input.hasEvidence) {
+    return "loading";
   }
   return "ready";
 }
@@ -221,13 +243,18 @@ export function ExplorerCountyEvidence({
     workspace.identity?.fips === workspace.requestedFips
       ? workspace.identity.label
       : (workspace.requestedFips ?? "Choose a county");
-  const leadLimitation =
-    followUp.status === "candidate" ? (followUp.limitations[0] ?? null) : null;
+  const candidateLimitations =
+    followUp.status === "candidate" ? followUp.limitations : [];
+  const leadLimitation = candidateLimitations[0] ?? null;
   const followUpStatus = followUpPanelStatus({
     countyRecordAbsent: workspace.countyRecordAbsent,
     countyRecordError: workspace.countyRecordError,
     countyRecordLoading: workspace.countyRecordLoading,
+    directoryError: workspace.directoryError,
+    directoryLoading: workspace.directoryLoading,
     hasEvidence: workspace.suggestedFollowUpEvidence !== null,
+    metadataError: workspace.metadataError,
+    metadataLoading: workspace.metadataLoading,
     recovery: workspace.recovery,
     requestedFips: workspace.requestedFips,
   });
@@ -302,6 +329,19 @@ export function ExplorerCountyEvidence({
           <p className="type-body" data-testid="explorer-summary-limitation">
             {leadLimitation}
           </p>
+        ) : null}
+        {candidateLimitations.length > 0 ? (
+          <details
+            className="ux-reset-explorer-disclosure"
+            data-testid="explorer-review-limitations"
+          >
+            <summary>Review limitations</summary>
+            <ul>
+              {candidateLimitations.map((limitation) => (
+                <li key={limitation}>{limitation}</li>
+              ))}
+            </ul>
+          </details>
         ) : null}
         {workspace.requestedFips ? (
           <Tier1SurveillancePriority

@@ -426,4 +426,143 @@ describe("Explorer county evidence", () => {
     );
     expect(screen.queryByTestId("investigate-evidence")).toBeNull();
   });
+
+  it("keeps every governed limitation through mode and county changes", () => {
+    const denverLimitations = [
+      "Cumulative status only",
+      "Collection date unavailable",
+      "Pathogen/vector species attribution unavailable",
+    ];
+    workspace.current = baseWorkspace({
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+      stateLabel: "Colorado (CO)",
+      suggestedFollowUpEvidence: publishedFollowUp(),
+    });
+    const denverFollowUp = {
+      ...candidateFollowUp(denverLimitations[0]),
+      limitations: denverLimitations,
+    };
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={denverFollowUp}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const limitationText = () =>
+      screen.getByTestId("explorer-review-limitations").textContent;
+    expect({
+      disclosure: limitationText(),
+      summary: screen.getByTestId("explorer-summary-limitation").textContent,
+    }).toStrictEqual({
+      disclosure: `Review limitations${denverLimitations.join("")}`,
+      summary: denverLimitations[0],
+    });
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={denverFollowUp}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(limitationText()).toBe(
+      `Review limitations${denverLimitations.join("")}`
+    );
+    workspace.current = baseWorkspace({
+      identity: { fips: "08013", label: "Boulder", stateCode: "CO" },
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08013",
+      stateLabel: "Colorado (CO)",
+      suggestedFollowUpEvidence: publishedFollowUp({
+        color: "#87b982",
+        priority: "Watch — Monitor signals",
+      }),
+    });
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={candidateFollowUp("Boulder limitation stays on Boulder.")}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(limitationText()).toBe(
+      "Review limitationsBoulder limitation stays on Boulder."
+    );
+  });
+
+  it("keeps an unstarted county read distinct from a missing record", () => {
+    const viewFor = (overrides: Partial<InvestigateWorkspace>) => {
+      workspace.current = baseWorkspace({
+        identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+        recovery: null,
+        releaseId: "alpha-2026",
+        requestedFips: "08001",
+        stateLabel: "Colorado (CO)",
+        ...overrides,
+      });
+    };
+    const mark = (text: string) => {
+      if (text.includes("Loading suggested follow-up")) {
+        return "loading";
+      }
+      if (text.includes("required request failed")) {
+        return "error";
+      }
+      if (text.includes("No published county record")) {
+        return "absent";
+      }
+      if (text.includes("Choose a county")) {
+        return "waiting";
+      }
+      return "other";
+    };
+    viewFor({ metadataLoading: true });
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const states = [
+      mark(screen.getByTestId("explorer-follow-up").textContent ?? ""),
+    ];
+    for (const overrides of [
+      { directoryLoading: true },
+      { metadataError: "Release metadata could not be loaded." },
+      {
+        directoryError: "The published county list could not be loaded.",
+        recovery: "directory" as const,
+      },
+      { countyRecordAbsent: true },
+    ]) {
+      viewFor(overrides);
+      view.rerender(
+        <ExplorerCountyEvidence
+          followUp={{ status: "factual" }}
+          methodologyLabel={null}
+          mode="follow-up"
+          onBackToMap={vi.fn<() => void>()}
+        />
+      );
+      states.push(
+        mark(screen.getByTestId("explorer-follow-up").textContent ?? "")
+      );
+    }
+    expect(states).toStrictEqual([
+      "loading",
+      "loading",
+      "error",
+      "error",
+      "absent",
+    ]);
+  });
 });
