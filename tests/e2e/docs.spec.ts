@@ -301,7 +301,10 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   const reviewPath = "/explore?scope=NY&county=36061&sort=score";
   await page.goto(reviewPath);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the evidence behind every county.",
+    })
   ).toBeVisible();
 
   if (testInfo.project.name.includes("mobile")) {
@@ -391,7 +394,10 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   expect(workspaceUrl.searchParams.get("county")).toBe("36061");
   expect(workspaceUrl.searchParams.get("sort")).toBe("score");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the evidence behind every county.",
+    })
   ).toBeVisible();
 });
 

@@ -9,7 +9,10 @@ test.describe("Investigate bookmarks open Atlas Explorer", () => {
     await expect(page).toHaveURL(/scope=CO/);
     await expect(page.getByTestId("investigate-header")).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     expect(new URL(page.url()).searchParams.get("county")).not.toBe("06037");
   });

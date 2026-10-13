@@ -11,7 +11,10 @@ test("retired public analytical bookmarks do not open the assistant drawer", asy
     await page.goto(start);
     await expect(page).toHaveURL(/\/explore/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     await expect(
       page.getByRole("dialog", { name: "Atlas Assistant" })

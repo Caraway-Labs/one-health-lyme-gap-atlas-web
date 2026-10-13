@@ -261,7 +261,10 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page).not.toHaveURL(/period=/);
     const exploreUrl = page.url();
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "release"))
@@ -339,7 +342,10 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/explore/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     expect(new URL(page.url()).searchParams.get("county")).toBeNull();
     expect(exploreUrl).toContain("/explore");
@@ -537,7 +543,10 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/county=/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
   });
 
@@ -577,7 +586,10 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page).toHaveURL(/\/explore/);
     await expect(page.getByRole("heading", { name: "Action" })).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "release"))

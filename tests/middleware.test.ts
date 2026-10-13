@@ -252,8 +252,8 @@ describe("front porch session middleware", () => {
         "/explore?scope=CO&county=08001&sort=score",
       ],
       [
-        "/app/compare?compare=08001,08013&return=review",
-        "/compare?compare=08001%2C08013&return=review",
+        "/app/compare?compare=08001,08013&return=review&mode=evidence",
+        "/compare?compare=08001%2C08013&return=review&mode=evidence",
       ],
       [
         "/app/assistant?conversation=abc&page_ref=kept",

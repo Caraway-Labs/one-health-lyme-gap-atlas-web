@@ -188,7 +188,10 @@ test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages",
   await page.goto("/overview");
   await expect(page).toHaveURL(/\/explore$/);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the evidence behind every county.",
+    })
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
@@ -417,7 +420,10 @@ test("retired public analytical bookmarks open Atlas Explorer", async ({
     await page.goto(item.start);
     await expect(page).toHaveURL(/\/explore/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     const params = new URL(page.url()).searchParams;
     expect(params.get("county")).toBe(item.county);

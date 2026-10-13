@@ -56,7 +56,7 @@ Browse is the current Review surface: map, list, and compact preview when `count
 | Source | Recorded target | State |
 | --- | --- | --- |
 | `/app/review` | `/explore` | Same surface. Supported Review keys stay: `scope`, `county`, `compare`, `dataset`, `period`, `sort`, `page`, `mode`, `selection`, `layer`. Other keys are dropped. |
-| `/app/compare` | `/compare` | Same surface. Supported Compare keys stay, including `return`. |
+| `/app/compare` | `/compare` | Same surface. Supported Compare keys stay, including `return` and `mode`. |
 | `/app/assistant` | `/askatlas` | Same surface. `county`, `dataset`, `conversation`, and `page_ref` stay. |
 | `/app`, `/app/explore` | `/explore` | Browse. Historical alias query rewrite, not the same-surface copy. |
 | `/app/investigate`, `/investigate` | `/explore` | `mode=evidence` when `county` is one valid FIPS. Otherwise browse with no county. |
@@ -117,7 +117,7 @@ These are dropped when an alias redirects. They are not Explorer state:
 | `release` | Not a URL key. Release identity is `dataset`. | Dropped. Not aliased onto `dataset`. |
 | `layer` | Review map layer. `/app/explore` uses `metric` instead. | Kept on `/app/review` → `/explore`. Dropped from any historical alias. Not aliased onto `metric`. |
 | `fips` | Not a URL key. The county key is `county`. | Dropped. |
-| `mode` on an alias | Not a current route contract | The source path chooses `evidence` or `follow-up`. An incoming `mode` does not override that. |
+| `mode` on an alias | Explorer view, and Compare's return restoration | Kept on `/app/review` → `/explore` and on `/app/compare` → `/compare`. Compare reads `mode` only to restore that Explorer view on return. Historical aliases drop an incoming `mode`; the source path chooses `evidence` or `follow-up`. |
 
 Hashes are not copied. `#atlas`, `#methods`, and `#scoring` are legacy Overview fragments (`legacyAnalyticalFragmentHref`). They are not Explorer anchors. The recorded redirect does not append a hash. `mode=follow-up` is the Suggested follow-up restoration target so a missing hash cannot jump to the top of the page.
 

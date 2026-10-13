@@ -67,7 +67,7 @@ export const UX_RESET_HANDOFF_EXPORT: Record<
 export const UX_RESET_PAGE_LOCAL_PARAM_KEYS = {
   action: ["plan", "role"] as const,
   assistant: ["conversation", "page_ref"] as const,
-  compare: ["metric", "return"] as const,
+  compare: ["metric", "mode", "return"] as const,
   explore: ["view", "metric", "page", "selected", "map_scope"] as const,
   feed: ["tab"] as const,
   investigate: ["evidence", "eco", "breakpoint", "missing", "q"] as const,

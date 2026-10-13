@@ -98,12 +98,12 @@ async function expectHistoryNavigation(
 
 const WORKSPACE_DESTINATIONS = [
   {
-    heading: "Atlas Explorer",
+    heading: "Explore the evidence behind every county.",
     path: "/explore",
     title: "Atlas Explorer | One Health Lyme Gap Atlas",
   },
   {
-    heading: "Compare",
+    heading: "Two counties. A clearer picture.",
     path: "/compare",
     title: "Compare | One Health Lyme Gap Atlas",
   },

@@ -11,7 +11,10 @@ test("retired Geographic Explorer view bookmarks open Atlas Explorer browse", as
     await expect(page).toHaveURL(/\/explore\?.*county=08001/);
     expect(new URL(page.url()).searchParams.get("view")).toBeNull();
     await expect(
-      page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the evidence behind every county.",
+      })
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Geographic tiles" })

@@ -21,7 +21,10 @@ test("an overview bookmark opens Atlas Explorer browse and drops score filters",
   });
   expect(url.hash).toBe("");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the evidence behind every county.",
+    })
   ).toBeVisible();
 });
 

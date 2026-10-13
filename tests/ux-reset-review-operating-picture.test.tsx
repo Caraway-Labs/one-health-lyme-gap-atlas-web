@@ -63,7 +63,19 @@ vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
 }));
 
 vi.mock(import("@/components/atlas-map"), () => ({
-  AtlasMap: () => <div data-testid="mock-atlas-map" />,
+  AtlasMap: ({
+    includeUnscoredCounties = true,
+    scores = [],
+  }: {
+    includeUnscoredCounties?: boolean;
+    scores?: readonly { fips: string }[];
+  }) => (
+    <div
+      data-include-unscored={includeUnscoredCounties ? "true" : "false"}
+      data-map-fips={scores.map((entry) => entry.fips).join(" ")}
+      data-testid="mock-atlas-map"
+    />
+  ),
 }));
 
 vi.mock(import("@/lib/county-geography"), async (importOriginal) => {
@@ -297,6 +309,192 @@ describe("Review operating picture state", () => {
         geometry.mockImplementation(restore);
       }
     }
+  });
+
+  it("limits the map to eligible counties and names an empty filter", async () => {
+    cleanup();
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const geometry = vi.mocked(fetchCountyDisplayGeometry);
+    const restore = geometry.getMockImplementation();
+    geometry.mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-105.2, 40], type: "Point" },
+          properties: { fips: "08013" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const review = buildStateReview({
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Adams",
+          fips: "08001",
+          reasonText: "Adams was returned by the method.",
+        }),
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Boulder",
+          fips: "08013",
+          reasonText: "Boulder was returned by the method.",
+        }),
+      ],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      const { unmount } = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            availableDataGate={{ fips: new Set(["08001"]), kind: "ready" }}
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        if (!screen.queryByTestId("mock-atlas-map")) {
+          throw new Error("filtered map was not drawn");
+        }
+      });
+      expect({
+        candidates: screen
+          .getAllByTestId("review-candidate")
+          .map((row) => row.dataset.fips),
+        includeUnscored:
+          screen.getByTestId("mock-atlas-map").dataset.includeUnscored,
+        mapFips: screen.getByTestId("mock-atlas-map").dataset.mapFips,
+        missingShapes: screen.queryByTestId("review-state-map-empty"),
+        regionFips: screen.getByTestId("review-state-map-region").dataset
+          .mapFips,
+      }).toStrictEqual({
+        candidates: ["08001"],
+        includeUnscored: "false",
+        mapFips: "08001",
+        missingShapes: null,
+        regionFips: "08001",
+      });
+      unmount();
+
+      const empty = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            availableDataGate={{ fips: new Set(), kind: "ready" }}
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        if (!screen.queryByTestId("explorer-map-available-data-empty")) {
+          throw new Error("empty filter message was not shown");
+        }
+      });
+      expect({
+        candidates: screen.queryAllByTestId("review-candidate"),
+        empty: screen.getByTestId("explorer-map-available-data-empty")
+          .textContent,
+        listEmpty: screen.getByTestId("explorer-available-data-empty")
+          .textContent,
+        map: screen.queryByTestId("mock-atlas-map"),
+        missingShapes: screen.queryByTestId("review-state-map-empty"),
+      }).toStrictEqual({
+        candidates: [],
+        empty: "No published counties match the Available data filter.",
+        listEmpty: "No published counties match the Available data filter.",
+        map: null,
+        missingShapes: null,
+      });
+      empty.unmount();
+    } finally {
+      cleanup();
+      if (restore) {
+        geometry.mockImplementation(restore);
+      }
+    }
+  });
+
+  it("hides counties while a restrictive available-data filter is loading or failed", async () => {
+    cleanup();
+    const review = buildStateReview({
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Adams",
+          fips: "08001",
+          reasonText: "Adams was returned by the method.",
+        }),
+      ],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { unmount } = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          availableDataGate={{ kind: "loading" }}
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    expect({
+      candidates: screen.queryByTestId("review-candidate"),
+      empty: screen.queryByTestId("explorer-available-data-empty"),
+      list: screen.getByTestId("explorer-available-data-loading").textContent,
+      map: screen.queryByTestId("mock-atlas-map"),
+      mapMessage: screen.getByTestId("explorer-map-available-data-loading")
+        .textContent,
+    }).toStrictEqual({
+      candidates: null,
+      empty: null,
+      list: "Checking counties for the Available data filter…",
+      map: null,
+      mapMessage: "Checking counties for the Available data filter…",
+    });
+    unmount();
+
+    const failed = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          availableDataGate={{ kind: "error" }}
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    expect({
+      candidates: screen.queryByTestId("review-candidate"),
+      list: screen.getByTestId("explorer-available-data-error").textContent,
+      map: screen.queryByTestId("mock-atlas-map"),
+      mapMessage: screen.getByTestId("explorer-map-available-data-error")
+        .textContent,
+    }).toStrictEqual({
+      candidates: null,
+      list: "Available data could not be applied. Counties stay hidden until the filter can be checked.",
+      map: null,
+      mapMessage:
+        "Available data could not be applied. Counties stay hidden until the filter can be checked.",
+    });
+    failed.unmount();
+    cleanup();
   });
 
   it("builds a limited candidate preview from the returned record", () => {

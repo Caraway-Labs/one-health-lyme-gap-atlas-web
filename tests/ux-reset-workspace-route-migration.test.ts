@@ -572,17 +572,21 @@ describe("six-page workspace route migration", () => {
       redirectView(
         migrate(
           "/app/compare",
-          "return=investigate&compare=06037,06059&conversation=abc"
+          "return=investigate&compare=06037,06059&mode=evidence&conversation=abc"
         )
       )
     ).toStrictEqual({
       compareTruncated: false,
       droppedKeys: ["conversation"],
-      href: "/compare?return=investigate&compare=06037%2C06059",
+      href: "/compare?return=investigate&compare=06037%2C06059&mode=evidence",
       kind: "redirect",
       mode: null,
       pathname: "/compare",
-      query: { compare: "06037,06059", return: "investigate" },
+      query: {
+        compare: "06037,06059",
+        mode: "evidence",
+        return: "investigate",
+      },
     });
     expect(
       redirectView(

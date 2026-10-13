@@ -26,7 +26,7 @@ export function ReviewScopeSelector({
 
   return (
     <label className="ux-reset-review-scope-field">
-      <span className="type-small">Jurisdiction</span>
+      <span className="type-small">State</span>
       <Select
         value={value}
         onValueChange={(next) => {
@@ -38,8 +38,8 @@ export function ReviewScopeSelector({
         }}
       >
         <SelectTrigger
-          aria-label="Jurisdiction"
-          className="h-11 w-full max-w-md"
+          aria-label="State"
+          className="h-11 w-full"
           data-testid="review-scope-select"
         >
           <SelectValue>{reviewScopeLabel(scope, stateOptions)}</SelectValue>
