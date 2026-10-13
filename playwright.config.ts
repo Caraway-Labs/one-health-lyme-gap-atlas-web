@@ -1,4 +1,6 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
+
+import { atlasBrowserProjects } from "./scripts/playwright-projects";
 
 const productionVisuals = process.env.ATLAS_VISUAL_PRODUCTION === "1";
 
@@ -10,10 +12,9 @@ export default defineConfig({
     : "test-results/playwright",
   timeout: 60_000,
   workers: 1,
-  projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
-  ],
+  // Desktop Chromium is the release project. Pixel 7 is added only for
+  // `--project=mobile` or ATLAS_E2E_MOBILE=1. See docs/ci.md.
+  projects: atlasBrowserProjects(),
   testDir: "./tests/e2e",
   testIgnore: productionVisuals ? undefined : "**/front-porch-visual.spec.ts",
   testMatch: productionVisuals ? "**/front-porch-visual.spec.ts" : undefined,
