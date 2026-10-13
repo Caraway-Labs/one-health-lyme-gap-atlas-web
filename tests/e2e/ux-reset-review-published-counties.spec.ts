@@ -160,7 +160,7 @@ test.describe("Published Review county exploration", () => {
       "Unsupported"
     );
     const result = await new AxeBuilder({ page })
-      .include(".ux-reset-review-operating-side")
+      .include(".ux-reset-explorer-list, .ux-reset-explorer-preview")
       .analyze();
     expect(result.violations).toEqual([]);
   });
@@ -173,7 +173,7 @@ test.describe("Published Review county exploration", () => {
     await expect(page).not.toHaveURL(/county=/);
     await choose(page, "01001");
     await page
-      .getByRole("combobox", { name: "Review scope", exact: true })
+      .getByRole("combobox", { name: "Jurisdiction", exact: true })
       .click();
     await page
       .getByRole("option", { name: "Colorado (CO)", exact: true })

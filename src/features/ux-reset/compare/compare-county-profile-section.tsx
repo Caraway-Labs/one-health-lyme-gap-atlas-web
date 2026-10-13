@@ -13,11 +13,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  CompareCompactEvidence,
+  compareReaderState,
+} from "@/features/ux-reset/compare/compare-compact-evidence";
+import {
   compareProfilePeriodQualification,
   type CompareProfileAlignment,
   type CompareProfileCell,
+  type CompareProfileRowId,
 } from "@/features/ux-reset/compare/compare-county-profile";
-import { EvidenceObject } from "@/features/ux-reset/evidence";
 
 function profileRetryLabel(coolingDown: boolean, retrying: boolean): string {
   if (coolingDown && retrying) {
@@ -45,7 +49,7 @@ function ProfileCellView({
         data-observation={cell.reason}
         data-testid={`compare-profile-cell-${rowId}-${fips}`}
       >
-        {cell.message}
+        {compareReaderState(cell.reason, cell.message)}
       </p>
     );
   }
@@ -82,14 +86,66 @@ function ProfileCellView({
       data-observation="present"
       data-testid={`compare-profile-cell-${rowId}-${fips}`}
     >
-      <EvidenceObject claimHeadingLevel="h3" model={cell.evidence} showReason />
+      <CompareCompactEvidence model={cell.evidence} />
     </div>
   );
+}
+
+const compactCellClass = "h-auto whitespace-normal align-top";
+
+export function CompareProfileRows({
+  alignment,
+  leftLabel,
+  rightLabel,
+  rowIds,
+  rowNote,
+}: {
+  alignment: CompareProfileAlignment;
+  leftLabel: string;
+  rightLabel: string;
+  rowIds?: readonly CompareProfileRowId[];
+  rowNote?: (rowId: CompareProfileRowId) => string | null;
+}) {
+  const rows = rowIds
+    ? rowIds.flatMap((id) => {
+        const row = alignment.rows.find((entry) => entry.id === id);
+        return row ? [row] : [];
+      })
+    : alignment.rows;
+  return rows.map((row) => (
+    <TableRow
+      data-row-id={row.id}
+      data-testid={`compare-profile-row-${row.id}`}
+      key={row.id}
+    >
+      <TableHead className={compactCellClass} scope="row">
+        <span>{row.label}</span>
+        {rowNote?.(row.id) ? (
+          <span className="type-small">{rowNote(row.id)}</span>
+        ) : null}
+      </TableHead>
+      <TableCell className={compactCellClass} data-county={leftLabel}>
+        <ProfileCellView
+          cell={row.left}
+          fips={alignment.leftFips}
+          rowId={row.id}
+        />
+      </TableCell>
+      <TableCell className={compactCellClass} data-county={rightLabel}>
+        <ProfileCellView
+          cell={row.right}
+          fips={alignment.rightFips}
+          rowId={row.id}
+        />
+      </TableCell>
+    </TableRow>
+  ));
 }
 
 export function CompareCountyProfileSection({
   alignment,
   coolingDown = false,
+  embedded = false,
   error,
   leftLabel,
   loading,
@@ -100,6 +156,7 @@ export function CompareCountyProfileSection({
 }: {
   alignment: CompareProfileAlignment | null;
   coolingDown?: boolean;
+  embedded?: boolean;
   error: string | null;
   leftLabel: string;
   loading: boolean;
@@ -119,15 +176,20 @@ export function CompareCountyProfileSection({
       data-release-mismatch={alignment?.releaseMismatch ? "true" : "false"}
       data-testid="compare-profile-section"
     >
-      <AtlasSectionHeader
-        description="Original values for each county. No rank and no calculated difference."
-        eyebrow="County record"
-        headingLevel="h2"
-        title="Published county evidence"
-      />
-      <p className="type-body" data-testid="compare-profile-comparability">
-        {compareProfilePeriodQualification(period)}
-      </p>
+      {embedded ? null : (
+        <AtlasSectionHeader
+          description="Original values for each county. No rank and no calculated difference."
+          eyebrow="County record"
+          headingLevel="h2"
+          title="Published county evidence"
+        />
+      )}
+      <details className="ux-reset-compare-qualification">
+        <summary>How these county-record rows are dated</summary>
+        <p className="type-small" data-testid="compare-profile-comparability">
+          {compareProfilePeriodQualification(period)}
+        </p>
+      </details>
       {loading ? (
         <AtlasStatusMessage tone="loading">
           <p data-testid="compare-profile-loading">
@@ -205,7 +267,7 @@ export function CompareCountyProfileSection({
           </p>
         </AtlasStatusMessage>
       ) : null}
-      {alignment ? (
+      {alignment && !embedded ? (
         <div data-testid="compare-profile">
           <Table>
             <TableCaption>
@@ -214,37 +276,23 @@ export function CompareCountyProfileSection({
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead scope="col">County record</TableHead>
-                <TableHead scope="col">{leftLabel}</TableHead>
-                <TableHead scope="col">{rightLabel}</TableHead>
+                <TableHead className={compactCellClass} scope="col">
+                  Evidence measure
+                </TableHead>
+                <TableHead className={compactCellClass} scope="col">
+                  {leftLabel}
+                </TableHead>
+                <TableHead className={compactCellClass} scope="col">
+                  {rightLabel}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {alignment.rows.map((row) => (
-                <TableRow
-                  data-row-id={row.id}
-                  data-testid={`compare-profile-row-${row.id}`}
-                  key={row.id}
-                >
-                  <TableHead scope="row">
-                    <span className="type-card">{row.label}</span>
-                  </TableHead>
-                  <TableCell>
-                    <ProfileCellView
-                      cell={row.left}
-                      fips={alignment.leftFips}
-                      rowId={row.id}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <ProfileCellView
-                      cell={row.right}
-                      fips={alignment.rightFips}
-                      rowId={row.id}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              <CompareProfileRows
+                alignment={alignment}
+                leftLabel={leftLabel}
+                rightLabel={rightLabel}
+              />
             </TableBody>
           </Table>
         </div>

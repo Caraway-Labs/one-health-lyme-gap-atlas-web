@@ -45,7 +45,7 @@ export function parseCompareReturnTarget(
 export function compareReturnLabel(target: CompareReturnTarget): string {
   switch (target) {
     case "review": {
-      return "Return to Atlas Explorer";
+      return "Return to Explorer";
     }
     case "investigate": {
       return "Return to county evidence";

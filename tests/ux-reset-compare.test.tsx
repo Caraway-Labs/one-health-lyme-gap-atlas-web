@@ -301,7 +301,7 @@ describe("two-county aligned comparison", () => {
     expect(screen.getByTestId("compare-workspace").dataset.recovery).toBe(
       "empty"
     );
-    expect(screen.getByTestId("compare-recovery").textContent).toContain(
+    expect(screen.getByTestId("compare-empty").textContent).toContain(
       "will not select"
     );
     expect(screen.queryByTestId("compare-alignment")).toBeNull();
@@ -321,7 +321,7 @@ describe("two-county aligned comparison", () => {
     expect(screen.getByTestId("compare-workspace").dataset.recovery).toBe(
       "partial"
     );
-    expect(screen.getByTestId("compare-recovery").textContent).toContain(
+    expect(screen.getByTestId("compare-empty").textContent).toContain(
       "second county"
     );
     expect(observationRequests).toStrictEqual([]);
@@ -491,7 +491,7 @@ describe("two-county aligned comparison", () => {
     renderCompare("?compare=08001,08013&scope=CO");
     await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
     fireEvent.click(
-      screen.getByRole("button", { name: /Remove Boulder, Colorado/ })
+      screen.getByRole("button", { name: "Clear second county" })
     );
     await waitForPair("08001");
     expect(navigationSearchParams.get("compare")).toBe("08001,08013");
@@ -977,7 +977,7 @@ describe("two-county aligned comparison", () => {
       returnParam: openedHref.includes("return="),
     }).toStrictEqual({
       county: true,
-      label: "Return to Atlas Explorer",
+      label: "Return to Explorer",
       pair: true,
       path: true,
       returnParam: false,
@@ -1085,17 +1085,21 @@ describe("two-county aligned comparison", () => {
   it("leaves a direct link usable when return is absent or invalid", async () => {
     const direct = renderCompare("?compare=08001,08013&scope=CO");
     await waitForPair("08001,08013");
-    expect(screen.queryByTestId("compare-return")).toBeNull();
+    expect(screen.getByTestId("compare-return").textContent).toBe(
+      "Return to Explorer"
+    );
     expect(screen.getByTestId("compare-workspace").dataset.return).toBe("");
     direct.unmount();
 
     renderCompare("?compare=08001,not-a-fips&return=assistant");
     await waitForPair("08001");
-    expect(screen.queryByTestId("compare-return")).toBeNull();
+    expect(screen.getByTestId("compare-return").textContent).toBe(
+      "Return to Explorer"
+    );
     expect(screen.getByTestId("compare-workspace").dataset.pairIssue).toBe(
       "invalid"
     );
-    expect(screen.getByTestId("compare-recovery").textContent).toContain(
+    expect(screen.getByTestId("compare-empty").textContent).toContain(
       "second county"
     );
   });

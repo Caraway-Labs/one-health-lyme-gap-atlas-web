@@ -293,6 +293,10 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(
       page.getByTestId("review-preview-qualification")
     ).toContainText("not treated as zero");
+    const scoreSummary = page
+      .getByTestId("review-county-preview")
+      .locator("summary", { hasText: "Score and methodology" });
+    await scoreSummary.click();
     await expect(
       page.getByTestId("review-county-preview").getByText("Inspect provenance")
     ).toBeVisible();

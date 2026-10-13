@@ -3,16 +3,25 @@
 import publicCopy from "@caraway-labs/one-health-lyme-gap-atlas-knowledge-graph/public-copy";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { AssistantCountyContextNotice } from "@/components/assistant-county-context";
 import { EvidenceChatAnswerSources } from "@/components/evidence-chat-answer-sources";
 import {
+  AskAtlasHistoryControl,
   ChatHistoryEmptyHint,
   ChatHistoryMobileToggle,
 } from "@/components/evidence-chat-history";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import { atlasAssistantWorkspaceHeadingId } from "@/lib/assistant-entry-points";
@@ -50,7 +59,10 @@ export function EvidenceChatConversationContent({
     active,
     ask,
     charCountNearLimit,
+    clearAllConversations,
+    composerHasUnsentText,
     conversations,
+    deleteOne,
     editQuestion,
     failure,
     failureRegionRef,
@@ -63,6 +75,7 @@ export function EvidenceChatConversationContent({
     mode,
     pending,
     retryQuestion,
+    selectConversation,
     setMessage,
     setMobileHistoryOpen,
     showEmptyState,
@@ -114,6 +127,14 @@ export function EvidenceChatConversationContent({
   const Heading = headingLevel === 2 ? "h2" : "h1";
   const askAtlasPage = presentation === "ask-atlas";
   const heading = askAtlasPage ? "Ask Atlas" : "Atlas Assistant";
+  const [confirmNewChat, setConfirmNewChat] = useState(false);
+  const requestNewChat = () => {
+    if (composerHasUnsentText()) {
+      setConfirmNewChat(true);
+      return;
+    }
+    startNewChat();
+  };
 
   return (
     <ChatPanel
@@ -123,28 +144,47 @@ export function EvidenceChatConversationContent({
         : {})}
     >
       <PanelHeader className="chat-panel-header">
-        <div>
-          {askAtlasPage ? (
-            <Badge variant="outline">Reviewed literature</Badge>
-          ) : (
+        {askAtlasPage ? (
+          <div className="ux-reset-ask-atlas-title-block">
+            <div className="ux-reset-ask-atlas-heading">
+              <Heading id={assistantHeadingId}>{heading}</Heading>
+              <Badge variant="outline">Reviewed literature</Badge>
+            </div>
+            <p className="ux-reset-ask-atlas-intro">
+              Explore reviewed research on Lyme disease and ticks.
+            </p>
+          </div>
+        ) : (
+          <div>
             <span className="kicker">Reviewed literature</span>
-          )}
-          <Heading id={assistantHeadingId}>{heading}</Heading>
-        </div>
+            <Heading id={assistantHeadingId}>{heading}</Heading>
+          </div>
+        )}
         <div className="chat-panel-header-actions">
-          {mode === "workspace" && (
+          {askAtlasPage ? (
+            <AskAtlasHistoryControl
+              activeConversationId={active?.id}
+              composerFocusRef={inputRef}
+              conversations={conversations}
+              onClearAll={clearAllConversations}
+              onDelete={deleteOne}
+              onSelect={selectConversation}
+            />
+          ) : null}
+          {mode === "workspace" && !askAtlasPage ? (
             <ChatHistoryMobileToggle
               conversationCount={conversations.length}
+              label="Recent chats"
               mobileToggleRef={mobileHistoryToggleRef}
               onOpenChange={setMobileHistoryOpen}
               open={mobileHistoryOpen}
             />
-          )}
+          ) : null}
           <Button
             variant="secondary"
             {...analyticsControlAttributes("evidence_chat_new")}
             type="button"
-            onClick={() => startNewChat()}
+            onClick={requestNewChat}
           >
             New chat
           </Button>
@@ -193,7 +233,7 @@ export function EvidenceChatConversationContent({
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => startNewChat()}
+                    onClick={requestNewChat}
                     {...analyticsControlAttributes("evidence_chat_new")}
                   >
                     New chat
@@ -307,11 +347,10 @@ export function EvidenceChatConversationContent({
             visible={showEmptyState && showStarterPrompts}
           />
         )}
-        {askAtlasPage ? (
-          <p className="medical-notice">{publicCopy.medical_notice}</p>
-        ) : null}
         <form className="chat-form" onSubmit={submit}>
-          <label htmlFor={`chat-message-${mode}`}>Your question</label>
+          <label htmlFor={`chat-message-${mode}`}>
+            {askAtlasPage ? "Your research question" : "Your question"}
+          </label>
           <textarea
             id={`chat-message-${mode}`}
             ref={inputRef}
@@ -321,10 +360,18 @@ export function EvidenceChatConversationContent({
             aria-describedby={charCountNearLimit ? charCountId : undefined}
             onChange={(event) => setMessage(event.target.value)}
             disabled={pending}
-            placeholder="What does reviewed evidence say about…"
+            placeholder={
+              askAtlasPage
+                ? "What does reviewed research say about…"
+                : "What does reviewed evidence say about…"
+            }
           />
           <div className="chat-form-actions">
-            {charCountNearLimit ? (
+            {askAtlasPage ? (
+              <small id={charCountId} className="chat-char-count">
+                Up to 1,000 characters
+              </small>
+            ) : charCountNearLimit ? (
               <small
                 id={charCountId}
                 className="chat-char-count chat-char-count-near-limit"
@@ -345,6 +392,9 @@ export function EvidenceChatConversationContent({
               Ask
             </Button>
           </div>
+          {askAtlasPage ? (
+            <p className="medical-notice">{publicCopy.medical_notice}</p>
+          ) : null}
         </form>
         <PanelFooter className="chat-attribution">
           Data supplied by the NCBI. NCBI does not endorse this product.{" "}
@@ -363,6 +413,38 @@ export function EvidenceChatConversationContent({
             ))}
         </PanelFooter>
       </div>
+      <Dialog onOpenChange={setConfirmNewChat} open={confirmNewChat}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start a new chat?</DialogTitle>
+            <DialogDescription>
+              The question in the composer has not been sent. Starting a new
+              chat clears that text.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setConfirmNewChat(false);
+                inputRef.current?.focus();
+              }}
+            >
+              Keep question
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setConfirmNewChat(false);
+                startNewChat();
+              }}
+            >
+              Start new chat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ChatPanel>
   );
 }

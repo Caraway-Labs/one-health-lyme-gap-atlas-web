@@ -12,7 +12,6 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 import {
@@ -416,12 +415,14 @@ export function ReviewNationalOrientationView({
   };
 
   return (
-    <Card data-testid="review-national-orientation">
-      <CardHeader>
-        <h2 className="type-card">{reviewStateNavigationCopy.heading}</h2>
+    <div
+      className="ux-reset-explorer-browse"
+      data-testid="review-national-orientation"
+    >
+      <div className="ux-reset-explorer-list ux-reset-review-state-nav">
+        <h2 className="type-card">County list</h2>
+        <h3 className="sr-only">{reviewStateNavigationCopy.heading}</h3>
         <p className="type-body">{reviewStateNavigationCopy.description}</p>
-      </CardHeader>
-      <CardContent className="ux-reset-review-state-nav">
         <p className="type-small" id={instructionsId}>
           {reviewStateNavigationCopy.instructions}
         </p>
@@ -556,7 +557,18 @@ export function ReviewNationalOrientationView({
             );
           })}
         </ul>
-      </CardContent>
-    </Card>
+      </div>
+      <aside className="ux-reset-explorer-preview">
+        <p className="eyebrow">Selected county</p>
+        <p className="type-body">
+          No county is selected. Choose a state to open its counties. National
+          ranking is unavailable, and that is not low priority.
+        </p>
+        <p className="type-small">
+          This map shows state boundaries so you can open a state. It is not an
+          Atlas gap score map.
+        </p>
+      </aside>
+    </div>
   );
 }

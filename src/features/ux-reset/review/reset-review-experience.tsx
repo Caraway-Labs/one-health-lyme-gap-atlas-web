@@ -26,6 +26,11 @@ import {
   explorerFollowUpState,
   explorerReviewLoad,
 } from "@/features/ux-reset/review/explorer-follow-up";
+import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
+import {
+  explorerMapLayerById,
+  type ExplorerMapLayerId,
+} from "@/features/ux-reset/review/explorer-map-layers";
 import {
   EXPLORER_EVIDENCE_MODE,
   EXPLORER_SELECTION_REQUIRED,
@@ -90,6 +95,12 @@ function ResetReviewExperienceInner() {
   );
   const userChoseScopeRef = useRef(false);
   const [userChoseScope, setUserChoseScope] = useState(false);
+  const [countyQuery, setCountyQuery] = useState("");
+  const [countyQueryScope, setCountyQueryScope] = useState(scope);
+  if (countyQueryScope !== scope) {
+    setCountyQueryScope(scope);
+    setCountyQuery("");
+  }
   const rewrittenScopeKey = useRef<string | null>(null);
   const replacedModeKey = useRef<string | null>(null);
   const pendingLeaveRef = useRef<string | null>(null);
@@ -168,6 +179,13 @@ function ResetReviewExperienceInner() {
       void setUrlState({ scope: nextScope }, { history: "replace" });
     },
     [scope, setUrlState]
+  );
+  const mapLayer = explorerMapLayerById(urlState.layer).id;
+  const setMapLayer = useCallback(
+    (layerId: ExplorerMapLayerId) => {
+      void setUrlState({ layer: layerId });
+    },
+    [setUrlState]
   );
   const setCounty = useCallback(
     (fips: string | null, history: "push" | "replace") => {
@@ -386,38 +404,52 @@ function ResetReviewExperienceInner() {
   });
 
   return (
-    <>
+    <div className="ux-reset-explorer-page">
       {explorerMode ? null : (
         <ReviewAskAtlasPublisher context={reviewAskContext} />
       )}
-      <header className="ux-reset-page-header">
+      <header className="ux-reset-explorer-heading">
         <h1>{route.label}</h1>
-        <p className="type-body">{route.description}</p>
+        <p>Explore county surveillance evidence and what to verify next.</p>
       </header>
 
-      <div className="ux-reset-review-toolbar">
+      <div className="ux-reset-explorer-toolbar">
         <ReviewScopeSelector
           scope={scope}
           stateOptions={stateOptions}
           onScopeChange={setScope}
         />
+        <ExplorerMapLayerControl
+          layerId={mapLayer}
+          onLayerChange={setMapLayer}
+        />
+        {scope !== "ALL" && !scopeUnsupported ? (
+          <label
+            className="ux-reset-review-scope-field"
+            htmlFor="explorer-county-search"
+          >
+            County or FIPS
+            <input
+              id="explorer-county-search"
+              placeholder="Search counties"
+              type="search"
+              value={countyQuery}
+              onChange={(event) => {
+                setCountyQuery(event.target.value);
+              }}
+            />
+          </label>
+        ) : null}
         {scopeViewReady ? (
           <p
-            className="type-body ux-reset-review-scope-status"
+            className="sr-only"
             data-request-scope={renderedScope}
             data-testid="review-scope-status"
           >
-            Showing results for <strong>{scopeLabel}</strong>
+            Showing results for {scopeLabel}
           </p>
         ) : null}
       </div>
-
-      <ReviewReleaseEvidence
-        errorMessage={presentationQuery.metadataError}
-        isError={presentationQuery.metadataIsError}
-        isLoading={metadataLoading}
-        metadata={presentationQuery.metadata}
-      />
 
       {metadataLoading || startingScopePending ? (
         <AtlasStatusMessage tone="loading">
@@ -491,6 +523,8 @@ function ResetReviewExperienceInner() {
               <ReviewOperatingPicture
                 county={reviewCounty}
                 freezeCountySelection={explorerMode !== null}
+                mapLayer={mapLayer}
+                countyQuery={countyQuery}
                 period={urlState.period}
                 requireExplicitCountySelection={
                   urlState.selection === EXPLORER_SELECTION_REQUIRED
@@ -506,7 +540,16 @@ function ResetReviewExperienceInner() {
           </section>
         ) : null}
       </div>
-    </>
+      <details className="ux-reset-explorer-release">
+        <summary>Release and methodology</summary>
+        <ReviewReleaseEvidence
+          errorMessage={presentationQuery.metadataError}
+          isError={presentationQuery.metadataIsError}
+          isLoading={metadataLoading}
+          metadata={presentationQuery.metadata}
+        />
+      </details>
+    </div>
   );
 }
 

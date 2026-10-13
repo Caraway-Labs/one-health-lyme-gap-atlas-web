@@ -151,13 +151,23 @@ test.describe("P0 evidence catalog", () => {
     test(`${story.id} renders without a service request`, async ({ page }) => {
       const traffic = track(page);
       await openStory(page, story.id);
-      await expect(
-        page.getByText(story.text, { exact: false }).first()
-      ).toBeVisible();
+      const reveal = async () => {
+        const target = page.getByText(story.text, { exact: false }).first();
+        await target.waitFor({ state: "attached" });
+        await target.evaluate((element) => {
+          let node = element.parentElement;
+          while (node) {
+            if (node instanceof HTMLDetailsElement) {
+              node.open = true;
+            }
+            node = node.parentElement;
+          }
+        });
+        await expect(target).toBeVisible();
+      };
+      await reveal();
       await page.reload();
-      await expect(
-        page.getByText(story.text, { exact: false }).first()
-      ).toBeVisible();
+      await reveal();
       expect(traffic.blocked).toEqual([]);
       expect(traffic.errors).toEqual([]);
     });
@@ -311,6 +321,7 @@ test.describe("P0 evidence catalog", () => {
     await expect(page.getByTestId("preview-action")).toHaveText(
       "Last preview action: None"
     );
+    await page.locator("summary", { hasText: "Score and methodology" }).click();
     await page.getByText("Inspect provenance").click();
     const source = page.getByRole("link", { name: "Open source reference" });
     await source.evaluate((anchor) => {

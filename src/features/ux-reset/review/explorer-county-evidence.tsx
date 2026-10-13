@@ -1,5 +1,6 @@
 "use client";
 
+import { Zap } from "lucide-react";
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 
@@ -168,7 +169,7 @@ function SuggestedFollowUp({
       id={EXPLORER_SECTION_IDS.followUp}
     >
       <h2 ref={headingRef} tabIndex={-1}>
-        Suggested follow-up
+        <Zap aria-hidden="true" /> Suggested follow-up
       </h2>
       {status === "loading" ? (
         <AtlasStatusMessage tone="loading">
@@ -354,6 +355,14 @@ export function ExplorerCountyEvidence({
       data-testid="explorer-county-evidence"
     >
       <section aria-label="County summary" id={EXPLORER_SECTION_IDS.summary}>
+        <Button
+          data-testid="explorer-back-to-map"
+          type="button"
+          variant="secondary"
+          onClick={onBackToMap}
+        >
+          Back to map
+        </Button>
         <p className="eyebrow">County evidence</p>
         <h2
           ref={headingRef}
@@ -369,6 +378,7 @@ export function ExplorerCountyEvidence({
           {workspace.stateLabel ? ` · ${workspace.stateLabel}` : null}
           {workspace.releaseId ? ` · Release ${workspace.releaseId}` : null}
         </p>
+        <h3>Why review this county?</h3>
         <p className="type-body" data-testid="explorer-review-category">
           {reviewCategoryCopy(followUp)}
         </p>
@@ -396,13 +406,6 @@ export function ExplorerCountyEvidence({
           />
         ) : null}
         <div className="ux-reset-explorer-actions">
-          <Button
-            data-testid="explorer-back-to-map"
-            type="button"
-            onClick={onBackToMap}
-          >
-            Back to map
-          </Button>
           {publishedCounty ? (
             <Link
               className={cn(buttonVariants({ variant: "secondary" }))}

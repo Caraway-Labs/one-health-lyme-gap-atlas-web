@@ -99,6 +99,15 @@ export function clientFailure(error: unknown): ClientFailure {
       title: "Connection problem.",
     };
   }
+  if (error.status === 502 || error.status === 503) {
+    return {
+      message:
+        "The assistant service is unavailable. This is not a finding that the Atlas corpus lacks relevant literature.",
+      retry: true,
+      state: "network_failure",
+      title: "Service unavailable.",
+    };
+  }
   if (error.status === 429) {
     return {
       message:

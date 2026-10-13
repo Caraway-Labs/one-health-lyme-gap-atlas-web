@@ -134,7 +134,7 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
   );
   await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
   await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
-  await page.getByLabel("Your question").fill(QUESTION);
+  await page.getByLabel("Your research question").fill(QUESTION);
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(
     page.getByText("Reviewed studies describe exposure.")
@@ -202,12 +202,14 @@ test("recovers an unknown conversation, a cleared history, and a failed request"
   await expect(
     page.getByText("Conversation not found in this browser.")
   ).toBeVisible();
-  await expect(page.getByLabel("Your question")).toBeEnabled();
+  await expect(page.getByLabel("Your research question")).toBeEnabled();
   expect(chatCalls).toBe(0);
   const missing = await new AxeBuilder({ page }).analyze();
   expect(missing.violations).toEqual([]);
 
-  await page.getByLabel("Your question").fill("Question during an outage");
+  await page
+    .getByLabel("Your research question")
+    .fill("Question during an outage");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(
     page.getByTestId("ask-atlas-workspace").getByRole("alert")
@@ -217,23 +219,14 @@ test("recovers an unknown conversation, a cleared history, and a failed request"
   await expect(page.getByText("Recovered after retry.")).toBeVisible();
   await expect(page.getByRole("link", { name: /Source paper/ })).toBeVisible();
 
-  const desktopClear = page.locator(
-    ".chat-history-desktop .chat-history-clear"
-  );
-  if (await desktopClear.isVisible()) {
-    await desktopClear.click();
-  } else {
-    await page.getByRole("button", { name: /Recent chats/ }).click();
-    await page
-      .locator(".chat-history-mobile-sheet .chat-history-clear")
-      .click();
-  }
+  await page.getByRole("button", { name: "Chat history" }).click();
+  await page.locator("#ask-atlas-history-panel .chat-history-clear").click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Clear all" })
     .click();
   await expect(
-    page.getByText("Ask a research question about reviewed literature.")
+    page.getByText("Start with your own question or adapt one below.")
   ).toBeVisible();
   await expect(page).not.toHaveURL(/conversation=/);
 
@@ -264,7 +257,7 @@ test("keeps a county missing from the release out of the literature request", as
   await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
   await expect(page.getByText("99999")).toHaveCount(0);
   await page
-    .getByLabel("Your question")
+    .getByLabel("Your research question")
     .fill("Question without county evidence");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(
@@ -391,7 +384,7 @@ async function expectControlReachable(control: Locator) {
 }
 
 async function expectComposerUsable(page: Page) {
-  const question = page.getByLabel("Your question");
+  const question = page.getByLabel("Your research question");
   const ask = page.getByRole("button", { name: "Ask", exact: true });
   await expectControlReachable(question);
   await question.click();
@@ -429,7 +422,7 @@ test("keeps an empty chat usable at a short landscape height", async ({
   await installChatAnswer(page);
   await page.goto("/app/assistant");
   await expect(
-    page.getByText("Ask a research question about reviewed literature.")
+    page.getByText("Start with your own question or adapt one below.")
   ).toBeVisible();
   await expectComposerUsable(page);
 });
@@ -465,7 +458,7 @@ test("keeps an empty chat usable at 200% desktop zoom", async ({ page }) => {
   await installChatAnswer(page);
   await page.goto("/app/assistant");
   await expect(
-    page.getByText("Ask a research question about reviewed literature.")
+    page.getByText("Start with your own question or adapt one below.")
   ).toBeVisible();
   const rootFont = await page.evaluate(
     () => getComputedStyle(document.documentElement).fontSize
@@ -504,7 +497,7 @@ test("scrolls the research page instead of trapping the transcript", async ({
     transcriptOverflow: "visible",
     transcriptTraps: false,
   });
-  await expectControlReachable(page.getByLabel("Your question"));
+  await expectControlReachable(page.getByLabel("Your research question"));
 });
 
 test("focuses the transcript when a saved conversation link is opened from the keyboard", async ({
@@ -578,13 +571,13 @@ test("ignores a late answer after a newer question is saved", async ({
     );
   });
   await page.goto("/app/assistant");
-  await page.getByLabel("Your question").fill("Old question");
+  await page.getByLabel("Your research question").fill("Old question");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
   await page.getByRole("button", { name: "New chat" }).first().click();
   await expect(page.getByText("Searching reviewed evidence…")).toHaveCount(0);
-  await expect(page.getByLabel("Your question")).toBeEnabled();
-  await page.getByLabel("Your question").fill("New question");
+  await expect(page.getByLabel("Your research question")).toBeEnabled();
+  await page.getByLabel("Your research question").fill("New question");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect.poll(() => pending.length).toBe(2);
   pending[1]?.resolve(undefined);
