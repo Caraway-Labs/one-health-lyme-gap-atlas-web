@@ -10,9 +10,18 @@ import {
 describe("professional app route guard", () => {
   it("recognizes the /app namespace", () => {
     expect(isProfessionalAppPath("/app")).toBeTruthy();
+    expect(isProfessionalAppPath("/app/review")).toBeTruthy();
     expect(isProfessionalAppPath("/app/explore")).toBeTruthy();
     expect(isProfessionalAppPath("/app/ai-responsible-use")).toBeTruthy();
     expect(isProfessionalAppPath("/application")).toBeFalsy();
+  });
+
+  it("guards canonical workspace paths without matching public neighbors", () => {
+    expect(isProfessionalAppPath("/explore")).toBeTruthy();
+    expect(isProfessionalAppPath("/compare")).toBeTruthy();
+    expect(isProfessionalAppPath("/askatlas")).toBeTruthy();
+    expect(isProfessionalAppPath("/explorer")).toBeFalsy();
+    expect(isProfessionalAppPath("/assistant")).toBeFalsy();
   });
 
   it("treats partial Supabase configuration as not configured", () => {
@@ -30,7 +39,7 @@ describe("professional app route guard", () => {
       shouldRedirectUnauthenticatedAppRoute({
         atlasE2E: false,
         nodeEnv: "production",
-        pathname: "/app/review",
+        pathname: "/explore",
         supabaseConfigured: true,
         userPresent: false,
       })
@@ -89,7 +98,7 @@ describe("professional app route guard", () => {
       shouldRedirectUnauthenticatedAppRoute({
         atlasE2E: true,
         nodeEnv: "development",
-        pathname: "/app/review",
+        pathname: "/explore",
         supabaseConfigured: false,
         userPresent: false,
       })

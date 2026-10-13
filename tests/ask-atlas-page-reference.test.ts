@@ -117,7 +117,7 @@ describe("Ask Atlas page reference", () => {
       periodOnAskUrl: null,
       requestFields: false,
       returnHref:
-        "/app/review?scope=CO&county=08001&dataset=alpha-2026&period=2023-01-01",
+        "/explore?scope=CO&county=08001&dataset=alpha-2026&period=2023-01-01",
       surface: "explore",
     });
     expect(state.reference.context.fields.geography).toMatchObject({
@@ -134,7 +134,7 @@ describe("Ask Atlas page reference", () => {
     const reference = pageReferenceFromContext(compareContext(), source);
     const href = askAtlasEntryHref({
       context: compareContext(),
-      pathname: "/app/compare",
+      pathname: "/compare",
       searchParams: source,
     });
     const entry = new URL(href, "http://localhost");
@@ -151,7 +151,7 @@ describe("Ask Atlas page reference", () => {
       askPeriod: null,
       kind: "validated",
       returnHref:
-        "/app/compare?scope=CO&county=08001&compare=08001%2C08013&dataset=alpha-2026&period=2023-01-01",
+        "/compare?scope=CO&county=08001&compare=08001%2C08013&dataset=alpha-2026&period=2023-01-01",
       sourceCompare: ["08001", "08013"],
       sourcePeriod: "2023-01-01",
     });
@@ -169,11 +169,11 @@ describe("Ask Atlas page reference", () => {
     entry.searchParams.set("dataset", "other-release");
     expect({
       bare: readAskAtlasPageReference(
-        "/app/assistant",
+        "/askatlas",
         new URLSearchParams("county=08001&dataset=alpha-2026")
       ).kind,
       invalid: readAskAtlasPageReference(
-        "/app/assistant",
+        "/askatlas",
         new URLSearchParams("page_ref=not-json&county=08001")
       ).kind,
       mismatched: readAskAtlasPageReference(entry.pathname, entry.searchParams)
@@ -341,7 +341,7 @@ describe("Ask Atlas page reference", () => {
       throw new Error("reference missing");
     }
     const href = askAtlasPageReferenceHref(
-      "/app/assistant",
+      "/askatlas",
       new URLSearchParams("county=08001&dataset=alpha-2026"),
       reference
     );

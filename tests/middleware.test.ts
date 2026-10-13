@@ -113,9 +113,9 @@ describe("front porch session middleware", () => {
     );
 
     expect(response.cookies.get("sb-access")?.value).toBe("refreshed");
-    expect(response.status).toBe(307);
+    expect(response.status).toBe(308);
     expect(response.headers.get("location")).toBe(
-      "http://localhost/app/review?scope=CO&county=08001"
+      "http://localhost/explore?scope=CO&county=08001"
     );
   });
 
@@ -182,6 +182,12 @@ describe("front porch session middleware", () => {
       "/overview",
       "/geographic_explorer",
       "/investigate",
+      "/explore",
+      "/explore/:path*",
+      "/compare",
+      "/compare/:path*",
+      "/askatlas",
+      "/askatlas/:path*",
     ]);
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
@@ -227,29 +233,35 @@ describe("front porch session middleware", () => {
     createServerClient.mockReturnValue({ auth: { getUser } });
 
     const cases = [
-      ["/app", "/app/review"],
-      [
-        "/app/explore?scope=NY&county=36061",
-        "/app/review?scope=NY&county=36061",
-      ],
-      [
-        "/app/investigate?county=08001",
-        "/app/review?county=08001&mode=evidence",
-      ],
-      ["/app/investigate", "/app/review"],
-      ["/app/action?county=08001", "/app/review?county=08001&mode=follow-up"],
+      ["/app", "/explore"],
+      ["/app/explore?scope=NY&county=36061", "/explore?scope=NY&county=36061"],
+      ["/app/investigate?county=08001", "/explore?county=08001&mode=evidence"],
+      ["/app/investigate", "/explore"],
+      ["/app/action?county=08001", "/explore?county=08001&mode=follow-up"],
       ["/app/action?county=08001&plan=evidence-brief", null],
-      ["/app/action", "/app/review"],
-      ["/overview?county=08001&state=CO", "/app/review?scope=CO&county=08001"],
+      ["/app/action", "/explore"],
+      ["/overview?county=08001&state=CO", "/explore?scope=CO&county=08001"],
       [
         "/geographic_explorer?selected=06037,06059",
-        "/app/review?compare=06037%2C06059",
+        "/explore?compare=06037%2C06059",
       ],
-      ["/investigate?county=not-a-county", "/app/review?selection=required"],
-      ["/app/explore?metric=reported-cases&scope=CO", "/app/review?scope=CO"],
-      ["/app/review?scope=CO&county=08001", null],
-      ["/app/compare?compare=08001,08013", null],
-      ["/app/assistant", null],
+      ["/investigate?county=not-a-county", "/explore?selection=required"],
+      ["/app/explore?metric=reported-cases&scope=CO", "/explore?scope=CO"],
+      [
+        "/app/review?scope=CO&county=08001&sort=score",
+        "/explore?scope=CO&county=08001&sort=score",
+      ],
+      [
+        "/app/compare?compare=08001,08013&return=review",
+        "/compare?compare=08001%2C08013&return=review",
+      ],
+      [
+        "/app/assistant?conversation=abc&page_ref=kept",
+        "/askatlas?conversation=abc&page_ref=kept",
+      ],
+      ["/explore?scope=CO", null],
+      ["/compare?compare=08001,08013", null],
+      ["/askatlas", null],
       ["/app/feed", null],
       ["/app/settings", null],
       ["/variant_1", null],
@@ -282,14 +294,44 @@ describe("front porch session middleware", () => {
         return {
           followUp: target === null ? null : 200,
           installedHref: target,
-          installedStatus: target === null ? null : 307,
+          installedStatus: target === null ? null : 308,
           location: target === null ? null : `http://localhost${target}`,
           path,
-          robots: workspace ? "noindex, nofollow" : null,
-          status: target === null ? 200 : 307,
+          robots:
+            workspace ||
+            pathname === "/explore" ||
+            pathname === "/compare" ||
+            pathname === "/askatlas"
+              ? "noindex, nofollow"
+              : null,
+          status: target === null ? 200 : 308,
         };
       })
     );
+  });
+
+  it("sends an unauthenticated canonical workspace URL to sign-in without a permanent redirect", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubEnv("ATLAS_E2E", "0");
+    vi.stubEnv("NODE_ENV", "production");
+    getUser.mockResolvedValue({ data: { user: null } });
+    createServerClient.mockReturnValue({ auth: { getUser } });
+
+    const response = await middleware(
+      atlasRequest("/explore?scope=CO&county=08001")
+    );
+
+    expect({
+      location: response.headers.get("location"),
+      robots: response.headers.get("x-robots-tag"),
+      status: response.status,
+    }).toStrictEqual({
+      location:
+        "http://localhost/auth/sign-in?next=%2Fexplore%3Fscope%3DCO%26county%3D08001",
+      robots: "noindex, nofollow",
+      status: 307,
+    });
   });
 
   it("serves the Front Porch without Supabase configuration", async () => {

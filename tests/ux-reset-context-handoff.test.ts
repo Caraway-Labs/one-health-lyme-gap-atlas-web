@@ -236,7 +236,7 @@ describe("UX Reset cross-page context contract", () => {
     const source = new URLSearchParams("scope=IN&county=18097&dataset=alpha");
     expect(
       uxResetDestinationHref("compare", UX_RESET_ROUTE_PATHS.review, source)
-    ).toBe("/app/compare?scope=IN&county=18097&dataset=alpha");
+    ).toBe("/compare?scope=IN&county=18097&dataset=alpha");
     expect(
       uxResetShellHandoffHref(
         "/app/investigate",

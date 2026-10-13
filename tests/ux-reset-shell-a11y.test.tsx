@@ -86,9 +86,7 @@ describe("UX Reset shell accessibility", () => {
       name: "Professional workspace",
     });
     expect(
-      navigation
-        .querySelector('a[href="/app/review"]')
-        ?.getAttribute("aria-label")
+      navigation.querySelector('a[href="/explore"]')?.getAttribute("aria-label")
     ).toBe("Atlas Explorer");
     expect(navigation.querySelector('a[href="/overview"]')).toBeNull();
     expect(

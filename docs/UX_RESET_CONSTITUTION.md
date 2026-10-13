@@ -171,8 +171,8 @@ Before new Reset UI:
 
 ## Legacy vs Reset routes
 
-- **Reset** professional routes live under `/app/*` and follow this constitution.
-- **[#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)** redirects the mapped aliases (`/app`, `/app/explore`, `/app/investigate`, `/app/action`, `/overview`, `/geographic_explorer`, `/investigate`, and `/` with a legacy analytical query) to Atlas Explorer with HTTP 307. Query preservation follows [ux-reset-six-page-route-mapping.md](./ux-reset-six-page-route-mapping.md). Invalid county input is omitted; Atlas does not invent a county.
+- **Reset** professional routes follow this constitution. Canonical workspace URLs are `/explore` (Atlas Explorer), `/compare`, `/askatlas`, `/app/feed`, `/app/settings`, and `/docs` ([#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608)).
+- **[#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608)** permanently redirects `/app/review`, `/app/compare`, and `/app/assistant` to those canonical paths with HTTP 308, preserving each page's supported query. **[#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)** aliases (`/app`, `/app/explore`, `/app/investigate`, `/app/action`, `/overview`, `/geographic_explorer`, `/investigate`, and `/` with a legacy analytical query) redirect to Atlas Explorer through the same map. Query preservation follows [ux-reset-six-page-route-mapping.md](./ux-reset-six-page-route-mapping.md). Invalid county input is omitted; Atlas does not invent a county.
 - Routes the map marks out of scope stay, including `/`, `/assistant`, `/knowledge-graph`, trust pages, and auth utilities.
 - **[#550](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/550)** retired `/variant_1`–`/variant_7`. Those URLs return HTTP 404, including query strings. Do not revive them and do not redirect them.
 

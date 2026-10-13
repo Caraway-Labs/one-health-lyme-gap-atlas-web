@@ -252,7 +252,7 @@ describe("Explorer county evidence", () => {
     expect(compareHref).toContain("county=08013");
     const askHref =
       screen.getByTestId("explorer-ask-atlas").getAttribute("href") ?? "";
-    expect(askHref).toContain("/app/assistant");
+    expect(askHref).toContain("/askatlas");
     expect(askHref).not.toContain("mode=");
   });
 

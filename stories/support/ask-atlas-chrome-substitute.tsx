@@ -54,7 +54,7 @@ export function AskAtlasChromeProvider({ children }: { children: ReactNode }) {
         <Link
           className={buttonVariants({ size: "sm", variant: "outline" })}
           data-testid="ask-atlas-launcher"
-          href="/app/assistant"
+          href="/askatlas"
         >
           Ask Atlas
         </Link>

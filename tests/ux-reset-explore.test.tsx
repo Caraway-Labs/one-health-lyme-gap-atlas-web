@@ -477,13 +477,13 @@ describe("Explore workspace", () => {
       ).toBe(EXPLORE_PRECIPITATION_MEASURE_ID)
     );
     const investigate = screen.getByTestId("explore-investigate");
-    expect(investigate.getAttribute("href")).toContain("/app/review");
+    expect(investigate.getAttribute("href")).toContain("/explore");
     expect(investigate.getAttribute("href")).toContain("mode=evidence");
     expect(investigate.getAttribute("href")).toContain("county=08001");
     expect(investigate.getAttribute("href")).not.toContain("metric=");
     expect(
       screen.getByTestId("explore-compare").getAttribute("href")
-    ).toContain("/app/compare");
+    ).toContain("/compare");
   });
 
   it("keeps the previous measure labeled until the next measure loads, then switches together", async () => {
@@ -830,7 +830,7 @@ describe("Explore workspace", () => {
     const pageHref =
       screen.getByTestId("explore-compare").getAttribute("href") ?? "";
     const shellHref = uxResetShellHandoffHref(
-      "/app/compare",
+      "/compare",
       "/app/explore",
       new URLSearchParams(conflicting)
     );
@@ -1159,7 +1159,7 @@ describe("Explore workspace", () => {
         dataset: "alpha-2026",
         geographyId: "08001",
         kind: "validated",
-        pathname: "/app/assistant",
+        pathname: "/askatlas",
         releaseId: "alpha-2026",
         returnDataset: "alpha-2026",
       },
@@ -1209,7 +1209,7 @@ describe("Explore workspace", () => {
         dataset: "alpha-2026",
         geographyId: "08001",
         kind: "validated",
-        pathname: "/app/assistant",
+        pathname: "/askatlas",
         releaseId: "alpha-2026",
         returnDataset: "alpha-2026",
       },
@@ -1289,7 +1289,7 @@ describe("Explore workspace", () => {
         dataset: "alpha-2026",
         geographyId: "08001",
         kind: "validated",
-        pathname: "/app/assistant",
+        pathname: "/askatlas",
         releaseId: "alpha-2026",
         returnDataset: "alpha-2026",
       },

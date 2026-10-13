@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/app/assistant",
+  usePathname: () => "/askatlas",
   useSearchParams: (): ReadonlyURLSearchParams =>
     new URLSearchParams() as unknown as ReadonlyURLSearchParams,
 }));
@@ -448,7 +448,7 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
   it("does not change county, metric, or scope when an answer arrives", async () => {
     const href =
       mode === "workspace"
-        ? "/app/assistant?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL"
+        ? "/askatlas?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL"
         : "/app/explore?county=08001&metric=reported-cases&scope=ALL";
     window.history.replaceState({}, "", href);
     chatRequest.mockResolvedValue({ data: literaturePayload() });
@@ -469,7 +469,7 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
       county: "08001",
       dataset: mode === "workspace" ? "alpha-2026" : null,
       metric: "reported-cases",
-      pathname: mode === "workspace" ? "/app/assistant" : "/app/explore",
+      pathname: mode === "workspace" ? "/askatlas" : "/app/explore",
       request: {
         history: [],
         message: "What does the evidence say?",

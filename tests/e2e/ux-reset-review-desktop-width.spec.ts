@@ -13,7 +13,7 @@ import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures"
  */
 const RELEASE_ID = baldwin.release.release_id;
 const COUNTY_FIPS = "01083";
-const REVIEW_PATH = `/app/review?scope=AL&dataset=${RELEASE_ID}&layer=tick_status&county=${COUNTY_FIPS}`;
+const REVIEW_PATH = `/explore?scope=AL&dataset=${RELEASE_ID}&layer=tick_status&county=${COUNTY_FIPS}`;
 const EDGE_TOLERANCE_PX = 1;
 /** 4.25rem compact shell at a 16px root. */
 const COLLAPSED_SIDEBAR_PX = 68;

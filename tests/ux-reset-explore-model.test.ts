@@ -454,7 +454,7 @@ describe("Explore release identity", () => {
   it("follows shared compare precedence when selected conflicts", () => {
     const pair = authoritativeExploreComparePair(["08013", "36001"], ["08001"]);
     const shell = uxResetShellHandoffHref(
-      "/app/compare",
+      "/compare",
       "/app/explore",
       new URLSearchParams(
         "compare=08013,36001&selected=08001&county=08001&scope=CO"

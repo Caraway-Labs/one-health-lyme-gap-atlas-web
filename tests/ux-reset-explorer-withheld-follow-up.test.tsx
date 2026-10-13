@@ -40,7 +40,7 @@ let mockedSearch = "";
 vi.mock(import("next/navigation"), async (importOriginal) => {
   const navigation = {
     ...(await importOriginal()),
-    usePathname: () => "/app/review",
+    usePathname: () => "/explore",
     useRouter: () => reviewRouter,
     useSearchParams: () =>
       new URLSearchParams(mockedSearch) as ReadonlyURLSearchParams,
@@ -138,7 +138,7 @@ function renderReview(
           onUrlUpdate?.({ history: options.history, queryString })
         }
         searchParams={
-          new URL(`http://localhost/app/review?${mockedSearch}`).search
+          new URL(`http://localhost/explore?${mockedSearch}`).search
         }
       >
         <ResetReviewExperience />

@@ -129,7 +129,7 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
   expect(accessibility.violations).toEqual([]);
 
   await page.getByRole("link", { name: FRONT_PORCH_EXPLORE_LABEL }).click();
-  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview$/);
+  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fexplore$/);
   await expectNoCountyPreselection(page);
   await expect(
     page.getByRole("heading", { name: "Sign in or create an account" })
@@ -139,16 +139,16 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
 test("sign-in stays on the approved screen and an overview bookmark opens Atlas Explorer", async ({
   page,
 }) => {
-  await page.goto("/auth/sign-in?next=%2Fapp%2Freview");
+  await page.goto("/auth/sign-in?next=%2Fexplore");
   await expect(
     page.getByRole("heading", { name: "Sign in or create an account" })
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview$/);
+  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fexplore$/);
   await expect(
     page.getByRole("link", { name: "Continue without an account" })
   ).toHaveCount(0);
   await page.goto("/overview");
-  await expect(page).toHaveURL(/\/app\/review\/?$/);
+  await expect(page).toHaveURL(/\/explore\/?$/);
   await expect(page).not.toHaveURL(/sign-in/);
   await expect(
     page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
@@ -190,8 +190,8 @@ test("public privacy shell uses the shared unauthenticated chrome", async ({
 });
 
 test("signed-in review entry does not preselect a county", async ({ page }) => {
-  await page.goto("/app/review");
-  await expect(page).toHaveURL(/\/app\/review\/?$/);
+  await page.goto("/explore");
+  await expect(page).toHaveURL(/\/explore\/?$/);
   await expectNoCountyPreselection(page);
   await expect(
     page.getByRole("heading", { level: 1, name: "Atlas Explorer" })

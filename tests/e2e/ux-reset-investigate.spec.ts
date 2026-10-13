@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.describe("Investigate bookmarks open Atlas Explorer", () => {
   test("a valid county opens county evidence", async ({ page }) => {
     await page.goto("/app/investigate?county=08001&scope=CO");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).toHaveURL(/scope=CO/);
@@ -18,7 +18,7 @@ test.describe("Investigate bookmarks open Atlas Explorer", () => {
     page,
   }) => {
     await page.goto("/app/investigate?county=not-a-county&scope=CO");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/mode=/);
     await expect(page).not.toHaveURL(/county=/);
     await expect(page).toHaveURL(/selection=required/);

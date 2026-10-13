@@ -31,11 +31,11 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 
 | Capability | Status | How it supports investigation | Important boundary |
 | --- | --- | --- | --- |
-| Atlas Explorer at [/app/review](/app/review) | Available now | Start from the United States or one state, and read the map and county list. Open county evidence or suggested follow-up on that address. | National scope is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope and no county. On a state picture with no county, Atlas Explorer selects the first published review candidate and writes it into the address. A county that is present but does not validate opens with `selection=required` and is not replaced. |
-| Compare at [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures, with unit, period, and availability on each value. | This page does not rank a winner. |
+| Atlas Explorer at [/explore](/explore) | Available now | Start from the United States or one state, and read the map and county list. Open county evidence or suggested follow-up on that address. | National scope is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope and no county. On a state picture with no county, Atlas Explorer selects the first published review candidate and writes it into the address. A county that is present but does not validate opens with `selection=required` and is not replaced. |
+| Compare at [/compare](/compare) | Available now | Compare two counties on aligned measures, with unit, period, and availability on each value. | This page does not rank a winner. |
 | Settings at [/app/settings](/app/settings) | Available now | Save United States or a state as the next Atlas Explorer start, plus optional role, organization, and job title. Sign out, export, and removal use the account controls on the same page. | Optional fields can stay empty. The default does not change evidence values or block other geographies. |
 | Docs from the workspace | Available now | Open this reference in a new tab from the workspace navigation. | The original workspace tab keeps its URL. Docs is not in-page help. |
-| Ask Atlas at [/app/assistant](/app/assistant) | Experimental/demo | Atlas Explorer and Compare open this dedicated page. It requests reviewed literature when that service is enabled. Explorer and Compare can pass a validated page reference and a return link. | Feature-gated. The reference is not sent as a county or comparison request. With the service off, the page says Ask Atlas is unavailable and the other pages stay usable. There is no side panel, no Structured mode, and no Both mode. History stays in this browser. |
+| Ask Atlas at [/askatlas](/askatlas) | Experimental/demo | Atlas Explorer and Compare open this dedicated page. It requests reviewed literature when that service is enabled. Explorer and Compare can pass a validated page reference and a return link. | Feature-gated. The reference is not sent as a county or comparison request. With the service off, the page says Ask Atlas is unavailable and the other pages stay usable. There is no side panel, no Structured mode, and no Both mode. History stays in this browser. |
 | Feed at [/app/feed](/app/feed) | Planned | The destination is in the navigation. | It does not yet provide feed items or alerts. |
 | Evidence brief | Experimental/demo | A direct `plan=evidence-brief` address still opens that brief and returns to county evidence. | It is not a workspace destination. Surveillance planning is not released. |
 | API keys in Settings | Not supported | Public API reads do not use a key. | Settings does not generate or revoke a key. See [API, MCP, and access](/docs/api-mcp-and-access) and the [developer quickstart](/docs/develop/quickstart). |
@@ -55,8 +55,8 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 
 ## Where to start
 
-- Sign in and open [Atlas Explorer](/app/review) for the map, county list, county evidence, and suggested follow-up.
-- Open [Compare](/app/compare) for two counties.
+- Sign in and open [Atlas Explorer](/explore) for the map, county list, county evidence, and suggested follow-up.
+- Open [Compare](/compare) for two counties.
 - Read the [professional workspace](/docs/professional-workspace) guide for Atlas Explorer, Compare, Ask Atlas, Feed, Settings, and Docs.
 - Follow the [investigation workflows](/docs/investigation-workflows) for question-to-next-step guidance.
 - Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) and the methodology context beside the result before relying on a signal. Keep the [AI Ethics commitments](/ai-ethics) nearby for AI-enabled or experimental experiences.

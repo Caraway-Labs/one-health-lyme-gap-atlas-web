@@ -10,9 +10,9 @@ import {
 
 describe("sign-in recovery", () => {
   it("keeps the existing callback destinations", () => {
-    expect(
-      emailConfirmRedirect("https://onehealthatlas.org", "/app/review")
-    ).toBe("https://onehealthatlas.org/auth/confirm?next=%2Fapp%2Freview");
+    expect(emailConfirmRedirect("https://onehealthatlas.org", "/explore")).toBe(
+      "https://onehealthatlas.org/auth/confirm?next=%2Fexplore"
+    );
     expect(
       googleCallbackRedirect("https://onehealthatlas.org", "/account")
     ).toBe("https://onehealthatlas.org/auth/callback?next=%2Faccount");

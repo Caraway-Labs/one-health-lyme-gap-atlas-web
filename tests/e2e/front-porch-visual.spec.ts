@@ -289,7 +289,7 @@ test("signed-in header and responsive boundary widths remain readable", async ({
   // Same server-rendered account label and href as the signed-in session.
   await page.locator(".front-porch-sign-in").evaluate((element) => {
     element.textContent = "Open Atlas Explorer";
-    element.setAttribute("href", "/app/review");
+    element.setAttribute("href", "/explore");
   });
   for (const width of frontPorchBoundaryWidths) {
     if (!releaseViewportRuns(testInfo.project.name, width)) {

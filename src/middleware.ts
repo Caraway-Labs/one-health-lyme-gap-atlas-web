@@ -116,5 +116,11 @@ export const config = {
     "/overview",
     "/geographic_explorer",
     "/investigate",
+    "/explore",
+    "/explore/:path*",
+    "/compare",
+    "/compare/:path*",
+    "/askatlas",
+    "/askatlas/:path*",
   ],
 };

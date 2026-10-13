@@ -110,7 +110,7 @@ test.describe("Published Review county exploration", () => {
     page,
   }) => {
     await installPublishedReview(page);
-    await page.goto(`/app/review?scope=AL&dataset=${release}&county=01001`);
+    await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
     const picker = page.getByRole("combobox", {
       name: "Published county",
       exact: true,
@@ -147,7 +147,7 @@ test.describe("Published Review county exploration", () => {
     );
     await page.getByTestId("review-investigate").click();
     await expect(page).toHaveURL(
-      /\/app\/review\?.*county=01005.*mode=evidence|\/app\/review\?.*mode=evidence.*county=01005/,
+      /\/explore\?.*county=01005.*mode=evidence|\/explore\?.*mode=evidence.*county=01005/,
       {
         timeout: 30000,
       }
@@ -168,7 +168,7 @@ test.describe("Published Review county exploration", () => {
     page,
   }) => {
     await installPublishedReview(page);
-    await page.goto(`/app/review?scope=AL&dataset=${release}&county=01999`);
+    await page.goto(`/explore?scope=AL&dataset=${release}&county=01999`);
     await expect(page.getByText(/67 published counties/)).toBeVisible();
     await expect(page).not.toHaveURL(/county=/);
     await choose(page, "01001");
@@ -182,7 +182,7 @@ test.describe("Published Review county exploration", () => {
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toHaveCount(0);
-    await page.goto("/app/review?scope=AL&county=01003&dataset=empty-release");
+    await page.goto("/explore?scope=AL&county=01003&dataset=empty-release");
     await expect(page).not.toHaveURL(/county=/);
     await expect(page.getByTestId("review-investigate")).toHaveCount(0);
   });
@@ -190,7 +190,7 @@ test.describe("Published Review county exploration", () => {
     page,
   }) => {
     await installPublishedReview(page);
-    await page.goto(`/app/review?scope=AL&dataset=${release}`);
+    await page.goto(`/explore?scope=AL&dataset=${release}`);
     const canvas = page.getByLabel(/Map of Alabama/).locator("canvas");
     await expect(canvas).toBeVisible();
     await expect(page.getByTestId("review-state-map-region")).toHaveAttribute(

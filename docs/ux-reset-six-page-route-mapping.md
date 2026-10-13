@@ -1,29 +1,34 @@
 # Six-page workspace route migration
 
 **Story:** [#196](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/196)  
+**Canonical URLs:** [#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608)  
 **Epic:** [#194](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/194)  
 **Machine-readable map:** `src/features/ux-reset/workspace-route-migration.ts` (`recordedWorkspaceMigration`)  
-**Canonical path constant:** `ATLAS_EXPLORER_PATH` in `src/features/ux-reset/routes.ts`
+**Canonical path constants:** `ATLAS_EXPLORER_PATH`, `RESET_COMPARE_PATH`, and `RESET_ASSISTANT_PATH` in `src/features/ux-reset/routes.ts`
 
-This document records the compatibility map. [#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197) installs it: the professional sidebar lists the six destinations below, and middleware applies these redirects with HTTP 307 after the auth guard. The Explorer view ([#413](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/413)) and the dedicated Ask Atlas page ([#424](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/424)) are the landing surfaces. [#198](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/198) updates remaining product links and docs after that.
+This document records the compatibility map. [#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197) installs it from middleware after the auth guard. [#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608) sets the canonical workspace URLs to `/explore`, `/compare`, and `/askatlas` and changes the installed redirect status to HTTP 308. The Explorer view ([#413](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/413)) and the dedicated Ask Atlas page ([#424](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/424)) are the landing surfaces. [#198](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/198) updated product links and docs to the six destinations; #608 retargets those links to the canonical paths. There is one redirect function. `next.config` host redirects stay separate because they cannot apply this query map.
 
 The October 11, 2026 workspace is six destinations: **Atlas Explorer, Compare, Ask Atlas, Feed, Settings, Docs**. Atlas Explorer is map-led review and exploration, expandable county evidence, and Suggested follow-up on one URL. There is no separate Overview, Review, Explore, Investigate, Action, or Assistant side panel in that destination list. This map does not add a seventh destination.
 
-## Canonical Explorer URL
+## Canonical workspace URLs
 
-`ATLAS_EXPLORER_PATH` is `/app/review` (`RESET_REVIEW_PATH`).
+| Destination | Constant | Canonical path | Former path |
+| --- | --- | --- | --- |
+| Atlas Explorer | `ATLAS_EXPLORER_PATH` | `/explore` | `/app/review` (`RESET_REVIEW_PATH`) |
+| Compare | `RESET_COMPARE_PATH` | `/compare` | `/app/compare` (`LEGACY_COMPARE_PATH`) |
+| Ask Atlas | `RESET_ASSISTANT_PATH` | `/askatlas` | `/app/assistant` (`LEGACY_ASSISTANT_PATH`) |
 
-Review is the existing map, ranked list, and county-preview route. Signed-in Front Porch entry already uses it (`frontPorchExploreHref`). Settings default jurisdiction already applies to a Review open that omits `scope` and `county`. Compare's `return=review` already resolves to this path. `/app` is still the placeholder workspace home, not the map. `/app/explore` is the measure browser that Explorer will absorb. A new `/app/explorer` path is not part of this map.
+`/explore` renders the existing Review experience. Signed-in Front Porch entry uses it (`frontPorchExploreHref`). Settings default jurisdiction still applies to an Explorer open that omits `scope` and `county`. Compare's `return=review` resolves to `/explore`. `/app` is still the placeholder workspace home, not the map. `/app/explore` remains the historical measure-browser alias. A `/app/explorer` path is not part of this map. Public `/assistant` is not Ask Atlas.
 
-The display name Atlas Explorer does not require a different path. The live shell labels are the six destinations in the table below.
+The live shell labels are the six destinations in the table below.
 
 ## Destination inventory
 
 | Destination | Canonical path | Current label in `RESET_ROUTES` | This map |
 | --- | --- | --- | --- |
-| Atlas Explorer | `/app/review` | Review | Canonical. Aliases below redirect here at cutover. |
-| Compare | `/app/compare` | Compare | Stays a dedicated page. |
-| Ask Atlas | `/app/assistant` | Assistant | Stays this path. #197 may change the label. |
+| Atlas Explorer | `/explore` | Atlas Explorer | Canonical. Aliases below redirect here. |
+| Compare | `/compare` | Compare | Canonical dedicated page. |
+| Ask Atlas | `/askatlas` | Ask Atlas | Canonical dedicated page. |
 | Feed | `/app/feed` | Feed | Path and placeholder scope stay. |
 | Settings | `/app/settings` | Settings | Path and profile/account scope stay. |
 | Docs | `/docs` and nested docs slugs | Docs | Path and scope stay. Nested docs are the same destination. |
@@ -34,7 +39,7 @@ These are not workspace destinations and this map does not retarget them:
 | --- | --- | --- |
 | `/` | Front Porch, unless a legacy analytical query is present | Stays the Front Porch. A legacy analytical query is an Overview deep link and maps to Explorer browse. |
 | `/assistant` | Public literature workspace | Stays. It is not the signed-in Ask Atlas route. |
-| `/knowledge-graph` | Already redirects to `/assistant`, preserving `conversation` | Stays that alias. This map does not send it to `/app/assistant`. |
+| `/knowledge-graph` | Already redirects to `/assistant`, preserving `conversation` | Stays that alias. This map does not send it to `/askatlas`. |
 | `/app/ai-responsible-use` | Signed-in trust page | Stays. Not a seventh destination. |
 | `/account`, `/auth/*`, `/privacy`, `/ai-ethics`, `/about/caraway-labs`, `/design-system`, `/api/search` | Existing utility, trust, and technical routes | Out of scope. |
 | `/variant_1`–`/variant_7` | HTTP 404 since #550, including `/variant_6` | **Retired. Do not revive and do not redirect.** |
@@ -46,18 +51,21 @@ These are not workspace destinations and this map does not retarget them:
 
 Browse is the current Review surface: map, list, and compact preview when `county` is a single valid FIPS. `mode` is omitted.
 
-`mode=evidence` is expanded county evidence. `mode=follow-up` is that same expanded county opened at Suggested follow-up. `/app/review` reads one exact token and renders that view. An invalid or repeated `mode` is removed. Middleware redirects the aliases below. They do not render their old pages.
+`mode=evidence` is expanded county evidence. `mode=follow-up` is that same expanded county opened at Suggested follow-up. `/explore` reads one exact token and renders that view. An invalid or repeated `mode` is removed. Middleware redirects the aliases below. They do not render their old pages.
 
 | Source | Recorded target | State |
 | --- | --- | --- |
-| `/app`, `/app/review`, `/app/explore` | `/app/review` | Browse. Review is already canonical, so it does not redirect. |
-| `/app/investigate`, `/investigate` | `/app/review` | `mode=evidence` when `county` is one valid FIPS. Otherwise browse with no county. |
-| `/app/action` | `/app/review` | `mode=follow-up` when `county` is one valid FIPS. Otherwise browse with no county. |
-| `/overview` | `/app/review` | Browse. A county stays a preview selection, not expanded evidence. |
-| `/geographic_explorer` | `/app/review` | Browse. |
-| `/` with a legacy Overview/Investigate query (`breakpoint`, `compare`, `county`, `dataset`, `eco`, `evidence`, `missing`, `q`, `state`) | `/app/review` | Browse. Plain `/` stays the Front Porch. `/` with only Geographic Explorer keys (`metric`, `view`, `selected`, `page`) also stays the Front Porch, matching `legacyAnalyticalOverviewHref`. |
+| `/app/review` | `/explore` | Same surface. Supported Review keys stay: `scope`, `county`, `compare`, `dataset`, `period`, `sort`, `page`, `mode`, `selection`, `layer`. Other keys are dropped. |
+| `/app/compare` | `/compare` | Same surface. Supported Compare keys stay, including `return`. |
+| `/app/assistant` | `/askatlas` | Same surface. `county`, `dataset`, `conversation`, and `page_ref` stay. |
+| `/app`, `/app/explore` | `/explore` | Browse. Historical alias query rewrite, not the same-surface copy. |
+| `/app/investigate`, `/investigate` | `/explore` | `mode=evidence` when `county` is one valid FIPS. Otherwise browse with no county. |
+| `/app/action` | `/explore` | `mode=follow-up` when `county` is one valid FIPS. Otherwise browse with no county. |
+| `/overview` | `/explore` | Browse. A county stays a preview selection, not expanded evidence. |
+| `/geographic_explorer` | `/explore` | Browse. |
+| `/` with a legacy Overview/Investigate query (`breakpoint`, `compare`, `county`, `dataset`, `eco`, `evidence`, `missing`, `q`, `state`) | `/explore` | Browse. Plain `/` stays the Front Porch. `/` with only Geographic Explorer keys (`metric`, `view`, `selected`, `page`) also stays the Front Porch, matching `legacyAnalyticalOverviewHref`. |
 
-Today `/` with a legacy analytical query still redirects to `/overview`. The recorded target skips that intermediate hop. The running app is unchanged.
+A `/` request that carries a legacy analytical query redirects straight to `/explore`. It does not stop at `/overview`. Plain `/` stays the Front Porch.
 
 Bare `/investigate` and `/app/investigate` do **not** carry the Investigation Workspace nuqs default county `06037`. That default is applied only when `atlasSearchParams` parses a missing `county`. The map reads the raw query. A missing, blank, invalid, or repeated county opens county selection and does not substitute another county. The same rule applies to Action.
 
@@ -98,16 +106,16 @@ These are dropped when an alias redirects. They are not Explorer state:
 | `evidence` | `atlasSearchParams` (`all`, `ecological`, `human`, `complete`) | Legacy evidence filter. Reset Investigate does not read it. |
 | `q` | Legacy text filter | Not a Reset query. |
 | `view` | Geographic Explorer enum (`tiles`, `multiples`, `matrix`, `ranking`, `maps`, `scatter`, `compare`, `trends`); also parsed and unread on `/app/explore` | Not an Explorer mode. |
-| `page` | Geographic Explorer and Review/Explore list position | Page-local. Not copied across routes. |
-| `sort` | Review list control | Stays on `/app/review` because that path does not redirect. Dropped from any alias. |
+| `page` | Geographic Explorer and Review list position | Kept on `/app/review` → `/explore`. Dropped from any historical alias. |
+| `sort` | Review list control | Kept on `/app/review` → `/explore`. Dropped from any historical alias. |
 | `map_scope` | Explore map framing | Must not overwrite Review `scope`. |
 | `plan`, `role` | Action. Only `plan` is parsed. `evidence-brief` is the one workflow id. `role` is unread. | Other Action links redirect to suggested follow-up and drop `plan`. One `plan=evidence-brief` stays on `/app/action` so the evidence brief remains reachable until that workflow renders in follow-up. |
-| `return` | Compare (`review` or `investigate`) | Stays on `/app/compare`. `return=review` targets `/app/review`. `return=investigate` targets Atlas Explorer `mode=evidence`. |
-| `conversation` | `/assistant`, `/app/assistant`, `/knowledge-graph` | Stays on the Assistant URLs. Not copied to Explorer. |
-| `page_ref` | `/app/assistant` | Validated Ask Atlas page reference. Not a shared key, not a chat request field, and not retrieved evidence. |
+| `return` | Compare (`review` or `investigate`) | Kept on `/app/compare` → `/compare`. `return=review` targets `/explore`. `return=investigate` targets Atlas Explorer `mode=evidence`. |
+| `conversation` | `/assistant`, `/app/assistant`, `/askatlas`, `/knowledge-graph` | Kept on the Assistant URLs. `/app/assistant` redirects to `/askatlas` with this key. Not copied to Explorer. |
+| `page_ref` | `/app/assistant`, `/askatlas` | Validated Ask Atlas page reference. Kept across the same-surface redirect. Not a shared key, not a chat request field, and not retrieved evidence. |
 | `tab` | Named on Feed, not read | Feed does not redirect. |
 | `release` | Not a URL key. Release identity is `dataset`. | Dropped. Not aliased onto `dataset`. |
-| `layer` | Not a URL key. `/app/explore` uses `metric`. | Dropped. Not aliased onto `metric`. |
+| `layer` | Review map layer. `/app/explore` uses `metric` instead. | Kept on `/app/review` → `/explore`. Dropped from any historical alias. Not aliased onto `metric`. |
 | `fips` | Not a URL key. The county key is `county`. | Dropped. |
 | `mode` on an alias | Not a current route contract | The source path chooses `evidence` or `follow-up`. An incoming `mode` does not override that. |
 
@@ -131,16 +139,16 @@ Product links after #197 and #198:
 | --- | --- |
 | `paths.ts` `RESET_ROUTES` | Sidebar: Atlas Explorer, Compare, Ask Atlas, Feed, Settings, Docs. Explore, Investigate, and Action stay alias metadata, not sidebar entries. |
 | `professional-shell.tsx` | Those six destinations. |
-| `front-porch-copy.ts` | Signed-in entry to `/app/review`. |
-| `review-county-preview.ts` | County evidence on `/app/review` with `mode=evidence`. |
-| `reset-explore-experience.tsx` | **View county evidence** on `/app/review?mode=evidence`. Compare stays `/app/compare`. |
-| `reset-investigate-experience.tsx` | **Return to Atlas Explorer** for browse. **Suggested follow-up** is `/app/review?mode=follow-up`. |
-| `reset-action-experience.tsx` | **Return to county evidence** on `/app/review?mode=evidence`. The evidence brief itself stays on `plan=evidence-brief`. |
+| `front-porch-copy.ts` | Signed-in entry to `/explore`. |
+| `review-county-preview.ts` | County evidence on `/explore` with `mode=evidence`. |
+| `reset-explore-experience.tsx` | **View county evidence** on `/explore?mode=evidence`. Compare stays `/compare`. |
+| `reset-investigate-experience.tsx` | **Return to Atlas Explorer** for browse. **Suggested follow-up** is `/explore?mode=follow-up`. |
+| `reset-action-experience.tsx` | **Return to county evidence** on `/explore?mode=evidence`. The evidence brief itself stays on `plan=evidence-brief`. |
 | `ask-atlas/page-reference.ts` | Return links run through this map, so an Explore, Investigate, or Action reference opens the Explorer state above. |
 | `compare-entry.ts`, `use-compare-workspace.ts` | Compare stays dedicated. `return=investigate` opens `mode=evidence`. |
 | `settings-account-controls.tsx` | Account return `/app/settings`. |
 | `middleware.ts` | Unauthenticated `/app` → sign-in `next`, then this map. |
-| `return-path.ts` `accountFreeContinueHref` | Professional paths → `/app/review`. |
+| `return-path.ts` `accountFreeContinueHref` | Professional paths, including `/explore`, `/compare`, and `/askatlas`, → `/explore`. |
 
 #198 retargets those product links and the user docs. It does not add a redirect.
 
@@ -161,8 +169,8 @@ Account-free continue sends professional paths to Atlas Explorer. Public aliases
 
 When #197 installs the map:
 
-- Cross-route redirects use HTTP **307** and **replace** the history entry. Back returns to the page before the alias, not to the alias. Do not use 308 in that change; permanent redirects are cached before the replacement views are known to be the ones users should keep.
-- Same-path query cleanup on `/app/review` uses history replace, the same way Action already uses `history: "replace"`. It must not navigate to a different path.
+- Cross-route redirects use HTTP **308** and **replace** the history entry. Back returns to the page before the alias, not to the alias. #608 is the permanent canonical URL decision, so 308 is the installed status. Unauthenticated sign-in redirects stay HTTP 307 and are not cached as the workspace destination.
+- Same-path query cleanup on `/explore` uses history replace, the same way Action already uses `history: "replace"`. It must not navigate to a different path.
 - Applying the map to a redirect target returns `kind: "unchanged"`. Canonical destinations are fixed points. Tests in `tests/ux-reset-workspace-route-migration.test.ts` lock that.
 - `/variant_*` and `/ux-lab/**` are not nodes in the redirect graph.
 - `/knowledge-graph` is not chained through Explorer.
@@ -173,8 +181,8 @@ Focus and anchor restoration, verified by #197 once #413 has the view:
 | --- | --- |
 | Browse with a county the user left from Review | Existing `markReviewReturnFocus` county row, or the published-county picker when the county is outside the first page. |
 | Browse with no county | The county-selection prompt. Do not focus a fabricated row. |
-| `mode=evidence` | The expanded evidence heading on `/app/review`. |
-| `mode=follow-up` | The Suggested follow-up section on `/app/review`. |
+| `mode=evidence` | The expanded evidence heading on `/explore`. |
+| `mode=follow-up` | The Suggested follow-up section on `/explore`. |
 
 No hash is added for those states. #413's in-page section links can be hashes on the canonical URL after the targets exist. Until the targets exist, a hash is not a successful restore.
 
@@ -182,13 +190,13 @@ No hash is added for those states. #413's in-page section links can be hashes on
 
 Already covered by `tests/ux-reset-workspace-route-migration.test.ts`:
 
-- Six destinations, canonical path `/app/review`, live destination ids unchanged.
+- Six destinations, canonical paths `/explore`, `/compare`, and `/askatlas`, live destination ids unchanged.
 - No production file imports the map.
 - Every alias row above, including bare investigate/action without `06037`.
 - Unsupported keys, scope-versus-state, dropped measure ids, two-county cap, evidence-brief staying on Action, and `selection=required` for an invalid county.
 - Retired variants and `/ux-lab` stay unmapped.
 - One redirect then a fixed point.
-- 307 and history replace are the recorded install policy, with redirects not installed.
+- 308 and history replace are the installed redirect policy. Sign-in redirects stay 307.
 
 Still required in #197, and not claimed here:
 

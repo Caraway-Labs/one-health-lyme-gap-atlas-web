@@ -114,7 +114,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO"
@@ -132,7 +132,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await page.reload();
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
@@ -143,14 +143,14 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: null });
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.getByTestId("review-scope-status")).toHaveAttribute(
       "data-request-scope",
       "ALL"
     );
 
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
@@ -162,7 +162,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "NY"
@@ -180,7 +180,7 @@ test.describe("Review national and state scope controls", () => {
       "Desktop-only history flow"
     );
     await installReviewApiMocks(page, { profileState: null });
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
 
     await page.getByTestId("review-scope-select").click();
@@ -223,7 +223,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }, testInfo) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=CO&county=08001");
+    await page.goto("/explore?scope=CO&county=08001");
     const handoff = page.getByTestId("review-investigate");
     await expect(handoff).toHaveAttribute("data-county", "08001");
     await page.getByRole("button", { name: /Boulder, CO/ }).click();
@@ -260,7 +260,7 @@ test.describe("Review national and state scope controls", () => {
   }, testInfo) => {
     const profileMethods: string[] = [];
     await installReviewApiMocks(page, { profileMethods, profileState: "CO" });
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "United States" }).click();
 
@@ -308,7 +308,7 @@ test.describe("Review national and state scope controls", () => {
       });
     });
 
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByText("Loading review scope…")).toBeVisible();
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "United States" }).click();
@@ -373,7 +373,7 @@ test.describe("Review national and state scope controls", () => {
       });
     });
 
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "New York (NY)" }).click();
     await expect(page).toHaveURL(/scope=NY/);
@@ -407,7 +407,7 @@ test.describe("Review national and state scope controls", () => {
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
     await page.goto("/app/settings");
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO"
@@ -427,7 +427,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=NOT");
+    await page.goto("/explore?scope=NOT");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.getByTestId("review-scope-status")).toContainText(
       "United States"
@@ -439,7 +439,7 @@ test.describe("Review national and state scope controls", () => {
 
   test("leaves an unrecognized state code unsupported", async ({ page }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=ZZ");
+    await page.goto("/explore?scope=ZZ");
     await expect(page.getByTestId("review-scope-unsupported")).toHaveText(
       "ZZ is not supported — lower 48 only."
     );
@@ -476,7 +476,7 @@ test.describe("Review national and state scope controls", () => {
       });
     });
 
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "New York (NY)" }).click();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
@@ -524,7 +524,7 @@ test.describe("Review national and state scope controls", () => {
         { timeout: 8000 }
       )
       .catch(() => null);
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "New York (NY)" }).click();
     await expect(page.getByTestId("review-candidate")).toContainText("Albany");

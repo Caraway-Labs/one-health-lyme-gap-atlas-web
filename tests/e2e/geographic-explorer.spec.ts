@@ -2,32 +2,32 @@ import { expect, test } from "@playwright/test";
 
 const bookmarks = [
   {
-    landed: /\/app\/review$/,
+    landed: /\/explore$/,
     start: "/geographic_explorer",
   },
   {
     landed:
-      /\/app\/review\?.*county=06085.*scope=CA|\/app\/review\?.*scope=CA.*county=06085/,
+      /\/explore\?.*county=06085.*scope=CA|\/explore\?.*scope=CA.*county=06085/,
     start: "/geographic_explorer?state=CA&county=06085",
   },
   {
-    landed: /\/app\/review\?.*scope=CA/,
+    landed: /\/explore\?.*scope=CA/,
     start: "/geographic_explorer?state=CA&evidence=complete",
   },
   {
-    landed: /\/app\/review\?.*county=08001/,
+    landed: /\/explore\?.*county=08001/,
     start: "/geographic_explorer?view=ranking&county=08001",
   },
   {
-    landed: /\/app\/review\?.*county=08001/,
+    landed: /\/explore\?.*county=08001/,
     start: "/geographic_explorer?view=maps&county=08001",
   },
   {
-    landed: /\/app\/review\?.*dataset=old-release/,
+    landed: /\/explore\?.*dataset=old-release/,
     start: "/geographic_explorer?dataset=old-release",
   },
   {
-    landed: /\/app\/review$/,
+    landed: /\/explore$/,
     start: "/geographic_explorer?view=maps",
   },
 ] as const;

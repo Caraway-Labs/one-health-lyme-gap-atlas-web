@@ -483,7 +483,7 @@ describe("Investigate finding handoff", () => {
           actionHref="/app/action?county=08001"
           bundle={catalogFailed ? emptyBundle() : bundle}
           compare={[]}
-          compareHref="/app/compare"
+          compareHref="/compare"
           countyFips="08001"
           finding={carriedFinding}
           findingCountyLabel={countyIdentity.label}

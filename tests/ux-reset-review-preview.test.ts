@@ -333,7 +333,7 @@ describe("Review county preview", () => {
       compare: "36001",
       county: "36001",
       page: null,
-      path: "/app/compare",
+      path: "/compare",
       period: "2023-01-01",
       returnTo: "review",
       sort: null,

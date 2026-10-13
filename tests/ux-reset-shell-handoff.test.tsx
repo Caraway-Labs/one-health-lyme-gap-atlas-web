@@ -4,7 +4,7 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import ResetReviewPage from "@/app/app/review/page";
+import ResetReviewPage from "@/app/explore/page";
 import { uxResetDestinationHref } from "@/features/ux-reset";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
@@ -129,7 +129,7 @@ describe("UX Reset shell rendered handoff", () => {
         ?.getAttribute("href"),
       compare: navigation
         .querySelector(
-          'a[href="/app/compare?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01"]'
+          'a[href="/compare?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01"]'
         )
         ?.getAttribute("aria-label"),
       explore: navigation.querySelector('a[aria-label="Explore"]'),
@@ -141,14 +141,14 @@ describe("UX Reset shell rendered handoff", () => {
       serializer: uxResetDestinationHref("compare", pathname, searchParams),
     }).toStrictEqual({
       action: null,
-      ask: "/app/assistant?county=08001&dataset=alpha-2026-08-06",
+      ask: "/askatlas?county=08001&dataset=alpha-2026-08-06",
       compare: "Compare",
       explore: null,
       feed: "/app/feed",
       feedQuery: null,
       investigate: null,
       serializer:
-        "/app/compare?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01",
+        "/compare?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01",
     });
   });
 

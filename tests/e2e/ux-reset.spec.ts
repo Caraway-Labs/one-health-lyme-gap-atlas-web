@@ -99,17 +99,17 @@ async function expectHistoryNavigation(
 const WORKSPACE_DESTINATIONS = [
   {
     heading: "Atlas Explorer",
-    path: "/app/review",
+    path: "/explore",
     title: "Atlas Explorer | One Health Lyme Gap Atlas",
   },
   {
     heading: "Compare",
-    path: "/app/compare",
+    path: "/compare",
     title: "Compare | One Health Lyme Gap Atlas",
   },
   {
     heading: "Ask Atlas",
-    path: "/app/assistant",
+    path: "/askatlas",
     title: "Ask Atlas | One Health Lyme Gap Atlas",
   },
   {
@@ -276,9 +276,9 @@ test("professional workspace shell supports navigation, focus, and responsive la
   }
 
   if (!testInfo.project.name.includes("mobile")) {
-    await clickWorkspaceLink(page, "Compare", "/app/compare");
+    await clickWorkspaceLink(page, "Compare", "/compare");
     const compareUrl = new URL(page.url());
-    expect(compareUrl.pathname).toBe("/app/compare");
+    expect(compareUrl.pathname).toBe("/compare");
     expect(compareUrl.searchParams.get("county")).toBe("08001");
     expect(compareUrl.searchParams.get("scope")).toBe("CO");
     expect(compareUrl.searchParams.get("tab")).toBeNull();
@@ -333,7 +333,7 @@ test("bounded context survives rendered navigation, reload, and browser history"
   await installDeterministicWorkspaceMocks(page);
 
   const expectExplorerContext = (target: URL) => {
-    expect(target.pathname).toBe("/app/review");
+    expect(target.pathname).toBe("/explore");
     expect(target.searchParams.get("scope")).toBe("CO");
     expect(target.searchParams.get("county")).toBe("08001");
     expect(target.searchParams.get("dataset")).toBe("alpha-2026-08-06");
@@ -342,20 +342,20 @@ test("bounded context survives rendered navigation, reload, and browser history"
   };
 
   const expectCompareSelection = (target: URL) => {
-    expect(target.pathname).toBe("/app/compare");
+    expect(target.pathname).toBe("/compare");
     expect(target.searchParams.get("compare")).toBe("08001,08003");
   };
 
   await page.goto(
-    "/app/review?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
+    "/explore?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
   );
-  await clickWorkspaceLink(page, "Compare", "/app/compare");
+  await clickWorkspaceLink(page, "Compare", "/compare");
 
   let url = new URL(page.url());
   expectCompareSelection(url);
   expect(url.searchParams.get("sort")).toBeNull();
 
-  await clickWorkspaceLink(page, "Atlas Explorer", "/app/review");
+  await clickWorkspaceLink(page, "Atlas Explorer", "/explore");
   expectExplorerContext(new URL(page.url()));
 
   await page.reload();
@@ -365,23 +365,21 @@ test("bounded context survives rendered navigation, reload, and browser history"
   await expectHistoryNavigation(
     page,
     "back",
-    (target) => target.pathname === "/app/compare"
+    (target) => target.pathname === "/compare"
   );
   expectCompareSelection(new URL(page.url()));
 
   await expectHistoryNavigation(
     page,
     "forward",
-    (target) => target.pathname === "/app/review"
+    (target) => target.pathname === "/explore"
   );
   expectExplorerContext(new URL(page.url()));
 
-  await page.goto(
-    "/app/review?scope=state&county=bad&period=2024&dataset=alpha"
-  );
-  await clickWorkspaceLink(page, "Compare", "/app/compare");
+  await page.goto("/explore?scope=state&county=bad&period=2024&dataset=alpha");
+  await clickWorkspaceLink(page, "Compare", "/compare");
   url = new URL(page.url());
-  expect(url.pathname).toBe("/app/compare");
+  expect(url.pathname).toBe("/compare");
   expect(url.searchParams.get("county")).toBeNull();
   expect(url.searchParams.get("scope")).toBe("ALL");
   expect(url.searchParams.get("period")).toBeNull();
@@ -395,12 +393,12 @@ test("an Action bookmark stays on suggested follow-up after reload", async ({
   await page.goto(
     "/app/action?county=08001&scope=CO&dataset=alpha-2026-08-06&period=2023-01-01"
   );
-  await expect(page).toHaveURL(/\/app\/review/);
+  await expect(page).toHaveURL(/\/explore/);
   await expect(page).toHaveURL(/mode=follow-up/);
   await expect(page).toHaveURL(/county=08001/);
   await page.reload();
   const url = new URL(page.url());
-  expect(url.pathname).toBe("/app/review");
+  expect(url.pathname).toBe("/explore");
   expect(url.searchParams.get("mode")).toBe("follow-up");
   expect(url.searchParams.get("county")).toBe("08001");
   expect(url.searchParams.get("scope")).toBe("CO");

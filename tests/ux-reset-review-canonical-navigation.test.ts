@@ -19,27 +19,27 @@ describe("Review canonical navigation", () => {
       '<a id="investigate" href="/app/investigate?scope=ALL&dataset=alpha">Investigate</a>';
     const destination = leavingReviewDestination(
       document.querySelector("#investigate"),
-      "/app/review",
-      "http://localhost/app/review?scope=state&county=bad&period=2024&dataset=alpha",
+      "/explore",
+      "http://localhost/explore?scope=state&county=bad&period=2024&dataset=alpha",
       modifiers
     );
     expect({
       destination,
       followed: followPendingReviewDestination({
         destination,
-        pathname: "/app/review",
-        reviewPath: "/app/review",
+        pathname: "/explore",
+        reviewPath: "/explore",
       }),
       modifier: leavingReviewDestination(
         document.querySelector("#investigate"),
-        "/app/review",
-        "http://localhost/app/review?scope=state",
+        "/explore",
+        "http://localhost/explore?scope=state",
         { ...modifiers, metaKey: true }
       ),
       settled: followPendingReviewDestination({
         destination,
         pathname: "/app/investigate",
-        reviewPath: "/app/review",
+        reviewPath: "/explore",
       }),
     }).toStrictEqual({
       destination: "/app/investigate?scope=ALL&dataset=alpha",

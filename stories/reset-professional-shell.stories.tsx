@@ -111,7 +111,7 @@ function ShellFrame({ route, startCollapsed }: ShellStoryProps) {
 const meta = {
   title: "Navigation and Layout/Reset professional shell",
   component: ShellStory,
-  args: { route: "/app/review", startCollapsed: false },
+  args: { route: "/explore", startCollapsed: false },
   decorators: [WithStorySidebarKey],
   argTypes: {
     route: { control: "select", options: shellRouteHrefs },
@@ -122,7 +122,7 @@ const meta = {
     atlasLayout: "full",
     nextjs: {
       appDirectory: true,
-      navigation: { pathname: "/app/review", query: {} },
+      navigation: { pathname: "/explore", query: {} },
     },
     docs: {
       description: {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { UxResetDestinationId } from "@/features/ux-reset/routes";
 import { isCountyFips } from "@/lib/county-geography";
 
 const DATASET_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
@@ -24,6 +25,43 @@ export const UX_RESET_SHARED_CONTEXT_PARAM_KEYS = [
 
 export type UxResetSharedContextParamKey =
   (typeof UX_RESET_SHARED_CONTEXT_PARAM_KEYS)[number];
+
+/**
+ * Shared keys each destination may receive during cross-page handoff.
+ * Keys omitted here are dropped explicitly when entering that route.
+ * Lives here so middleware can read it without loading client parsers.
+ */
+export const UX_RESET_HANDOFF_ACCEPTANCE: Record<
+  UxResetDestinationId,
+  readonly UxResetSharedContextParamKey[]
+> = {
+  action: ["scope", "county", "compare", "dataset", "period"],
+  assistant: ["county", "dataset"],
+  compare: ["scope", "county", "compare", "dataset", "period"],
+  explore: ["scope", "county", "dataset", "period"],
+  feed: [],
+  investigate: ["scope", "county", "compare", "dataset", "period"],
+  review: ["scope", "county", "compare", "dataset", "period"],
+  settings: [],
+};
+
+/**
+ * Shared keys each source route may export during handoff.
+ * Feed and Settings export nothing even if the URL contains query params.
+ */
+export const UX_RESET_HANDOFF_EXPORT: Record<
+  UxResetDestinationId,
+  readonly UxResetSharedContextParamKey[]
+> = {
+  action: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  assistant: ["county", "dataset"],
+  compare: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  explore: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  feed: [],
+  investigate: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  review: [...UX_RESET_SHARED_CONTEXT_PARAM_KEYS],
+  settings: [],
+};
 
 /** Page-local URL keys — never copied across UX Reset routes. */
 export const UX_RESET_PAGE_LOCAL_PARAM_KEYS = {

@@ -72,14 +72,14 @@ describe("explorer county mode", () => {
   it("appends mode without dropping the compare return target", () => {
     expect(
       hrefWithExplorerMode(
-        "/app/compare?compare=08001&return=review&scope=CO",
+        "/compare?compare=08001&return=review&scope=CO",
         "follow-up"
       )
-    ).toBe("/app/compare?compare=08001&return=review&scope=CO&mode=follow-up");
+    ).toBe("/compare?compare=08001&return=review&scope=CO&mode=follow-up");
   });
 
   it("restores expanded review only for one exact mode on a review return", () => {
-    const href = "/app/review?county=08001&scope=CO&dataset=alpha-2026";
+    const href = "/explore?county=08001&scope=CO&dataset=alpha-2026";
     expect(
       compareReturnHrefWithExplorerMode({
         href,

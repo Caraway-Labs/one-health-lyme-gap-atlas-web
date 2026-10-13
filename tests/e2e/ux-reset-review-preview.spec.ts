@@ -240,7 +240,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       geometry: false,
     });
     await page.goto(
-      "/app/review?period=2023-01-01&dataset=alpha-2026&sort=score&page=2&compare=08001,08013"
+      "/explore?period=2023-01-01&dataset=alpha-2026&sort=score&page=2&compare=08001,08013"
     );
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
@@ -251,7 +251,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     await page.getByRole("option", { name: "New York (NY)" }).click();
     const albany = page.getByTestId("review-county-preview");
     await expect(albany).toHaveAttribute("data-fips", "36001");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     await expect(albany).toHaveAttribute(
       "data-follow-up",
@@ -265,7 +265,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     await suffolkRow.click();
     const suffolk = page.getByTestId("review-county-preview");
     await expect(suffolk).toHaveAttribute("data-fips", "36024");
-    await expect(page).toHaveURL(/\/app\/review\?/);
+    await expect(page).toHaveURL(/\/explore\?/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     const previewState = await suffolk.evaluate((element) => ({
       availability: element.getAttribute("data-availability"),
@@ -342,7 +342,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     );
 
     await page.goBack({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/county=36024/);
     await expect(page).toHaveURL(/sort=score/);
@@ -396,14 +396,14 @@ test.describe("Review county preview and Investigate handoff", () => {
     ];
     await installPreviewMocks(page, counties);
     await page.goto(
-      "/app/review?scope=NY&dataset=alpha-2026&period=2023-01-01&sort=score"
+      "/explore?scope=NY&dataset=alpha-2026&period=2023-01-01&sort=score"
     );
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
       "36001"
     );
     await page.locator('button[data-fips="36001"]').click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
       "href",
@@ -440,7 +440,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     }
     const mapPreview = page.getByTestId("review-county-preview");
     await expect(mapPreview).toHaveAttribute("data-fips", "36003");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     const mapHref =
       (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
@@ -483,7 +483,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       geometry: false,
     });
     await page.goto(
-      "/app/review?scope=NY&county=36005&dataset=alpha-2026&period=2023-01-01"
+      "/explore?scope=NY&county=36005&dataset=alpha-2026&period=2023-01-01"
     );
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
@@ -525,7 +525,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       ],
       { geometry: false }
     );
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
       "36045"
@@ -556,7 +556,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       geometry: false,
     });
     await page.goto(
-      "/app/review?scope=NY&county=36024&dataset=alpha-2026&period=2023-01-01&sort=score"
+      "/explore?scope=NY&county=36024&dataset=alpha-2026&period=2023-01-01&sort=score"
     );
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
@@ -572,7 +572,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       "36024"
     );
     await page.goBack({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/county=36024/);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/sort=score/);

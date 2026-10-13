@@ -298,7 +298,7 @@ test("opens HelpDocs search and finds the evidence guide", async ({
 test("workspace Docs keeps the analytical URL while search and a heading link survive reload", async ({
   page,
 }, testInfo) => {
-  const reviewPath = "/app/review?scope=NY&county=36061&sort=score";
+  const reviewPath = "/explore?scope=NY&county=36061&sort=score";
   await page.goto(reviewPath);
   await expect(
     page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
@@ -385,7 +385,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   await expect(docsPage.locator("body")).toContainText('"openapi"');
 
   await page.bringToFront();
-  await expect(page).toHaveURL(/\/app\/review\?/);
+  await expect(page).toHaveURL(/\/explore\?/);
   const workspaceUrl = new URL(page.url());
   expect(workspaceUrl.searchParams.get("scope")).toBe("NY");
   expect(workspaceUrl.searchParams.get("county")).toBe("36061");
@@ -421,7 +421,7 @@ test("renders the capability-boundaries table with one column count", async ({
 test("opens the configured docs destination from the workspace sidebar", async ({
   page,
 }, testInfo) => {
-  await page.goto("/app/review");
+  await page.goto("/explore");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }

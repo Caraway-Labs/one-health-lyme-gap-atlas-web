@@ -93,7 +93,7 @@ describe("Ask Atlas dedicated-page launcher", () => {
     }).toStrictEqual({
       dialog: null,
       panel: null,
-      pathname: "/app/assistant",
+      pathname: "/askatlas",
       reference: "absent",
     });
     expect(chatRequest).not.toHaveBeenCalled();
@@ -117,7 +117,7 @@ describe("Ask Atlas dedicated-page launcher", () => {
         <ChromeProbe />
       </AskAtlasChromeProvider>
     );
-    expect(launcherHref().pathname).toBe("/app/assistant");
+    expect(launcherHref().pathname).toBe("/askatlas");
     expect(screen.queryByLabelText("Your question")).toBeNull();
     expect(screen.queryByTestId("ask-atlas-panel")).toBeNull();
     expect(chatRequest).not.toHaveBeenCalled();
@@ -150,7 +150,7 @@ describe("Ask Atlas dedicated-page launcher", () => {
   });
 
   it("puts the published review identity on the Ask Atlas link", () => {
-    pathname = "/app/review";
+    pathname = "/explore";
     search = new URLSearchParams("scope=CO&county=08001&dataset=alpha-2026");
     const review = inheritedContextFromReview({
       rankedCounties: [
@@ -185,7 +185,7 @@ describe("Ask Atlas dedicated-page launcher", () => {
       },
       kind: "validated",
       panel: null,
-      returnHref: "/app/review?scope=CO&county=08001&dataset=alpha-2026",
+      returnHref: "/explore?scope=CO&county=08001&dataset=alpha-2026",
     });
   });
 });

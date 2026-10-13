@@ -90,7 +90,7 @@ test.describe("professional navigation desktop", () => {
     );
   });
 
-  for (const path of ["/app/review", "/app/compare"] as const) {
+  for (const path of ["/explore", "/compare"] as const) {
     test(`${path} expanded header, active row, and compact density`, async ({
       page,
     }) => {
@@ -135,8 +135,8 @@ test.describe("professional navigation desktop", () => {
         await brand.locator("b").evaluate((element) => element.clientWidth + 1)
       );
 
-      const activeName = path === "/app/review" ? "Atlas Explorer" : "Compare";
-      const otherName = path === "/app/review" ? "Compare" : "Atlas Explorer";
+      const activeName = path === "/explore" ? "Atlas Explorer" : "Compare";
+      const otherName = path === "/explore" ? "Compare" : "Atlas Explorer";
       await expect(nav.getByRole("link")).toHaveCount(6);
       expect(
         await nav
@@ -232,7 +232,7 @@ test.describe("professional navigation desktop", () => {
     page,
   }) => {
     await page.setViewportSize(DESKTOP);
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await page.getByRole("button", { name: "Hide navigation" }).click();
     const sidebar = page.locator("#ux-reset-pro-navigation");
     await expect(sidebar).toHaveAttribute("data-state", "collapsed");
@@ -301,7 +301,7 @@ test.describe("professional navigation desktop", () => {
         .evaluate((element) => getComputedStyle(element).borderTopWidth)
     ).toBe("1px");
 
-    await page.goto("/app/compare");
+    await page.goto("/compare");
     await expect(sidebar).toHaveAttribute("data-state", "collapsed");
     await expect(
       (await navigation(page)).getByRole("link", {
@@ -321,12 +321,12 @@ test.describe("professional navigation desktop", () => {
       page.getByRole("button", { name: "Hide navigation" })
     ).toBeVisible();
 
-    await page.goto("/app/review");
-    await page.goto("/app/compare");
+    await page.goto("/explore");
+    await page.goto("/compare");
     await page.goBack();
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
-      .toBe("/app/review");
+      .toBe("/explore");
     await expect(
       (await navigation(page)).getByRole("link", {
         exact: true,
@@ -336,7 +336,7 @@ test.describe("professional navigation desktop", () => {
     await page.goForward();
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
-      .toBe("/app/compare");
+      .toBe("/compare");
     await expect(
       (await navigation(page)).getByRole("link", {
         exact: true,
@@ -346,11 +346,11 @@ test.describe("professional navigation desktop", () => {
     await expect(sidebar).toHaveAttribute("data-state", "expanded");
   });
 
-  test("/app/review has no new navigation accessibility violations", async ({
+  test("/explore has no new navigation accessibility violations", async ({
     page,
   }) => {
     await page.setViewportSize(DESKTOP);
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(await navigation(page)).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);
@@ -365,7 +365,7 @@ test.describe("professional navigation mobile", () => {
     );
   });
 
-  for (const path of ["/app/review", "/app/compare"] as const) {
+  for (const path of ["/explore", "/compare"] as const) {
     test(`${path} drawer stays closed, then opens without desktop collapse chrome`, async ({
       page,
     }) => {
@@ -421,7 +421,7 @@ test.describe("professional navigation mobile", () => {
         "Settings",
         "Docs, opens in a new tab",
       ]);
-      const activeName = path === "/app/review" ? "Atlas Explorer" : "Compare";
+      const activeName = path === "/explore" ? "Atlas Explorer" : "Compare";
       const active = nav.getByRole("link", { exact: true, name: activeName });
       await expect(active).toHaveAttribute("aria-current", "page");
       const activeStyle = await rowStyle(active);

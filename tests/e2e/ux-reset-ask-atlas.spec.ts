@@ -255,7 +255,7 @@ test.describe("Ask Atlas dedicated page", () => {
       );
     });
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).not.toHaveURL(/metric=/);
     await expect(page).not.toHaveURL(/period=/);
@@ -288,7 +288,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
 
     await page.getByTestId("ask-atlas-launcher").click();
-    await expect(page).toHaveURL(/\/app\/assistant/);
+    await expect(page).toHaveURL(/\/askatlas/);
     await expect(
       page.getByRole("heading", { level: 1, name: "Ask Atlas" })
     ).toBeVisible();
@@ -336,13 +336,13 @@ test.describe("Ask Atlas dedicated page", () => {
       .analyze();
     expect(axe.violations).toEqual([]);
     await page.getByTestId("ask-atlas-return").click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/explore/);
     await expect(
       page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
     ).toBeVisible();
     expect(new URL(page.url()).searchParams.get("county")).toBeNull();
-    expect(exploreUrl).toContain("/app/review");
+    expect(exploreUrl).toContain("/explore");
     expect(testInfo.project.name.length).toBeGreaterThan(0);
   });
 
@@ -350,7 +350,7 @@ test.describe("Ask Atlas dedicated page", () => {
     page,
   }) => {
     await installUniformCompareMocks(page);
-    await page.goto("/app/compare?compare=08001,08013&scope=CO");
+    await page.goto("/compare?compare=08001,08013&scope=CO");
     await expect(page.getByTestId("compare-workspace")).toBeVisible();
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
@@ -366,7 +366,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await page.getByRole("link", { name: "Clear page reference" }).click();
     await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
     await page.goto(
-      "/app/assistant?page_ref=not-json&county=08001&dataset=alpha-2026"
+      "/askatlas?page_ref=not-json&county=08001&dataset=alpha-2026"
     );
     const unverified = page.getByTestId("ask-atlas-page-reference");
     await expect(unverified).toHaveAttribute(
@@ -385,7 +385,7 @@ test.describe("Ask Atlas dedicated page", () => {
     page,
   }) => {
     await installUniformCompareMocks(page);
-    await page.goto("/app/compare?compare=08001,08013&scope=CO");
+    await page.goto("/compare?compare=08001,08013&scope=CO");
     await expect(page.getByTestId("compare-workspace")).toBeVisible();
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
@@ -412,9 +412,9 @@ test.describe("Ask Atlas dedicated page", () => {
     );
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/app\/compare/);
+    await expect(page).toHaveURL(/\/compare/);
     await page.goForward();
-    await expect(page).toHaveURL(/\/app\/assistant/);
+    await expect(page).toHaveURL(/\/askatlas/);
     await expect(reference).toHaveAttribute(
       "data-reference-state",
       "validated"
@@ -430,7 +430,7 @@ test.describe("Ask Atlas dedicated page", () => {
   }) => {
     await installExploreMocks(page);
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "release"))
@@ -439,12 +439,12 @@ test.describe("Ask Atlas dedicated page", () => {
     await page.goto(
       "/app/explore?county=not-a-county&metric=reported-cases&scope=ALL"
     );
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     const landed = new URL(page.url());
     expect(landed.searchParams.get("county")).toBeNull();
     expect(landed.searchParams.get("metric")).toBeNull();
     expect(landed.searchParams.get("selection")).toBe("required");
-    expect(landed.pathname).toBe("/app/review");
+    expect(landed.pathname).toBe("/explore");
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
       .toBeNull();
@@ -460,7 +460,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await launcher.focus();
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/app\/assistant/);
+    await expect(page).toHaveURL(/\/askatlas/);
     await expect(
       page.getByRole("heading", { level: 1, name: "Ask Atlas" })
     ).toBeVisible();
@@ -499,7 +499,7 @@ test.describe("Ask Atlas dedicated page", () => {
         chatResponse("Second answer stays.", `request-${call}`)
       );
     });
-    await page.goto("/app/assistant");
+    await page.goto("/askatlas");
     await page.getByLabel("Your research question").fill("First question");
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
@@ -523,7 +523,7 @@ test.describe("Ask Atlas dedicated page", () => {
       await fulfillJson(route, { detail: "upstream unavailable" }, 503);
     });
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "release"))
       .toBe("alpha-2026");
@@ -534,7 +534,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(failure).toBeVisible();
     await expect(failure).toContainText("not a finding");
     await page.getByTestId("ask-atlas-return").click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/county=/);
     await expect(
       page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
@@ -544,7 +544,7 @@ test.describe("Ask Atlas dedicated page", () => {
   test("reloads Explorer browse without opening a panel", async ({ page }) => {
     await installExploreMocks(page);
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await page.reload();
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).not.toHaveURL(/metric=/);
@@ -566,15 +566,15 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await page.goto("/app/compare?compare=08001,08013");
+    await page.goto("/compare?compare=08001,08013");
     await expect(page.getByTestId("compare-workspace")).toBeVisible();
     await expect(page.getByTestId("ask-atlas-launcher")).toHaveAttribute(
       "href",
-      /\/app\/assistant/
+      /\/askatlas/
     );
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await page.goto("/app/action");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page.getByRole("heading", { name: "Action" })).toHaveCount(0);
     await expect(
       page.getByRole("heading", { level: 1, name: "Atlas Explorer" })
@@ -597,7 +597,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await installExploreMocks(page);
     await page.setViewportSize({ height: 800, width: 390 });
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect
       .poll(async () => fieldId((await readLauncher(page)).state, "release"))
       .toBe("alpha-2026");
@@ -624,14 +624,14 @@ test.describe("Ask Atlas dedicated page", () => {
       );
     });
     await page.goto("/app/investigate?county=08001&scope=CO&period=1999-01-01");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page.getByTestId("investigate-finding-text")).toHaveCount(0);
     await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await page.getByTestId("ask-atlas-launcher").click();
-    await expect(page).toHaveURL(/\/app\/assistant/);
+    await expect(page).toHaveURL(/\/askatlas/);
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
@@ -642,9 +642,7 @@ test.describe("Ask Atlas dedicated page", () => {
     ]);
 
     await installUniformCompareMocks(page);
-    await page.goto(
-      "/app/compare?compare=08001,08013&scope=CO&period=1999-01-01"
-    );
+    await page.goto("/compare?compare=08001,08013&scope=CO&period=1999-01-01");
     await expect(page.getByText("Observation period").first()).toBeVisible();
     await expect(page.getByTestId("compare-alignment")).toContainText("2023");
     await expect(page.getByTestId("compare-alignment")).not.toContainText(
@@ -660,7 +658,7 @@ test.describe("Ask Atlas dedicated page", () => {
     expect(compare.url.searchParams.get("compare")).toBeNull();
     expect(compare.url.searchParams.get("period")).toBeNull();
     if (compare.state.kind === "validated") {
-      expect(compare.state.returnHref).toContain("/app/compare?");
+      expect(compare.state.returnHref).toContain("/compare?");
       expect(compare.state.returnHref).toContain("compare=08001%2C08013");
       expect(compare.state.returnHref).toContain("period=2023-01-01");
       expect(compare.state.returnHref).not.toContain("1999");
@@ -670,7 +668,7 @@ test.describe("Ask Atlas dedicated page", () => {
       "does not compare these counties"
     );
     await page.getByTestId("ask-atlas-return").click();
-    await expect(page).toHaveURL(/\/app\/compare/);
+    await expect(page).toHaveURL(/\/compare/);
     await expect(page).toHaveURL(/compare=08001/);
     await expect(page).toHaveURL(/period=2023-01-01/);
     await expect(page).not.toHaveURL(/1999/);
@@ -683,16 +681,16 @@ test.describe("Ask Atlas dedicated page", () => {
     await installReviewMocks(page);
     await page.goto("/app/settings");
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
     await page.getByTestId("ask-atlas-launcher").click();
-    await expect(page).toHaveURL(/\/app\/assistant/);
+    await expect(page).toHaveURL(/\/askatlas/);
     await page.goBack();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert");
     await page.goForward();
-    await expect(page).toHaveURL(/\/app\/assistant/);
+    await expect(page).toHaveURL(/\/askatlas/);
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
     await page.route("**/v1/knowledge-graph/chat", async (route) => {
