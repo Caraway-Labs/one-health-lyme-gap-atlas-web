@@ -1,3 +1,9 @@
+import {
+  ATLAS_EXPLORER_PATH,
+  RESET_ASSISTANT_PATH,
+  RESET_COMPARE_PATH,
+} from "@/features/ux-reset/routes";
+
 export type AppRouteGuardContext = {
   atlasE2E: boolean;
   nodeEnv: string;
@@ -6,8 +12,29 @@ export type AppRouteGuardContext = {
   userPresent: boolean;
 };
 
+const CANONICAL_WORKSPACE_PATHS = [
+  ATLAS_EXPLORER_PATH,
+  RESET_COMPARE_PATH,
+  RESET_ASSISTANT_PATH,
+] as const;
+
+function matchesWorkspacePath(pathname: string, path: string): boolean {
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
+/**
+ * Professional workspace routes require a session.
+ * `/app` still covers Feed, Settings, trust, and historical aliases.
+ * Issue 608 canonical Explorer, Compare, and Ask Atlas live outside that prefix.
+ */
 export function isProfessionalAppPath(pathname: string): boolean {
-  return pathname === "/app" || pathname.startsWith("/app/");
+  const normalized = pathname.split(/[?#]/, 1)[0] || "/";
+  if (normalized === "/app" || normalized.startsWith("/app/")) {
+    return true;
+  }
+  return CANONICAL_WORKSPACE_PATHS.some((path) =>
+    matchesWorkspacePath(normalized, path)
+  );
 }
 
 export function isSupabaseAuthConfigured(

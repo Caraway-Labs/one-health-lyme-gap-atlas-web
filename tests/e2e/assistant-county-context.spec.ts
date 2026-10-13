@@ -85,7 +85,7 @@ test("retired Geographic Explorer selection opens Atlas Explorer without the dra
   page,
 }) => {
   await page.goto("/geographic_explorer?county=08001");
-  await expect(page).toHaveURL(/\/app\/review\?.*county=08001/);
+  await expect(page).toHaveURL(/\/explore\?.*county=08001/);
   await expect(
     page.getByRole("heading", {
       level: 1,

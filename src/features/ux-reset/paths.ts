@@ -29,12 +29,15 @@ export {
 import {
   ATLAS_EXPLORER_PATH,
   DOCS_PATH,
+  LEGACY_ASSISTANT_PATH,
+  LEGACY_COMPARE_PATH,
   RESET_ACTION_PATH,
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
   RESET_EXPLORE_PATH,
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
   RESET_SETTINGS_PATH,
   UX_RESET_APP_PREFIX,
 } from "@/features/ux-reset/routes";
@@ -218,10 +221,27 @@ export function isResetRouteActive(
   }
 }
 
+const LEGACY_RESET_ROUTE_IDS = {
+  [LEGACY_ASSISTANT_PATH]: "assistant",
+  [LEGACY_COMPARE_PATH]: "compare",
+  [RESET_REVIEW_PATH]: "explorer",
+} as const;
+
 export function findResetRoute(pathname: string): ResetRoute | undefined {
-  return [...RESET_ROUTES]
+  const direct = [...RESET_ROUTES]
     .sort((a, b) => b.href.length - a.href.length)
     .find((route) => isResetRouteActive(route, pathname));
+  if (direct) {
+    return direct;
+  }
+  const normalized = pathname.split(/[?#]/, 1)[0] || "/";
+  const trimmed =
+    normalized.length > 1 && normalized.endsWith("/")
+      ? normalized.slice(0, -1)
+      : normalized;
+  const legacyId =
+    LEGACY_RESET_ROUTE_IDS[trimmed as keyof typeof LEGACY_RESET_ROUTE_IDS];
+  return legacyId ? resetRouteById(legacyId) : undefined;
 }
 
 export function resetRouteById(id: ResetRoute["id"]): ResetRoute {

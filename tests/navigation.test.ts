@@ -97,6 +97,13 @@ describe("Atlas navigation contract", () => {
     expect(
       sitemap().some((entry) => entry.url.includes("/ux-lab"))
     ).toBeFalsy();
+    expect(
+      sitemap().some((entry) =>
+        ["/explore", "/compare", "/askatlas", "/app/review"].some((path) =>
+          entry.url.includes(path)
+        )
+      )
+    ).toBeFalsy();
   });
 
   it("keeps the UX Reset professional workspace off the legacy analytical shell", () => {
@@ -106,8 +113,14 @@ describe("Atlas navigation contract", () => {
       shell: "none",
       status: "hidden",
     });
-    expect(getRouteShell("/app/review")).toBe("none");
-    expect(getRouteShell("/app/ai-responsible-use")).toBe("none");
+    expect([
+      getRouteShell("/app/review"),
+      getRouteShell("/explore"),
+      getRouteShell("/compare"),
+      getRouteShell("/askatlas"),
+      getRouteShell("/assistant"),
+      getRouteShell("/app/ai-responsible-use"),
+    ]).toStrictEqual(["none", "none", "none", "none", "analytical", "none"]);
   });
 
   it("matches exact and nested routes without query sensitivity", () => {

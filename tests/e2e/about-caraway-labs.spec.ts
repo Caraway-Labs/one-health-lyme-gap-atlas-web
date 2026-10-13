@@ -129,7 +129,7 @@ test("publishes an anonymous About Caraway Labs page", async ({
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page).not.toHaveURL(/sign-in/);
 
-  await page.goto("/app/review");
+  await page.goto("/explore");
   const brand = page.getByRole("contentinfo").getByRole("link", {
     name: "One Health Atlas by Caraway Labs (opens in a new tab)",
   });
@@ -144,7 +144,7 @@ test("publishes an anonymous About Caraway Labs page", async ({
   await expect(
     popup.getByRole("heading", { level: 1, name: "About Caraway Labs" })
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/app\/review$/);
+  await expect(page).toHaveURL(/\/explore$/);
   await popup.screenshot({
     path: testInfo.outputPath("about-caraway-labs.png"),
     fullPage: true,

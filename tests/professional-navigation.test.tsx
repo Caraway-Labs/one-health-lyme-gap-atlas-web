@@ -10,7 +10,7 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RESET_APP_PATH, RESET_REVIEW_PATH } from "@/features/ux-reset/paths";
+import { ATLAS_EXPLORER_PATH, RESET_APP_PATH } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
 let pathname: string = RESET_APP_PATH;
@@ -149,7 +149,7 @@ describe("professional workspace navigation", () => {
   });
 
   it("marks only the active route and keeps Docs as an external tab", () => {
-    pathname = RESET_REVIEW_PATH;
+    pathname = ATLAS_EXPLORER_PATH;
     render(
       <ResetProfessionalShell>
         <p>Review</p>

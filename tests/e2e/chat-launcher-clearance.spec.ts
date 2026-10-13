@@ -9,7 +9,7 @@ test("retired public analytical bookmarks do not open the assistant drawer", asy
     "/overview",
   ]) {
     await page.goto(start);
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(
       page.getByRole("heading", {
         level: 1,

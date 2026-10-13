@@ -120,7 +120,7 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
     /page_ref=/
   );
   await page.getByTestId("ask-atlas-launcher").click();
-  await expect(page).toHaveURL(/\/app\/assistant\?/);
+  await expect(page).toHaveURL(/\/askatlas\?/);
   await expect(page).not.toHaveURL(/county=/);
   await expect(page).toHaveURL(/page_ref=/);
   await expect(page).not.toHaveURL(/conversation=/);
@@ -155,10 +155,10 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
   expect(requests).toHaveLength(1);
 
   await page.goBack();
-  await expect(page).toHaveURL(/\/app\/review/);
+  await expect(page).toHaveURL(/\/explore/);
   await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
   await page.goForward();
-  await expect(page).toHaveURL(/\/app\/assistant\?/);
+  await expect(page).toHaveURL(/\/askatlas\?/);
   await expect(
     page.getByText("Reviewed studies describe exposure.")
   ).toBeVisible();
@@ -198,7 +198,7 @@ test("recovers an unknown conversation, a cleared history, and a failed request"
     );
   });
 
-  await page.goto("/app/assistant?conversation=missing-id");
+  await page.goto("/askatlas?conversation=missing-id");
   await expect(
     page.getByText("Conversation not found in this browser.")
   ).toBeVisible();
@@ -233,7 +233,7 @@ test("recovers an unknown conversation, a cleared history, and a failed request"
   await page.evaluate(() => {
     localStorage.removeItem("one-health-lyme-gap-atlas:knowledge-chat:v1");
   });
-  await page.goto("/app/assistant?conversation=conversation-retry");
+  await page.goto("/askatlas?conversation=conversation-retry");
   await expect(
     page.getByText("Conversation not found in this browser.")
   ).toBeVisible();
@@ -252,7 +252,7 @@ test("keeps a county missing from the release out of the literature request", as
       chatResponse("Literature only.", "request-stale", "conversation-stale")
     );
   });
-  await page.goto("/app/assistant?county=99999&dataset=alpha-2026");
+  await page.goto("/askatlas?county=99999&dataset=alpha-2026");
   await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
   await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
   await expect(page.getByText("99999")).toHaveCount(0);
@@ -273,7 +273,7 @@ test("keeps a county missing from the release out of the literature request", as
 
 const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
 const DESKTOP_WINDOW = { height: 720, width: 1280 };
-const SAVED_COUNTY_CHAT_URL = "/app/assistant?county=08001&dataset=alpha-2026";
+const SAVED_COUNTY_CHAT_URL = "/askatlas?county=08001&dataset=alpha-2026";
 
 async function seedSavedCountyChat(page: Page) {
   const answer = `${"Reviewed evidence varies by region and stays attributable to the governed release. ".repeat(40)}County answer stays in the transcript.`;
@@ -420,7 +420,7 @@ test("keeps an empty chat usable at a short landscape height", async ({
   await page.setViewportSize({ height: 360, width: 740 });
   await installExploreMocks(page);
   await installChatAnswer(page);
-  await page.goto("/app/assistant");
+  await page.goto("/askatlas");
   await expect(
     page.getByText("Start with your own question or adapt one below.")
   ).toBeVisible();
@@ -456,7 +456,7 @@ test("keeps an empty chat usable at 200% desktop zoom", async ({ page }) => {
   });
   await installExploreMocks(page);
   await installChatAnswer(page);
-  await page.goto("/app/assistant");
+  await page.goto("/askatlas");
   await expect(
     page.getByText("Start with your own question or adapt one below.")
   ).toBeVisible();
@@ -509,7 +509,7 @@ test("focuses the transcript when a saved conversation link is opened from the k
   await page.evaluate(() => {
     const link = document.createElement("a");
     link.dataset.testid = "saved-conversation-link";
-    link.href = "/app/assistant?conversation=conversation-county";
+    link.href = "/askatlas?conversation=conversation-county";
     link.textContent = "Open saved conversation";
     link.style.position = "fixed";
     link.style.top = "0";
@@ -570,7 +570,7 @@ test("ignores a late answer after a newer question is saved", async ({
       )
     );
   });
-  await page.goto("/app/assistant");
+  await page.goto("/askatlas");
   await page.getByLabel("Your research question").fill("Old question");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();

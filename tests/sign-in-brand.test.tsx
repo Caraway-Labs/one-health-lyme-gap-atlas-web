@@ -28,9 +28,7 @@ vi.mock(
 vi.mock(import("next/navigation"), async (original) => ({
   ...(await original()),
   useSearchParams: () =>
-    new URLSearchParams(
-      "next=/app/review"
-    ) as unknown as ReadonlyURLSearchParams,
+    new URLSearchParams("next=/explore") as unknown as ReadonlyURLSearchParams,
 }));
 
 import SignInPage from "@/app/auth/sign-in/page";
@@ -65,7 +63,7 @@ describe("branded sign-in preserves provider behavior", () => {
     expect(auth.signInWithOtp).toHaveBeenCalledWith({
       email: "fixture@example.invalid",
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm?next=%2Fapp%2Freview`,
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=%2Fexplore`,
       },
     });
     expectCanonicalMark(container);
@@ -101,7 +99,7 @@ describe("branded sign-in preserves provider behavior", () => {
     expect(auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=%2Fapp%2Freview`,
+        redirectTo: `${window.location.origin}/auth/callback?next=%2Fexplore`,
       },
     });
     expect(

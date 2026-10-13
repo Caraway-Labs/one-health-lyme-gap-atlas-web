@@ -8,7 +8,12 @@ import {
   UserCircle,
 } from "lucide-react";
 
-import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
+import {
+  ABOUT_CARAWAY_LABS_PATH,
+  ATLAS_EXPLORER_PATH,
+  RESET_ASSISTANT_PATH,
+  RESET_COMPARE_PATH,
+} from "@/features/ux-reset/routes";
 
 export type NavigationGroupId = "explore" | "research" | "reference";
 export type NavigationStatus = "available" | "inDevelopment" | "hidden";
@@ -255,6 +260,49 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     pageDescription:
       "Authenticated professional workspace for the One Health Lyme Gap Atlas.",
     pageTitle: "Professional workspace | One Health Lyme Gap Atlas",
+    placement: "none",
+    shell: "none",
+    status: "hidden",
+  },
+  {
+    auth: "required",
+    description:
+      "Map, county evidence, and suggested follow-up for one governed release.",
+    href: ATLAS_EXPLORER_PATH,
+    id: "atlas-explorer",
+    label: "Atlas Explorer",
+    match: "prefix",
+    pageDescription:
+      "Map-led review, expandable county evidence, and suggested follow-up.",
+    pageTitle: "Atlas Explorer | One Health Lyme Gap Atlas",
+    placement: "none",
+    shell: "none",
+    status: "hidden",
+  },
+  {
+    auth: "required",
+    description: "Compare two counties on aligned governed measures.",
+    href: RESET_COMPARE_PATH,
+    id: "workspace-compare",
+    label: "Compare",
+    match: "prefix",
+    pageDescription:
+      "Two-county evidence comparison with each measure's unit, period, and availability.",
+    pageTitle: "Compare | One Health Lyme Gap Atlas",
+    placement: "none",
+    shell: "none",
+    status: "hidden",
+  },
+  {
+    auth: "required",
+    description: "Ask questions grounded in reviewed literature.",
+    href: RESET_ASSISTANT_PATH,
+    id: "ask-atlas",
+    label: "Ask Atlas",
+    match: "prefix",
+    pageDescription:
+      "Dedicated answer-only workspace for reviewed-literature questions.",
+    pageTitle: "Ask Atlas | One Health Lyme Gap Atlas",
     placement: "none",
     shell: "none",
     status: "hidden",

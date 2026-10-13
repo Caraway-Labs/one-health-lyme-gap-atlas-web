@@ -74,11 +74,11 @@ test.describe("Atlas Explorer county evidence", () => {
     page,
   }, testInfo) => {
     await installExplorerMocks(page);
-    await page.goto("/app/review?scope=CO&county=08001");
+    await page.goto("/explore?scope=CO&county=08001");
     await expect(page.getByTestId("review-view-county-evidence")).toBeVisible();
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
       "href",
-      /\/app\/review\?.*mode=evidence/
+      /\/explore\?.*mode=evidence/
     );
 
     await page.getByTestId("review-view-county-evidence").click();
@@ -110,7 +110,7 @@ test.describe("Atlas Explorer county evidence", () => {
 
     const compareHref =
       (await page.getByTestId("explorer-compare").getAttribute("href")) ?? "";
-    expect(compareHref).toContain("/app/compare");
+    expect(compareHref).toContain("/compare");
     expect(compareHref).toContain("mode=evidence");
     expect(compareHref).toContain("return=review");
     expect(compareHref).not.toContain("020");
@@ -135,7 +135,7 @@ test.describe("Atlas Explorer county evidence", () => {
     page,
   }) => {
     await installExplorerMocks(page);
-    await page.goto("/app/review?scope=CO&county=08001&mode=follow-up");
+    await page.goto("/explore?scope=CO&county=08001&mode=follow-up");
     await expect(
       page.getByRole("heading", { name: "Suggested follow-up" })
     ).toBeFocused();
@@ -156,11 +156,11 @@ test.describe("Atlas Explorer county evidence", () => {
         })
     );
     await page.getByTestId("explorer-compare").click();
-    await expect(page).toHaveURL(/\/app\/compare/, { timeout: 20_000 });
+    await expect(page).toHaveURL(/\/compare/, { timeout: 20_000 });
     await expect(page).toHaveURL(/mode=follow-up/);
     await expect(page).toHaveURL(/return=review/);
     await page.getByTestId("compare-return").click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/mode=follow-up/);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page.getByTestId("explorer-county-evidence")).toBeVisible();
@@ -170,7 +170,7 @@ test.describe("Atlas Explorer county evidence", () => {
     page,
   }) => {
     await installExplorerMocks(page);
-    await page.goto("/app/review?scope=CO&mode=evidence");
+    await page.goto("/explore?scope=CO&mode=evidence");
     await expect(page.getByTestId("explorer-recovery")).toHaveAttribute(
       "data-recovery",
       "missing"
@@ -179,7 +179,7 @@ test.describe("Atlas Explorer county evidence", () => {
     await page.getByTestId("explorer-back-to-map").click();
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
 
-    await page.goto("/app/review?scope=CO&mode=tiles&mode=evidence");
+    await page.goto("/explore?scope=CO&mode=tiles&mode=evidence");
     await expect(page).not.toHaveURL(/mode=/);
     await expect(page.getByTestId("review-scope-results")).toBeVisible();
     await expect(page.getByTestId("explorer-county-evidence")).toHaveCount(0);
@@ -189,7 +189,7 @@ test.describe("Atlas Explorer county evidence", () => {
     page,
   }) => {
     await installExplorerMocks(page);
-    await page.goto("/app/review?scope=CO&county=08001&mode=evidence");
+    await page.goto("/explore?scope=CO&county=08001&mode=evidence");
     await expect(page.getByTestId("explorer-county-heading")).toHaveText(
       "Denver"
     );

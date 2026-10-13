@@ -14,20 +14,28 @@ export const DOCS_PATH = "/docs" as const;
  */
 export const ABOUT_CARAWAY_LABS_PATH = "/about/caraway-labs" as const;
 
+/** Former Atlas Explorer path. Permanently redirects to `ATLAS_EXPLORER_PATH`. */
 export const RESET_REVIEW_PATH = `${UX_RESET_APP_PREFIX}/review` as const;
 
 /**
- * Canonical Atlas Explorer URL for the six-page workspace (issues 196, 197).
- * The display name is Atlas Explorer. The path reuses Review.
- * Compatibility redirects are installed in middleware.
+ * Canonical Atlas Explorer URL (issue 608).
+ * The display name is Atlas Explorer. Compatibility redirects live in the
+ * recorded workspace map and are installed from middleware.
  */
-export const ATLAS_EXPLORER_PATH = RESET_REVIEW_PATH;
+export const ATLAS_EXPLORER_PATH = "/explore" as const;
 export const RESET_EXPLORE_PATH = `${UX_RESET_APP_PREFIX}/explore` as const;
 export const RESET_INVESTIGATE_PATH =
   `${UX_RESET_APP_PREFIX}/investigate` as const;
-export const RESET_COMPARE_PATH = `${UX_RESET_APP_PREFIX}/compare` as const;
+/** Former Compare path. Permanently redirects to `RESET_COMPARE_PATH`. */
+export const LEGACY_COMPARE_PATH = `${UX_RESET_APP_PREFIX}/compare` as const;
+/** Canonical Compare URL (issue 608). */
+export const RESET_COMPARE_PATH = "/compare" as const;
 export const RESET_ACTION_PATH = `${UX_RESET_APP_PREFIX}/action` as const;
-export const RESET_ASSISTANT_PATH = `${UX_RESET_APP_PREFIX}/assistant` as const;
+/** Former Ask Atlas path. Permanently redirects to `RESET_ASSISTANT_PATH`. */
+export const LEGACY_ASSISTANT_PATH =
+  `${UX_RESET_APP_PREFIX}/assistant` as const;
+/** Canonical Ask Atlas URL (issue 608). Distinct from the public `/assistant` route. */
+export const RESET_ASSISTANT_PATH = "/askatlas" as const;
 export const RESET_FEED_PATH = `${UX_RESET_APP_PREFIX}/feed` as const;
 export const RESET_SETTINGS_PATH = `${UX_RESET_APP_PREFIX}/settings` as const;
 
@@ -58,27 +66,43 @@ export const UX_RESET_ROUTE_PATHS: Record<UxResetDestinationId, string> = {
   explore: RESET_EXPLORE_PATH,
   feed: RESET_FEED_PATH,
   investigate: RESET_INVESTIGATE_PATH,
-  review: RESET_REVIEW_PATH,
+  review: ATLAS_EXPLORER_PATH,
   settings: RESET_SETTINGS_PATH,
 };
 
-const UX_RESET_ROUTE_PATH_SET = new Set<string>(
-  Object.values(UX_RESET_ROUTE_PATHS)
-);
+/**
+ * Former canonical paths keep the destination's handoff contract so a link
+ * built from a bookmarked `/app/*` URL still exports the same keys. Redirect
+ * targets stay in the workspace migration module, not in this lookup.
+ */
+const LEGACY_UX_RESET_ROUTE_PATHS: Partial<
+  Record<string, UxResetDestinationId>
+> = {
+  [LEGACY_ASSISTANT_PATH]: "assistant",
+  [LEGACY_COMPARE_PATH]: "compare",
+  [RESET_REVIEW_PATH]: "review",
+};
+
+function normalizeRoutePathname(pathname: string): string {
+  const withoutQuery = pathname.split(/[?#]/, 1)[0] || "/";
+  if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) {
+    return withoutQuery.slice(0, -1);
+  }
+  return withoutQuery;
+}
 
 export function uxResetDestinationFromPath(
   pathname: string
 ): UxResetDestinationId | null {
-  const normalized = pathname.split(/[?#]/, 1)[0] || "/";
+  const normalized = normalizeRoutePathname(pathname);
   for (const id of UX_RESET_DESTINATION_IDS) {
     if (UX_RESET_ROUTE_PATHS[id] === normalized) {
       return id;
     }
   }
-  return null;
+  return LEGACY_UX_RESET_ROUTE_PATHS[normalized] ?? null;
 }
 
 export function isUxResetRoutePath(pathname: string): boolean {
-  const normalized = pathname.split(/[?#]/, 1)[0] || "/";
-  return UX_RESET_ROUTE_PATH_SET.has(normalized);
+  return uxResetDestinationFromPath(pathname) !== null;
 }

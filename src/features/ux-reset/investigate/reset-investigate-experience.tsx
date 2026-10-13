@@ -42,7 +42,6 @@ import {
 import {
   ATLAS_EXPLORER_PATH,
   RESET_INVESTIGATE_PATH,
-  RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
@@ -126,7 +125,7 @@ function InvestigateExperienceInner() {
     workspace.scope,
   ]);
   const returnHref = uxResetShellHandoffHref(
-    RESET_REVIEW_PATH,
+    ATLAS_EXPLORER_PATH,
     RESET_INVESTIGATE_PATH,
     handoffParams
   );

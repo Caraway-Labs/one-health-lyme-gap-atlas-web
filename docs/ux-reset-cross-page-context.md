@@ -2,11 +2,11 @@
 
 **Story:** [#408](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/408)  
 **Product rules:** [UX_RESET_CONSTITUTION.md](./UX_RESET_CONSTITUTION.md) (when merged)  
-**Route namespace:** `/app/*` ([#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406))
+**Route namespace:** `/explore`, `/compare`, `/askatlas`, and remaining `/app/*` destinations ([#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406), [#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608))
 
 ## Purpose
 
-Users move among **Atlas Explorer, Compare, and Ask Atlas** without rebuilding geography, release, or compare selections. Context lives in **validated, canonical URL search parameters** so direct links and reloads stay reproducible. Atlas Explorer is the Review path (`/app/review`). Explore, Investigate, and Action are compatibility aliases that redirect there ([#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)).
+Users move among **Atlas Explorer, Compare, and Ask Atlas** without rebuilding geography, release, or compare selections. Context lives in **validated, canonical URL search parameters** so direct links and reloads stay reproducible. Atlas Explorer is `/explore`. Compare is `/compare`. Ask Atlas is `/askatlas`. Former `/app/review`, `/app/compare`, and `/app/assistant` URLs permanently redirect there. Explore, Investigate, and Action remain compatibility aliases that redirect to Atlas Explorer ([#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197), [#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608)).
 
 **Browser back/forward** depends on the shell pushing real history entries when navigating; that wiring ships with the authenticated shell ([#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406) / PR #439). This contract defines what belongs in each URL; it does not by itself integrate history.
 
@@ -14,14 +14,14 @@ Implementation: `src/features/ux-reset/` — path authority in `routes.ts`, pars
 
 ## Route path authority
 
-Path strings for Review, Explore, Investigate, Compare, Action, Assistant, Feed, and Settings are exported from `routes.ts` (`RESET_REVIEW_PATH`, …). **Docs** use `/docs` (`DOCS_PATH`) and are not part of the `/app` query handoff surface.
+Path strings for Atlas Explorer, Explore, Investigate, Compare, Action, Ask Atlas, Feed, and Settings are exported from `routes.ts` (`ATLAS_EXPLORER_PATH`, `RESET_COMPARE_PATH`, `RESET_ASSISTANT_PATH`, …). **Docs** use `/docs` (`DOCS_PATH`) and are not part of the workspace query handoff surface.
 
 Shell handoff entry point:
 
 ```ts
 import { uxResetShellHandoffHref } from "@/features/ux-reset";
 
-const href = uxResetShellHandoffHref("/app/review", pathname, searchParams);
+const href = uxResetShellHandoffHref("/explore", pathname, searchParams);
 ```
 
 ## Shared context keys (bounded)
@@ -85,7 +85,7 @@ An actual candidate keeps its existing recommendation preview. Other published c
 
 The canonical `county`, `scope`, `dataset`, and supported `period` handoff stays the existing shared context contract. Ask Atlas inherits only the selected, validated published identity, independent of candidate naming. Returning from county evidence focuses the candidate row when one exists, otherwise the Published county picker. A fresh URL without a county does not auto-select a factual county; the existing first-candidate default applies only to published candidates.
 
-Selecting a county on Atlas Explorer updates shared `county` and shows a preview: county identity, why it is in the review set, suggested follow-up, **View county evidence**, and **Compare**. Selection does not leave Atlas Explorer and does not expand evidence until the user asks. **View county evidence** sets `mode=evidence` and replaces the map, list, and preview with the in-page county view. **Back to map** clears `mode` and restores that browse surface. The county-evidence link stays on `/app/review` and keeps the shared keys that page accepts. `mode` is Explorer state, not a separate destination.
+Selecting a county on Atlas Explorer updates shared `county` and shows a preview: county identity, why it is in the review set, suggested follow-up, **View county evidence**, and **Compare**. Selection does not leave Atlas Explorer and does not expand evidence until the user asks. **View county evidence** sets `mode=evidence` and replaces the map, list, and preview with the in-page county view. **Back to map** clears `mode` and restores that browse surface. The county-evidence link stays on `/explore` and keeps the shared keys that page accepts. `mode` is Explorer state, not a separate destination.
 
 The preview why line is the review-priority rationale only. It does not say that county inputs are available, and it does not treat a missing tick or pathogen record as biological absence. When the score row is limited or unavailable, the preview shows that evidence state through the shared evidence strip and an Inspect provenance control. A `SUPPRESSED` status is Limited under the shared contract, including when evidence completeness is 100. A row whose human, tick, and pathogen statuses are all absent is Unavailable only when evidence completeness is zero. Completeness above zero means other scored inputs still provide governed signal, so that aggregate state is Limited. A county score summary does not include source family, observation period, evidence type, or provenance for that status, so those fields stay Unavailable and the caveat states the metadata limitation. The page release strip remains release-level. Governed observation rows stay on Investigate.
 

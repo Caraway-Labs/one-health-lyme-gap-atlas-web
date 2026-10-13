@@ -12,7 +12,7 @@ describe("reset Ask Atlas workspace handoff", () => {
       "conversation-1"
     );
     expect(href).toBe(
-      "/app/assistant?county=08001&dataset=alpha-2026&conversation=conversation-1"
+      "/askatlas?county=08001&dataset=alpha-2026&conversation=conversation-1"
     );
   });
 
@@ -22,6 +22,6 @@ describe("reset Ask Atlas workspace handoff", () => {
         "/app/explore",
         new URLSearchParams("scope=CO&metric=reported-cases&page=2")
       )
-    ).toBe("/app/assistant");
+    ).toBe("/askatlas");
   });
 });

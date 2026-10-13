@@ -83,7 +83,7 @@ async function footerLayout(page: Page) {
 test("opens trust links from the professional footer", async ({
   page,
 }, testInfo) => {
-  await page.goto("/app/review");
+  await page.goto("/explore");
   const footer = page.getByRole("contentinfo");
   const brand = footer.getByRole("link", {
     name: "One Health Atlas by Caraway Labs (opens in a new tab)",
@@ -160,7 +160,7 @@ test("opens trust links from the professional footer", async ({
   await expect(
     popup.getByRole("heading", { level: 1, name: "About Caraway Labs" })
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/app\/review$/);
+  await expect(page).toHaveURL(/\/explore$/);
   await popup.close();
 
   await privacy.click();
@@ -170,7 +170,7 @@ test("opens trust links from the professional footer", async ({
     page.getByRole("heading", { name: "Privacy without the fine print." })
   ).toBeVisible();
 
-  await page.goto("/app/review");
+  await page.goto("/explore");
   await page
     .getByRole("contentinfo")
     .getByRole("link", { name: "Privacy settings" })
@@ -209,10 +209,10 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
     localStorage.setItem("amplitude_unsent", "vendor-local");
   });
 
-  await page.goto("/app/review");
+  await page.goto("/explore");
   await expect
     .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
-    .toBe("/app/review");
+    .toBe("/explore");
   await page.waitForLoadState("domcontentloaded");
 
   await expect

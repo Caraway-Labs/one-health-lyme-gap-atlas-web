@@ -33,7 +33,7 @@ import {
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/app/review",
+  usePathname: () => "/explore",
   useSearchParams: () => new URLSearchParams("") as ReadonlyURLSearchParams,
 }));
 

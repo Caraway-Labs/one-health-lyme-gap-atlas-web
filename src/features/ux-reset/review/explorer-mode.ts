@@ -1,5 +1,5 @@
 /**
- * Atlas Explorer county mode on `/app/review` (issue 413).
+ * Atlas Explorer county mode on `/explore` (issues 413, 608).
  * Omitted for browse. These tokens match the recorded route map and are
  * defined here so Review does not import that map.
  */

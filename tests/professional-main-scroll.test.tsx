@@ -88,7 +88,7 @@ function ScrollHarness({
 }
 
 function renderScroller(
-  pathname = "/app/review",
+  pathname = "/explore",
   search = "scope=AZ",
   showAnchor = false
 ) {
@@ -159,9 +159,9 @@ function appendControl(node: HTMLElement): HTMLElement {
 describe("professional main scroll decisions", () => {
   it("normalizes search order and builds a location key", () => {
     expect(normalizedSearch("b=2&a=1&b=1")).toBe("a=1&b=2&b=1");
-    expect(mainLocationKey("/app/review", "")).toBe("/app/review");
-    expect(mainLocationKey("/app/review", "scope=AZ&county=04013")).toBe(
-      "/app/review?county=04013&scope=AZ"
+    expect(mainLocationKey("/explore", "")).toBe("/explore");
+    expect(mainLocationKey("/explore", "scope=AZ&county=04013")).toBe(
+      "/explore?county=04013&scope=AZ"
     );
   });
 
@@ -172,7 +172,7 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: true,
         hasHash: true,
         kind: "pop",
-        locationKey: "/app/review?scope=AZ",
+        locationKey: "/explore?scope=AZ",
         previousLocationKey: "/app/settings",
         savedOffset: 80,
       },
@@ -183,7 +183,7 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: true,
         hasHash: false,
         kind: "pop",
-        locationKey: "/app/review?scope=AZ",
+        locationKey: "/explore?scope=AZ",
         previousLocationKey: "/app/settings",
         savedOffset: 80,
       },
@@ -194,7 +194,7 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: false,
         hasHash: true,
         kind: "pop",
-        locationKey: "/app/review",
+        locationKey: "/explore",
         previousLocationKey: null,
         savedOffset: undefined,
       },
@@ -205,7 +205,7 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: false,
         hasHash: false,
         kind: "pop",
-        locationKey: "/app/review",
+        locationKey: "/explore",
         previousLocationKey: null,
         savedOffset: 10,
       },
@@ -217,7 +217,7 @@ describe("professional main scroll decisions", () => {
         hasHash: true,
         kind: "push",
         locationKey: "/app/settings",
-        previousLocationKey: "/app/review",
+        previousLocationKey: "/explore",
         savedOffset: 10,
       },
       { type: "hash" }
@@ -228,7 +228,7 @@ describe("professional main scroll decisions", () => {
         hasHash: false,
         kind: "push",
         locationKey: "/app/settings",
-        previousLocationKey: "/app/review",
+        previousLocationKey: "/explore",
         savedOffset: 10,
       },
       { type: "reset" }
@@ -249,7 +249,7 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: false,
         hasHash: false,
         kind: "replace",
-        locationKey: "/app/review?scope=AZ",
+        locationKey: "/explore?scope=AZ",
         previousLocationKey: null,
         savedOffset: 90,
       },
@@ -260,8 +260,8 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: false,
         hasHash: false,
         kind: "replace",
-        locationKey: "/app/review?county=04013&scope=AZ",
-        previousLocationKey: "/app/review?scope=AZ",
+        locationKey: "/explore?county=04013&scope=AZ",
+        previousLocationKey: "/explore?scope=AZ",
         savedOffset: 90,
       },
       { type: "keep" }
@@ -282,7 +282,7 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: false,
         hasHash: false,
         kind: "idle",
-        locationKey: "/app/review?scope=AZ",
+        locationKey: "/explore?scope=AZ",
         previousLocationKey: null,
         savedOffset: 40,
       },
@@ -294,7 +294,7 @@ describe("professional main scroll decisions", () => {
         hasHash: false,
         kind: "idle",
         locationKey: "/app/settings",
-        previousLocationKey: "/app/review?scope=AZ",
+        previousLocationKey: "/explore?scope=AZ",
         savedOffset: 40,
       },
       { type: "reset" }
@@ -304,8 +304,8 @@ describe("professional main scroll decisions", () => {
         entryMatchesPending: false,
         hasHash: false,
         kind: "idle",
-        locationKey: "/app/review?scope=AZ",
-        previousLocationKey: "/app/review?scope=AZ",
+        locationKey: "/explore?scope=AZ",
+        previousLocationKey: "/explore?scope=AZ",
         savedOffset: 40,
       },
       { type: "keep" }
@@ -444,7 +444,7 @@ describe("professional main scroll history", () => {
     vi.stubGlobal("CSS", {
       escape: (value: string) => value,
     });
-    window.history.replaceState(null, "", "/app/review?scope=AZ");
+    window.history.replaceState(null, "", "/explore?scope=AZ");
   });
 
   afterEach(() => {
@@ -483,7 +483,7 @@ describe("professional main scroll history", () => {
     expect(mainElement().scrollTop).toBe(0);
 
     await goHistory("back");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(500);
   });
@@ -491,13 +491,13 @@ describe("professional main scroll history", () => {
   it("starts a query-only push at the top and restores Arizona on back", async () => {
     const view = renderScroller();
     rememberMainOffset(640);
-    window.history.pushState({}, "", "/app/review?scope=NY");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=NY" />);
+    window.history.pushState({}, "", "/explore?scope=NY");
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=NY" />);
     flushFrames();
     expect(mainElement().scrollTop).toBe(0);
 
     await goHistory("back");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(500);
   });
@@ -505,17 +505,17 @@ describe("professional main scroll history", () => {
   it("stores a distinct offset for each history entry of the same URL", async () => {
     const view = renderScroller();
     rememberMainOffset(100);
-    window.history.pushState({}, "", "/app/review?scope=AZ");
+    window.history.pushState({}, "", "/explore?scope=AZ");
     rememberMainOffset(400);
 
     await goHistory("back");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(50);
     expect(mainElement().scrollTop).toBeLessThan(200);
 
     await goHistory("forward");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(300);
   });
@@ -525,8 +525,8 @@ describe("professional main scroll history", () => {
     rememberMainOffset(500);
     window.history.pushState({}, "", "/app/investigate#section");
     await goHistory("back");
-    window.history.pushState({}, "", "/app/review?scope=NY");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=NY" />);
+    window.history.pushState({}, "", "/explore?scope=NY");
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=NY" />);
     flushFrames();
     expect(mainElement().scrollTop).toBe(0);
   });
@@ -534,9 +534,9 @@ describe("professional main scroll history", () => {
   it("keeps the offset when a replace rewrites the query", () => {
     const view = renderScroller();
     rememberMainOffset(300);
-    window.history.replaceState({}, "", "/app/review?scope=AZ&county=04013");
+    window.history.replaceState({}, "", "/explore?scope=AZ&county=04013");
     view.rerender(
-      <ScrollHarness pathname="/app/review" search="county=04013&scope=AZ" />
+      <ScrollHarness pathname="/explore" search="county=04013&scope=AZ" />
     );
     flushFrames();
     expect(mainElement().scrollTop).toBe(300);
@@ -594,8 +594,8 @@ describe("professional main scroll history", () => {
     hydrateProfessionalMainScrollForTests();
     const view = renderScroller();
     expect(mainElement().scrollTop).toBe(700);
-    window.history.pushState({}, "", "/app/review?scope=NY");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=NY" />);
+    window.history.pushState({}, "", "/explore?scope=NY");
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=NY" />);
     flushFrames(12);
     expect(mainElement().scrollTop).toBe(0);
   });
@@ -641,7 +641,7 @@ describe("professional main scroll history", () => {
     for (const gesture of gestures) {
       cleanup();
       resetProfessionalMainScrollForTests();
-      window.history.replaceState(null, "", "/app/review?scope=AZ");
+      window.history.replaceState(null, "", "/explore?scope=AZ");
       const primed = renderScroller();
       const entryId = readHistoryEntryId(window.history.state);
       primed.unmount();
@@ -806,7 +806,7 @@ describe("professional main scroll history", () => {
     window.history.pushState({}, "", "/app/settings");
     view.rerender(<ScrollHarness pathname="/app/settings" search="" />);
     await goHistory("back");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(120);
   });
@@ -815,7 +815,7 @@ describe("professional main scroll history", () => {
     const view = renderScroller();
     rememberMainOffset(140);
     window.history.pushState({}, "");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBe(140);
   });
@@ -831,18 +831,18 @@ describe("professional main scroll history", () => {
     const view = renderScroller();
     rememberMainOffset(640);
     const link = appendControl(document.createElement("a"));
-    link.setAttribute("href", "/app/review?scope=NY");
+    link.setAttribute("href", "/explore?scope=NY");
     link.textContent = "Open New York review";
     fireEvent.pointerDown(link);
     mainElement().scrollTop = 0;
     fireEvent.scroll(mainElement());
-    window.history.pushState({}, "", "/app/review?scope=NY");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=NY" />);
+    window.history.pushState({}, "", "/explore?scope=NY");
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=NY" />);
     flushFrames();
     expect(mainElement().scrollTop).toBe(0);
 
     await goHistory("back");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(500);
     link.remove();
@@ -886,14 +886,14 @@ describe("professional main scroll history", () => {
   it("seeds a same-URL push and ignores a history jump to zero", async () => {
     const view = renderScroller();
     rememberMainOffset(180);
-    window.history.pushState({}, "", "/app/review?scope=AZ");
+    window.history.pushState({}, "", "/explore?scope=AZ");
     rememberMainOffset(420);
     mainElement().scrollTop = 0;
     fireEvent.scroll(mainElement());
     expect(mainElement().scrollTop).toBe(420);
 
     await goHistory("back");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(100);
     expect(mainElement().scrollTop).toBeLessThan(250);
@@ -902,7 +902,7 @@ describe("professional main scroll history", () => {
     fireEvent.scroll(mainElement());
     expect(mainElement().scrollTop).toBeGreaterThan(100);
     await goHistory("forward");
-    view.rerender(<ScrollHarness pathname="/app/review" search="scope=AZ" />);
+    view.rerender(<ScrollHarness pathname="/explore" search="scope=AZ" />);
     flushFrames();
     expect(mainElement().scrollTop).toBeGreaterThan(350);
   });
@@ -1007,7 +1007,7 @@ describe("professional main scroll keyboard ownership", () => {
       }
     );
     vi.stubGlobal("cancelAnimationFrame", () => {});
-    window.history.replaceState(null, "", "/app/review?scope=AZ");
+    window.history.replaceState(null, "", "/explore?scope=AZ");
     renderScroller();
   });
 

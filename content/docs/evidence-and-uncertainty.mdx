@@ -17,7 +17,7 @@ Use these terms consistently when reading a result:
 | **Modeled output** | An estimate, forecast, classification, or other result produced by a model rather than directly published as an observation. | Require the model version, inputs, validation, uncertainty, and human review before relying on it. The current public explorer does not promise an authoritative modeled outbreak or individual-risk output. |
 | **Investigation candidate** | A geography or pattern selected for a bounded follow-up question because the available evidence or an evidence gap merits review. | State what should be checked next and what evidence could change the interpretation. |
 
-[Atlas Explorer](/app/review) labels the county review score and evidence completeness as analytical signals. The active release is shown in the application; [current capabilities](/docs/current-capabilities) describes the release boundary.
+[Atlas Explorer](/explore) labels the county review score and evidence completeness as analytical signals. The active release is shown in the application; [current capabilities](/docs/current-capabilities) describes the release boundary.
 
 ## Start with provenance
 
@@ -30,7 +30,7 @@ Before interpreting a signal, locate and record:
 - **Freshness and processing context:** source retrieval, release generation, and data load times when the application provides them; and
 - **Limitations:** coverage, sample size, representativeness, missingness, suppression, comparability, uncertainty, and known data-quality constraints.
 
-The evidence snapshot on [Atlas Explorer](/app/review) summarizes source periods, scoring methodology, and release processing times in plain language, with exact IDs behind **Inspect provenance**. County evidence adds county-level source context when it is available. Use that page before sharing or acting on a result. A generated date describes the release; it is not necessarily the date of disease observations. See [Releases and methodology labels](/docs/releases-and-methodology) for definitions of each label.
+The evidence snapshot on [Atlas Explorer](/explore) summarizes source periods, scoring methodology, and release processing times in plain language, with exact IDs behind **Inspect provenance**. County evidence adds county-level source context when it is available. Use that page before sharing or acting on a result. A generated date describes the release; it is not necessarily the date of disease observations. See [Releases and methodology labels](/docs/releases-and-methodology) for definitions of each label.
 
 The list above is the provenance to record for evidence in the current open-data release. Atlas is also designed so a later governed source can be normalized into the same evidence concepts. That normalization keeps the original source and publisher, dataset version or vintage, geography, observation period, transformation, and limitations on the result. A shared model does not make two sources equivalent. Missing, suppressed, unavailable, and uncertain inputs stay visible as the states in the next section. [Sources and canonical evidence](/docs/sources-and-canonical-evidence) separates that architectural intent from the sources released today.
 
@@ -87,6 +87,6 @@ Use this checklist for a county, comparison, or other review candidate:
 7. **Choose a bounded next step.** Source validation, local surveillance review, a time-bounded analysis, expert consultation, or no action.
 8. **Record the handoff.** Save the URL, release, method, filters, evidence context, question, reviewer, and caveats using the [investigation workflows](/docs/investigation-workflows).
 
-[Atlas Explorer](/app/review) provides the map and the county list for the same release. If map geometry is unavailable or a map is not usable, use the county list and text summaries. For AI-enabled or experimental experiences, keep the [AI Ethics commitments](/ai-ethics) in view and retain human review.
+[Atlas Explorer](/explore) provides the map and the county list for the same release. If map geometry is unavailable or a map is not usable, use the county list and text summaries. For AI-enabled or experimental experiences, keep the [AI Ethics commitments](/ai-ethics) in view and retain human review.
 
 Atlas helps identify what may deserve investigation. It does not provide clinical advice, person-level exposure or disease-risk predictions, causal proof, guaranteed outbreak forecasts, or an automatic public-health decision.

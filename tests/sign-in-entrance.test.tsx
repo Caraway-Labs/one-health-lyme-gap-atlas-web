@@ -20,7 +20,7 @@ const { signInWithOAuth, signInWithOtp } = vi.hoisted(() => ({
   >(),
 }));
 
-let search = "next=/app/review";
+let search = "next=/explore";
 
 vi.mock(
   import("next/font/local"),
@@ -47,7 +47,7 @@ import SignInPage from "@/app/auth/sign-in/page";
 describe("email-first sign-in entrance", () => {
   afterEach(() => {
     cleanup();
-    search = "next=/app/review";
+    search = "next=/explore";
     signInWithOAuth.mockReset();
     signInWithOtp.mockReset();
   });
@@ -99,8 +99,7 @@ describe("email-first sign-in entrance", () => {
       expect(signInWithOtp).toHaveBeenCalledWith({
         email: "person@example.org",
         options: {
-          emailRedirectTo:
-            "http://localhost:3000/auth/confirm?next=%2Fapp%2Freview",
+          emailRedirectTo: "http://localhost:3000/auth/confirm?next=%2Fexplore",
         },
       });
     });
@@ -121,8 +120,7 @@ describe("email-first sign-in entrance", () => {
     await waitFor(() => {
       expect(signInWithOAuth).toHaveBeenCalledWith({
         options: {
-          redirectTo:
-            "http://localhost:3000/auth/callback?next=%2Fapp%2Freview",
+          redirectTo: "http://localhost:3000/auth/callback?next=%2Fexplore",
         },
         provider: "google",
       });
@@ -311,7 +309,7 @@ async function showConfirmation() {
 describe("sign-in error announcements", () => {
   afterEach(() => {
     cleanup();
-    search = "next=/app/review";
+    search = "next=/explore";
     signInWithOAuth.mockReset();
     signInWithOtp.mockReset();
   });

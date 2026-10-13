@@ -4,7 +4,7 @@ test("an overview bookmark opens Atlas Explorer browse and drops score filters",
   page,
 }) => {
   await page.goto("/overview?dataset=alpha-explorer&county=06085&eco=70");
-  await expect(page).toHaveURL(/\/app\/review/);
+  await expect(page).toHaveURL(/\/explore/);
   const url = new URL(page.url());
   expect({
     county: url.searchParams.get("county"),
@@ -17,7 +17,7 @@ test("an overview bookmark opens Atlas Explorer browse and drops score filters",
     dataset: "alpha-explorer",
     eco: null,
     mode: null,
-    pathname: "/app/review",
+    pathname: "/explore",
   });
   expect(url.hash).toBe("");
   await expect(
@@ -34,7 +34,7 @@ test("a geographic explorer bookmark opens browse and does not invent a county",
   await page.goto(
     "/geographic_explorer?view=compare&selected=06085%2C06037&county=06085&metric=score"
   );
-  await expect(page).toHaveURL(/\/app\/review/);
+  await expect(page).toHaveURL(/\/explore/);
   const url = new URL(page.url());
   expect(url.searchParams.get("view")).toBeNull();
   expect(url.searchParams.get("metric")).toBeNull();
@@ -42,7 +42,7 @@ test("a geographic explorer bookmark opens browse and does not invent a county",
   expect(url.searchParams.get("mode")).toBeNull();
 
   await page.goto("/geographic_explorer?county=99999");
-  await expect(page).toHaveURL(/\/app\/review/);
+  await expect(page).toHaveURL(/\/explore/);
   expect(new URL(page.url()).searchParams.get("county")).toBe("99999");
   expect(new URL(page.url()).searchParams.get("county")).not.toBe("06037");
 });
@@ -51,7 +51,7 @@ test("a legacy analytical root URL opens Atlas Explorer and drops unsupported fi
   page,
 }) => {
   await page.goto("/?county=08001&state=CO&dataset=alpha-explorer&eco=70");
-  await expect(page).toHaveURL(/\/app\/review/);
+  await expect(page).toHaveURL(/\/explore/);
   const url = new URL(page.url());
   expect({
     county: url.searchParams.get("county"),
@@ -64,7 +64,7 @@ test("a legacy analytical root URL opens Atlas Explorer and drops unsupported fi
     county: "08001",
     dataset: "alpha-explorer",
     eco: null,
-    pathname: "/app/review",
+    pathname: "/explore",
     scope: "CO",
     state: null,
   });
@@ -79,12 +79,12 @@ test("drops a legacy root section hash and keeps the Front Porch story anchor", 
   page,
 }) => {
   await page.goto("/#atlas");
-  await expect(page).toHaveURL(/\/app\/review/);
-  expect(new URL(page.url()).pathname).toBe("/app/review");
+  await expect(page).toHaveURL(/\/explore/);
+  expect(new URL(page.url()).pathname).toBe("/explore");
   expect(new URL(page.url()).search).toBe("");
 
   await page.goto("/#methods");
-  await expect(page).toHaveURL(/\/app\/review/);
+  await expect(page).toHaveURL(/\/explore/);
   expect(new URL(page.url()).search).toBe("");
 
   await page.goto("/#front-porch-story");

@@ -39,8 +39,8 @@ function WithStorySidebarKey(
 }
 
 const items = [
-  ["Atlas Explorer", "/app/review"],
-  ["Compare", "/app/compare"],
+  ["Atlas Explorer", "/explore"],
+  ["Compare", "/compare"],
 ] as const;
 
 export function SidebarStory({ startCollapsed }: { startCollapsed: boolean }) {
