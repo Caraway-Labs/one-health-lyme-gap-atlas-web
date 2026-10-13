@@ -302,10 +302,10 @@ test.describe("Ask Atlas dedicated page", () => {
       "alpha-2026"
     );
     await expect(referenceField(page, "geography")).toHaveCount(0);
-    await expect(reference).toContainText("not literature retrieved");
+    await expect(reference).toContainText("Answers search reviewed literature");
     await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
     await expect(
-      page.getByText("Ask a research question about reviewed literature.")
+      page.getByText("Start with your own question or adapt one below.")
     ).toBeVisible();
     await expect(page.getByText("Data supplied by the NCBI.")).toBeVisible();
     const layout =
@@ -314,7 +314,7 @@ test.describe("Ask Atlas dedicated page", () => {
       path: `/opt/cursor/artifacts/ask-atlas-page-${layout}.png`,
     });
 
-    await page.getByLabel("Your question").fill(QUESTION);
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Source paper")).toBeVisible();
     expect(requests).toHaveLength(1);
@@ -467,7 +467,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.getByTestId("ask-atlas-workspace")).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
-    await expect(page.getByLabel("Your question")).toBeVisible();
+    await expect(page.getByLabel("Your research question")).toBeVisible();
   });
 
   test("drops a late answer after New chat", async ({ page }) => {
@@ -499,11 +499,11 @@ test.describe("Ask Atlas dedicated page", () => {
       );
     });
     await page.goto("/app/assistant");
-    await page.getByLabel("Your question").fill("First question");
+    await page.getByLabel("Your research question").fill("First question");
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
     await page.getByRole("button", { name: "New chat" }).click();
-    await page.getByLabel("Your question").fill("A later question");
+    await page.getByLabel("Your research question").fill("A later question");
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Second answer stays.")).toBeVisible();
     resolveFirst();
@@ -527,7 +527,7 @@ test.describe("Ask Atlas dedicated page", () => {
       .poll(async () => fieldId((await readLauncher(page)).state, "release"))
       .toBe("alpha-2026");
     await page.getByTestId("ask-atlas-launcher").click();
-    await page.getByLabel("Your question").fill(QUESTION);
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     const failure = page.locator("[data-assistant-state='network_failure']");
     await expect(failure).toBeVisible();
@@ -598,8 +598,8 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
     await expect(page.getByTestId("ask-atlas-page-reference")).toBeVisible();
-    await page.getByLabel("Your question").scrollIntoViewIfNeeded();
-    await expect(page.getByLabel("Your question")).toBeInViewport();
+    await page.getByLabel("Your research question").scrollIntoViewIfNeeded();
+    await expect(page.getByLabel("Your research question")).toBeInViewport();
   });
 
   test("inherits the accepted observation period instead of an unvalidated request", async ({
@@ -626,7 +626,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await page.getByTestId("ask-atlas-launcher").click();
     await expect(page).toHaveURL(/\/app\/assistant/);
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await page.getByLabel("Your question").fill(QUESTION);
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Source paper")).toBeVisible();
     expect(Object.keys(chatBodies[0] ?? {}).toSorted()).toEqual([
@@ -694,7 +694,7 @@ test.describe("Ask Atlas dedicated page", () => {
         chatResponse("Reviewed studies describe exposure.", "request-link")
       );
     });
-    await page.getByLabel("Your question").fill(QUESTION);
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     const source = page.getByRole("link", { name: "Source paper" });
     await expect(source).toBeVisible();

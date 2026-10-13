@@ -529,6 +529,7 @@
   outline-offset: 2px;
 }
 
+.ux-reset-explorer-map .maplibre-atlas,
 .ux-reset-review-state-map .maplibre-atlas {
   min-height: 0;
   height: 100%;
@@ -629,12 +630,13 @@
 
 @media (min-width: 960px) {
   .ux-reset-review-operating {
-    grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.9fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
   }
 
   .ux-reset-review-result,
-  .ux-reset-review-gaps {
+  .ux-reset-review-gaps,
+  .ux-reset-explorer-browse {
     grid-column: 1 / -1;
   }
 }
@@ -871,8 +873,162 @@
   min-width: 0;
 }
 
-.ux-reset-compare-table table {
-  min-width: 52rem;
+.ux-reset-compare-unified {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ux-reset-compare-unified table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.ux-reset-compare-col-measure {
+  width: 28%;
+}
+
+.ux-reset-compare-col-county {
+  width: 36%;
+}
+
+.ux-reset-compare-unified > div > table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--background);
+}
+
+.ux-reset-compare-county-name,
+.ux-reset-compare-fips,
+.ux-reset-compare-unified thead a {
+  display: block;
+}
+
+.ux-reset-compare-fips {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.ux-reset-compare-unified thead a {
+  width: fit-content;
+  margin-top: 0.35rem;
+}
+
+.ux-reset-compare-shared-note,
+.ux-reset-compare-score-method,
+.ux-reset-compare-state-context {
+  margin-top: 0.75rem;
+}
+
+.ux-reset-compare-meta,
+.ux-reset-compare-qualification-line {
+  margin: 0.2rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.ux-reset-compare-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+}
+
+.ux-reset-compare-unified caption {
+  caption-side: bottom;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.ux-reset-compare-unified th,
+.ux-reset-compare-unified td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.ux-reset-compare-unified .ux-reset-evidence-object {
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ux-reset-compare-unified .ux-reset-evidence-object-heading :is(h3, h4, h5) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.ux-reset-compare-unified .ux-reset-evidence-value {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.ux-reset-compare-unified .ux-reset-evidence-strip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  margin: 0;
+}
+
+.ux-reset-compare-unified .ux-reset-evidence-strip-meta div {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.ux-reset-compare-unified .ux-reset-evidence-strip-meta dt,
+.ux-reset-compare-unified .ux-reset-evidence-strip-meta dd {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.ux-reset-compare-unified [data-observation="missing"],
+.ux-reset-compare-unified [data-observation="failed"],
+.ux-reset-compare-unified [data-observation="unsupported_period"],
+.ux-reset-compare-unified [data-observation="release_mismatch"] {
+  margin: 0;
+  color: var(--atlas-muted-text);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 700px) {
+  .ux-reset-compare-unified table,
+  .ux-reset-compare-unified caption,
+  .ux-reset-compare-unified tbody,
+  .ux-reset-compare-unified tr,
+  .ux-reset-compare-unified th,
+  .ux-reset-compare-unified td {
+    display: block;
+    width: 100%;
+  }
+
+  .ux-reset-compare-unified thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .ux-reset-compare-unified td[data-county]::before {
+    content: attr(data-county);
+    display: block;
+    margin-bottom: 0.15rem;
+    font-weight: 600;
+  }
+
+  .ux-reset-compare-unified tr {
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--line);
+  }
 }
 
 .ux-reset-compare th .type-small,
@@ -909,6 +1065,10 @@
   overflow: auto;
   overscroll-behavior: contain;
   scroll-padding: var(--space-2);
+}
+
+.ux-reset-pro-main :focus-visible {
+  scroll-margin-bottom: 1.5rem;
 }
 
 .ux-reset-ask-atlas-reference,
@@ -1086,19 +1246,75 @@
 }
 
 .ux-reset-ask-atlas-workspace .evidence-chat-workspace {
-  flex: 1 1 auto;
-  grid-template-rows: minmax(0, 1fr);
+  flex: none;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
   min-height: 0;
   overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ux-reset-ask-atlas-workspace .chat-history-desktop {
+  display: none;
+}
+
+.ux-reset-ask-atlas-workspace .chat-history-mobile-toggle {
+  display: inline-flex;
+}
+
+.ux-reset-ask-atlas-workspace .chat-history-mobile-backdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  padding: 0;
+  background: rgb(15 35 45 / 42%);
+}
+
+.ux-reset-ask-atlas-workspace .chat-history-mobile-sheet {
+  display: flex;
+  max-height: min(78vh, 28rem);
+  margin: auto 0 0;
+  padding: 1rem 1rem 1.25rem;
+  overflow: hidden;
+  border-radius: 1rem 1rem 0 0;
+  background: var(--card);
+  flex-direction: column;
+  box-shadow: 0 -12px 40px rgb(15 35 45 / 18%);
 }
 
 .ux-reset-ask-atlas-workspace .chat-panel {
   display: flex;
-  flex: 1 1 auto;
+  flex: none;
   flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: none;
   height: auto;
   min-height: 0;
+  margin: 0;
   overflow: visible;
+  background: transparent;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel-header {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ux-reset-ask-atlas-workspace
+  .chat-panel
+  > :not(.chat-panel-header):not(.ux-reset-ask-atlas-reference) {
+  width: min(100%, 56rem);
+}
+
+.ux-reset-ask-atlas-workspace .ux-reset-ask-atlas-reference {
+  width: 100%;
 }
 
 .ux-reset-ask-atlas-workspace .chat-transcript {
@@ -1129,6 +1345,522 @@
 
 .ux-reset-ask-atlas-workspace .chat-turn p {
   margin-block: 0.4rem 0;
+}
+
+.ux-reset-pro-main .ux-reset-explorer-page h1,
+.ux-reset-pro-main .ux-reset-compare h1 {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.ux-reset-explorer-page,
+.ux-reset-compare,
+.ux-reset-ask-atlas-workspace {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.ux-reset-explorer-heading,
+.ux-reset-compare-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ux-reset-explorer-heading {
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ux-reset-explorer-heading p,
+.ux-reset-compare-header p {
+  margin: 0.25rem 0 0;
+  color: var(--atlas-muted-text);
+}
+
+.ux-reset-explorer-toolbar,
+.ux-reset-compare-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+}
+
+.ux-reset-explorer-toolbar .ux-reset-review-scope-field {
+  display: grid;
+  gap: 0.25rem;
+  flex: 0 1 16rem;
+  min-width: 12rem;
+}
+
+.ux-reset-review-operating {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ux-reset-explorer-browse {
+  display: grid;
+  gap: 0.875rem;
+  align-items: stretch;
+  order: -1;
+}
+
+.ux-reset-explorer-list,
+.ux-reset-explorer-map,
+.ux-reset-explorer-preview {
+  min-width: 0;
+}
+
+.ux-reset-explorer-preview,
+.ux-reset-explorer-list > .gap-0,
+.ux-reset-explorer-page .ux-reset-review-preview {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.ux-reset-explorer-list > .gap-0 {
+  min-height: 0;
+}
+
+.ux-reset-explorer-map {
+  width: 100%;
+  min-height: 20rem;
+}
+
+.ux-reset-explorer-map .map-wrap {
+  aspect-ratio: auto;
+  min-height: 10rem;
+  height: min(26rem, max(10rem, calc(100svh - 39.5rem)));
+}
+
+@media (min-width: 1200px) {
+  .ux-reset-explorer-map .map-wrap {
+    min-height: 16rem;
+    height: min(32rem, max(16rem, calc(100svh - 28rem)));
+  }
+}
+
+.ux-reset-explorer-map-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem 0;
+}
+
+.ux-reset-explorer-map-heading h2,
+.ux-reset-explorer-map-heading p {
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+.ux-reset-explorer-map-heading h2 {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.ux-reset-explorer-map-heading p,
+.ux-reset-explorer-county-score {
+  color: var(--atlas-muted-text);
+  font-size: 0.75rem;
+}
+
+.ux-reset-explorer-toolbar input[type="search"] {
+  width: 100%;
+  height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 0 0.65rem;
+}
+
+.ux-reset-explorer-list .type-small {
+  margin: 0.15rem 0 0;
+}
+
+.ux-reset-explorer-list .ux-reset-review-candidate-list {
+  max-height: none;
+  overflow: visible;
+}
+
+.ux-reset-explorer-list .ux-reset-review-candidate strong {
+  overflow-wrap: anywhere;
+}
+
+.ux-reset-explorer-list .ux-reset-review-candidate {
+  gap: 0.1rem;
+  padding: 0.4rem 0.55rem;
+}
+
+.ux-reset-explorer-list .ux-reset-review-candidate[aria-current="true"] {
+  border: 1px solid var(--primary);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.ux-reset-explorer-browse .ux-reset-review-state-map {
+  min-height: 20rem;
+  height: min(32rem, calc(100dvh - 16rem));
+}
+
+.ux-reset-explorer-legend ul,
+.ux-reset-layer-availability ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-explorer-legend li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ux-reset-explorer-legend li span {
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.ux-reset-review-candidate[aria-current="true"] {
+  background: color-mix(in srgb, var(--mint) 72%, white);
+}
+
+.ux-reset-review-preview-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ux-reset-review-preview-actions .ux-reset-review-open,
+.ux-reset-review-preview-actions button {
+  width: 100%;
+  justify-content: center;
+}
+
+.ux-reset-explorer-release,
+.ux-reset-review-result {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.ux-reset-compare-empty {
+  padding: 1.25rem;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+.ux-reset-compare-empty h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.evidence-chat[data-presentation="ask-atlas"] .chat-panel {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.ux-reset-ask-atlas-title-block {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.ux-reset-ask-atlas-intro {
+  margin: 0;
+  color: var(--atlas-muted-text);
+}
+
+.ux-reset-ask-atlas-workspace .ux-reset-ask-atlas-storage {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ux-reset-ask-atlas-workspace .chat-starter-prompts {
+  padding: 0;
+}
+
+.ux-reset-ask-atlas-workspace .chat-starter-prompts-label {
+  color: var(--atlas-muted-text);
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ux-reset-ask-atlas-workspace .chat-starter-prompts-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ux-reset-ask-atlas-workspace .chat-starter-prompt-button {
+  width: 100%;
+  height: auto;
+  min-height: 4.5rem;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background: var(--card);
+  text-align: left;
+  white-space: normal;
+}
+
+.ux-reset-ask-atlas-workspace .chat-composer-dock {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ux-reset-ask-atlas-workspace .chat-transcript-flow,
+.ux-reset-ask-atlas-workspace .chat-form,
+.ux-reset-ask-atlas-workspace .medical-notice,
+.ux-reset-ask-atlas-workspace .chat-starter-prompts {
+  padding-inline: 0;
+}
+
+.ux-reset-ask-atlas-workspace .chat-starter-prompts h2,
+.ux-reset-ask-atlas-workspace .chat-form,
+.ux-reset-ask-atlas-workspace .chat-form label,
+.ux-reset-ask-atlas-workspace .chat-form textarea,
+.ux-reset-ask-atlas-workspace .medical-notice {
+  font-family: var(--font-sans);
+}
+
+.ux-reset-ask-atlas-workspace .chat-form label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ux-reset-ask-atlas-workspace .chat-form .medical-notice {
+  margin-top: 0.75rem;
+  padding-inline: 0;
+}
+
+.ux-reset-ask-atlas-workspace .chat-panel-header-actions > button {
+  position: relative;
+  z-index: 32;
+}
+
+.ux-reset-ask-atlas-history {
+  position: relative;
+}
+
+.ux-reset-ask-atlas-history-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  border: 0;
+  background: transparent;
+}
+
+.ux-reset-ask-atlas-history-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 33;
+  display: grid;
+  gap: 0.75rem;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(24rem, 70vh);
+  overflow: auto;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 12px 32px rgb(15 35 45 / 12%);
+}
+
+.ux-reset-ask-atlas-history-panel .chat-history-list {
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.ux-reset-ask-atlas-workspace .chat-starter-prompts h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.ux-reset-ask-atlas-workspace .chat-form {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.ux-reset-ask-atlas-workspace .chat-form textarea {
+  min-height: 7.5rem;
+}
+
+@media (max-width: 700px) {
+  .ux-reset-ask-atlas-workspace .chat-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ux-reset-ask-atlas-workspace .chat-panel-header-actions {
+    justify-content: flex-start;
+  }
+
+  .ux-reset-ask-atlas-workspace .chat-starter-prompts-list {
+    grid-template-columns: 1fr;
+  }
+
+  .ux-reset-ask-atlas-history-backdrop {
+    background: rgb(15 35 45 / 42%);
+  }
+
+  .ux-reset-ask-atlas-history-panel {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: min(78vh, 28rem);
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+.ux-reset-ask-atlas-workspace .medical-notice {
+  background: transparent;
+  color: var(--atlas-muted-text);
+  font-size: 0.8rem;
+}
+
+.ux-reset-explorer-evidence [data-testid="explorer-county-heading"] {
+  margin: 0.35rem 0 0.15rem;
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.ux-reset-explorer-follow-up h2 {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.ux-reset-evidence-columns {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 1200px) {
+  .ux-reset-explorer-browse {
+    grid-template-columns: minmax(14.5rem, 16.25rem) minmax(0, 1fr) minmax(
+        18rem,
+        20.5rem
+      );
+  }
+
+  .ux-reset-explorer-list {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .ux-reset-explorer-map,
+  .ux-reset-explorer-browse .ux-reset-review-state-map {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ux-reset-explorer-preview {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .ux-reset-explorer-list.ux-reset-review-state-nav {
+    display: contents;
+  }
+
+  .ux-reset-explorer-list.ux-reset-review-state-nav
+    > :not(.ux-reset-review-state-map) {
+    grid-column: 1;
+  }
+
+  .ux-reset-evidence-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ux-reset-evidence-columns > :nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 800px) {
+  .ux-reset-explorer-browse {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  }
+
+  .ux-reset-explorer-map,
+  .ux-reset-explorer-browse .ux-reset-review-state-map {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .ux-reset-explorer-list {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .ux-reset-explorer-preview {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 799px) {
+  .ux-reset-explorer-browse,
+  .ux-reset-evidence-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ux-reset-explorer-map {
+    order: 1;
+  }
+
+  .ux-reset-explorer-preview {
+    order: 2;
+  }
+
+  .ux-reset-explorer-list {
+    order: 3;
+  }
+
+  .ux-reset-explorer-map .map-wrap {
+    min-height: 16rem;
+    height: 16rem;
+  }
 }
 
 /* A restored professional document stays hidden until its account is confirmed. */

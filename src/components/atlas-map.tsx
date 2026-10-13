@@ -124,6 +124,7 @@ export function AtlasMap({
   selectedFips,
   selectedState = "ALL",
   cameraFrameState,
+  fitSignal = 0,
   resetNationalView = false,
   selectedDistrict = "ALL",
   onSelect,
@@ -144,6 +145,8 @@ export function AtlasMap({
   selectedState?: string;
   /** When set, fits the map camera to this state scope (Review). Independent of highlight `selectedState`. */
   cameraFrameState?: string | null;
+  /** Increment to fit the camera to the current jurisdiction again. */
+  fitSignal?: number;
   /**
    * Opt-in. When the frame returns to the national view, jump back to the
    * contiguous United States camera. Callers that omit this keep the previous
@@ -168,6 +171,7 @@ export function AtlasMap({
   const applyingExternalMove = useRef(false);
   const previousSelectedFips = useRef<string | null>(null);
   const previousFramedState = useRef<string | null>(null);
+  const previousFitSignal = useRef(fitSignal);
   const cameraFitGeneration = useRef(0);
   const [mapReady, setMapReady] = useState(false);
   const selectRef = useRef(onSelect);
@@ -337,7 +341,16 @@ export function AtlasMap({
       setMapReady(true);
     });
     map.current = instance;
+    const observed = container.current;
+    const resizeObserver =
+      observed && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            instance.resize();
+          })
+        : null;
+    resizeObserver?.observe(observed as HTMLElement);
     return () => {
+      resizeObserver?.disconnect();
       instance.remove();
       map.current = null;
     };
@@ -379,6 +392,10 @@ export function AtlasMap({
     const instance = map.current;
     if (!mapReady || !instance?.getLayer("selected-outline")) {
       return;
+    }
+    if (previousFitSignal.current !== fitSignal) {
+      previousFitSignal.current = fitSignal;
+      previousFramedState.current = null;
     }
     const frameState =
       cameraFrameState && cameraFrameState !== "ALL" ? cameraFrameState : null;
@@ -460,6 +477,7 @@ export function AtlasMap({
     });
   }, [
     cameraFrameState,
+    fitSignal,
     geometry,
     mapReady,
     resetNationalView,

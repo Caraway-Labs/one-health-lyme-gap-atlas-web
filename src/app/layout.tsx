@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
@@ -6,6 +7,11 @@ import { RouteChrome } from "@/components/route-chrome";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { Providers } from "./providers";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -50,7 +56,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html className={inter.variable} lang="en" data-scroll-behavior="smooth">
       <body>
         <TooltipProvider>
           <Providers>

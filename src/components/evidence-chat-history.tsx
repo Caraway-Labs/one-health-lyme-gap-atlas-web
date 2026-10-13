@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -158,6 +158,147 @@ function ChatHistoryClearDialog({
   );
 }
 
+const SAVED_IN_BROWSER =
+  "Up to five conversations stay in this browser for 30 days. Nothing is stored until a response is saved. Deleting a chat removes that local copy only.";
+
+export function AskAtlasHistoryControl({
+  activeConversationId,
+  composerFocusRef,
+  conversations,
+  onClearAll,
+  onDelete,
+  onSelect,
+}: {
+  activeConversationId?: string;
+  composerFocusRef: RefObject<HTMLTextAreaElement | null>;
+  conversations: LocalConversation[];
+  onClearAll: () => void;
+  onDelete: (id: string) => void;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [relativeTimeNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    panelRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  function closePanel(focusButton = true) {
+    setOpen(false);
+    if (focusButton) {
+      buttonRef.current?.focus();
+    }
+  }
+
+  return (
+    <div className="ux-reset-ask-atlas-history">
+      <Button
+        aria-controls="ask-atlas-history-panel"
+        aria-expanded={open}
+        ref={buttonRef}
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          setOpen((current) => !current);
+        }}
+        {...analyticsControlAttributes("evidence_chat_history_open")}
+      >
+        Chat history
+      </Button>
+      {open ? (
+        <>
+          <button
+            aria-label="Close chat history"
+            className="ux-reset-ask-atlas-history-backdrop"
+            type="button"
+            onClick={() => {
+              closePanel();
+            }}
+          />
+          <div
+            aria-label="Chat history"
+            className="ux-reset-ask-atlas-history-panel"
+            id="ask-atlas-history-panel"
+            ref={panelRef}
+            role="dialog"
+            tabIndex={-1}
+          >
+            <div className="chat-history-header">
+              <strong>Chat history</strong>
+              {conversations.length > 0 ? (
+                <button
+                  aria-haspopup="dialog"
+                  className="chat-history-clear"
+                  type="button"
+                  onClick={() => {
+                    closePanel(false);
+                    setClearDialogOpen(true);
+                  }}
+                >
+                  Clear all
+                </button>
+              ) : null}
+            </div>
+            {conversations.length === 0 ? (
+              <p className="chat-history-empty-hint">
+                No chats are saved in this browser yet. A chat is saved here
+                only after a response arrives.
+              </p>
+            ) : (
+              <ChatHistoryList
+                activeConversationId={activeConversationId}
+                conversations={conversations}
+                now={relativeTimeNow}
+                onDelete={onDelete}
+                onSelect={(id) => {
+                  onSelect(id);
+                  closePanel(false);
+                  composerFocusRef.current?.focus();
+                }}
+              />
+            )}
+            <details
+              className="ux-reset-ask-atlas-storage"
+              data-testid="ask-atlas-browser-storage"
+              id="ask-atlas-browser-storage"
+            >
+              <summary>Saved in this browser</summary>
+              <p>{SAVED_IN_BROWSER}</p>
+            </details>
+          </div>
+        </>
+      ) : null}
+      <ChatHistoryClearDialog
+        focusReturnRef={buttonRef}
+        onConfirm={() => {
+          onClearAll();
+          setClearDialogOpen(false);
+          composerFocusRef.current?.focus();
+        }}
+        onOpenChange={setClearDialogOpen}
+        open={clearDialogOpen}
+      />
+    </div>
+  );
+}
+
 export function ChatHistoryEmptyHint() {
   return (
     <p className="chat-history-empty-hint">
@@ -169,11 +310,13 @@ export function ChatHistoryEmptyHint() {
 
 export function ChatHistoryMobileToggle({
   conversationCount,
+  label = "Recent chats",
   mobileToggleRef,
   onOpenChange,
   open,
 }: {
   conversationCount: number;
+  label?: string;
   mobileToggleRef: RefObject<HTMLButtonElement | null>;
   onOpenChange: (open: boolean) => void;
   open: boolean;
@@ -192,7 +335,7 @@ export function ChatHistoryMobileToggle({
       onClick={() => onOpenChange(!open)}
       {...analyticsControlAttributes("evidence_chat_history_open")}
     >
-      Recent chats ({conversationCount})
+      {label} ({conversationCount})
     </Button>
   );
 }

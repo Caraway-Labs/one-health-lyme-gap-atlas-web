@@ -652,10 +652,12 @@ export async function loadCountyEvidenceBundle(input: {
         if (isAbortError(error) || input.signal.aborted) {
           throw error;
         }
+        const absent = error instanceof AtlasApiError && error.status === 404;
         return {
           measureId: measure.measure_id,
           message: failureMessage(error),
-          retryAtMs: retryAtMsFromError(error),
+          retryAtMs: absent ? null : retryAtMsFromError(error),
+          retryable: absent ? false : undefined,
           status: "failed" as const,
         };
       }

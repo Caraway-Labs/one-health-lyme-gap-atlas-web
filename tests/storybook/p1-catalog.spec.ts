@@ -150,9 +150,18 @@ test.describe("P1 Storybook catalog", () => {
     test(`${story.id} renders without a service request`, async ({ page }) => {
       const traffic = track(page);
       await openStory(page, story.id);
-      await expect(
-        page.getByText(story.text, { exact: false }).first()
-      ).toBeVisible();
+      const target = page.getByText(story.text, { exact: false }).first();
+      await target.waitFor({ state: "attached" });
+      await target.evaluate((element) => {
+        let node = element.parentElement;
+        while (node) {
+          if (node instanceof HTMLDetailsElement) {
+            node.open = true;
+          }
+          node = node.parentElement;
+        }
+      });
+      await expect(target).toBeVisible();
       expect(traffic.blocked).toEqual([]);
       expect(traffic.downloads).toEqual([]);
     });

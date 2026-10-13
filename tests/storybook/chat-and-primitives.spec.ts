@@ -159,6 +159,7 @@ test.describe("Chat and primitive catalog", () => {
     await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
     await expect(field).toBeDisabled();
     await page.getByRole("button", { name: "New chat" }).click();
+    await page.getByRole("button", { name: "Start new chat" }).click();
     await expect(page.getByText("Searching reviewed evidence…")).toHaveCount(0);
     await expect(field).toBeEnabled();
     expect(blocked).toEqual([]);

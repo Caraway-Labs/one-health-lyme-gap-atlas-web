@@ -86,6 +86,7 @@ describe("Storybook chat fixtures", () => {
       pendingField instanceof HTMLTextAreaElement && pendingField.disabled
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start new chat" }));
     expect(screen.queryByText("Searching reviewed evidence…")).toBeNull();
     const readyField = screen.getByRole("textbox", { name: "Your question" });
     expect(

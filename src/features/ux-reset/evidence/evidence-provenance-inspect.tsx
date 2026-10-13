@@ -56,6 +56,8 @@ type EvidenceProvenanceInspectProps = {
   provenance: EvidenceProvenanceModel;
   /** Overrides the evidence-state row label. Shared evidence keeps “Evidence state”. */
   stateHeading?: string;
+  /** Compare uses “Sources and limitations”. Other surfaces keep provenance inspect. */
+  summaryLabel?: string;
 } & (
   | {
       availability: EvidenceAvailability;
@@ -79,7 +81,12 @@ function evidenceStateText(props: EvidenceProvenanceInspectProps): string {
 export function EvidenceProvenanceInspect(
   props: EvidenceProvenanceInspectProps
 ) {
-  const { className, contentSurface = "source_card", provenance } = props;
+  const {
+    className,
+    contentSurface = "source_card",
+    provenance,
+    summaryLabel = "Inspect provenance",
+  } = props;
   const technical = provenance.technical;
   const evaluatedAt = technical
     ? evaluatedAtText(technical.evaluatedAt, technical.evaluatedAtRaw)
@@ -108,7 +115,7 @@ export function EvidenceProvenanceInspect(
         }
       }}
     >
-      <summary>Inspect provenance</summary>
+      <summary>{summaryLabel}</summary>
       <div className="ux-reset-evidence-provenance-body">
         <dl className="ux-reset-evidence-provenance-fields">
           <div data-testid="evidence-provenance-source">

@@ -427,7 +427,7 @@ describe("Storybook P0 evidence fixtures", () => {
     );
     clickLink(screen.getByRole("link", { name: "County evidence" }));
     expect(onOpen).toHaveBeenCalledExactlyOnceWith(syntheticCounty.fips);
-    clickLink(screen.getByRole("link", { name: "Compare" }));
+    clickLink(screen.getByRole("link", { name: "Compare this county" }));
     expect(onOpen).toHaveBeenCalledTimes(2);
     expect(onOpen.mock.calls[1]).toStrictEqual([syntheticCounty.fips]);
   });

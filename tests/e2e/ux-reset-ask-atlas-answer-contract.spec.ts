@@ -191,7 +191,7 @@ async function installChat(page: Page) {
 
 async function ask(page: Page, question: string) {
   const root = page.getByTestId("ask-atlas-workspace");
-  const input = root.getByLabel("Your question");
+  const input = root.getByLabel("Your research question");
   await input.fill(question);
   await root.getByRole("button", { name: "Ask", exact: true }).click();
 }
@@ -223,8 +223,8 @@ async function expectAnswerContract(page: Page) {
   );
   await expect(root.getByRole("tab", { name: /both/i })).toHaveCount(0);
   await expect(
-    root.getByText("Structured and Both modes are not available.")
-  ).toBeVisible();
+    root.getByText("Answers search reviewed literature.")
+  ).toHaveCount(0);
 
   const results = await new AxeBuilder({ page })
     .include("[data-testid='ask-atlas-workspace']")
@@ -314,7 +314,7 @@ test("workspace enforces the answer contract without changing filters", async ({
   await page.goto(WORKSPACE_URL);
   await expect(page.getByTestId("ask-atlas-workspace")).toBeVisible();
   await expect(
-    page.getByText("Ask a research question about reviewed literature.")
+    page.getByText("Start with your own question or adapt one below.")
   ).toBeVisible();
   await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
   await expectAnswerContract(page);

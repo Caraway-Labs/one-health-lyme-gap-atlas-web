@@ -2,11 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { Ref } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { formatGovernedEvidenceValue } from "@/features/ux-reset/evidence/value-state-contract";
@@ -17,6 +20,7 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { RESET_REVIEW_PATH } from "@/features/ux-reset/routes";
 import type { CountyDetail } from "@/generated/models";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +87,7 @@ export function reviewHumanFloorEvidence(
 
 export function ReviewPublishedCountyPreview({
   county,
+  compareHref,
   href,
   onOpen,
   onViewCountyEvidence,
@@ -90,12 +95,21 @@ export function ReviewPublishedCountyPreview({
   releaseId,
 }: {
   county: ExploreCountyIdentity;
+  compareHref: string;
   href: string;
   onOpen: (fips: string) => void;
   onViewCountyEvidence?: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   releaseId: string;
 }) {
+  const pathname = usePathname() ?? RESET_REVIEW_PATH;
+  const searchParams = useSearchParams() ?? new URLSearchParams();
+  const askContext = useAskAtlasInheritedContext();
+  const askHref = askAtlasEntryHref({
+    context: askContext,
+    pathname,
+    searchParams,
+  });
   const query = useQuery({
     queryKey: ["ux-reset-review-published-county", releaseId, county.fips],
     queryFn: ({ signal }) =>
@@ -103,6 +117,7 @@ export function ReviewPublishedCountyPreview({
   });
   // Never present cached facts after a failed refresh as current evidence.
   const detail = query.isError ? null : query.data;
+  const floor = detail ? reviewHumanFloorEvidence(detail) : null;
   const rows = detail
     ? publishedCountyHierarchy({
         measures: [],
@@ -125,41 +140,70 @@ export function ReviewPublishedCountyPreview({
       data-testid="review-published-county-preview"
       data-fips={county.fips}
     >
+      <p className="eyebrow">Selected county</p>
       <h2 className="type-card">
         {county.county}, {county.stateName}
       </h2>
+      <p className="type-body">Review category unavailable</p>
       <p className="type-small">
         FIPS {county.fips} · Release {releaseId}
       </p>
       <p className="type-body">
-        Published factual evidence. This selection does not imply recommendation
-        eligibility or disease risk.
+        Published county evidence is available. This selection is not a review
+        recommendation, and it is not a disease-risk estimate.
       </p>
-      {onViewCountyEvidence ? (
-        <Button
-          data-county={county.fips}
-          data-testid="review-view-county-evidence"
-          type="button"
-          onClick={() => {
-            onViewCountyEvidence(county.fips);
-          }}
+      <p className="type-small">
+        Review recommendations are unavailable for this jurisdiction in the
+        current release.
+      </p>
+      <div className="ux-reset-review-preview-actions">
+        {onViewCountyEvidence ? (
+          <Button
+            data-county={county.fips}
+            data-testid="review-view-county-evidence"
+            type="button"
+            onClick={() => {
+              onViewCountyEvidence(county.fips);
+            }}
+          >
+            View county evidence
+          </Button>
+        ) : null}
+        <Link
+          ref={openRef}
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-review-open"
+          )}
+          data-testid="review-investigate"
+          data-variant="secondary"
+          href={href}
+          onClick={() => onOpen(county.fips)}
         >
-          View county evidence
-        </Button>
-      ) : null}
-      <Link
-        ref={openRef}
-        className={cn(
-          buttonVariants(),
-          "ux-reset-review-open hover:bg-primary"
-        )}
-        data-testid="review-investigate"
-        data-variant="primary"
-        href={href}
-        onClick={() => onOpen(county.fips)}
-      >
-        County evidence
-      </Link>
+          County evidence
+        </Link>
+        <Link
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-review-open"
+          )}
+          data-testid="review-compare"
+          href={compareHref}
+          onClick={() => onOpen(county.fips)}
+        >
+          Compare this county
+        </Link>
+        <Link
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "ux-reset-review-open"
+          )}
+          data-testid="review-ask-atlas"
+          href={askHref}
+        >
+          Ask Atlas
+        </Link>
+      </div>
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">
           Loading published county evidence…
@@ -176,28 +220,32 @@ export function ReviewPublishedCountyPreview({
           No published county record was returned for this release.
         </AtlasStatusMessage>
       ) : null}
-      {detail ? (
+      {detail && floor ? (
         <>
-          <EvidenceObject model={reviewHumanFloorEvidence(detail)} showReason />
-          {rows.map((row) => (
-            <EvidenceObject
-              key={row.measureId}
-              model={row.evidence}
-              showReason
-            />
-          ))}
-          {detail.population === null ? (
-            <p>Population was not returned; it is not zero.</p>
-          ) : null}
+          <p className="type-body">{floor.displayValue}</p>
+          <p className="type-small">{floor.valueNote}</p>
           <p className="type-small">
             Pathogen “No records” is not evidence of pathogen absence. Tick
             establishment does not measure abundance.
           </p>
-          <p className="type-small">{detail.release.limitations}</p>
-          <p className="type-small">
-            Release loaded {detail.release.loaded_at}. This is not an
-            observation period.
-          </p>
+          <details className="ux-reset-explorer-score">
+            <summary>Score and methodology</summary>
+            {rows.map((row) => (
+              <EvidenceObject
+                key={row.measureId}
+                model={row.evidence}
+                showReason
+              />
+            ))}
+            {detail.population === null ? (
+              <p>Population was not returned; it is not zero.</p>
+            ) : null}
+            <p className="type-small">{detail.release.limitations}</p>
+            <p className="type-small">
+              Release loaded {detail.release.loaded_at}. This is not an
+              observation period.
+            </p>
+          </details>
         </>
       ) : null}
     </Card>

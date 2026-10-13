@@ -12,34 +12,33 @@ type LiteraturePrompt = {
 const PRIMARY_PROMPTS: readonly LiteraturePrompt[] = [
   {
     id: "reporting_interpretation",
-    label: "How should surveillance reporting be interpreted?",
-    question:
-      "What do peer-reviewed studies say about how Lyme disease surveillance reporting should be interpreted?",
+    label: "How should Lyme surveillance reporting be interpreted?",
+    question: "How should Lyme surveillance reporting be interpreted?",
   },
   {
     id: "tick_surveillance_limits",
-    label: "What limits tick surveillance?",
-    question:
-      "What limitations do reviewed studies describe for tick surveillance?",
+    label: "What can tick surveillance tell us?",
+    question: "What can tick surveillance tell us?",
   },
   {
     id: "prevention_education",
-    label: "What does prevention education research report?",
-    question:
-      "What does reviewed literature report about Lyme disease prevention education?",
+    label: "What evidence supports prevention education?",
+    question: "What evidence supports prevention education?",
   },
 ];
 
 const MORE_PROMPTS: readonly LiteraturePrompt[] = [
   {
     id: "vectors_hosts",
-    label: "Tick vectors and reservoir hosts",
+    label:
+      "What does reviewed evidence describe about Ixodes tick vectors and reservoir hosts for Lyme disease?",
     question:
       "What does reviewed evidence describe about Ixodes tick vectors and reservoir hosts for Lyme disease?",
   },
   {
     id: "diagnostics_literature",
-    label: "Diagnostics in surveillance studies",
+    label:
+      "What diagnostic or laboratory approaches appear in tick-borne disease surveillance literature?",
     question:
       "What diagnostic or laboratory approaches appear in tick-borne disease surveillance literature?",
   },
@@ -88,9 +87,9 @@ export function AskAtlasLiteraturePrompts({
       aria-labelledby="ask-atlas-prompts-label"
       className="chat-starter-prompts"
     >
-      <p className="chat-starter-prompts-label" id="ask-atlas-prompts-label">
-        Ask a research question about reviewed literature. A prompt fills the
-        question and is not sent until you choose Ask.
+      <h2 id="ask-atlas-prompts-label">What would you like to understand?</h2>
+      <p className="chat-starter-prompts-label">
+        Start with your own question or adapt one below.
       </p>
       <PromptList onSelect={onSelect} prompts={PRIMARY_PROMPTS} />
       {/* Native disclosure: there is no shared Disclosure primitive. */}

@@ -31,6 +31,9 @@ export function AskAtlasWorkspace({
             <h1>Ask Atlas</h1>
             <Badge variant="outline">Reviewed literature</Badge>
           </header>
+          <p className="ux-reset-ask-atlas-intro">
+            Explore reviewed research on Lyme disease and ticks.
+          </p>
           <AskAtlasPageReferenceStrip />
           <AskAtlasUnavailableNotice
             headingId={ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID}
@@ -62,31 +65,7 @@ function AskAtlasWorkspaceChat({
           visible={model.showEmptyState}
         />
       }
-      leading={
-        <>
-          <AskAtlasPageReferenceStrip />
-          <p
-            className="ux-reset-ask-atlas-mode-note"
-            data-testid="ask-atlas-literature-only"
-          >
-            Answers use reviewed literature only. Structured and Both modes are
-            not available. A page reference is not sent with the question, and
-            showing a comparison does not run a county comparison.
-          </p>
-          {/* Native disclosure: there is no shared Disclosure primitive. */}
-          <details
-            className="ux-reset-ask-atlas-storage"
-            data-testid="ask-atlas-browser-storage"
-          >
-            <summary>Saved in this browser</summary>
-            <p>
-              Up to five conversations stay in this browser for 30 days. Nothing
-              is stored until a response is saved. Deleting a chat removes that
-              local copy only.
-            </p>
-          </details>
-        </>
-      }
+      leading={<AskAtlasPageReferenceStrip />}
       model={model}
       presentation="ask-atlas"
     />

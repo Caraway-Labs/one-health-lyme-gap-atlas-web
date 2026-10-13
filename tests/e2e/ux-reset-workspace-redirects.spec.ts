@@ -67,10 +67,12 @@ test.describe("six-destination redirects", () => {
       .toBe("/app/review");
     expect(new URL(page.url()).pathname).not.toBe("/app/explore");
 
-    await page.goto("/app/compare?compare=08001,08013");
-    await expect(page).toHaveURL(
-      /\/app\/compare\?compare=08001%2C08013|08001,08013/
-    );
+    await page.goto("/app/compare?compare=08001,08013", {
+      waitUntil: "commit",
+    });
+    await expect
+      .poll(() => page.url(), { timeout: 15_000 })
+      .toMatch(/\/app\/compare\?compare=08001%2C08013|08001,08013/);
     await page.goto("/app/assistant");
     await expect(page).toHaveURL(/\/app\/assistant\/?$/);
     await page.goto("/app/review");

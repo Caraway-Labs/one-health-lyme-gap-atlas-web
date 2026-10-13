@@ -216,6 +216,7 @@ export function useStoryChatModel(
       setRetryQuestion("");
       setAction("Cleared conversations.");
     },
+    composerHasUnsentText: () => message.trim().length > 0,
     conversations,
     deleteOne: () => {
       setConversations([]);

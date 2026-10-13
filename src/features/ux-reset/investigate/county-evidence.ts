@@ -156,6 +156,11 @@ export type CountyEvidenceMeasureFailure = {
   message: string;
   /** Epoch ms when a server Retry-After allows the next read. Null when none. */
   retryAtMs: number | null;
+  /**
+   * False when the API settled the read as absence, such as a 404 for a
+   * measure with no published observations. Those reads are not retried.
+   */
+  retryable?: boolean;
 };
 
 export type CountyEvidenceFamilySection = {
@@ -244,6 +249,7 @@ export type MeasureObservationOutcome =
       measureId: string;
       message: string;
       retryAtMs: number | null;
+      retryable?: boolean;
       status: "failed";
     }
   | {
@@ -975,6 +981,7 @@ export function buildCountyEvidenceBundle(input: {
           measureLabel: measureLabel(input.measures, outcome.measureId),
           message: outcome.message,
           retryAtMs: outcome.retryAtMs,
+          retryable: outcome.retryable,
         });
         break;
       }

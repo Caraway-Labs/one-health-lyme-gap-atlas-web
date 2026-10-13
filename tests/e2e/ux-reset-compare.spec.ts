@@ -323,8 +323,9 @@ test.describe("two-county Compare", () => {
       const scrolls = await page
         .getByTestId("compare-profile")
         .locator("[data-slot=table-container]")
+        .first()
         .evaluate((element) => element.scrollWidth > element.clientWidth);
-      expect(scrolls).toBe(true);
+      expect(scrolls).toBe(false);
     }
 
     const observationUrls = requested.filter((url) =>
@@ -356,9 +357,7 @@ test.describe("two-county Compare", () => {
       page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
     ).toContainText("12");
 
-    await page
-      .getByRole("button", { name: /Remove Boulder, Colorado/ })
-      .click();
+    await page.getByRole("button", { name: "Clear second county" }).click();
     await expect(page).toHaveURL(/compare=08001(?!,)/);
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
@@ -546,9 +545,7 @@ test.describe("two-county Compare", () => {
       "08001,08013"
     );
 
-    await page
-      .getByRole("button", { name: /Remove Boulder, Colorado/ })
-      .click();
+    await page.getByRole("button", { name: "Clear second county" }).click();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001"
@@ -622,7 +619,7 @@ test.describe("two-county Compare", () => {
     await expect(page.getByTestId("compare-retry-profile")).toBeVisible();
     await expect(
       page.getByTestId("compare-profile-cell-human_case_floor-08001")
-    ).toContainText("not used");
+    ).toContainText("Couldn’t load this evidence.");
     await expect(
       page.getByTestId("compare-profile-cell-human_case_floor-08001")
     ).not.toContainText("12");
@@ -651,10 +648,14 @@ test.describe("two-county Compare", () => {
       "data-pair-issue",
       "invalid"
     );
-    await expect(page.getByTestId("compare-return")).toHaveCount(0);
+    await expect(page.getByTestId("compare-return")).toHaveText(
+      "Return to Explorer"
+    );
     await page.goto("/app/compare?compare=08001,08013");
     await expect(page.getByTestId("compare-alignment")).toBeVisible();
-    await expect(page.getByTestId("compare-return")).toHaveCount(0);
+    await expect(page.getByTestId("compare-return")).toHaveText(
+      "Return to Explorer"
+    );
     await page.reload();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
