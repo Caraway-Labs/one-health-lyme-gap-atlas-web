@@ -282,7 +282,80 @@ describe("Explorer map layers", () => {
       layerId: "pathogen_status",
       scoresStatus: "ready",
     });
-    expect(paint.period).toBe("Source vintage unavailable.");
+    expect(paint.period).toBe("Pathogen status vintage unavailable");
+  });
+
+  it("keeps an unavailable vintage for every missing gap-score source", () => {
+    const paint = paintExplorerMapLayer({
+      counties: [county("08001", { color: "#a9d2db" })],
+      layerId: "gap_score",
+      releaseId: "alpha-2026",
+      scoresStatus: "ready",
+      sources: [
+        {
+          key: "human",
+          label: "CDC Lyme surveillance",
+          vintage: "2023",
+        },
+        {
+          key: "pathogen",
+          label: "CDC ArboNET tickborne pathogen status",
+          vintage: "  ",
+        },
+      ],
+    });
+    expect(paint.period).toBe(
+      "Release alpha-2026. CDC Lyme surveillance 2023 · Tick status vintage unavailable · CDC ArboNET tickborne pathogen status vintage unavailable · Social vulnerability vintage unavailable · Rural-urban codes vintage unavailable"
+    );
+  });
+
+  it("gives unrecognized categories colors that are not already used", () => {
+    const extras = [
+      "Detected",
+      "Suspect",
+      "Possible",
+      "Endemic",
+      "Emerging",
+      "Local",
+      "Imported",
+      "Widespread",
+    ];
+    const reserved = new Set([
+      "var(--atlas-muted-text)",
+      "var(--explorer-boundary)",
+      "var(--mint)",
+      "var(--navy)",
+      "var(--navy-2)",
+      "var(--teal)",
+      "var(--teal-dark)",
+    ]);
+    const paint = paintExplorerMapLayer({
+      counties: [
+        county("08001", { tick_status: "Unknown" }),
+        county("08005", { tick_status: "No records" }),
+        county("08013", { tick_status: "Unavailable" }),
+        ...extras.map((status, index) =>
+          county(`0802${index}`, { tick_status: status })
+        ),
+      ],
+      layerId: "tick_status",
+      scoresStatus: "ready",
+    });
+    const byLabel = new Map(
+      paint.entries.map((entry) => [entry.label, entry.color])
+    );
+    const extraColors = extras.map((status) => byLabel.get(status) ?? "");
+    expect({
+      detected: extraColors[0],
+      distinct: new Set(extraColors).size,
+      reserved: extraColors.some((color) => reserved.has(color)),
+      unknown: byLabel.get("Unknown (not zero, not confirmed absence)"),
+    }).toStrictEqual({
+      detected: "var(--ink)",
+      distinct: extras.length,
+      reserved: false,
+      unknown: "var(--navy-2)",
+    });
   });
 
   it("does not invent an incidence-floor scale", () => {

@@ -101,7 +101,32 @@ const POSITIVE_STATUS_COLOR: Readonly<Record<string, string>> = {
 };
 const OBSERVED_ZERO_COLOR = "var(--teal-dark)";
 const NEUTRAL_STATUS_COLOR = "var(--atlas-muted-text)";
-const EXTRA_CATEGORY_COLORS = ["var(--navy-2)", "var(--mint)"] as const;
+/**
+ * Colors already assigned to a known status or to the absent-data swatch.
+ * An unrecognized category must not reuse one of these.
+ */
+const RESERVED_STATUS_COLORS = new Set<string>([
+  BOUNDARY_COLOR,
+  NEUTRAL_STATUS_COLOR,
+  OBSERVED_ZERO_COLOR,
+  "var(--mint)",
+  "var(--navy)",
+  "var(--navy-2)",
+  "var(--teal)",
+]);
+/**
+ * Hues for published categories the legend does not already name. None of
+ * these are a neutral status color or a known category color.
+ */
+const EXTRA_CATEGORY_COLORS = [
+  "var(--ink)",
+  "var(--atlas-action-primary)",
+  "var(--atlas-action-primary-foreground)",
+  "color-mix(in srgb, var(--ink) 28%, var(--atlas-action-primary))",
+  "color-mix(in srgb, var(--ink) 55%, var(--atlas-action-primary))",
+  "color-mix(in srgb, var(--atlas-action-primary) 40%, var(--white))",
+  "color-mix(in srgb, var(--ink) 80%, var(--white))",
+] as const;
 
 function neutralStatusColor(normalized: string): string {
   switch (normalized) {
@@ -131,6 +156,15 @@ const CATEGORY_SOURCE_KEYS: Partial<
   pathogen_status: ["pathogen"],
   tick_status: ["tick"],
 };
+
+/** Used only when metadata does not name the expected source. */
+const EXPECTED_SOURCE_LABEL = {
+  context_rucc: "Rural-urban codes",
+  context_svi: "Social vulnerability",
+  human: "Human surveillance",
+  pathogen: "Pathogen status",
+  tick: "Tick status",
+} as const;
 
 type LegendKind =
   | "boundaries"
@@ -254,6 +288,33 @@ function governedBandForColor(color: string): ScoreBand | null {
   return SCORE_COLOR_BANDS.find((band) => band.token === bandToken) ?? null;
 }
 
+function sourceDisplayLabel(
+  key: string,
+  source: ExplorerMapLegendSource | undefined
+): string {
+  const published = source?.label.trim() ?? "";
+  if (published) {
+    return published;
+  }
+  if (key in EXPECTED_SOURCE_LABEL) {
+    return EXPECTED_SOURCE_LABEL[key as keyof typeof EXPECTED_SOURCE_LABEL];
+  }
+  return key;
+}
+
+function sourceVintagePhrase(
+  key: string,
+  sources: readonly ExplorerMapLegendSource[] | undefined
+): string {
+  const source = sources?.find((entry) => entry.key === key);
+  const label = sourceDisplayLabel(key, source);
+  const vintage = source?.vintage.trim() ?? "";
+  if (!vintage) {
+    return `${label} vintage unavailable`;
+  }
+  return `${label} ${vintage}`;
+}
+
 function legendPeriod(input: PaintInput, layerId: ExplorerMapLayerId): string {
   if (layerId === "boundaries") {
     return "County boundaries are not an evidence layer.";
@@ -262,23 +323,30 @@ function legendPeriod(input: PaintInput, layerId: ExplorerMapLayerId): string {
     ? `Release ${input.releaseId.trim()}`
     : null;
   const keys = CATEGORY_SOURCE_KEYS[layerId] ?? [];
-  const vintages: string[] = [];
-  for (const key of keys) {
-    const source = input.sources?.find((entry) => entry.key === key);
-    const label = source?.label.trim() ?? "";
-    const vintage = source?.vintage.trim() ?? "";
-    if (!label || !vintage) {
-      continue;
-    }
-    vintages.push(`${label} ${vintage}`);
-  }
-  if (vintages.length === 0) {
+  if (keys.length === 0) {
     return release
       ? `${release}. Source vintage unavailable.`
       : "Source vintage unavailable.";
   }
-  const listed = vintages.join(" · ");
+  const listed = keys
+    .map((key) => sourceVintagePhrase(key, input.sources))
+    .join(" · ");
   return release ? `${release}. ${listed}` : listed;
+}
+
+function nextExtraColor(used: ReadonlySet<string>): string {
+  for (const candidate of EXTRA_CATEGORY_COLORS) {
+    if (!used.has(candidate)) {
+      return candidate;
+    }
+  }
+  let amount = 24;
+  let mixed = `color-mix(in srgb, var(--ink) ${amount}%, var(--atlas-action-primary))`;
+  while (used.has(mixed)) {
+    amount += 7;
+    mixed = `color-mix(in srgb, var(--ink) ${amount}%, var(--atlas-action-primary))`;
+  }
+  return mixed;
 }
 
 function boundaryPaint(
@@ -472,20 +540,20 @@ function statusLegend(
     )
   );
   const colors = new Map<string, string>();
-  let extra = 0;
+  const used = new Set<string>(RESERVED_STATUS_COLORS);
   for (const status of statuses) {
     const kind = statusKind(status);
     const normalized = status.trim().toLowerCase();
-    let color = POSITIVE_STATUS_COLOR[normalized];
+    let color: string;
     if (kind === "neutral") {
       color = neutralStatusColor(normalized);
     } else if (kind === "observed-zero") {
       color = OBSERVED_ZERO_COLOR;
-    } else if (!color) {
-      color = EXTRA_CATEGORY_COLORS[extra % EXTRA_CATEGORY_COLORS.length];
-      extra += 1;
+    } else {
+      color = POSITIVE_STATUS_COLOR[normalized] ?? nextExtraColor(used);
     }
-    colors.set(status, color ?? NEUTRAL_STATUS_COLOR);
+    colors.set(status, color);
+    used.add(color);
   }
   return {
     colors,
