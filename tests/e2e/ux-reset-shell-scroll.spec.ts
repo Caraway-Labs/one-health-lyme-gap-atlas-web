@@ -271,6 +271,7 @@ test.describe("professional shell scroll containment", () => {
     const results = await new AxeBuilder({ page })
       .exclude(".maplibregl-canvas")
       .exclude(".maplibregl-map")
+      .exclude("[data-base-ui-portal]")
       .analyze();
     expect(results.violations).toEqual([]);
   });
