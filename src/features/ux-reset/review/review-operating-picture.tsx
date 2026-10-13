@@ -48,6 +48,15 @@ import {
   ExplorerMlPriorityLegend,
 } from "@/features/ux-reset/review/explorer-ml-priority";
 import {
+  adjustCountyScenarios,
+  SCENARIO_SCORE_DEFAULTS,
+  scoreSettingsFromCollection,
+} from "@/features/ux-reset/review/explorer-scenario-score";
+import {
+  ExplorerAdjustedScenarioLine,
+  explorerScenarioSelectionText,
+} from "@/features/ux-reset/review/explorer-what-if-scenario";
+import {
   buildReviewCandidatePreview,
   reviewCandidateExplanation,
 } from "@/features/ux-reset/review/review-candidate-preview";
@@ -79,7 +88,11 @@ import {
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
-import { useExplorerCountyMlPriorities } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
+import {
+  EXPLORER_ML_PRIORITY_PAGE_SIZE,
+  explorerMlListedFips,
+  useExplorerCountyMlPriorities,
+} from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
 import { EXPLORER_ML_PRIORITY_UNAVAILABLE } from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
@@ -91,6 +104,7 @@ import {
   parseAtlasDateTime,
   parseConfigurationSha256,
 } from "@/lib/atlas-evidence-metadata";
+import type { ScoreSettings } from "@/lib/atlas-ui";
 import {
   countyDisplayGeometryQueryKey,
   fetchCountyDisplayGeometry,
@@ -127,6 +141,8 @@ type ReviewOperatingPictureProps = {
   requireExplicitCountySelection?: boolean;
   review: StateReview;
   scopeCode: string;
+  /** Browser what-if. Defaults leave the governed score, priority, and map color in place. */
+  scenarioSettings?: ScoreSettings;
   stateName: string;
   tierRelease?: Tier1ActiveRelease;
   countyQuery?: string;
@@ -285,6 +301,7 @@ export function ReviewOperatingPicture({
   period = null,
   requireExplicitCountySelection = false,
   review,
+  scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   scopeCode,
   stateName,
   tierRelease = UNKNOWN_TIER_RELEASE,
@@ -397,12 +414,59 @@ export function ReviewOperatingPicture({
       ) ?? [],
     [geometryQuery.data]
   );
-  const scoresQuery = useExplorerMapScores(releaseId, mapLayer);
+  const scoresQuery = useExplorerMapScores(releaseId);
+  const scenarioBaseline = useMemo(
+    () => scoreSettingsFromCollection(scoresQuery.data?.settings),
+    [scoresQuery.data?.settings]
+  );
+  const scenarioByFips = useMemo(
+    () =>
+      adjustCountyScenarios(
+        (scoresQuery.data?.counties ?? []).filter(
+          (county) => county.state === scopeCode
+        ),
+        scenarioSettings,
+        scenarioBaseline
+      ),
+    [scenarioBaseline, scenarioSettings, scopeCode, scoresQuery.data?.counties]
+  );
   const mapPaint = useMemo(() => {
     const layer = explorerMapLayerById(mapLayer);
-    const counties = (scoresQuery.data?.counties ?? []).filter(
+    let counties = (scoresQuery.data?.counties ?? []).filter(
       (county) => county.state === scopeCode
     );
+    const scenarioColors = scenarioByFips !== null && layer.id === "gap_score";
+    let hasAdjustedColor = false;
+    let hasLimitedScenario = false;
+    if (scenarioColors && scenarioByFips) {
+      counties = counties.map((county) => {
+        const scenario = scenarioByFips.get(county.fips);
+        if (!scenario) {
+          return county;
+        }
+        switch (scenario.kind) {
+          case "adjusted": {
+            hasAdjustedColor = true;
+            return {
+              ...county,
+              color: scenario.colorToken,
+              priority: `Adjusted scenario · ${scenario.priority}`,
+            };
+          }
+          case "limited": {
+            hasLimitedScenario = true;
+            return county;
+          }
+          case "unchanged": {
+            return county;
+          }
+          default: {
+            const exhaustive: never = scenario;
+            return exhaustive;
+          }
+        }
+      });
+    }
     const scoresStatus = layer.needsScores
       ? !releaseId || scoresQuery.isError
         ? "error"
@@ -410,14 +474,29 @@ export function ReviewOperatingPicture({
           ? "loading"
           : "ready"
       : "ready";
-    return paintExplorerMapLayer({
+    const paint = paintExplorerMapLayer({
       counties,
       layerId: layer.id,
       scoresStatus,
     });
+    if (!scenarioColors || scoresStatus !== "ready") {
+      return paint;
+    }
+    if (!hasAdjustedColor && !hasLimitedScenario) {
+      return paint;
+    }
+    const limitedNote = hasLimitedScenario
+      ? " Counties without a published incidence on this collection keep the governed score and color."
+      : "";
+    return {
+      ...paint,
+      note: `Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.${limitedNote}`,
+      title: "Adjusted scenario",
+    };
   }, [
     mapLayer,
     releaseId,
+    scenarioByFips,
     scopeCode,
     scoresQuery.data,
     scoresQuery.isError,
@@ -489,6 +568,9 @@ export function ReviewOperatingPicture({
   const selectedPublished = directory.counties.find(
     (entry) => entry.fips === selectedFips
   );
+  const selectedScenario = selectedFips
+    ? scenarioByFips?.get(selectedFips)
+    : null;
   const selected = candidates.find(
     (entry) => entry.countyFips === selectedFips
   );
@@ -634,10 +716,22 @@ export function ReviewOperatingPicture({
       )
   );
   const visibleCandidateCount = visibleCandidates.length;
-  const listedFips =
-    candidates.length > 0
-      ? visibleCandidates.map((candidate) => candidate.countyFips)
-      : visibleDirectory.map((entry) => entry.fips);
+  const directoryWindowKey = `${scopeCode}\u0000${countyQueryText}\u0000${availableDataGate.kind}`;
+  const [directoryWindow, setDirectoryWindow] = useState({
+    count: EXPLORER_ML_PRIORITY_PAGE_SIZE,
+    key: "",
+  });
+  const shownDirectoryCount =
+    directoryWindow.key === directoryWindowKey
+      ? directoryWindow.count
+      : EXPLORER_ML_PRIORITY_PAGE_SIZE;
+  const listedFips = explorerMlListedFips({
+    candidateFips: visibleCandidates.map((candidate) => candidate.countyFips),
+    directoryFips: visibleDirectory.map((entry) => entry.fips),
+    selectedFips,
+    shownDirectoryCount,
+  });
+  const listedFipsSet = new Set(listedFips);
   const mlPriorities = useExplorerCountyMlPriorities(listedFips, tierRelease);
   useEffect(() => {
     if (freezeCountySelection || !selectedFips || visibleCandidateCount === 0) {
@@ -816,6 +910,9 @@ export function ReviewOperatingPicture({
             data-include-unscored={
               availableDataGate.kind === "open" ? "true" : "false"
             }
+            data-map-colors={mapCounties
+              .map((county) => `${county.fips}:${county.color ?? ""}`)
+              .join(" ")}
             data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
             data-testid="review-state-map-region"
             aria-busy={
@@ -1068,6 +1165,9 @@ export function ReviewOperatingPicture({
                           publishedCategory={published?.priority || undefined}
                           publishedScore={published?.score}
                         />
+                        <ExplorerAdjustedScenarioLine
+                          scenario={scenarioByFips?.get(candidate.countyFips)}
+                        />
                       </button>
                     </div>
                   );
@@ -1080,42 +1180,71 @@ export function ReviewOperatingPicture({
                 className="ux-reset-review-candidate-list"
                 role="list"
               >
-                {visibleDirectory.map((entry) => {
-                  const published = publishedScoreByFips.get(entry.fips);
-                  const classification =
-                    mlPriorities.get(entry.fips) ??
-                    EXPLORER_ML_PRIORITY_UNAVAILABLE;
-                  return (
-                    <div key={entry.fips} role="listitem">
-                      <button
-                        aria-current={
-                          entry.fips === selectedFips ? "true" : undefined
-                        }
-                        className="ux-reset-review-candidate"
-                        data-fips={entry.fips}
-                        data-ml-tier={classification.tier}
-                        data-testid="review-published-county"
-                        type="button"
-                        onClick={() =>
-                          selectCounty(entry.fips, "results_table")
-                        }
-                      >
-                        <ExplorerCountyRowContent
-                          classification={classification}
-                          explanation="Review category unavailable. Published county record."
-                          name={`${entry.county}, ${scopeCode}`}
-                          publishedCategory={published?.priority || undefined}
-                          publishedScore={published?.score}
-                        />
-                      </button>
-                    </div>
-                  );
-                })}
+                {visibleDirectory
+                  .filter((entry) => listedFipsSet.has(entry.fips))
+                  .map((entry) => {
+                    const published = publishedScoreByFips.get(entry.fips);
+                    const classification =
+                      mlPriorities.get(entry.fips) ??
+                      EXPLORER_ML_PRIORITY_UNAVAILABLE;
+                    return (
+                      <div key={entry.fips} role="listitem">
+                        <button
+                          aria-current={
+                            entry.fips === selectedFips ? "true" : undefined
+                          }
+                          className="ux-reset-review-candidate"
+                          data-fips={entry.fips}
+                          data-ml-tier={classification.tier}
+                          data-testid="review-published-county"
+                          type="button"
+                          onClick={() =>
+                            selectCounty(entry.fips, "results_table")
+                          }
+                        >
+                          <ExplorerCountyRowContent
+                            classification={classification}
+                            explanation="Review category unavailable. Published county record."
+                            name={`${entry.county}, ${scopeCode}`}
+                            publishedCategory={published?.priority || undefined}
+                            publishedScore={published?.score}
+                          />
+                          <ExplorerAdjustedScenarioLine
+                            scenario={scenarioByFips?.get(entry.fips)}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })}
               </div>
+            ) : null}
+            {candidates.length === 0 &&
+            shownDirectoryCount < visibleDirectory.length ? (
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid="explorer-ml-priority-more"
+                onClick={() => {
+                  setDirectoryWindow({
+                    count: shownDirectoryCount + EXPLORER_ML_PRIORITY_PAGE_SIZE,
+                    key: directoryWindowKey,
+                  });
+                }}
+              >
+                {`Show ${Math.min(
+                  EXPLORER_ML_PRIORITY_PAGE_SIZE,
+                  visibleDirectory.length - shownDirectoryCount
+                )} more counties`}
+              </Button>
             ) : null}
           </Card>
         </div>
         <div className="ux-reset-explorer-preview">
+          {selectedScenario ? (
+            <p className="type-small" data-testid="explorer-scenario-selected">
+              {explorerScenarioSelectionText(selectedScenario)}
+            </p>
+          ) : null}
           {!preview && handoff && releaseId && selectedPublished ? (
             <ReviewPublishedCountyPreview
               compareHref={handoff.compareHref}

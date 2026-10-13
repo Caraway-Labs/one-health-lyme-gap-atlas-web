@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { explorerMapLayerById } from "@/features/ux-reset/review/explorer-map-layers";
 import { scoresV1AtlasScoresGet } from "@/generated/atlas";
 import { ScoresV1AtlasScoresGetResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -15,26 +14,21 @@ export const EXPLORER_SCORE_SETTINGS: ScoreSettings = {
   missing_human_weakness: 75,
 };
 
-export function useExplorerMapScores(
-  releaseId: string | null,
-  layerId: string
-) {
-  const layer = explorerMapLayerById(layerId);
+export function useExplorerMapScores(releaseId: string | null) {
   return useQuery({
-    enabled: Boolean(releaseId) && layer.needsScores,
+    enabled: Boolean(releaseId),
     queryFn: async ({ signal }) => {
       if (!releaseId) {
         throw new Error("Map colors require a release.");
       }
+      const response = await scoresV1AtlasScoresGet(
+        { dataset_version: releaseId, ...EXPLORER_SCORE_SETTINGS },
+        { signal }
+      );
       return validateApiResponse(
         "Atlas scores",
         ScoresV1AtlasScoresGetResponse,
-        (
-          await scoresV1AtlasScoresGet(
-            { dataset_version: releaseId, ...EXPLORER_SCORE_SETTINGS },
-            { signal }
-          )
-        ).data
+        response.data
       );
     },
     queryKey: ["ux-reset-review-scores", releaseId, EXPLORER_SCORE_SETTINGS],

@@ -3,6 +3,7 @@
 import {
   useQueries,
   useQueryClient,
+  type QueryClient,
   type UseQueryResult,
 } from "@tanstack/react-query";
 
@@ -16,7 +17,99 @@ import { tier1SurveillancePriorityQueryOptions } from "@/features/ux-reset/surve
 import type { Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
+/** In-flight Tier 1 reads for one Explorer list. A state directory must not open one request per county. */
+export const EXPLORER_ML_PRIORITY_FETCH_LIMIT = 4;
+
+/** Published-directory rows mounted and eligible to fetch before Show more. */
+export const EXPLORER_ML_PRIORITY_PAGE_SIZE = 20;
+
 type PriorityResult = UseQueryResult<Tier1CountyPriority, Error>;
+
+function prioritizeSelectedFips(
+  fipsList: readonly string[],
+  selectedFips: string | null
+): string[] {
+  if (!selectedFips) {
+    return [...fipsList];
+  }
+  return [selectedFips, ...fipsList.filter((fips) => fips !== selectedFips)];
+}
+
+/**
+ * FIPS the list may request. Candidate rows are already bounded.
+ * A published directory contributes only the current page, plus the selected
+ * county when that row sits past the page.
+ */
+export function explorerMlListedFips(input: {
+  candidateFips: readonly string[];
+  directoryFips: readonly string[];
+  selectedFips: string | null;
+  shownDirectoryCount: number;
+}): readonly string[] {
+  if (input.candidateFips.length > 0) {
+    return prioritizeSelectedFips(input.candidateFips, input.selectedFips);
+  }
+  const page = input.directoryFips.slice(
+    0,
+    Math.max(0, input.shownDirectoryCount)
+  );
+  const selectedPastPage =
+    input.selectedFips !== null &&
+    input.directoryFips.includes(input.selectedFips) &&
+    !page.includes(input.selectedFips);
+  return prioritizeSelectedFips(
+    selectedPastPage && input.selectedFips
+      ? [input.selectedFips, ...page]
+      : page,
+    input.selectedFips
+  );
+}
+
+function tier1QueryState(
+  queryClient: QueryClient,
+  fips: string,
+  releaseId: string | null
+) {
+  return queryClient.getQueryState<Tier1CountyPriority, Error>([
+    "ux-reset-tier1-surveillance-priority",
+    fips,
+    releaseId,
+  ]);
+}
+
+/**
+ * Lower-48 counties that may fetch now. Settled rows stay out of the window
+ * so a finished read is not started again. In-flight rows keep their slot.
+ */
+export function explorerMlPriorityFetchTargets(
+  fipsList: readonly string[],
+  queryClient: QueryClient,
+  releaseId: string | null,
+  limit = EXPLORER_ML_PRIORITY_FETCH_LIMIT
+): ReadonlySet<string> {
+  const fetching: string[] = [];
+  const idle: string[] = [];
+  for (const fips of fipsList) {
+    if (!isLower48CountyFips(fips)) {
+      continue;
+    }
+    const state = tier1QueryState(queryClient, fips, releaseId);
+    if (state?.fetchStatus === "fetching" || state?.fetchStatus === "paused") {
+      fetching.push(fips);
+      continue;
+    }
+    if (state?.status === "success" || state?.status === "error") {
+      continue;
+    }
+    idle.push(fips);
+  }
+  const targets = new Set(fetching.slice(0, limit));
+  const room = limit - targets.size;
+  for (const fips of idle.slice(0, Math.max(0, room))) {
+    targets.add(fips);
+  }
+  return targets;
+}
 
 function queryStatus(
   query: PriorityResult | undefined
@@ -39,13 +132,17 @@ export function useExplorerCountyMlPriorities(
 ): ReadonlyMap<string, ExplorerMlListClassification> {
   const queryClient = useQueryClient();
   const releaseId = release.status === "ready" ? release.releaseId : null;
+  const fetchTargets =
+    release.status === "ready"
+      ? explorerMlPriorityFetchTargets(fipsList, queryClient, releaseId)
+      : new Set<string>();
   const queries: PriorityResult[] = useQueries({
     queries: fipsList.map((fips) =>
       tier1SurveillancePriorityQueryOptions(
         fips,
         releaseId,
         queryClient,
-        isLower48CountyFips(fips)
+        fetchTargets.has(fips)
       )
     ),
   });

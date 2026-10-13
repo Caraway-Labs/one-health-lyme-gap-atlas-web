@@ -12,7 +12,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ExplorerMlPriorityBadge } from "@/features/ux-reset/review/explorer-ml-priority";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
-import { useExplorerCountyMlPriorities } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
+import {
+  EXPLORER_ML_PRIORITY_FETCH_LIMIT,
+  EXPLORER_ML_PRIORITY_PAGE_SIZE,
+  useExplorerCountyMlPriorities,
+} from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
 import {
   EXPLORER_ML_PRIORITY_FAILED,
   EXPLORER_ML_PRIORITY_FAILED_LABEL,
@@ -37,7 +41,30 @@ import {
   tier1PriorityForCounty,
 } from "./fixtures/tier1-surveillance-priority";
 
-const { tier1Get } = vi.hoisted(() => ({
+const { publishedCounties, tier1Get } = vi.hoisted(() => ({
+  publishedCounties: vi.fn<
+    () => {
+      county: string;
+      fips: string;
+      state: string;
+      stateName: string;
+    }[]
+  >(() => [
+    { county: "Adams", fips: "08001", state: "CO", stateName: "Colorado" },
+    {
+      county: "Boulder",
+      fips: "08013",
+      state: "CO",
+      stateName: "Colorado",
+    },
+    { county: "Denver", fips: "08031", state: "CO", stateName: "Colorado" },
+    {
+      county: "Clear Creek",
+      fips: "08019",
+      state: "CO",
+      stateName: "Colorado",
+    },
+  ]),
   tier1Get:
     vi.fn<
       typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
@@ -54,22 +81,7 @@ vi.mock(
   import("@/features/ux-reset/review/use-published-review-counties"),
   () => ({
     usePublishedReviewCounties: () => ({
-      counties: [
-        { county: "Adams", fips: "08001", state: "CO", stateName: "Colorado" },
-        {
-          county: "Boulder",
-          fips: "08013",
-          state: "CO",
-          stateName: "Colorado",
-        },
-        { county: "Denver", fips: "08031", state: "CO", stateName: "Colorado" },
-        {
-          county: "Clear Creek",
-          fips: "08019",
-          state: "CO",
-          stateName: "Colorado",
-        },
-      ],
+      counties: publishedCounties(),
       isError: false,
       isLoading: false,
       isSuccess: true,
@@ -144,6 +156,23 @@ describe("Explorer county rows show ML surveillance priority", () => {
   afterEach(() => {
     cleanup();
     tier1Get.mockReset();
+    publishedCounties.mockReset();
+    publishedCounties.mockReturnValue([
+      { county: "Adams", fips: "08001", state: "CO", stateName: "Colorado" },
+      {
+        county: "Boulder",
+        fips: "08013",
+        state: "CO",
+        stateName: "Colorado",
+      },
+      { county: "Denver", fips: "08031", state: "CO", stateName: "Colorado" },
+      {
+        county: "Clear Creek",
+        fips: "08019",
+        state: "CO",
+        stateName: "Colorado",
+      },
+    ]);
     vi.useRealTimers();
   });
 
@@ -390,5 +419,64 @@ describe("Explorer county rows show ML surveillance priority", () => {
       { label: EXPLORER_ML_PRIORITY_FAILED_LABEL, tier: "failed" },
       { label: EXPLORER_ML_PRIORITY_FAILED_LABEL, tier: "failed" },
     ]);
+  });
+
+  it("requests only the open directory page, four counties at a time", async () => {
+    const pending: ((value: {
+      data: ReturnType<typeof tier1PriorityForCounty>;
+      headers: Headers;
+      status: 200;
+    }) => void)[] = [];
+    tier1Get.mockImplementation(() => {
+      const deferred = Promise.withResolvers<{
+        data: ReturnType<typeof tier1PriorityForCounty>;
+        headers: Headers;
+        status: 200;
+      }>();
+      pending.push(deferred.resolve);
+      return deferred.promise;
+    });
+    publishedCounties.mockReturnValue(
+      Array.from({ length: 25 }, (_, index) => ({
+        county: `County ${index + 1}`,
+        fips: String(8001 + index).padStart(5, "0"),
+        state: "CO",
+        stateName: "Colorado",
+      }))
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            candidates: [],
+            resultState: "none_stand_out",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          tierRelease={release}
+        />
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+    });
+    expect(screen.getAllByTestId("review-published-county")).toHaveLength(
+      EXPLORER_ML_PRIORITY_PAGE_SIZE
+    );
+    expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+    fireEvent.click(screen.getByTestId("explorer-ml-priority-more"));
+    expect(screen.getAllByTestId("review-published-county")).toHaveLength(25);
+    expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+    for (const resolve of pending) {
+      resolve({
+        data: tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
+        headers: new Headers(),
+        status: 200 as const,
+      });
+    }
   });
 });
