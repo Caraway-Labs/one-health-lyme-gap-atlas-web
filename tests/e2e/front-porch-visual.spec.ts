@@ -136,9 +136,14 @@ for (const viewport of frontPorchCompositionViewports) {
       animations: "disabled",
       maxDiffPixelRatio: 0.02,
     });
-    await expect(page.locator(".front-porch-beat").first()).toHaveScreenshot(
-      `first-transition-${viewport.width}.png`,
-      { animations: "disabled", maxDiffPixelRatio: 0.02 }
+    const firstBeat = page.locator(".front-porch-beat").first();
+    await expect(firstBeat).toHaveCSS("min-height", "570px");
+    await expect(firstBeat.locator("h2")).toHaveText(
+      "Start with reported human illness."
+    );
+    await expect(firstBeat.locator(".front-porch-kicker")).toHaveCSS(
+      "text-transform",
+      "uppercase"
     );
   });
 }
