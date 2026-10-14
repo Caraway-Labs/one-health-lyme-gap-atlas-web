@@ -11,9 +11,14 @@ import {
   FRONT_PORCH_BEATS,
   FRONT_PORCH_EXPLORE_LABEL,
   FRONT_PORCH_EXPLORE_SUPPORT,
+  FRONT_PORCH_FINALE,
+  FRONT_PORCH_TRUST,
+  FRONT_PORCH_TRUST_LINES,
   FRONT_PORCH_FOLLOW_STORY_LABEL,
   FRONT_PORCH_FOOTER_LINKS,
   FRONT_PORCH_GLASS_CALLOUT,
+  FRONT_PORCH_INTRO,
+  FRONT_PORCH_HERO_EXAMPLE,
   FRONT_PORCH_HERO_HEADLINE,
   FRONT_PORCH_HERO_IMAGE,
   FRONT_PORCH_HERO_SUPPORT,
@@ -34,32 +39,78 @@ const FORBIDDEN_PUBLIC_COPY =
 describe("front porch copy", () => {
   it("keeps the locked hero copy", () => {
     expect(FRONT_PORCH_HERO_HEADLINE).toBe(
-      "The data is telling more than one story."
+      "Connect the data. See the bigger picture."
     );
     expect(FRONT_PORCH_HERO_SUPPORT).toBe(
-      "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps epidemiologists connect those perspectives and decide what deserves a closer look."
+      "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps public health professionals connect those perspectives and decide what deserves a closer look."
     );
-    expect(FRONT_PORCH_GLASS_CALLOUT).toBe(
-      "Human health + Vectors + Environment"
+    expect(FRONT_PORCH_HERO_EXAMPLE).toBe(
+      "Follow the Lyme disease example in Buncombe County, North Carolina."
     );
-    expect(FRONT_PORCH_HERO_IMAGE).toMatchObject({
-      approved: true,
-      src: "/images/one-health-ecosystem.png",
+    expect({
+      callout: FRONT_PORCH_GLASS_CALLOUT,
+      image: FRONT_PORCH_HERO_IMAGE,
+    }).toStrictEqual({
+      callout: "Human health + Vectors + Environment",
+      image: {
+        approved: true,
+        src: "/images/one-health-ecosystem.png",
+      },
+    });
+    expect(FRONT_PORCH_INTRO).toStrictEqual({
+      eyebrow: "The question worth asking",
+      paragraph:
+        "Reported Lyme cases show part of the picture. Tick surveillance, environmental data, and community context add other perspectives. Follow the Buncombe County example to see what becomes clearer—and what questions remain.",
+      title: "What can we learn by looking at the data together?",
     });
   });
 
-  it("keeps a six-beat story free of invented claims", () => {
+  it("keeps the approved ending copy free of em dashes", () => {
+    expect(FRONT_PORCH_TRUST).toStrictEqual({
+      eyebrow: "Confidence through clarity",
+      paragraph:
+        "Understanding a dataset means knowing where it came from, when it was collected, and what it can tell us. Atlas brings sources, coverage, and limitations into view so public health professionals can interpret the data in context.",
+      title: "What's missing from the data matters, too.",
+    });
+    expect(FRONT_PORCH_TRUST_LINES.map((line) => line.detail)).toStrictEqual([
+      "See where the data came from",
+      "Know when the data were collected or reported",
+      "See where data are available and where gaps remain",
+      "Understand what the data can and cannot tell you",
+    ]);
+    expect(FRONT_PORCH_FINALE).toStrictEqual({
+      eyebrow: "Continue exploring",
+      paragraph:
+        "Bring human surveillance, tick and pathogen data, and environmental and community context together. Explore county patterns, review the available data, and identify questions for follow-up.",
+      title: "One place to see the bigger picture.",
+    });
+    expect(FRONT_PORCH_EXPLORE_SUPPORT).toBe(
+      "Built for public health professionals."
+    );
+    expect(
+      `${FRONT_PORCH_TRUST.paragraph} ${FRONT_PORCH_FINALE.paragraph} ${FRONT_PORCH_EXPLORE_SUPPORT}`
+    ).not.toMatch(/—/);
+  });
+
+  it("keeps the scrollytelling steps free of invented claims", () => {
     const story = FRONT_PORCH_BEATS.map(
       (beat) => `${beat.title} ${beat.paragraphs.join(" ")}`
     ).join(" ");
 
     expect(FRONT_PORCH_BEATS.map((beat) => beat.id)).toStrictEqual([
-      "question",
       "human-surveillance",
       "vector-pathogen",
       "environment-community",
-      "sources-limits",
-      "atlas",
+    ]);
+    expect(FRONT_PORCH_BEATS.map((beat) => beat.title)).toStrictEqual([
+      "Start with reported human illness.",
+      "Add tick and pathogen data.",
+      "Place the data in context.",
+    ]);
+    expect(FRONT_PORCH_BEATS.map((beat) => beat.status)).toStrictEqual([
+      "Human data",
+      "Vector data",
+      "One Health view",
     ]);
     expect(story).not.toMatch(FORBIDDEN_PUBLIC_COPY);
     expect(story).not.toMatch(/\d{4}/);
@@ -133,7 +184,15 @@ describe("front porch view", () => {
           .some((link) => link.getAttribute("href") === item.href)
       )
     ).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(FORBIDDEN_PUBLIC_COPY);
+    expect({
+      example: screen.getByText(FRONT_PORCH_HERO_EXAMPLE).textContent,
+      forbidden: /alaska|hawaii|37021|data pending|underreported/i.test(
+        document.body.textContent ?? ""
+      ),
+    }).toStrictEqual({
+      example: FRONT_PORCH_HERO_EXAMPLE,
+      forbidden: false,
+    });
   });
 
   it("renders each story beat heading", () => {
@@ -184,12 +243,6 @@ describe("front porch view", () => {
           target: brand.getAttribute("target"),
         },
         brandMark: footer.querySelector("img.atlas-brand-mark"),
-        evidenceHref: screen
-          .getByRole("link", { name: "Evidence and uncertainty" })
-          .getAttribute("href"),
-        methodologyHref: screen
-          .getByRole("link", { name: "Methodology" })
-          .getAttribute("href"),
         feedback: trust.queryByRole("button", { name: "Feedback" }),
         privacySettings: trust.getByRole("button", { name: "Privacy settings" })
           .textContent,
@@ -206,8 +259,6 @@ describe("front porch view", () => {
           target: "_blank",
         },
         brandMark: null,
-        evidenceHref: "/docs/evidence-and-uncertainty",
-        methodologyHref: "/docs/releases-and-methodology",
         feedback: null,
         privacySettings: "Privacy settings",
         trustLinks: [

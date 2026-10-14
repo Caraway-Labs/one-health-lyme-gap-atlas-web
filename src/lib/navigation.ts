@@ -68,13 +68,14 @@ export const NAVIGATION_GROUPS: readonly {
  */
 export const ATLAS_ROUTES: readonly RouteMetadata[] = [
   {
-    description: "Public introduction to One Health Atlas for epidemiologists.",
+    description:
+      "Public introduction to One Health Atlas for public health professionals.",
     href: "/",
     id: "front-porch",
     label: "One Health Atlas",
     match: "exact",
     pageDescription:
-      "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps epidemiologists connect those perspectives and decide what deserves a closer look.",
+      "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps public health professionals connect those perspectives and decide what deserves a closer look.",
     pageTitle: "One Health Atlas",
     placement: "none",
     shell: "none",
