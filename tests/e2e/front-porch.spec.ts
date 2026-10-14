@@ -45,7 +45,7 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
         weight: style.fontWeight,
       };
     });
-  expect(headlineFont.weight).toBe("500");
+  expect(headlineFont.weight).toBe("700");
   expect(headlineFont.style).toBe("normal");
   expect(headlineFont.color).toBe("rgb(255, 255, 255)");
   expect(headlineFont.family.toLowerCase()).not.toContain("georgia");
@@ -103,7 +103,12 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
     ).toBeVisible();
   }
   await expect(page.getByText(/data pending/i)).toHaveCount(0);
-  await expect(page.getByText(/buncombe/i)).toHaveCount(0);
+  await expect(page.getByText(/underreported/i)).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "Follow the Lyme disease example in Buncombe County, North Carolina."
+    )
+  ).toBeVisible();
 
   const follow = page.getByRole("link", {
     name: FRONT_PORCH_FOLLOW_STORY_LABEL,

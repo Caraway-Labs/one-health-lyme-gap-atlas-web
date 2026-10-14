@@ -70,7 +70,7 @@ test("a legacy analytical root URL opens Atlas Explorer and drops unsupported fi
   });
   await expect(
     page.getByRole("heading", {
-      name: "The data is telling more than one story.",
+      name: "Connect the data. See the bigger picture.",
     })
   ).toHaveCount(0);
 });
@@ -91,7 +91,7 @@ test("drops a legacy root section hash and keeps the Front Porch story anchor", 
   await expect(page).toHaveURL(/\/#front-porch-story$/);
   await expect(
     page.getByRole("heading", {
-      name: "The data is telling more than one story.",
+      name: "Connect the data. See the bigger picture.",
     })
   ).toBeVisible();
 });
