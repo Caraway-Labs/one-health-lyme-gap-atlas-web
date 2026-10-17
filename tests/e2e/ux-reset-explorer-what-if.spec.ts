@@ -137,6 +137,9 @@ test.describe("Explorer what-if scenario", () => {
       "Published score 22.9"
     );
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText("Published score 22.9 · No adjustments");
     await page.screenshot({
       path: "/opt/cursor/artifacts/what-if-collapsed.png",
       fullPage: true,
@@ -167,6 +170,23 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
       "not personal disease risk"
     );
+    const impactSummary = page.getByTestId("explorer-scenario-impact-summary");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-description")
+    ).toHaveText("Published to adjusted.");
+    await expect(impactSummary).toContainText("22.9 → 12.2 · −10.7 points");
+    const impact = page.getByTestId("explorer-scenario-impact");
+    await expect(impact).toContainText("Scenario impact — Conejos County");
+    await expect(impact).toContainText("Published score");
+    await expect(impact).toContainText("Adjusted scenario");
+    await expect(impact).toContainText("12.2");
+    await expect(impact).toContainText("−10.7 points");
+    await expect(impact).toContainText("Priority unchanged");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-microcopy")
+    ).toContainText(
+      "not a personal Lyme disease-risk estimate or a new ML prediction"
+    );
     await page.screenshot({
       path: "/opt/cursor/artifacts/what-if-expanded-changed.png",
       fullPage: true,
@@ -185,6 +205,12 @@ test.describe("Explorer what-if scenario", () => {
     await page.getByTestId("explorer-scenario-reset").click();
     await expect(page).not.toHaveURL(/[?&]missing=/);
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText("Published score 22.9 · No adjustments");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).not.toContainText("points");
     await expect(candidate).toContainText("Published score 22.9");
     await expect(missing).toHaveValue("75");
 
@@ -314,8 +340,25 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
       "Governed score 0"
     );
+    const impact = page.getByTestId("explorer-scenario-impact");
+    await expect(impact).toContainText("Scenario impact — Twelve County");
+    await expect(impact).toContainText("Adjusted scenario unavailable");
+    await expect(impact).toContainText("Published score");
+    await expect(impact).not.toContainText("points");
+    await expect(impact).not.toContainText("Scenario rank");
+    await expect(impact).not.toContainText("→");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText("Adjusted scenario unavailable");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).not.toContainText("→");
 
     await thirty.click();
+    await expect(impact).toContainText("Scenario impact — Thirty County");
+    await expect(impact).not.toContainText("Twelve County");
+    await expect(impact).toContainText("Adjusted scenario unavailable");
+    await expect(impact).not.toContainText("points");
     await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
       "Adjusted scenario unavailable"
     );
@@ -408,5 +451,124 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("slider", { name: "Tick and pathogen share" })
     ).toHaveValue("65");
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
+  });
+
+  test("hydrates a shared scenario and keeps the comparison on the selected county", async ({
+    page,
+  }) => {
+    const review = "Priority 2 — Review";
+    const investigate = "Priority 1 — Investigate";
+    const lower = "Lower Atlas priority — Not a safety finding";
+    const watch = "Watch — Monitor signals";
+    const scoreFor = (
+      fips: string,
+      county: string,
+      priority: string,
+      human: number,
+      score: number
+    ) => ({
+      burgdorferi_status: "Present",
+      color: "#55a8a3",
+      county,
+      evidence_completeness: 80,
+      fips,
+      human_status: "published_count_floor",
+      in_contiguous_tick_scope: true,
+      priority,
+      score: {
+        access_signal: 0,
+        community: 0,
+        ecological: 100,
+        human_weakness: human,
+        pathogen_signal: 100,
+        rural_signal: 0,
+        score,
+        svi_signal: 0,
+        tick_signal: 100,
+      },
+      state: "CO",
+      state_name: "Colorado",
+      tick_status: "Established",
+    });
+    await installExplorer(page, {
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Boulder",
+          fips: "08013",
+          reasonText: "Boulder was returned by the method.",
+        }),
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Lake",
+          fips: "08065",
+          reasonText: "Lake was returned by the method.",
+        }),
+      ],
+      geometry: {
+        features: [
+          countyBox("08013", -105.6, 40),
+          countyBox("08065", -106.4, 39),
+        ],
+        type: "FeatureCollection",
+      },
+      scores: {
+        counties: [
+          scoreFor("08013", "Boulder County", review, 100, 65),
+          scoreFor("08065", "Lake County", lower, 0, 0),
+        ],
+        methodology_version: "1",
+        release_id: "alpha-2026",
+        settings: scenarioScores.settings,
+      },
+    });
+
+    await page.setViewportSize({ width: 1711, height: 900 });
+    await page.goto("/app/review?scope=CO&county=08013&eco=85");
+    const summary = page.getByTestId("explorer-scenario-impact-summary");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-description")
+    ).toHaveText("Published to adjusted.");
+    await expect(summary).toContainText("65.0 → 85.0 · +20.0 points");
+    await expect(
+      page.getByTestId("explorer-what-if-scenario")
+    ).not.toHaveAttribute("open", "");
+
+    await page.getByTestId("explorer-what-if-summary").click();
+    const impact = page.getByTestId("explorer-scenario-impact");
+    await expect(impact).toContainText("Scenario impact — Boulder County");
+    await expect(impact).toContainText(
+      `Priority changed: ${review} → ${investigate}`
+    );
+    await expect(impact).toContainText("Published score");
+    await expect(impact).toContainText("85.0");
+
+    await page
+      .getByRole("slider", { name: "Tick and pathogen share" })
+      .fill("40");
+    await expect(summary).toContainText("65.0 → 40.0 · −25.0 points");
+    await expect(impact).toContainText(
+      `Priority changed: ${review} → ${watch}`
+    );
+
+    await page
+      .getByRole("slider", { name: "Tick and pathogen share" })
+      .fill("85");
+    const lake = page.locator(
+      "[data-testid='review-candidate'][data-fips='08065']"
+    );
+    await lake.click();
+    await expect(page).toHaveURL(/county=08065/);
+    await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
+    await expect(summary).not.toContainText("65.0");
+    await expect(summary).not.toContainText("85.0");
+    await expect(impact).toContainText("Scenario impact — Lake County");
+    await expect(impact).not.toContainText("Boulder");
+    await expect(impact).toContainText("Priority unchanged");
+
+    await page.setViewportSize({ width: 800, height: 900 });
+    await expect(summary).toBeVisible();
+    await expect(impact).toBeVisible();
+    await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
   });
 });
