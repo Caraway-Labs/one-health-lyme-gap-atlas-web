@@ -1,5 +1,6 @@
 "use client";
 
+import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { ScoringCalculationPreview } from "@/components/scoring-calculation-preview";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -23,6 +24,7 @@ export const EXPLORER_SCENARIO_IMPACT_MICROCOPY =
 export type ExplorerWhatIfImpactState =
   | { status: "none" }
   | { status: "pending" }
+  | { status: "error" }
   | { status: "unavailable" }
   | {
       /**
@@ -40,6 +42,7 @@ export type ExplorerWhatIfImpactState =
 
 type ExplorerScenarioImpactView =
   | { kind: "pending" }
+  | { kind: "error" }
   | {
       collapsed: string;
       expanded: string;
@@ -78,6 +81,8 @@ type ExplorerScenarioImpactView =
 type ExplorerWhatIfScenarioProps = {
   impact: ExplorerWhatIfImpactState;
   onChange: (settings: ScoreSettings) => void;
+  onRetryScores?: () => void;
+  scoresRetrying?: boolean;
   settings: ScoreSettings;
 };
 
@@ -129,7 +134,10 @@ export function resolveExplorerWhatIfImpact(input: {
   if (input.scoresStatus === "loading") {
     return { status: "pending" };
   }
-  if (input.scoresStatus === "error" || !input.counties) {
+  if (input.scoresStatus === "error") {
+    return { status: "error" };
+  }
+  if (!input.counties) {
     return { status: "unavailable" };
   }
   const inScope = input.counties.filter(
@@ -250,6 +258,9 @@ export function presentExplorerScenarioImpact(
     case "pending": {
       return { kind: "pending" };
     }
+    case "error": {
+      return { kind: "error" };
+    }
     case "unavailable": {
       return {
         collapsed: "Score comparison unavailable",
@@ -300,7 +311,7 @@ function ImpactScoreCell({
 }
 
 function ScenarioImpactSummary({ view }: { view: ExplorerScenarioImpactView }) {
-  if (view.kind === "pending") {
+  if (view.kind === "pending" || view.kind === "error") {
     return null;
   }
   return (
@@ -324,7 +335,8 @@ function ScenarioImpactSummary({ view }: { view: ExplorerScenarioImpactView }) {
 
 function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
   switch (view.kind) {
-    case "pending": {
+    case "pending":
+    case "error": {
       return null;
     }
     case "placeholder": {
@@ -462,118 +474,146 @@ function ScenarioControl({
 export function ExplorerWhatIfScenario({
   impact,
   onChange,
+  onRetryScores,
+  scoresRetrying = false,
   settings,
 }: ExplorerWhatIfScenarioProps) {
   const atDefaults = scenarioSettingsEqual(settings, SCENARIO_SCORE_DEFAULTS);
   const impactView = presentExplorerScenarioImpact(impact);
   return (
-    <details
-      className="ux-reset-explorer-scenario"
-      data-testid="explorer-what-if-scenario"
-    >
-      <summary data-testid="explorer-what-if-summary">
-        <span className="ux-reset-explorer-scenario-heading">
-          <span>What-if scenario</span>
-          <small>Scoring calculation · exploratory assumptions</small>
-        </span>
-        <ScoringCalculationPreview settings={settings} />
-        <ScenarioImpactSummary view={impactView} />
-        <span className="ux-reset-explorer-scenario-affordance">
-          <span className="ux-reset-explorer-scenario-affordance-closed">
-            View &amp; adjust assumptions
-          </span>
-          <span className="ux-reset-explorer-scenario-affordance-open">
-            Hide assumptions
-          </span>
-          <span
-            aria-hidden="true"
-            className="ux-reset-explorer-scenario-chevron"
-          />
-        </span>
-      </summary>
-      <div className="ux-reset-explorer-scenario-body">
-        <p>
-          The score combines the published human surveillance signal with{" "}
-          <strong>
-            {settings.ecological_share}% tick and pathogen evidence
-          </strong>{" "}
-          and{" "}
-          <strong>{100 - settings.ecological_share}% community context</strong>.
-          Missing county records are never treated as zero cases. Moving a
-          slider recalculates an adjusted scenario in this browser for the
-          counties in view. The governed score stays the published value.
-        </p>
-        <p>
-          This is a follow-up priority calculation for surveillance review. It
-          is not a diagnosis, an individual exposure estimate, or a prediction
-          of future cases. Adjusted values are not written to the release.
-        </p>
-        <p>
-          County list scores update with these assumptions. Map colors update on
-          the Atlas gap score layer. This scores collection does not include
-          published incidence. Raising the threshold leaves counties whose
-          governed human signal is already 0 with an unavailable adjusted
-          result, and the governed score stays in place. A missing incidence is
-          not treated as zero.
-        </p>
-        <ScenarioImpactDetails view={impactView} />
-        <p
-          className="type-small ux-reset-explorer-scenario-impact-note"
-          data-testid="explorer-scenario-impact-microcopy"
+    <>
+      {impact.status === "error" ? (
+        <AtlasStatusMessage
+          className="ux-reset-explorer-scenario-scores-error"
+          tone="error"
         >
-          {EXPLORER_SCENARIO_IMPACT_MICROCOPY}
-        </p>
-        <div className="ux-reset-explorer-scenario-controls">
-          <ScenarioControl
-            label="Tick and pathogen share"
-            max={SCENARIO_CONTROL_RANGES.ecological_share.max}
-            min={SCENARIO_CONTROL_RANGES.ecological_share.min}
-            note="Balances tick and pathogen evidence with community context."
-            step={SCENARIO_CONTROL_RANGES.ecological_share.step}
-            value={settings.ecological_share}
-            valueLabel={`${settings.ecological_share}%`}
-            onChange={(value) => {
-              onChange({ ...settings, ecological_share: value });
+          <p>
+            The published scores could not be loaded. This is a request failure,
+            not missing evidence.
+          </p>
+          {onRetryScores ? (
+            <Button
+              data-testid="explorer-scenario-scores-retry"
+              disabled={scoresRetrying}
+              type="button"
+              variant="secondary"
+              onClick={onRetryScores}
+            >
+              {scoresRetrying
+                ? "Retrying published scores…"
+                : "Retry published scores"}
+            </Button>
+          ) : null}
+        </AtlasStatusMessage>
+      ) : null}
+      <details
+        className="ux-reset-explorer-scenario"
+        data-testid="explorer-what-if-scenario"
+      >
+        <summary data-testid="explorer-what-if-summary">
+          <span className="ux-reset-explorer-scenario-heading">
+            <span>What-if scenario</span>
+            <small>Scoring calculation · exploratory assumptions</small>
+          </span>
+          <ScoringCalculationPreview settings={settings} />
+          <ScenarioImpactSummary view={impactView} />
+          <span className="ux-reset-explorer-scenario-affordance">
+            <span className="ux-reset-explorer-scenario-affordance-closed">
+              View &amp; adjust assumptions
+            </span>
+            <span className="ux-reset-explorer-scenario-affordance-open">
+              Hide assumptions
+            </span>
+            <span
+              aria-hidden="true"
+              className="ux-reset-explorer-scenario-chevron"
+            />
+          </span>
+        </summary>
+        <div className="ux-reset-explorer-scenario-body">
+          <p>
+            The score combines the published human surveillance signal with{" "}
+            <strong>
+              {settings.ecological_share}% tick and pathogen evidence
+            </strong>{" "}
+            and{" "}
+            <strong>{`${100 - settings.ecological_share}% community context.`}</strong>{" "}
+            Missing county records are never treated as zero cases. Moving a
+            slider recalculates an adjusted scenario in this browser for the
+            counties in view. The governed score stays the published value.
+          </p>
+          <p>
+            This is a follow-up priority calculation for surveillance review. It
+            is not a diagnosis, an individual exposure estimate, or a prediction
+            of future cases. Adjusted values are not written to the release.
+          </p>
+          <p>
+            County list scores update with these assumptions. Map colors update
+            on the Atlas gap score layer. This scores collection does not
+            include published incidence. Raising the threshold leaves counties
+            whose governed human signal is already 0 with an unavailable
+            adjusted result, and the governed score stays in place. A missing
+            incidence is not treated as zero.
+          </p>
+          <ScenarioImpactDetails view={impactView} />
+          <p
+            className="type-small ux-reset-explorer-scenario-impact-note"
+            data-testid="explorer-scenario-impact-microcopy"
+          >
+            {EXPLORER_SCENARIO_IMPACT_MICROCOPY}
+          </p>
+          <div className="ux-reset-explorer-scenario-controls">
+            <ScenarioControl
+              label="Tick and pathogen share"
+              max={SCENARIO_CONTROL_RANGES.ecological_share.max}
+              min={SCENARIO_CONTROL_RANGES.ecological_share.min}
+              note="Balances tick and pathogen evidence with community context."
+              step={SCENARIO_CONTROL_RANGES.ecological_share.step}
+              value={settings.ecological_share}
+              valueLabel={`${settings.ecological_share}%`}
+              onChange={(value) => {
+                onChange({ ...settings, ecological_share: value });
+              }}
+            />
+            <ScenarioControl
+              label="Published-record threshold"
+              max={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.max}
+              min={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.min}
+              note="At this published incidence value, the human-signal weakness is zero."
+              step={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.step}
+              value={settings.low_incidence_breakpoint}
+              valueLabel={`${settings.low_incidence_breakpoint} per 100,000`}
+              onChange={(value) => {
+                onChange({ ...settings, low_incidence_breakpoint: value });
+              }}
+            />
+            <ScenarioControl
+              label="Missing county-record value"
+              max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
+              min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
+              note="Represents uncertainty where no county-level record is publishable."
+              step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
+              value={settings.missing_human_weakness}
+              valueLabel={String(settings.missing_human_weakness)}
+              onChange={(value) => {
+                onChange({ ...settings, missing_human_weakness: value });
+              }}
+            />
+          </div>
+          <Button
+            data-testid="explorer-scenario-reset"
+            disabled={atDefaults}
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              onChange(SCENARIO_SCORE_DEFAULTS);
             }}
-          />
-          <ScenarioControl
-            label="Published-record threshold"
-            max={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.max}
-            min={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.min}
-            note="At this published incidence value, the human-signal weakness is zero."
-            step={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.step}
-            value={settings.low_incidence_breakpoint}
-            valueLabel={`${settings.low_incidence_breakpoint} per 100,000`}
-            onChange={(value) => {
-              onChange({ ...settings, low_incidence_breakpoint: value });
-            }}
-          />
-          <ScenarioControl
-            label="Missing county-record value"
-            max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
-            min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
-            note="Represents uncertainty where no county-level record is publishable."
-            step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
-            value={settings.missing_human_weakness}
-            valueLabel={String(settings.missing_human_weakness)}
-            onChange={(value) => {
-              onChange({ ...settings, missing_human_weakness: value });
-            }}
-          />
+          >
+            Reset to defaults
+          </Button>
         </div>
-        <Button
-          data-testid="explorer-scenario-reset"
-          disabled={atDefaults}
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            onChange(SCENARIO_SCORE_DEFAULTS);
-          }}
-        >
-          Reset to defaults
-        </Button>
-      </div>
-    </details>
+      </details>
+    </>
   );
 }
 

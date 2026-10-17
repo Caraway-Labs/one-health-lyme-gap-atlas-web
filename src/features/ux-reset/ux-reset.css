@@ -2232,6 +2232,12 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   color: var(--foreground);
 }
 
+.ux-reset-explorer-scenario-scores-error {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 0.75rem 0;
+}
+
 .ux-reset-explorer-scenario {
   margin-block: 0.75rem 0.25rem;
   border: 1px solid var(--line);

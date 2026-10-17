@@ -437,6 +437,53 @@ describe(ExplorerWhatIfScenario, () => {
     expect(screen.getByTestId("explorer-scenario-impact").textContent).toBe(
       "Score comparison is unavailable for this county."
     );
+    expect(screen.queryByTestId("explorer-scenario-scores-retry")).toBeNull();
+  });
+
+  it("shows a retryable request failure instead of an unavailable comparison", () => {
+    const onRetryScores = vi.fn<() => void>();
+    const view = render(
+      <ExplorerWhatIfScenario
+        impact={{ status: "error" }}
+        settings={SCENARIO_SCORE_DEFAULTS}
+        onChange={vi.fn<() => void>()}
+        onRetryScores={onRetryScores}
+      />
+    );
+    const alert = screen.getByRole("alert");
+    const message = alert.textContent ?? "";
+    expect({
+      comparison: screen.queryByTestId("explorer-scenario-impact-summary"),
+      requestFailure: message.includes(
+        "request failure, not missing evidence."
+      ),
+      retry: screen.getByTestId("explorer-scenario-scores-retry").textContent,
+      unavailable: message.includes("Score comparison unavailable"),
+    }).toStrictEqual({
+      comparison: null,
+      requestFailure: true,
+      retry: "Retry published scores",
+      unavailable: false,
+    });
+    fireEvent.click(screen.getByTestId("explorer-scenario-scores-retry"));
+    expect(onRetryScores).toHaveBeenCalledOnce();
+
+    view.rerender(
+      <ExplorerWhatIfScenario
+        impact={{ status: "error" }}
+        scoresRetrying
+        settings={SCENARIO_SCORE_DEFAULTS}
+        onChange={vi.fn<() => void>()}
+        onRetryScores={onRetryScores}
+      />
+    );
+    expect(screen.getByTestId("explorer-scenario-scores-retry")).toHaveProperty(
+      "disabled",
+      true
+    );
+    expect(
+      screen.getByTestId("explorer-scenario-scores-retry").textContent
+    ).toBe("Retrying published scores…");
   });
 });
 
@@ -535,6 +582,59 @@ describe(resolveExplorerWhatIfImpact, () => {
         settings: SCENARIO_SCORE_DEFAULTS,
       }).status
     ).toBe("unavailable");
+  });
+
+  it("keeps a failed scores request distinct from a county the response omitted", () => {
+    const failedWithRows = resolveExplorerWhatIfImpact({
+      collectionSettings: SCENARIO_SCORE_DEFAULTS,
+      counties: [published],
+      countyFips: "01001",
+      scopeCode: "AL",
+      scoresStatus: "error",
+      settings: SCENARIO_SCORE_DEFAULTS,
+    });
+    const failedWithoutRows = resolveExplorerWhatIfImpact({
+      collectionSettings: undefined,
+      counties: undefined,
+      countyFips: "01001",
+      scopeCode: "AL",
+      scoresStatus: "error",
+      settings: SCENARIO_SCORE_DEFAULTS,
+    });
+    const omitted = resolveExplorerWhatIfImpact({
+      collectionSettings: undefined,
+      counties: [published],
+      countyFips: "01003",
+      scopeCode: "AL",
+      scoresStatus: "ready",
+      settings: SCENARIO_SCORE_DEFAULTS,
+    });
+    const emptySuccess = resolveExplorerWhatIfImpact({
+      collectionSettings: undefined,
+      counties: undefined,
+      countyFips: "01001",
+      scopeCode: "AL",
+      scoresStatus: "ready",
+      settings: SCENARIO_SCORE_DEFAULTS,
+    });
+    expect({
+      emptySuccess: emptySuccess.status,
+      failedView: presentExplorerScenarioImpact(failedWithRows).kind,
+      failedWithRows: failedWithRows.status,
+      failedWithoutRows: failedWithoutRows.status,
+      omitted: presentExplorerScenarioImpact(omitted),
+    }).toStrictEqual({
+      emptySuccess: "unavailable",
+      failedView: "error",
+      failedWithRows: "error",
+      failedWithoutRows: "error",
+      omitted: {
+        collapsed: "Score comparison unavailable",
+        expanded: "Score comparison is unavailable for this county.",
+        kind: "placeholder",
+        placeholder: "unavailable",
+      },
+    });
   });
 
   it("uses the governed score at defaults and a definite scenario after a slider change", () => {

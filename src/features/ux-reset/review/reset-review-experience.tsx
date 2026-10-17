@@ -639,8 +639,14 @@ function ResetReviewExperienceInner() {
       {isLower48ReviewScope(scope) && !scopeUnsupported && !explorerMode ? (
         <ExplorerWhatIfScenario
           impact={scenarioImpact}
+          scoresRetrying={
+            scenarioScoresQuery.isFetching && scenarioScoresQuery.isError
+          }
           settings={scenarioSettings}
           onChange={setScenarioSettings}
+          onRetryScores={() => {
+            void scenarioScoresQuery.refetch();
+          }}
         />
       ) : null}
 
