@@ -420,12 +420,20 @@ test.describe("Atlas Explorer layer legends", () => {
 
     await page.getByTestId("explorer-map-layer").click();
     const floor = page.getByRole("option", {
-      name: "Lyme incidence floor (unavailable)",
+      exact: true,
+      name: "Lyme incidence floor",
     });
-    await expect(floor).toBeDisabled();
-    await page.keyboard.press("Escape");
-    await expect(legend).toContainText("Atlas gap score");
+    await expect(floor).toBeEnabled();
+    await floor.click();
+    await expect(legend).toContainText(
+      "No admitted observations were published for this measure on the current release."
+    );
     await expect(legend).not.toContainText("lower bound");
+    await page.getByTestId("explorer-map-layer").click();
+    await expect(
+      page.getByRole("option", { name: "Lyme incidence floor (unavailable)" })
+    ).toBeDisabled();
+    await page.keyboard.press("Escape");
 
     const results = await new AxeBuilder({ page })
       .include("[data-testid='explorer-map-legend']")
