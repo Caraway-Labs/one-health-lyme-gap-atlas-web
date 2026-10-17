@@ -2232,6 +2232,12 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   color: var(--foreground);
 }
 
+.ux-reset-explorer-scenario-scores-error {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 0.75rem 0;
+}
+
 .ux-reset-explorer-scenario {
   margin-block: 0.75rem 0.25rem;
   border: 1px solid var(--line);
@@ -2366,6 +2372,69 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   display: block;
 }
 
+.ux-reset-explorer-scenario-impact-summary {
+  flex: 0 1 auto;
+  color: var(--foreground);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ux-reset-explorer-scenario-impact {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.ux-reset-explorer-scenario-impact h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ux-reset-explorer-scenario-impact-scores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+.ux-reset-explorer-scenario-impact-cell {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-scenario-impact-cell dt,
+.ux-reset-explorer-scenario-impact-cell span,
+.ux-reset-explorer-scenario-impact-priority,
+.ux-reset-explorer-scenario-impact-note {
+  color: var(--atlas-muted-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.ux-reset-explorer-scenario-impact-cell dd {
+  margin: 0;
+}
+
+.ux-reset-explorer-scenario-impact-cell strong {
+  display: block;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ux-reset-explorer-scenario-impact-priority,
+.ux-reset-explorer-scenario-impact-note {
+  margin: 0;
+  max-width: 62rem;
+}
+
 @media (max-width: 800px) {
   .ux-reset-explorer-scenario-controls {
     grid-template-columns: minmax(0, 1fr);
@@ -2373,5 +2442,14 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
   .ux-reset-explorer-scenario > summary {
     align-items: flex-start;
+  }
+
+  .ux-reset-explorer-scenario-impact-scores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ux-reset-explorer-scenario-impact-summary {
+    flex-basis: 100%;
+    white-space: normal;
   }
 }

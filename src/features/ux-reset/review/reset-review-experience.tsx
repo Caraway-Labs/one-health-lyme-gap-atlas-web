@@ -44,7 +44,10 @@ import {
   EXPLORER_SELECTION_REQUIRED,
   resolveExplorerModeQuery,
 } from "@/features/ux-reset/review/explorer-mode";
-import { ExplorerWhatIfScenario } from "@/features/ux-reset/review/explorer-what-if-scenario";
+import {
+  ExplorerWhatIfScenario,
+  resolveExplorerWhatIfImpact,
+} from "@/features/ux-reset/review/explorer-what-if-scenario";
 import {
   hasExplicitReviewLocation,
   hasExplicitReviewScopeParam,
@@ -84,6 +87,7 @@ import {
 import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useExplorerCountyReference } from "@/features/ux-reset/review/use-explorer-county-reference";
+import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { useProfileDefaultJurisdiction } from "@/features/ux-reset/review/use-profile-default-jurisdiction";
 import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
 import { useReviewPresentation } from "@/features/ux-reset/review/use-review-presentation";
@@ -220,6 +224,33 @@ function ResetReviewExperienceInner() {
   );
   const countyReference = useExplorerCountyReference(
     scopeUnsupported ? null : confirmedRelease
+  );
+  const scenarioScoresQuery = useExplorerMapScores(
+    isLower48ReviewScope(scope) && !scopeUnsupported ? confirmedRelease : null
+  );
+  const scenarioImpact = useMemo(
+    () =>
+      resolveExplorerWhatIfImpact({
+        collectionSettings: scenarioScoresQuery.data?.settings,
+        counties: scenarioScoresQuery.data?.counties,
+        countyFips: reviewCounty,
+        scopeCode: scope,
+        scoresStatus: scenarioScoresQuery.isSuccess
+          ? "ready"
+          : scenarioScoresQuery.isError
+            ? "error"
+            : "loading",
+        settings: scenarioSettings,
+      }),
+    [
+      reviewCounty,
+      scenarioScoresQuery.data?.counties,
+      scenarioScoresQuery.data?.settings,
+      scenarioScoresQuery.isError,
+      scenarioScoresQuery.isSuccess,
+      scenarioSettings,
+      scope,
+    ]
   );
 
   const releaseStates = useMemo(
@@ -607,8 +638,15 @@ function ResetReviewExperienceInner() {
 
       {isLower48ReviewScope(scope) && !scopeUnsupported && !explorerMode ? (
         <ExplorerWhatIfScenario
+          impact={scenarioImpact}
+          scoresRetrying={
+            scenarioScoresQuery.isFetching && scenarioScoresQuery.isError
+          }
           settings={scenarioSettings}
           onChange={setScenarioSettings}
+          onRetryScores={() => {
+            void scenarioScoresQuery.refetch();
+          }}
         />
       ) : null}
 
