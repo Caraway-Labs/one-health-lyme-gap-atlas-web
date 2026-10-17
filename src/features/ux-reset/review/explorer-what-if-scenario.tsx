@@ -25,6 +25,12 @@ export type ExplorerWhatIfImpactState =
   | { status: "pending" }
   | { status: "unavailable" }
   | {
+      /**
+       * True when the sliders differ from the governed baseline.
+       * A null scenario map then means every in-scope county is unchanged.
+       * It does not mean the baseline, and it is never a stand-in for limited.
+       */
+      assumptionsChanged: boolean;
       countyName: string;
       governedPriority: string;
       governedScore: number;
@@ -133,14 +139,12 @@ export function resolveExplorerWhatIfImpact(input: {
   if (!selected) {
     return { status: "unavailable" };
   }
-  const scenarios = adjustCountyScenarios(
-    inScope,
-    input.settings,
-    scoreSettingsFromCollection(
-      collectionSettingsRecord(input.collectionSettings)
-    )
+  const baseline = scoreSettingsFromCollection(
+    collectionSettingsRecord(input.collectionSettings)
   );
+  const scenarios = adjustCountyScenarios(inScope, input.settings, baseline);
   return {
+    assumptionsChanged: !scenarioSettingsEqual(input.settings, baseline),
     countyName: selected.county.trim() || "Selected county",
     governedPriority: selected.priority.trim(),
     governedScore: selected.score.score,
@@ -149,18 +153,57 @@ export function resolveExplorerWhatIfImpact(input: {
   };
 }
 
+function definiteScenarioImpact(input: {
+  adjustedLabel: string;
+  adjustedPriority: string;
+  countyName: string;
+  governedLabel: string;
+  governedPriority: string;
+  resultKind: "adjusted" | "unchanged";
+}): ExplorerScenarioImpactView {
+  const deltaLabel = formatExplorerScenarioDelta(
+    Number(input.adjustedLabel) - Number(input.governedLabel)
+  );
+  return {
+    accessibleLead: "Published to adjusted.",
+    adjustedLabel: input.adjustedLabel,
+    adjustedPriority: input.adjustedPriority,
+    collapsed: `${input.governedLabel} → ${input.adjustedLabel} · ${deltaLabel}`,
+    countyName: input.countyName,
+    deltaLabel,
+    governedLabel: input.governedLabel,
+    governedPriority: input.governedPriority,
+    kind: "definite",
+    priorityText: priorityChangeText(
+      input.governedPriority,
+      input.adjustedPriority
+    ),
+    resultKind: input.resultKind,
+  };
+}
+
 function presentReadyImpact(
   impact: Extract<ExplorerWhatIfImpactState, { status: "ready" }>
 ): ExplorerScenarioImpactView {
   const governedLabel = formatExplorerScenarioScore(impact.governedScore);
   if (impact.scenario === null) {
-    return {
-      collapsed: `Published score ${governedLabel} · No adjustments`,
+    if (!impact.assumptionsChanged) {
+      return {
+        collapsed: `Published score ${governedLabel} · No adjustments`,
+        countyName: impact.countyName,
+        governedLabel,
+        governedPriority: impact.governedPriority,
+        kind: "baseline",
+      };
+    }
+    return definiteScenarioImpact({
+      adjustedLabel: governedLabel,
+      adjustedPriority: impact.governedPriority,
       countyName: impact.countyName,
       governedLabel,
       governedPriority: impact.governedPriority,
-      kind: "baseline",
-    };
+      resultKind: "unchanged",
+    });
   }
   switch (impact.scenario.kind) {
     case "limited": {
@@ -175,27 +218,14 @@ function presentReadyImpact(
     }
     case "adjusted":
     case "unchanged": {
-      const adjustedLabel = formatExplorerScenarioScore(impact.scenario.score);
-      const deltaLabel = formatExplorerScenarioDelta(
-        Number(adjustedLabel) - Number(governedLabel)
-      );
-      const priorityText = priorityChangeText(
-        impact.governedPriority,
-        impact.scenario.priority
-      );
-      return {
-        accessibleLead: "Published to adjusted.",
-        adjustedLabel,
+      return definiteScenarioImpact({
+        adjustedLabel: formatExplorerScenarioScore(impact.scenario.score),
         adjustedPriority: impact.scenario.priority,
-        collapsed: `${governedLabel} → ${adjustedLabel} · ${deltaLabel}`,
         countyName: impact.countyName,
-        deltaLabel,
         governedLabel,
         governedPriority: impact.governedPriority,
-        kind: "definite",
-        priorityText,
         resultKind: impact.scenario.kind,
-      };
+      });
     }
     default: {
       const exhaustive: never = impact.scenario;

@@ -126,6 +126,7 @@ describe(ExplorerWhatIfScenario, () => {
 
   it("shows the published score at defaults without a scenario delta", () => {
     renderScenario(SCENARIO_SCORE_DEFAULTS, {
+      assumptionsChanged: false,
       countyName: "Conejos County",
       governedPriority: LOWER,
       governedScore: 22.9,
@@ -152,6 +153,76 @@ describe(ExplorerWhatIfScenario, () => {
     });
   });
 
+  it("shows 0.0 points when every county is unchanged and clears that on reset", () => {
+    const zeroHuman = county({
+      county: "Baldwin County",
+      fips: "01003",
+      human_status: "published_count_floor",
+      score: {
+        access_signal: 0,
+        community: 0,
+        ecological: 100,
+        human_weakness: 0,
+        pathogen_signal: 100,
+        rural_signal: 0,
+        score: 0,
+        svi_signal: 0,
+        tick_signal: 100,
+      },
+    });
+    const moved = { ...SCENARIO_SCORE_DEFAULTS, ecological_share: 85 };
+    const onChange = vi.fn<(next: ScoreSettings) => void>();
+    const view = renderScenario(
+      moved,
+      resolveExplorerWhatIfImpact({
+        collectionSettings: SCENARIO_SCORE_DEFAULTS,
+        counties: [zeroHuman],
+        countyFips: "01003",
+        scopeCode: "AL",
+        scoresStatus: "ready",
+        settings: moved,
+      }),
+      onChange
+    );
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const impact =
+      screen.getByTestId("explorer-scenario-impact").textContent ?? "";
+    expect({
+      baseline: impact.includes("No adjustments"),
+      priority: impact.includes("Priority unchanged"),
+      share: screen
+        .getByRole("slider", { name: "Tick and pathogen share" })
+        .getAttribute("value"),
+      summary: screen.getByTestId("explorer-scenario-impact-summary")
+        .textContent,
+    }).toStrictEqual({
+      baseline: false,
+      priority: true,
+      share: "85",
+      summary: "Published to adjusted.0.0 → 0.0 · 0.0 points",
+    });
+
+    fireEvent.click(screen.getByTestId("explorer-scenario-reset"));
+    expect(onChange).toHaveBeenLastCalledWith(SCENARIO_SCORE_DEFAULTS);
+    view.rerender(
+      <ExplorerWhatIfScenario
+        impact={resolveExplorerWhatIfImpact({
+          collectionSettings: SCENARIO_SCORE_DEFAULTS,
+          counties: [zeroHuman],
+          countyFips: "01003",
+          scopeCode: "AL",
+          scoresStatus: "ready",
+          settings: SCENARIO_SCORE_DEFAULTS,
+        })}
+        onChange={onChange}
+        settings={SCENARIO_SCORE_DEFAULTS}
+      />
+    );
+    expect(
+      screen.getByTestId("explorer-scenario-impact-summary").textContent
+    ).toBe("Published score 0.0 · No adjustments");
+  });
+
   it("shows a signed point change and a priority change for an adjusted county", () => {
     renderScenario(SCENARIO_SCORE_DEFAULTS, {
       countyName: "Autauga County",
@@ -167,6 +238,7 @@ describe(ExplorerWhatIfScenario, () => {
         rank: 3,
         score: 74.1,
       },
+      assumptionsChanged: true,
       status: "ready",
     });
 
@@ -206,6 +278,7 @@ describe(ExplorerWhatIfScenario, () => {
         rank: 2,
         score: 12.2,
       },
+      assumptionsChanged: true,
       status: "ready",
     });
 
@@ -231,6 +304,7 @@ describe(ExplorerWhatIfScenario, () => {
         rank: 1,
         score: 0,
       },
+      assumptionsChanged: true,
       status: "ready",
     });
 
@@ -254,6 +328,7 @@ describe(ExplorerWhatIfScenario, () => {
         governedScore: 0,
         kind: "limited",
       },
+      assumptionsChanged: true,
       status: "ready",
     });
 
@@ -285,6 +360,7 @@ describe(ExplorerWhatIfScenario, () => {
 
   it("replaces both comparison lines when the selected county changes", () => {
     const view = renderScenario(SCENARIO_SCORE_DEFAULTS, {
+      assumptionsChanged: false,
       countyName: "Conejos County",
       governedPriority: LOWER,
       governedScore: 22.9,
@@ -311,6 +387,7 @@ describe(ExplorerWhatIfScenario, () => {
             rank: 1,
             score: 74.1,
           },
+          assumptionsChanged: true,
           status: "ready",
         }}
         settings={SCENARIO_SCORE_DEFAULTS}
@@ -476,6 +553,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       baseline: {
         countyName: "Autauga County",
         governedPriority: REVIEW,
+        assumptionsChanged: false,
         governedScore: 65,
         scenario: null,
         status: "ready",
@@ -553,9 +631,20 @@ describe(resolveExplorerWhatIfImpact, () => {
       scoresStatus: "ready",
       settings: { ...SCENARIO_SCORE_DEFAULTS, ecological_share: 85 },
     });
-    expect(unchanged).toMatchObject({
+    expect({
+      assumptionsChanged:
+        unchanged.status === "ready" ? unchanged.assumptionsChanged : false,
+      scenario: unchanged.status === "ready" ? unchanged.scenario : "present",
+      view: presentExplorerScenarioImpact(unchanged),
+    }).toMatchObject({
+      assumptionsChanged: true,
       scenario: null,
-      status: "ready",
+      view: {
+        collapsed: "0.0 → 0.0 · 0.0 points",
+        kind: "definite",
+        priorityText: "Priority unchanged",
+        resultKind: "unchanged",
+      },
     });
 
     const shifted = resolveExplorerWhatIfImpact({

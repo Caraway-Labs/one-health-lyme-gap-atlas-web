@@ -571,4 +571,76 @@ test.describe("Explorer what-if scenario", () => {
     await expect(impact).toBeVisible();
     await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
   });
+
+  test("hydrates an unchanged scenario from a shared URL and clears it on reset", async ({
+    page,
+  }) => {
+    const lower = "Lower Atlas priority — Not a safety finding";
+    await installExplorer(page, {
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Lake",
+          fips: "08065",
+          reasonText: "Lake was returned by the method.",
+        }),
+      ],
+      scores: {
+        counties: [
+          {
+            burgdorferi_status: "Present",
+            color: "#55a8a3",
+            county: "Lake County",
+            evidence_completeness: 80,
+            fips: "08065",
+            human_status: "published_count_floor",
+            in_contiguous_tick_scope: true,
+            priority: lower,
+            score: {
+              access_signal: 0,
+              community: 0,
+              ecological: 100,
+              human_weakness: 0,
+              pathogen_signal: 100,
+              rural_signal: 0,
+              score: 0,
+              svi_signal: 0,
+              tick_signal: 100,
+            },
+            state: "CO",
+            state_name: "Colorado",
+            tick_status: "Established",
+          },
+        ],
+        methodology_version: "1",
+        release_id: "alpha-2026",
+        settings: scenarioScores.settings,
+      },
+    });
+
+    await page.goto("/app/review?scope=CO&county=08065&eco=85");
+    const summary = page.getByTestId("explorer-scenario-impact-summary");
+    await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
+    await expect(summary).not.toContainText("No adjustments");
+    await expect(
+      page.getByTestId("explorer-what-if-scenario")
+    ).not.toHaveAttribute("open", "");
+
+    await page.getByTestId("explorer-what-if-summary").click();
+    const impact = page.getByTestId("explorer-scenario-impact");
+    await expect(impact).toContainText("Scenario impact — Lake County");
+    await expect(impact).toContainText("Priority unchanged");
+    await expect(impact).not.toContainText("Adjusted scenario unavailable");
+    await expect(
+      page.getByRole("slider", { name: "Tick and pathogen share" })
+    ).toHaveValue("85");
+
+    await page.getByTestId("explorer-scenario-reset").click();
+    await expect(page).not.toHaveURL(/[?&]eco=/);
+    await expect(summary).toContainText("Published score 0.0 · No adjustments");
+    await expect(summary).not.toContainText("0.0 points");
+    await expect(
+      page.getByRole("slider", { name: "Tick and pathogen share" })
+    ).toHaveValue("65");
+  });
 });
