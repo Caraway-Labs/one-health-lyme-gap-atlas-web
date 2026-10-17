@@ -6,11 +6,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   FRONT_PORCH_COUNTY_ILLUSTRATION_SLOT,
+  FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH,
   FRONT_PORCH_MAP_VIEWBOX,
   FRONT_PORCH_SVG_ROUNDING_TOLERANCE,
+  MONTGOMERY_COUNTY_FIPS as GENERATOR_FIPS,
+  countyDisplayFeatureSha256,
   formatProjectedRingsAsSvgPath,
   projectCountyDisplayGeometryToSvgPath,
   projectCountyDisplayRings,
+  ringPointCounts,
 } from "@/features/front-porch/county-outline-path";
 import { FrontPorchScrolly } from "@/features/front-porch/front-porch-scrolly";
 import {
@@ -19,13 +23,6 @@ import {
   MONTGOMERY_COUNTY_OUTLINE_PROVENANCE,
 } from "@/features/front-porch/montgomery-county-outline.generated";
 import { COUNTY_DISPLAY_GEOMETRY_API_PATH } from "@/lib/county-geography";
-
-import {
-  FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH,
-  MONTGOMERY_COUNTY_FIPS as GENERATOR_FIPS,
-  countyDisplayFeatureSha256,
-  ringPointCounts,
-} from "../scripts/generate-front-porch-montgomery-outline";
 
 const FIXTURE_PATH = path.join(
   process.cwd(),

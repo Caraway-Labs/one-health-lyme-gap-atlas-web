@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /**
  * Projects governed county display geometry into the Front Porch illustration.
  *
@@ -29,6 +31,11 @@ export const FRONT_PORCH_COUNTY_ILLUSTRATION_SLOT = {
   minX: 147.9,
   minY: 98,
 } as const;
+
+export const MONTGOMERY_COUNTY_FIPS = "51121";
+
+/** Same route as `COUNTY_DISPLAY_GEOMETRY_API_PATH` in county-geography.ts. */
+export const FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH = "/v1/atlas/geometry";
 
 export const FRONT_PORCH_SVG_COORDINATE_DECIMALS = 1;
 
@@ -77,6 +84,63 @@ function assertClosedRing(ring: GeoJSON.Position[], label: string): void {
   if (!closed) {
     throw new Error(`${label} must stay a closed ring.`);
   }
+}
+
+type CanonicalCountyFeature = GeoJSON.Feature<
+  GeoJSON.Polygon | GeoJSON.MultiPolygon,
+  { fips: typeof MONTGOMERY_COUNTY_FIPS }
+>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
+
+export function canonicalCountyDisplayFeature(
+  feature: GeoJSON.Feature
+): CanonicalCountyFeature {
+  if (feature.type !== "Feature") {
+    throw new Error("Montgomery display geometry must be a GeoJSON Feature.");
+  }
+  const properties = feature.properties;
+  if (!isRecord(properties) || properties.fips !== MONTGOMERY_COUNTY_FIPS) {
+    throw new Error(
+      `Montgomery display geometry must be FIPS ${MONTGOMERY_COUNTY_FIPS}.`
+    );
+  }
+  if (Object.keys(properties).length !== 1) {
+    throw new Error(
+      "Montgomery display geometry properties must contain only fips."
+    );
+  }
+  if (feature.id !== MONTGOMERY_COUNTY_FIPS) {
+    throw new Error(
+      `Montgomery display geometry id must be ${MONTGOMERY_COUNTY_FIPS}.`
+    );
+  }
+  const geometry = feature.geometry;
+  if (
+    !geometry ||
+    (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")
+  ) {
+    throw new Error("Montgomery display geometry must be a polygon.");
+  }
+  return {
+    geometry,
+    id: MONTGOMERY_COUNTY_FIPS,
+    properties: { fips: MONTGOMERY_COUNTY_FIPS },
+    type: "Feature",
+  };
+}
+
+export function countyDisplayFeatureSha256(feature: GeoJSON.Feature): string {
+  const canonical = canonicalCountyDisplayFeature(feature);
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+}
+
+export function ringPointCounts(geometry: GeoJSON.Geometry): number[][] {
+  return polygonsFromGeometry(geometry).map((polygon) =>
+    polygon.map((ring) => ring.length)
+  );
 }
 
 function polygonsFromGeometry(

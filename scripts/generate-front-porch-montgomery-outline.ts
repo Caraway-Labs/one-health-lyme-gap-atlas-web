@@ -10,17 +10,19 @@
  *
  * Optional override: ATLAS_GEOMETRY_API_BASE_URL. No Authorization header is sent.
  */
-import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 import {
+  FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH,
   FRONT_PORCH_OUTLINE_PROJECTION,
+  MONTGOMERY_COUNTY_FIPS,
+  canonicalCountyDisplayFeature,
+  countyDisplayFeatureSha256,
   projectCountyDisplayGeometryToSvgPath,
+  ringPointCounts,
 } from "../src/features/front-porch/county-outline-path.ts";
 
-export const FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH = "/v1/atlas/geometry";
-export const MONTGOMERY_COUNTY_FIPS = "51121";
 export const PUBLIC_ATLAS_API_BASE_URL = "https://api.onehealthatlas.org";
 
 const METADATA_PATH = "/v1/atlas/metadata";
@@ -44,83 +46,8 @@ type OutlineProvenance = {
   sourceCrs: "EPSG:4326";
 };
 
-type CanonicalFeature = GeoJSON.Feature<
-  GeoJSON.Polygon | GeoJSON.MultiPolygon,
-  { fips: typeof MONTGOMERY_COUNTY_FIPS }
->;
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
-}
-
-export function canonicalCountyDisplayFeature(
-  feature: GeoJSON.Feature
-): CanonicalFeature {
-  if (feature.type !== "Feature") {
-    throw new Error("Montgomery display geometry must be a GeoJSON Feature.");
-  }
-  const properties = feature.properties;
-  if (!isRecord(properties) || properties.fips !== MONTGOMERY_COUNTY_FIPS) {
-    throw new Error(
-      `Montgomery display geometry must be FIPS ${MONTGOMERY_COUNTY_FIPS}.`
-    );
-  }
-  if (Object.keys(properties).length !== 1) {
-    throw new Error(
-      "Montgomery display geometry properties must contain only fips."
-    );
-  }
-  if (feature.id !== MONTGOMERY_COUNTY_FIPS) {
-    throw new Error(
-      `Montgomery display geometry id must be ${MONTGOMERY_COUNTY_FIPS}.`
-    );
-  }
-  const geometry = feature.geometry;
-  if (
-    !geometry ||
-    (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon")
-  ) {
-    throw new Error("Montgomery display geometry must be a polygon.");
-  }
-  return {
-    geometry,
-    id: MONTGOMERY_COUNTY_FIPS,
-    properties: { fips: MONTGOMERY_COUNTY_FIPS },
-    type: "Feature",
-  };
-}
-
-export function countyDisplayFeatureSha256(feature: GeoJSON.Feature): string {
-  const canonical = canonicalCountyDisplayFeature(feature);
-  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
-}
-
-export function ringPointCounts(geometry: GeoJSON.Geometry): number[][] {
-  switch (geometry.type) {
-    case "Polygon": {
-      return [geometry.coordinates.map((ring) => ring.length)];
-    }
-    case "MultiPolygon": {
-      return geometry.coordinates.map((polygon) =>
-        polygon.map((ring) => ring.length)
-      );
-    }
-    case "GeometryCollection":
-    case "LineString":
-    case "MultiLineString":
-    case "MultiPoint":
-    case "Point": {
-      throw new Error(
-        `Front Porch county outlines require polygon display geometry, received ${geometry.type}.`
-      );
-    }
-    default: {
-      const exhaustive: never = geometry;
-      throw new Error(
-        `Front Porch county outlines require polygon display geometry, received ${String(exhaustive)}.`
-      );
-    }
-  }
 }
 
 function geometryApiBaseUrl(): string {
