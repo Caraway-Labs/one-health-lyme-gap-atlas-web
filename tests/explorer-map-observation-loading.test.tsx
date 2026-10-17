@@ -116,7 +116,7 @@ describe("explorer observation loading", () => {
           releaseId: geometryStatus === "loading" ? null : "release-1",
           scopeCode: "CO",
         }),
-      { initialProps: "loading" as const, wrapper }
+      { initialProps: "loading" as "error" | "loading" | "ready", wrapper }
     );
     const loading = observationGate(view.result.current.svi);
     view.rerender("error");

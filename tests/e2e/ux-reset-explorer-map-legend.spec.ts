@@ -418,22 +418,25 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend).not.toContainText("Established");
     await expect(legend).not.toContainText("Present");
 
-    await page.getByTestId("explorer-map-layer").click();
-    const floor = page.getByRole("option", {
-      exact: true,
-      name: "Lyme incidence floor",
-    });
-    await expect(floor).toBeEnabled();
-    await floor.click();
+    await chooseLayer(page, "Lyme incidence floor");
     await expect(legend).toContainText(
       "No admitted observations were published for this measure on the current release."
     );
+    await expect(legend).toHaveAttribute("data-legend-kind", "unavailable");
     await expect(legend).not.toContainText("lower bound");
+    await expect(legend).not.toContainText("per 100,000");
     await page.getByTestId("explorer-map-layer").click();
     await expect(
       page.getByRole("option", { name: "Lyme incidence floor (unavailable)" })
     ).toBeDisabled();
     await page.keyboard.press("Escape");
+
+    await chooseLayer(page, "Atlas gap score");
+    await expect(legend).toContainText("Atlas gap score");
+    await expect(legend).toContainText("0 to less than 20");
+    await expect(legend).not.toContainText(
+      "No admitted observations were published for this measure on the current release."
+    );
 
     const results = await new AxeBuilder({ page })
       .include("[data-testid='explorer-map-legend']")
