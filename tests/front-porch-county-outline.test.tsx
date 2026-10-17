@@ -7,11 +7,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   FRONT_PORCH_COUNTY_ILLUSTRATION_SLOT,
   FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH,
+  FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID,
   FRONT_PORCH_MAP_VIEWBOX,
   FRONT_PORCH_SVG_ROUNDING_TOLERANCE,
   MONTGOMERY_COUNTY_FIPS as GENERATOR_FIPS,
   countyDisplayFeatureSha256,
   formatProjectedRingsAsSvgPath,
+  frontPorchDisplayGeometryRequests,
   projectCountyDisplayGeometryToSvgPath,
   projectCountyDisplayRings,
   ringPointCounts,
@@ -264,12 +266,42 @@ describe("Montgomery County front porch outline", () => {
     ).toThrow(/closed ring/);
   });
 
+  it("keeps the October 15 release when current metadata has advanced", () => {
+    const advancedReleaseId = "governed-2099-01-01-later-prod";
+    const feature = montgomeryFeature();
+    const requests = frontPorchDisplayGeometryRequests(
+      "https://api.onehealthatlas.org",
+      advancedReleaseId
+    );
+    expect({
+      outline: projectCountyDisplayGeometryToSvgPath(feature.geometry),
+      requests,
+      sha256: countyDisplayFeatureSha256(feature),
+      usesAdvancedRelease: JSON.stringify(requests).includes(advancedReleaseId),
+    }).toStrictEqual({
+      outline: MONTGOMERY_COUNTY_OUTLINE,
+      requests: {
+        geometryUrl:
+          "https://api.onehealthatlas.org/v1/atlas/geometry?dataset_version=governed-2026-10-15-january-climate-prod",
+        metadataUrl:
+          "https://api.onehealthatlas.org/v1/atlas/metadata?dataset_version=governed-2026-10-15-january-climate-prod",
+        releaseId: FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID,
+      },
+      sha256: MONTGOMERY_COUNTY_OUTLINE_PROVENANCE.featureSha256,
+      usesAdvancedRelease: false,
+    });
+    expect(() =>
+      frontPorchDisplayGeometryRequests("https://api.onehealthatlas.org", " ")
+    ).toThrow(/release_id is empty/);
+  });
+
   it("keeps the homepage outline on the generated asset", () => {
     const scrolly = readFileSync(SCROLLY_PATH, "utf-8");
     const generator = readFileSync(GENERATOR_PATH, "utf-8");
     expect({
       apiPath: generator.includes(COUNTY_DISPLAY_GEOMETRY_API_PATH),
       authorization: /["']Authorization["']/u.test(generator),
+      pinnedRequests: generator.includes("frontPorchDisplayGeometryRequests"),
       censusBoundary: /Census county boundary/u.test(scrolly),
       generatedImport: scrolly.includes("montgomery-county-outline.generated"),
       oldPath: scrolly.includes("M203.1 184.8"),
@@ -277,6 +309,7 @@ describe("Montgomery County front porch outline", () => {
     }).toStrictEqual({
       apiPath: true,
       authorization: false,
+      pinnedRequests: true,
       censusBoundary: false,
       generatedImport: true,
       oldPath: false,

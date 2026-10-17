@@ -37,6 +37,43 @@ export const MONTGOMERY_COUNTY_FIPS = "51121";
 /** Same route as `COUNTY_DISPLAY_GEOMETRY_API_PATH` in county-geography.ts. */
 export const FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH = "/v1/atlas/geometry";
 
+/**
+ * Regeneration stays on the October 15 governed release. A later current
+ * metadata release must not change this asset. Dated-observation migration
+ * stays with issue 474.
+ */
+export const FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID =
+  "governed-2026-10-15-january-climate-prod" as const;
+
+const FRONT_PORCH_METADATA_API_PATH = "/v1/atlas/metadata";
+
+export type FrontPorchGeometryRequests = {
+  geometryUrl: string;
+  metadataUrl: string;
+  releaseId: typeof FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID;
+};
+
+/**
+ * Metadata and geometry URLs for the pinned release. `observedCurrentReleaseId`
+ * is the release a caller just saw on unversioned metadata. It is checked so
+ * an empty observation fails closed, and it is never written into the URLs.
+ */
+export function frontPorchDisplayGeometryRequests(
+  apiBaseUrl: string,
+  observedCurrentReleaseId: string
+): FrontPorchGeometryRequests {
+  if (observedCurrentReleaseId.trim().length === 0) {
+    throw new Error("Observed metadata release_id is empty.");
+  }
+  const base = apiBaseUrl.replace(/\/$/u, "");
+  const release = encodeURIComponent(FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID);
+  return {
+    geometryUrl: `${base}${FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH}?dataset_version=${release}`,
+    metadataUrl: `${base}${FRONT_PORCH_METADATA_API_PATH}?dataset_version=${release}`,
+    releaseId: FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID,
+  };
+}
+
 export const FRONT_PORCH_SVG_COORDINATE_DECIMALS = 1;
 
 /** Half of the 0.1 user-unit rounding quantum. */

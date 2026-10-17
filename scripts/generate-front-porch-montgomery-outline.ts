@@ -8,24 +8,28 @@
  *
  *   npm run generate:front-porch-county
  *
- * Optional override: ATLAS_GEOMETRY_API_BASE_URL. No Authorization header is sent.
+ * Both metadata and geometry use the pinned October 15 release
+ * (`governed-2026-10-15-january-climate-prod`). A newer current metadata
+ * release does not change the request. Optional override:
+ * ATLAS_GEOMETRY_API_BASE_URL. No Authorization header is sent.
  */
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 import {
   FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH,
+  FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID,
   FRONT_PORCH_OUTLINE_PROJECTION,
   MONTGOMERY_COUNTY_FIPS,
   canonicalCountyDisplayFeature,
   countyDisplayFeatureSha256,
+  frontPorchDisplayGeometryRequests,
   projectCountyDisplayGeometryToSvgPath,
   ringPointCounts,
 } from "../src/features/front-porch/county-outline-path.ts";
 
 export const PUBLIC_ATLAS_API_BASE_URL = "https://api.onehealthatlas.org";
 
-const METADATA_PATH = "/v1/atlas/metadata";
 const REGENERATE_COMMAND = "npm run generate:front-porch-county";
 const SVI_SOURCE_KEY = "context_svi";
 
@@ -177,10 +181,18 @@ export const MONTGOMERY_COUNTY_OUTLINE_PROVENANCE = ${JSON.stringify(provenance,
 
 async function generateMontgomeryCountyOutline(): Promise<void> {
   const apiBaseUrl = geometryApiBaseUrl();
-  const metadataUrl = `${apiBaseUrl}${METADATA_PATH}`;
-  const metadata = await getAnonymousJson(metadataUrl);
+  const requests = frontPorchDisplayGeometryRequests(
+    apiBaseUrl,
+    FRONT_PORCH_DISPLAY_GEOMETRY_RELEASE_ID
+  );
+  const metadata = await getAnonymousJson(requests.metadataUrl);
   const svi = readSviRelease(metadata.body);
-  const geometryUrl = `${apiBaseUrl}${FRONT_PORCH_DISPLAY_GEOMETRY_API_PATH}?dataset_version=${encodeURIComponent(svi.releaseId)}`;
+  if (svi.releaseId !== requests.releaseId) {
+    throw new Error(
+      `Pinned display geometry is ${requests.releaseId}, but metadata returned ${svi.releaseId}.`
+    );
+  }
+  const { geometryUrl } = requests;
   const geometry = await getAnonymousJson(geometryUrl);
   if (!geometry.etag) {
     throw new Error("Display geometry response did not include an ETag.");
