@@ -270,12 +270,15 @@ function paintQuantity(input: {
         row.valueState === ValueState.ZERO)
   );
   const domain =
-    "minimum" in scale
-      ? { maximum: scale.maximum, minimum: scale.minimum }
-      : observedDomain(valued);
+    valued.length === 0
+      ? null
+      : "minimum" in scale
+        ? { maximum: scale.maximum, minimum: scale.minimum }
+        : observedDomain(valued);
   const colorsByFips = new Map<string, string>();
   for (const row of input.rows) {
     if (
+      domain === null ||
       row.numeric === null ||
       (row.valueState !== ValueState.OBSERVED &&
         row.valueState !== ValueState.ZERO)
@@ -293,20 +296,26 @@ function paintQuantity(input: {
     );
   }
   const entries: ExplorerMapLegendEntry[] = [];
-  const lowRaw = endpointRaw(valued, domain.minimum) ?? String(domain.minimum);
-  const highRaw = endpointRaw(valued, domain.maximum) ?? String(domain.maximum);
-  const zeroAtLow = valued.some(
-    (row) =>
-      row.valueState === ValueState.ZERO && row.numeric === domain.minimum
-  );
-  entries.push({
-    color: scale.low,
-    detail: zeroAtLow
-      ? "Observed zero is the low end of this scale. It is not a missing value."
-      : null,
-    label: zeroAtLow ? `${lowRaw} (observed zero)` : `${lowRaw} (low end)`,
-  });
-  if (domain.maximum !== domain.minimum) {
+  const lowRaw = domain
+    ? (endpointRaw(valued, domain.minimum) ?? String(domain.minimum))
+    : null;
+  const highRaw = domain
+    ? (endpointRaw(valued, domain.maximum) ?? String(domain.maximum))
+    : null;
+  if (domain && lowRaw && highRaw) {
+    const zeroAtLow = valued.some(
+      (row) =>
+        row.valueState === ValueState.ZERO && row.numeric === domain.minimum
+    );
+    entries.push({
+      color: scale.low,
+      detail: zeroAtLow
+        ? "Observed zero is the low end of this scale. It is not a missing value."
+        : null,
+      label: zeroAtLow ? `${lowRaw} (observed zero)` : `${lowRaw} (low end)`,
+    });
+  }
+  if (domain && highRaw && domain.maximum !== domain.minimum) {
     let highest: ExplorerMapNumericRow | null = null;
     for (const row of valued) {
       if (row.numeric === null) {

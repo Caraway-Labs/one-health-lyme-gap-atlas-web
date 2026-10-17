@@ -437,6 +437,63 @@ describe("Explorer map layers", () => {
     expect(paint.note).toMatch(/review ranking/);
   });
 
+  it("does not invent a numeric endpoint when every published value is missing", () => {
+    const missingRows = [
+      {
+        categoryLabel: null,
+        fips: "01001",
+        numeric: null,
+        raw: null,
+        valueState: ValueState.MISSING,
+      },
+      {
+        categoryLabel: null,
+        fips: "08001",
+        numeric: null,
+        raw: null,
+        valueState: ValueState.MISSING,
+      },
+    ];
+    const incidence = paintExplorerMapLayer({
+      counties: [],
+      layerId: "incidence_floor",
+      observation: {
+        omitted: 0,
+        period: "2023-01-01 through 2023-12-31.",
+        rows: missingRows,
+        sourceLabel: "CDC Lyme surveillance",
+        status: "ready",
+        unit: "per 100,000",
+      },
+      scoresStatus: "ready",
+    });
+    const svi = paintExplorerMapLayer({
+      counties: [],
+      layerId: "svi",
+      observation: {
+        omitted: 0,
+        period: "Vintage 2022.",
+        rows: missingRows,
+        sourceLabel: "CDC/ATSDR Social Vulnerability Index",
+        status: "ready",
+        unit: "percentile",
+      },
+      scoresStatus: "ready",
+    });
+    expect({
+      incidence: incidence.entries.map((entry) => entry.label),
+      svi: svi.entries.map((entry) => entry.label),
+    }).toStrictEqual({
+      incidence: [
+        "Missing (not zero and not a low value)",
+        "No published value",
+      ],
+      svi: ["Missing (not zero and not a low value)", "No published value"],
+    });
+    expect(incidence.colorsByFips.get("01001")).toBe("var(--mint)");
+    expect(svi.colorsByFips.get("08001")).toBe("var(--mint)");
+  });
+
   it("drops the previous layer's scale on the next paint", () => {
     const counties = [
       county("08001", { tick_status: "Established" }),

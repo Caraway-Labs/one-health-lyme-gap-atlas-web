@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
@@ -7,7 +7,11 @@ import {
   EXPLORER_OBSERVATION_SPECS,
   ExplorerMapContractError,
 } from "@/features/ux-reset/review/explorer-map-observation";
-import { splitExplorerMapObservationBatches } from "@/features/ux-reset/review/load-explorer-map-observations";
+import {
+  loadExplorerMapObservations,
+  splitExplorerMapObservationBatches,
+} from "@/features/ux-reset/review/load-explorer-map-observations";
+import { observationGate } from "@/features/ux-reset/review/use-explorer-map-observations";
 import type { CountyContextObservation, Observation } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 
@@ -105,6 +109,10 @@ function rucc(input: {
 }
 
 describe("Explorer map observations", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("accepts an incidence floor and keeps a missing row null", () => {
     const ready = acceptExplorerMapObservations({
       releaseId: "release-1",
@@ -199,6 +207,66 @@ describe("Explorer map observations", () => {
         }),
       ])
     ).toThrow(/does not invent dates/);
+  });
+
+  it("follows one continuation page and keeps a missing value null", async () => {
+    const first = dated({ fips: "06037", value: 0.15 });
+    const second = dated({
+      fips: "01001",
+      state: ValueState.MISSING,
+      value: null,
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = new URL(String(input), "http://localhost:8000");
+        const token = url.searchParams.get("page_token");
+        const body = token
+          ? {
+              data: [second],
+              links: {},
+              meta: { next_page_token: null },
+            }
+          : {
+              data: [first],
+              links: {},
+              meta: { next_page_token: "page-2" },
+            };
+        return Response.json(body);
+      })
+    );
+    const ready = await loadExplorerMapObservations({
+      fips: ["06037", "01001"],
+      releaseId: "release-1",
+      signal: new AbortController().signal,
+      spec: EXPLORER_OBSERVATION_SPECS.incidence_floor,
+    });
+    expect(ready.rows.map((row) => [row.fips, row.numeric])).toStrictEqual([
+      ["06037", 0.15],
+      ["01001", null],
+    ]);
+    expect(ready.omitted).toBe(0);
+  });
+
+  it("keeps a layer disabled when the collection has no admitted rows", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ data: [], links: {}, meta: {} }))
+    );
+    await expect(
+      loadExplorerMapObservations({
+        fips: ["08001"],
+        releaseId: "release-1",
+        signal: new AbortController().signal,
+        spec: EXPLORER_OBSERVATION_SPECS.incidence_floor,
+      })
+    ).rejects.toThrow(/no rows/);
+    expect(
+      observationGate({
+        reason: "The observation collection returned no rows.",
+        status: "error",
+      }).selectable
+    ).toBeFalsy();
   });
 
   it("splits a national county list into more than one bounded batch", () => {

@@ -30,9 +30,7 @@ import { cn } from "@/lib/utils";
  * Missing completeness stays missing. A published 0 remains 0.
  * Callers that omit the field are not treated as zero percent.
  */
-export function mapFeatureCompleteness(
-  value?: number | null
-): number | null {
+export function mapFeatureCompleteness(value?: number | null): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return null;
   }
