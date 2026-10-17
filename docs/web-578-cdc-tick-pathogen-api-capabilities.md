@@ -268,7 +268,7 @@ Five-digit `geography_id=99999` with the cumulative CDC query returned the same 
 | `burgdorferi_status` | `06001` | `Present` | `OBSERVED` | `detected` | 200 |
 | `burgdorferi_status` | `06013` | `Present` | `OBSERVED` | `detected` | 200 |
 
-Twelve further receipt cases, both measures, also HTTP 200 on that date: `04013`, `08031`, `25025`, `37063`, `48029`, `53033`. The receipt says those twelve include `Established` and publisher `No records`, and that `No records` stays `unknown`. It does not assign a publisher value to each of the twelve. This brief does not invent that assignment.
+The same receipt also recorded HTTP 200 for both measures at six further county FIPS: `04013`, `08031`, `25025`, `37063`, `48029`, and `53033`. That is 12 observations, two per county, not 12 more counties. The receipt says those observations include `Established` and publisher `No records`, and that `No records` stays `unknown`. It does not assign a publisher value to each FIPS. This brief does not invent that assignment.
 
 ### Producer scope versus HTTP samples
 
@@ -279,7 +279,7 @@ The 2026-10-12 receipt, repeated on WEB #578:
 | `scapularis_status` | 3,109 | 3,109 | 9 | 35 |
 | `burgdorferi_status` | 3,109 | 3,109 | 10 | 35 |
 
-**19** distinct public observations were tested successfully (9 tick, 10 pathogen). That is the seven rows above plus the twelve additional counties. It is not a claim that 6,218 HTTP requests returned 200. This 2026-10-17 check did not re-count producer admission.
+**19** distinct public observations were tested successfully (9 tick, 10 pathogen) across **13** counties: the seven counties in the table above, plus both measures for each of the six FIPS above. It is not a claim that 6,218 HTTP requests returned 200, and it is not 19 counties. This 2026-10-17 check did not re-count producer admission.
 
 Receipt metadata revisions, for observations on the October 6 release:
 
@@ -456,7 +456,7 @@ API #246's recovery was not in production at the time of these calls. Later comm
 
 These are open questions. They are not UI decisions.
 
-1. Which release should a requirement treat as the current CDC observation: the live metadata release (`governed-2026-10-15-january-climate-prod`), whose cumulative reads returned 504 on 2026-10-17, or the October 6 release in the HTTP 200 receipts?
+1. The current public metadata release is `governed-2026-10-15-january-climate-prod`, and cumulative CDC reads against it returned HTTP 504 on 2026-10-17. The HTTP 200 samples belong to the older `governed-2026-10-06-nlcd-demo-cohort` release. They record that older release only and do not stand in for current observations. What must this current release return before a requirement treats a CDC county observation as available?
 2. What API response must exist before a consumer is allowed to show an observation, given that the documented cumulative read currently returns gateway HTML?
 3. How should requirements name the separate facts that already diverge in real payloads: publisher `value`, canonical `value_state`, historical `evidence.state`, and `normalized_state`?
 4. Source resources retrieved on 2026-10-17 have a CDC dataset URL and vintage `through 2025-12-31`. October 12 observation excerpts have null `source_label`, `source_url`, and `source_published_at`. Which of those fields are in the requirement, once observation JSON is available again?
@@ -473,7 +473,7 @@ Verified against the live document and live calls unless a row says the source i
 | --- | --- |
 | Current observation delivery | Live OpenAPI tells clients to call the cumulative CDC query. On 2026-10-17 that query returned HTTP 504 HTML for every lower-48 county tried, including the seven previously accepted counties. |
 | API #88 gateway | The contract's unavailable response is HTTP 503 `application/problem+json`. The public edge returns HTTP 504 `text/html` with `x-do-orig-status: 503`. Unresolved on API #88. Also the transport symptom on API #246. |
-| Release gate | Live metadata release is 15 October 2025 climate production. HTTP 200 CDC observations in the receipt are bound to the 6 October 2025 release. API #246's diagnosis says the deployed adapter still requires the older release and rejects the read before a producer call. Not re-verified from source in this repo. |
+| Release gate | Live metadata release is 15 October 2026 climate production. HTTP 200 CDC observations in the receipt are bound to the 6 October 2026 release. API #246's diagnosis says the deployed adapter still requires the older release and rejects the read before a producer call. Not re-verified from source in this repo. |
 | Exclusion count | Live `GET /v1/sources/pathogen` limitation says 33 absent canonical counties are unknown source coverage. Receipts say 35 excluded incomplete-authority rows per measure. |
 | Problem `type` URLs | Live 400 responses use `https://carawaylabs.com/problems/unsupported-filter` and `https://carawaylabs.com/problems/invalid-request`. The OpenAPI illustrative 400 example uses `https://carawaylabs.com/problems/http-400` and a generic detail string. Live 404 measure-lookup uses `https://carawaylabs.com/problems/http-404`; live unknown-source and unknown observation-measure responses use `https://carawaylabs.com/problems/resource-not-found`. |
 | Semantic version | Receipt observations: `1.0.0`. Live measures, indicators, and sources: `2.0.0`. |
