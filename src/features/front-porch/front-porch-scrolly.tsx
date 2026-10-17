@@ -213,6 +213,7 @@ export function FrontPorchScrolly() {
               aria-label="County illustration"
               className="front-porch-stage-body"
               role="region"
+              // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable county panel must be keyboard accessible
               tabIndex={0}
             >
               <div className="front-porch-map-frame">
