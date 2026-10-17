@@ -4189,7 +4189,7 @@ select:focus-visible {
   position: sticky;
   top: 60px;
   display: flex;
-  height: min(78vh, 640px);
+  height: auto;
   max-height: calc(100vh - 80px);
   min-height: 420px;
   flex-direction: column;
@@ -4221,13 +4221,26 @@ select:focus-visible {
 .front-porch-stage-body {
   position: relative;
   flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: radial-gradient(circle at 60% 35%, #e4efea, #f1f6f2);
+}
+.front-porch-stage-body:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: -3px;
+}
+.front-porch-map-frame {
+  position: relative;
+  width: 100%;
+  margin-bottom: 168px;
   background: radial-gradient(circle at 60% 35%, #e4efea, #f1f6f2);
 }
 .front-porch-map {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  aspect-ratio: 600 / 480;
 }
 .front-porch-sketch-county {
   fill: #c1dbcf;
@@ -4264,10 +4277,15 @@ select:focus-visible {
   fill: #c8dfd3;
   stroke: #72a99c;
 }
-.front-porch-county-lines {
+.front-porch-county-texture {
   fill: none;
   stroke: #78ab9c;
+  stroke-width: 1.4;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
   stroke-opacity: 0.65;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 .front-porch-point-halo {
   fill: #4e8b80;
@@ -4304,14 +4322,14 @@ select:focus-visible {
 }
 .front-porch-evidence {
   position: absolute;
+  top: 79%;
   right: 22px;
-  bottom: 22px;
   left: 22px;
   z-index: 3;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 .front-porch-evidence-card {
   display: flex;

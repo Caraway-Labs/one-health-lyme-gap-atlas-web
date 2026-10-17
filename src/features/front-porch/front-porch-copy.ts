@@ -17,7 +17,7 @@ export const FRONT_PORCH_HERO_SUPPORT =
   "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps public health professionals connect those perspectives and decide what deserves a closer look.";
 
 export const FRONT_PORCH_HERO_EXAMPLE =
-  "Follow the Lyme disease example in Buncombe County, North Carolina.";
+  "Follow the Lyme disease example in Montgomery County, Virginia.";
 
 export const FRONT_PORCH_GLASS_CALLOUT = "Human health + Vectors + Environment";
 
@@ -52,7 +52,7 @@ export const FRONT_PORCH_FOOTER_LINKS = [
 export const FRONT_PORCH_INTRO = {
   eyebrow: "The question worth asking",
   paragraph:
-    "Reported Lyme cases show part of the picture. Tick surveillance, environmental data, and community context add other perspectives. Follow the Buncombe County example to see what becomes clearer—and what questions remain.",
+    "Reported Lyme cases show part of the picture. Tick surveillance, environmental data, and community context add other perspectives. Follow the Montgomery County example to see what becomes clearer—and what questions remain.",
   title: "What can we learn by looking at the data together?",
 } as const;
 
@@ -114,7 +114,7 @@ export const FRONT_PORCH_STAGE_NOTE =
 /**
  * Three steps share one pinned county panel.
  * The county drawing and its dots are illustrative, not sampling locations.
- * Buncombe County is the named example, not a selected explore target.
+ * Montgomery County is the named example, not a selected explore target.
  */
 export const FRONT_PORCH_BEATS: readonly FrontPorchBeat[] = [
   {
@@ -175,7 +175,7 @@ export function frontPorchExploreHref(signedIn: boolean): string {
 }
 
 const FRONT_PORCH_FORBIDDEN_HREF_PATTERN =
-  /buncombe|37021|alaska|hawaii|county=|fips=/i;
+  /buncombe|montgomery|37021|51121|alaska|hawaii|county=|fips=/i;
 
 export function frontPorchExploreHrefSelectsCounty(href: string): boolean {
   return FRONT_PORCH_FORBIDDEN_HREF_PATTERN.test(href);

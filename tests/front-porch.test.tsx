@@ -34,7 +34,7 @@ import {
 import { ANALYTICS_PREFERENCE_KEY } from "@/lib/analytics-consent";
 
 const FORBIDDEN_PUBLIC_COPY =
-  /buncombe|alaska|hawaii|37021|data pending|underreported/i;
+  /buncombe|montgomery|alaska|hawaii|37021|51121|data pending|underreported/i;
 
 describe("front porch copy", () => {
   it("keeps the locked hero copy", () => {
@@ -45,7 +45,7 @@ describe("front porch copy", () => {
       "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps public health professionals connect those perspectives and decide what deserves a closer look."
     );
     expect(FRONT_PORCH_HERO_EXAMPLE).toBe(
-      "Follow the Lyme disease example in Buncombe County, North Carolina."
+      "Follow the Lyme disease example in Montgomery County, Virginia."
     );
     expect({
       callout: FRONT_PORCH_GLASS_CALLOUT,
@@ -60,7 +60,7 @@ describe("front porch copy", () => {
     expect(FRONT_PORCH_INTRO).toStrictEqual({
       eyebrow: "The question worth asking",
       paragraph:
-        "Reported Lyme cases show part of the picture. Tick surveillance, environmental data, and community context add other perspectives. Follow the Buncombe County example to see what becomes clearer—and what questions remain.",
+        "Reported Lyme cases show part of the picture. Tick surveillance, environmental data, and community context add other perspectives. Follow the Montgomery County example to see what becomes clearer—and what questions remain.",
       title: "What can we learn by looking at the data together?",
     });
   });
@@ -186,9 +186,10 @@ describe("front porch view", () => {
     ).toBeTruthy();
     expect({
       example: screen.getByText(FRONT_PORCH_HERO_EXAMPLE).textContent,
-      forbidden: /alaska|hawaii|37021|data pending|underreported/i.test(
-        document.body.textContent ?? ""
-      ),
+      forbidden:
+        /buncombe|alaska|hawaii|37021|51121|data pending|underreported/i.test(
+          document.body.textContent ?? ""
+        ),
     }).toStrictEqual({
       example: FRONT_PORCH_HERO_EXAMPLE,
       forbidden: false,
