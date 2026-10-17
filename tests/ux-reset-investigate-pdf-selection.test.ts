@@ -54,6 +54,7 @@ describe("Investigate PDF measure selection", () => {
       ValueState.MISSING,
       ValueState.UNAVAILABLE,
       ValueState.NO_COUNTY_LINKED_RECORD,
+      ValueState.NO_RECORDS,
     ] as const;
     const selection = select({
       records: states.map((state, index) =>

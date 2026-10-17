@@ -17,6 +17,7 @@ import {
   type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
+import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
   countyV1CountiesFipsGet,
   indicatorsV1IndicatorsGet,
@@ -448,7 +449,7 @@ async function fetchMeasureObservations(input: {
       ObservationsV1ObservationsGetResponse,
       response.data
     );
-    collected.push(...parsed.data);
+    collected.push(...readDatedObservations(parsed.data));
     const nextToken = parsed.meta.next_page_token ?? null;
     if (!nextToken || seenTokens.has(nextToken)) {
       break;

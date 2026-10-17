@@ -1,3 +1,4 @@
+import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import type { ExplorerMapPaint } from "@/features/ux-reset/review/explorer-map-layers";
 
 export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
@@ -17,6 +18,14 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
         <strong>{paint.title}</strong>
         {unit}
       </p>
+      {paint.selection ? <p className="type-small">{paint.selection}</p> : null}
+      {paint.selectionEvidence ? (
+        <EvidenceObject
+          claimHeadingLevel="h4"
+          model={paint.selectionEvidence}
+          showReason
+        />
+      ) : null}
       {paint.entries.length > 0 ? (
         <ul aria-label={`${paint.title} colors`}>
           {paint.entries.map((entry) => (

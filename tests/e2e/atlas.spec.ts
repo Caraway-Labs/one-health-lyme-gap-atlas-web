@@ -186,7 +186,17 @@ test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages",
   page,
 }) => {
   await page.goto("/overview");
-  await expect(page).toHaveURL(/\/explore$/);
+  // Startup replaces the scope-less redirect with explicit national scope.
+  // That history entry is the canonical URL; Back must not restore a bare
+  // /explore that could apply a different saved starting view.
+  await expect(page).toHaveURL(/\/explore\?scope=ALL$/);
+  await page.goto("/docs");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/explore\?scope=ALL$/);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/docs$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/explore\?scope=ALL$/);
   await expect(
     page.getByRole("heading", {
       level: 1,

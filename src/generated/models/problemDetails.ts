@@ -8,7 +8,7 @@
 import type { ProblemDetailsErrors } from './problemDetailsErrors';
 
 /**
- * RFC 9457 error. Canonical public resources add stable code; legacy routes may omit it.
+ * RFC 9457 error. Stable codes are included when the response contract defines one.
  */
 export interface ProblemDetails {
   type: string;

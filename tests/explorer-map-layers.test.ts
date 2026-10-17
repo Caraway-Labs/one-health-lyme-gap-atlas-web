@@ -1,10 +1,55 @@
 import { describe, expect, it } from "vitest";
 
+import { mapFeatureCompleteness } from "@/components/atlas-map";
 import {
   paintExplorerMapLayer,
   parseExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
 import type { CountyScoreSummary } from "@/generated/models";
+import { ValueState } from "@/generated/models";
+
+function observationRow(
+  fips: string,
+  valueState: ValueState,
+  numeric: number | null,
+  raw: string | null
+): ExplorerMapNumericRow {
+  return {
+    categoryLabel: null,
+    fips,
+    numeric,
+    provenance: {
+      atlasAcquiredAt: null,
+      evidence: {
+        provenance_ref: "prov",
+        resource_id: "resource",
+        resource_type: "observation",
+      },
+      limitations: [],
+      measureId: "incidence_floor_2023",
+      methodology: null,
+      methodologyId: null,
+      methodologyVersion: "semantic_county_assembly_v1",
+      observationId: `obs-${fips}`,
+      periodEnd: "2023-12-31",
+      periodStart: "2023-01-01",
+      provenanceRef: "prov",
+      publishedValue: raw,
+      releaseId: "release-1",
+      semanticVersion: "2.0.0",
+      sourceId: "human",
+      sourceLabel: "CDC Lyme surveillance",
+      sourcePublishedAt: null,
+      sourceUrl: null,
+      sourceVintage: "2023",
+      temporalGrain: "YEAR",
+      unit: "per 100,000",
+    },
+    raw,
+    valueState,
+  };
+}
 
 function county(
   fips: string,
@@ -56,12 +101,37 @@ const legendSources = [
 ];
 
 describe("Explorer map layers", () => {
-  it("rejects layers the scores collection cannot encode", () => {
-    expect(parseExplorerMapLayerId("svi")).toBeNull();
-    expect(parseExplorerMapLayerId("incidence_floor")).toBeNull();
-    expect(parseExplorerMapLayerId("uninsured")).toBeNull();
-    expect(parseExplorerMapLayerId("rurality")).toBeNull();
-    expect(parseExplorerMapLayerId("gap_score")).toBe("gap_score");
+  it("keeps governed layer ids in the URL and does not paint them before they validate", () => {
+    expect({
+      completeness: parseExplorerMapLayerId("completeness"),
+      gap: parseExplorerMapLayerId("gap_score"),
+      incidence: parseExplorerMapLayerId("incidence_floor"),
+      invalid: parseExplorerMapLayerId("not-a-layer"),
+      rurality: parseExplorerMapLayerId("rurality"),
+      svi: parseExplorerMapLayerId("svi"),
+      uninsured: parseExplorerMapLayerId("uninsured"),
+    }).toStrictEqual({
+      completeness: "completeness",
+      gap: "gap_score",
+      incidence: "incidence_floor",
+      invalid: null,
+      rurality: "rurality",
+      svi: "svi",
+      uninsured: "uninsured",
+    });
+    const paint = paintExplorerMapLayer({
+      counties: [county("08001")],
+      layerId: "incidence_floor",
+      observation: {
+        reason:
+          "No admitted observations were published for this measure on the current release.",
+        status: "error",
+      },
+      scoresStatus: "ready",
+    });
+    expect(paint.kind).toBe("unavailable");
+    expect(paint.colorsByFips.size).toBe(0);
+    expect(paint.note).toMatch(/No admitted observations/);
   });
 
   it("copies published gap-score colors and skips a blank color", () => {
@@ -362,17 +432,85 @@ describe("Explorer map layers", () => {
     });
   });
 
-  it("does not invent an incidence-floor scale", () => {
+  it("paints the published incidence floor without turning missing into zero", () => {
     const paint = paintExplorerMapLayer({
-      counties: [county("08001")],
+      counties: [county("08001", { color: "#e9602b" })],
       layerId: "incidence_floor",
+      observation: {
+        omitted: 1,
+        period: "2023-01-01 through 2023-12-31.",
+        rows: [
+          observationRow("06037", ValueState.OBSERVED, 0.15, "0.15"),
+          observationRow("01001", ValueState.MISSING, null, null),
+        ],
+        sourceLabel: "CDC Lyme surveillance",
+        status: "ready",
+        unit: "per 100,000",
+      },
       scoresStatus: "ready",
     });
-    expect(paint.kind).toBe("unavailable");
-    expect(paint.colorsByFips.size).toBe(0);
-    expect(paint.entries).toStrictEqual([]);
+    expect({
+      alabama: paint.colorsByFips.get("01001"),
+      gap: paint.entries.some((entry) => entry.label.includes("gap")),
+      losAngeles: paint.colorsByFips.get("06037"),
+      missing: paint.entries.some((entry) =>
+        entry.label.includes("Missing (not zero and not a low value)")
+      ),
+      unpainted: paint.colorsByFips.get("08001"),
+    }).toStrictEqual({
+      alabama: "var(--mint)",
+      gap: false,
+      losAngeles: "hsl(204, 45%, 88%)",
+      missing: true,
+      unpainted: undefined,
+    });
     expect(paint.note).toMatch(/lower bound/);
-    expect(paint.note).not.toMatch(/0 to less than/);
+    expect(paint.note).toMatch(/review ranking/);
+  });
+
+  it("does not invent a numeric endpoint when every published value is missing", () => {
+    const missingRows = [
+      observationRow("01001", ValueState.MISSING, null, null),
+      observationRow("08001", ValueState.MISSING, null, null),
+    ];
+    const incidence = paintExplorerMapLayer({
+      counties: [],
+      layerId: "incidence_floor",
+      observation: {
+        omitted: 0,
+        period: "2023-01-01 through 2023-12-31.",
+        rows: missingRows,
+        sourceLabel: "CDC Lyme surveillance",
+        status: "ready",
+        unit: "per 100,000",
+      },
+      scoresStatus: "ready",
+    });
+    const svi = paintExplorerMapLayer({
+      counties: [],
+      layerId: "svi",
+      observation: {
+        omitted: 0,
+        period: "Vintage 2022.",
+        rows: missingRows,
+        sourceLabel: "CDC/ATSDR Social Vulnerability Index",
+        status: "ready",
+        unit: "percentile",
+      },
+      scoresStatus: "ready",
+    });
+    expect({
+      incidence: incidence.entries.map((entry) => entry.label),
+      svi: svi.entries.map((entry) => entry.label),
+    }).toStrictEqual({
+      incidence: [
+        "Missing (not zero and not a low value)",
+        "No published value",
+      ],
+      svi: ["Missing (not zero and not a low value)", "No published value"],
+    });
+    expect(incidence.colorsByFips.get("01001")).toBe("var(--mint)");
+    expect(svi.colorsByFips.get("08001")).toBe("var(--mint)");
   });
 
   it("drops the previous layer's scale on the next paint", () => {
@@ -399,12 +537,33 @@ describe("Explorer map layers", () => {
     expect(gap.layerId).toBe("gap_score");
   });
 
-  it("does not draw an out-of-range completeness value", () => {
+  it("paints published completeness integers and leaves an out-of-range value unpainted", () => {
     const paint = paintExplorerMapLayer({
-      counties: [county("08001", { evidence_completeness: 140 })],
+      counties: [
+        county("01001", { evidence_completeness: 67 }),
+        county("08001", { evidence_completeness: 50, fips: "08001" }),
+        county("08013", { evidence_completeness: 140, fips: "08013" }),
+      ],
       layerId: "completeness",
       scoresStatus: "ready",
     });
-    expect(paint.colorsByFips.has("08001")).toBeFalsy();
+    expect(paint.colorsByFips.get("01001")).not.toBe(
+      paint.colorsByFips.get("08001")
+    );
+    expect(paint.colorsByFips.has("08013")).toBeFalsy();
+    expect(paint.note).toMatch(/does not recompute/);
+    expect(paint.note).toMatch(/uninsured percentile/);
+    expect(paint.entries.map((entry) => entry.label)).toStrictEqual([
+      "50",
+      "67",
+      "No published value",
+    ]);
+  });
+
+  it("keeps a missing map completeness value missing", () => {
+    expect(mapFeatureCompleteness()).toBeNull();
+    expect(mapFeatureCompleteness(null)).toBeNull();
+    expect(mapFeatureCompleteness(0)).toBe(0);
+    expect(mapFeatureCompleteness(67)).toBe(67);
   });
 });

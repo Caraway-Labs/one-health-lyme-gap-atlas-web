@@ -39,7 +39,10 @@ import {
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
+  completenessLayerGate,
   explorerMapLayerById,
+  explorerMapLayerGates,
+  isExplorerObservationLayer,
   paintExplorerMapLayer,
   resolveExplorerMapColor,
   type ExplorerMapLayerId,
@@ -92,10 +95,19 @@ import {
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
 import {
+  isLower48CountyFips,
+  stateFipsPrefix,
+} from "@/features/ux-reset/review/review-state-fips";
+import {
   EXPLORER_ML_PRIORITY_PAGE_SIZE,
   explorerMlListedFips,
   useExplorerCountyMlPriorities,
 } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
+import {
+  observationGate,
+  observationPaintState,
+  useExplorerMapObservations,
+} from "@/features/ux-reset/review/use-explorer-map-observations";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { usePublishedReviewCounties } from "@/features/ux-reset/review/use-published-review-counties";
 import { EXPLORER_ML_PRIORITY_UNAVAILABLE } from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
@@ -400,13 +412,30 @@ export function ReviewOperatingPicture({
     ),
     staleTime: Infinity,
   });
-  const geometryFips = useMemo(
-    () =>
-      geometryQuery.data?.features.flatMap((feature) =>
-        feature.properties.fips ? [feature.properties.fips] : []
-      ) ?? [],
-    [geometryQuery.data]
-  );
+  const geometryFips = useMemo(() => {
+    const prefix = stateFipsPrefix(scopeCode);
+    return (
+      geometryQuery.data?.features.flatMap((feature) => {
+        const fips = feature.properties.fips;
+        if (!fips || (prefix !== null && !fips.startsWith(prefix))) {
+          return [];
+        }
+        return [fips];
+      }) ?? []
+    );
+  }, [geometryQuery.data, scopeCode]);
+  const geometryStatus = geometryQuery.isPending
+    ? "loading"
+    : geometryQuery.isError
+      ? "error"
+      : "ready";
+  const observations = useExplorerMapObservations({
+    activeLayerId: mapLayer,
+    fips: geometryFips,
+    geometryStatus,
+    releaseId,
+    scopeCode,
+  });
   const scoresQuery = useExplorerMapScores(releaseId);
   const scenarioBaseline = useMemo(
     () => scoreSettingsFromCollection(scoresQuery.data?.settings),
@@ -423,8 +452,58 @@ export function ReviewOperatingPicture({
       ),
     [scenarioBaseline, scenarioSettings, scopeCode, scoresQuery.data?.counties]
   );
+  const lower48Scores = useMemo(
+    () =>
+      (scoresQuery.data?.counties ?? []).filter((county) =>
+        isLower48CountyFips(county.fips)
+      ),
+    [scoresQuery.data?.counties]
+  );
+  const scoreLoadStatus =
+    !releaseId || scoresQuery.isError
+      ? "error"
+      : scoresQuery.isPending
+        ? "loading"
+        : "ready";
+  const layerGates = useMemo(
+    () =>
+      explorerMapLayerGates({
+        completeness: completenessLayerGate({
+          counties: lower48Scores,
+          scoresStatus: scoreLoadStatus,
+        }),
+        observations: {
+          incidence_floor: observationGate(observations.incidence_floor),
+          rurality: observationGate(observations.rurality),
+          svi: observationGate(observations.svi),
+          uninsured: observationGate(observations.uninsured),
+        },
+      }),
+    [lower48Scores, observations, scoreLoadStatus]
+  );
   const mapPaint = useMemo(() => {
     const layer = explorerMapLayerById(mapLayer);
+    if (isExplorerObservationLayer(layer.id)) {
+      return paintExplorerMapLayer({
+        counties: [],
+        layerId: layer.id,
+        observation: observationPaintState(observations[layer.id]),
+        releaseId,
+        scoresStatus: "ready",
+        selectedFips,
+        sources,
+      });
+    }
+    if (layer.id === "completeness") {
+      return paintExplorerMapLayer({
+        counties: lower48Scores,
+        layerId: "completeness",
+        releaseId,
+        scoresStatus: scoreLoadStatus,
+        selectedFips,
+        sources,
+      });
+    }
     let counties = (scoresQuery.data?.counties ?? []).filter(
       (county) => county.state === scopeCode
     );
@@ -494,13 +573,17 @@ export function ReviewOperatingPicture({
       unit: "adjusted review-priority score",
     };
   }, [
+    lower48Scores,
     mapLayer,
+    observations,
     releaseId,
     scenarioByFips,
     scopeCode,
+    scoreLoadStatus,
     scoresQuery.data,
     scoresQuery.isError,
     scoresQuery.isPending,
+    selectedFips,
     sources,
   ]);
   const inStateMapCounties = useMemo(
@@ -899,6 +982,7 @@ export function ReviewOperatingPicture({
           {onMapLayerChange ? (
             <div className="ux-reset-explorer-map-layer">
               <ExplorerMapLayerControl
+                gates={layerGates}
                 layerId={mapLayer}
                 onLayerChange={onMapLayerChange}
               />

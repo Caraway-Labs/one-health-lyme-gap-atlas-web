@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadInvestigatePdf } from "@/features/ux-reset/investigate/download-investigate-pdf";
 import type { InvestigatePdfContext } from "@/features/ux-reset/investigate/investigate-next-step";
 import { InvestigatePdfExport } from "@/features/ux-reset/investigate/investigate-pdf-export";
+import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
   countyReportPdfV1CountiesFipsReportPdfGet,
   stateReportPdfV1StatesStateReportPdfGet,
@@ -1043,10 +1044,13 @@ describe("PDF transport", () => {
     if (transportCase.transport.mode === "abort-before") {
       controller.abort();
     }
-    const pending = downloadInvestigatePdf(adamsContext(observations.data), {
-      shouldCommit: () => commit.current,
-      signal: controller.signal,
-    });
+    const pending = downloadInvestigatePdf(
+      adamsContext(readDatedObservations(observations.data)),
+      {
+        shouldCommit: () => commit.current,
+        signal: controller.signal,
+      }
+    );
     await expectDownload(pending, transportCase.expectation, reportUrls);
     expect(observationRequests).toStrictEqual(
       transportCase.expectation.observations
@@ -1083,10 +1087,16 @@ describe("PDF transport", () => {
       );
     });
     await expect(
-      downloadInvestigatePdf(adamsContext(observations.data), {})
+      downloadInvestigatePdf(
+        adamsContext(readDatedObservations(observations.data)),
+        {}
+      )
     ).resolves.toStrictEqual({ committed: true });
     await expect(
-      downloadInvestigatePdf(adamsContext(observations.data), {})
+      downloadInvestigatePdf(
+        adamsContext(readDatedObservations(observations.data)),
+        {}
+      )
     ).rejects.toMatchObject({
       message: "Renderer unavailable.",
       status: 503,
@@ -1125,13 +1135,18 @@ describe("PDF transport", () => {
       return pendingReport.promise;
     });
     const view = render(
-      <InvestigatePdfExport context={adamsContext(observations.data)} />
+      <InvestigatePdfExport
+        context={adamsContext(readDatedObservations(observations.data))}
+      />
     );
     fireEvent.click(screen.getByRole("button", { name: "Export PDF" }));
     await reportStarted.promise;
     view.rerender(
       <InvestigatePdfExport
-        context={{ ...adamsContext(observations.data), countyFips: "08013" }}
+        context={{
+          ...adamsContext(readDatedObservations(observations.data)),
+          countyFips: "08013",
+        }}
       />
     );
     await waitFor(() => {

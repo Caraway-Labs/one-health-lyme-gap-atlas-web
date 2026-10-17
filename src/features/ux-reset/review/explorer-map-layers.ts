@@ -1,10 +1,20 @@
+import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
+import {
+  paintReadyCompletenessLayer,
+  paintReadyObservationLayer,
+} from "@/features/ux-reset/review/explorer-map-layer-scale";
+import type {
+  ExplorerMapNumericRow,
+  ExplorerObservationLayerId,
+} from "@/features/ux-reset/review/explorer-map-observation";
+import { EXPLORER_OBSERVATION_LAYER_IDS } from "@/features/ux-reset/review/explorer-map-observation";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyScoreSummary } from "@/generated/models";
 
 /**
- * Desired Atlas Explorer layers. Selectable layers are only those the scores
- * collection can encode without a new formula. County-detail fields that are
- * not on that collection stay visible and unavailable.
+ * Atlas Explorer layers. Score and boundary layers stay selectable from the
+ * scores collection. Observation layers stay selectable until a load fails
+ * validation. Completeness stays selectable only after scores validate.
  */
 export const EXPLORER_MAP_LAYERS = [
   {
@@ -18,9 +28,8 @@ export const EXPLORER_MAP_LAYERS = [
     id: "incidence_floor",
     label: "Lyme incidence floor",
     needsScores: false,
-    selectable: false,
-    unavailableReason:
-      "No map collection supplies the published incidence floor for every county. A published incidence floor is a lower bound, not an exact incidence estimate. County evidence still shows a county's own floor when that record exists.",
+    selectable: true,
+    unavailableReason: null,
   },
   {
     id: "tick_status",
@@ -40,33 +49,29 @@ export const EXPLORER_MAP_LAYERS = [
     id: "svi",
     label: "Social vulnerability",
     needsScores: false,
-    selectable: false,
-    unavailableReason:
-      "Social vulnerability is on a county record, not on the scores collection used to color the map. This page does not assemble a nationwide layer from county-detail reads.",
+    selectable: true,
+    unavailableReason: null,
   },
   {
     id: "uninsured",
     label: "Uninsured population",
     needsScores: false,
-    selectable: false,
-    unavailableReason:
-      "Uninsured population is on a county record, not on the scores collection used to color the map. This page does not assemble a nationwide layer from county-detail reads.",
+    selectable: true,
+    unavailableReason: null,
   },
   {
     id: "rurality",
     label: "Rurality",
     needsScores: false,
-    selectable: false,
-    unavailableReason:
-      "Rurality is on a county record, not on the scores collection used to color the map. This page does not assemble a nationwide layer from county-detail reads.",
+    selectable: true,
+    unavailableReason: null,
   },
   {
     id: "completeness",
     label: "Evidence completeness",
     needsScores: true,
-    selectable: false,
-    unavailableReason:
-      "The scores collection publishes an evidence-completeness percent, and this map does not invent a color scale for it.",
+    selectable: true,
+    unavailableReason: null,
   },
   {
     id: "boundaries",
@@ -186,17 +191,101 @@ export type ExplorerMapPaint = {
   layerId: ExplorerMapLayerId;
   note: string;
   period: string;
+  /** Exact published value for the selected county, when one is selected. */
+  selection?: string | null;
+  /** Shared evidence contract for the selected county on an observation layer. */
+  selectionEvidence?: EvidenceObjectModel | null;
   title: string;
   unit: string | null;
 };
 
+export type ExplorerObservationPaintState =
+  | { reason: string; status: "error" | "idle" | "loading" }
+  | {
+      omitted: number;
+      period: string;
+      rows: readonly ExplorerMapNumericRow[];
+      sourceLabel: string | null;
+      status: "ready";
+      unit: string;
+    };
+
 type PaintInput = {
   counties: readonly CountyScoreSummary[];
   layerId: ExplorerMapLayerId;
+  observation?: ExplorerObservationPaintState | null;
   releaseId?: string | null;
   scoresStatus: "error" | "loading" | "ready";
+  selectedFips?: string | null;
   sources?: readonly ExplorerMapLegendSource[];
 };
+
+export type ExplorerLayerGate = {
+  reason: string | null;
+  selectable: boolean;
+};
+
+const OBSERVATION_LAYER_ID_SET = new Set<string>(
+  EXPLORER_OBSERVATION_LAYER_IDS
+);
+
+export function isExplorerObservationLayer(
+  layerId: string
+): layerId is ExplorerObservationLayerId {
+  return OBSERVATION_LAYER_ID_SET.has(layerId);
+}
+
+export function completenessLayerGate(input: {
+  counties: readonly { evidence_completeness: number }[];
+  scoresStatus: "error" | "loading" | "ready";
+}): ExplorerLayerGate {
+  if (input.scoresStatus === "loading") {
+    return {
+      reason: "Published values for this layer are still loading.",
+      selectable: false,
+    };
+  }
+  if (input.scoresStatus === "error") {
+    return {
+      reason:
+        "The scores collection could not be loaded, so evidence completeness cannot be checked.",
+      selectable: false,
+    };
+  }
+  const paintable = input.counties.some(
+    (county) =>
+      Number.isInteger(county.evidence_completeness) &&
+      county.evidence_completeness >= 0 &&
+      county.evidence_completeness <= 100
+  );
+  if (!paintable) {
+    return {
+      reason:
+        "No published evidence-completeness value in the 0–100 range was available.",
+      selectable: false,
+    };
+  }
+  return { reason: null, selectable: true };
+}
+
+export function explorerMapLayerGates(input: {
+  completeness: ExplorerLayerGate;
+  observations: Record<ExplorerObservationLayerId, ExplorerLayerGate>;
+}): Record<ExplorerMapLayerId, ExplorerLayerGate> {
+  const gates = {} as Record<ExplorerMapLayerId, ExplorerLayerGate>;
+  for (const layer of EXPLORER_MAP_LAYERS) {
+    if (layer.id === "completeness") {
+      gates[layer.id] = input.completeness;
+      continue;
+    }
+    if (isExplorerObservationLayer(layer.id)) {
+      gates[layer.id] = input.observations[layer.id];
+      continue;
+    }
+    gates[layer.id] = { reason: null, selectable: true };
+  }
+  return gates;
+}
 
 type ScoreBand = (typeof SCORE_COLOR_BANDS)[number];
 
@@ -628,60 +717,123 @@ function categoricalPaint(
   };
 }
 
+function loadingPaint(input: PaintInput, note: string): ExplorerMapPaint {
+  const layer = explorerMapLayerById(input.layerId);
+  return {
+    colorsByFips: new Map(),
+    entries: [],
+    kind: "loading",
+    layerId: layer.id,
+    note,
+    period: legendPeriod(input, layer.id),
+    title: layer.label,
+    unit: null,
+  };
+}
+
+function observationPaint(input: PaintInput): ExplorerMapPaint {
+  const layer = explorerMapLayerById(input.layerId);
+  const observation = input.observation;
+  if (!isExplorerObservationLayer(layer.id)) {
+    return unavailablePaint(input);
+  }
+  if (observation?.status === "ready") {
+    return paintReadyObservationLayer({
+      layerId: layer.id,
+      omitted: observation.omitted,
+      period: observation.period,
+      releaseId: input.releaseId,
+      rows: observation.rows,
+      selectedFips: input.selectedFips,
+      sourceLabel: observation.sourceLabel,
+      unit: observation.unit,
+    });
+  }
+  if (observation?.status === "error") {
+    return {
+      ...unavailablePaint(input),
+      note: observation.reason,
+    };
+  }
+  return loadingPaint(
+    input,
+    observation?.reason ??
+      `Loading ${layer.label} from the published observation collection.`
+  );
+}
+
 /**
  * Colors for counties the geometry can draw. Score colors are copied from the
- * scores response. Status colors only distinguish published status strings.
- * A percent without a published color scale is not painted.
+ * scores response. Observation colors come from admitted rows only. Missing
+ * stays missing.
  */
 export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
   const layer = explorerMapLayerById(input.layerId);
-  if (layer.id === "boundaries") {
-    return boundaryPaint(
-      input,
-      "County boundaries only. This map is not colored by Atlas gap score.",
-      "County boundaries",
-      "boundaries"
-    );
-  }
-  if (!layer.selectable) {
-    return unavailablePaint(input);
-  }
-  if (input.scoresStatus === "loading") {
-    return {
-      colorsByFips: new Map(),
-      entries: [],
-      kind: "loading",
-      layerId: layer.id,
-      note: `Loading ${layer.label} from the published scores collection.`,
-      period: legendPeriod(input, layer.id),
-      title: layer.label,
-      unit:
-        layer.id === "gap_score"
-          ? "review-priority score"
-          : "published status category",
-    };
-  }
-  if (input.scoresStatus === "error" || input.counties.length === 0) {
-    return boundaryPaint(
-      input,
-      `${layer.label} could not be loaded from the scores collection. The map shows county boundaries only.`,
-      "County boundaries",
-      "unavailable"
-    );
-  }
-
-  switch (layer.id) {
-    case "gap_score": {
-      return gapScorePaint(input);
+  const layerId = layer.id;
+  switch (layerId) {
+    case "boundaries": {
+      return boundaryPaint(
+        input,
+        "County boundaries only. This map is not colored by Atlas gap score.",
+        "County boundaries",
+        "boundaries"
+      );
     }
+    case "incidence_floor":
+    case "rurality":
+    case "svi":
+    case "uninsured": {
+      return observationPaint(input);
+    }
+    case "completeness": {
+      if (input.scoresStatus === "loading") {
+        return loadingPaint(
+          input,
+          "Loading evidence completeness from the published scores collection."
+        );
+      }
+      if (input.scoresStatus === "error" || input.counties.length === 0) {
+        return boundaryPaint(
+          input,
+          "Evidence completeness could not be loaded from the scores collection. The map shows county boundaries only.",
+          "County boundaries",
+          "unavailable"
+        );
+      }
+      return paintReadyCompletenessLayer({
+        counties: input.counties,
+        period: legendPeriod(input, "completeness"),
+        selectedFips: input.selectedFips,
+      });
+    }
+    case "gap_score":
+    case "pathogen_status":
     case "tick_status": {
-      return categoricalPaint(input, (county) => county.tick_status);
-    }
-    case "pathogen_status": {
+      if (input.scoresStatus === "loading") {
+        return loadingPaint(
+          input,
+          `Loading ${layer.label} from the published scores collection.`
+        );
+      }
+      if (input.scoresStatus === "error" || input.counties.length === 0) {
+        return boundaryPaint(
+          input,
+          `${layer.label} could not be loaded from the scores collection. The map shows county boundaries only.`,
+          "County boundaries",
+          "unavailable"
+        );
+      }
+      if (layerId === "gap_score") {
+        return gapScorePaint(input);
+      }
+      if (layerId === "tick_status") {
+        return categoricalPaint(input, (county) => county.tick_status);
+      }
       return categoricalPaint(input, (county) => county.burgdorferi_status);
     }
     default: {
-      return layer satisfies never;
+      const exhaustive: never = layerId;
+      return exhaustive;
     }
   }
 }

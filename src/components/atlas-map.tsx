@@ -26,6 +26,17 @@ import {
 import { countyBelongsToDistrict } from "@/lib/health-districts";
 import { cn } from "@/lib/utils";
 
+/**
+ * Missing completeness stays missing. A published 0 remains 0.
+ * Callers that omit the field are not treated as zero percent.
+ */
+export function mapFeatureCompleteness(value?: number | null): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  return value;
+}
+
 type FeatureCollection = GeoJSON.FeatureCollection<
   GeoJSON.Geometry,
   { fips: string }
@@ -50,7 +61,7 @@ export type AtlasMapHandle = {
 export type AtlasMapCounty = {
   color?: string;
   county?: string;
-  evidence_completeness?: number;
+  evidence_completeness?: number | null;
   fips: string;
   state: string;
 };
@@ -242,7 +253,9 @@ export function AtlasMap({
             properties: {
               ...feature.properties,
               color: county?.color ?? "#e4e9ea",
-              completeness: county?.evidence_completeness ?? 0,
+              completeness: mapFeatureCompleteness(
+                county?.evidence_completeness
+              ),
               selected: feature.properties.fips === selectedFips,
               selectedDistrict: Boolean(
                 county?.county &&

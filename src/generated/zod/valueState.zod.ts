@@ -7,7 +7,7 @@
  */
 import * as zod from 'zod';
 
-export const ValueState = zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.')
+export const ValueState = zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')
 
 export type ValueState = zod.input<typeof ValueState>;
 export type ValueStateOutput = zod.output<typeof ValueState>;
