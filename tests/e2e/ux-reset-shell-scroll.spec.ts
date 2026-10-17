@@ -22,6 +22,10 @@ type ChromeBox = {
   width: number;
 };
 
+function boxRight(value: ChromeBox): number {
+  return value.left + value.width;
+}
+
 function isMobileProject(projectName: string): boolean {
   return projectName.includes("mobile");
 }
@@ -93,27 +97,25 @@ async function box(locator: Locator): Promise<ChromeBox> {
   });
 }
 
+const PRO_SCROLL = ".ux-reset-pro-scroll";
+
 async function mainScrollTop(page: Page): Promise<number> {
-  return page
-    .locator("main.ux-reset-pro-main")
-    .evaluate((element) => element.scrollTop);
+  return page.locator(PRO_SCROLL).evaluate((element) => element.scrollTop);
 }
 
 async function mainScrollMax(page: Page): Promise<number> {
-  return page.locator("main.ux-reset-pro-main").evaluate((element) => {
+  return page.locator(PRO_SCROLL).evaluate((element) => {
     return Math.max(0, element.scrollHeight - element.clientHeight);
   });
 }
 
 async function setMainScroll(page: Page, requested: number): Promise<number> {
-  return page
-    .locator("main.ux-reset-pro-main")
-    .evaluate((element, next: number) => {
-      const max = Math.max(0, element.scrollHeight - element.clientHeight);
-      const applied = Math.min(next, max);
-      element.scrollTop = applied;
-      return applied;
-    }, requested);
+  return page.locator(PRO_SCROLL).evaluate((element, next: number) => {
+    const max = Math.max(0, element.scrollHeight - element.clientHeight);
+    const applied = Math.min(next, max);
+    element.scrollTop = applied;
+    return applied;
+  }, requested);
 }
 
 async function expectRouteContentReachable(page: Page): Promise<void> {
@@ -188,6 +190,71 @@ async function expectChromeParked(
   );
 }
 
+type FooterFlow = {
+  footerBottom: number;
+  footerHeight: number;
+  footerLeft: number;
+  footerTop: number;
+  footerWidth: number;
+  followsMain: boolean;
+  headerBottom: number;
+  insideMain: boolean;
+  mainBottom: number;
+  mainLeft: number;
+  mainScrollTop: number;
+  mainWidth: number;
+  position: string;
+  viewportHeight: number;
+};
+
+async function footerFlow(page: Page): Promise<FooterFlow> {
+  return page.evaluate(() => {
+    const footer = document.querySelector(
+      ".ux-reset-pro-app .ux-reset-trust-footer"
+    );
+    const scroll = document.querySelector(".ux-reset-pro-scroll");
+    const main = scroll?.querySelector("main.ux-reset-pro-main") ?? null;
+    const header = document.querySelector(".ux-reset-pro-app .app-header");
+    if (
+      !(footer instanceof HTMLElement) ||
+      !(scroll instanceof HTMLElement) ||
+      !(main instanceof HTMLElement) ||
+      !(header instanceof HTMLElement)
+    ) {
+      throw new Error("professional footer flow is missing its shell");
+    }
+    const footerBox = footer.getBoundingClientRect();
+    const scrollBox = scroll.getBoundingClientRect();
+    const headerBox = header.getBoundingClientRect();
+    return {
+      footerBottom: footerBox.bottom,
+      footerHeight: footerBox.height,
+      footerLeft: footerBox.left,
+      footerTop: footerBox.top,
+      footerWidth: footerBox.width,
+      followsMain: main.nextElementSibling === footer,
+      headerBottom: headerBox.bottom,
+      insideMain: main.contains(footer),
+      mainBottom: scrollBox.bottom,
+      mainLeft: scrollBox.left,
+      mainScrollTop: scroll.scrollTop,
+      mainWidth: scrollBox.width,
+      position: getComputedStyle(footer).position,
+      viewportHeight: window.innerHeight,
+    };
+  });
+}
+
+function expectFooterInMainPane(flow: FooterFlow, sidebarRight: number) {
+  expect(flow.followsMain).toBe(true);
+  expect(flow.insideMain).toBe(false);
+  expect(flow.position).not.toBe("fixed");
+  expect(flow.position).not.toBe("sticky");
+  expect(flow.footerLeft).toBeGreaterThanOrEqual(sidebarRight - 1);
+  expect(Math.abs(flow.footerLeft - flow.mainLeft)).toBeLessThanOrEqual(1);
+  expect(Math.abs(flow.footerWidth - flow.mainWidth)).toBeLessThanOrEqual(1);
+}
+
 test.describe("professional shell scroll containment", () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(
@@ -209,7 +276,7 @@ test.describe("professional shell scroll containment", () => {
 
     const sidebar = page.locator("#ux-reset-pro-navigation");
     const header = page.locator(".ux-reset-pro-app .app-header");
-    const main = page.locator("main.ux-reset-pro-main");
+    const main = page.locator(PRO_SCROLL);
     const sidebarBox = await box(sidebar);
     const headerBox = await box(header);
     expect(sidebarBox.top).toBe(0);
@@ -250,7 +317,7 @@ test.describe("professional shell scroll containment", () => {
 
     const beforeSpace = await mainScrollTop(page);
     const mainPane = await page
-      .locator("main.ux-reset-pro-main")
+      .locator(PRO_SCROLL)
       .evaluate((element) => element.clientHeight);
     await page.getByRole("button", { name: "Hide navigation" }).focus();
     await page.keyboard.press(" ");
@@ -274,6 +341,149 @@ test.describe("professional shell scroll containment", () => {
       .exclude("[data-base-ui-portal]")
       .analyze();
     expect(results.violations).toEqual([]);
+  });
+
+  test("reveals the trust footer only at the end of a long main scroll", async ({
+    page,
+  }) => {
+    await page.setViewportSize(DESKTOP);
+    await installArizonaReview(page);
+    await page.goto("/explore?scope=AZ");
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+
+    const sidebar = page.locator("#ux-reset-pro-navigation");
+    const header = page.locator(".ux-reset-pro-app .app-header");
+    const sidebarBox = await box(sidebar);
+    const headerBox = await box(header);
+    expect(sidebarBox.top).toBe(0);
+    expect(headerBox.top).toBe(0);
+
+    const before = await footerFlow(page);
+    expectFooterInMainPane(before, boxRight(sidebarBox));
+    expect(before.mainScrollTop).toBe(0);
+    expect(before.footerTop).toBeGreaterThanOrEqual(before.viewportHeight - 1);
+    await expectChromeParked(page, sidebarBox, headerBox);
+
+    await setMainScroll(page, 100_000);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(80);
+    const atEnd = await footerFlow(page);
+    expectFooterInMainPane(atEnd, boxRight(sidebarBox));
+    expect(atEnd.footerTop).toBeLessThan(atEnd.viewportHeight);
+    expect(atEnd.footerBottom).toBeLessThanOrEqual(atEnd.viewportHeight + 1);
+    expect(atEnd.footerBottom).toBeGreaterThan(
+      atEnd.mainBottom - atEnd.footerHeight - 2
+    );
+    await expect(
+      page.getByRole("link", { exact: true, name: "Privacy" })
+    ).toBeVisible();
+    await expectChromeParked(page, sidebarBox, headerBox);
+
+    await page.locator(PRO_SCROLL).evaluate((element) => {
+      element.dispatchEvent(
+        new WheelEvent("wheel", {
+          bubbles: true,
+          cancelable: true,
+          deltaY: -240,
+        })
+      );
+      element.scrollTop = 0;
+    });
+    await expect.poll(() => mainScrollTop(page)).toBe(0);
+    const returned = await footerFlow(page);
+    expect(returned.footerTop).toBeGreaterThanOrEqual(
+      returned.viewportHeight - 1
+    );
+    await expectChromeParked(page, sidebarBox, headerBox);
+
+    await page.getByRole("link", { exact: true, name: "Feed" }).click();
+    await expect(page).toHaveURL(/\/app\/feed$/);
+    await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+    await expect.poll(() => mainScrollTop(page)).toBe(0);
+    const feed = await footerFlow(page);
+    expectFooterInMainPane(feed, boxRight(await box(sidebar)));
+    expect(feed.footerTop).toBeGreaterThan(feed.headerBottom);
+    expect(feed.footerBottom).toBeLessThanOrEqual(feed.viewportHeight + 1);
+    expect(Math.abs(feed.footerBottom - feed.mainBottom)).toBeLessThanOrEqual(
+      2
+    );
+    expect(feed.mainBottom).toBeGreaterThan(feed.viewportHeight - 2);
+    await expectChromeParked(page, sidebarBox, headerBox);
+
+    await sidebar
+      .getByRole("link", { exact: true, name: "Atlas Explorer" })
+      .click();
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(
+      page.getByRole("heading", {
+        name: "Explore the evidence behind every county.",
+      })
+    ).toBeVisible();
+    await expect.poll(() => mainScrollTop(page)).toBe(0);
+    const explorer = await footerFlow(page);
+    expectFooterInMainPane(explorer, boxRight(await box(sidebar)));
+    const explorerOverflows = await page
+      .locator(PRO_SCROLL)
+      .evaluate((element) => {
+        return element.scrollHeight > element.clientHeight + 8;
+      });
+    if (explorerOverflows) {
+      expect(explorer.footerTop).toBeGreaterThanOrEqual(
+        explorer.viewportHeight - 1
+      );
+    } else {
+      expect(
+        Math.abs(explorer.footerBottom - explorer.mainBottom)
+      ).toBeLessThanOrEqual(2);
+    }
+    await expectChromeParked(page, sidebarBox, headerBox);
+  });
+
+  test("keeps the trust footer in the shared main pane on workspace routes", async ({
+    page,
+  }) => {
+    await page.setViewportSize(DESKTOP);
+    await installArizonaReview(page);
+    for (const path of [
+      "/explore?scope=AZ",
+      "/app/explore",
+      "/compare",
+      "/askatlas",
+      "/app/feed",
+      "/app/settings",
+    ]) {
+      await page.goto(path);
+      await expect(page.locator("main.ux-reset-pro-main")).toBeVisible();
+      const sidebarRight = await page
+        .locator("#ux-reset-pro-navigation")
+        .evaluate((element) => element.getBoundingClientRect().right);
+      const flow = await footerFlow(page);
+      expectFooterInMainPane(flow, sidebarRight);
+      expect(
+        await page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
+      ).toBe(0);
+      expect(
+        await page
+          .locator(".ux-reset-pro-app .app-header")
+          .evaluate((element) =>
+            Math.round(element.getBoundingClientRect().top)
+          )
+      ).toBe(0);
+      expect(
+        await page
+          .locator("#ux-reset-pro-navigation")
+          .evaluate((element) =>
+            Math.round(element.getBoundingClientRect().top)
+          )
+      ).toBe(0);
+    }
+
+    await page.goto("/docs");
+    await expect(page.locator(".ux-reset-pro-app")).toHaveCount(0);
+    await page.goto("/");
+    await expect(page.locator(".ux-reset-pro-app")).toHaveCount(0);
+    await expect(
+      page.locator(".front-porch .ux-reset-trust-footer")
+    ).toBeVisible();
   });
 
   test("starts the next route at the top and restores review on back", async ({
@@ -316,7 +526,7 @@ test.describe("professional shell scroll containment", () => {
     await expect
       .poll(() =>
         field.evaluate((element) => {
-          const main = element.closest("main");
+          const main = element.closest(".ux-reset-pro-scroll");
           if (!main) {
             return null;
           }
@@ -447,7 +657,7 @@ test.describe("professional shell scroll containment", () => {
         const shell = document.querySelector(".ux-reset-pro-app");
         const sidebar = document.querySelector("#ux-reset-pro-navigation");
         const header = document.querySelector(".ux-reset-pro-app .app-header");
-        const main = shell?.querySelector("main.ux-reset-pro-main") ?? null;
+        const main = shell?.querySelector(".ux-reset-pro-scroll") ?? null;
         if (
           !(
             scrolling &&
@@ -530,7 +740,7 @@ test.describe("professional shell scroll containment", () => {
       page.getByRole("option", { name: "New York (NY)" })
     ).toBeAttached();
     await page.evaluate((offset) => {
-      const main = document.querySelector("main.ux-reset-pro-main");
+      const main = document.querySelector(".ux-reset-pro-scroll");
       if (main instanceof HTMLElement) {
         main.scrollTop = offset;
       }
@@ -587,7 +797,7 @@ test.describe("professional shell scroll containment", () => {
     await setMainScroll(page, high);
     await expect.poll(() => mainScrollTop(page)).toBe(high);
     await expect.poll(() => storedMainOffset(page)).toBe(high);
-    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
+    await page.locator(PRO_SCROLL).evaluate((element) => {
       element.scrollTop = 0;
     });
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(high - 40);
@@ -596,7 +806,7 @@ test.describe("professional shell scroll containment", () => {
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(low - 40);
     await expect.poll(() => mainScrollTop(page)).toBeLessThan(low + 70);
     await expect.poll(() => storedMainOffset(page)).toBeGreaterThan(low - 40);
-    await page.locator("main.ux-reset-pro-main").evaluate((element) => {
+    await page.locator(PRO_SCROLL).evaluate((element) => {
       element.scrollTop = 0;
     });
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(low - 40);
@@ -624,7 +834,7 @@ test.describe("professional shell scroll containment", () => {
     await expect
       .poll(() =>
         field.evaluate((element) => {
-          const main = element.closest("main");
+          const main = element.closest(".ux-reset-pro-scroll");
           if (!main) {
             return false;
           }
@@ -652,21 +862,25 @@ test.describe("professional shell scroll containment", () => {
       await route.fulfill({ json: { profile: null }, status: 200 });
     });
     await page.goto("/app/settings");
-    const main = page.locator("main.ux-reset-pro-main");
+    const main = page.locator(PRO_SCROLL);
     await expect(page.getByTestId("settings-job-title")).toBeVisible();
     const leaving = await main.evaluate((element) => {
+      const route = element.querySelector("main");
+      if (!(route instanceof HTMLElement)) {
+        throw new Error("missing professional route");
+      }
       const target = document.createElement("div");
       target.id = "fragment-target";
       target.textContent = "Fragment target";
-      element.prepend(target);
+      route.prepend(target);
       const anchor = document.createElement("a");
       anchor.href = "#fragment-target";
       anchor.textContent = "Fragment target";
       anchor.dataset.testid = "fragment-leave";
-      element.prepend(anchor);
+      route.prepend(anchor);
       const spacer = document.createElement("div");
       spacer.style.height = "1800px";
-      element.append(spacer);
+      route.append(spacer);
       element.scrollTop = element.scrollHeight;
       return element.scrollTop;
     });
@@ -747,11 +961,9 @@ test.describe("professional shell scroll containment", () => {
       .evaluate((element) => {
         return getComputedStyle(element).overflowY;
       });
-    const mainOverflow = await page
-      .locator("main.ux-reset-pro-main")
-      .evaluate((element) => {
-        return getComputedStyle(element).overflowY;
-      });
+    const mainOverflow = await page.locator(PRO_SCROLL).evaluate((element) => {
+      return getComputedStyle(element).overflowY;
+    });
     expect(overflow).toBe("visible");
     expect(mainOverflow).toBe("visible");
   });
@@ -772,6 +984,47 @@ test.describe("professional shell scroll containment mobile", () => {
     await page.goto("/app/settings");
     await expectRouteContentReachable(page);
     await expectTrustFooterReachable(page);
+  });
+
+  test("scrolls the phone main pane to the trust footer", async ({ page }) => {
+    await page.setViewportSize(MOBILE);
+    await installArizonaReview(page);
+    await page.goto("/explore?scope=AZ");
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    const header = page.locator(".ux-reset-pro-app .app-header");
+    expect((await box(header)).top).toBe(0);
+
+    const before = await footerFlow(page);
+    expect(before.followsMain).toBe(true);
+    expect(before.insideMain).toBe(false);
+    expect(before.position).not.toBe("fixed");
+    expect(before.position).not.toBe("sticky");
+    expect(Math.abs(before.footerLeft - before.mainLeft)).toBeLessThanOrEqual(
+      1
+    );
+    expect(before.footerTop).toBeGreaterThanOrEqual(before.viewportHeight - 1);
+
+    await setMainScroll(page, 100_000);
+    await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(40);
+    const atEnd = await footerFlow(page);
+    expect(atEnd.footerBottom).toBeLessThanOrEqual(atEnd.viewportHeight + 1);
+    expect(atEnd.footerTop).toBeLessThan(atEnd.viewportHeight);
+    expect((await box(header)).top).toBe(0);
+    expect(
+      await page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)
+    ).toBe(0);
+
+    await page.goto("/app/feed");
+    await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+    await expect.poll(() => mainScrollTop(page)).toBe(0);
+    const feed = await footerFlow(page);
+    expect(feed.position).not.toBe("fixed");
+    expect(feed.position).not.toBe("sticky");
+    expect(feed.footerBottom).toBeLessThanOrEqual(feed.viewportHeight + 1);
+    expect(Math.abs(feed.footerBottom - feed.mainBottom)).toBeLessThanOrEqual(
+      2
+    );
+    expect((await box(header)).top).toBe(0);
   });
 
   for (const viewport of [MOBILE, TABLET]) {
@@ -797,14 +1050,12 @@ test.describe("professional shell scroll containment mobile", () => {
       const header = page.locator(".ux-reset-pro-app .app-header");
       const headerBefore = await box(header);
       expect(headerBefore.top).toBe(0);
-      const scrolled = await page
-        .locator("main.ux-reset-pro-main")
-        .evaluate((element) => {
-          const max = Math.max(0, element.scrollHeight - element.clientHeight);
-          const next = Math.min(480, max);
-          element.scrollTop = next;
-          return next;
-        });
+      const scrolled = await page.locator(PRO_SCROLL).evaluate((element) => {
+        const max = Math.max(0, element.scrollHeight - element.clientHeight);
+        const next = Math.min(480, max);
+        element.scrollTop = next;
+        return next;
+      });
       expect(scrolled).toBeGreaterThan(0);
       await expect.poll(() => mainScrollTop(page)).toBe(scrolled);
       expect((await box(header)).top).toBe(0);

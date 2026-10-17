@@ -182,6 +182,34 @@ describe("UX Reset professional workspace", () => {
     expect(footer.querySelector("button")).toBeNull();
   });
 
+  it("places the trust footer after route content inside the scrolling main", () => {
+    pathname = RESET_APP_PATH;
+    render(
+      <ResetProfessionalShell>
+        <ResetWorkspaceOverviewPage />
+      </ResetProfessionalShell>
+    );
+
+    const scroll = document.querySelector(".ux-reset-pro-scroll");
+    const main = scroll?.querySelector("main.ux-reset-pro-main");
+    const footer = screen.getByRole("contentinfo");
+    expect({
+      footerFollowsMain: main?.nextElementSibling === footer,
+      footerInMain: Boolean(main?.contains(footer)),
+      footerInScroll: Boolean(scroll?.contains(footer)),
+      insetFooter: document
+        .querySelector(".app-inset")
+        ?.querySelector(":scope > footer"),
+      mainFirst: scroll?.firstElementChild === main,
+    }).toStrictEqual({
+      footerFollowsMain: true,
+      footerInMain: false,
+      footerInScroll: true,
+      insetFooter: null,
+      mainFirst: true,
+    });
+  });
+
   it("links AI / Responsible Use from the workspace footer", () => {
     pathname = RESET_APP_PATH;
     render(

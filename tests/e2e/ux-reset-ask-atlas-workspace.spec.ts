@@ -478,7 +478,7 @@ test("scrolls the research page instead of trapping the transcript", async ({
     page.getByText("County answer stays in the transcript.")
   ).toBeVisible();
   const layout = await page.evaluate(() => {
-    const main = document.querySelector("main.ux-reset-pro-main");
+    const main = document.querySelector(".ux-reset-pro-scroll");
     const transcript = document.querySelector(".chat-transcript");
     if (!main || !transcript) {
       return null;
