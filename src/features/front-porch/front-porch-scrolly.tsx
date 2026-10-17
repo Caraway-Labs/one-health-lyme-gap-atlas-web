@@ -8,18 +8,78 @@ import {
   FRONT_PORCH_STAGE_NOTE,
 } from "@/features/front-porch/front-porch-copy";
 
-const STAGE_HEADING = "Illustrative data view for the Buncombe County example";
+const STAGE_HEADING =
+  "Illustrative data view for the Montgomery County example";
 const EVIDENCE_MARKS = ["◌", "⌁", "✳"] as const;
+const COUNTY_MARKERS = [
+  { cx: 344, cy: 140, halo: 14, point: 5, opacity: 0.22 },
+  { cx: 230, cy: 290, halo: 16, point: 6, opacity: 0.18 },
+  { cx: 392, cy: 272, halo: 16, point: 5, opacity: 0.2 },
+] as const;
+// Simplified from the Census county boundary (GEOID 51121) and stored as a static path.
+const MONTGOMERY_COUNTY_OUTLINE =
+  "M203.1 184.8 L158.8 198.5 L147.9 214.1 L149.5 228.7 L166.5 253.2 L201.2 234.3 L215.0 238.7 L211.0 245.9 L191.8 275.8 L203.0 307.7 L204.5 314.1 L187.5 322.9 L194.0 356.7 L190.0 363.1 L181.3 366.7 L195.8 419.4 L211.3 409.0 L242.8 403.7 L250.8 403.8 L288.8 394.5 L326.7 388.4 L369.4 340.6 L439.8 311.7 L432.2 211.2 L386.2 148.3 L383.8 120.8 L342.0 98.0 L238.9 168.0 L203.2 184.8Z";
+const ORIGINAL_ZIGZAG = "M108 218 l89 -24 l68 38 l69 -41 l77 47 l86 -13";
+const ORIGINAL_LEFT_LINE = "M139 162 l36 77 l-18 71";
+const ORIGINAL_REMAINING_LINES = "M380 155 l-23 101 l63 99";
+const ORIGINAL_VERTICAL_LINE = "M240 118 l10 90 l26 195";
+const ORIGINAL_LINE_CENTER = { x: 302.5, y: 260.5 } as const;
+const COUNTY_LINE_FIT = { x: 301.4, y: 260.3, scale: 0.75 } as const;
+const LEFTMOST_LINE_SHIFT = 24;
+const NEXT_LINE_SHIFT = 77.3;
+const VERTICAL_LINE_SHIFT = 16;
+const COUNTY_PLACEMENT = { x: 301.4, y: 260.3, scale: 1.08, lift: 18 } as const;
+
+function CountyLines({ clipId }: { clipId: string }) {
+  return (
+    <g
+      aria-hidden="true"
+      clipPath={`url(#${clipId})`}
+      transform={`translate(${COUNTY_LINE_FIT.x} ${COUNTY_LINE_FIT.y}) scale(${COUNTY_LINE_FIT.scale}) translate(${-ORIGINAL_LINE_CENTER.x} ${-ORIGINAL_LINE_CENTER.y})`}
+    >
+      <path
+        className="front-porch-county-texture"
+        d={ORIGINAL_ZIGZAG}
+        transform={`translate(${LEFTMOST_LINE_SHIFT} 0)`}
+      />
+      <path
+        className="front-porch-county-texture"
+        d={ORIGINAL_LEFT_LINE}
+        transform={`translate(${NEXT_LINE_SHIFT} 0)`}
+      />
+      <path
+        className="front-porch-county-texture"
+        d={ORIGINAL_VERTICAL_LINE}
+        transform={`translate(${VERTICAL_LINE_SHIFT} 0)`}
+      />
+      <path
+        className="front-porch-county-texture"
+        d={ORIGINAL_REMAINING_LINES}
+      />
+    </g>
+  );
+}
 
 function MobileSketch({ step }: { step: number }) {
   if (step === 0) {
     return (
-      <svg aria-hidden="true" viewBox="0 0 300 170">
-        <path
-          className="front-porch-sketch-county"
-          d="M38 45 85 25 121 39 145 18 189 33 224 55 260 43 275 84 253 122 198 148 155 137 104 154 66 116 22 98Z"
-          strokeWidth="2"
-        />
+      <svg aria-hidden="true" viewBox="120 50 350 390">
+        <defs>
+          <clipPath id="county-sketch-texture-clip">
+            <path d={MONTGOMERY_COUNTY_OUTLINE} />
+          </clipPath>
+        </defs>
+        <g
+          transform={`translate(0 ${-COUNTY_PLACEMENT.lift}) translate(${COUNTY_PLACEMENT.x} ${COUNTY_PLACEMENT.y}) scale(${COUNTY_PLACEMENT.scale}) translate(${-COUNTY_PLACEMENT.x} ${-COUNTY_PLACEMENT.y})`}
+        >
+          <path
+            className="front-porch-sketch-county"
+            d={MONTGOMERY_COUNTY_OUTLINE}
+            strokeLinejoin="round"
+            strokeWidth="4"
+          />
+          <CountyLines clipId="county-sketch-texture-clip" />
+        </g>
       </svg>
     );
   }
@@ -147,110 +207,93 @@ export function FrontPorchScrolly() {
           >
             <div className="front-porch-stage-top">
               <strong>{FRONT_PORCH_STAGE_HEADER}</strong>
-              <span>Geographic focus · Buncombe County, NC</span>
+              <span>Geographic focus · Montgomery County, VA</span>
             </div>
             <div className="front-porch-stage-body">
-              <div className="front-porch-stage-label">
-                <b>Buncombe County</b>
-                <small>North Carolina · United States</small>
-              </div>
-              <svg
-                aria-hidden="true"
-                className="front-porch-map"
-                preserveAspectRatio="xMidYMid meet"
-                viewBox="0 0 600 480"
-              >
-                <defs>
-                  <pattern
-                    height="22"
-                    id="county-dot-grid"
-                    patternUnits="userSpaceOnUse"
-                    width="22"
-                  >
-                    <circle className="front-porch-dot" cx="1" cy="1" r="1" />
-                  </pattern>
-                </defs>
-                <rect fill="url(#county-dot-grid)" height="480" width="600" />
-                <path
-                  className="front-porch-county"
-                  d="M45 185 99 160 132 126 178 143 213 98 258 126 300 119 339 156 388 145 433 179 485 169 525 204 514 261 545 297 505 342 453 359 419 404 367 387 322 422 279 402 239 363 194 359 156 315 107 316 77 266 43 237Z"
-                  strokeWidth="2.2"
-                />
-                <path
-                  className="front-porch-county-lines"
-                  d="m108 218 89-24 68 38 69-41 77 47 86-13M139 162l36 77-18 71m83-192 10 90 26 195m104-248-23 101 63 99"
-                  strokeWidth="1.4"
-                />
-                <g
-                  className={
-                    active >= 1
-                      ? "front-porch-map-points front-porch-map-points-on"
-                      : "front-porch-map-points"
-                  }
+              <div className="front-porch-map-frame">
+                <div className="front-porch-stage-label">
+                  <b>Montgomery County</b>
+                  <small>Virginia · United States</small>
+                </div>
+                <svg
+                  aria-hidden="true"
+                  className="front-porch-map"
+                  preserveAspectRatio="xMidYMin meet"
+                  viewBox="0 0 600 480"
                 >
-                  <circle
-                    className="front-porch-point-halo"
-                    cx="193"
-                    cy="240"
-                    opacity="0.22"
-                    r="18"
-                  />
-                  <circle
-                    className="front-porch-point"
-                    cx="193"
-                    cy="240"
-                    r="5"
-                  />
-                  <circle
-                    className="front-porch-point-halo"
-                    cx="360"
-                    cy="240"
-                    opacity="0.18"
-                    r="24"
-                  />
-                  <circle
-                    className="front-porch-point"
-                    cx="360"
-                    cy="240"
-                    r="6"
-                  />
-                  <circle
-                    className="front-porch-point-halo"
-                    cx="280"
-                    cy="339"
-                    opacity="0.2"
-                    r="14"
-                  />
-                  <circle
-                    className="front-porch-point"
-                    cx="280"
-                    cy="339"
-                    r="5"
-                  />
-                </g>
-              </svg>
-              <div className="front-porch-evidence">
-                {FRONT_PORCH_BEATS.map((beat, index) => (
-                  <div
-                    className={
-                      index <= active
-                        ? "front-porch-evidence-card front-porch-evidence-show"
-                        : "front-porch-evidence-card"
-                    }
-                    key={beat.id}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="front-porch-evidence-icon"
+                  <defs>
+                    <pattern
+                      height="22"
+                      id="county-dot-grid"
+                      patternUnits="userSpaceOnUse"
+                      width="22"
                     >
-                      {EVIDENCE_MARKS[index]}
-                    </span>
-                    <span>
-                      <strong>{beat.cardTitle}</strong>
-                      <span>{beat.cardDetail}</span>
-                    </span>
-                  </div>
-                ))}
+                      <circle className="front-porch-dot" cx="1" cy="1" r="1" />
+                    </pattern>
+                    <clipPath id="county-texture-clip">
+                      <path d={MONTGOMERY_COUNTY_OUTLINE} />
+                    </clipPath>
+                  </defs>
+                  <rect fill="url(#county-dot-grid)" height="480" width="600" />
+                  <g
+                    transform={`translate(0 ${-COUNTY_PLACEMENT.lift}) translate(${COUNTY_PLACEMENT.x} ${COUNTY_PLACEMENT.y}) scale(${COUNTY_PLACEMENT.scale}) translate(${-COUNTY_PLACEMENT.x} ${-COUNTY_PLACEMENT.y})`}
+                  >
+                    <path
+                      className="front-porch-county"
+                      d={MONTGOMERY_COUNTY_OUTLINE}
+                      strokeLinejoin="round"
+                      strokeWidth="2.2"
+                    />
+                    <CountyLines clipId="county-texture-clip" />
+                    {COUNTY_MARKERS.map((marker, index) => (
+                      <g
+                        className={
+                          index <= active
+                            ? "front-porch-map-points front-porch-map-points-on"
+                            : "front-porch-map-points"
+                        }
+                        key={marker.cx}
+                      >
+                        <circle
+                          className="front-porch-point-halo"
+                          cx={marker.cx}
+                          cy={marker.cy}
+                          opacity={marker.opacity}
+                          r={marker.halo}
+                        />
+                        <circle
+                          className="front-porch-point"
+                          cx={marker.cx}
+                          cy={marker.cy}
+                          r={marker.point}
+                        />
+                      </g>
+                    ))}
+                  </g>
+                </svg>
+                <div className="front-porch-evidence">
+                  {FRONT_PORCH_BEATS.map((beat, index) => (
+                    <div
+                      className={
+                        index <= active
+                          ? "front-porch-evidence-card front-porch-evidence-show"
+                          : "front-porch-evidence-card"
+                      }
+                      key={beat.id}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="front-porch-evidence-icon"
+                      >
+                        {EVIDENCE_MARKS[index]}
+                      </span>
+                      <span>
+                        <strong>{beat.cardTitle}</strong>
+                        <span>{beat.cardDetail}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="front-porch-stage-bottom">

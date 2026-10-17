@@ -16,7 +16,9 @@ import {
 async function expectNoCountyPreselection(page: Page) {
   const url = page.url().toLowerCase();
   expect(url).not.toContain("buncombe");
+  expect(url).not.toContain("montgomery");
   expect(url).not.toContain("37021");
+  expect(url).not.toContain("51121");
   expect(url).not.toContain("alaska");
   expect(url).not.toContain("hawaii");
   expect(new URL(page.url()).searchParams.get("county")).toBeNull();
@@ -106,7 +108,7 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
   await expect(page.getByText(/underreported/i)).toHaveCount(0);
   await expect(
     page.getByText(
-      "Follow the Lyme disease example in Buncombe County, North Carolina."
+      "Follow the Lyme disease example in Montgomery County, Virginia."
     )
   ).toBeVisible();
 
