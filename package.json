@@ -20,6 +20,7 @@
     "check:ux-reset": "node scripts/check-ux-reset-constitution.mjs",
     "typecheck": "tsc --noEmit",
     "generate:api": "orval --config orval.config.ts",
+    "generate:front-porch-county": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/generate-front-porch-montgomery-outline.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --project=desktop",
