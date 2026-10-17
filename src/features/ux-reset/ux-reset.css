@@ -1453,9 +1453,17 @@
 
 .ux-reset-explorer-toolbar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr) minmax(
+      0,
+      1fr
+    );
   gap: 0.75rem 1rem;
   align-items: end;
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
 }
 
 .ux-reset-explorer-toolbar .ux-reset-review-scope-field {
@@ -1514,6 +1522,12 @@
 @media (max-width: 1100px) {
   .ux-reset-explorer-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .ux-reset-explorer-toolbar {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
