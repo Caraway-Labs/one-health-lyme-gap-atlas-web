@@ -209,7 +209,12 @@ export function FrontPorchScrolly() {
               <strong>{FRONT_PORCH_STAGE_HEADER}</strong>
               <span>Geographic focus · Montgomery County, VA</span>
             </div>
-            <div className="front-porch-stage-body">
+            <div
+              aria-label="County illustration"
+              className="front-porch-stage-body"
+              role="region"
+              tabIndex={0}
+            >
               <div className="front-porch-map-frame">
                 <div className="front-porch-stage-label">
                   <b>Montgomery County</b>

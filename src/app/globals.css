@@ -4225,6 +4225,10 @@ select:focus-visible {
   overflow: auto;
   background: radial-gradient(circle at 60% 35%, #e4efea, #f1f6f2);
 }
+.front-porch-stage-body:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: -3px;
+}
 .front-porch-map-frame {
   position: relative;
   width: 100%;
