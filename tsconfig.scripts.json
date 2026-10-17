@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "incremental": false,
+    "noEmit": true
+  },
+  "include": ["scripts/generate-front-porch-montgomery-outline.ts"],
+  "exclude": ["node_modules", "node_modules.broken-*"]
+}

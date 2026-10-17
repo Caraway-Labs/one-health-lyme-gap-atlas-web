@@ -30,5 +30,9 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "node_modules.broken-*"]
+  "exclude": [
+    "node_modules",
+    "node_modules.broken-*",
+    "scripts/generate-front-porch-montgomery-outline.ts"
+  ]
 }

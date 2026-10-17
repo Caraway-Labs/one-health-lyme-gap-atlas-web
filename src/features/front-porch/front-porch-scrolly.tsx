@@ -7,6 +7,7 @@ import {
   FRONT_PORCH_STAGE_HEADER,
   FRONT_PORCH_STAGE_NOTE,
 } from "@/features/front-porch/front-porch-copy";
+import { MONTGOMERY_COUNTY_OUTLINE } from "@/features/front-porch/montgomery-county-outline.generated";
 
 const STAGE_HEADING =
   "Illustrative data view for the Montgomery County example";
@@ -16,9 +17,6 @@ const COUNTY_MARKERS = [
   { cx: 230, cy: 290, halo: 16, point: 6, opacity: 0.18 },
   { cx: 392, cy: 272, halo: 16, point: 5, opacity: 0.2 },
 ] as const;
-// Simplified from the Census county boundary (GEOID 51121) and stored as a static path.
-const MONTGOMERY_COUNTY_OUTLINE =
-  "M203.1 184.8 L158.8 198.5 L147.9 214.1 L149.5 228.7 L166.5 253.2 L201.2 234.3 L215.0 238.7 L211.0 245.9 L191.8 275.8 L203.0 307.7 L204.5 314.1 L187.5 322.9 L194.0 356.7 L190.0 363.1 L181.3 366.7 L195.8 419.4 L211.3 409.0 L242.8 403.7 L250.8 403.8 L288.8 394.5 L326.7 388.4 L369.4 340.6 L439.8 311.7 L432.2 211.2 L386.2 148.3 L383.8 120.8 L342.0 98.0 L238.9 168.0 L203.2 184.8Z";
 const ORIGINAL_ZIGZAG = "M108 218 l89 -24 l68 38 l69 -41 l77 47 l86 -13";
 const ORIGINAL_LEFT_LINE = "M139 162 l36 77 l-18 71";
 const ORIGINAL_REMAINING_LINES = "M380 155 l-23 101 l63 99";
