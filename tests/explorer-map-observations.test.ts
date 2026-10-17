@@ -1,7 +1,11 @@
+import { render, screen } from "@testing-library/react";
+import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
+import { paintReadyObservationLayer } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
+import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
   acceptExplorerMapObservations,
   EXPLORER_OBSERVATION_SPECS,
@@ -246,6 +250,83 @@ describe("Explorer map observations", () => {
       ["01001", null],
     ]);
     expect(ready.omitted).toBe(0);
+    expect(ready.rows[0]?.provenance.provenanceRef).toBe("prov");
+    expect(ready.rows[0]?.provenance.evidence.resource_id).toBe("resource");
+  });
+
+  it("keeps governed limitations and provenance for the selected county", () => {
+    const observed = {
+      ...dated({ fips: "08001", value: 1.2 }),
+      limitations: ["Counts below 10 are suppressed in the source table."],
+      source_published_at: "2024-06-01T00:00:00Z",
+    };
+    const suppressed = {
+      ...dated({ fips: "08005", state: ValueState.SUPPRESSED, value: null }),
+      limitations: ["Privacy suppression applies to this county."],
+      methodology_version: "semantic_county_assembly_v1",
+    };
+    const ready = acceptExplorerMapObservations({
+      releaseId: "release-1",
+      requestedFips: ["08001", "08005"],
+      rows: [observed, suppressed],
+      spec: EXPLORER_OBSERVATION_SPECS.incidence_floor,
+    });
+    const paint = paintReadyObservationLayer({
+      layerId: "incidence_floor",
+      omitted: ready.omitted,
+      period: ready.period,
+      rows: ready.rows,
+      selectedFips: "08001",
+      sourceLabel: ready.sourceLabel,
+      unit: ready.unit,
+    });
+    expect({
+      acquired: ready.rows[0]?.provenance.atlasAcquiredAt,
+      limitations: ready.rows[0]?.provenance.limitations,
+      method: ready.rows[0]?.provenance.methodologyVersion,
+      provenance: ready.rows[0]?.provenance.provenanceRef,
+      published: ready.rows[0]?.provenance.sourcePublishedAt,
+      state: paint.selectionEvidence?.availability,
+      reason: paint.selectionEvidence?.reasonCode,
+    }).toStrictEqual({
+      acquired: null,
+      limitations: ["Counts below 10 are suppressed in the source table."],
+      method: "semantic_county_assembly_v1",
+      provenance: "prov",
+      published: "2024-06-01T00:00:00Z",
+      state: "limited",
+      reason: "MATERIAL_LIMITATION",
+    });
+    render(createElement(ExplorerMapLegend, { paint }));
+    const suppressedPaint = paintReadyObservationLayer({
+      layerId: "incidence_floor",
+      omitted: ready.omitted,
+      period: ready.period,
+      rows: ready.rows,
+      selectedFips: "08005",
+      sourceLabel: ready.sourceLabel,
+      unit: ready.unit,
+    });
+    expect({
+      availability: screen.getByTestId("ux-reset-evidence-object").dataset
+        .evidenceAvailability,
+      inspect: screen.getByTestId("evidence-provenance-inspect").textContent,
+      limitations: screen.getByTestId("evidence-provenance-limitations")
+        .textContent,
+      suppressedAvailability: suppressedPaint.selectionEvidence?.availability,
+      suppressedReason: suppressedPaint.selectionEvidence?.reasonCode,
+      suppressedRef:
+        suppressedPaint.selectionEvidence?.provenance.technical?.provenanceRef,
+    }).toStrictEqual({
+      availability: "limited",
+      inspect: expect.stringContaining("Inspect provenance"),
+      limitations: expect.stringContaining(
+        "Counts below 10 are suppressed in the source table."
+      ),
+      suppressedAvailability: "limited",
+      suppressedReason: ValueState.SUPPRESSED,
+      suppressedRef: "prov",
+    });
   });
 
   it("keeps a layer disabled when the collection has no admitted rows", async () => {

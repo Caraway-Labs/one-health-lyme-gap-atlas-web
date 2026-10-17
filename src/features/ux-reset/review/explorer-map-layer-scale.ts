@@ -1,10 +1,13 @@
+import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import type {
   ExplorerMapLegendEntry,
   ExplorerMapPaint,
 } from "@/features/ux-reset/review/explorer-map-layers";
-import type {
-  ExplorerMapNumericRow,
-  ExplorerObservationLayerId,
+import {
+  evidenceObjectForExplorerMapRow,
+  explorerMapLayerClaimLabel,
+  type ExplorerMapNumericRow,
+  type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
 import { ValueState } from "@/generated/models";
 
@@ -202,6 +205,7 @@ function paintBase(input: {
   unit: string | null;
   colorsByFips: Map<string, string>;
   selection: string | null;
+  selectionEvidence?: EvidenceObjectModel | null;
 }): ExplorerMapPaint {
   return {
     colorsByFips: input.colorsByFips,
@@ -211,6 +215,7 @@ function paintBase(input: {
     note: input.note,
     period: input.period,
     selection: input.selection,
+    selectionEvidence: input.selectionEvidence ?? null,
     title: input.title,
     unit: input.unit,
   };
@@ -235,12 +240,22 @@ export function paintReadyObservationLayer(input: {
     input.selectedFips,
     input.unit
   );
+  const selectedRow = input.selectedFips
+    ? input.rows.find((row) => row.fips === input.selectedFips)
+    : undefined;
+  const selectionEvidence = selectedRow
+    ? evidenceObjectForExplorerMapRow(
+        selectedRow,
+        explorerMapLayerClaimLabel(input.layerId)
+      )
+    : null;
   if (input.layerId === "rurality") {
     return paintRurality({
       omitted: input.omitted,
       period,
       rows: input.rows,
       selection,
+      selectionEvidence,
       unit: input.unit,
     });
   }
@@ -250,6 +265,7 @@ export function paintReadyObservationLayer(input: {
     period,
     rows: input.rows,
     selection,
+    selectionEvidence,
     unit: input.unit,
   });
 }
@@ -260,6 +276,7 @@ function paintQuantity(input: {
   period: string;
   rows: readonly ExplorerMapNumericRow[];
   selection: string | null;
+  selectionEvidence: EvidenceObjectModel | null;
   unit: string;
 }): ExplorerMapPaint {
   const scale = NUMERIC_SCALE[input.layerId];
@@ -368,6 +385,7 @@ function paintQuantity(input: {
     note: `${note} ${coverageSentence(input.rows, input.omitted)}`,
     period: input.period,
     selection: input.selection,
+    selectionEvidence: input.selectionEvidence,
     title,
     unit: input.unit,
   });
@@ -398,6 +416,7 @@ function paintRurality(input: {
   period: string;
   rows: readonly ExplorerMapNumericRow[];
   selection: string | null;
+  selectionEvidence: EvidenceObjectModel | null;
   unit: string;
 }): ExplorerMapPaint {
   const colorsByFips = new Map<string, string>();
@@ -435,6 +454,7 @@ function paintRurality(input: {
     note: `2023 USDA ERS rural-urban codes. Nine source categories with their published labels. Colors are separate classes, not a risk gradient and not distances. This vintage has no observation dates. The county list stays the review ranking. ${coverageSentence(input.rows, input.omitted)}`,
     period: input.period,
     selection: input.selection,
+    selectionEvidence: input.selectionEvidence,
     title: "Rurality",
     unit: "rural-urban code",
   });

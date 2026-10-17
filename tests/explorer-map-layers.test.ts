@@ -5,8 +5,51 @@ import {
   paintExplorerMapLayer,
   parseExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
 import type { CountyScoreSummary } from "@/generated/models";
 import { ValueState } from "@/generated/models";
+
+function observationRow(
+  fips: string,
+  valueState: ValueState,
+  numeric: number | null,
+  raw: string | null
+): ExplorerMapNumericRow {
+  return {
+    categoryLabel: null,
+    fips,
+    numeric,
+    provenance: {
+      atlasAcquiredAt: null,
+      evidence: {
+        provenance_ref: "prov",
+        resource_id: "resource",
+        resource_type: "observation",
+      },
+      limitations: [],
+      measureId: "incidence_floor_2023",
+      methodology: null,
+      methodologyId: null,
+      methodologyVersion: "semantic_county_assembly_v1",
+      observationId: `obs-${fips}`,
+      periodEnd: "2023-12-31",
+      periodStart: "2023-01-01",
+      provenanceRef: "prov",
+      publishedValue: raw,
+      releaseId: "release-1",
+      semanticVersion: "2.0.0",
+      sourceId: "human",
+      sourceLabel: "CDC Lyme surveillance",
+      sourcePublishedAt: null,
+      sourceUrl: null,
+      sourceVintage: "2023",
+      temporalGrain: "YEAR",
+      unit: "per 100,000",
+    },
+    raw,
+    valueState,
+  };
+}
 
 function county(
   fips: string,
@@ -397,20 +440,8 @@ describe("Explorer map layers", () => {
         omitted: 1,
         period: "2023-01-01 through 2023-12-31.",
         rows: [
-          {
-            categoryLabel: null,
-            fips: "06037",
-            numeric: 0.15,
-            raw: "0.15",
-            valueState: ValueState.OBSERVED,
-          },
-          {
-            categoryLabel: null,
-            fips: "01001",
-            numeric: null,
-            raw: null,
-            valueState: ValueState.MISSING,
-          },
+          observationRow("06037", ValueState.OBSERVED, 0.15, "0.15"),
+          observationRow("01001", ValueState.MISSING, null, null),
         ],
         sourceLabel: "CDC Lyme surveillance",
         status: "ready",
@@ -439,20 +470,8 @@ describe("Explorer map layers", () => {
 
   it("does not invent a numeric endpoint when every published value is missing", () => {
     const missingRows = [
-      {
-        categoryLabel: null,
-        fips: "01001",
-        numeric: null,
-        raw: null,
-        valueState: ValueState.MISSING,
-      },
-      {
-        categoryLabel: null,
-        fips: "08001",
-        numeric: null,
-        raw: null,
-        valueState: ValueState.MISSING,
-      },
+      observationRow("01001", ValueState.MISSING, null, null),
+      observationRow("08001", ValueState.MISSING, null, null),
     ];
     const incidence = paintExplorerMapLayer({
       counties: [],

@@ -94,7 +94,10 @@ import {
   markReviewReturnFocus,
   reviewReturnFocusMatches,
 } from "@/features/ux-reset/review/review-return-focus";
-import { isLower48CountyFips } from "@/features/ux-reset/review/review-state-fips";
+import {
+  isLower48CountyFips,
+  stateFipsPrefix,
+} from "@/features/ux-reset/review/review-state-fips";
 import {
   EXPLORER_ML_PRIORITY_PAGE_SIZE,
   explorerMlListedFips,
@@ -102,6 +105,7 @@ import {
 } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
 import {
   observationGate,
+  observationPaintState,
   useExplorerMapObservations,
 } from "@/features/ux-reset/review/use-explorer-map-observations";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
@@ -408,22 +412,29 @@ export function ReviewOperatingPicture({
     ),
     staleTime: Infinity,
   });
-  const geometryFips = useMemo(
-    () =>
-      geometryQuery.data?.features.flatMap((feature) =>
-        feature.properties.fips ? [feature.properties.fips] : []
-      ) ?? [],
-    [geometryQuery.data]
-  );
+  const geometryFips = useMemo(() => {
+    const prefix = stateFipsPrefix(scopeCode);
+    return (
+      geometryQuery.data?.features.flatMap((feature) => {
+        const fips = feature.properties.fips;
+        if (!fips || (prefix !== null && !fips.startsWith(prefix))) {
+          return [];
+        }
+        return [fips];
+      }) ?? []
+    );
+  }, [geometryQuery.data, scopeCode]);
   const geometryStatus = geometryQuery.isPending
     ? "loading"
     : geometryQuery.isError
       ? "error"
       : "ready";
   const observations = useExplorerMapObservations({
+    activeLayerId: mapLayer,
     fips: geometryFips,
     geometryStatus,
     releaseId,
+    scopeCode,
   });
   const scoresQuery = useExplorerMapScores(releaseId);
   const scenarioBaseline = useMemo(
@@ -476,7 +487,7 @@ export function ReviewOperatingPicture({
       return paintExplorerMapLayer({
         counties: [],
         layerId: layer.id,
-        observation: observations[layer.id],
+        observation: observationPaintState(observations[layer.id]),
         releaseId,
         scoresStatus: "ready",
         selectedFips,

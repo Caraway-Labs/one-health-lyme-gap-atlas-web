@@ -1,3 +1,4 @@
+import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import {
   paintReadyCompletenessLayer,
   paintReadyObservationLayer,
@@ -12,8 +13,8 @@ import type { CountyScoreSummary } from "@/generated/models";
 
 /**
  * Atlas Explorer layers. Score and boundary layers stay selectable from the
- * scores collection. Observation and completeness layers become selectable
- * only after the governed collection for the current release validates.
+ * scores collection. Observation layers stay selectable until a load fails
+ * validation. Completeness stays selectable only after scores validate.
  */
 export const EXPLORER_MAP_LAYERS = [
   {
@@ -192,6 +193,8 @@ export type ExplorerMapPaint = {
   period: string;
   /** Exact published value for the selected county, when one is selected. */
   selection?: string | null;
+  /** Shared evidence contract for the selected county on an observation layer. */
+  selectionEvidence?: EvidenceObjectModel | null;
   title: string;
   unit: string | null;
 };

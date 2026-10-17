@@ -4,7 +4,11 @@ import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { DatedObservationContractError } from "@/features/ux-reset/review/dated-observation-envelope";
-import type { ExplorerLayerGate } from "@/features/ux-reset/review/explorer-map-layers";
+import type {
+  ExplorerLayerGate,
+  ExplorerMapLayerId,
+  ExplorerObservationPaintState,
+} from "@/features/ux-reset/review/explorer-map-layers";
 import {
   EXPLORER_OBSERVATION_LAYER_IDS,
   EXPLORER_OBSERVATION_SPECS,
@@ -13,7 +17,10 @@ import {
   type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
 import { loadExplorerMapObservations } from "@/features/ux-reset/review/load-explorer-map-observations";
-import { isLower48CountyFips } from "@/features/ux-reset/review/review-state-fips";
+import {
+  isLower48CountyFips,
+  stateFipsPrefix,
+} from "@/features/ux-reset/review/review-state-fips";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { ApiResponseValidationError } from "@/lib/api-response-validation";
 
@@ -21,6 +28,7 @@ export type ExplorerObservationGeometryStatus = "error" | "loading" | "ready";
 
 export type ExplorerObservationLayerState =
   | { reason: string; status: "error" | "idle" | "loading" }
+  | { status: "unloaded" }
   | ({ status: "ready" } & ExplorerMapObservationReady);
 
 const LOADING_REASON = "Published values for this layer are still loading.";
@@ -73,26 +81,49 @@ function retryObservation(failureCount: number, error: unknown): boolean {
   return failureCount < 2;
 }
 
+export function observationPaintState(
+  state: ExplorerObservationLayerState
+): ExplorerObservationPaintState {
+  if (state.status === "unloaded") {
+    return { reason: LOADING_REASON, status: "loading" };
+  }
+  return state;
+}
+
 export function observationGate(
   state: ExplorerObservationLayerState
 ): ExplorerLayerGate {
-  if (state.status === "ready") {
+  if (
+    state.status === "ready" ||
+    state.status === "unloaded" ||
+    state.status === "loading"
+  ) {
     return { reason: null, selectable: true };
   }
   return { reason: state.reason, selectable: false };
 }
 
 export function useExplorerMapObservations(input: {
+  activeLayerId: ExplorerMapLayerId;
   fips: readonly string[];
   geometryStatus: ExplorerObservationGeometryStatus;
   releaseId: string | null;
+  /** When set, only counties in this review state are requested. */
+  scopeCode?: string | null;
 }): Record<ExplorerObservationLayerId, ExplorerObservationLayerState> {
+  const scopePrefix = input.scopeCode ? stateFipsPrefix(input.scopeCode) : null;
   const fips = useMemo(
     () =>
       [
-        ...new Set(input.fips.filter((fips) => isLower48CountyFips(fips))),
+        ...new Set(
+          input.fips.filter(
+            (countyFips) =>
+              isLower48CountyFips(countyFips) &&
+              (scopePrefix === null || countyFips.startsWith(scopePrefix))
+          )
+        ),
       ].toSorted(),
-    [input.fips]
+    [input.fips, scopePrefix]
   );
   const fipsKey = fips.join(",");
   const enabled =
@@ -101,7 +132,7 @@ export function useExplorerMapObservations(input: {
     fips.length > 0;
   const queries = useQueries({
     queries: EXPLORER_OBSERVATION_LAYER_IDS.map((layerId) => ({
-      enabled,
+      enabled: enabled && layerId === input.activeLayerId,
       queryFn: ({ signal }: { signal: AbortSignal }) => {
         const releaseId = input.releaseId;
         if (!releaseId) {
@@ -152,19 +183,33 @@ export function useExplorerMapObservations(input: {
         continue;
       }
       const query = queries[index];
-      if (!query || query.isError) {
+      if (!query) {
+        states[layerId] = { status: "unloaded" };
+        continue;
+      }
+      if (query.isError) {
         states[layerId] = {
-          reason: failureReason(query?.error),
+          reason: failureReason(query.error),
           status: "error",
         };
         continue;
       }
-      if (!query.data) {
-        states[layerId] = { reason: LOADING_REASON, status: "loading" };
+      if (query.data) {
+        states[layerId] = { ...query.data, status: "ready" };
         continue;
       }
-      states[layerId] = { ...query.data, status: "ready" };
+      if (layerId !== input.activeLayerId || query.fetchStatus === "idle") {
+        states[layerId] = { status: "unloaded" };
+        continue;
+      }
+      states[layerId] = { reason: LOADING_REASON, status: "loading" };
     }
     return states;
-  }, [fips.length, input.geometryStatus, input.releaseId, queries]);
+  }, [
+    fips.length,
+    input.activeLayerId,
+    input.geometryStatus,
+    input.releaseId,
+    queries,
+  ]);
 }

@@ -59,6 +59,7 @@ import {
 } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
 import {
   observationGate,
+  observationPaintState,
   useExplorerMapObservations,
 } from "@/features/ux-reset/review/use-explorer-map-observations";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
@@ -152,6 +153,7 @@ export function ReviewNationalPicture({
       ? "error"
       : "ready";
   const observations = useExplorerMapObservations({
+    activeLayerId: mapLayer,
     fips:
       geometryQuery.data?.features.map((feature) => feature.properties.fips) ??
       [],
@@ -205,7 +207,7 @@ export function ReviewNationalPicture({
         counties: scoreCounties,
         layerId: layer.id,
         observation: isExplorerObservationLayer(layer.id)
-          ? observations[layer.id]
+          ? observationPaintState(observations[layer.id])
           : null,
         releaseId,
         scoresStatus,

@@ -1,6 +1,9 @@
+import { evidenceObjectFromObservation } from "@/features/ux-reset/evidence/from-observation";
+import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { DatedObservationContractError } from "@/features/ux-reset/review/dated-observation-envelope";
 import type {
   CountyContextObservation,
+  EvidenceReference,
   Observation,
   ValueState,
 } from "@/generated/models";
@@ -23,13 +26,137 @@ export const EXPLORER_OBSERVATION_LAYER_IDS = [
 export type ExplorerObservationLayerId =
   (typeof EXPLORER_OBSERVATION_LAYER_IDS)[number];
 
+/** Fields the shared evidence contract needs for one governed map value. */
+export type ExplorerMapRowProvenance = {
+  atlasAcquiredAt: string | null;
+  evidence: EvidenceReference;
+  limitations: readonly string[];
+  measureId: string;
+  methodology: string | null;
+  methodologyId: string | null;
+  methodologyVersion: string;
+  observationId: string;
+  periodEnd: string | null;
+  periodStart: string | null;
+  provenanceRef: string;
+  publishedValue: number | string | null;
+  releaseId: string;
+  semanticVersion: string;
+  sourceId: string;
+  sourceLabel: string | null;
+  sourcePublishedAt: string | null;
+  sourceUrl: string | null;
+  sourceVintage: string | null;
+  temporalGrain: string;
+  unit: string;
+};
+
 export type ExplorerMapNumericRow = {
   categoryLabel: string | null;
   fips: string;
   numeric: number | null;
+  provenance: ExplorerMapRowProvenance;
   raw: string | null;
   valueState: ValueState;
 };
+
+const LAYER_CLAIM_LABEL = {
+  incidence_floor: "Lyme incidence floor",
+  rurality: "Rurality",
+  svi: "Social vulnerability",
+  uninsured: "Uninsured population",
+} as const;
+
+export function explorerMapLayerClaimLabel(
+  layerId: ExplorerObservationLayerId
+): string {
+  return LAYER_CLAIM_LABEL[layerId];
+}
+
+/**
+ * Selected-county readout for a governed map row.
+ * Availability, limitations, method, freshness, and provenance stay on the
+ * shared evidence contract instead of a display-only reduction.
+ */
+export function evidenceObjectForExplorerMapRow(
+  row: ExplorerMapNumericRow,
+  claimLabel: string
+): EvidenceObjectModel {
+  const provenance = row.provenance;
+  const periodStart = provenance.periodStart ?? "";
+  const periodEnd = provenance.periodEnd ?? "";
+  const model = evidenceObjectFromObservation({
+    claimLabel,
+    observation: {
+      atlas_acquired_at: provenance.atlasAcquiredAt,
+      denominator: null,
+      evidence: provenance.evidence,
+      geography: { geography_id: row.fips, geography_type: "county" },
+      limitations: [...provenance.limitations],
+      measure_id: provenance.measureId,
+      methodology: provenance.methodology,
+      methodology_id: provenance.methodologyId,
+      methodology_version: provenance.methodologyVersion,
+      observation_id: provenance.observationId,
+      period_end: periodEnd,
+      period_start: periodStart,
+      provenance_ref: provenance.provenanceRef,
+      release_id: provenance.releaseId,
+      semantic_version: provenance.semanticVersion,
+      source_id: provenance.sourceId,
+      source_label: provenance.sourceLabel,
+      source_published_at: provenance.sourcePublishedAt,
+      source_url: provenance.sourceUrl,
+      source_vintage: provenance.sourceVintage,
+      temporal_grain: provenance.temporalGrain,
+      unit: provenance.unit,
+      value: provenance.publishedValue,
+      value_state: row.valueState,
+    },
+  });
+  const resourceType = provenance.evidence.resource_type.trim();
+  const resourceId = provenance.evidence.resource_id.trim();
+  const reference =
+    resourceType && resourceId ? `${resourceType} ${resourceId}` : "";
+  if (!reference) {
+    return model;
+  }
+  return {
+    ...model,
+    provenance: {
+      ...model.provenance,
+      referenceLines: [reference],
+    },
+  };
+}
+
+function provenanceFromObservation(
+  row: CountyContextObservation | Observation
+): ExplorerMapRowProvenance {
+  return {
+    atlasAcquiredAt: row.atlas_acquired_at ?? null,
+    evidence: row.evidence,
+    limitations: [...row.limitations],
+    measureId: row.measure_id,
+    methodology: row.methodology?.trim() ? row.methodology : null,
+    methodologyId: row.methodology_id,
+    methodologyVersion: row.methodology_version,
+    observationId: row.observation_id,
+    periodEnd: row.period_end,
+    periodStart: row.period_start,
+    provenanceRef: row.provenance_ref,
+    publishedValue: row.value,
+    releaseId: row.release_id,
+    semanticVersion: row.semantic_version,
+    sourceId: row.source_id,
+    sourceLabel: row.source_label ?? null,
+    sourcePublishedAt: row.source_published_at ?? null,
+    sourceUrl: row.source_url ?? null,
+    sourceVintage: row.source_vintage ?? null,
+    temporalGrain: row.temporal_grain,
+    unit: row.unit,
+  };
+}
 
 export type ExplorerMapObservationReady = {
   omitted: number;
@@ -414,6 +541,7 @@ export function acceptExplorerMapObservations(input: {
       categoryLabel,
       fips,
       numeric: parsed.numeric,
+      provenance: provenanceFromObservation(row),
       raw: parsed.raw,
       valueState: row.value_state,
     });
