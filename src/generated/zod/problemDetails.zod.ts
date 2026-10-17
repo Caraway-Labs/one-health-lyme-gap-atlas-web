@@ -18,7 +18,7 @@ export const ProblemDetails = zod.object({
   "request_id": zod.string(),
   "code": zod.union([zod.string(),zod.null()]).default(problemDetailsCodeDefault),
   "errors": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.null()]).default(problemDetailsErrorsDefault)
-}).describe('RFC 9457 error. Canonical public resources add stable code; legacy routes may omit it.')
+}).describe('RFC 9457 error. Stable codes are included when the response contract defines one.')
 
 export type ProblemDetails = zod.input<typeof ProblemDetails>;
 export type ProblemDetailsOutput = zod.output<typeof ProblemDetails>;

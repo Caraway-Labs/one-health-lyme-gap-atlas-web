@@ -2,6 +2,7 @@ import {
   investigateCountyReportExportOffer,
   type InvestigatePdfContext,
 } from "@/features/ux-reset/investigate/investigate-next-step";
+import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
   countyReportPdfV1CountiesFipsReportPdfGet,
   observationsV1ObservationsGet,
@@ -70,7 +71,7 @@ export async function downloadInvestigatePdf(
       );
       if (parsed.meta.next_page_token || !parsed.data.length)
         throw new Error("Complete canonical evidence is unavailable.");
-      fresh.push(...parsed.data);
+      fresh.push(...readDatedObservations(parsed.data));
     }
     if (evidenceIdentity(fresh) !== expected)
       throw new Error(

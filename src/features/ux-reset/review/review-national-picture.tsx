@@ -29,7 +29,10 @@ import {
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
+  completenessLayerGate,
   explorerMapLayerById,
+  explorerMapLayerGates,
+  isExplorerObservationLayer,
   paintExplorerMapLayer,
   resolveExplorerMapColor,
   type ExplorerMapLayerId,
@@ -54,6 +57,10 @@ import {
   explorerMlListedFips,
   useExplorerCountyMlPriorities,
 } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
+import {
+  observationGate,
+  useExplorerMapObservations,
+} from "@/features/ux-reset/review/use-explorer-map-observations";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import {
   EXPLORER_ML_PRIORITY_LEGEND,
@@ -139,6 +146,18 @@ export function ReviewNationalPicture({
     staleTime: Infinity,
   });
   const scoresQuery = useExplorerMapScores(releaseId);
+  const geometryStatus = geometryQuery.isPending
+    ? "loading"
+    : geometryQuery.isError
+      ? "error"
+      : "ready";
+  const observations = useExplorerMapObservations({
+    fips:
+      geometryQuery.data?.features.map((feature) => feature.properties.fips) ??
+      [],
+    geometryStatus,
+    releaseId,
+  });
   const layer = explorerMapLayerById(mapLayer);
   const scoreCounties = useMemo(
     () =>
@@ -155,16 +174,53 @@ export function ReviewNationalPicture({
         ? "loading"
         : "ready"
     : "ready";
+  const completenessGate = useMemo(
+    () =>
+      completenessLayerGate({
+        counties: scoreCounties,
+        scoresStatus: scoresQuery.isError
+          ? "error"
+          : scoresQuery.isPending
+            ? "loading"
+            : "ready",
+      }),
+    [scoreCounties, scoresQuery.isError, scoresQuery.isPending]
+  );
+  const layerGates = useMemo(
+    () =>
+      explorerMapLayerGates({
+        completeness: completenessGate,
+        observations: {
+          incidence_floor: observationGate(observations.incidence_floor),
+          rurality: observationGate(observations.rurality),
+          svi: observationGate(observations.svi),
+          uninsured: observationGate(observations.uninsured),
+        },
+      }),
+    [completenessGate, observations]
+  );
   const mapPaint = useMemo(
     () =>
       paintExplorerMapLayer({
         counties: scoreCounties,
         layerId: layer.id,
+        observation: isExplorerObservationLayer(layer.id)
+          ? observations[layer.id]
+          : null,
         releaseId,
         scoresStatus,
+        selectedFips,
         sources,
       }),
-    [layer.id, releaseId, scoreCounties, scoresStatus, sources]
+    [
+      layer.id,
+      observations,
+      releaseId,
+      scoreCounties,
+      scoresStatus,
+      selectedFips,
+      sources,
+    ]
   );
   const geometryFeatures = useMemo(
     () =>
@@ -384,6 +440,7 @@ export function ReviewNationalPicture({
         </div>
         <div className="ux-reset-explorer-map-layer">
           <ExplorerMapLayerControl
+            gates={layerGates}
             layerId={mapLayer}
             onLayerChange={onMapLayerChange}
           />

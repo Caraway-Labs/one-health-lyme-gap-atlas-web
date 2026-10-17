@@ -52,6 +52,7 @@ export type ExploreTimeBound =
 const NON_NUMERIC_VALUE_STATES: ReadonlySet<ValueState> = new Set([
   ValueState.MISSING,
   ValueState.NO_COUNTY_LINKED_RECORD,
+  ValueState.NO_RECORDS,
   ValueState.SUPPRESSED,
   ValueState.UNAVAILABLE,
 ]);

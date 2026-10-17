@@ -1,0 +1,485 @@
+import type {
+  ExplorerMapLegendEntry,
+  ExplorerMapPaint,
+} from "@/features/ux-reset/review/explorer-map-layers";
+import type {
+  ExplorerMapNumericRow,
+  ExplorerObservationLayerId,
+} from "@/features/ux-reset/review/explorer-map-observation";
+import { ValueState } from "@/generated/models";
+
+const NO_PUBLISHED_VALUE = "No published value";
+const BOUNDARY_COLOR = "var(--explorer-boundary)";
+
+const NUMERIC_SCALE = {
+  incidence_floor: {
+    high: "hsl(210, 72%, 24%)",
+    low: "hsl(204, 45%, 88%)",
+  },
+  svi: {
+    high: "hsl(152, 58%, 22%)",
+    low: "hsl(142, 38%, 88%)",
+    maximum: 1,
+    minimum: 0,
+  },
+  uninsured: {
+    high: "hsl(266, 48%, 30%)",
+    low: "hsl(266, 38%, 91%)",
+    maximum: 100,
+    minimum: 0,
+  },
+} as const;
+
+/** Qualitative classes. These hues are not a severity ramp. */
+const RUCC_COLORS = {
+  1: "hsl(210, 55%, 42%)",
+  2: "hsl(28, 78%, 48%)",
+  3: "hsl(140, 40%, 36%)",
+  4: "hsl(350, 62%, 50%)",
+  5: "hsl(174, 42%, 36%)",
+  6: "hsl(280, 28%, 46%)",
+  7: "hsl(330, 52%, 62%)",
+  8: "hsl(24, 32%, 40%)",
+  9: "hsl(200, 8%, 52%)",
+} as const;
+
+/**
+ * Rounded share of six release conditions from Data
+ * `semantic_release._evidence_completeness`. 3/6, 4/6, 5/6, and 6/6 round to
+ * 50, 67, 83, and 100.
+ */
+const COMPLETENESS_COLORS: Readonly<Record<number, string>> = {
+  0: "hsl(208, 45%, 94%)",
+  17: "hsl(208, 48%, 84%)",
+  33: "hsl(208, 52%, 72%)",
+  50: "hsl(208, 55%, 60%)",
+  67: "hsl(208, 60%, 46%)",
+  83: "hsl(208, 64%, 34%)",
+  100: "hsl(208, 72%, 24%)",
+};
+
+export const EVIDENCE_COMPLETENESS_EXPLANATION =
+  "Published evidence completeness is the rounded share of six release conditions: a human published count floor; blacklegged tick status Established or Reported; B. burgdorferi Present; a non-null social-vulnerability percentile; a non-null uninsured percentile; and a non-null rural-urban code. It is not surveillance sampling completeness, not evidence of disease absence, and not a confidence score. The map uses the published integer and does not recompute it. The county list stays the review ranking.";
+
+const STATE_COLOR: Partial<Record<ValueState, string>> = {
+  [ValueState.MISSING]: "var(--mint)",
+  [ValueState.NO_COUNTY_LINKED_RECORD]: "hsl(28, 18%, 46%)",
+  [ValueState.NO_RECORDS]: "hsl(200, 10%, 62%)",
+  [ValueState.SUPPRESSED]: "var(--navy-2)",
+  [ValueState.UNAVAILABLE]: "var(--atlas-muted-text)",
+};
+
+const STATE_LABEL: Partial<Record<ValueState, string>> = {
+  [ValueState.MISSING]: "Missing (not zero and not a low value)",
+  [ValueState.NO_COUNTY_LINKED_RECORD]:
+    "No county-linked record (not zero and not confirmed absence)",
+  [ValueState.NO_RECORDS]: "No records (not zero and not confirmed absence)",
+  [ValueState.SUPPRESSED]: "Suppressed (not zero)",
+  [ValueState.UNAVAILABLE]: "Unavailable (not zero)",
+};
+
+function parseHsl(color: string): [number, number, number] {
+  const match =
+    /^hsl\((?<h>\d+(?:\.\d+)?),\s*(?<s>\d+(?:\.\d+)?)%,\s*(?<l>\d+(?:\.\d+)?)%\)$/.exec(
+      color
+    );
+  if (!match?.groups) {
+    return [0, 0, 50];
+  }
+  return [
+    Number(match.groups.h),
+    Number(match.groups.s),
+    Number(match.groups.l),
+  ];
+}
+
+export function mixExplorerScaleColor(
+  low: string,
+  high: string,
+  ratio: number
+): string {
+  if (ratio <= 0) {
+    return low;
+  }
+  if (ratio >= 1) {
+    return high;
+  }
+  const start = parseHsl(low);
+  const end = parseHsl(high);
+  const hue = Math.round(start[0] + (end[0] - start[0]) * ratio);
+  const saturation = Math.round(start[1] + (end[1] - start[1]) * ratio);
+  const lightness = Math.round(start[2] + (end[2] - start[2]) * ratio);
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+function noPublishedValueEntry(): ExplorerMapLegendEntry {
+  return {
+    color: BOUNDARY_COLOR,
+    detail: "Not zero, not low, and not confirmed absence",
+    label: NO_PUBLISHED_VALUE,
+  };
+}
+
+function countStates(
+  rows: readonly ExplorerMapNumericRow[]
+): Map<ValueState, number> {
+  const counts = new Map<ValueState, number>();
+  for (const row of rows) {
+    counts.set(row.valueState, (counts.get(row.valueState) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function coverageSentence(
+  rows: readonly ExplorerMapNumericRow[],
+  omitted: number
+): string {
+  const counts = countStates(rows);
+  return `This load: ${counts.get(ValueState.OBSERVED) ?? 0} observed, ${counts.get(ValueState.ZERO) ?? 0} observed zero, ${counts.get(ValueState.MISSING) ?? 0} missing, ${omitted} omitted.`;
+}
+
+function selectionSentence(
+  rows: readonly ExplorerMapNumericRow[],
+  selectedFips: string | null | undefined,
+  unit: string
+): string | null {
+  if (!selectedFips) {
+    return null;
+  }
+  const row = rows.find((entry) => entry.fips === selectedFips);
+  if (!row) {
+    return `Selected county ${selectedFips}: no published row. Not zero.`;
+  }
+  if (row.valueState === ValueState.ZERO) {
+    return `Selected county ${selectedFips}: 0 ${unit}, observed zero. Not a missing value.`;
+  }
+  if (row.valueState === ValueState.OBSERVED && row.raw) {
+    const label = row.categoryLabel ? `, ${row.categoryLabel}` : "";
+    return `Selected county ${selectedFips}: ${row.raw} ${unit}${label}.`;
+  }
+  const label = STATE_LABEL[row.valueState] ?? row.valueState;
+  return `Selected county ${selectedFips}: ${label}.`;
+}
+
+function scaleRatio(value: number, minimum: number, maximum: number): number {
+  if (maximum <= minimum) {
+    return 0;
+  }
+  return (value - minimum) / (maximum - minimum);
+}
+
+function stateEntries(
+  rows: readonly ExplorerMapNumericRow[]
+): ExplorerMapLegendEntry[] {
+  const present = new Set(rows.map((row) => row.valueState));
+  const entries: ExplorerMapLegendEntry[] = [];
+  for (const state of [
+    ValueState.MISSING,
+    ValueState.SUPPRESSED,
+    ValueState.UNAVAILABLE,
+    ValueState.NO_COUNTY_LINKED_RECORD,
+    ValueState.NO_RECORDS,
+  ]) {
+    if (!present.has(state)) {
+      continue;
+    }
+    entries.push({
+      color: STATE_COLOR[state] ?? "var(--atlas-muted-text)",
+      detail: null,
+      label: STATE_LABEL[state] ?? state,
+    });
+  }
+  return entries;
+}
+
+function paintBase(input: {
+  entries: ExplorerMapLegendEntry[];
+  kind: ExplorerMapPaint["kind"];
+  layerId: ExplorerMapPaint["layerId"];
+  note: string;
+  period: string;
+  title: string;
+  unit: string | null;
+  colorsByFips: Map<string, string>;
+  selection: string | null;
+}): ExplorerMapPaint {
+  return {
+    colorsByFips: input.colorsByFips,
+    entries: input.entries,
+    kind: input.kind,
+    layerId: input.layerId,
+    note: input.note,
+    period: input.period,
+    selection: input.selection,
+    title: input.title,
+    unit: input.unit,
+  };
+}
+
+export function paintReadyObservationLayer(input: {
+  layerId: ExplorerObservationLayerId;
+  omitted: number;
+  period: string;
+  releaseId?: string | null;
+  rows: readonly ExplorerMapNumericRow[];
+  selectedFips?: string | null;
+  sourceLabel: string | null;
+  unit: string;
+}): ExplorerMapPaint {
+  const release = input.releaseId?.trim()
+    ? `Release ${input.releaseId.trim()}. `
+    : "";
+  const period = `${release}${input.period}`;
+  const selection = selectionSentence(
+    input.rows,
+    input.selectedFips,
+    input.unit
+  );
+  if (input.layerId === "rurality") {
+    return paintRurality({
+      omitted: input.omitted,
+      period,
+      rows: input.rows,
+      selection,
+      unit: input.unit,
+    });
+  }
+  return paintQuantity({
+    layerId: input.layerId,
+    omitted: input.omitted,
+    period,
+    rows: input.rows,
+    selection,
+    unit: input.unit,
+  });
+}
+
+function paintQuantity(input: {
+  layerId: Exclude<ExplorerObservationLayerId, "rurality">;
+  omitted: number;
+  period: string;
+  rows: readonly ExplorerMapNumericRow[];
+  selection: string | null;
+  unit: string;
+}): ExplorerMapPaint {
+  const scale = NUMERIC_SCALE[input.layerId];
+  const valued = input.rows.filter(
+    (row) =>
+      row.numeric !== null &&
+      (row.valueState === ValueState.OBSERVED ||
+        row.valueState === ValueState.ZERO)
+  );
+  const domain =
+    "minimum" in scale
+      ? { maximum: scale.maximum, minimum: scale.minimum }
+      : observedDomain(valued);
+  const colorsByFips = new Map<string, string>();
+  for (const row of input.rows) {
+    if (
+      row.numeric === null ||
+      (row.valueState !== ValueState.OBSERVED &&
+        row.valueState !== ValueState.ZERO)
+    ) {
+      const color = STATE_COLOR[row.valueState];
+      if (color) {
+        colorsByFips.set(row.fips, color);
+      }
+      continue;
+    }
+    const ratio = scaleRatio(row.numeric, domain.minimum, domain.maximum);
+    colorsByFips.set(
+      row.fips,
+      mixExplorerScaleColor(scale.low, scale.high, ratio)
+    );
+  }
+  const entries: ExplorerMapLegendEntry[] = [];
+  const lowRaw = endpointRaw(valued, domain.minimum) ?? String(domain.minimum);
+  const highRaw = endpointRaw(valued, domain.maximum) ?? String(domain.maximum);
+  const zeroAtLow = valued.some(
+    (row) =>
+      row.valueState === ValueState.ZERO && row.numeric === domain.minimum
+  );
+  entries.push({
+    color: scale.low,
+    detail: zeroAtLow
+      ? "Observed zero is the low end of this scale. It is not a missing value."
+      : null,
+    label: zeroAtLow ? `${lowRaw} (observed zero)` : `${lowRaw} (low end)`,
+  });
+  if (domain.maximum !== domain.minimum) {
+    let highest: ExplorerMapNumericRow | null = null;
+    for (const row of valued) {
+      if (row.numeric === null) {
+        continue;
+      }
+      if (highest?.numeric == null || row.numeric > highest.numeric) {
+        highest = row;
+      }
+    }
+    const highIsEndpoint = highest?.numeric === domain.maximum;
+    entries.push({
+      color: scale.high,
+      detail: highIsEndpoint
+        ? null
+        : "Governed high end of the scale. Counties in this release can fall below it.",
+      label: highIsEndpoint
+        ? `${highRaw} (high end)`
+        : `${domain.maximum} (scale high end)`,
+    });
+    if (highest?.numeric != null && !highIsEndpoint && highest.raw) {
+      entries.push({
+        color: mixExplorerScaleColor(
+          scale.low,
+          scale.high,
+          scaleRatio(highest.numeric, domain.minimum, domain.maximum)
+        ),
+        detail: "Highest published value in this load. Not a separate class.",
+        label: `${highest.raw} (highest published value)`,
+      });
+    }
+  }
+  entries.push(...stateEntries(input.rows), noPublishedValueEntry());
+  const title = {
+    incidence_floor: "Lyme incidence floor",
+    svi: "Social vulnerability",
+    uninsured: "Uninsured population",
+  }[input.layerId];
+  const note = {
+    incidence_floor:
+      "2023 published lower bound per 100,000, not an exact incidence estimate. Color runs in a straight line from the lowest to the highest published value. Values between the legend ends use a mix of those two colors. Missing is not drawn as zero. A wide published range keeps most counties near the low end. The county list stays the review ranking.",
+    svi: "National county percentile from the 2022 SVI product, on a 0 to 1 scale. Not a percentage of people. Observed zero is the low end of that scale. Values between the legend ends use a mix of those two colors. Missing is not drawn as zero. The county list stays the review ranking.",
+    uninsured:
+      "Percent of the civilian noninstitutionalized population on a 0 to 100 scale. Observed zero is 0 percent, not a missing value. Values between the legend ends use a mix of those two colors. The county list stays the review ranking.",
+  }[input.layerId];
+  return paintBase({
+    colorsByFips,
+    entries,
+    kind: "choropleth",
+    layerId: input.layerId,
+    note: `${note} ${coverageSentence(input.rows, input.omitted)}`,
+    period: input.period,
+    selection: input.selection,
+    title,
+    unit: input.unit,
+  });
+}
+
+function observedDomain(rows: readonly ExplorerMapNumericRow[]): {
+  maximum: number;
+  minimum: number;
+} {
+  const values = rows.flatMap((row) =>
+    row.numeric === null ? [] : [row.numeric]
+  );
+  if (values.length === 0) {
+    return { maximum: 0, minimum: 0 };
+  }
+  return { maximum: Math.max(...values), minimum: Math.min(...values) };
+}
+
+function endpointRaw(
+  rows: readonly ExplorerMapNumericRow[],
+  endpoint: number
+): string | null {
+  return rows.find((row) => row.numeric === endpoint && row.raw)?.raw ?? null;
+}
+
+function paintRurality(input: {
+  omitted: number;
+  period: string;
+  rows: readonly ExplorerMapNumericRow[];
+  selection: string | null;
+  unit: string;
+}): ExplorerMapPaint {
+  const colorsByFips = new Map<string, string>();
+  const classes = new Map<number, string>();
+  for (const row of input.rows) {
+    if (
+      row.valueState === ValueState.OBSERVED &&
+      row.numeric !== null &&
+      row.categoryLabel &&
+      row.numeric in RUCC_COLORS
+    ) {
+      const code = row.numeric as keyof typeof RUCC_COLORS;
+      colorsByFips.set(row.fips, RUCC_COLORS[code]);
+      classes.set(code, row.categoryLabel);
+      continue;
+    }
+    const color = STATE_COLOR[row.valueState];
+    if (color) {
+      colorsByFips.set(row.fips, color);
+    }
+  }
+  const entries: ExplorerMapLegendEntry[] = [...classes.entries()]
+    .toSorted((left, right) => left[0] - right[0])
+    .map(([code, label]) => ({
+      color: RUCC_COLORS[code as keyof typeof RUCC_COLORS],
+      detail: null,
+      label: `${code}. ${label}`,
+    }));
+  entries.push(...stateEntries(input.rows), noPublishedValueEntry());
+  return paintBase({
+    colorsByFips,
+    entries,
+    kind: "categorical",
+    layerId: "rurality",
+    note: `2023 USDA ERS rural-urban codes. Nine source categories with their published labels. Colors are separate classes, not a risk gradient and not distances. This vintage has no observation dates. The county list stays the review ranking. ${coverageSentence(input.rows, input.omitted)}`,
+    period: input.period,
+    selection: input.selection,
+    title: "Rurality",
+    unit: "rural-urban code",
+  });
+}
+
+export function completenessColor(score: number): string | null {
+  if (!Number.isInteger(score) || score < 0 || score > 100) {
+    return null;
+  }
+  return COMPLETENESS_COLORS[score] ?? `hsl(${(score * 17) % 360}, 35%, 42%)`;
+}
+
+export function paintReadyCompletenessLayer(input: {
+  counties: readonly { evidence_completeness: number; fips: string }[];
+  period: string;
+  selectedFips?: string | null;
+}): ExplorerMapPaint {
+  const colorsByFips = new Map<string, string>();
+  const present = new Map<number, string>();
+  for (const county of input.counties) {
+    const color = completenessColor(county.evidence_completeness);
+    if (!color) {
+      continue;
+    }
+    colorsByFips.set(county.fips, color);
+    present.set(county.evidence_completeness, color);
+  }
+  const entries: ExplorerMapLegendEntry[] = [...present.entries()]
+    .toSorted((left, right) => left[0] - right[0])
+    .map(([score, color]) => ({
+      color,
+      detail: "Published integer. Not recomputed in the browser.",
+      label: `${score}`,
+    }));
+  entries.push(noPublishedValueEntry());
+  const selected = input.selectedFips
+    ? input.counties.find((county) => county.fips === input.selectedFips)
+    : undefined;
+  let selection: string | null = null;
+  if (input.selectedFips) {
+    selection =
+      selected && completenessColor(selected.evidence_completeness)
+        ? `Selected county ${input.selectedFips}: published evidence completeness ${selected.evidence_completeness}.`
+        : `Selected county ${input.selectedFips}: no published evidence-completeness value in range. Not zero.`;
+  }
+  return paintBase({
+    colorsByFips,
+    entries,
+    kind: "choropleth",
+    layerId: "completeness",
+    note: EVIDENCE_COMPLETENESS_EXPLANATION,
+    period: input.period,
+    selection,
+    title: "Evidence completeness",
+    unit: "published percent of six conditions",
+  });
+}

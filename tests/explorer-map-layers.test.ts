@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { mapFeatureCompleteness } from "@/components/atlas-map";
 import {
   paintExplorerMapLayer,
   parseExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
 import type { CountyScoreSummary } from "@/generated/models";
+import { ValueState } from "@/generated/models";
 
 function county(
   fips: string,
@@ -56,12 +58,37 @@ const legendSources = [
 ];
 
 describe("Explorer map layers", () => {
-  it("rejects layers the scores collection cannot encode", () => {
-    expect(parseExplorerMapLayerId("svi")).toBeNull();
-    expect(parseExplorerMapLayerId("incidence_floor")).toBeNull();
-    expect(parseExplorerMapLayerId("uninsured")).toBeNull();
-    expect(parseExplorerMapLayerId("rurality")).toBeNull();
-    expect(parseExplorerMapLayerId("gap_score")).toBe("gap_score");
+  it("keeps governed layer ids in the URL and does not paint them before they validate", () => {
+    expect({
+      completeness: parseExplorerMapLayerId("completeness"),
+      gap: parseExplorerMapLayerId("gap_score"),
+      incidence: parseExplorerMapLayerId("incidence_floor"),
+      invalid: parseExplorerMapLayerId("not-a-layer"),
+      rurality: parseExplorerMapLayerId("rurality"),
+      svi: parseExplorerMapLayerId("svi"),
+      uninsured: parseExplorerMapLayerId("uninsured"),
+    }).toStrictEqual({
+      completeness: "completeness",
+      gap: "gap_score",
+      incidence: "incidence_floor",
+      invalid: null,
+      rurality: "rurality",
+      svi: "svi",
+      uninsured: "uninsured",
+    });
+    const paint = paintExplorerMapLayer({
+      counties: [county("08001")],
+      layerId: "incidence_floor",
+      observation: {
+        reason:
+          "No admitted observations were published for this measure on the current release.",
+        status: "error",
+      },
+      scoresStatus: "ready",
+    });
+    expect(paint.kind).toBe("unavailable");
+    expect(paint.colorsByFips.size).toBe(0);
+    expect(paint.note).toMatch(/No admitted observations/);
   });
 
   it("copies published gap-score colors and skips a blank color", () => {
@@ -362,17 +389,52 @@ describe("Explorer map layers", () => {
     });
   });
 
-  it("does not invent an incidence-floor scale", () => {
+  it("paints the published incidence floor without turning missing into zero", () => {
     const paint = paintExplorerMapLayer({
-      counties: [county("08001")],
+      counties: [county("08001", { color: "#e9602b" })],
       layerId: "incidence_floor",
+      observation: {
+        omitted: 1,
+        period: "2023-01-01 through 2023-12-31.",
+        rows: [
+          {
+            categoryLabel: null,
+            fips: "06037",
+            numeric: 0.15,
+            raw: "0.15",
+            valueState: ValueState.OBSERVED,
+          },
+          {
+            categoryLabel: null,
+            fips: "01001",
+            numeric: null,
+            raw: null,
+            valueState: ValueState.MISSING,
+          },
+        ],
+        sourceLabel: "CDC Lyme surveillance",
+        status: "ready",
+        unit: "per 100,000",
+      },
       scoresStatus: "ready",
     });
-    expect(paint.kind).toBe("unavailable");
-    expect(paint.colorsByFips.size).toBe(0);
-    expect(paint.entries).toStrictEqual([]);
+    expect({
+      alabama: paint.colorsByFips.get("01001"),
+      gap: paint.entries.some((entry) => entry.label.includes("gap")),
+      losAngeles: paint.colorsByFips.get("06037"),
+      missing: paint.entries.some((entry) =>
+        entry.label.includes("Missing (not zero and not a low value)")
+      ),
+      unpainted: paint.colorsByFips.get("08001"),
+    }).toStrictEqual({
+      alabama: "var(--mint)",
+      gap: false,
+      losAngeles: "hsl(204, 45%, 88%)",
+      missing: true,
+      unpainted: undefined,
+    });
     expect(paint.note).toMatch(/lower bound/);
-    expect(paint.note).not.toMatch(/0 to less than/);
+    expect(paint.note).toMatch(/review ranking/);
   });
 
   it("drops the previous layer's scale on the next paint", () => {
@@ -399,12 +461,33 @@ describe("Explorer map layers", () => {
     expect(gap.layerId).toBe("gap_score");
   });
 
-  it("does not draw an out-of-range completeness value", () => {
+  it("paints published completeness integers and leaves an out-of-range value unpainted", () => {
     const paint = paintExplorerMapLayer({
-      counties: [county("08001", { evidence_completeness: 140 })],
+      counties: [
+        county("01001", { evidence_completeness: 67 }),
+        county("08001", { evidence_completeness: 50, fips: "08001" }),
+        county("08013", { evidence_completeness: 140, fips: "08013" }),
+      ],
       layerId: "completeness",
       scoresStatus: "ready",
     });
-    expect(paint.colorsByFips.has("08001")).toBeFalsy();
+    expect(paint.colorsByFips.get("01001")).not.toBe(
+      paint.colorsByFips.get("08001")
+    );
+    expect(paint.colorsByFips.has("08013")).toBeFalsy();
+    expect(paint.note).toMatch(/does not recompute/);
+    expect(paint.note).toMatch(/uninsured percentile/);
+    expect(paint.entries.map((entry) => entry.label)).toStrictEqual([
+      "50",
+      "67",
+      "No published value",
+    ]);
+  });
+
+  it("keeps a missing map completeness value missing", () => {
+    expect(mapFeatureCompleteness()).toBeNull();
+    expect(mapFeatureCompleteness(null)).toBeNull();
+    expect(mapFeatureCompleteness(0)).toBe(0);
+    expect(mapFeatureCompleteness(67)).toBe(67);
   });
 });

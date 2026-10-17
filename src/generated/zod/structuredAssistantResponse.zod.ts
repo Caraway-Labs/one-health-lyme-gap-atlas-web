@@ -17,6 +17,8 @@ export const structuredAssistantResponseToolEvidenceItemKindDefault = `tool_resu
 export const structuredAssistantResponseToolEvidenceItemMeasuresMax = 20;
 
 
+
+
 export const structuredAssistantResponseToolEvidenceItemObservationsMax = 200;
 
 export const structuredAssistantResponseToolEvidenceItemCoverageMax = 200;
@@ -96,7 +98,7 @@ export const StructuredAssistantResponse = zod.object({
   "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
+  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
   "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "methodology_id": zod.union([zod.string(),zod.null()]).optional().describe('Exact governed methodology resource ID; null when not governed.'),
@@ -145,7 +147,7 @@ export const StructuredAssistantResponse = zod.object({
   "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
+  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
   "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "methodology_id": zod.union([zod.string(),zod.null()]).optional().describe('Exact governed methodology resource ID; null when not governed.'),
@@ -161,17 +163,16 @@ export const StructuredAssistantResponse = zod.object({
 })),zod.null()]).optional()
 })).max(structuredAssistantResponseToolEvidenceItemMeasuresMax).optional(),
   "observations": zod.array(zod.object({
+  "metadata_revision_id": zod.union([zod.string(),zod.null()]).optional().describe('Reviewed consumer-safe metadata revision; not private lineage.'),
   "observation_id": zod.string().describe('Stable observation identity and compact provenance reference.'),
   "measure_id": zod.string(),
   "geography": zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
 }).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "period_start": zod.iso.date().describe('Inclusive start of the governed observation period.'),
-  "period_end": zod.iso.date().describe('Inclusive end of the governed observation period.'),
   "temporal_grain": zod.string(),
   "value": zod.union([zod.number(),zod.string(),zod.null()]).describe('Read with value_state and unit; null never means zero.'),
-  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record, not evidence of absence.'),
+  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
   "unit": zod.string(),
   "denominator": zod.union([zod.string(),zod.null()]).describe('Governed denominator; null means it is not supplied and must not be inferred.'),
   "strata": zod.record(zod.string(), zod.string()).optional(),
@@ -216,7 +217,78 @@ export const StructuredAssistantResponse = zod.object({
   "weight_version": zod.string(),
   "geometry_version": zod.string().describe('Analysis geometry identity only; no polygons.'),
   "metadata_revision_id": zod.string()
-}).describe('Coverage independent of value state; numeric strings preserve exact DECIMAL.'),zod.null()]).optional().describe('Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.')
+}).describe('Coverage independent of value state; numeric strings preserve exact DECIMAL.'),zod.null()]).optional().describe('Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.'),
+  "surveillance_context": zod.union([zod.object({
+  "evidence": zod.union([zod.object({
+  "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
+  "normalized_state": zod.union([zod.enum(['established', 'detected', 'unknown']),zod.null()]).optional().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
+  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
+  "reason_codes": zod.array(zod.string()).min(1),
+  "evidence_tier": zod.literal("GOVERNED_MAPPING"),
+  "observation_key": zod.string(),
+  "revision_id": zod.string(),
+  "value_state": zod.string(),
+  "source_rule_id": zod.string(),
+  "limitations": zod.array(zod.string()).min(1),
+  "evidence_revision_id": zod.string()
+}).describe('Data-projector evidence, never an API classification.'),zod.null()]).optional(),
+  "methodology_comparison": zod.union([zod.object({
+  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
+  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
+  "reason_codes": zod.array(zod.string()),
+  "methodology_era_ids": zod.array(zod.union([zod.string(),zod.null()])),
+  "jurisdiction_class": zod.union([zod.string(),zod.null()]),
+  "references": zod.array(zod.string()),
+  "limitations": zod.array(zod.string()),
+  "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
+}),zod.null()]).optional(),
+  "temporal_alignment": zod.union([zod.object({
+  "contract_version": zod.literal("atlas-temporal-alignment-v1"),
+  "method_id": zod.string(),
+  "method_version": zod.string(),
+  "source_id": zod.string(),
+  "measure_id": zod.string(),
+  "aggregation_rule": zod.string(),
+  "coverage_denominator": zod.string(),
+  "decision_cutoff": zod.iso.datetime({"offset":true}),
+  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']),
+  "reason_codes": zod.array(zod.string()),
+  "limitations": zod.array(zod.string()),
+  "observation_window": zod.object({
+  "start": zod.iso.date(),
+  "end_exclusive": zod.iso.date(),
+  "calendar": zod.literal("GREGORIAN"),
+  "timezone": zod.literal("UTC")
+}),
+  "target_window": zod.object({
+  "start": zod.iso.date(),
+  "end_exclusive": zod.iso.date(),
+  "calendar": zod.literal("GREGORIAN"),
+  "timezone": zod.literal("UTC")
+}),
+  "lag": zod.object({
+  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
+  "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
+  "offset_days": zod.int(),
+  "window_days": zod.union([zod.int(),zod.null()]).optional(),
+  "season_id": zod.union([zod.string(),zod.null()]).optional()
+}),
+  "coverage": zod.object({
+  "expected": zod.union([zod.int(),zod.number()]),
+  "observed": zod.union([zod.int(),zod.number()]),
+  "unit": zod.string(),
+  "partial_allowed": zod.boolean()
+}),
+  "reference_period": zod.union([zod.object({
+  "id": zod.string(),
+  "start": zod.iso.date(),
+  "end_exclusive": zod.iso.date(),
+  "source_vintage": zod.string()
+}),zod.null()]).optional()
+}),zod.null()]).optional()
+}),zod.null()]).optional().describe('Only supplied through an admitted Data release\/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.'),
+  "period_start": zod.iso.date().describe('Inclusive start of the governed observation period.'),
+  "period_end": zod.iso.date().describe('Inclusive end of the governed observation period.')
 })).max(structuredAssistantResponseToolEvidenceItemObservationsMax).optional(),
   "coverage": zod.array(zod.object({
   "geography": zod.object({

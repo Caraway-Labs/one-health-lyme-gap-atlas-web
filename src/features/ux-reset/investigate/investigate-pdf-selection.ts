@@ -64,7 +64,8 @@ function publishedValueState(state: Observation["value_state"]): boolean {
     case ValueState.SUPPRESSED:
     case ValueState.MISSING:
     case ValueState.UNAVAILABLE:
-    case ValueState.NO_COUNTY_LINKED_RECORD: {
+    case ValueState.NO_COUNTY_LINKED_RECORD:
+    case ValueState.NO_RECORDS: {
       return true;
     }
     default: {

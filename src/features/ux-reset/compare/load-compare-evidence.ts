@@ -17,6 +17,7 @@ import {
   mapWithConcurrency,
   investigateObservationRequestRejection,
 } from "@/features/ux-reset/investigate/load-county-evidence";
+import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import { observationsV1ObservationsGet } from "@/generated/atlas";
 import type {
   Measure,
@@ -427,7 +428,7 @@ async function fetchCompareObservations(input: {
       ObservationsV1ObservationsGetResponse,
       response.data
     );
-    collected.push(...parsed.data);
+    collected.push(...readDatedObservations(parsed.data));
     const nextToken = parsed.meta.next_page_token ?? null;
     if (!nextToken || seenTokens.has(nextToken)) {
       break;

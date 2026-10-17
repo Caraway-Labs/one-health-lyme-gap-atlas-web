@@ -10,6 +10,7 @@ import {
   type ExploreCountyIdentity,
   type ExploreTimeBound,
 } from "@/features/ux-reset/explore/explore-model";
+import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
   getObservationsV1ObservationsGetUrl,
   measuresV1MeasuresGet,
@@ -383,7 +384,7 @@ async function fetchObservationPage(input: {
   );
   return {
     nextToken: parsed.meta.next_page_token ?? null,
-    observations: parsed.data,
+    observations: readDatedObservations(parsed.data),
   };
 }
 

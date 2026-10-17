@@ -10,15 +10,18 @@ import {
 import {
   EXPLORER_MAP_LAYERS,
   explorerMapLayerById,
+  type ExplorerLayerGate,
   type ExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
 
 type ExplorerMapLayerControlProps = {
+  gates: Record<ExplorerMapLayerId, ExplorerLayerGate>;
   layerId: ExplorerMapLayerId;
   onLayerChange: (layerId: ExplorerMapLayerId) => void;
 };
 
 export function ExplorerMapLayerControl({
+  gates,
   layerId,
   onLayerChange,
 }: ExplorerMapLayerControlProps) {
@@ -33,7 +36,7 @@ export function ExplorerMapLayerControl({
         value={selected.id}
         onValueChange={(next) => {
           const layer = EXPLORER_MAP_LAYERS.find((entry) => entry.id === next);
-          if (!layer?.selectable) {
+          if (!layer || !gates[layer.id]?.selectable) {
             return;
           }
           onLayerChange(layer.id);
@@ -49,19 +52,23 @@ export function ExplorerMapLayerControl({
           <SelectValue>{selected.label}</SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {EXPLORER_MAP_LAYERS.map((layer) => (
-            <SelectItem
-              disabled={!layer.selectable}
-              key={layer.id}
-              value={layer.id}
-            >
-              {layer.selectable ? layer.label : `${layer.label} (unavailable)`}
-            </SelectItem>
-          ))}
+          {EXPLORER_MAP_LAYERS.map((layer) => {
+            const gate = gates[layer.id];
+            const selectable = gate?.selectable ?? false;
+            return (
+              <SelectItem
+                disabled={!selectable}
+                key={layer.id}
+                value={layer.id}
+              >
+                {selectable ? layer.label : `${layer.label} (unavailable)`}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
       <p className="sr-only" id={noteId}>
-        {selected.unavailableReason ??
+        {gates[selected.id]?.reason ??
           "The county list stays a review ranking when one exists. Changing the layer does not rank counties by this measure."}
       </p>
       <details className="ux-reset-layer-availability">
@@ -74,9 +81,10 @@ export function ExplorerMapLayerControl({
           {EXPLORER_MAP_LAYERS.map((layer) => (
             <li key={layer.id}>
               <strong>{layer.label}.</strong>{" "}
-              {layer.selectable
-                ? "Available from the published scores collection or as county boundaries."
-                : layer.unavailableReason}
+              {gates[layer.id]?.selectable
+                ? "Available from the published collection for this release. Changing the layer does not rank counties by this measure."
+                : (gates[layer.id]?.reason ??
+                  "This layer is not available for the current release.")}
             </li>
           ))}
         </ul>

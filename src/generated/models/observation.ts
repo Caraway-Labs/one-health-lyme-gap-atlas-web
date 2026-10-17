@@ -9,21 +9,20 @@ import type { EnvironmentalContext } from './environmentalContext';
 import type { EvidenceReference } from './evidenceReference';
 import type { GeographyIdentity } from './geographyIdentity';
 import type { ObservationStrata } from './observationStrata';
+import type { SurveillanceContext } from './surveillanceContext';
 import type { ValueState } from './valueState';
 
 export interface Observation {
+  /** Reviewed consumer-safe metadata revision; not private lineage. */
+  metadata_revision_id?: string | null;
   /** Stable observation identity and compact provenance reference. */
   observation_id: string;
   measure_id: string;
   geography: GeographyIdentity;
-  /** Inclusive start of the governed observation period. */
-  period_start: string;
-  /** Inclusive end of the governed observation period. */
-  period_end: string;
   temporal_grain: string;
   /** Read with value_state and unit; null never means zero. */
   value: number | string | null;
-  /** OBSERVED is nonzero; ZERO is numeric zero; MISSING/SUPPRESSED/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record, not evidence of absence. */
+  /** OBSERVED is nonzero; ZERO is numeric zero; MISSING/SUPPRESSED/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC's No records. Neither establishes biological absence. */
   value_state: ValueState;
   unit: string;
   /** Governed denominator; null means it is not supplied and must not be inferred. */
@@ -59,4 +58,10 @@ export interface Observation {
   evidence: EvidenceReference;
   /** Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number. */
   environmental_context?: EnvironmentalContext | null;
+  /** Only supplied through an admitted Data release/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal. */
+  surveillance_context?: SurveillanceContext | null;
+  /** Inclusive start of the governed observation period. */
+  period_start: string;
+  /** Inclusive end of the governed observation period. */
+  period_end: string;
 }

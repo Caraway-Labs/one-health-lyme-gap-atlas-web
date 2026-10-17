@@ -22,7 +22,7 @@ export const CollectionEnvelopeMeasure = zod.object({
   "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
+  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
   "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "methodology_id": zod.union([zod.string(),zod.null()]).optional().describe('Exact governed methodology resource ID; null when not governed.'),
