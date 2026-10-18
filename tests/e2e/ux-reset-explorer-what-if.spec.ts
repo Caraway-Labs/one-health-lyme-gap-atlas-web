@@ -643,4 +643,238 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("slider", { name: "Tick and pathogen share" })
     ).toHaveValue("65");
   });
+
+  test("shows the what-if panel on national browse and keeps scenario settings into a state", async ({
+    page,
+  }) => {
+    const review = "Priority 2 — Review";
+    const investigate = "Priority 1 — Investigate";
+    await installExplorer(page, {
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Boulder",
+          fips: "08013",
+          reasonText: "Boulder was returned by the method.",
+        }),
+      ],
+      geometry: {
+        features: [
+          countyBox("08013", -105.6, 40),
+          countyBox("08021", -106.2, 37),
+        ],
+        type: "FeatureCollection",
+      },
+      scores: {
+        counties: [
+          {
+            burgdorferi_status: "Present",
+            color: "#55a8a3",
+            county: "Boulder County",
+            evidence_completeness: 80,
+            fips: "08013",
+            human_status: "published_count_floor",
+            in_contiguous_tick_scope: true,
+            priority: review,
+            score: {
+              access_signal: 0,
+              community: 0,
+              ecological: 100,
+              human_weakness: 100,
+              pathogen_signal: 100,
+              rural_signal: 0,
+              score: 65,
+              svi_signal: 0,
+              tick_signal: 100,
+            },
+            state: "CO",
+            state_name: "Colorado",
+            tick_status: "Established",
+          },
+          scenarioScores.counties[0],
+        ],
+        methodology_version: "1",
+        release_id: "alpha-2026",
+        settings: scenarioScores.settings,
+      },
+    });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/app/review?scope=ALL");
+    const panel = page.getByTestId("explorer-what-if-scenario");
+    await expect(panel).toBeVisible();
+    await expect(panel).not.toHaveAttribute("open", "");
+    await expect(panel).toContainText("65%");
+    await expect(panel).toContainText("10 per 100,000");
+    await expect(panel).toContainText("View & adjust assumptions");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText(
+      "Select a county to compare its published and adjusted score"
+    );
+    await expect(panel).not.toContainText("points");
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect(page.getByTestId("explorer-map-legend")).not.toContainText(
+      "national average"
+    );
+    await page.screenshot({
+      fullPage: true,
+      path: "/opt/cursor/artifacts/national-explorer-what-if-after-collapsed.png",
+    });
+
+    const summary = page.getByTestId("explorer-what-if-summary");
+    await summary.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("slider")).toHaveCount(3);
+    const missing = page.getByRole("slider", {
+      name: "Missing county-record value",
+    });
+    await missing.fill("40");
+    await expect(page).toHaveURL(/[?&]missing=40(?:&|$)/);
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText(
+      "Select a county to compare its published and adjusted score"
+    );
+    await expect(
+      page.getByRole("heading", { name: "Adjusted scenario" })
+    ).toBeVisible();
+    const map = page.getByTestId("review-national-map-region");
+    await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
+    await expect(map).not.toHaveAttribute("data-map-colors", /02\d{3}:/);
+
+    await page.getByTestId("explorer-map-layer").click();
+    await page.getByRole("option", { name: "County boundaries" }).click();
+    await expect(
+      page.getByRole("heading", { name: "County boundaries" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Adjusted scenario" })
+    ).toHaveCount(0);
+    await expect(map).not.toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
+
+    await page.getByTestId("explorer-map-layer").click();
+    await page.getByRole("option", { name: "Atlas gap score" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Adjusted scenario" })
+    ).toBeVisible();
+
+    await page.getByTestId("explorer-scenario-reset").click();
+    await expect(page).not.toHaveURL(/[?&]missing=/);
+    await expect(
+      page.getByRole("heading", { name: "Atlas gap score" })
+    ).toBeVisible();
+    await expect(missing).toHaveValue("75");
+
+    await page.goto("/app/review?scope=ALL&county=08013&eco=85");
+    await expect(panel).not.toHaveAttribute("open", "");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText("65.0 → 85.0 · +20.0 points");
+    await summary.click();
+    const impact = page.getByTestId("explorer-scenario-impact");
+    await expect(impact).toContainText("Scenario impact — Boulder County");
+    await expect(impact).toContainText(
+      `Priority changed: ${review} → ${investigate}`
+    );
+    await expect(impact).not.toContainText("Conejos");
+    await page.screenshot({
+      fullPage: true,
+      path: "/opt/cursor/artifacts/national-explorer-what-if-after-selected.png",
+    });
+    const axe = await new AxeBuilder({ page })
+      .include("[data-testid='explorer-what-if-scenario']")
+      .analyze();
+    expect(axe.violations).toEqual([]);
+
+    await page.setViewportSize({ width: 800, height: 900 });
+    await expect(panel).toBeVisible();
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText("65.0 → 85.0 · +20.0 points");
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(page).toHaveURL(/[?&]eco=85(?:&|$)/);
+    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
+      0
+    );
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText("65.0 → 85.0 · +20.0 points");
+    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(1);
+
+    await page.goto("/app/review?scope=ALL&county=08013&mode=evidence&eco=85");
+    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
+
+    await page.goto("/app/review?scope=ALL&county=08013&mode=follow-up&eco=85");
+    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
+  });
+
+  test("keeps a limited national county honest and leaves Alaska without the panel", async ({
+    page,
+  }) => {
+    const lower = "Lower Atlas priority — Not a safety finding";
+    await installExplorer(page, {
+      geometry: {
+        features: [countyBox("08001", -105, 39.5)],
+        type: "FeatureCollection",
+      },
+      scores: {
+        counties: [
+          {
+            burgdorferi_status: "Present",
+            color: "#a9d2db",
+            county: "Adams County",
+            evidence_completeness: 80,
+            fips: "08001",
+            human_status: "published_count_floor",
+            in_contiguous_tick_scope: true,
+            priority: lower,
+            score: {
+              access_signal: 0,
+              community: 0,
+              ecological: 100,
+              human_weakness: 0,
+              pathogen_signal: 100,
+              rural_signal: 0,
+              score: 0,
+              svi_signal: 0,
+              tick_signal: 100,
+            },
+            state: "CO",
+            state_name: "Colorado",
+            tick_status: "Established",
+          },
+        ],
+        methodology_version: "1",
+        release_id: "alpha-2026",
+        settings: scenarioScores.settings,
+      },
+    });
+
+    await page.goto("/app/review?scope=ALL&county=08001&breakpoint=20");
+    const summary = page.getByTestId("explorer-scenario-impact-summary");
+    await expect(summary).toContainText(
+      "Published score 0.0 · Adjusted scenario unavailable"
+    );
+    await expect(summary).not.toContainText("points");
+    await page.getByTestId("explorer-what-if-summary").click();
+    const impact = page.getByTestId("explorer-scenario-impact");
+    await expect(impact).toContainText("Scenario impact — Adams County");
+    await expect(impact).toContainText("Adjusted scenario unavailable");
+    await expect(impact).not.toContainText("points");
+    await expect(impact).not.toContainText("Scenario rank");
+    await expect(
+      page.getByTestId("review-national-map-region")
+    ).toHaveAttribute("data-map-colors", /08001:#a9d2db/i);
+
+    await page.goto("/app/review?scope=AK&breakpoint=20");
+    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
+    await expect(page.getByTestId("review-scope-unsupported")).toBeVisible();
+  });
 });

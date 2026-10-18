@@ -41,6 +41,16 @@ import {
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import { ExplorerCountyRowContent } from "@/features/ux-reset/review/explorer-ml-priority";
 import {
+  SCENARIO_SCORE_DEFAULTS,
+  adjustCountyScenarios,
+  scoreSettingsFromCollection,
+} from "@/features/ux-reset/review/explorer-scenario-score";
+import {
+  ExplorerAdjustedScenarioLine,
+  applyGapScoreScenarioColors,
+  scenarioGapScoreLegend,
+} from "@/features/ux-reset/review/explorer-what-if-scenario";
+import {
   buildReviewCompareHandoff,
   buildReviewInvestigateHandoff,
 } from "@/features/ux-reset/review/review-county-preview";
@@ -71,6 +81,7 @@ import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priori
 import type { CountyScoreSummary } from "@/generated/models";
 import { isContiguousUsCounty } from "@/lib/atlas-geometry";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
+import type { ScoreSettings } from "@/lib/atlas-ui";
 import {
   countyDisplayGeometryQueryKey,
   fetchCountyDisplayGeometry,
@@ -92,6 +103,8 @@ type ReviewNationalPictureProps = {
   onViewCountyEvidence?: (fips: string) => void;
   period: string | null;
   releaseId: string;
+  /** Browser what-if. Defaults leave governed county colors in place. */
+  scenarioSettings?: ScoreSettings;
   releaseStates: readonly AtlasStateOption[];
   sources?: readonly ExplorerMapLegendSource[];
   tierRelease: Tier1ActiveRelease;
@@ -123,6 +136,7 @@ export function ReviewNationalPicture({
   period,
   releaseId,
   releaseStates,
+  scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   sources = NO_LEGEND_SOURCES,
   tierRelease,
 }: ReviewNationalPictureProps) {
@@ -169,6 +183,15 @@ export function ReviewNationalPicture({
       ),
     [scoresQuery.data?.counties]
   );
+  const scenarioBaseline = useMemo(
+    () => scoreSettingsFromCollection(scoresQuery.data?.settings),
+    [scoresQuery.data?.settings]
+  );
+  const scenarioByFips = useMemo(
+    () =>
+      adjustCountyScenarios(scoreCounties, scenarioSettings, scenarioBaseline),
+    [scenarioBaseline, scenarioSettings, scoreCounties]
+  );
   const scoresStatus = layer.needsScores
     ? scoresQuery.isError
       ? "error"
@@ -201,29 +224,40 @@ export function ReviewNationalPicture({
       }),
     [completenessGate, observations]
   );
-  const mapPaint = useMemo(
-    () =>
-      paintExplorerMapLayer({
-        counties: scoreCounties,
-        layerId: layer.id,
-        observation: isExplorerObservationLayer(layer.id)
-          ? observationPaintState(observations[layer.id])
-          : null,
-        releaseId,
-        scoresStatus,
-        selectedFips,
-        sources,
-      }),
-    [
-      layer.id,
-      observations,
+  const mapPaint = useMemo(() => {
+    const scenarioColors = scenarioByFips !== null && layer.id === "gap_score";
+    const colored = scenarioColors
+      ? applyGapScoreScenarioColors(scoreCounties, scenarioByFips)
+      : null;
+    const paint = paintExplorerMapLayer({
+      counties: colored?.counties ?? scoreCounties,
+      layerId: layer.id,
+      observation: isExplorerObservationLayer(layer.id)
+        ? observationPaintState(observations[layer.id])
+        : null,
       releaseId,
-      scoreCounties,
       scoresStatus,
       selectedFips,
       sources,
-    ]
-  );
+    });
+    const legend =
+      colored && scoresStatus === "ready"
+        ? scenarioGapScoreLegend(colored)
+        : null;
+    if (!legend) {
+      return paint;
+    }
+    return { ...paint, ...legend };
+  }, [
+    layer.id,
+    observations,
+    releaseId,
+    scenarioByFips,
+    scoreCounties,
+    scoresStatus,
+    selectedFips,
+    sources,
+  ]);
   const geometryFeatures = useMemo(
     () =>
       (geometryQuery.data?.features ?? []).filter(
@@ -633,6 +667,10 @@ export function ReviewNationalPicture({
                             published?.priority.trim() || undefined
                           }
                           publishedScore={published?.score.score}
+                        />
+                        <ExplorerAdjustedScenarioLine
+                          scenario={scenarioByFips?.get(entry.fips)}
+                          showRank={false}
                         />
                       </button>
                     </div>
