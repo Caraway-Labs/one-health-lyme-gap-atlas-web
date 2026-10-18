@@ -12,7 +12,7 @@ import {
   getDocsUrl,
   getPublishedApiOrigin,
   getSiteOrigin,
-} from "./public-origins.ts";
+} from "./public-origins";
 
 /**
  * Build-time rendering of the public Atlas OpenAPI contract.

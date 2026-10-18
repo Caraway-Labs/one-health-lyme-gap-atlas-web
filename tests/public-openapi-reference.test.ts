@@ -427,11 +427,17 @@ describe("public OpenAPI reference", () => {
   });
 
   it("checks the pinned contract from the command line", () => {
+    const registerTsExtension = path.join(
+      process.cwd(),
+      "scripts/register-ts-extension.mjs"
+    );
     const success = spawnSync(
       process.execPath,
       [
         "--experimental-strip-types",
         "--disable-warning=ExperimentalWarning",
+        "--import",
+        registerTsExtension,
         "src/lib/public-openapi-reference.ts",
         "--check",
       ],
@@ -443,6 +449,8 @@ describe("public OpenAPI reference", () => {
       [
         "--experimental-strip-types",
         "--disable-warning=ExperimentalWarning",
+        "--import",
+        registerTsExtension,
         path.join(process.cwd(), "src/lib/public-openapi-reference.ts"),
         "--check",
       ],
