@@ -16,6 +16,17 @@ const ALLOWED =
   "Optional analytics are allowed for this browser until this preference expires or you change it.";
 const DO_NOT_TRACK =
   "Your browser's Do Not Track preference is on. Atlas will keep optional analytics off.";
+const SEEDED_GRANT_LIFETIME_MS = 1000 * 60 * 60 * 24 * 30;
+const AMPLITUDE_QUIET_MS = 10_000;
+
+function seededGrant(now: number): string {
+  return JSON.stringify({
+    decidedAt: new Date(now).toISOString(),
+    decision: "granted",
+    expiresAt: new Date(now + SEEDED_GRANT_LIFETIME_MS).toISOString(),
+    version: 1,
+  });
+}
 
 async function storedDecision(page: Page): Promise<string | null> {
   return page.evaluate((key) => {
@@ -140,23 +151,43 @@ test("persists deny, allow, and withdraw from the footer Settings link", async (
 test("honors Do Not Track on Settings opened from the footer", async ({
   page,
 }, testInfo) => {
+  const amplitudeCalls: string[] = [];
+  await page.route(/amplitude/i, async (route) => {
+    amplitudeCalls.push(route.request().url());
+    await route.abort();
+  });
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "doNotTrack", {
       configurable: true,
       get: () => "1",
     });
   });
-  await page.addInitScript((key) => {
-    localStorage.setItem(
-      key,
-      JSON.stringify({
-        decidedAt: "2026-01-01T00:00:00.000Z",
-        decision: "granted",
-        expiresAt: "2027-04-01T00:00:00.000Z",
-        version: 1,
-      })
-    );
-  }, PREFERENCE_KEY);
+  await page.addInitScript(
+    ({ key, preference }) => {
+      localStorage.setItem(key, preference);
+    },
+    { key: PREFERENCE_KEY, preference: seededGrant(Date.now()) }
+  );
+
+  // `/` mounts AnalyticsClient. Workspace shell "none" routes, including
+  // Settings, do not, so a Settings-only check would miss a startup that
+  // ignored Do Not Track for an existing grant.
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Privacy settings" })
+  ).toBeVisible();
+  expect(amplitudeCalls).toEqual([]);
+  let amplitudeRequested = false;
+  try {
+    await page.waitForRequest(/amplitude/i, { timeout: AMPLITUDE_QUIET_MS });
+    amplitudeRequested = true;
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== "TimeoutError") {
+      throw error;
+    }
+  }
+  expect(amplitudeRequested).toBe(false);
+  expect(amplitudeCalls).toEqual([]);
 
   const privacy = await openSettingsFromFooter(page);
   const allow = privacy.getByRole("button", {
