@@ -12,7 +12,7 @@ type FrontPorchTrustFooterProps = {
 /**
  * Public Front Porch trust footer. Link targets are anonymous-safe:
  * `/app/ai-responsible-use` and `/app/settings` redirect signed-out visitors
- * to sign-in, and Settings does not yet expose analytics consent (issues 427 and 527).
+ * to sign-in. Signed-in Settings exposes the same analytics consent.
  * `extraControls` is for contracted route-specific controls. The Front Porch
  * call site leaves it empty.
  */

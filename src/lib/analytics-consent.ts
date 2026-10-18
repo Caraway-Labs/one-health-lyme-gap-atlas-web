@@ -23,6 +23,40 @@ export function honorsDoNotTrack(navigator: BrowserNavigator): boolean {
   return navigator.doNotTrack === "1" || navigator.doNotTrack === "yes";
 }
 
+function browserLocalStorage(): Storage {
+  return window.localStorage;
+}
+
+/**
+ * Reads the browser preference. Getting `localStorage` itself can throw a
+ * SecurityError before `readAnalyticsPreference` runs, so that access stays
+ * inside this try/catch.
+ */
+export function readBrowserAnalyticsPreference(
+  now = new Date()
+): AnalyticsConsentState {
+  try {
+    return readAnalyticsPreference(browserLocalStorage(), now);
+  } catch {
+    return "storage-unavailable";
+  }
+}
+
+/**
+ * Writes the browser preference. Getting `localStorage` itself can throw
+ * before `writeAnalyticsPreference` runs.
+ */
+export function writeBrowserAnalyticsPreference(
+  decision: AnalyticsPreference,
+  now = new Date()
+): AnalyticsConsentState {
+  try {
+    return writeAnalyticsPreference(browserLocalStorage(), decision, now);
+  } catch {
+    return "storage-unavailable";
+  }
+}
+
 export function readAnalyticsPreference(
   storage: Storage,
   now = new Date()

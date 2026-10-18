@@ -5,7 +5,9 @@ import {
   analyticsMayStart,
   honorsDoNotTrack,
   readAnalyticsPreference,
+  readBrowserAnalyticsPreference,
   writeAnalyticsPreference,
+  writeBrowserAnalyticsPreference,
 } from "../src/lib/analytics-consent";
 
 describe("analytics consent", () => {
@@ -57,6 +59,26 @@ describe("analytics consent", () => {
     localStorage.setItem(ANALYTICS_PREFERENCE_KEY, "not json");
     expect(readAnalyticsPreference(localStorage)).toBe("not-decided");
     expect(localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).toBeNull();
+  });
+
+  it("returns storage-unavailable when the localStorage getter throws", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("storage denied", "SecurityError");
+      },
+    });
+    try {
+      expect(readBrowserAnalyticsPreference()).toBe("storage-unavailable");
+      expect(writeBrowserAnalyticsPreference("granted")).toBe(
+        "storage-unavailable"
+      );
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(window, "localStorage", descriptor);
+      }
+    }
   });
 
   it("honors Do Not Track even when a visitor previously granted consent", () => {
