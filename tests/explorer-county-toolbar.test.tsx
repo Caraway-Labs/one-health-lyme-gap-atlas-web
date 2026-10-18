@@ -30,16 +30,29 @@ const counties: ExplorerCountyReference[] = [
     stateName: "Alabama",
     tickStatus: "No records",
   },
+  {
+    burgdorferiStatus: "Present",
+    county: "Bullock County",
+    evidenceCompleteness: 80,
+    fips: "01011",
+    humanStatus: "published_count_floor",
+    state: "AL",
+    stateName: "Alabama",
+    tickStatus: "Established",
+  },
 ];
 
 function ToolbarHarness({
+  onClearSelection,
   onCountySelect,
   onDownload,
 }: {
+  onClearSelection: () => void;
   onCountySelect: (county: ExplorerCountyReference) => void;
   onDownload: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [selectedFips, setSelectedFips] = useState<string | null>(null);
   const [availableData, setAvailableData] = useState<EvidenceView>("all");
   return (
     <ExplorerCountyToolbar
@@ -48,10 +61,20 @@ function ToolbarHarness({
       countyQuery={query}
       downloadDisabled={false}
       scope="AL"
+      selectedFips={selectedFips}
       stateOptions={[{ code: "AL", name: "Alabama" }]}
       onAvailableDataChange={setAvailableData}
+      onClearSelection={() => {
+        setQuery("");
+        setSelectedFips(null);
+        onClearSelection();
+      }}
       onCountyQueryChange={setQuery}
-      onCountySelect={onCountySelect}
+      onCountySelect={(county) => {
+        setQuery(county.fips);
+        setSelectedFips(county.fips);
+        onCountySelect(county);
+      }}
       onDownload={onDownload}
       onScopeChange={vi.fn<() => void>()}
     />
@@ -63,11 +86,11 @@ describe("explorer county toolbar", () => {
     cleanup();
   });
 
-  it("selects an exact FIPS from the keyboard and names the export scope", () => {
-    const onCountySelect = vi.fn<(county: ExplorerCountyReference) => void>();
+  it("names the four controls and keeps the export note out of the row", () => {
     render(
       <ToolbarHarness
-        onCountySelect={onCountySelect}
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
         onDownload={vi.fn<() => void>()}
       />
     );
@@ -78,19 +101,43 @@ describe("explorer county toolbar", () => {
     expect(
       screen.getByRole("combobox", { name: "Available data" })
     ).toBeTruthy();
-    expect(screen.getByText(EXPLORER_COUNTY_EXPORT_NOTE)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Download county list as CSV" })
+    ).toBeTruthy();
+    const note = screen.getByTestId("explorer-county-export-note");
+    expect({
+      hidden: note.className.includes("sr-only"),
+      note: note.textContent,
+    }).toStrictEqual({ hidden: true, note: EXPLORER_COUNTY_EXPORT_NOTE });
+  });
+
+  it("selects an exact FIPS and shows the county name", () => {
+    const onCountySelect = vi.fn<(county: ExplorerCountyReference) => void>();
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={onCountySelect}
+        onDownload={vi.fn<() => void>()}
+      />
+    );
     const search = screen.getByTestId("explorer-county-search");
+    expect(search.getAttribute("placeholder")).toBe("Search county or FIPS");
     fireEvent.change(search, { target: { value: "01001" } });
+    expect(
+      screen.getByRole("option", { name: "Autauga, AL - 01001" })
+    ).toBeTruthy();
     fireEvent.keyDown(search, { key: "Enter" });
     expect(onCountySelect).toHaveBeenCalledWith(
       expect.objectContaining({ fips: "01001" })
     );
+    expect((search as HTMLInputElement).value).toBe("Autauga, AL - 01001");
   });
 
   it("moves the active county with the arrow keys before selecting it", () => {
     const onCountySelect = vi.fn<(county: ExplorerCountyReference) => void>();
     render(
       <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
         onCountySelect={onCountySelect}
         onDownload={vi.fn<() => void>()}
       />
@@ -102,5 +149,82 @@ describe("explorer county toolbar", () => {
     expect(onCountySelect).toHaveBeenCalledWith(
       expect.objectContaining({ fips: "01003" })
     );
+    expect((search as HTMLInputElement).value).toBe("Baldwin, AL - 01003");
+  });
+
+  it("clears a selected county back to the search placeholder", () => {
+    const onClearSelection = vi.fn<() => void>();
+    render(
+      <ToolbarHarness
+        onClearSelection={onClearSelection}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onDownload={vi.fn<() => void>()}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    fireEvent.change(search, { target: { value: "auta" } });
+    expect(
+      screen.getByRole("option", { name: "Autauga, AL - 01001" })
+    ).toBeTruthy();
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    fireEvent.change(search, { target: { value: "01001" } });
+    fireEvent.keyDown(search, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear county" }));
+    expect(onClearSelection).toHaveBeenCalledOnce();
+    expect((search as HTMLInputElement).value).toBe("");
+    expect(search.getAttribute("placeholder")).toBe("Search county or FIPS");
+  });
+
+  it("shows the county label when a selection arrives without a matching query", () => {
+    const view = render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        downloadDisabled={false}
+        scope="AL"
+        selectedFips="01001"
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onDownload={vi.fn<() => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    expect({
+      clear: screen.queryByRole("button", { name: "Clear county" }) !== null,
+      value: (search as HTMLInputElement).value,
+    }).toStrictEqual({
+      clear: true,
+      value: "Autauga, AL - 01001",
+    });
+    view.rerender(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery="auta"
+        downloadDisabled={false}
+        scope="AL"
+        selectedFips="01011"
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onDownload={vi.fn<() => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    expect({
+      clear: screen.queryByRole("button", { name: "Clear county" }) !== null,
+      value: (search as HTMLInputElement).value,
+    }).toStrictEqual({
+      clear: true,
+      value: "Bullock County, AL - 01011",
+    });
   });
 });

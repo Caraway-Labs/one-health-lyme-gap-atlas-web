@@ -27,6 +27,7 @@ import {
   explorerAvailableDataGate,
   explorerCountyListCsv,
   explorerCountyListFilename,
+  countyQueryAfterSelectionChange,
   filterExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerCountyToolbar } from "@/features/ux-reset/review/explorer-county-toolbar";
@@ -191,9 +192,15 @@ function ResetReviewExperienceInner() {
   const [countyQuery, setCountyQuery] = useState("");
   const [availableData, setAvailableData] = useState<EvidenceView>("all");
   const [countyQueryScope, setCountyQueryScope] = useState(scope);
+  const [pendingSelectedQuery, setPendingSelectedQuery] = useState<
+    string | null
+  >(null);
   if (countyQueryScope !== scope) {
     setCountyQueryScope(scope);
-    setCountyQuery("");
+    setCountyQuery(pendingSelectedQuery ?? "");
+    if (pendingSelectedQuery !== null) {
+      setPendingSelectedQuery(null);
+    }
   }
   const rewrittenScopeKey = useRef<string | null>(null);
   const replacedModeKey = useRef<string | null>(null);
@@ -205,6 +212,19 @@ function ResetReviewExperienceInner() {
   const modeQuery = resolveExplorerModeQuery(rawModeValues);
   const explorerMode = modeQuery.mode;
   const reviewCounty = normalizeReviewCounty(scope, urlState.county);
+  const [trackedCountyQueryCounty, setTrackedCountyQueryCounty] =
+    useState(reviewCounty);
+  if (trackedCountyQueryCounty !== reviewCounty) {
+    const nextQuery = countyQueryAfterSelectionChange(
+      countyQuery,
+      trackedCountyQueryCounty,
+      reviewCounty
+    );
+    setTrackedCountyQueryCounty(reviewCounty);
+    if (nextQuery !== null) {
+      setCountyQuery(nextQuery);
+    }
+  }
   const profileQuery = useProfileDefaultJurisdiction();
 
   const scopeUnsupported = isUnsupportedReviewScope(scope);
@@ -332,12 +352,17 @@ function ResetReviewExperienceInner() {
         setChosenNationalFips(county);
       }
       const generation = nationalChoiceGenerationRef.current;
+      const clearSelectionGuard =
+        county !== null && urlState.selection === EXPLORER_SELECTION_REQUIRED;
       // nuqs pushes the next entry inside a throttled transition and passes
       // null history state. Stamp this choice only after that write, and only
       // onto the entry whose URL still shows it.
       void (async () => {
         try {
-          await setUrlState({ county }, { history });
+          await setUrlState(
+            clearSelectionGuard ? { county, selection: null } : { county },
+            { history }
+          );
         } catch {
           // A failed history write leaves the entry unstamped, so Back withholds it.
           return;
@@ -354,7 +379,7 @@ function ResetReviewExperienceInner() {
         stampExplicitNationalCounty(county);
       })();
     },
-    [scope, setUrlState]
+    [scope, setUrlState, urlState.selection]
   );
   const availableDataGate = useMemo(
     () =>
@@ -380,12 +405,31 @@ function ResetReviewExperienceInner() {
         setCounty(county.fips, "push");
         return;
       }
+      setPendingSelectedQuery(county.fips);
       userChoseScopeRef.current = true;
       setUserChoseScope(true);
-      void setUrlState({ county: county.fips, scope: county.state });
+      void setUrlState({
+        county: county.fips,
+        scope: county.state,
+        ...(urlState.selection === EXPLORER_SELECTION_REQUIRED
+          ? { selection: null }
+          : {}),
+      });
     },
-    [scope, setCounty, setUrlState]
+    [scope, setCounty, setUrlState, urlState.selection]
   );
+  const clearToolbarCounty = useCallback(() => {
+    setPendingSelectedQuery(null);
+    setCountyQuery("");
+    nationalChoiceGenerationRef.current += 1;
+    if (scope === "ALL") {
+      setChosenNationalFips(null);
+    }
+    void setUrlState(
+      { county: null, selection: EXPLORER_SELECTION_REQUIRED },
+      { history: "push" }
+    );
+  }, [scope, setUrlState]);
   const downloadCountyList = useCallback(() => {
     const rows = filterExplorerCountyReference(countyReference.counties, {
       evidence: availableData,
@@ -624,8 +668,10 @@ function ResetReviewExperienceInner() {
         countyQuery={countyQuery}
         downloadDisabled={!countyReference.isSuccess}
         scope={scope}
+        selectedFips={reviewCounty}
         stateOptions={stateOptions}
         onAvailableDataChange={setAvailableData}
+        onClearSelection={clearToolbarCounty}
         onCountyQueryChange={setCountyQuery}
         onCountySelect={selectToolbarCounty}
         onDownload={downloadCountyList}
@@ -693,6 +739,7 @@ function ResetReviewExperienceInner() {
           methodologyLabel={methodologyLabel}
           mode={explorerMode}
           onBackToMap={backToMap}
+          reviewResultState={stateReview.review?.result_state ?? null}
         />
       ) : null}
 

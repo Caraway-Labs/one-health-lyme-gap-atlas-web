@@ -2,11 +2,14 @@ import { Zap } from "lucide-react";
 import type { RefObject } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { CountyActionPlan } from "@/components/county-action-plan";
 import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
+import type { SuggestedFollowUpSelection } from "@/features/ux-reset/review/suggested-follow-up-content";
+import type { CountyDetail } from "@/generated/models";
 import {
-  FOLLOW_UP_RECORD_NOTE,
-  type SuggestedFollowUpSelection,
-} from "@/features/ux-reset/review/suggested-follow-up-content";
+  buildCountyFollowUp,
+  type FollowUpReviewContext,
+} from "@/lib/follow-up-workflows";
 
 export type SuggestedFollowUpPanelStatus =
   | "absent"
@@ -16,11 +19,12 @@ export type SuggestedFollowUpPanelStatus =
   | "waiting";
 
 function panelMarker(
-  selection: SuggestedFollowUpSelection | null,
+  detail: CountyDetail | null,
+  reviewContext: FollowUpReviewContext | undefined,
   status: SuggestedFollowUpPanelStatus
 ): string {
-  if (status === "ready" && selection?.responseId) {
-    return selection.responseId;
+  if (status === "ready" && detail) {
+    return buildCountyFollowUp(detail, reviewContext).level.title;
   }
   return status;
 }
@@ -49,114 +53,26 @@ export function ExplorerReviewPriority({
   );
 }
 
-function ActivityList({
-  selection,
-}: {
-  selection: SuggestedFollowUpSelection;
-}) {
-  return (
-    <ol className="ux-reset-explorer-activities">
-      {selection.activities.map((activity) => (
-        <li key={activity.id} className="ux-reset-explorer-activity">
-          <h3>{activity.title}</h3>
-          <p className="type-body">{activity.description}</p>
-          <dl className="ux-reset-explorer-activity-meta">
-            <div>
-              <dt className="type-small">Partners</dt>
-              <dd>{activity.partners}</dd>
-            </div>
-            <div>
-              <dt className="type-small">Purpose</dt>
-              <dd>{activity.purpose}</dd>
-            </div>
-          </dl>
-          {activity.whyThisSuggestion ? (
-            <details className="ux-reset-explorer-disclosure">
-              <summary>Why this suggestion</summary>
-              <p className="type-body">{activity.whyThisSuggestion}</p>
-            </details>
-          ) : null}
-          {activity.resources.length > 0 ? (
-            <details className="ux-reset-explorer-disclosure">
-              <summary>Official resources</summary>
-              <ul>
-                {activity.resources.map((resource) => (
-                  <li key={resource.id}>
-                    <a
-                      href={resource.href}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      {resource.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ) : null}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function ReadyFollowUp({
-  selection,
-}: {
-  selection: SuggestedFollowUpSelection;
-}) {
-  if (!selection.responseTitle) {
-    return (
-      <AtlasStatusMessage tone="empty">
-        This county color is outside the six review-priority bands, so no
-        follow-up response is assigned.
-      </AtlasStatusMessage>
-    );
-  }
-  return (
-    <>
-      <p className="type-body" data-testid="explorer-follow-up-response">
-        {selection.responseTitle}
-      </p>
-      <p className="type-body">{selection.introduction}</p>
-      {selection.generalFallbackNote ? (
-        <p className="type-body" data-testid="explorer-follow-up-fallback">
-          {selection.generalFallbackNote}
-        </p>
-      ) : null}
-      {selection.tickLimitedNote ? (
-        <p className="type-body">{selection.tickLimitedNote}</p>
-      ) : null}
-      {selection.singlePeriodNote ? (
-        <p className="type-body">{selection.singlePeriodNote}</p>
-      ) : null}
-      <ActivityList selection={selection} />
-      {selection.closing ? (
-        <p className="type-body">{selection.closing}</p>
-      ) : null}
-      <p className="type-small">{selection.interpretationNote}</p>
-      <p className="type-small">{FOLLOW_UP_RECORD_NOTE}</p>
-    </>
-  );
-}
-
 export function ExplorerSuggestedFollowUpPanel({
   countyFips,
+  detail,
   headingRef,
-  selection,
+  reviewContext,
   status,
 }: {
   countyFips: string | null;
+  detail: CountyDetail | null;
   headingRef: RefObject<HTMLHeadingElement | null>;
-  selection: SuggestedFollowUpSelection | null;
+  reviewContext?: FollowUpReviewContext;
   status: SuggestedFollowUpPanelStatus;
 }) {
+  const workflowReady = status === "ready" && detail !== null;
   return (
     <section
       aria-label="Suggested follow-up"
       className="ux-reset-explorer-follow-up"
       data-county={countyFips ?? ""}
-      data-follow-up={panelMarker(selection, status)}
+      data-follow-up={panelMarker(detail, reviewContext, status)}
       data-testid="explorer-follow-up"
       id={EXPLORER_SECTION_IDS.followUp}
     >
@@ -186,7 +102,15 @@ export function ExplorerSuggestedFollowUpPanel({
           assigned.
         </AtlasStatusMessage>
       ) : null}
-      {selection ? <ReadyFollowUp selection={selection} /> : null}
+      {workflowReady ? (
+        <CountyActionPlan
+          detail={detail}
+          headingLevel="h3"
+          idPrefix="evidence-"
+          reviewContext={reviewContext}
+          showEyebrow={false}
+        />
+      ) : null}
     </section>
   );
 }

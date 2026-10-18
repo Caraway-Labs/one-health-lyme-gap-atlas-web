@@ -1734,14 +1734,14 @@
 
 .ux-reset-explorer-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr) minmax(
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.75fr) minmax(
       0,
-      1fr
-    );
-  gap: 0.4rem 0.75rem;
-  align-items: end;
+      1.15fr
+    ) minmax(11.5rem, 1fr);
+  gap: var(--space-2);
+  align-items: center;
   min-width: 0;
-  padding: 0.65rem 0.85rem;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card);
@@ -1749,16 +1749,24 @@
 
 .ux-reset-explorer-toolbar .ux-reset-review-scope-field {
   display: grid;
-  gap: 0.25rem;
+  gap: 0;
   min-width: 0;
 }
 
-.ux-reset-explorer-export-note {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1.3;
+.ux-reset-explorer-download {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* Match the State and Available data select size (h-8 / --spacing * 8). */
+.ux-reset-explorer-toolbar [data-slot="select-trigger"],
+.ux-reset-explorer-toolbar [data-slot="button"],
+.ux-reset-explorer-toolbar input[type="search"] {
+  box-sizing: border-box;
+  height: calc(var(--spacing) * 8);
+  min-height: calc(var(--spacing) * 8);
 }
 
 .ux-reset-county-combobox {
@@ -1852,6 +1860,21 @@
   min-height: 20rem;
 }
 
+.ux-reset-explorer-map-follow-up {
+  width: 100%;
+  min-width: 0;
+  border-color: var(--action-plan-border);
+  background: var(--action-plan-surface);
+}
+
+.ux-reset-explorer-map-follow-up .action-plan {
+  width: 100%;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .ux-reset-explorer-map .map-wrap {
   aspect-ratio: auto;
   min-height: 10rem;
@@ -1892,7 +1915,14 @@
 
 .ux-reset-explorer-toolbar input[type="search"] {
   width: 100%;
-  height: var(--control-height);
+  padding-block: 0;
+  line-height: 1.25rem;
+}
+
+.ux-reset-explorer-toolbar input[type="search"]::-webkit-search-cancel-button,
+.ux-reset-explorer-toolbar input[type="search"]::-webkit-search-decoration {
+  display: none;
+  appearance: none;
 }
 
 .ux-reset-explorer-list .type-small {
@@ -2665,6 +2695,11 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   align-items: center;
 }
 
+.ux-reset-explorer-follow-up .action-plan {
+  width: 100%;
+  margin-top: 0;
+}
+
 .ux-reset-explorer-follow-up-priority {
   display: flex;
   gap: var(--space-2);
@@ -2841,6 +2876,11 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     grid-row: 1;
   }
 
+  .ux-reset-explorer-map-follow-up {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
   /* State orientation keeps the map and state list in one column. The
      national picture's fixed row would crush that list under the map. */
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav) {
@@ -2896,11 +2936,16 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 
   .ux-reset-explorer-list {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
   }
 
   .ux-reset-explorer-preview {
     grid-column: 2;
+    grid-row: 3;
+  }
+
+  .ux-reset-explorer-map-follow-up {
+    grid-column: 1 / -1;
     grid-row: 2;
   }
 }
@@ -2915,12 +2960,16 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     order: 1;
   }
 
-  .ux-reset-explorer-preview {
+  .ux-reset-explorer-map-follow-up {
     order: 2;
   }
 
-  .ux-reset-explorer-list {
+  .ux-reset-explorer-preview {
     order: 3;
+  }
+
+  .ux-reset-explorer-list {
+    order: 4;
   }
 
   .ux-reset-explorer-map .map-wrap {

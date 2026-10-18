@@ -205,8 +205,39 @@ export function countyReferenceMatchesAvailableData(
   );
 }
 
+/**
+ * A toolbar selection stores its FIPS in the county query, and that query
+ * filters suggestions, the ranked list, and the CSV. When history or another
+ * control moves the selection, carry that committed FIPS with it. Typed search
+ * text is not a committed FIPS, so it stays while the person is editing.
+ * Returns null when the query should stay as it is.
+ */
+export function countyQueryAfterSelectionChange(
+  countyQuery: string,
+  previousCounty: string | null,
+  nextCounty: string | null
+): string | null {
+  if (previousCounty === null || countyQuery !== previousCounty) {
+    return null;
+  }
+  if (nextCounty === null) {
+    return countyQuery === "" ? null : "";
+  }
+  if (countyQuery === nextCounty) {
+    return null;
+  }
+  return nextCounty;
+}
+
+/** Presentation only. Canonical selection remains the five-character FIPS. */
+export function explorerCountySelectionLabel(
+  county: Pick<ExplorerCountyReference, "county" | "fips" | "state">
+): string {
+  return `${county.county}, ${county.state} - ${county.fips}`;
+}
+
 export function countyReferenceMatchesQuery(
-  county: Pick<ExplorerCountyReference, "county" | "fips">,
+  county: Pick<ExplorerCountyReference, "county" | "fips" | "state">,
   query: string
 ): boolean {
   const text = query.trim().toLowerCase();
@@ -215,7 +246,8 @@ export function countyReferenceMatchesQuery(
   }
   const name = county.county.trim().toLowerCase();
   const fips = county.fips.trim();
-  if (name.includes(text) || fips.includes(text)) {
+  const state = county.state.trim().toLowerCase();
+  if (name.includes(text) || fips.includes(text) || state === text) {
     return true;
   }
   return name.length > 0 && text.includes(fips) && text.includes(name);

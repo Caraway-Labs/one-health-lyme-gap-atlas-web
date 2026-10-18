@@ -40,10 +40,13 @@ import {
   type SuggestedFollowUpPanelStatus,
 } from "@/features/ux-reset/review/explorer-suggested-follow-up-panel";
 import { PopulationRuralityContextSection } from "@/features/ux-reset/review/population-rurality-context-section";
+import { isGovernedReviewResultState } from "@/features/ux-reset/review/review-operating-state";
 import { selectSuggestedFollowUp } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
+import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
+import type { FollowUpReviewContext } from "@/lib/follow-up-workflows";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -156,7 +159,7 @@ function followUpPanelStatus(input: {
   countyRecordLoading: boolean;
   directoryError: string | null;
   directoryLoading: boolean;
-  hasEvidence: boolean;
+  hasCountyDetail: boolean;
   metadataError: string | null;
   metadataLoading: boolean;
   recovery: InvestigateRecovery | null;
@@ -189,10 +192,30 @@ function followUpPanelStatus(input: {
   if (input.countyRecordAbsent) {
     return "absent";
   }
-  if (input.countyRecordLoading || !input.hasEvidence) {
+  if (input.countyRecordLoading || !input.hasCountyDetail) {
     return "loading";
   }
   return "ready";
+}
+
+const ABSENT_NEXT_CHECK = "The review result did not include a next check.";
+
+function followUpReviewContext(
+  followUp: ExplorerFollowUpState,
+  reviewResultState: StateReviewResultState | null
+): FollowUpReviewContext {
+  const returnedNextCheck =
+    followUp.status === "candidate" ? followUp.firstStep : null;
+  return {
+    governedNextCheck:
+      returnedNextCheck && returnedNextCheck !== ABSENT_NEXT_CHECK
+        ? returnedNextCheck
+        : null,
+    reviewResultState:
+      reviewResultState && isGovernedReviewResultState(reviewResultState)
+        ? reviewResultState
+        : null,
+  };
 }
 
 export function ExplorerCountyEvidence({
@@ -200,11 +223,13 @@ export function ExplorerCountyEvidence({
   methodologyLabel,
   mode,
   onBackToMap,
+  reviewResultState = null,
 }: {
   followUp: ExplorerFollowUpState;
   methodologyLabel: string | null;
   mode: ExplorerCountyMode;
   onBackToMap: () => void;
+  reviewResultState?: StateReviewResultState | null;
 }) {
   const workspace = useInvestigateWorkspace();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -290,7 +315,7 @@ export function ExplorerCountyEvidence({
     countyRecordLoading: workspace.countyRecordLoading,
     directoryError: workspace.directoryError,
     directoryLoading: workspace.directoryLoading,
-    hasEvidence: workspace.suggestedFollowUpEvidence !== null,
+    hasCountyDetail: workspace.countyDetail !== null,
     metadataError: workspace.metadataError,
     metadataLoading: workspace.metadataLoading,
     recovery: workspace.recovery,
@@ -599,8 +624,9 @@ export function ExplorerCountyEvidence({
 
       <ExplorerSuggestedFollowUpPanel
         countyFips={workspace.requestedFips}
+        detail={workspace.countyDetail}
         headingRef={followUpRef}
-        selection={followUpSelection}
+        reviewContext={followUpReviewContext(followUp, reviewResultState)}
         status={followUpStatus}
       />
 

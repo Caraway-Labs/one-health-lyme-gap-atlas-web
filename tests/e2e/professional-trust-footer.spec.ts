@@ -52,10 +52,15 @@ async function footerLayout(page: Page) {
     if (!(brand instanceof HTMLElement) || !(links instanceof HTMLElement)) {
       throw new Error("trust footer is missing its brand or link group");
     }
+    const bar = footer.querySelector(".ux-reset-trust-footer-bar");
+    if (!(bar instanceof HTMLElement)) {
+      throw new Error("trust footer is missing its bar");
+    }
     const footerBox = footer.getBoundingClientRect();
     const brandBox = brand.getBoundingClientRect();
     const linksBox = links.getBoundingClientRect();
     const brandStyle = getComputedStyle(brand);
+    const barStyle = getComputedStyle(bar);
     const linkStyle = getComputedStyle(links.querySelector("a") as HTMLElement);
     const footerStyle = getComputedStyle(footer);
     return {
@@ -73,6 +78,8 @@ async function footerLayout(page: Page) {
       linkFontSize: linkStyle.fontSize,
       linkFontWeight: linkStyle.fontWeight,
       linksInset: linksBox.left - footerBox.left,
+      paddingBottom: barStyle.paddingBottom,
+      paddingTop: barStyle.paddingTop,
       overflow: footer.scrollWidth > footer.clientWidth + 1,
       stacked: linksBox.top >= brandBox.bottom - 1,
       surface: footerStyle.backgroundColor,
@@ -106,8 +113,8 @@ test("opens trust links from the professional footer", async ({
     expect(layout.footerHeight).toBeGreaterThan(64);
   } else {
     expect(layout.stacked).toBe(false);
-    expect(layout.footerHeight).toBeGreaterThanOrEqual(60);
-    expect(layout.footerHeight).toBeLessThanOrEqual(64);
+    expect(layout.footerHeight).toBeGreaterThanOrEqual(43);
+    expect(layout.footerHeight).toBeLessThanOrEqual(45);
     expect(layout.centerDelta).toBeLessThanOrEqual(1);
   }
   await footer.screenshot({
@@ -254,4 +261,52 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
   await page.screenshot({
     path: testInfo.outputPath("footer-withdraw-after-back.png"),
   });
+});
+
+test("wraps the workspace footer at 200% text size without clipping", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await page.goto("/explore");
+  const footer = page.locator(".ux-reset-pro-app .ux-reset-trust-footer");
+  await expect(
+    footer.getByRole("link", { name: "Privacy", exact: true })
+  ).toBeVisible();
+  const wide = await footerLayout(page);
+  expect(wide.stacked).toBe(false);
+  expect(wide.footerHeight).toBeGreaterThanOrEqual(43);
+  expect(wide.footerHeight).toBeLessThanOrEqual(45);
+  expect(wide.paddingTop).toBe("4px");
+  expect(wide.paddingBottom).toBe("4px");
+
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "32px";
+  });
+  await expect(
+    footer.getByRole("link", { name: "AI / Responsible Use" })
+  ).toBeVisible();
+  await expect(
+    footer.getByRole("link", { name: "Privacy settings" })
+  ).toBeVisible();
+  const zoomed = await footerLayout(page);
+  expect(zoomed.overflow).toBe(false);
+  expect(zoomed.stacked).toBe(true);
+  expect(zoomed.footerHeight).toBeGreaterThan(44);
+  // --space-4 is 1rem, so 200% text size uses 32px rather than 16px.
+  expect(zoomed.paddingTop).toBe("32px");
+  expect(zoomed.paddingBottom).toBe("32px");
+  await footer.screenshot({
+    path: testInfo.outputPath("footer-200-percent-text.png"),
+  });
+
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+  // 900px is under the 60rem stack threshold and is not a phone width.
+  await page.setViewportSize({ height: 900, width: 900 });
+  const narrow = await footerLayout(page);
+  expect(narrow.overflow).toBe(false);
+  expect(narrow.stacked).toBe(true);
+  expect(narrow.paddingTop).toBe("16px");
+  expect(narrow.paddingBottom).toBe("16px");
 });
