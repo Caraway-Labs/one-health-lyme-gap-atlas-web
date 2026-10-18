@@ -21,7 +21,7 @@ Send the request URL with its query string. A collection returns `data`, `meta`,
 | [Indicators, measures, and observations](/docs/develop/resources) | Choose a measure and read `value` with `value_state` |
 | [Provenance and evidence](/docs/develop/provenance) | Cite source, methodology, release, and freshness fields |
 | [Workflow guides](/docs/develop/workflows) | Query one county, compare counties, read environmental context, and reproduce a result |
-| [Observation queries](/docs/develop/observation-queries) | Choose one of five slices and see which temporal parameters that slice accepts |
+| [Observation queries](/docs/develop/observation-queries) | Choose a checked slice, including land cover, and see which temporal parameters that slice accepts |
 | [MCP clients](/docs/develop/mcp-clients) | Connect Claude Desktop, Cursor, or a custom client, and copy the interpretation guardrails |
 | [OpenAPI, GitHub, and support](/docs/develop/support) | Open the machine-readable contract and report a `request_id` |
 
@@ -54,4 +54,4 @@ Current-release observations have a default pre-execution logical-result ceiling
 
 `GET /v1/geographies/{geography_type}/{geography_id}` is declared, and its description says delivery currently returns `503` with `CANONICAL_DATA_UNAVAILABLE` and no geometry. See [Geography](/docs/develop/geography).
 
-The observations operation describes separately enabled January 2025 environmental measures that carry `environmental_context`. On 18 October 2026 the measures catalog included those daily ids. The five slice queries and the parameters they reject are in [Observation queries](/docs/develop/observation-queries). `surveillance_context` is optional and requires an admitted Data delivery. See [Workflow guides](/docs/develop/workflows).
+The observations operation describes separately enabled January 2025 environmental measures that carry `environmental_context`. On 18 October 2026 the measures catalog included those daily ids. The checked slice queries, including annual land cover, and the parameters they reject are in [Observation queries](/docs/develop/observation-queries). `surveillance_context` is optional and requires an admitted Data delivery. See [Workflow guides](/docs/develop/workflows).

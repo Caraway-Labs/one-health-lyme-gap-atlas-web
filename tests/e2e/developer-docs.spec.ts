@@ -249,6 +249,7 @@ const observationPanels = [
   { marker: "privacy-protected floor", tab: "Annual surveillance" },
   { marker: "scapularis_status", tab: "Cumulative vector and pathogen" },
   { marker: "nclimgrid_tavg_county_day", tab: "January 2025 environment" },
+  { marker: "nlcd_forest_area_share_county_year", tab: "Land cover" },
   { marker: "svi_percentile_2022", tab: "2022 SVI and ACS" },
   { marker: "Metro: area population at least 1 million", tab: "2023 RUCC" },
 ] as const;
@@ -314,6 +315,34 @@ test("persists the observation slice tab and shows the temporal matrix", async (
     ["critical", "serious"].includes(violation.impact ?? "")
   );
   expect(blockingViolations).toEqual([]);
+});
+
+test("opens a hidden observation slice from its heading hash", async ({
+  page,
+}) => {
+  await page.goto(
+    "/docs/develop/observation-queries#cumulative-vector-and-pathogen"
+  );
+  await expect(
+    page.getByRole("heading", {
+      exact: true,
+      name: "Cumulative vector and pathogen",
+    })
+  ).toBeVisible();
+  await expect(page.getByText("scapularis_status").first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { exact: true, name: "Annual surveillance" })
+  ).toBeHidden();
+
+  await page.goto("/docs/develop/observation-queries");
+  await page
+    .getByRole("link", { exact: true, name: "Cumulative vector and pathogen" })
+    .click();
+  await expect(page).toHaveURL(/#cumulative-vector-and-pathogen$/);
+  await expect(page.getByText("scapularis_status").first()).toBeVisible();
+  await expect(
+    page.getByRole("tab", { name: "Cumulative vector and pathogen" })
+  ).toHaveAttribute("aria-selected", "true");
 });
 
 test("keeps observation query tabs usable at 375px", async ({

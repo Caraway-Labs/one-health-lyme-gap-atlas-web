@@ -17,12 +17,22 @@ const sliceLabels = [
   "Annual surveillance",
   "Cumulative vector and pathogen",
   "January 2025 environment",
+  "Land cover",
   "2022 SVI and ACS",
   "2023 RUCC",
 ] as const;
 
+const sliceIds = [
+  "annual-surveillance",
+  "cumulative-vector-and-pathogen",
+  "january-2025-environment",
+  "land-cover",
+  "2022-svi-and-acs",
+  "2023-rucc",
+] as const;
+
 describe("observation query documentation", () => {
-  it("persists one Fumadocs tab group for the five slices", () => {
+  it("persists one Fumadocs tab group whose values match the item labels", () => {
     expect(page).toContain('groupId="atlas-observation-slice"');
     expect(page).toContain("persist");
     expect(page).toContain('from "fumadocs-ui/components/tabs"');
@@ -31,11 +41,27 @@ describe("observation query documentation", () => {
     const items = [...(itemsBody ?? "").matchAll(/"(?<label>[^"]+)"/gu)].map(
       (match) => match.groups?.label
     );
-    const values = [...page.matchAll(/<Tab value="(?<label>[^"]+)">/gu)].map(
-      (match) => match.groups?.label
+    const tabs = [
+      ...page.matchAll(/<Tab forceMount value="(?<label>[^"]+)">/gu),
+    ];
+    const headings = [...page.matchAll(/^\s*### (?<heading>.+)$/gmu)].map(
+      (match) => match.groups?.heading
     );
-    expect(items).toStrictEqual([...sliceLabels]);
-    expect(values).toStrictEqual([...sliceLabels]);
+    expect({
+      headings,
+      items,
+      labels: tabs.map((match) => match.groups?.label),
+      panelIds: page.match(/<Tab[^>]*\sid="/u),
+      slugs: headings.map((heading) =>
+        heading?.toLowerCase().replaceAll(" ", "-")
+      ),
+    }).toStrictEqual({
+      headings: [...sliceLabels],
+      items: [...sliceLabels],
+      labels: [...sliceLabels],
+      panelIds: null,
+      slugs: [...sliceIds],
+    });
   });
 
   it("names supported and rejected temporal parameters from the checked contract", () => {

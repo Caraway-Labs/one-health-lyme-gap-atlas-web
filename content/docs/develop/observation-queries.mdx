@@ -1,13 +1,13 @@
 ---
 title: Observation queries
-description: Five current-release observation slices, with the temporal parameters each slice accepts and the parameters it rejects.
+description: Checked observation slices, including annual land cover, and the temporal parameters each slice accepts or rejects.
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 import { ObservationCurl } from "@/features/docs/observation-query-example";
 
-These are the five observation slices in the current public contract. Each tab is one slice. The choice is stored in this browser. The matrix under the tabs is the supported and rejected temporal parameters, checked against `https://api.onehealthatlas.org` on 18 October 2026. The release id on the successful rows was `governed-2026-10-15-january-climate-prod`.
+These are the checked observation slices for the current public contract, including annual land cover. Each tab is one slice. The choice is stored in this browser. A heading link opens that slice. The matrix under the tabs is the supported and rejected temporal parameters, checked against `https://api.onehealthatlas.org` on 18 October 2026. The release id on the successful rows was `governed-2026-10-15-january-climate-prod`.
 
 County examples use FIPS `36061` (New York County, New York). Atlas product geography for these guides is the lower 48 states and the District of Columbia. Preserve leading zeros.
 
@@ -15,8 +15,8 @@ Discover ids before you copy one. `GET /v1/measures?page_size=100` on that date 
 
 ## Checked requests
 
-<Tabs groupId="atlas-observation-slice" items={["Annual surveillance", "Cumulative vector and pathogen", "January 2025 environment", "2022 SVI and ACS", "2023 RUCC"]} label="Observation slice" persist>
-  <Tab value="Annual surveillance">
+<Tabs groupId="atlas-observation-slice" items={["Annual surveillance", "Cumulative vector and pathogen", "January 2025 environment", "Land cover", "2022 SVI and ACS", "2023 RUCC"]} label="Observation slice" persist>
+  <Tab forceMount value="Annual surveillance">
     ### Annual surveillance
 
     Published human surveillance in this check is the 2023 case-count floor, measure `case_count_floor_2023`. It is a privacy-protected floor in `cases`. It is not a diagnosis, a complete incidence count, or an individual risk estimate.
@@ -30,7 +30,7 @@ Discover ids before you copy one. `GET /v1/measures?page_size=100` on that date 
     `year` 2022 returned HTTP 200, `data` empty, meta `availability` `UNAVAILABLE`, and `reason` `NO_PUBLISHED_RESULTS`. That empty page is not a 2022 surveillance slice and not a zero. `vintage_year` returned HTTP 400 `UNSUPPORTED_FILTER` and detail `This measure does not support vintage_year.` A stratification value of age returned HTTP 400 `UNSUPPORTED_STRATIFICATION` and detail `This release has no governed strata.`
 
   </Tab>
-  <Tab value="Cumulative vector and pathogen">
+  <Tab forceMount value="Cumulative vector and pathogen">
     ### Cumulative vector and pathogen
 
     The checked vector measure is `scapularis_status`. The checked pathogen measure is `burgdorferi_status`. The catalog also lists `pacificus_status`. This page does not treat that third id as checked. Both checked measures use one cumulative day, `start_date` and `end_date` 2025-12-31. `temporal_grain` on the rows was `CUMULATIVE`. That day is not an annual collection event.
@@ -42,7 +42,7 @@ Discover ids before you copy one. `GET /v1/measures?page_size=100` on that date 
     `year` 2025 on `scapularis_status` returned HTTP 400 `UNSUPPORTED_FILTER` and detail `CDC status is cumulative as published; omit year and use start_date=end_date=2025-12-31.` A range from 2025-01-01 through 2025-12-31 returned the same code and detail. `vintage_year` returned HTTP 400 `UNSUPPORTED_FILTER` and detail `This measure does not support vintage_year.` Missing dates returned HTTP 400 `INVALID_REQUEST` and detail `Supply a year or both start_date and end_date.` A stratification value of species returned HTTP 400 `UNSUPPORTED_STRATIFICATION`.
 
   </Tab>
-  <Tab value="January 2025 environment">
+  <Tab forceMount value="January 2025 environment">
     ### January 2025 environment
 
     The checked measure is `nclimgrid_tavg_county_day` on indicator `climate_temperature`. The catalog also lists `nclimgrid_tmax_county_day`, `nclimgrid_tmin_county_day`, and `nclimgrid_prcp_county_day`. Those three ids were not the checked observation. The measure limitation says this is January 2025 descriptive weather context only, with no Lyme causal, risk, or ML claim. `environmental_context` is coverage for that weather value. It is not a disease model.
@@ -54,7 +54,19 @@ Discover ids before you copy one. `GET /v1/measures?page_size=100` on that date 
     `year` 2025 returned HTTP 200 and 31 rows, each with temporal grain DAY, from 2025-01-01 through 2025-01-31. It did not return one annual aggregate. The January window with `start_date` 2025-01-01 and `end_date` 2025-01-31 also returned 31 rows. 2025-02-01 through 2025-02-01 returned HTTP 200, `data` empty, meta `availability` `UNAVAILABLE`, and `reason` `NO_PUBLISHED_RESULTS`. February is not a published environmental slice. `vintage_year` returned HTTP 400 `UNSUPPORTED_FILTER` and detail `This measure does not support vintage_year.` Missing dates returned HTTP 400 `INVALID_REQUEST`. A stratification value of age returned HTTP 400 `UNSUPPORTED_STRATIFICATION`.
 
   </Tab>
-  <Tab value="2022 SVI and ACS">
+  <Tab forceMount value="Land cover">
+    ### Land cover
+
+    The checked measure is `nlcd_forest_area_share_county_year` on indicator `land_cover_context`. The measure resource says the unit is `fraction`, the temporal semantics are 2025, and missingness keeps a true zero as zero while an unselected county has no observation. Its limitation names selected 2025 TIGER geographies 09110 and 51013 only. This is land-cover context. It is not the January weather series, and it is not a Lyme causal or risk estimate.
+
+    <ObservationCurl query="measure_id=nlcd_forest_area_share_county_year&geography_type=county&geography_id=36061&year=2025" />
+
+    FIPS 36061 is outside those selected geographies. On 18 October 2026 that request returned HTTP 200, `data` empty, meta `availability` `UNAVAILABLE`, and `reason` `NO_PUBLISHED_RESULTS`. The inclusive 2025 range, without `year`, returned the same empty page. `year` 2023 also returned that empty page. An empty page is not a zero share. A selected geography is a different request. See [Workflow guides](/docs/develop/workflows).
+
+    `vintage_year` returned HTTP 400 `UNSUPPORTED_FILTER` and detail `This measure does not support vintage_year.` Sending `year` together with both dates returned HTTP 400 `INVALID_REQUEST` and detail `Use year or a date range, not both.` Omitting the period returned HTTP 400 `INVALID_REQUEST` and detail `Supply a year or both start_date and end_date.` A stratification value of class returned HTTP 400 `UNSUPPORTED_STRATIFICATION`.
+
+  </Tab>
+  <Tab forceMount value="2022 SVI and ACS">
     ### 2022 SVI and ACS
 
     County SVI, population, and insurance context require `vintage_year` 2022. The checked measure is `svi_percentile_2022`. The same vintage also returned HTTP 200 for `population_2022` and `uninsured_percent_2022`. The period on those rows is the ACS window 2018-01-01 through 2022-12-31, `temporal_grain` `PERIOD`. That window is not five annual observations. A percentile rank is not a percentage of people, and it is not individual risk.
@@ -66,7 +78,7 @@ Discover ids before you copy one. `GET /v1/measures?page_size=100` on that date 
     `year` 2022, the ACS dates as `start_date` and `end_date`, and a request with no time parameter each returned HTTP 400 `INVALID_REQUEST` and detail `Supply vintage_year for county context.` `vintage_year` 2023 returned HTTP 400 `UNSUPPORTED_FILTER` and detail `Unsupported county context time selection.` A stratification value of age returned HTTP 400 `UNSUPPORTED_STRATIFICATION`. An absent row is unavailable evidence. It is not zero.
 
   </Tab>
-  <Tab value="2023 RUCC">
+  <Tab forceMount value="2023 RUCC">
     ### 2023 RUCC
 
     Rural-urban classification requires `vintage_year` 2023 and measure `rucc_2023`. The code is a category for that vintage. It is not an annual rate, an ordered distance, or individual risk. Period dates on the checked row were null.
@@ -89,6 +101,7 @@ Supported means the checked request returned HTTP 200 and a row, or, where noted
 | Annual surveillance | Supported for 2023. 2022 was HTTP 200 and an empty page | Supported for 2023-01-01 through 2023-12-31. Both `year` and the dates together are rejected | Rejected. `UNSUPPORTED_FILTER` | Rejected. `UNSUPPORTED_STRATIFICATION` |
 | Cumulative vector and pathogen | Rejected. `UNSUPPORTED_FILTER` | Supported only when both dates are 2025-12-31. A wider 2025 range was rejected | Rejected. `UNSUPPORTED_FILTER` | Rejected. `UNSUPPORTED_STRATIFICATION` |
 | January 2025 environment | Supported for 2025 as 31 daily January rows, not one annual value | Supported for one January day and for 1 January through 31 January. 1 February was HTTP 200 and an empty page | Rejected. `UNSUPPORTED_FILTER` | Rejected. `UNSUPPORTED_STRATIFICATION` |
+| Land cover | Accepted for 2025 and for 2023. Both were HTTP 200 and an empty page for FIPS 36061 | Accepted for 2025-01-01 through 2025-12-31 as an empty page for this county. Both `year` and the dates together are rejected | Rejected. `UNSUPPORTED_FILTER` | Rejected. `UNSUPPORTED_STRATIFICATION` |
 | 2022 SVI and ACS | Rejected. `INVALID_REQUEST` | Rejected. `INVALID_REQUEST` | Required. 2022 is supported. 2023 is rejected | Rejected. `UNSUPPORTED_STRATIFICATION` |
 | 2023 RUCC | Rejected. `INVALID_REQUEST` | Rejected. `INVALID_REQUEST` | Required. 2023 is supported. 2022 is rejected | Rejected. `UNSUPPORTED_STRATIFICATION` |
 
@@ -107,4 +120,4 @@ These are not additional slices. Do not fill them in from another measure.
 - Any `stratification`. The checked release has no governed strata.
 - Counties outside the lower 48 and the District of Columbia. The environmental measure limitation says coverage outside the contiguous set is unavailable. These guides do not add a request for that coverage.
 
-Land-cover measures are a different annual series. They are not this environmental slice. See [Workflow guides](/docs/develop/workflows).
+The January environment tab is weather. The land-cover tab is the annual series, and an unselected county stays an empty page.
