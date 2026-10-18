@@ -1607,8 +1607,8 @@
 
 @media (min-width: 1200px) {
   .ux-reset-explorer-map .map-wrap {
-    min-height: 16rem;
-    height: min(32rem, max(16rem, calc(100svh - 28rem)));
+    min-height: 28rem;
+    height: 32rem;
   }
 }
 
@@ -2091,7 +2091,7 @@
 
 @media (min-width: 1200px) {
   .ux-reset-explorer-browse {
-    align-items: start;
+    align-items: stretch;
     grid-template-columns: minmax(13rem, 14rem) minmax(0, 1fr) minmax(
         15.5rem,
         17rem
@@ -2102,7 +2102,31 @@
 
   .ux-reset-explorer-list,
   .ux-reset-explorer-preview {
-    max-height: min(44rem, calc(100svh - 8rem));
+    /* Zero height keeps county content from stretching the map row.
+       The stretched minimum matches the map card. */
+    height: 0;
+    min-height: 100%;
+    overflow: hidden;
+  }
+
+  .ux-reset-explorer-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ux-reset-explorer-list > .gap-0 {
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ux-reset-explorer-list .ux-reset-review-candidate-list {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .ux-reset-explorer-preview {
     overflow: auto;
   }
 
@@ -2125,9 +2149,9 @@
 
   .ux-reset-explorer-map .map-wrap {
     flex: 0 0 auto;
-    /* 32rem is the desktop ceiling. The viewport cap keeps that canvas above
-       the footer on a 900px-tall screen; shorter laptops keep 28rem and scroll. */
-    height: min(32rem, max(28rem, calc(100svh - 28rem)));
+    /* 32rem is the desktop canvas. The trust footer scrolls with the page,
+       so this height is not reduced by a footer offset. */
+    height: 32rem;
     min-height: 28rem;
     overflow: hidden;
   }

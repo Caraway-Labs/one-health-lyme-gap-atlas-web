@@ -86,6 +86,8 @@ const WIDTH_CASES: readonly WidthCase[] = [
 type ExplorerLayout = {
   alignItems: string;
   browseRight: number;
+  candidateOverflow: string;
+  canvasHeight: number;
   browseWidth: number;
   contentRight: number;
   contentWidth: number;
@@ -95,6 +97,7 @@ type ExplorerLayout = {
   flexDirection: string;
   gridTemplateColumns: string;
   innerWidth: number;
+  listBottom: number;
   listRight: number;
   listTop: number;
   listWidth: number;
@@ -293,9 +296,15 @@ async function readExplorerLayout(page: Page): Promise<ExplorerLayout> {
     const contentLeft = mainRect.left + main.clientLeft + paddingLeft;
     const contentRight =
       mainRect.left + main.clientLeft + main.clientWidth - paddingRight;
+    const canvas = map.querySelector(".map-wrap");
+    const candidates = list.querySelector(".ux-reset-review-candidate-list");
     return {
       alignItems: operatingStyle.alignItems,
       browseRight: browseRect.right,
+      candidateOverflow: candidates
+        ? getComputedStyle(candidates).overflowY
+        : "",
+      canvasHeight: canvas?.getBoundingClientRect().height ?? 0,
       browseWidth: browseRect.width,
       contentRight,
       contentWidth: contentRight - contentLeft,
@@ -306,6 +315,7 @@ async function readExplorerLayout(page: Page): Promise<ExplorerLayout> {
       flexDirection: operatingStyle.flexDirection,
       gridTemplateColumns: operatingStyle.gridTemplateColumns,
       innerWidth: window.innerWidth,
+      listBottom: listRect.bottom,
       listRight: listRect.right,
       listTop: listRect.top,
       listWidth: listRect.width,
@@ -383,6 +393,11 @@ function expectThreeColumn(layout: ExplorerLayout): void {
   expectNear(layout.previewWidth, PREVIEW_CAP_PX);
   expectNear(trackAt(layout.tracks, 0), LIST_CAP_PX);
   expectNear(trackAt(layout.tracks, 2), PREVIEW_CAP_PX);
+  expect(layout.listBottom).toBeLessThanOrEqual(
+    layout.mapBottom + EDGE_TOLERANCE_PX
+  );
+  expectNear(layout.canvasHeight, 32 * layout.rootFontSize);
+  expect(layout.candidateOverflow).toBe("auto");
 }
 
 function expectTwoColumn(layout: ExplorerLayout): void {
