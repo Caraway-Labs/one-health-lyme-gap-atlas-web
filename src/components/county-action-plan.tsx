@@ -1,7 +1,11 @@
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import type { CountyDetail } from "@/generated/models";
-import { followUpPlanFor } from "@/lib/atlas-ui";
+import {
+  buildCountyFollowUp,
+  FOLLOW_UP_INTERPRETATION,
+  FOLLOW_UP_UNAVAILABLE_INTERPRETATION,
+  type FollowUpReviewContext,
+  type FollowUpWorkflowRow,
+} from "@/lib/follow-up-workflows";
 
 export const PROGRAM_RESOURCES = [
   {
@@ -22,39 +26,133 @@ export const PROGRAM_RESOURCES = [
   },
 ];
 
-export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
-  const plan = followUpPlanFor(detail);
+function FollowUpRow({ row }: { row: FollowUpWorkflowRow }) {
+  return (
+    <li data-category={row.id} data-testid={`follow-up-${row.id}`}>
+      <strong>{row.label}</strong>
+      <span>{row.recommendation}</span>
+    </li>
+  );
+}
+
+export function CountyActionPlan({
+  detail,
+  headingLevel = "h4",
+  idPrefix = "",
+  reviewContext,
+  showEyebrow = true,
+}: {
+  detail: CountyDetail;
+  headingLevel?: "h3" | "h4";
+  idPrefix?: string;
+  reviewContext?: FollowUpReviewContext;
+  showEyebrow?: boolean;
+}) {
+  const workflow = buildCountyFollowUp(detail, reviewContext);
+  const headingId = `${idPrefix}county-action-heading-${detail.fips}`;
+  const questions = workflow.rows.map((row) => ({
+    id: row.id,
+    question: row.verifyQuestion,
+  }));
+  const partners = workflow.rows.map((row) => ({
+    id: row.id,
+    label: row.label,
+    partners: row.partners,
+  }));
+  const resources = workflow.rows.flatMap((row) =>
+    row.resources.map((resource) => resource)
+  );
+  const uniqueResources = resources.filter(
+    (resource, index) =>
+      resources.findIndex((entry) => entry.id === resource.id) === index
+  );
 
   return (
-    <Card
-      className="action-plan bg-muted gap-0 py-0 ring-0"
-      aria-labelledby={`county-action-heading-${detail.fips}`}
-      role="region"
+    <section
+      aria-labelledby={headingId}
+      className="action-plan"
+      data-review-level={workflow.level.status}
+      data-testid="suggested-follow-up"
+      data-unavailable-reason={workflow.level.reason ?? ""}
     >
       <div className="action-plan-heading">
         <div>
-          <span className="eyebrow">Suggested follow-up</span>
-          <h4 id={`county-action-heading-${detail.fips}`}>{plan.level}</h4>
+          {showEyebrow ? (
+            <span className="eyebrow">Suggested follow-up</span>
+          ) : null}
+          {headingLevel === "h3" ? (
+            <h3 data-testid="explorer-follow-up-response" id={headingId}>
+              {workflow.level.title}
+            </h3>
+          ) : (
+            <h4 data-testid="explorer-follow-up-response" id={headingId}>
+              {workflow.level.title}
+            </h4>
+          )}
         </div>
-        <Badge className="action-timeframe h-auto" variant="outline">
-          {plan.timeframe}
-        </Badge>
       </div>
-      <p className="action-summary">{plan.summary}</p>
-      <p className="action-caution">
-        <strong>What this means:</strong> This is a review recommendation, not a
-        measure of individual risk or proof that Lyme disease is undercounted.
+      <p className="action-summary">{workflow.level.explanation}</p>
+      {workflow.level.colorResponseNote ? (
+        <p className="action-summary" data-testid="follow-up-color-note">
+          {workflow.level.colorResponseNote}
+        </p>
+      ) : null}
+      {workflow.level.governedNextCheck ? (
+        <p className="action-summary" data-testid="follow-up-next-check">
+          Returned next check: {workflow.level.governedNextCheck}
+        </p>
+      ) : null}
+      {workflow.verificationNote ? (
+        <p className="action-summary" data-testid="follow-up-verification-note">
+          {workflow.verificationNote}
+        </p>
+      ) : null}
+      <p className="action-caution" data-testid="follow-up-interpretation">
+        {workflow.level.status === "unavailable"
+          ? FOLLOW_UP_UNAVAILABLE_INTERPRETATION
+          : FOLLOW_UP_INTERPRETATION}
       </p>
       <ol className="action-list">
-        {plan.actions.map((action) => (
-          <li key={`${action.owner}-${action.task}`}>
-            <strong>{action.owner}</strong>
-            <span>{action.task}</span>
-          </li>
+        {workflow.rows.map((row) => (
+          <FollowUpRow key={row.id} row={row} />
         ))}
       </ol>
       <details className="action-resources">
-        <summary>Official program examples and resources</summary>
+        <summary>Questions, partner roles, and official resources</summary>
+        <p>
+          Partner roles are suggestions for local judgment. Atlas does not
+          assign them.
+        </p>
+        <p>Questions to verify locally</p>
+        <ul>
+          {questions.map((question) => (
+            <li key={question.id}>{question.question}</li>
+          ))}
+        </ul>
+        <p>Potential partner roles</p>
+        <ul>
+          {partners.map((partner) => (
+            <li key={partner.id}>
+              <strong>{partner.label}.</strong> {partner.partners}
+            </li>
+          ))}
+        </ul>
+        <p>Relevant official resources</p>
+        <ul>
+          {uniqueResources.map((resource) => (
+            <li key={resource.id}>
+              <a
+                aria-label={`${resource.label} (opens in a new tab)`}
+                href={resource.href}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {resource.label}
+                <span aria-hidden="true"> ↗</span>
+              </a>
+            </li>
+          ))}
+        </ul>
         <p>
           These examples show approaches used by other state vector-borne
           disease programs. Follow the selected county&apos;s own state
@@ -64,10 +162,10 @@ export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
           {PROGRAM_RESOURCES.map((resource) => (
             <li key={resource.href}>
               <a
-                href={resource.href}
-                target="_blank"
-                rel="noopener noreferrer"
                 aria-label={`${resource.label} (opens in a new tab)`}
+                href={resource.href}
+                rel="noopener noreferrer"
+                target="_blank"
               >
                 {resource.label}
                 <span aria-hidden="true"> ↗</span>
@@ -76,6 +174,6 @@ export function CountyActionPlan({ detail }: { detail: CountyDetail }) {
           ))}
         </ul>
       </details>
-    </Card>
+    </section>
   );
 }

@@ -37,6 +37,7 @@ import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-i
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import type { ExplorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
 import type { SuggestedFollowUpEvidence } from "@/features/ux-reset/review/suggested-follow-up-content";
+import type { CountyDetail } from "@/generated/models";
 
 const workspace = vi.hoisted(() => ({
   current: null as InvestigateWorkspace | null,
@@ -116,6 +117,7 @@ function baseWorkspace(
     catalogRefreshError: null,
     compare: [],
     countyRecord: null,
+    countyDetail: null,
     countyRecordAbsent: false,
     countyRecordError: null,
     countyRecordLoading: false,
@@ -150,6 +152,59 @@ function baseWorkspace(
     stateLabel: null,
     suggestedFollowUpEvidence: null,
     ...overrides,
+  };
+}
+
+function countyDetailFor(
+  evidence: SuggestedFollowUpEvidence,
+  fips: string
+): CountyDetail {
+  return {
+    burgdorferi_status: evidence.burgdorferiStatus,
+    case_count_floor_2023: evidence.caseCountFloor2023,
+    color: evidence.color,
+    county: "County",
+    evidence_completeness: 0,
+    fips,
+    human_status: evidence.humanStatus,
+    in_contiguous_tick_scope: true,
+    incidence_floor_2023: evidence.incidenceFloor2023,
+    pacificus_status: evidence.pacificusStatus,
+    population: null,
+    priority: evidence.priority,
+    release: {
+      bundle_sha256: "a".repeat(64),
+      generated_at: "2026-01-01",
+      limitations: "test",
+      loaded_at: "2026-01-01",
+      methodology_version: "test",
+      release_id: "alpha-2026",
+      schema_version: "test",
+      scope: "test",
+      score_defaults: {} as never,
+      sources: [],
+      states: [],
+    },
+    rucc_2023: evidence.rucc2023,
+    scapularis_status: evidence.scapularisStatus,
+    score: {
+      access_signal: 0,
+      community: 0,
+      ecological: 0,
+      human_weakness: 0,
+      pathogen_signal: 0,
+      rural_signal: 0,
+      score: 0,
+      svi_signal: 0,
+      tick_signal: 0,
+    },
+    state: "CO",
+    state_name: "Colorado",
+    state_unallocated_records_2023: null,
+    svi_percentile: evidence.sviPercentile,
+    tick_status: evidence.tickStatus,
+    uninsured_percent: evidence.uninsuredPercent,
+    uninsured_percentile: evidence.uninsuredPercentile,
   };
 }
 
@@ -247,6 +302,7 @@ describe("Explorer county evidence", () => {
       requestedFips: "08001",
       stateLabel: "Colorado (CO)",
       suggestedFollowUpEvidence: publishedFollowUp(),
+      countyDetail: countyDetailFor(publishedFollowUp(), "08001"),
     });
     render(
       <ExplorerCountyEvidence
@@ -284,6 +340,13 @@ describe("Explorer county evidence", () => {
         color: "#a9d2db",
         priority: "Lower Atlas priority — Not a safety finding",
       }),
+      countyDetail: countyDetailFor(
+        publishedFollowUp({
+          color: "#a9d2db",
+          priority: "Lower Atlas priority — Not a safety finding",
+        }),
+        "08001"
+      ),
     });
     const view = render(
       <ExplorerCountyEvidence
@@ -308,6 +371,15 @@ describe("Explorer county evidence", () => {
         incidenceFloor2023: null,
         priority: "Watch — Monitor signals",
       }),
+      countyDetail: countyDetailFor(
+        publishedFollowUp({
+          color: "#87b982",
+          humanStatus: "no_county_linked_record",
+          incidenceFloor2023: null,
+          priority: "Watch — Monitor signals",
+        }),
+        "08013"
+      ),
     });
     view.rerender(
       <ExplorerCountyEvidence
@@ -329,7 +401,7 @@ describe("Explorer county evidence", () => {
       county: "08013",
       priority: "Review priority: Monitor for changes",
       reason: "Boulder limitation stays on Boulder.",
-      response: "Monitor the pattern",
+      response: "Verify with local information",
     });
   });
 

@@ -87,6 +87,7 @@ function baseWorkspace(
     selection: { fips: SAMPLE_FIPS, kind: "county" },
     setCounty: vi.fn<(fips: string) => void>(),
     stateLabel: "Colorado (CO)",
+    countyDetail: null,
     suggestedFollowUpEvidence: null,
     ...overrides,
   };

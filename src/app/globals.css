@@ -18,6 +18,8 @@
   --mint: #dff1eb;
   --pale: #f3f7f5;
   --line: #d8e2df;
+  --action-plan-surface: #f2f8f6;
+  --action-plan-border: #bedbd5;
   --white: #ffffff;
   --orange: #e9602b;
   --gold: #efc64a;
@@ -1401,9 +1403,9 @@ a {
 .action-plan {
   margin-top: 1.5rem;
   padding: 1.1rem;
-  border: 1px solid #bedbd5;
+  border: 1px solid var(--action-plan-border);
   border-radius: 0.75rem;
-  background: #f2f8f6;
+  background: var(--action-plan-surface);
 }
 .action-plan-heading {
   display: flex;
@@ -1411,6 +1413,7 @@ a {
   justify-content: space-between;
   gap: 1rem;
 }
+.action-plan-heading h3,
 .action-plan-heading h4 {
   margin: 0.25rem 0 0;
   color: var(--navy);
@@ -1449,20 +1452,23 @@ a {
 }
 .action-list li {
   display: grid;
-  grid-template-columns: minmax(8.5rem, 0.75fr) 1.6fr;
+  grid-template-columns: minmax(0, 30%) minmax(0, 70%);
+  align-items: start;
   gap: 0.75rem;
-  padding: 0.65rem 0.7rem;
+  padding: 0.7rem 0.75rem;
   border-radius: 0.5rem;
   background: white;
 }
 .action-list strong {
+  min-width: 0;
   color: var(--navy);
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   line-height: 1.4;
 }
 .action-list span {
+  min-width: 0;
   color: #405661;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   line-height: 1.5;
 }
 .action-resources {
