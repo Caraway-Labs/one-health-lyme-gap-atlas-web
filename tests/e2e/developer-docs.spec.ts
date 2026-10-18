@@ -169,6 +169,10 @@ test("renders MCP client recipes, transport, and copyable guardrails", async ({
     page.getByRole("heading", { name: "Transport and auth", exact: true })
   ).toBeVisible();
   await expect(page.getByText("2025-06-18").first()).toBeVisible();
+  await expect(page.locator("main")).toContainText("notifications/initialized");
+  await expect(page.locator("main")).toContainText(
+    "MCP-Protocol-Version: 2025-06-18"
+  );
   await expect(
     page.getByRole("cell", { name: "No sign in", exact: true })
   ).toBeVisible();

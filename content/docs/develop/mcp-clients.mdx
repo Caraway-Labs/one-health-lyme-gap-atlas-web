@@ -14,7 +14,7 @@ Checked against `https://mcp.onehealthatlas.org` on 2026-10-18.
 | Item | Supported | What was checked |
 | --- | --- | --- |
 | Endpoint | `https://mcp.onehealthatlas.org/mcp` | `initialize` and `tools/list` returned HTTP 200 |
-| Transport | Streamable HTTP, stateless JSON | POST responses were `application/json`. No `mcp-session-id` was returned. A later POST did not need the initialize call |
+| Transport | Streamable HTTP, stateless JSON | POST responses were `application/json`. Initialize did not return `Mcp-Session-Id`. Later requests still send `notifications/initialized` and `MCP-Protocol-Version` |
 | Accept header | `application/json` and `text/event-stream` | Both values were sent on the successful POST requests |
 | Protocol | `2025-06-18` | The server returned `protocolVersion` `2025-06-18` and `serverInfo` `atlas-lyme-mcp` `0.1.0` |
 | Auth | None | The same initialize succeeded with no credential header and again when a non-credential token was sent. Do not send an API key, OAuth client, or Settings secret |
@@ -68,7 +68,9 @@ Reload MCP, then confirm the four tool names above. `atlas_resolve_geographies` 
 
 ## Custom client
 
-Send JSON-RPC with POST. No session header and no credential.
+Send one JSON-RPC message per POST. Do not send a credential. The checked initialize response did not include `Mcp-Session-Id`. If a response includes that header, send it on every later request.
+
+After `initialize` succeeds, send `notifications/initialized` before any other request. That notification has no `id`. On 2026-10-18 the server returned HTTP 202 and an empty body. Include `MCP-Protocol-Version: 2025-06-18` on that notification and on every later request. The value is the protocol version negotiated by `initialize`.
 
 ```sh
 curl -fsS \
@@ -82,6 +84,16 @@ curl -fsS \
 curl -fsS \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
+  -H 'MCP-Protocol-Version: 2025-06-18' \
+  -X POST 'https://mcp.onehealthatlas.org/mcp' \
+  --data '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+```
+
+```sh
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'MCP-Protocol-Version: 2025-06-18' \
   -X POST 'https://mcp.onehealthatlas.org/mcp' \
   --data '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 ```

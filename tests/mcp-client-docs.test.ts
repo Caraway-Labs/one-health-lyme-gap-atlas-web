@@ -34,7 +34,7 @@ describe("MCP client configuration documentation", () => {
       "Streamable HTTP",
       "application/json",
       "text/event-stream",
-      "mcp-session-id",
+      "Mcp-Session-Id",
       "2025-06-18",
       "atlas-lyme-mcp",
       "No sign in",
@@ -72,6 +72,8 @@ describe("MCP client configuration documentation", () => {
       "Do not set `sse` or `streamable-http`",
       "Do not add `headers` or an `auth` object",
       'protocolVersion":"2025-06-18',
+      "notifications/initialized",
+      "MCP-Protocol-Version: 2025-06-18",
       "python -m atlas_lyme_mcp.check_client",
       "MCP_URL=https://mcp.onehealthatlas.org/mcp",
     ];
@@ -87,8 +89,28 @@ describe("MCP client configuration documentation", () => {
       "Authorization:",
     ].filter((phrase) => clientPage.includes(phrase));
 
+    const customStart = clientPage.indexOf("## Custom client");
+    const customEnd = clientPage.indexOf("## Interpretation guardrails");
+    const customClient = clientPage.slice(customStart, customEnd);
+    const initializeAt = customClient.indexOf('"method":"initialize"');
+    const notificationAt = customClient.indexOf(
+      '"method":"notifications/initialized"'
+    );
+    const listAt = customClient.indexOf('"method":"tools/list"');
+    const headerBeforeList = customClient.lastIndexOf(
+      "MCP-Protocol-Version: 2025-06-18",
+      listAt
+    );
+    const lifecycleOrder = [
+      customStart !== -1,
+      initializeAt !== -1 && initializeAt < notificationAt,
+      notificationAt !== -1 && notificationAt < listAt,
+      headerBeforeList > notificationAt,
+    ];
+
     expect(missing).toStrictEqual([]);
     expect(forbidden).toStrictEqual([]);
+    expect(lifecycleOrder).toStrictEqual([true, true, true, true]);
   });
 
   it("publishes copyable interpretation guardrails", () => {
