@@ -122,5 +122,7 @@ export const config = {
     "/compare/:path*",
     "/askatlas",
     "/askatlas/:path*",
+    "/data-provenance",
+    "/data-provenance/:path*",
   ],
 };

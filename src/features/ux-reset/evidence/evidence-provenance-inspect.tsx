@@ -1,5 +1,6 @@
 "use client";
 
+import { dataProvenanceHref } from "@/features/ux-reset/data-provenance/catalog";
 import type { ContentSurface } from "@/lib/atlas-analytics";
 import { trackProvenanceOpened } from "@/lib/atlas-analytics";
 import {
@@ -242,6 +243,13 @@ export function EvidenceProvenanceInspect(
             </a>
           </p>
         )}
+        <p data-testid="evidence-provenance-page-link">
+          <a href={dataProvenanceHref(technical?.sourceId)}>
+            {technical?.sourceId?.trim()
+              ? "Open Data Provenance for this source"
+              : "Open Data Provenance"}
+          </a>
+        </p>
       </div>
     </details>
   );
