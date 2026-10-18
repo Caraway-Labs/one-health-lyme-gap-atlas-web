@@ -79,8 +79,6 @@ describe("data provenance catalog", () => {
 
   it("groups sources only from governed indicator domains", () => {
     const catalog = buildDataProvenanceCatalog({
-      domainMetadataUnavailable: false,
-      incomplete: false,
       indicators: [
         indicator("human_disease_burden", INVESTIGATE_DOMAIN_HUMAN),
         indicator("tick_surveillance", INVESTIGATE_DOMAIN_VECTOR),
@@ -113,6 +111,9 @@ describe("data provenance catalog", () => {
           source_url: "ftp://example.com/not-http",
         }),
       ],
+      indicatorsRead: "complete",
+      measuresRead: "complete",
+      sourcesIncomplete: false,
     });
 
     expect(
@@ -167,17 +168,19 @@ describe("data provenance catalog", () => {
 
   it("does not invent a family when domain metadata is unavailable", () => {
     const catalog = buildDataProvenanceCatalog({
-      domainMetadataUnavailable: true,
-      incomplete: false,
       indicators: [],
+      indicatorsRead: "unavailable",
       measures: [],
+      measuresRead: "unavailable",
       sources: [source("cdc-lyme", "CDC Lyme surveillance")],
+      sourcesIncomplete: false,
     });
     expect(catalog.families).toStrictEqual([]);
-    expect(catalog.other.map((card) => card.sourceId)).toStrictEqual([
+    expect(catalog.sources.map((card) => card.sourceId)).toStrictEqual([
       "cdc-lyme",
     ]);
-    expect(catalog.domainMetadataUnavailable).toBeTruthy();
+    expect(catalog.measuresRead).toBe("unavailable");
+    expect(catalog.indicatorsRead).toBe("unavailable");
   });
 
   it("uses a stable source anchor and leaves unknown ids off the page hash", () => {

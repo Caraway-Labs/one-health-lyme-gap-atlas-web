@@ -110,20 +110,30 @@ export type ProvenanceFamilyEntry =
       primaryLabel: string;
     };
 
+export const COLLECTION_READS = [
+  "complete",
+  "incomplete",
+  "unavailable",
+] as const;
+
+export type CollectionRead = (typeof COLLECTION_READS)[number];
+
 export type DataProvenanceCatalog = {
-  domainMetadataUnavailable: boolean;
   families: readonly ProvenanceFamilyGroup[];
-  incomplete: boolean;
+  indicatorsRead: CollectionRead;
+  measuresRead: CollectionRead;
   other: readonly ProvenanceSourceCard[];
   sources: readonly ProvenanceSourceCard[];
+  sourcesIncomplete: boolean;
 };
 
 export type DataProvenanceCatalogInput = {
-  domainMetadataUnavailable: boolean;
-  incomplete: boolean;
   indicators: readonly Indicator[];
+  indicatorsRead: CollectionRead;
   measures: readonly Measure[];
+  measuresRead: CollectionRead;
   sources: readonly Source[];
+  sourcesIncomplete: boolean;
 };
 
 const SOURCE_ANCHOR_PREFIX = "source-";
@@ -339,10 +349,11 @@ export function buildDataProvenanceCatalog(
   const other = sources.filter((card) => card.primaryFamilyId === null);
 
   return {
-    domainMetadataUnavailable: input.domainMetadataUnavailable,
     families,
-    incomplete: input.incomplete,
+    indicatorsRead: input.indicatorsRead,
+    measuresRead: input.measuresRead,
     other,
     sources,
+    sourcesIncomplete: input.sourcesIncomplete,
   };
 }

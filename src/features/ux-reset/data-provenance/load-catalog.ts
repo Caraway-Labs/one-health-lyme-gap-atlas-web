@@ -17,6 +17,7 @@ import { validateApiResponse } from "@/lib/api-response-validation";
 
 import {
   buildDataProvenanceCatalog,
+  type CollectionRead,
   type DataProvenanceCatalog,
 } from "./catalog";
 
@@ -130,30 +131,51 @@ async function readIndicators(
   });
 }
 
+type CollectionResult<T> = {
+  items: T[];
+  read: CollectionRead;
+};
+
+function collectionRead(incomplete: boolean): CollectionRead {
+  if (incomplete) {
+    return "incomplete";
+  }
+  return "complete";
+}
+
 /**
- * Sources are required. Measure and indicator metadata only assign domains.
- * A failure there still returns the source list and says domains are unavailable.
+ * A failed or page-capped read is not an empty relationship list.
+ * Sources that already loaded stay on the page either way.
+ */
+async function readCollection<T>(
+  read: Promise<{ incomplete: boolean; items: T[] }>
+): Promise<CollectionResult<T>> {
+  try {
+    const result = await read;
+    return { items: result.items, read: collectionRead(result.incomplete) };
+  } catch {
+    return { items: [], read: "unavailable" };
+  }
+}
+
+/**
+ * Sources are required. Measure and indicator metadata only assign relationships.
+ * A failure there still returns the sources that loaded.
  */
 export async function loadDataProvenanceCatalog(
   signal: AbortSignal
 ): Promise<DataProvenanceCatalog> {
   const sources = await readSources(signal);
   const [measures, indicators] = await Promise.all([
-    readMeasures(signal).then(
-      (result) => ({ ...result, failed: false as const }),
-      () => ({ failed: true as const, incomplete: false, items: [] })
-    ),
-    readIndicators(signal).then(
-      (result) => ({ ...result, failed: false as const }),
-      () => ({ failed: true as const, incomplete: false, items: [] })
-    ),
+    readCollection(readMeasures(signal)),
+    readCollection(readIndicators(signal)),
   ]);
   return buildDataProvenanceCatalog({
-    domainMetadataUnavailable: measures.failed || indicators.failed,
-    incomplete:
-      sources.incomplete || measures.incomplete || indicators.incomplete,
     indicators: indicators.items,
+    indicatorsRead: indicators.read,
     measures: measures.items,
+    measuresRead: measures.read,
     sources: sources.items,
+    sourcesIncomplete: sources.incomplete,
   });
 }

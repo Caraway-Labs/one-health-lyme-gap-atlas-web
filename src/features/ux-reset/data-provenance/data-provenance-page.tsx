@@ -12,6 +12,7 @@ import {
 
 import {
   sourceIdFromProvenanceHash,
+  type CollectionRead,
   type DataProvenanceCatalog,
   type ProvenanceFamilyGroup,
   type ProvenanceSourceCard,
@@ -74,14 +75,80 @@ function TextField({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-function domainText(card: ProvenanceSourceCard): string {
-  if (card.domains.length === 0) {
-    return NOT_PROVIDED;
+function domainText(
+  card: ProvenanceSourceCard,
+  indicatorsRead: CollectionRead,
+  measuresRead: CollectionRead
+): string {
+  if (card.domains.length > 0) {
+    return card.domains.join(", ");
   }
-  return card.domains.join(", ");
+  if (measuresRead !== "complete" || indicatorsRead !== "complete") {
+    return "Unavailable";
+  }
+  return NOT_PROVIDED;
 }
 
-function SourceCardDetails({ card }: { card: ProvenanceSourceCard }) {
+function measureAbsenceCopy(measuresRead: CollectionRead): string {
+  switch (measuresRead) {
+    case "unavailable": {
+      return "Related measure metadata could not be loaded.";
+    }
+    case "incomplete": {
+      return "Related measure metadata is incomplete, so this source's measures may be missing.";
+    }
+    case "complete": {
+      return "No governed measure in this release lists this source.";
+    }
+    default: {
+      const unreachable: never = measuresRead;
+      return unreachable;
+    }
+  }
+}
+
+function otherSourcesCopy(catalog: DataProvenanceCatalog): string {
+  switch (catalog.measuresRead) {
+    case "unavailable": {
+      return "Related measure metadata could not be loaded, so evidence domains are not assigned. These sources are still in the current release.";
+    }
+    case "incomplete": {
+      return "Related measure metadata is incomplete, so a missing evidence domain is not proof that this source has none.";
+    }
+    case "complete": {
+      break;
+    }
+    default: {
+      const unreachable: never = catalog.measuresRead;
+      return unreachable;
+    }
+  }
+  switch (catalog.indicatorsRead) {
+    case "unavailable": {
+      return "Indicator metadata could not be loaded, so evidence domains are not assigned. These sources are still in the current release.";
+    }
+    case "incomplete": {
+      return "Indicator metadata is incomplete, so a missing evidence domain is not proof that this source has none.";
+    }
+    case "complete": {
+      return "These sources are in the current release. No governed indicator domain places them in human surveillance, ticks and pathogens, environment, or population context.";
+    }
+    default: {
+      const unreachable: never = catalog.indicatorsRead;
+      return unreachable;
+    }
+  }
+}
+
+function SourceCardDetails({
+  card,
+  indicatorsRead,
+  measuresRead,
+}: {
+  card: ProvenanceSourceCard;
+  indicatorsRead: CollectionRead;
+  measuresRead: CollectionRead;
+}) {
   return (
     <details
       className="ux-reset-provenance-source"
@@ -104,7 +171,9 @@ function SourceCardDetails({ card }: { card: ProvenanceSourceCard }) {
         <span className="type-small">
           Publisher: {card.publisher ?? NOT_PROVIDED}
         </span>
-        <span className="type-small">Evidence domain: {domainText(card)}</span>
+        <span className="type-small">
+          Evidence domain: {domainText(card, indicatorsRead, measuresRead)}
+        </span>
         <span className="type-small">Source type: {NOT_PROVIDED}</span>
         <span className="type-small">Description: {NOT_PROVIDED}</span>
       </summary>
@@ -215,7 +284,7 @@ function SourceCardDetails({ card }: { card: ProvenanceSourceCard }) {
               </dl>
             ))
           ) : (
-            <p>No governed measure in this release lists this source.</p>
+            <p>{measureAbsenceCopy(measuresRead)}</p>
           )}
         </div>
       </div>
@@ -223,7 +292,15 @@ function SourceCardDetails({ card }: { card: ProvenanceSourceCard }) {
   );
 }
 
-function FamilyList({ family }: { family: ProvenanceFamilyGroup }) {
+function FamilyList({
+  family,
+  indicatorsRead,
+  measuresRead,
+}: {
+  family: ProvenanceFamilyGroup;
+  indicatorsRead: CollectionRead;
+  measuresRead: CollectionRead;
+}) {
   return (
     <section aria-labelledby={`provenance-family-${family.id}`}>
       <h3 className="type-card" id={`provenance-family-${family.id}`}>
@@ -233,7 +310,11 @@ function FamilyList({ family }: { family: ProvenanceFamilyGroup }) {
         {family.entries.map((entry) => (
           <li key={`${family.id}-${entry.card.sourceId}`}>
             {entry.kind === "card" ? (
-              <SourceCardDetails card={entry.card} />
+              <SourceCardDetails
+                card={entry.card}
+                indicatorsRead={indicatorsRead}
+                measuresRead={measuresRead}
+              />
             ) : (
               <p>
                 <a href={`#${entry.card.anchorId}`}>{entry.card.label}</a> is
@@ -245,6 +326,34 @@ function FamilyList({ family }: { family: ProvenanceFamilyGroup }) {
         ))}
       </ul>
     </section>
+  );
+}
+
+function MetadataStatus({ catalog }: { catalog: DataProvenanceCatalog }) {
+  return (
+    <>
+      {catalog.measuresRead === "unavailable" ? (
+        <p>Related measure metadata could not be loaded.</p>
+      ) : null}
+      {catalog.measuresRead === "incomplete" ? (
+        <p>
+          Related measure metadata is incomplete, so some source relationships
+          may be missing.
+        </p>
+      ) : null}
+      {catalog.indicatorsRead === "unavailable" ? (
+        <p>
+          Indicator metadata could not be loaded, so evidence domains are not
+          assigned.
+        </p>
+      ) : null}
+      {catalog.indicatorsRead === "incomplete" ? (
+        <p>
+          Indicator metadata is incomplete, so some evidence domains may be
+          missing.
+        </p>
+      ) : null}
+    </>
   );
 }
 
@@ -280,40 +389,39 @@ function CatalogRegion({
           The list below is the general provenance page.
         </p>
       ) : null}
-      {catalog.incomplete ? (
+      {catalog.sourcesIncomplete ? (
         <p>
-          The catalog stopped after the page limit. It is not a complete
+          The source list stopped after the page limit. It is not a complete
           inventory of the release.
         </p>
       ) : null}
-      {catalog.domainMetadataUnavailable ? (
-        <p>
-          Measure or indicator metadata could not be loaded, so evidence domains
-          are not assigned. The sources below are still the current release
-          list.
-        </p>
-      ) : null}
+      <MetadataStatus catalog={catalog} />
       {catalog.sources.length === 0 ? (
         <p>The current release returned no sources.</p>
       ) : (
         <>
           {catalog.families.map((family) => (
-            <FamilyList family={family} key={family.id} />
+            <FamilyList
+              family={family}
+              indicatorsRead={catalog.indicatorsRead}
+              key={family.id}
+              measuresRead={catalog.measuresRead}
+            />
           ))}
           {catalog.other.length > 0 ? (
             <section aria-labelledby="provenance-family-other">
               <h3 className="type-card" id="provenance-family-other">
                 Other released sources
               </h3>
-              <p className="type-body">
-                These sources are in the current release. No governed indicator
-                domain places them in human surveillance, ticks and pathogens,
-                environment, or population context.
-              </p>
+              <p className="type-body">{otherSourcesCopy(catalog)}</p>
               <ul className="ux-reset-provenance-sources">
                 {catalog.other.map((card) => (
                   <li key={card.sourceId}>
-                    <SourceCardDetails card={card} />
+                    <SourceCardDetails
+                      card={card}
+                      indicatorsRead={catalog.indicatorsRead}
+                      measuresRead={catalog.measuresRead}
+                    />
                   </li>
                 ))}
               </ul>

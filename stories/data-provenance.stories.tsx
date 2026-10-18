@@ -47,8 +47,6 @@ function measure(id: string, indicatorId: string, sourceId: string): Measure {
 }
 
 const releasedCatalog = buildDataProvenanceCatalog({
-  domainMetadataUnavailable: false,
-  incomplete: false,
   indicators: [
     indicator("human_disease_burden", "human"),
     indicator("tick_surveillance", "vector"),
@@ -61,6 +59,9 @@ const releasedCatalog = buildDataProvenanceCatalog({
     source("cdc-lyme", "CDC Lyme surveillance"),
     source("cdc-ticks", "Tick establishment records"),
   ],
+  indicatorsRead: "complete",
+  measuresRead: "complete",
+  sourcesIncomplete: false,
 });
 
 const queryClient = new QueryClient({
