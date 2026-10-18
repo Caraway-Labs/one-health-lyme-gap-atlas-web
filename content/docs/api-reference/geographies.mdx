@@ -252,7 +252,7 @@ Synthetic error example
 
 #### 503
 
-Canonical data service unavailable; application/problem+json
+Canonical data delivery is not yet available.
 
 ##### Headers
 
@@ -293,9 +293,10 @@ Synthetic error example
   "type": "https://carawaylabs.com/problems/http-503",
   "title": "Request failed",
   "status": 503,
-  "detail": "Canonical data service unavailable; application/problem+json",
+  "detail": "Canonical data delivery is not yet available.",
   "instance": "/v1/observations",
-  "request_id": "example-request-id"
+  "request_id": "example-request-id",
+  "code": "CANONICAL_DATA_UNAVAILABLE"
 }
 ```
 

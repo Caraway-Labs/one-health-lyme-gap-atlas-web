@@ -72,6 +72,7 @@ describe("developer documentation guides", () => {
       "SUPPRESSED",
       "UNAVAILABLE",
       "NO_COUNTY_LINKED_RECORD",
+      "NO_RECORDS",
       "413",
       "414",
       "surveillance_context",
@@ -109,7 +110,6 @@ describe("developer documentation guides", () => {
       developText.includes("60 requests") ? "60 requests" : undefined,
       developText.match(/Bearer |API token|install the SDK/i)?.[0],
       developText.includes("npm install") ? "npm install" : undefined,
-      developText.includes("NO_RECORDS") ? "NO_RECORDS" : undefined,
       developText.includes("contracts/openapi.json")
         ? "contracts/openapi.json"
         : undefined,

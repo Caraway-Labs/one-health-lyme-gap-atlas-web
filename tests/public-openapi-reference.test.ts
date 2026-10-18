@@ -19,6 +19,7 @@ import {
   PublicOpenApiContractError,
   PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH,
   PUBLIC_OPENAPI_RELATIVE_PATH,
+  compareAuthoritativeOpenApiChecksum,
   loadPublicOpenApiContract,
   readAndLoadPublicOpenApiContract,
   renderPublicApiReference,
@@ -125,7 +126,7 @@ describe("public OpenAPI reference", () => {
       )
       .map((section) => `${section.name} ${section.status}`);
 
-    expect(sections).toHaveLength(36);
+    expect(sections).toHaveLength(38);
     expect(incomplete).toStrictEqual([]);
   });
 
@@ -1881,4 +1882,112 @@ function minimalDocument(): Record<string, unknown> {
     ],
     tags: [{ description: "Discovery.", name: "discovery" }],
   };
+}
+
+describe("public OpenAPI drift", () => {
+  it("reports a checksum mismatch without rewriting the pin", () => {
+    const pinnedSha256 = "a".repeat(64);
+    const message = failureText(() => {
+      compareAuthoritativeOpenApiChecksum(
+        pinnedSha256,
+        Buffer.from("different-document")
+      );
+    });
+
+    expect(message.startsWith("stale_contract:")).toBeTruthy();
+    expect(message).toContain(pinnedSha256);
+    expect(message).toContain(
+      "This check does not rewrite accepted artifacts."
+    );
+    expect(
+      existsSync(path.join(process.cwd(), PUBLIC_OPENAPI_RELATIVE_PATH))
+    ).toBeTruthy();
+  });
+
+  it("accepts bytes whose checksum matches the pin", () => {
+    const bytes = Buffer.from("accepted-document");
+    const pinnedSha256 = createHash("sha256").update(bytes).digest("hex");
+
+    expect(() => {
+      compareAuthoritativeOpenApiChecksum(pinnedSha256, bytes);
+    }).not.toThrow();
+  });
+
+  it("pins the CDC cumulative filter beside an optional year", () => {
+    const contract = readAndLoadPublicOpenApiContract(process.cwd());
+    const observations = contract.tags
+      .flatMap((tag) => tag.operations)
+      .find(
+        (operation) =>
+          operation.operationId === "observations_v1_observations_get"
+      );
+    const year = observations?.parameters.find(
+      (parameter) => parameter.name === "year"
+    );
+    const vintageYear = observations?.parameters.find(
+      (parameter) => parameter.name === "vintage_year"
+    );
+    const description = observations?.description ?? "";
+
+    expect({
+      burgdorferi: description.includes("burgdorferi_status"),
+      cumulative: description.includes("CUMULATIVE"),
+      cumulativeDate: year?.description.includes(
+        "CDC cumulative status rejects year; use start_date=end_date=2025-12-31."
+      ),
+      scapularis: description.includes("scapularis_status"),
+      vintageYear: vintageYear?.name,
+      yearRequired: year?.required,
+    }).toStrictEqual({
+      burgdorferi: true,
+      cumulative: true,
+      cumulativeDate: true,
+      scapularis: true,
+      vintageYear: "vintage_year",
+      yearRequired: false,
+    });
+  });
+
+  it("keeps DAY admissible and records the accepted retrieval", () => {
+    const contract = readAndLoadPublicOpenApiContract(process.cwd());
+    const temporalGrain = contract.schemas.Observation;
+    const grain = isRecord(temporalGrain)
+      ? record(
+          isRecord(temporalGrain.properties)
+            ? temporalGrain.properties
+            : undefined,
+          "temporal_grain"
+        )
+      : undefined;
+
+    expect({
+      grainEnum: grain?.enum,
+      grainType: grain?.type,
+      noRecords: JSON.stringify(contract.schemas.ValueState).includes(
+        "NO_RECORDS"
+      ),
+      sha256: contract.provenance.sha256,
+      sourceCommit: contract.provenance.sourceCommit,
+    }).toStrictEqual({
+      grainEnum: undefined,
+      grainType: "string",
+      noRecords: true,
+      sha256:
+        "112cb300663f4e8dfd82f48106dd312243c4c2fdeb1aa52b9921d81e276f131b",
+      sourceCommit: "9fcd1ed86fd02e8a84abc5c7c59047263bf98519",
+    });
+  });
+});
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function record(
+  value: Record<string, unknown> | undefined,
+  key: string
+): Record<string, unknown> | undefined {
+  if (!value) return undefined;
+  const child = value[key];
+  return isRecord(child) ? child : undefined;
 }

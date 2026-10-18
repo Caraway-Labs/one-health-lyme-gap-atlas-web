@@ -1,5 +1,11 @@
+import { readFileSync } from "node:fs";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+
+const publicOpenApiManifest = JSON.parse(
+  readFileSync("contracts/public-openapi.manifest.json", "utf8")
+) as { sourceCommit: string };
 
 const docsPages = [
   { path: "/docs", heading: "Start with Atlas Lyme" },
@@ -144,7 +150,7 @@ test("renders the generated observations reference with version, source, and raw
     page.getByText("Application version", { exact: true })
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "25cd3ec90a9b330c620f02ca012576fd98b3f4ab" })
+    page.getByRole("cell", { name: publicOpenApiManifest.sourceCommit })
   ).toBeVisible();
   const rawSpec = page.getByRole("link", { name: "OpenAPI schema" });
   await expect(rawSpec).toHaveAttribute(
