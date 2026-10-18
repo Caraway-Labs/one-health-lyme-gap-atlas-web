@@ -1358,6 +1358,10 @@
   letter-spacing: 0;
 }
 
+.ux-reset-pro-main .ux-reset-explorer-page h1 {
+  font-size: 1.25rem;
+}
+
 .ux-reset-explorer-page,
 .ux-reset-compare,
 .ux-reset-ask-atlas-workspace {
@@ -1370,20 +1374,24 @@
   gap: 0.65rem;
 }
 
-.ux-reset-explorer-page > .ux-reset-explorer-toolbar {
-  order: 0;
-}
-
-.ux-reset-explorer-page > .ux-reset-explorer-browse-slot {
-  order: 1;
-}
-
 .ux-reset-explorer-page > .ux-reset-page-introduction {
+  gap: 0.15rem;
+}
+
+.ux-reset-explorer-page > :not(.ux-reset-page-introduction) {
   order: 2;
 }
 
-.ux-reset-explorer-page > .ux-reset-explorer-release {
+.ux-reset-explorer-page > .ux-reset-explorer-toolbar {
+  order: 1;
+}
+
+.ux-reset-explorer-page > .ux-reset-explorer-browse-slot {
   order: 3;
+}
+
+.ux-reset-explorer-page > .ux-reset-explorer-release {
+  order: 4;
 }
 
 .ux-reset-explorer-heading,
@@ -1461,6 +1469,29 @@
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.3;
+}
+
+.ux-reset-explorer-page
+  > .ux-reset-page-introduction
+  .ux-reset-page-introduction-heading
+  p,
+.ux-reset-explorer-page
+  > .ux-reset-page-introduction
+  .ux-reset-page-introduction-guidance {
+  max-width: none;
+}
+
+.ux-reset-page-introduction-guidance {
+  max-width: 52rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.ux-reset-page-introduction-guidance strong {
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 .ux-reset-compare > .ux-reset-compare-header {

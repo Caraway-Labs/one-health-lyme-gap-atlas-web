@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
+import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 import {
   countyPassesAvailableData,
   countyReferenceMatchesQuery,
@@ -463,7 +464,7 @@ export function ReviewNationalPicture({
       <Card className="ux-reset-explorer-map ux-reset-review-operating-map map-card gap-0 py-0">
         <div className="ux-reset-explorer-map-heading">
           <div>
-            <h2>{mapPaint.title}</h2>
+            <h2>{EXPLORER_MAP_SECTION_HEADING}</h2>
             <p>
               {period ? `Period ${period}` : "Source periods vary by evidence"}
               {` · Release ${releaseId}`}

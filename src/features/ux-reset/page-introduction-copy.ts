@@ -1,5 +1,7 @@
 /**
- * Product-owner copy for Atlas Explorer and Compare, approved October 12, 2026.
+ * Product-owner copy for Atlas Explorer and Compare.
+ * Explorer welcome copy was approved October 17, 2026.
+ * Compare copy remains the October 12 introduction.
  * Ask Atlas, Feed, Settings, and Docs do not use a page introduction.
  */
 export const PAGE_INTRODUCTION_COPY = {
@@ -12,13 +14,15 @@ export const PAGE_INTRODUCTION_COPY = {
       "Compare surveillance evidence across counties to uncover meaningful differences, shared patterns, and gaps in what we know.",
   },
   explorer: {
-    headline: "Explore the evidence behind every county.",
-    stripBody:
-      "Atlas brings human, tick, and environmental evidence into one view to support public health surveillance—not to predict personal disease risk.",
-    stripHeading: "From data to better decisions",
+    guidance:
+      "Choose a state, search for a county, or select one on the map to explore the evidence, identify gaps, and see suggested follow-up.",
+    guidanceLead: "Get started:",
+    headline: "Explore the One Health Atlas",
     supporting:
-      "Discover geographic patterns, investigate available surveillance data, and understand where the evidence is strong, limited, or missing.",
+      "Discover patterns in reported Lyme disease, tick and pathogen surveillance, and community context across U.S. counties.",
   },
 } as const;
+
+export const EXPLORER_MAP_SECTION_HEADING = "Explore county patterns";
 
 export type PageIntroductionId = keyof typeof PAGE_INTRODUCTION_COPY;
