@@ -1737,7 +1737,7 @@
 }
 
 .ux-reset-explorer-list .ux-reset-review-candidate strong {
-  grid-column: 1;
+  grid-column: 1 / -1;
   grid-row: 1;
   color: var(--navy);
   font-size: 0.95rem;
@@ -1758,14 +1758,18 @@
 }
 
 .ux-reset-explorer-list .ux-reset-ml-priority.priority-pill {
-  grid-column: 2;
-  grid-row: 1;
+  /* The 18% column cannot share a row with a nowrap badge.
+     A squeezed name wraps one letter per line and the row no longer fits the list. */
+  grid-column: 1 / -1;
+  grid-row: auto;
   align-self: center;
-  justify-self: end;
+  justify-self: start;
+  max-width: 100%;
   margin-bottom: 0;
   font-size: var(--type-small-size);
   font-weight: 700;
   line-height: 1.2;
+  white-space: normal;
 }
 
 .ux-reset-ml-priority.priority-pill[data-tier="unavailable"],
@@ -2164,10 +2168,9 @@
 @media (min-width: 1200px) {
   .ux-reset-explorer-browse {
     align-items: stretch;
-    grid-template-columns: minmax(13rem, 14rem) minmax(0, 1fr) minmax(
-        15.5rem,
-        17rem
-      );
+    /* Desktop workspace: county nav 18%, map 52%, selected county 30%.
+       minmax(0, …fr) keeps long copy from stretching a column. */
+    grid-template-columns: minmax(0, 18fr) minmax(0, 52fr) minmax(0, 30fr);
     height: auto;
     min-height: 0;
   }
@@ -2196,6 +2199,15 @@
     flex: 1 1 0;
     min-height: 0;
     overflow: auto;
+  }
+
+  /* At 18% the published-category sentence wraps taller than the list.
+     Keep the full sentence in the button name and show two lines. */
+  .ux-reset-explorer-list .ux-reset-review-candidate small {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .ux-reset-explorer-preview {

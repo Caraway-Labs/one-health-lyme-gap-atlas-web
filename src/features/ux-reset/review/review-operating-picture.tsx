@@ -69,6 +69,7 @@ import {
   buildReviewCandidatePreview,
   reviewCandidateExplanation,
 } from "@/features/ux-reset/review/review-candidate-preview";
+import { alignCandidateRow } from "@/features/ux-reset/review/review-candidate-row-scroll";
 import {
   buildReviewCompareHandoff,
   buildReviewInvestigateHandoff,
@@ -689,12 +690,7 @@ export function ReviewOperatingPicture({
         if (!(list instanceof HTMLElement) || !row.isConnected) {
           return;
         }
-        const rowBox = row.getBoundingClientRect();
-        const listBox = list.getBoundingClientRect();
-        list.scrollTop = Math.max(
-          0,
-          rowBox.top - listBox.top + list.scrollTop - 8
-        );
+        alignCandidateRow(list, row);
       };
       alignRow();
       row.focus({ preventScroll: true });
@@ -710,12 +706,7 @@ export function ReviewOperatingPicture({
         ) {
           return;
         }
-        const rowBox = current.getBoundingClientRect();
-        const listBox = currentList.getBoundingClientRect();
-        currentList.scrollTop = Math.max(
-          0,
-          rowBox.top - listBox.top + currentList.scrollTop - 8
-        );
+        alignCandidateRow(currentList, current);
       });
     } else {
       focusPublishedSelect();
@@ -798,16 +789,7 @@ export function ReviewOperatingPicture({
       ) {
         return;
       }
-      const rowBox = row.getBoundingClientRect();
-      const listBox = list.getBoundingClientRect();
-      const inside =
-        rowBox.height > 0 &&
-        rowBox.top >= listBox.top - 1 &&
-        rowBox.bottom <= listBox.bottom + 1;
-      if (inside) {
-        return;
-      }
-      list.scrollTop += rowBox.top - listBox.top - 8;
+      alignCandidateRow(list, row);
     };
     alignSelectedRow();
     const frame = requestAnimationFrame(alignSelectedRow);
