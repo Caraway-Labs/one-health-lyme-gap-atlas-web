@@ -24,6 +24,7 @@ export type ExplorerCountyMode = (typeof EXPLORER_COUNTY_MODES)[number];
 
 export const EXPLORER_SECTION_IDS = {
   context: "explorer-context",
+  environmental: "explorer-environmental-context",
   evidence: "explorer-evidence",
   followUp: "explorer-follow-up",
   sources: "explorer-sources",

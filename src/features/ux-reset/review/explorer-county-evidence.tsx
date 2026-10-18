@@ -24,6 +24,7 @@ import {
   useInvestigateWorkspace,
   type InvestigateRecovery,
 } from "@/features/ux-reset/investigate/use-investigate-workspace";
+import { EnvironmentalContextSection } from "@/features/ux-reset/review/environmental-context-section";
 import type { ExplorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
 import {
   EXPLORER_FOLLOW_UP_MODE,
@@ -45,6 +46,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   ["Summary", EXPLORER_SECTION_IDS.summary],
   ["Evidence", EXPLORER_SECTION_IDS.evidence],
+  ["Environmental context", EXPLORER_SECTION_IDS.environmental],
   ["Context & gaps", EXPLORER_SECTION_IDS.context],
   ["Suggested follow-up", EXPLORER_SECTION_IDS.followUp],
   ["Sources", EXPLORER_SECTION_IDS.sources],
@@ -514,6 +516,12 @@ export function ExplorerCountyEvidence({
           />
         ) : null}
       </section>
+
+      <EnvironmentalContextSection
+        fips={workspace.requestedFips}
+        releaseId={workspace.releaseId}
+        releaseLoading={workspace.metadataLoading}
+      />
 
       {hierarchy ? null : (
         <section
