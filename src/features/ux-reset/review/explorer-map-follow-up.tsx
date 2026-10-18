@@ -15,11 +15,13 @@ export function ExplorerMapFollowUp({
   governedNextCheck = null,
   releaseId,
   reviewResultState = null,
+  whatIfActive = false,
 }: {
   fips: string | null;
   governedNextCheck?: string | null;
   releaseId: string | null;
   reviewResultState?: GovernedReviewResultState | null;
+  whatIfActive?: boolean;
 }) {
   const countyFips = fips?.trim() ?? "";
   const query = useQuery({
@@ -84,6 +86,7 @@ export function ExplorerMapFollowUp({
             reviewResultState,
           }}
           showEyebrow={false}
+          whatIfActive={whatIfActive}
         />
       ) : null}
     </Card>

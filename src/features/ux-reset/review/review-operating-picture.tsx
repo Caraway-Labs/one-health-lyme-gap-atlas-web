@@ -1010,6 +1010,7 @@ export function ReviewOperatingPicture({
           governedNextCheck={preview?.followUp ?? null}
           releaseId={releaseId}
           reviewResultState={authoritativeResultState}
+          whatIfActive={scenarioByFips !== null && mapLayer === "gap_score"}
         />
 
         <div className="ux-reset-explorer-list">
