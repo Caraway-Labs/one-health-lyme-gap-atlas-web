@@ -166,9 +166,8 @@ describe("Tier 1 availability guide", () => {
       unpublished: guide.includes(
         "There is no retrieved `NO_PUBLISHED_MODEL` payload"
       ),
-      nationalSweep: guide.includes("national API sweep"),
-      productScope: guide.includes(
-        "Keep county calls inside the lower 48 states and the District of Columbia."
+      nationalInventory: guide.includes(
+        "This was a national API inventory, not the lower-48-and-DC scope used by these guides. Retain that geography scope when selecting counties; `AVAILABLE` reports a persisted result, not product-scope eligibility."
       ),
       geographyGuide: guide.includes("](/docs/develop/geography)"),
       outsideProductGeography: /Alaska|Hawaii|\b(?:AK|HI)\b/u.test(guide),
@@ -183,8 +182,7 @@ describe("Tier 1 availability guide", () => {
       nullData: true,
       predictedIncidence: 1,
       unpublished: true,
-      nationalSweep: true,
-      productScope: true,
+      nationalInventory: true,
       geographyGuide: true,
       outsideProductGeography: false,
     });
