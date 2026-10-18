@@ -1,0 +1,276 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  RESET_ACCESS_NAV,
+  RESET_WORKSPACE_NAV,
+  pageMetadataForResetRoute,
+} from "@/features/ux-reset/paths";
+import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
+import {
+  ATLAS_EXPLORER_PATH,
+  DOCS_PATH,
+  LEGACY_ASSISTANT_PATH,
+  LEGACY_COMPARE_PATH,
+  RESET_ACTION_PATH,
+  RESET_AI_RESPONSIBLE_USE_PATH,
+  RESET_EXPLORE_PATH,
+  RESET_FEED_PATH,
+  RESET_INVESTIGATE_PATH,
+  RESET_REVIEW_PATH,
+  RESET_SETTINGS_PATH,
+  UX_RESET_APP_PREFIX,
+} from "@/features/ux-reset/routes";
+import {
+  WORKSPACE_HEADER_FALLBACK,
+  WORKSPACE_HEADER_TITLES,
+  workspaceHeaderTitle,
+} from "@/features/ux-reset/workspace-header-title";
+import { findRouteMetadata } from "@/lib/navigation";
+
+let pathname: string = ATLAS_EXPLORER_PATH;
+const searchParams = new URLSearchParams();
+
+function stubDesktopMatchMedia() {
+  vi.stubGlobal(
+    "matchMedia",
+    (query: string): MediaQueryList =>
+      ({
+        addEventListener: () => {},
+        dispatchEvent: () => true,
+        matches: false,
+        media: query,
+        onchange: null,
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList
+  );
+}
+
+vi.mock(import("next/navigation"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  usePathname: () => pathname,
+  useSearchParams: () => searchParams as ReadonlyURLSearchParams,
+}));
+
+function headerLabel(): string {
+  return document.querySelector(".app-header-label")?.textContent ?? "";
+}
+
+function titlesFor(paths: readonly string[]): Record<string, string> {
+  return Object.fromEntries(
+    paths.map((path) => [path, workspaceHeaderTitle(path)])
+  );
+}
+
+describe("workspace header title resolution", () => {
+  it("uses the approved header text for the six destinations", () => {
+    expect(WORKSPACE_HEADER_TITLES).toStrictEqual({
+      "ask-atlas": "Ask Atlas",
+      compare: "Compare Counties",
+      docs: "Documentation",
+      explorer: "Atlas Explorer",
+      feed: "Intelligence Feed",
+      settings: "Settings",
+    });
+    expect(Object.values(WORKSPACE_HEADER_TITLES)).not.toContain(
+      "Professional workspace"
+    );
+    expect(WORKSPACE_HEADER_FALLBACK).not.toBe("Professional workspace");
+  });
+
+  it("keeps sidebar labels and document titles independent of the header", () => {
+    expect({
+      access: RESET_ACCESS_NAV.map((route) => route.label),
+      compareTitle: pageMetadataForResetRoute("compare").title,
+      feedTitle: pageMetadataForResetRoute("feed").title,
+      navigationLabel: findRouteMetadata("/app")?.label,
+      overviewTitle: pageMetadataForResetRoute("overview").title,
+      workspace: RESET_WORKSPACE_NAV.map((route) => route.label),
+    }).toStrictEqual({
+      access: ["Feed", "Settings", "Docs"],
+      compareTitle: "Compare | One Health Lyme Gap Atlas",
+      feedTitle: "Feed | One Health Lyme Gap Atlas",
+      navigationLabel: "Professional workspace",
+      overviewTitle: "Professional workspace | One Health Lyme Gap Atlas",
+      workspace: ["Atlas Explorer", "Compare", "Ask Atlas"],
+    });
+  });
+
+  it("resolves canonical routes, nested routes, queries, and trailing slashes", () => {
+    expect(
+      titlesFor([
+        "/explore",
+        "/explore/",
+        "/explore/counties?scope=CO",
+        "/compare",
+        "/compare?compare=08001,08013",
+        "/compare/pair",
+        "/askatlas",
+        "/askatlas/thread",
+        "/app/feed",
+        "/app/feed/item",
+        `${RESET_SETTINGS_PATH}#account`,
+        DOCS_PATH,
+        `${DOCS_PATH}/professional-workspace`,
+      ])
+    ).toStrictEqual({
+      "/app/feed": "Intelligence Feed",
+      "/app/feed/item": "Intelligence Feed",
+      "/app/settings#account": "Settings",
+      "/askatlas": "Ask Atlas",
+      "/askatlas/thread": "Ask Atlas",
+      "/compare": "Compare Counties",
+      "/compare/pair": "Compare Counties",
+      "/compare?compare=08001,08013": "Compare Counties",
+      "/docs": "Documentation",
+      "/docs/professional-workspace": "Documentation",
+      "/explore": "Atlas Explorer",
+      "/explore/": "Atlas Explorer",
+      "/explore/counties?scope=CO": "Atlas Explorer",
+    });
+  });
+
+  it("resolves recorded aliases to the destination title", () => {
+    expect(
+      titlesFor([
+        UX_RESET_APP_PREFIX,
+        RESET_EXPLORE_PATH,
+        `${RESET_EXPLORE_PATH}/nested`,
+        RESET_INVESTIGATE_PATH,
+        RESET_ACTION_PATH,
+        RESET_REVIEW_PATH,
+        `${RESET_REVIEW_PATH}/saved`,
+        LEGACY_COMPARE_PATH,
+        `${LEGACY_COMPARE_PATH}/extra`,
+        LEGACY_ASSISTANT_PATH,
+        `${LEGACY_ASSISTANT_PATH}/thread`,
+        "/overview?state=CO",
+        "/geographic_explorer",
+        "/investigate",
+      ])
+    ).toStrictEqual({
+      "/app": "Atlas Explorer",
+      "/app/action": "Atlas Explorer",
+      "/app/assistant": "Ask Atlas",
+      "/app/assistant/thread": "Ask Atlas",
+      "/app/compare": "Compare Counties",
+      "/app/compare/extra": "Compare Counties",
+      "/app/explore": "Atlas Explorer",
+      "/app/explore/nested": "Atlas Explorer",
+      "/app/investigate": "Atlas Explorer",
+      "/app/review": "Atlas Explorer",
+      "/app/review/saved": "Atlas Explorer",
+      "/geographic_explorer": "Atlas Explorer",
+      "/investigate": "Atlas Explorer",
+      "/overview?state=CO": "Atlas Explorer",
+    });
+  });
+
+  it("uses a fallback for routes outside the six destinations", () => {
+    expect(
+      titlesFor([
+        RESET_AI_RESPONSIBLE_USE_PATH,
+        `${RESET_AI_RESPONSIBLE_USE_PATH}/detail`,
+        "/",
+        "/privacy",
+        "/variant_1",
+        "/unknown",
+      ])
+    ).toStrictEqual({
+      "/": WORKSPACE_HEADER_FALLBACK,
+      "/app/ai-responsible-use": WORKSPACE_HEADER_FALLBACK,
+      "/app/ai-responsible-use/detail": WORKSPACE_HEADER_FALLBACK,
+      "/privacy": WORKSPACE_HEADER_FALLBACK,
+      "/unknown": WORKSPACE_HEADER_FALLBACK,
+      "/variant_1": WORKSPACE_HEADER_FALLBACK,
+    });
+  });
+});
+
+describe("workspace header in the professional shell", () => {
+  beforeEach(() => {
+    stubDesktopMatchMedia();
+  });
+
+  afterEach(() => {
+    cleanup();
+    pathname = ATLAS_EXPLORER_PATH;
+    vi.unstubAllGlobals();
+  });
+
+  it("renders the route title and leaves the navigation landmark name unchanged", () => {
+    pathname = "/compare";
+    render(
+      <ResetProfessionalShell>
+        <h1>Two counties. A clearer picture.</h1>
+      </ResetProfessionalShell>
+    );
+
+    expect({
+      header: headerLabel(),
+      heading: screen.getByRole("heading", {
+        name: "Two counties. A clearer picture.",
+      }).textContent,
+      navigation: screen
+        .getByRole("navigation", {
+          name: "Professional workspace",
+        })
+        .getAttribute("aria-label"),
+      shell: document
+        .querySelector("#ux-reset-pro-navigation")
+        ?.getAttribute("aria-label"),
+      staticLabel: screen.queryByText("Professional workspace"),
+    }).toStrictEqual({
+      header: "Compare Counties",
+      heading: "Two counties. A clearer picture.",
+      navigation: "Professional workspace",
+      shell: "Professional workspace",
+      staticLabel: null,
+    });
+  });
+
+  it("updates the visible title when the pathname changes", () => {
+    pathname = "/explore";
+    const view = render(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+    const titles = [headerLabel()];
+
+    pathname = "/askatlas";
+    view.rerender(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+    titles.push(headerLabel());
+
+    pathname = RESET_FEED_PATH;
+    view.rerender(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+    titles.push(headerLabel());
+
+    pathname = RESET_AI_RESPONSIBLE_USE_PATH;
+    view.rerender(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+    titles.push(headerLabel());
+
+    expect(titles).toStrictEqual([
+      "Atlas Explorer",
+      "Ask Atlas",
+      "Intelligence Feed",
+      WORKSPACE_HEADER_FALLBACK,
+    ]);
+    expect(
+      screen.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeTruthy();
+  });
+});

@@ -58,6 +58,7 @@ import { insetShouldScrollWithRoute } from "@/features/ux-reset/professional-she
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { useMobileViewport } from "@/features/ux-reset/use-mobile-viewport";
 import { WorkspaceAccountMenu } from "@/features/ux-reset/workspace-account-menu";
+import { workspaceHeaderTitle } from "@/features/ux-reset/workspace-header-title";
 import {
   subscribeWorkspaceRestore,
   workspaceRestoreConcealed,
@@ -519,7 +520,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           >
             <Menu />
           </SidebarTrigger>
-          <span className="app-header-label">Professional workspace</span>
+          <span className="app-header-label">
+            {workspaceHeaderTitle(pathname)}
+          </span>
           {askAtlas.launcher}
         </header>
         <div className="ux-reset-workspace-body">
