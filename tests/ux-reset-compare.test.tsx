@@ -45,6 +45,7 @@ let catalogRetryAfter: string | null = null;
 let blankContextSourceNote = false;
 let extraCatalogMeasures: typeof compareMeasuresFixture = [];
 const countyRecordRequests: string[] = [];
+const countyPriorityOverrides = new Map<string, string>();
 let countyRateLimitRemaining = 0;
 let countyRetryAfterSeconds: number | null = null;
 let navigationSearchParams = new URLSearchParams();
@@ -81,6 +82,10 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         } as never;
       }
       const detail = compareCountyDetail(fips);
+      const priorityOverride = countyPriorityOverrides.get(fips);
+      if (priorityOverride) {
+        detail.priority = priorityOverride;
+      }
       if (blankContextSourceNote) {
         detail.release = {
           ...detail.release,
@@ -287,6 +292,7 @@ describe("two-county aligned comparison", () => {
     extraCatalogMeasures = [];
     clearCompareCatalogRetryDeadlines();
     clearCompareProfileRetryDeadlines();
+    countyPriorityOverrides.clear();
     countyRateLimitRemaining = 0;
     countyRecordRequests.length = 0;
     countyRetryAfterSeconds = null;
@@ -325,6 +331,72 @@ describe("two-county aligned comparison", () => {
       "second county"
     );
     expect(observationRequests).toStrictEqual([]);
+  });
+
+  it("describes withheld counts as not comparable, including failed requests", async () => {
+    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const summary = await screen.findByTestId("compare-summary");
+    await waitFor(() => {
+      if (
+        !(summary.textContent ?? "").includes(
+          "Withheld counts are not comparable"
+        )
+      ) {
+        throw new Error("Waiting for the withheld overview.");
+      }
+    });
+    const text = summary.textContent ?? "";
+    expect({
+      failedAsMatched: text.includes("not treated as matched"),
+      fieldMatchLimitedToShared:
+        text.includes("Shared and differing counts") &&
+        text.includes("whose measure, unit, period, release, and method match"),
+      partial: text.includes("failed requests stay in the withheld count"),
+      treatsWithheldAsMatched: text.includes("already match"),
+      withheldNotComparable: text.includes(
+        "Withheld counts are not comparable"
+      ),
+    }).toStrictEqual({
+      failedAsMatched: true,
+      fieldMatchLimitedToShared: true,
+      partial: true,
+      treatsWithheldAsMatched: false,
+      withheldNotComparable: true,
+    });
+  });
+
+  it("uses priority pills for recognized review categories and stays neutral otherwise", async () => {
+    const samples = [
+      ["Priority 1 — Investigate", "urgent", "Highest review priority"],
+      ["Priority 2 — Review", "review", "Moderate review priority"],
+      ["Watch", "watch", "Monitor for changes"],
+      ["Lower", "lower", "Lower review priority"],
+      ["Priority 10 — Review", "neutral", "Priority 10 — Review"],
+    ] as const;
+    const seen: { text: string; tone: string | undefined }[] = [];
+    for (const [priority, tone] of samples) {
+      cleanup();
+      countyPriorityOverrides.set(COMPARE_LEFT_FIPS, priority);
+      renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+      await waitForPair("08001,08013");
+      const badge = await screen.findByTestId(
+        `compare-review-category-${COMPARE_LEFT_FIPS}`
+      );
+      const pill = badge.querySelector(".priority-pill");
+      seen.push({
+        text: badge.textContent ?? "",
+        tone:
+          tone === "neutral"
+            ? badge.dataset.reviewTone
+            : pill?.classList.contains(tone)
+              ? tone
+              : pill?.className,
+      });
+    }
+    expect(seen).toStrictEqual(
+      samples.map(([, tone, text]) => ({ text, tone }))
+    );
   });
 
   it("aligns a comparable value and a real zero on stable measure rows", async () => {
@@ -498,7 +570,7 @@ describe("two-county aligned comparison", () => {
     expect(screen.getByTestId("compare-workspace").dataset.staleUrl).toBe(
       "true"
     );
-    fireEvent.click(screen.getByRole("button", { name: "Clear counties" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear first county" }));
     await waitForPair("");
     expect(screen.getByTestId("compare-workspace").dataset.fips).toBe("");
     expect(navigationSearchParams.get("compare")).toBe("08001,08013");
@@ -968,25 +1040,27 @@ describe("two-county aligned comparison", () => {
     );
     await waitForPair("08001");
     const openedHref =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: openedHref.includes("county=08001"),
-      label: screen.getByTestId("compare-return").textContent,
       pair: openedHref.includes("compare="),
       path: openedHref.includes("/explore"),
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
       returnParam: openedHref.includes("return="),
     }).toStrictEqual({
       county: true,
-      label: "Return to Explorer",
       pair: true,
       path: true,
+      returnButton: null,
+      returnLink: null,
       returnParam: false,
     });
 
     await pickCounty("Second county", /Boulder, Colorado/);
     await waitForPair("08001,08013");
     const edited =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
     const investigateHref =
       screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
@@ -1003,10 +1077,12 @@ describe("two-county aligned comparison", () => {
       returnTarget: "review",
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear counties" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Clear both counties" })
+    );
     await waitForPair("");
     const cleared =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: cleared.includes("county=08001"),
       fips: screen.getByTestId("compare-workspace").dataset.fips,
@@ -1026,7 +1102,7 @@ describe("two-county aligned comparison", () => {
     await pickCounty("Second county", /Albany, New York/);
     await waitForPair("08001,36001");
     const href =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: href.includes("county=08001"),
       pair: href.includes("compare=08001%2C36001"),
@@ -1085,23 +1161,30 @@ describe("two-county aligned comparison", () => {
   it("leaves a direct link usable when return is absent or invalid", async () => {
     const direct = renderCompare("?compare=08001,08013&scope=CO");
     await waitForPair("08001,08013");
-    expect(screen.getByTestId("compare-return").textContent).toBe(
-      "Return to Explorer"
-    );
-    expect(screen.getByTestId("compare-workspace").dataset.return).toBe("");
+    expect({
+      pairIssue: screen.getByTestId("compare-workspace").dataset.return,
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
+    }).toStrictEqual({
+      pairIssue: "",
+      returnButton: null,
+      returnLink: null,
+    });
     direct.unmount();
 
     renderCompare("?compare=08001,not-a-fips&return=assistant");
     await waitForPair("08001");
-    expect(screen.getByTestId("compare-return").textContent).toBe(
-      "Return to Explorer"
-    );
-    expect(screen.getByTestId("compare-workspace").dataset.pairIssue).toBe(
-      "invalid"
-    );
-    expect(screen.getByTestId("compare-empty").textContent).toContain(
-      "second county"
-    );
+    expect({
+      empty: screen.getByTestId("compare-empty").textContent,
+      pairIssue: screen.getByTestId("compare-workspace").dataset.pairIssue,
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
+    }).toStrictEqual({
+      empty: expect.stringContaining("second county"),
+      pairIssue: "invalid",
+      returnButton: null,
+      returnLink: null,
+    });
   });
 });
 
