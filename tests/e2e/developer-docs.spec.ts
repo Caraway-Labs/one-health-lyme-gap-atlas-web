@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import { releaseViewportRuns } from "./release-phone-viewport";
 
@@ -158,31 +158,55 @@ test("keeps the developer quickstart usable at 375px", async ({
   expect(supportOverflow).toBeLessThanOrEqual(1);
 });
 
+const scoringTabLabel = "county-v1 scoring";
+const evidenceTabLabel = "county-v2 evidence";
+const scoringPanelText = "Cache-Control: public, max-age=300, must-revalidate";
+const evidencePanelText =
+  "county-v2 requires release, exact period and distinct measures.";
+
+async function expectTemplatePanel(
+  page: Page,
+  label: string,
+  visibleText: string,
+  hiddenText: string
+) {
+  await expect(
+    page.getByRole("tab", { exact: true, name: label })
+  ).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  await expect(panel).toHaveCount(1);
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText(visibleText);
+  await expect(page.getByText(hiddenText)).toBeHidden();
+}
+
 test("switches county report template tabs and records the selector", async ({
   page,
 }, testInfo) => {
   await page.goto("/docs/develop/workflows");
-  const scoring = page.getByRole("tab", { name: "county-v1 scoring" });
-  const evidence = page.getByRole("tab", { name: "county-v2 evidence" });
   await expect(
     page.getByRole("heading", { name: "Download a county report", exact: true })
   ).toBeVisible();
-  await evidence.click();
-  await expect(page.getByText("Cache-Control: no-store").first()).toBeVisible();
-  await expect(
-    page.getByText(
-      "county-v2 requires release, exact period and distinct measures."
-    )
-  ).toBeVisible();
-  await scoring.click();
-  await expect(
-    page
-      .getByText("Cache-Control: public, max-age=300, must-revalidate")
-      .first()
-  ).toBeVisible();
-  await expect(
-    page.getByText("Observation context requires county-v2.")
-  ).toBeVisible();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.getByRole("tab", { exact: true, name: evidenceTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    evidenceTabLabel,
+    evidencePanelText,
+    "Observation context requires county-v2."
+  );
+  await page.getByRole("tab", { exact: true, name: scoringTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
   await page.screenshot({
     path: testInfo.outputPath("county-report-workflows.png"),
   });
@@ -199,14 +223,26 @@ test("switches county report template tabs and records the selector", async ({
   await page.goto(
     "/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get"
   );
-  await page.getByRole("tab", { name: "county-v2 evidence" }).click();
-  await expect(page.getByText("Cache-Control: no-store").first()).toBeVisible();
-  await page.getByRole("tab", { name: "county-v1 scoring" }).click();
-  await expect(
-    page
-      .getByText("Cache-Control: public, max-age=300, must-revalidate")
-      .first()
-  ).toBeVisible();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.getByRole("tab", { exact: true, name: evidenceTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    evidenceTabLabel,
+    evidencePanelText,
+    "Observation context requires county-v2."
+  );
+  await page.getByRole("tab", { exact: true, name: scoringTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
   await page.screenshot({
     path: testInfo.outputPath("county-report-reference.png"),
   });
@@ -230,8 +266,19 @@ test("keeps county report template tabs usable at 375px", async ({
   );
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/docs/develop/workflows");
-  await page.getByRole("tab", { name: "county-v2 evidence" }).click();
-  await expect(page.getByText("Cache-Control: no-store").first()).toBeVisible();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.getByRole("tab", { exact: true, name: evidenceTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    evidenceTabLabel,
+    evidencePanelText,
+    "Observation context requires county-v2."
+  );
   const workflowOverflow = await page.evaluate(() => {
     const root = document.documentElement;
     return root.scrollWidth - root.clientWidth;
@@ -245,7 +292,12 @@ test("keeps county report template tabs usable at 375px", async ({
   await page
     .getByRole("heading", { name: "Download a county report", exact: true })
     .scrollIntoViewIfNeeded();
-  await page.getByRole("tab", { name: "county-v1 scoring" }).click();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
   const referenceOverflow = await page.evaluate(() => {
     const root = document.documentElement;
     return root.scrollWidth - root.clientWidth;

@@ -115,8 +115,8 @@ describe("public OpenAPI reference", () => {
     expect(
       missingPhrases(counties, [
         'items={["county-v1 scoring","county-v2 evidence"]}',
-        'value="county-v1-scoring"',
-        'value="county-v2-evidence"',
+        'value="county-v1 scoring"',
+        'value="county-v2 evidence"',
         "Observation context requires county-v2.",
         "county-v2 requires release, exact period and distinct measures.",
         "The requested county report template is not available.",

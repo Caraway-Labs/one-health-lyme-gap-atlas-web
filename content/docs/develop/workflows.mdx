@@ -129,7 +129,7 @@ Goal: download one county PDF with the selector that matches the report you need
 A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim. Parameter tables stay in the [county report reference](/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get).
 
 <Tabs items={["county-v1 scoring", "county-v2 evidence"]}>
-  <Tab value="county-v1-scoring">
+  <Tab value="county-v1 scoring">
 
 `county-v1` is the scoring selector. `dataset_version` is optional. These score settings are optional and bind the scoring inputs:
 
@@ -162,7 +162,7 @@ curl -fsS 'https://api.onehealthatlas.org/v1/counties/36061/report.pdf?template=
 ```
 
   </Tab>
-  <Tab value="county-v2-evidence">
+  <Tab value="county-v2 evidence">
 
 `county-v2` is the evidence selector. It requires `dataset_version`, `period_start`, `period_end`, and `measure_id`. Pass the observation `release_id` as `dataset_version`. `period_start` and `period_end` are the exact inclusive dates. `measure_id` accepts 1–20 distinct ids, repeated or comma-separated.
 
