@@ -9,6 +9,7 @@
     "resources",
     "provenance",
     "workflows",
+    "mcp-clients",
     "tier1-availability",
     "support"
   ]

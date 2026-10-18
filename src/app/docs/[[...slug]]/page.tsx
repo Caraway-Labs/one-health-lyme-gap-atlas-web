@@ -7,6 +7,7 @@ import {
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { docsCanonicalUrl } from "@/lib/docs-config";
 import { docsSource } from "@/lib/docs-source";
 
 type DocsPageProps = {
@@ -41,7 +42,7 @@ export async function generateMetadata({
   if (!page) notFound();
 
   return {
-    alternates: { canonical: page.url },
+    alternates: { canonical: docsCanonicalUrl(page.url) },
     description: page.data.description,
     title: `${page.data.title} | Atlas documentation`,
   };

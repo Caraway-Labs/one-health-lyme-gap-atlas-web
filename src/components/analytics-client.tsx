@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 
 import { readAmplitudeApiKey } from "@/lib/amplitude-deployment";
 import {
+  ANALYTICS_PREFERENCE_KEY,
   analyticsMayStart,
   honorsDoNotTrack,
-  readAnalyticsPreference,
+  readBrowserAnalyticsPreference,
   type AnalyticsConsentState,
 } from "@/lib/analytics-consent";
 import {
@@ -17,20 +18,64 @@ import {
   trackUiInteraction,
 } from "@/lib/atlas-analytics";
 
-const PREFERENCE_CHANGED_EVENT = "atlas:analytics-preference-changed";
+export const ANALYTICS_PREFERENCE_CHANGED_EVENT =
+  "atlas:analytics-preference-changed";
+
+function enforceStoredAnalyticsPreference(): void {
+  const mayStart = analyticsMayStart({
+    consent: readBrowserAnalyticsPreference(),
+    doNotTrack: honorsDoNotTrack(window.navigator),
+  });
+  if (!mayStart) {
+    atlasAnalytics.stop();
+  }
+}
+
+function isAnalyticsPreferenceStorageEvent(event: StorageEvent): boolean {
+  return event.key === null || event.key === ANALYTICS_PREFERENCE_KEY;
+}
+
+function onCrossTabAnalyticsPreference(event: StorageEvent): void {
+  if (!isAnalyticsPreferenceStorageEvent(event)) {
+    return;
+  }
+  // Another tab changed or cleared the preference. Stop before any later
+  // track, including after this tab has entered the professional shell.
+  notifyAnalyticsPreferenceChanged();
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", onCrossTabAnalyticsPreference);
+}
 
 export function AnalyticsClient() {
   const pathname = usePathname();
   const [consent, setConsent] = useState<AnalyticsConsentState>("not-decided");
 
   useEffect(() => {
-    const refreshPreference = () =>
-      setConsent(readAnalyticsPreference(window.localStorage));
-    const onPreferenceChanged = () => refreshPreference();
+    const refreshPreference = () => {
+      enforceStoredAnalyticsPreference();
+      setConsent(readBrowserAnalyticsPreference());
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (!isAnalyticsPreferenceStorageEvent(event)) {
+        return;
+      }
+      refreshPreference();
+    };
     refreshPreference();
-    window.addEventListener(PREFERENCE_CHANGED_EVENT, onPreferenceChanged);
-    return () =>
-      window.removeEventListener(PREFERENCE_CHANGED_EVENT, onPreferenceChanged);
+    window.addEventListener(
+      ANALYTICS_PREFERENCE_CHANGED_EVENT,
+      refreshPreference
+    );
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(
+        ANALYTICS_PREFERENCE_CHANGED_EVENT,
+        refreshPreference
+      );
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   useEffect(() => {
@@ -77,13 +122,8 @@ export function AnalyticsClient() {
 export function notifyAnalyticsPreferenceChanged(): void {
   // Stop here, not only in AnalyticsClient. The professional /app shell does
   // not mount that listener, and a grant made on legacy Atlas keeps the
-  // module-global SDK alive after the listener unmounts.
-  const mayStart = analyticsMayStart({
-    consent: readAnalyticsPreference(window.localStorage),
-    doNotTrack: honorsDoNotTrack(window.navigator),
-  });
-  if (!mayStart) {
-    atlasAnalytics.stop();
-  }
-  window.dispatchEvent(new Event(PREFERENCE_CHANGED_EVENT));
+  // module-global SDK alive after the listener unmounts. Cross-tab storage
+  // events call this same path.
+  enforceStoredAnalyticsPreference();
+  window.dispatchEvent(new Event(ANALYTICS_PREFERENCE_CHANGED_EVENT));
 }

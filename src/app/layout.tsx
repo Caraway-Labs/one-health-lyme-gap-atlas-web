@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { RouteChrome } from "@/components/route-chrome";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { getMetadataBase } from "@/lib/public-origins";
 
 import { Providers } from "./providers";
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   description:
     "A population-level hypothesis generator for Lyme surveillance review.",
-  metadataBase: new URL("https://onehealthatlas.org"),
+  metadataBase: getMetadataBase(),
   icons: {
     icon: [
       {
