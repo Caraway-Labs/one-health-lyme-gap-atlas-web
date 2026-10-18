@@ -29,10 +29,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { uxResetShellHandoffHref } from "@/features/ux-reset";
-import {
-  AskAtlasChromeProvider,
-  useAskAtlasChrome,
-} from "@/features/ux-reset/ask-atlas/ask-atlas-chrome";
+import { AskAtlasChromeProvider } from "@/features/ux-reset/ask-atlas/ask-atlas-chrome";
 import {
   ExploreCommittedNavigationProvider,
   searchParamsWithCommittedExploreContext,
@@ -179,7 +176,6 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const { mobileOpen, open, setMobileOpen } = useSidebar();
   const isMobileViewport = useMobileViewport();
-  const askAtlas = useAskAtlasChrome();
   const restoreConcealed = useSyncExternalStore(
     subscribeWorkspaceRestore,
     workspaceRestoreConcealed,
@@ -530,7 +526,6 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           <span className="app-header-label">
             {workspaceHeaderTitle(pathname, searchParams.toString())}
           </span>
-          {askAtlas.launcher}
         </header>
         <div className="ux-reset-workspace-body">
           <div ref={scrollRef} className="ux-reset-pro-scroll">

@@ -169,7 +169,7 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     statusBasis:
       "The dedicated /askatlas page is gated by the literature-chat switch. Product docs classify it as experimental, not as a general release.",
     support:
-      "Dedicated page and launcher: src/features/ux-reset/ask-atlas/ask-atlas-chrome.tsx, src/features/ux-reset/ask-atlas/ask-atlas-workspace.tsx, gate NEXT_PUBLIC_KG_CHAT_ENABLED, API POST /v1/knowledge-graph/chat. Contract: content/docs/professional-workspace.mdx (Ask Atlas); content/docs/ai-enabled-decision-intelligence.mdx (Experimental/demo); constitution issue 426 answer-only rule. The feature gate and docs keep this Experimental.",
+      "Dedicated page: src/features/ux-reset/ask-atlas/ask-atlas-workspace.tsx, gate NEXT_PUBLIC_KG_CHAT_ENABLED, API POST /v1/knowledge-graph/chat. Contract: content/docs/professional-workspace.mdx (Ask Atlas); content/docs/ai-enabled-decision-intelligence.mdx (Experimental/demo); constitution issue 426 answer-only rule. The feature gate and docs keep this Experimental.",
     docHref: "/docs/professional-workspace",
     docLabel: "Professional workspace",
   },

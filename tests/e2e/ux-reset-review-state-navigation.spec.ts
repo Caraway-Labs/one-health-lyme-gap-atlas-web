@@ -137,17 +137,17 @@ async function expectPublishedNationalCounty(page: Page, fips: string) {
     page.getByTestId("review-published-county-preview")
   ).toHaveAttribute("data-fips", fips);
   await expect
-    .poll(async () => {
-      const [launcher, preview] = await Promise.all([
-        page.getByTestId("ask-atlas-launcher").getAttribute("href"),
-        page.getByTestId("review-ask-atlas").getAttribute("href"),
-      ]);
-      return {
-        launcher: publishedAskHandoff(launcher),
-        preview: publishedAskHandoff(preview),
-      };
+    .poll(async () =>
+      publishedAskHandoff(
+        await page.getByTestId("review-ask-atlas").getAttribute("href")
+      )
+    )
+    .toEqual(expected);
+  await expect(
+    page.locator(".ux-reset-pro-app .app-header").getByRole("link", {
+      name: "Ask Atlas",
     })
-    .toEqual({ launcher: expected, preview: expected });
+  ).toHaveCount(0);
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -495,7 +495,7 @@ test.describe("Review national geographic navigation", () => {
     await expect
       .poll(async () => {
         const handoff = publishedAskHandoff(
-          await page.getByTestId("ask-atlas-launcher").getAttribute("href")
+          await page.getByTestId("review-ask-atlas").getAttribute("href")
         );
         return {
           county: handoff.county,

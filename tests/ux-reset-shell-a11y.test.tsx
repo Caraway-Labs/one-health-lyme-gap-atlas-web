@@ -18,7 +18,7 @@ import * as mobileTriggerRestore from "@/features/ux-reset/mobile-trigger-restor
 import { RESET_APP_PATH } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
-let pathname = RESET_APP_PATH;
+let pathname: string = RESET_APP_PATH;
 let searchParams = new URLSearchParams();
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
@@ -72,6 +72,51 @@ describe("UX Reset shell accessibility", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it("keeps Ask Atlas in the mobile drawer and out of the header", async () => {
+    pathname = "/explore";
+    mockMobileViewport(true);
+    render(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+
+    const header = document.querySelector(".app-header");
+    expect({
+      label: header?.querySelector(".app-header-label")?.textContent,
+      launcher: screen.queryByTestId("ask-atlas-launcher"),
+      link: header?.querySelector("a"),
+    }).toStrictEqual({
+      label: "Atlas Explorer",
+      launcher: null,
+      link: null,
+    });
+
+    const sidebar = document.querySelector("#ux-reset-pro-navigation");
+    await waitFor(() => {
+      expect(sidebar?.hasAttribute("inert")).toBeTruthy();
+    });
+    const openButton = screen.getByRole("button", { name: "Open navigation" });
+    openButton.focus();
+    fireEvent.click(openButton);
+    await waitFor(() => {
+      expect(sidebar?.hasAttribute("inert")).toBeFalsy();
+    });
+    const ask = sidebar?.querySelector('a[aria-label="Ask Atlas"]');
+    if (ask instanceof HTMLElement) {
+      ask.focus();
+    }
+    expect({
+      current: ask?.getAttribute("aria-current") ?? null,
+      focused: document.activeElement === ask,
+      href: ask?.getAttribute("href") ?? "",
+    }).toStrictEqual({
+      current: null,
+      focused: true,
+      href: expect.stringContaining("/askatlas"),
+    });
   });
 
   it("keeps accessible names on collapsed sidebar links", () => {
