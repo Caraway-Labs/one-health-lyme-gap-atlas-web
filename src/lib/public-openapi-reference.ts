@@ -16,6 +16,10 @@ import path from "node:path";
  * Pages are regenerated from that pin. A missing, malformed, empty, or
  * mismatched contract fails the build instead of leaving the previous pages
  * in place as a silent reference.
+ *
+ * `npm run docs:api:drift` compares the pin with the live document named in
+ * the manifest. It reports staleness and does not rewrite the pin, manifest,
+ * or generated pages. Pull-request builds do not run it.
  */
 
 export const PUBLIC_OPENAPI_RELATIVE_PATH = "contracts/public-openapi.json";
@@ -45,6 +49,7 @@ export type PublicOpenApiFailureCode =
   | "version_mismatch"
   | "source_mismatch"
   | "not_public_contract"
+  | "stale_contract"
   | "stale_reference";
 
 export class PublicOpenApiContractError extends Error {
@@ -1905,13 +1910,86 @@ function nodeCode(error: unknown): string | undefined {
   return undefined;
 }
 
+const DRIFT_ATTEMPTS = 3;
+
+/**
+ * Compare a retrieved authoritative document with the pinned checksum.
+ * A mismatch is a maintainer signal. This function does not write files.
+ */
+export function compareAuthoritativeOpenApiChecksum(
+  pinnedSha256: string,
+  authoritativeBytes: Uint8Array
+): void {
+  const authoritativeSha256 = createHash("sha256")
+    .update(authoritativeBytes)
+    .digest("hex");
+  if (authoritativeSha256 === pinnedSha256) {
+    return;
+  }
+  throw new PublicOpenApiContractError(
+    "stale_contract",
+    `Pinned public OpenAPI checksum ${pinnedSha256} differs from authoritative checksum ${authoritativeSha256}. Review the semantic diff before replacing contracts/public-openapi.json, then update the manifest and run npm run docs:api. This check does not rewrite accepted artifacts.`
+  );
+}
+
+/**
+ * Retrieve the manifest source URL and compare it with the pinned checksum.
+ * Retrieval failure and a checksum mismatch both fail closed. Neither path
+ * rewrites the pin, the manifest, or the generated reference.
+ */
+export async function checkAuthoritativeOpenApiDrift(
+  root: string
+): Promise<void> {
+  const contract = readAndLoadPublicOpenApiContract(root);
+  const sourceUrl = contract.provenance.sourceUrl;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= DRIFT_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(sourceUrl, {
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${String(response.status)}`);
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      compareAuthoritativeOpenApiChecksum(contract.provenance.sha256, bytes);
+      return;
+    } catch (error) {
+      if (error instanceof PublicOpenApiContractError) {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+  const detail =
+    lastError instanceof Error ? lastError.message : "unknown error";
+  throw new PublicOpenApiContractError(
+    "unavailable",
+    `Authoritative OpenAPI at ${sourceUrl} could not be retrieved (${detail}). The pinned contract was not changed.`
+  );
+}
+
 const invokedDirectly = process.argv[1]?.endsWith(
   "public-openapi-reference.ts"
 );
 
-if (invokedDirectly) {
+async function runPublicOpenApiCli(): Promise<void> {
   const check = process.argv.includes("--check");
+  const drift = process.argv.includes("--drift");
   try {
+    if (check && drift) {
+      throw new PublicOpenApiContractError(
+        "malformed",
+        "Pass only one of --check or --drift."
+      );
+    }
+    if (drift) {
+      await checkAuthoritativeOpenApiDrift(process.cwd());
+      console.log(
+        "Pinned public OpenAPI matches the authoritative document. No files were changed."
+      );
+      return;
+    }
     syncPublicApiReference({ check, root: process.cwd() });
     console.log(
       check
@@ -1922,8 +2000,12 @@ if (invokedDirectly) {
     if (error instanceof PublicOpenApiContractError) {
       console.error(`Public OpenAPI reference ${error.code}: ${error.message}`);
       process.exitCode = 1;
-    } else {
-      throw error;
+      return;
     }
+    throw error;
   }
+}
+
+if (invokedDirectly) {
+  await runPublicOpenApiCli();
 }

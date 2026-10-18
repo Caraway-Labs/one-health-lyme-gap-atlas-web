@@ -57,7 +57,7 @@ curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
 curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
 ```
 
-Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD`. `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` are gaps. `SUPPRESSED` is a privacy-protected observation: the value was withheld, and the workspace shows **Suppressed** rather than a number. Do not replace a gap or a suppressed observation with zero. A published `ZERO` stays a real zero. The same rule is explained for reviewers in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, and `NO_RECORDS`. `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` are gaps. `NO_RECORDS` retains CDC's `No records` and does not establish biological absence. `SUPPRESSED` is a privacy-protected observation: the value was withheld, and the workspace shows **Suppressed** rather than a number. Do not replace a gap or a suppressed observation with zero. A published `ZERO` stays a real zero. The same rule is explained for reviewers in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
 
 ## Limits and errors
 
