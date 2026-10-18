@@ -21,10 +21,10 @@ const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
 const COLLAPSED_SIDEBAR_PX = 68;
 /** 16rem shell at a 16px root. */
 const EXPANDED_SIDEBAR_PX = 256;
-/** 16.25rem three-column list cap. */
-const LIST_CAP_PX = 260;
-/** 20.5rem three-column preview cap. */
-const PREVIEW_CAP_PX = 328;
+/** 14rem three-column list cap. The map column keeps the remaining width. */
+const LIST_CAP_PX = 224;
+/** 17rem three-column preview cap. */
+const PREVIEW_CAP_PX = 272;
 /** 20rem two-column preview cap below the 1200px breakpoint. */
 const TWO_COLUMN_PREVIEW_CAP_PX = 320;
 

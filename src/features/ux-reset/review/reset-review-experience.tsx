@@ -692,6 +692,7 @@ function ResetReviewExperienceInner() {
       ) : null}
 
       <div
+        className="ux-reset-explorer-browse-slot"
         data-explorer-browse={explorerMode ? "parked" : "visible"}
         hidden={explorerMode !== null}
         inert={explorerMode !== null}
