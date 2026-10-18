@@ -703,17 +703,22 @@ test("centers the research column and keeps history in a drawer", async ({
     }
     const panelBox = panel.getBoundingClientRect();
     const bubbleBox = bubble.getBoundingClientRect();
-    const sampleX = Math.min(bubbleBox.right, panelBox.right) - 8;
+    const sampleX = bubbleBox.left + bubbleBox.width / 2;
     const sampleY = bubbleBox.top + bubbleBox.height / 2;
     const overlaps =
       sampleX > panelBox.left &&
+      sampleX < panelBox.right &&
       sampleY >= panelBox.top &&
       sampleY <= panelBox.bottom;
     if (!overlaps) {
-      return true;
+      return false;
     }
     const hit = document.elementFromPoint(sampleX, sampleY);
-    return hit instanceof Element && panel.contains(hit);
+    return (
+      hit instanceof Element &&
+      panel.contains(hit) &&
+      getComputedStyle(panel).opacity === "1"
+    );
   });
   expect(drawerCoversTurn).toBe(true);
   await page.screenshot({

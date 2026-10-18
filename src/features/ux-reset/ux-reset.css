@@ -2249,13 +2249,19 @@ html.ux-reset-ask-atlas-history-open .ux-reset-pro-scroll {
 
 html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   z-index: 60;
+  animation: none;
+  opacity: 1;
   background: rgb(15 35 45 / 42%);
+  backdrop-filter: none;
 }
 
 .ux-reset-ask-atlas-history-panel.ux-reset-ask-atlas-history-panel {
   position: fixed;
   inset: 0 0 0 auto;
   z-index: 80;
+  animation: none;
+  opacity: 1;
+  transform: none;
   background: var(--card);
   box-shadow: -12px 0 32px rgb(15 35 45 / 16%);
 }
