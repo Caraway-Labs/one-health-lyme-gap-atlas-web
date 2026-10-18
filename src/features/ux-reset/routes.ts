@@ -40,6 +40,12 @@ export const RESET_FEED_PATH = `${UX_RESET_APP_PREFIX}/feed` as const;
 export const RESET_SETTINGS_PATH = `${UX_RESET_APP_PREFIX}/settings` as const;
 
 /**
+ * Canonical Data Provenance page (issue 657). It is not part of the
+ * six-destination redirect map. Contextual provenance stays on the result.
+ */
+export const RESET_DATA_PROVENANCE_PATH = "/data-provenance" as const;
+
+/**
  * Authenticated trust page. It is not a workspace destination, so it stays
  * out of cross-page context handoff (issues 403, 406, 433).
  */

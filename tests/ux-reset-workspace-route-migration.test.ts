@@ -115,6 +115,11 @@ describe("six-page workspace route migration", () => {
       { id: "compare", label: "Compare", path: "/compare" },
       { id: "ask-atlas", label: "Ask Atlas", path: "/askatlas" },
       { id: "feed", label: "Feed", path: "/app/feed" },
+      {
+        id: "data-provenance",
+        label: "Data Provenance",
+        path: "/data-provenance",
+      },
       { id: "settings", label: "Settings", path: "/app/settings" },
       { id: "docs", label: "Docs", path: "/docs" },
     ]);
@@ -540,6 +545,14 @@ describe("six-page workspace route migration", () => {
     expect(migrate("/docs/what-is-atlas")).toStrictEqual({
       kind: "unchanged",
       pathname: "/docs/what-is-atlas",
+      reason: "canonical-destination",
+    });
+  });
+
+  it("leaves the data provenance page unchanged", () => {
+    expect(migrate("/data-provenance")).toStrictEqual({
+      kind: "unchanged",
+      pathname: "/data-provenance",
       reason: "canonical-destination",
     });
   });

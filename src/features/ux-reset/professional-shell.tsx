@@ -441,6 +441,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
                         href={shellHref(item)}
                         onClick={closeMobileNavigation}
                         tooltip={item.label}
+                        tooltipDetail={item.tooltipDetail}
                       >
                         <Icon aria-hidden="true" />
                         <span className="sidebar-item-label">{item.label}</span>
@@ -472,6 +473,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
                         rel={opensDocsTab ? "noopener noreferrer" : undefined}
                         target={opensDocsTab ? "_blank" : undefined}
                         tooltip={item.label}
+                        tooltipDetail={item.tooltipDetail}
                       >
                         <Icon aria-hidden="true" />
                         <span className="sidebar-item-label">{item.label}</span>
