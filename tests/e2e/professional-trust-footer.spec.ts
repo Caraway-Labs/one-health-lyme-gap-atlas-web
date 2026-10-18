@@ -106,8 +106,8 @@ test("opens trust links from the professional footer", async ({
     expect(layout.footerHeight).toBeGreaterThan(64);
   } else {
     expect(layout.stacked).toBe(false);
-    expect(layout.footerHeight).toBeGreaterThanOrEqual(60);
-    expect(layout.footerHeight).toBeLessThanOrEqual(64);
+    expect(layout.footerHeight).toBeGreaterThanOrEqual(43);
+    expect(layout.footerHeight).toBeLessThanOrEqual(45);
     expect(layout.centerDelta).toBeLessThanOrEqual(1);
   }
   await footer.screenshot({
@@ -253,5 +253,32 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
     });
   await page.screenshot({
     path: testInfo.outputPath("footer-withdraw-after-back.png"),
+  });
+});
+
+test("wraps the workspace footer at 200% text size without clipping", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await page.goto("/explore");
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "32px";
+  });
+  const footer = page.locator(".ux-reset-pro-app .ux-reset-trust-footer");
+  await expect(
+    footer.getByRole("link", { name: "Privacy", exact: true })
+  ).toBeVisible();
+  await expect(
+    footer.getByRole("link", { name: "AI / Responsible Use" })
+  ).toBeVisible();
+  await expect(
+    footer.getByRole("link", { name: "Privacy settings" })
+  ).toBeVisible();
+  const layout = await footerLayout(page);
+  expect(layout.overflow).toBe(false);
+  expect(layout.stacked).toBe(true);
+  expect(layout.footerHeight).toBeGreaterThan(44);
+  await footer.screenshot({
+    path: testInfo.outputPath("footer-200-percent-text.png"),
   });
 });
