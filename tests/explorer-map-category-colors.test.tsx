@@ -123,9 +123,10 @@ function specifiedBackground(swatch: Element): string {
 }
 
 function legendColor(legend: HTMLElement, label: string): string {
-  for (const item of legend.querySelectorAll("li")) {
-    const text = item.textContent?.trim() ?? "";
-    if (text !== label) {
+  for (const item of legend.querySelectorAll<HTMLElement>(
+    "[data-legend-label]"
+  )) {
+    if (item.dataset.legendLabel !== label) {
       continue;
     }
     const swatch = item.querySelector("span");
