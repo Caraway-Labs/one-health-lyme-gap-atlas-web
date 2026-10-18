@@ -1875,6 +1875,64 @@
   background: transparent;
 }
 
+.ux-reset-explorer-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  align-items: start;
+}
+
+.ux-reset-explorer-lower > * {
+  min-width: 0;
+}
+
+.ux-reset-explorer-resources {
+  border-color: var(--line);
+  background: var(--card);
+}
+
+.ux-reset-explorer-resources h3 {
+  margin: 0.25rem 0 0;
+  color: var(--navy);
+  font-size: 1.05rem;
+}
+
+.ux-reset-explorer-resources .type-body {
+  margin: 0.35rem 0 0;
+}
+
+.ux-reset-explorer-resource-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-explorer-resource-list li {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-resource-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  color: var(--teal-dark);
+  font-weight: 600;
+}
+
+.ux-reset-explorer-resource-list svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+}
+
 .ux-reset-explorer-map .map-wrap {
   aspect-ratio: auto;
   min-height: 10rem;
@@ -2876,9 +2934,11 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     grid-row: 1;
   }
 
-  .ux-reset-explorer-map-follow-up {
-    grid-column: 2;
+  .ux-reset-explorer-lower {
+    grid-column: 1 / -1;
     grid-row: 2;
+    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
+    align-items: stretch;
   }
 
   /* State orientation keeps the map and state list in one column. The
@@ -2944,7 +3004,7 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     grid-row: 3;
   }
 
-  .ux-reset-explorer-map-follow-up {
+  .ux-reset-explorer-lower {
     grid-column: 1 / -1;
     grid-row: 2;
   }
@@ -2960,7 +3020,7 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     order: 1;
   }
 
-  .ux-reset-explorer-map-follow-up {
+  .ux-reset-explorer-lower {
     order: 2;
   }
 
