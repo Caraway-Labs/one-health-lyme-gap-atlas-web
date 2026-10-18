@@ -14,6 +14,7 @@ const developPages = [
   "resources",
   "provenance",
   "workflows",
+  "tier1-availability",
   "support",
 ] as const;
 

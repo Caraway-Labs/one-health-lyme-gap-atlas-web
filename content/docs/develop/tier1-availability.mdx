@@ -1,0 +1,221 @@
+---
+title: Tier 1 availability
+description: Choose the Tier 1 availability read or the persisted priority read, and keep sufficient, insufficient, abstention, no published model, and an unknown FIPS apart.
+---
+
+Two county routes expose the same persisted Tier 1 batch. `GET /v1/counties/{fips}/tier1-surveillance-priority/availability` tells you whether the five-digit FIPS is in the current geography release and whether a model result was published. `GET /v1/counties/{fips}/tier1-surveillance-priority` returns that persisted result alone.
+
+This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. `LOW` is a scored tier. `INSUFFICIENT` is an input-data sufficiency state, not a statement that disease is absent. A null score is not zero, and a missing result is not low priority.
+
+The bodies below were retrieved from `https://api.onehealthatlas.org` on 18 October 2026. Parameter tables stay in the [priority reference](/docs/api-reference/counties#county_tier1_surveillance_priority_get) and the [availability reference](/docs/api-reference/counties#county_tier1_surveillance_priority_availability_get). Reviewers reading a screen, rather than a response, should use [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+
+## When to call each route
+
+| You need | Call | What a completed read means |
+| --- | --- | --- |
+| Membership in the current geography release, and whether a model result was published | `GET /v1/counties/{fips}/tier1-surveillance-priority/availability` | HTTP 200. `AVAILABLE` carries the persisted object in `data`. `UNAVAILABLE` with `NO_PUBLISHED_MODEL` carries `data` null. HTTP 404 means the five-digit FIPS is outside the release |
+| Only the persisted object, after you already know the county is supported | `GET /v1/counties/{fips}/tier1-surveillance-priority` | HTTP 200 and the priority object. HTTP 404 means no current result was returned. That 404 does not say whether the FIPS failed the geography check |
+
+Start with availability when the FIPS comes from outside Atlas, from a user, or from an older county list. Connecticut county codes such as `09001` are five digits and still fail the current release, because the release uses planning-region ids such as `09110`. Use the priority route when you are rendering a result you already located and you only need that object.
+
+Both operations declare HTTP 422 for a malformed FIPS, HTTP 429 with `Retry-After` when the service asks you to wait, and HTTP 503 when the read cannot be completed. A 503 is a failed read. It is not `UNAVAILABLE`, and it is not a tier.
+
+## Availability envelope
+
+A successful availability response is HTTP 200 `application/json`. Checked responses sent `Cache-Control: public, max-age=60`. The required fields are `availability`, `geography_release_id`, `reason`, and `data`.
+
+`geography_release_id` is the geography release that accepted the FIPS. `data.release_id` is the governed source release of the model batch. On this check they differed. Do not treat them as one release.
+
+`generated_at_utc` is the batch time. It is not the request time and not the observation date. `priority_percentile` is the within-batch position among scored counties for `prediction_batch_version`. It is not a probability, and it does not compare to another batch. `raw_model_score` is the model-native score. It is not incidence and not a probability. `limitation_ref` is the returned limitation identifier. It is not a docs URL on this site.
+
+## AVAILABLE and sufficient
+
+`GET /v1/counties/09110/tier1-surveillance-priority/availability` returned HTTP 200 for Capitol Planning Region, Connecticut.
+
+```json
+{
+  "availability": "AVAILABLE",
+  "geography_release_id": "governed-2026-10-15-january-climate-prod",
+  "reason": null,
+  "data": {
+    "county_fips": "09110",
+    "priority_tier": "HIGH",
+    "priority_percentile": 98.56824689786828,
+    "raw_model_score": 2.0739835966635036,
+    "evidence_sufficiency": "SUFFICIENT",
+    "model_version": "tier1-statistical-reference-v1",
+    "release_id": "governed-2026-09-18-unknown-coverage",
+    "source_commit": "024bbbf74a7da8e54566bd60e8e762d85a51e24f",
+    "prediction_batch_version": "tier1-review-priority-5536b5caad95cf47",
+    "tier_policy_version": "tier1-review-percentile-v1",
+    "generated_at_utc": "2026-10-07T02:14:24Z",
+    "reasons": [
+      {
+        "code": "PUBLISHED_HUMAN_FLOOR",
+        "text": "Published county-linked human count-floor signal is present; its magnitude is a lower bound."
+      },
+      {
+        "code": "PATHOGEN_PRESENT",
+        "text": "Publisher reports pathogen Present."
+      }
+    ],
+    "limitation_ref": "docs/contracts/tier1-persisted-output-v1.md"
+  }
+}
+```
+
+| Field | How to read this body |
+| --- | --- |
+| `availability` | `AVAILABLE`. A persisted result is in `data` |
+| `reason` | Null. `NO_PUBLISHED_MODEL` is not used when `data` is present |
+| `geography_release_id` | Geography release that accepted `09110` |
+| `data.evidence_sufficiency` | `SUFFICIENT`. Selected scoring inputs were sufficient for this contract. That is not calibrated confidence and not clinical certainty |
+| `data.priority_tier` | `HIGH` under `tier_policy_version`. High review priority is not a disease-risk class |
+| `data.priority_percentile` and `data.raw_model_score` | Both present, as the contract requires for `SUFFICIENT` and for `INSUFFICIENT` |
+| `data.reasons` | Returned reason text, at most three objects. The human floor text says the magnitude is a lower bound |
+
+The same county on the priority route returned the `data` object and no envelope. The batch fields matched this body.
+
+## AVAILABLE and insufficient
+
+`GET /v1/counties/01001/tier1-surveillance-priority/availability` returned HTTP 200 for Autauga County, Alabama. The batch identifiers match the sufficient example. The sufficiency state and the tier do not.
+
+```json
+{
+  "availability": "AVAILABLE",
+  "geography_release_id": "governed-2026-10-15-january-climate-prod",
+  "reason": null,
+  "data": {
+    "county_fips": "01001",
+    "priority_tier": "LOW",
+    "priority_percentile": 30.734966592427615,
+    "raw_model_score": 0.6000441944790827,
+    "evidence_sufficiency": "INSUFFICIENT",
+    "model_version": "tier1-statistical-reference-v1",
+    "release_id": "governed-2026-09-18-unknown-coverage",
+    "source_commit": "024bbbf74a7da8e54566bd60e8e762d85a51e24f",
+    "prediction_batch_version": "tier1-review-priority-5536b5caad95cf47",
+    "tier_policy_version": "tier1-review-percentile-v1",
+    "generated_at_utc": "2026-10-07T02:14:24Z",
+    "reasons": [
+      {
+        "code": "NO_COUNTY_HUMAN_RECORD",
+        "text": "No county-linked human record is available; the model uses an explicit placeholder."
+      },
+      {
+        "code": "PATHOGEN_NO_RECORDS",
+        "text": "Publisher reports No records; this is not evidence of absence."
+      }
+    ],
+    "limitation_ref": "docs/contracts/tier1-persisted-output-v1.md"
+  }
+}
+```
+
+| Field | How to read this body |
+| --- | --- |
+| `availability` and `reason` | Still `AVAILABLE` and null. Insufficient evidence is a published result, not a missing model |
+| `data.evidence_sufficiency` | `INSUFFICIENT`. The contract still requires `priority_tier`, `priority_percentile`, and `raw_model_score` |
+| `data.priority_tier` | `LOW`. A low tier is a scored review priority. It is not a safe county and not a zero |
+| `data.reasons` | The human reason says the model uses a placeholder because no county-linked human record is available. The pathogen reason says no records are not evidence of absence |
+
+`GET /v1/counties/01001/tier1-surveillance-priority` returned the inner object only. Checked field for field, it was the same object as `data` above.
+
+```json
+{
+  "county_fips": "01001",
+  "priority_tier": "LOW",
+  "priority_percentile": 30.734966592427615,
+  "raw_model_score": 0.6000441944790827,
+  "evidence_sufficiency": "INSUFFICIENT",
+  "model_version": "tier1-statistical-reference-v1",
+  "release_id": "governed-2026-09-18-unknown-coverage",
+  "source_commit": "024bbbf74a7da8e54566bd60e8e762d85a51e24f",
+  "prediction_batch_version": "tier1-review-priority-5536b5caad95cf47",
+  "tier_policy_version": "tier1-review-percentile-v1",
+  "generated_at_utc": "2026-10-07T02:14:24Z",
+  "reasons": [
+    {
+      "code": "NO_COUNTY_HUMAN_RECORD",
+      "text": "No county-linked human record is available; the model uses an explicit placeholder."
+    },
+    {
+      "code": "PATHOGEN_NO_RECORDS",
+      "text": "Publisher reports No records; this is not evidence of absence."
+    }
+  ],
+  "limitation_ref": "docs/contracts/tier1-persisted-output-v1.md"
+}
+```
+
+## NOT_ESTIMABLE abstention
+
+`NOT_ESTIMABLE` is a persisted result. It is not `UNAVAILABLE`, and it is not HTTP 404. The published schema requires `availability` `AVAILABLE`, `reason` null, and a `data` object whose `evidence_sufficiency` is `NOT_ESTIMABLE`. On that object, `priority_tier`, `priority_percentile`, and `raw_model_score` are null. `SUFFICIENT` and `INSUFFICIENT` are invalid if any of those three is null. `NOT_ESTIMABLE` is invalid if any of them is present.
+
+There is no retrieved abstention payload from this check. `GET /v1/atlas/scores` on 18 October 2026 listed 3,144 counties. The scores release id was the same value as `geography_release_id` in the bodies above. Availability for every listed FIPS returned HTTP 200, `AVAILABLE`, and `reason` null. Of those reads, 651 were `SUFFICIENT` (315 `HIGH` and 336 `MEDIUM`) and 2,493 were `INSUFFICIENT` (292 `MEDIUM` and 2,201 `LOW`). None was `NOT_ESTIMABLE`. Those counts describe this batch. They are not limits on which tier can accompany which sufficiency state.
+
+When a later batch returns an abstention, say that the batch did not assign a tier. Do not substitute `LOW`, zero, or "no disease." Keep `model_version`, `release_id`, `prediction_batch_version`, `tier_policy_version`, `generated_at_utc`, and `limitation_ref` from that `data` object.
+
+## UNAVAILABLE and NO_PUBLISHED_MODEL
+
+`UNAVAILABLE` is a successful determination. The operation returns HTTP 200 after the geography release and the Tier 1 projection have both been read. `reason` is `NO_PUBLISHED_MODEL`, and `data` is null. `geography_release_id` is still present, because the FIPS was accepted. The route does not turn null into zero and does not synthesize a model object.
+
+That state is distinct from `NOT_ESTIMABLE`, which is a published `data` object, and from HTTP 404, which means the FIPS was not in the geography release. It is also distinct from HTTP 503, which means the read failed.
+
+There is no retrieved `NO_PUBLISHED_MODEL` payload from this check. The same 3,144 county reads returned no `UNAVAILABLE` body. Do not invent a county to illustrate it. Branch on the four required fields when a later batch returns them, and describe the gap as no published model result. A null `data` value is not low priority.
+
+## Five-digit FIPS outside the release
+
+`GET /v1/counties/99999/tier1-surveillance-priority/availability` returned HTTP 404 `application/problem+json`. The checked response used a private cache directive. `99999` is five digits, and it is not in the current geography release. The same status and detail were returned for `00000` and for `09001`.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/resource-not-found",
+  "title": "Invalid public query",
+  "status": 404,
+  "detail": "County is not in the current geography release.",
+  "instance": "/v1/counties/99999/tier1-surveillance-priority/availability",
+  "request_id": "91af7989-a353-48e6-af9b-812727c66747",
+  "code": "RESOURCE_NOT_FOUND",
+  "errors": null
+}
+```
+
+| Field | How to read this problem |
+| --- | --- |
+| `status` and `code` | HTTP 404 and `RESOURCE_NOT_FOUND` |
+| `detail` | The county is not in the current geography release. This is not a model tier |
+| `instance` | The availability path that was requested |
+| `request_id` | Identifier for this response. A later call returns a different one |
+| `errors` | Null on this body. A validation failure can supply an array instead |
+
+A path that is not five digits does not reach that geography check. `GET /v1/counties/0911/tier1-surveillance-priority/availability` returned HTTP 422. The problem `detail` was `One or more request values are invalid.` The `errors` array named a string pattern mismatch on `fips` and required five digits. Preserve leading zeros. Send `09110`, not `9110`.
+
+The priority route does not answer this geography question. `GET /v1/counties/99999/tier1-surveillance-priority` also returned HTTP 404, with a different problem body and no `code`:
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-404",
+  "title": "Not found",
+  "status": 404,
+  "detail": "No current Tier 1 county result",
+  "instance": "/v1/counties/99999/tier1-surveillance-priority",
+  "request_id": "c57750de-fca5-4ed2-8bbb-2d45f422cf97",
+  "errors": null
+}
+```
+
+The operation description also uses HTTP 404 when a county has no persisted result. The checked unknown FIPS produced the detail above, and this check did not observe a published county with no model result. Do not read that priority 404 as proof the FIPS failed the geography release, and do not read it as `LOW`. Call availability when you need that distinction.
+
+## States that must stay apart
+
+| Observed or declared state | Say this | Do not say this |
+| --- | --- | --- |
+| `AVAILABLE`, `SUFFICIENT`, `HIGH` | The batch assigned a high surveillance review priority and recorded sufficient inputs | The county is high risk, or the percentile is a probability |
+| `AVAILABLE`, `INSUFFICIENT`, `LOW` | The batch assigned a low review tier and recorded insufficient inputs. The tier was still returned | The county is safe, the placeholder is zero, or no pathogen records means absence |
+| `AVAILABLE` and `NOT_ESTIMABLE` | The batch abstained. Tier, percentile, and score are null | Abstention is low priority, or abstention means no disease |
+| `UNAVAILABLE` and `NO_PUBLISHED_MODEL` | The FIPS is in the geography release and no model result is published | Null data is zero, or the county has a low tier |
+| Availability HTTP 404 `RESOURCE_NOT_FOUND` | This five-digit FIPS is not in the current geography release | The county has no Lyme activity |
+| Priority HTTP 404 | No current Tier 1 result was returned for that path | The geography check failed, or the county is low priority |
+| HTTP 422 | The path is not a five-digit FIPS | The county was looked up and found missing |
+| HTTP 503 | The read failed. Retry with `Retry-After` when it is present, and keep `request_id` | The failure is an evidence tier |

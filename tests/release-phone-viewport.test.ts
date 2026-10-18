@@ -148,6 +148,7 @@ describe("default E2E and Storybook phone viewport sweep", () => {
       "tests/e2e/professional-navigation.spec.ts",
       "tests/e2e/public-trust-pages.spec.ts",
       "tests/e2e/reset-feedback.spec.ts",
+      "tests/e2e/tier1-availability-docs.spec.ts",
       "tests/e2e/ux-reset-ask-atlas.spec.ts",
       "tests/e2e/ux-reset-compare.spec.ts",
       "tests/e2e/ux-reset-data-provenance.spec.ts",
