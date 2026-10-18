@@ -243,6 +243,84 @@ test.describe("workspace header titles", () => {
     ).toBeVisible();
   });
 
+  test("explore header shows the title without an Ask Atlas link", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 900, width: 1280 });
+    await page.goto("/explore");
+    const header = page.locator(HEADER);
+    await expectHeaderTitle(page, "Atlas Explorer");
+    await expect(header.getByRole("link", { name: "Ask Atlas" })).toHaveCount(
+      0
+    );
+    await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
+    await expect(header).toHaveText("Atlas Explorer");
+
+    const navigation = page.getByRole("navigation", {
+      name: "Professional workspace",
+    });
+    const compare = navigation.getByRole("link", {
+      exact: true,
+      name: "Compare",
+    });
+    const ask = navigation.getByRole("link", {
+      exact: true,
+      name: "Ask Atlas",
+    });
+    await expect(ask).toBeVisible();
+    await expect(ask).toHaveAttribute("aria-label", "Ask Atlas");
+    await expect(ask).not.toHaveAttribute("aria-current", "page");
+    await compare.focus();
+    await page.keyboard.press("Tab");
+    await expect(ask).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+      .toBe("/askatlas");
+    await expectHeaderTitle(page, "Ask Atlas");
+    await expect(header.getByRole("link", { name: "Ask Atlas" })).toHaveCount(
+      0
+    );
+    await expect(ask).toHaveAttribute("aria-current", "page");
+
+    await page.getByRole("button", { name: "Hide navigation" }).click();
+    await expect(ask).toHaveAttribute("aria-label", "Ask Atlas");
+    await ask.focus();
+    await expect(ask).toBeFocused();
+  });
+
+  test("phone navigation keeps Ask Atlas in the drawer and out of the header", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, 390),
+      "Phone-width workspace header checks run on the mobile project."
+    );
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.goto("/explore");
+    const header = page.locator(HEADER);
+    await expectHeaderTitle(page, "Atlas Explorer");
+    await expect(header.getByRole("link", { name: "Ask Atlas" })).toHaveCount(
+      0
+    );
+    await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
+    const sidebar = page.locator("#ux-reset-pro-navigation");
+    await expect(sidebar).toHaveAttribute("inert", "");
+    await page.getByRole("button", { name: "Open navigation" }).click();
+    await expect(sidebar).toHaveAttribute("role", "dialog");
+    const ask = sidebar.getByRole("link", { exact: true, name: "Ask Atlas" });
+    await expect(ask).toBeVisible();
+    await expect(ask).toHaveAttribute("aria-label", "Ask Atlas");
+    await ask.focus();
+    await expect(ask).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+      .toBe("/askatlas");
+    await expectHeaderTitle(page, "Ask Atlas");
+    await expect(ask).toHaveAttribute("aria-current", "page");
+  });
+
   test("keeps the header title on a phone viewport", async ({
     page,
   }, testInfo) => {

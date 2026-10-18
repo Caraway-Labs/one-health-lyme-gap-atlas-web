@@ -412,14 +412,17 @@ test.describe("P0 evidence catalog", () => {
     await expect(
       page.getByText("Active catalog route: /compare")
     ).toBeVisible();
-    const launcher = page.getByTestId("ask-atlas-launcher");
-    await expect(launcher).toHaveAttribute("href", "/askatlas");
+    const askAtlas = page
+      .getByRole("navigation", { name: "Professional workspace" })
+      .getByRole("link", { name: "Ask Atlas", exact: true });
+    await expect(askAtlas).toHaveAttribute("href", /\/askatlas/);
+    await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
     await expect(page.getByTestId("ask-atlas-panel")).toHaveCount(0);
     await expect(page.getByRole("dialog")).toHaveCount(0);
     const inset = page.locator(".app-inset");
     await expect(inset).not.toHaveAttribute("inert", "");
-    await launcher.focus();
-    await expect(launcher).toBeFocused();
+    await askAtlas.focus();
+    await expect(askAtlas).toBeFocused();
     const image = page.locator("img.atlas-brand-mark").first();
     await expect(image).toBeVisible();
     const src = await image.getAttribute("src");

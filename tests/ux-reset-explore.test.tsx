@@ -11,7 +11,6 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { readAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/page-reference";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import { ResetExploreExperience } from "@/features/ux-reset/explore/reset-explore-experience";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
@@ -367,13 +366,6 @@ function shellAssistantHref(): URL {
   );
 }
 
-function askAtlasLauncherHref(): URL {
-  return new URL(
-    screen.getByTestId("ask-atlas-launcher").getAttribute("href") ?? "",
-    "http://localhost"
-  );
-}
-
 function handoffSnapshot(url: URL) {
   return {
     conversation: url.searchParams.get("conversation"),
@@ -383,30 +375,13 @@ function handoffSnapshot(url: URL) {
   };
 }
 
-function committedLauncherReference() {
-  const href = askAtlasLauncherHref();
-  const state = readAskAtlasPageReference(href.pathname, href.searchParams);
-  const release =
-    state.kind === "validated" ? state.reference.context.fields.release : null;
-  const geography =
-    state.kind === "validated"
-      ? state.reference.context.fields.geography
-      : null;
-  const returnDataset =
-    state.kind === "validated"
-      ? new URL(state.returnHref, "http://localhost").searchParams.get(
-          "dataset"
-        )
-      : null;
-  return {
-    county: href.searchParams.get("county"),
-    dataset: href.searchParams.get("dataset"),
-    geographyId: geography?.state === "validated" ? geography.id : null,
-    kind: state.kind,
-    pathname: href.pathname,
-    releaseId: release?.state === "validated" ? release.id : null,
-    returnDataset,
-  };
+function expectHeaderOmitsAskAtlas() {
+  const header = document.querySelector(".app-header");
+  expect(
+    header?.querySelector("[data-testid='ask-atlas-launcher']")
+  ).toBeNull();
+  expect(header?.querySelector("a")).toBeNull();
+  expect(header?.textContent ?? "").not.toContain("Ask Atlas");
 }
 
 describe("Explore workspace", () => {
@@ -1147,22 +1122,13 @@ describe("Explore workspace", () => {
       "Catalog release does not match the requested release."
     );
     await waitFor(() => {
-      expect(committedLauncherReference().kind).toBe("validated");
+      expect(handoffSnapshot(shellAssistantHref()).dataset).toBe("alpha-2026");
     });
+    expectHeaderOmitsAskAtlas();
     expect({
-      launcher: committedLauncherReference(),
       requestedDataset: navigationSearchParams.get("dataset"),
       shell: handoffSnapshot(shellAssistantHref()),
     }).toStrictEqual({
-      launcher: {
-        county: "08001",
-        dataset: "alpha-2026",
-        geographyId: "08001",
-        kind: "validated",
-        pathname: "/askatlas",
-        releaseId: "alpha-2026",
-        returnDataset: "alpha-2026",
-      },
       requestedDataset: "alpha-2026-10-04",
       shell: {
         conversation: null,
@@ -1198,27 +1164,14 @@ describe("Explore workspace", () => {
     await screen.findByTestId("mock-atlas-map");
     expect(navigationSearchParams.has("dataset")).toBeFalsy();
     await waitFor(() => {
-      expect(committedLauncherReference().kind).toBe("validated");
+      expect(handoffSnapshot(shellAssistantHref()).dataset).toBe("alpha-2026");
     });
-    expect({
-      launcher: committedLauncherReference(),
-      shell: handoffSnapshot(shellAssistantHref()),
-    }).toStrictEqual({
-      launcher: {
-        county: "08001",
-        dataset: "alpha-2026",
-        geographyId: "08001",
-        kind: "validated",
-        pathname: "/askatlas",
-        releaseId: "alpha-2026",
-        returnDataset: "alpha-2026",
-      },
-      shell: {
-        conversation: null,
-        county: "08001",
-        dataset: "alpha-2026",
-        keys: ["county", "dataset"],
-      },
+    expectHeaderOmitsAskAtlas();
+    expect(handoffSnapshot(shellAssistantHref())).toStrictEqual({
+      conversation: null,
+      county: "08001",
+      dataset: "alpha-2026",
+      keys: ["county", "dataset"],
     });
     expect(chatRequest).not.toHaveBeenCalled();
   });
@@ -1278,27 +1231,14 @@ describe("Explore workspace", () => {
       "18 mm"
     );
     await waitFor(() => {
-      expect(committedLauncherReference().releaseId).toBe("alpha-2026");
+      expect(handoffSnapshot(shellAssistantHref()).dataset).toBe("alpha-2026");
     });
-    expect({
-      launcher: committedLauncherReference(),
-      shell: handoffSnapshot(shellAssistantHref()),
-    }).toStrictEqual({
-      launcher: {
-        county: "08001",
-        dataset: "alpha-2026",
-        geographyId: "08001",
-        kind: "validated",
-        pathname: "/askatlas",
-        releaseId: "alpha-2026",
-        returnDataset: "alpha-2026",
-      },
-      shell: {
-        conversation: null,
-        county: "08001",
-        dataset: "alpha-2026",
-        keys: ["county", "dataset"],
-      },
+    expectHeaderOmitsAskAtlas();
+    expect(handoffSnapshot(shellAssistantHref())).toStrictEqual({
+      conversation: null,
+      county: "08001",
+      dataset: "alpha-2026",
+      keys: ["county", "dataset"],
     });
   });
 });
