@@ -371,7 +371,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Adjusted scenario"
+      "Atlas gap score"
     );
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
       "not personal disease risk"
@@ -435,7 +435,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Adjusted scenario"
+      "Atlas gap score"
     );
     await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
 
@@ -753,7 +753,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Adjusted scenario"
+      "Atlas gap score"
     );
     const map = page.getByTestId("review-national-map-region");
     await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
@@ -778,7 +778,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Adjusted scenario"
+      "Atlas gap score"
     );
 
     await page.getByTestId("explorer-scenario-reset").click();

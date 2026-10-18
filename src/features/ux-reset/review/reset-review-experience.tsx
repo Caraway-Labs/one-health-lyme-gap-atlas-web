@@ -641,61 +641,6 @@ function ResetReviewExperienceInner() {
         </p>
       ) : null}
 
-      {scenarioScopeSupported && !explorerMode ? (
-        <ExplorerWhatIfScenario
-          impact={scenarioImpact}
-          scoresRetrying={
-            scenarioScoresQuery.isFetching && scenarioScoresQuery.isError
-          }
-          settings={scenarioSettings}
-          onChange={setScenarioSettings}
-          onRetryScores={() => {
-            void scenarioScoresQuery.refetch();
-          }}
-        />
-      ) : null}
-
-      {metadataLoading || startingScopePending ? (
-        <AtlasStatusMessage tone="loading">
-          Loading review scope…
-        </AtlasStatusMessage>
-      ) : null}
-
-      {presentationQuery.metadataIsError &&
-      reviewCounty &&
-      !reviewReady &&
-      !scopeUnsupported ? (
-        <Tier1SurveillancePriority
-          fips={reviewCounty}
-          headingLevel="h2"
-          release={tierRelease}
-        />
-      ) : null}
-
-      {scopeUnsupported ? <UnsupportedReviewScopeNotice scope={scope} /> : null}
-      {scopeUnsupported || (!pictureActive && clearCounty) ? (
-        <ReviewUrlContextPublisher
-          clearCompare={scopeUnsupported}
-          dataset={urlState.dataset}
-          period={urlState.period}
-        />
-      ) : null}
-
-      {scope !== "ALL" && !scopeUnsupported && stateReview.isError ? (
-        <AtlasStatusMessage tone="error">
-          {REVIEW_REQUEST_FAILURE_MESSAGE}
-        </AtlasStatusMessage>
-      ) : null}
-
-      {explorerMode ? (
-        <ExplorerCountyEvidence
-          followUp={followUp}
-          methodologyLabel={methodologyLabel}
-          mode={explorerMode}
-          onBackToMap={backToMap}
-        />
-      ) : null}
-
       <div
         className="ux-reset-explorer-browse-slot"
         data-explorer-browse={explorerMode ? "parked" : "visible"}
@@ -760,6 +705,62 @@ function ResetReviewExperienceInner() {
           </section>
         ) : null}
       </div>
+
+      {scenarioScopeSupported && !explorerMode ? (
+        <ExplorerWhatIfScenario
+          impact={scenarioImpact}
+          scoresRetrying={
+            scenarioScoresQuery.isFetching && scenarioScoresQuery.isError
+          }
+          settings={scenarioSettings}
+          onChange={setScenarioSettings}
+          onRetryScores={() => {
+            void scenarioScoresQuery.refetch();
+          }}
+        />
+      ) : null}
+
+      {metadataLoading || startingScopePending ? (
+        <AtlasStatusMessage tone="loading">
+          Loading review scope…
+        </AtlasStatusMessage>
+      ) : null}
+
+      {presentationQuery.metadataIsError &&
+      reviewCounty &&
+      !reviewReady &&
+      !scopeUnsupported ? (
+        <Tier1SurveillancePriority
+          fips={reviewCounty}
+          headingLevel="h2"
+          release={tierRelease}
+        />
+      ) : null}
+
+      {scopeUnsupported ? <UnsupportedReviewScopeNotice scope={scope} /> : null}
+      {scopeUnsupported || (!pictureActive && clearCounty) ? (
+        <ReviewUrlContextPublisher
+          clearCompare={scopeUnsupported}
+          dataset={urlState.dataset}
+          period={urlState.period}
+        />
+      ) : null}
+
+      {scope !== "ALL" && !scopeUnsupported && stateReview.isError ? (
+        <AtlasStatusMessage tone="error">
+          {REVIEW_REQUEST_FAILURE_MESSAGE}
+        </AtlasStatusMessage>
+      ) : null}
+
+      {explorerMode ? (
+        <ExplorerCountyEvidence
+          followUp={followUp}
+          methodologyLabel={methodologyLabel}
+          mode={explorerMode}
+          onBackToMap={backToMap}
+        />
+      ) : null}
+
       <details className="ux-reset-explorer-release">
         <summary>Release and methodology</summary>
         <ReviewReleaseEvidence
