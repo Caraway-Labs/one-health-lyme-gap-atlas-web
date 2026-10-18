@@ -45,6 +45,10 @@ const docsPages = [
     heading: "API, MCP, and access",
   },
   {
+    path: "/docs/develop/mcp-clients",
+    heading: "MCP clients",
+  },
+  {
     path: "/docs/api-reference",
     heading: "API reference",
   },

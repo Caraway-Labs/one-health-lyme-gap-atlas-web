@@ -149,10 +149,16 @@ describe("sources and canonical evidence documentation", () => {
         !accessPage.includes(phrase) || !provenancePage.includes(phrase)
     );
 
+    const accessFacts = [
+      "issuecomment-6116902766",
+      "exactly six tools; that receipt is historical",
+      "exactly four tools",
+      "](/docs/develop/mcp-clients)",
+    ].filter((phrase) => accessPage.split(phrase).length === 1);
+
     expect(missing).toStrictEqual([]);
     expect(linkedPagesMissing).toStrictEqual([]);
-    expect(accessPage).toContain("issuecomment-6116902766");
-    expect(accessPage).toContain("exactly six tools");
+    expect(accessFacts).toStrictEqual([]);
   });
 
   it("keeps the flexible-source story on the provenance pages", () => {

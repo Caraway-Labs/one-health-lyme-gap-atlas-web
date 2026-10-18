@@ -14,6 +14,7 @@ const developPages = [
   "resources",
   "provenance",
   "workflows",
+  "mcp-clients",
   "support",
 ] as const;
 
@@ -644,6 +645,10 @@ function contractMismatches(
     }
   }
   for (const page of developPages) {
+    // MCP recipes cite the production Streamable HTTP transport, not OpenAPI operations.
+    if (page === "mcp-clients") {
+      continue;
+    }
     if (page !== "geography" && readPage(page).includes("`504`")) {
       mismatches.push(
         `${page}: 504 is only the observed geography client status`
