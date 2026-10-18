@@ -314,7 +314,7 @@ test("workspace enforces the answer contract without changing filters", async ({
   await page.goto(WORKSPACE_URL);
   await expect(page.getByTestId("ask-atlas-workspace")).toBeVisible();
   await expect(
-    page.getByText("Start with your own question or adapt one below.")
+    page.getByRole("heading", { name: "What would you like to explore?" })
   ).toBeVisible();
   await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
   await expectAnswerContract(page);

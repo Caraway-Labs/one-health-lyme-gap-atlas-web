@@ -197,14 +197,18 @@ describe("Ask Atlas research workspace", () => {
     render(<AskAtlasWorkspace />);
     await ask("Question to clear");
     await screen.findByText("Saved answer.");
-    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
     fireEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", {
+      within(
+        screen.getByRole("dialog", { name: "Clear all saved chats?" })
+      ).getByRole("button", {
         name: "Clear all",
       })
     );
-    await screen.findByText(/Start with your own question or adapt one below/);
+    await screen.findByRole("heading", {
+      name: "What would you like to explore?",
+    });
     expect(storedConversations()).toStrictEqual([]);
 
     window.history.pushState(
@@ -369,7 +373,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the selected chat when a history click outruns a late success", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
@@ -394,7 +398,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the selected chat when a history click outruns a late error", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
@@ -463,7 +467,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("does not restore a deleted pending chat when its response arrives late", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete Second question" })
     );
@@ -487,7 +491,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("does not leak a late error after the pending chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete Second question" })
     );
@@ -508,7 +512,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps a late success on the open chat after another saved chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete First question" })
     );
@@ -532,7 +536,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps a late error on the open chat after another saved chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    fireEvent.click(screen.getByRole("button", { name: "Chat history" }));
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete First question" })
     );
@@ -589,6 +593,132 @@ describe("Ask Atlas research workspace", () => {
     expect(
       screen.queryByText("Old answer must not replace history.")
     ).toBeNull();
+  });
+
+  it("fills the composer from a Try asking card without sending", () => {
+    render(<AskAtlasWorkspace />);
+    const prompts = screen.getByTestId("ask-atlas-try-asking");
+    fireEvent.click(
+      within(prompts).getByRole("button", {
+        name: "What can tick surveillance tell us?",
+      })
+    );
+    const composer = screen.getByLabelText(
+      "Your research question"
+    ) as HTMLTextAreaElement;
+    expect({
+      calls: chatRequest.mock.calls.length,
+      cards: within(prompts).getAllByRole("button").length,
+      focused: document.activeElement === composer,
+      moreTopics: screen.queryByText("More research topics"),
+      value: composer.value,
+      welcome: screen.getByRole("heading", {
+        name: "What would you like to explore?",
+      }).textContent,
+    }).toStrictEqual({
+      calls: 0,
+      cards: 4,
+      focused: true,
+      moreTopics: null,
+      value: "What can tick surveillance tell us?",
+      welcome: "What would you like to explore?",
+    });
+  });
+
+  it("sends on Enter, keeps Shift+Enter and IME composition in the composer", async () => {
+    chatRequest.mockResolvedValue(
+      chatResult("Sent from the keyboard.", "request-key", "conversation-key")
+    );
+    render(<AskAtlasWorkspace />);
+    const composer = screen.getByLabelText(
+      "Your research question"
+    ) as HTMLTextAreaElement;
+    fireEvent.change(composer, { target: { value: "   " } });
+    fireEvent.keyDown(composer, { key: "Enter" });
+    fireEvent.change(composer, { target: { value: "Still composing" } });
+    const composing = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      isComposing: true,
+      key: "Enter",
+    });
+    composer.dispatchEvent(composing);
+    const newline = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: "Enter",
+      shiftKey: true,
+    });
+    composer.dispatchEvent(newline);
+    expect({
+      calls: chatRequest.mock.calls.length,
+      composingPrevented: composing.defaultPrevented,
+      newlinePrevented: newline.defaultPrevented,
+    }).toStrictEqual({
+      calls: 0,
+      composingPrevented: false,
+      newlinePrevented: false,
+    });
+
+    fireEvent.change(composer, { target: { value: "Send from Enter" } });
+    fireEvent.keyDown(composer, { key: "Enter" });
+    await screen.findByText("Sent from the keyboard.");
+    expect({
+      calls: chatRequest.mock.calls.length,
+      prompts: screen.queryByRole("heading", { name: "Try asking" }),
+    }).toStrictEqual({
+      calls: 1,
+      prompts: null,
+    });
+  });
+
+  it("restores a saved chat from the history drawer and keeps it after New chat", async () => {
+    chatRequest.mockResolvedValue(
+      chatResult("Drawer answer.", "request-drawer", "conversation-drawer")
+    );
+    render(<AskAtlasWorkspace />);
+    await ask("Question kept in history");
+    await screen.findByText("Drawer answer.");
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    const welcome = screen.getByRole("heading", {
+      name: "What would you like to explore?",
+    }).textContent;
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    const drawer = screen.getByRole("dialog", { name: "Chat history" });
+    expect({
+      crossDevice: /other devices|synced/i.test(drawer.textContent ?? ""),
+      localCopy: drawer.textContent?.includes("this browser") ?? false,
+      saved: storedConversations().length,
+      welcome,
+    }).toStrictEqual({
+      crossDevice: false,
+      localCopy: true,
+      saved: 1,
+      welcome: "What would you like to explore?",
+    });
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: /^Question kept in history/ })
+    );
+    await screen.findByText("Drawer answer.");
+    expect({
+      calls: chatRequest.mock.calls.length,
+      drawer: screen.queryByRole("dialog", { name: "Chat history" }),
+    }).toStrictEqual({
+      calls: 1,
+      drawer: null,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => {
+      expect({
+        drawer: screen.queryByRole("dialog", { name: "Chat history" }),
+        saved: storedConversations().length,
+      }).toStrictEqual({
+        drawer: null,
+        saved: 1,
+      });
+    });
   });
 
   it("shows unavailable without a composer or a request when literature chat is off", () => {
