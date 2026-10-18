@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -349,5 +349,105 @@ describe("workspace header in the professional shell", () => {
     expect(
       screen.getByRole("navigation", { name: "Professional workspace" })
     ).toBeTruthy();
+  });
+
+  it("omits Ask Atlas from the header while the sidebar item stays available", () => {
+    pathname = "/explore";
+    const view = render(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+
+    const headerAsk = () => {
+      const header = document.querySelector(".app-header");
+      return {
+        children: header?.querySelectorAll(":scope > *").length ?? 0,
+        label: header?.querySelector(".app-header-label")?.textContent ?? "",
+        launcher: header?.querySelector("[data-testid='ask-atlas-launcher']"),
+        link: header?.querySelector("a"),
+      };
+    };
+    const sidebarAsk = () => {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      return navigation.querySelector('a[aria-label="Ask Atlas"]');
+    };
+
+    expect(headerAsk()).toStrictEqual({
+      children: 2,
+      label: "Atlas Explorer",
+      launcher: null,
+      link: null,
+    });
+    const expanded = sidebarAsk();
+    if (expanded instanceof HTMLElement) {
+      expanded.focus();
+    }
+    expect({
+      current: expanded?.getAttribute("aria-current") ?? null,
+      focused: document.activeElement === expanded,
+      href: expanded?.getAttribute("href") ?? "",
+    }).toStrictEqual({
+      current: null,
+      focused: true,
+      href: expect.stringContaining("/askatlas"),
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide navigation" }));
+    const collapsed = sidebarAsk();
+    if (collapsed instanceof HTMLElement) {
+      collapsed.focus();
+    }
+    expect({
+      current: collapsed?.getAttribute("aria-current") ?? null,
+      focused: document.activeElement === collapsed,
+      href: collapsed?.getAttribute("href") ?? "",
+      label: collapsed?.getAttribute("aria-label"),
+    }).toStrictEqual({
+      current: null,
+      focused: true,
+      href: expect.stringContaining("/askatlas"),
+      label: "Ask Atlas",
+    });
+
+    pathname = "/compare";
+    view.rerender(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+    expect({
+      current: sidebarAsk()?.getAttribute("aria-current") ?? null,
+      header: headerAsk(),
+    }).toStrictEqual({
+      current: null,
+      header: {
+        children: 2,
+        label: "Compare Counties",
+        launcher: null,
+        link: null,
+      },
+    });
+
+    pathname = "/askatlas";
+    view.rerender(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+    expect({
+      current: sidebarAsk()?.getAttribute("aria-current"),
+      header: headerAsk(),
+    }).toStrictEqual({
+      current: "page",
+      header: {
+        children: 2,
+        label: "Ask Atlas",
+        launcher: null,
+        link: null,
+      },
+    });
   });
 });
