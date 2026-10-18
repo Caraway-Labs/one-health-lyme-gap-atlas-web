@@ -30,8 +30,8 @@ describe("page introduction", () => {
     ).toBeTruthy();
     expect(screen.getByText(copy.supporting)).toBeTruthy();
     expect(
-      screen.getByRole("heading", { level: 2, name: copy.stripHeading })
-    ).toBeTruthy();
+      screen.queryByRole("heading", { name: copy.stripHeading })
+    ).toBeNull();
     expect(screen.getByText(copy.stripBody)).toBeTruthy();
   });
 });

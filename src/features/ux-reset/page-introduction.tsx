@@ -23,12 +23,7 @@ export function PageIntroduction({ page }: { page: PageIntroductionId }) {
           <strong>{copy.guidanceLead}</strong> {copy.guidance}
         </p>
       ) : (
-        <div className="ux-reset-page-introduction-strip">
-          <h2 className="ux-reset-page-introduction-strip-heading">
-            {copy.stripHeading}
-          </h2>
-          <p>{copy.stripBody}</p>
-        </div>
+        <p className="ux-reset-page-introduction-note">{copy.stripBody}</p>
       )}
     </header>
   );
