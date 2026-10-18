@@ -174,7 +174,7 @@ describe("Explorer map legend", () => {
     expect(legend.dataset.legendLayer).toBe("gap_score");
     expect(legend.dataset.legendScale).toBe("segments");
     expect(legend.textContent).toContain("review-priority score");
-    expect(legend.textContent).toContain("No data");
+    expect(legend.textContent).toContain("Gap score unavailable");
     expect(legend.textContent).toContain(">=75");
   });
 
@@ -203,7 +203,7 @@ describe("Explorer map legend", () => {
         .querySelectorAll("[data-legend-segment]"),
     ].map((segment) => segment.getAttribute("aria-label") ?? "");
     expect(segments).toHaveLength(paint.entries.length);
-    expect(segments[0]).toMatch(/No published value[\s\S]*Not zero/);
+    expect(segments[0]).toMatch(/Gap score unavailable[\s\S]*Not zero/);
     expect(segments[1]).toMatch(/0 to <20[\s\S]*Not a safety finding/);
     expect(segments[2]).toMatch(
       /20 to <35[\s\S]*Lower Atlas priority[\s\S]*Monitor signals/
