@@ -1365,6 +1365,27 @@
   line-height: 1.45;
 }
 
+.ux-reset-explorer-page {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ux-reset-explorer-page > .ux-reset-explorer-toolbar {
+  order: 0;
+}
+
+.ux-reset-explorer-page > .ux-reset-explorer-browse-slot {
+  order: 1;
+}
+
+.ux-reset-explorer-page > .ux-reset-page-introduction {
+  order: 2;
+}
+
+.ux-reset-explorer-page > .ux-reset-explorer-release {
+  order: 3;
+}
+
 .ux-reset-explorer-heading,
 .ux-reset-compare-header {
   display: flex;
@@ -1464,10 +1485,10 @@
       0,
       1fr
     );
-  gap: 0.75rem 1rem;
+  gap: 0.4rem 0.75rem;
   align-items: end;
   min-width: 0;
-  padding: var(--space-4);
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card);
@@ -1483,6 +1504,8 @@
   grid-column: 1 / -1;
   margin: 0;
   color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.3;
 }
 
 .ux-reset-county-combobox {
@@ -1523,7 +1546,7 @@
 }
 
 .ux-reset-explorer-map-layer {
-  padding: 0 0.9rem 0.75rem;
+  padding: 0.2rem 0.75rem 0.35rem;
 }
 
 @media (max-width: 1100px) {
@@ -1594,7 +1617,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem 0.9rem 0;
+  padding: 0.45rem 0.75rem 0;
 }
 
 .ux-reset-explorer-map-heading h2,
@@ -2068,35 +2091,25 @@
 
 @media (min-width: 1200px) {
   .ux-reset-explorer-browse {
-    align-items: stretch;
-    grid-template-columns: minmax(14.5rem, 16.25rem) minmax(0, 1fr) minmax(
-        18rem,
-        20.5rem
+    align-items: start;
+    grid-template-columns: minmax(13rem, 14rem) minmax(0, 1fr) minmax(
+        15.5rem,
+        17rem
       );
-    /* The map keeps an 8rem floor. The extra row height is the layer legend. */
-    height: min(44rem, calc(100svh - 28.5rem));
-    min-height: 20rem;
-  }
-
-  .ux-reset-explorer-list,
-  .ux-reset-explorer-map,
-  .ux-reset-explorer-preview {
-    height: 100%;
+    height: auto;
     min-height: 0;
   }
 
   .ux-reset-explorer-list,
   .ux-reset-explorer-preview {
+    max-height: min(44rem, calc(100svh - 8rem));
     overflow: auto;
-  }
-
-  .ux-reset-explorer-map {
-    overflow: hidden;
   }
 
   .ux-reset-explorer-map {
     display: flex;
     flex-direction: column;
+    overflow: visible;
   }
 
   .ux-reset-explorer-map .ux-reset-explorer-map-heading,
@@ -2105,16 +2118,17 @@
   }
 
   .ux-reset-explorer-map .ux-reset-explorer-legend {
-    flex: 3 1 12rem;
-    max-height: 62%;
-    min-height: 0;
-    overflow: auto;
+    flex: 0 0 auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .ux-reset-explorer-map .map-wrap {
-    flex: 1 1 0;
-    height: auto;
-    min-height: 8rem;
+    flex: 0 0 auto;
+    /* 32rem is the desktop ceiling. The viewport cap keeps that canvas above
+       the footer on a 900px-tall screen; shorter laptops keep 28rem and scroll. */
+    height: min(32rem, max(28rem, calc(100svh - 28rem)));
+    min-height: 28rem;
     overflow: hidden;
   }
 
@@ -2185,6 +2199,11 @@
 }
 
 @media (max-width: 1199px) and (min-width: 800px) {
+  .ux-reset-explorer-map .map-wrap {
+    height: 28rem;
+    min-height: 28rem;
+  }
+
   .ux-reset-explorer-browse {
     grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
   }
@@ -2224,8 +2243,8 @@
   }
 
   .ux-reset-explorer-map .map-wrap {
-    min-height: 16rem;
-    height: 16rem;
+    min-height: 20rem;
+    height: 20rem;
   }
 }
 
