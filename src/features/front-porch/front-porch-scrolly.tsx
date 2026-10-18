@@ -30,6 +30,36 @@ const LEFTMOST_LINE_SHIFT = 24;
 const NEXT_LINE_SHIFT = 77.3;
 const VERTICAL_LINE_SHIFT = 16;
 const COUNTY_PLACEMENT = { x: 301.4, y: 260.3, scale: 1.08, lift: 18 } as const;
+const READING_LINE = 0.28;
+/**
+ * Panel 01's main paragraph must rise to this share of the viewport before
+ * its dot, halo, card, and status appear. Later beats keep READING_LINE.
+ */
+export const FRONT_PORCH_FIRST_FINDING_LINE = 0.64;
+
+export function frontPorchRevealIndex({
+  nearest,
+  firstParagraphBottom,
+  viewportHeight,
+  reducedMotion,
+  beatCount = FRONT_PORCH_BEATS.length,
+}: {
+  nearest: number;
+  firstParagraphBottom: number;
+  viewportHeight: number;
+  reducedMotion: boolean;
+  beatCount?: number;
+}) {
+  if (reducedMotion) {
+    return beatCount - 1;
+  }
+  if (nearest > 0) {
+    return nearest;
+  }
+  return firstParagraphBottom <= viewportHeight * FRONT_PORCH_FIRST_FINDING_LINE
+    ? 0
+    : -1;
+}
 
 function CardLines({ beat }: { beat: FrontPorchBeat }) {
   return beat.cardLines.map((line) => (
@@ -124,7 +154,8 @@ function MobileSketch({ step }: { step: number }) {
 }
 
 export function FrontPorchScrolly() {
-  const [active, setActive] = useState(0);
+  const [reading, setReading] = useState(0);
+  const [revealed, setRevealed] = useState(-1);
   const beatRefs = useRef<(HTMLElement | null)[]>([]);
   const progressRef = useRef<HTMLDivElement>(null);
 
@@ -142,11 +173,6 @@ export function FrontPorchScrolly() {
       const reducedMotion =
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reducedMotion) {
-        setActive(FRONT_PORCH_BEATS.length - 1);
-        return;
-      }
-
       let nearest = 0;
       let best = Number.POSITIVE_INFINITY;
       for (let index = 0; index < beatRefs.current.length; index += 1) {
@@ -155,14 +181,31 @@ export function FrontPorchScrolly() {
           continue;
         }
         const distance = Math.abs(
-          beat.getBoundingClientRect().top - window.innerHeight * 0.28
+          beat.getBoundingClientRect().top - window.innerHeight * READING_LINE
         );
         if (distance < best) {
           best = distance;
           nearest = index;
         }
       }
-      setActive((current) => (current === nearest ? current : nearest));
+      const firstParagraph = beatRefs.current[0]?.querySelector("p");
+      const nextRevealed = frontPorchRevealIndex({
+        nearest,
+        firstParagraphBottom:
+          firstParagraph?.getBoundingClientRect().bottom ??
+          Number.POSITIVE_INFINITY,
+        viewportHeight: window.innerHeight,
+        reducedMotion,
+      });
+      const nextReading = reducedMotion
+        ? FRONT_PORCH_BEATS.length - 1
+        : nearest;
+      setReading((current) =>
+        current === nextReading ? current : nextReading
+      );
+      setRevealed((current) =>
+        current === nextRevealed ? current : nextRevealed
+      );
     };
 
     const onScroll = () => {
@@ -180,7 +223,7 @@ export function FrontPorchScrolly() {
     };
   }, []);
 
-  const activeBeat = FRONT_PORCH_BEATS[active] ?? FRONT_PORCH_BEATS[0];
+  const revealedBeat = revealed >= 0 ? FRONT_PORCH_BEATS[revealed] : null;
 
   return (
     <>
@@ -195,7 +238,7 @@ export function FrontPorchScrolly() {
             <article
               aria-labelledby={`front-porch-${beat.id}`}
               className={
-                index === active
+                index === reading
                   ? "front-porch-beat front-porch-beat-active"
                   : "front-porch-beat"
               }
@@ -294,7 +337,7 @@ export function FrontPorchScrolly() {
                     {COUNTY_MARKERS.map((marker, index) => (
                       <g
                         className={
-                          index <= active
+                          index <= revealed
                             ? "front-porch-map-points front-porch-map-points-on"
                             : "front-porch-map-points"
                         }
@@ -321,7 +364,7 @@ export function FrontPorchScrolly() {
                   {FRONT_PORCH_BEATS.map((beat, index) => (
                     <div
                       className={
-                        index <= active
+                        index <= revealed
                           ? "front-porch-evidence-card front-porch-evidence-show"
                           : "front-porch-evidence-card"
                       }
@@ -351,9 +394,11 @@ export function FrontPorchScrolly() {
                   {FRONT_PORCH_STAGE_INTERPRET}
                 </span>
               </span>
-              <span className="front-porch-stage-status">
-                {activeBeat.status}
-              </span>
+              {revealedBeat ? (
+                <span className="front-porch-stage-status">
+                  {revealedBeat.status}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
