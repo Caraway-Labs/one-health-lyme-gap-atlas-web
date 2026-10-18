@@ -131,8 +131,12 @@ function captionsForSegments(
     const high =
       classes.find((entry) => entry.label === "75 or higher") ?? classes.at(-1);
     return {
-      left: missing.some((entry) => entry.label === NO_PUBLISHED_VALUE)
-        ? "No data"
+      left: missing.some(
+        (entry) =>
+          entry.label === NO_PUBLISHED_VALUE ||
+          entry.label === "Gap score unavailable"
+      )
+        ? "Gap score unavailable"
         : null,
       right: high ? compactRange(high.label) : null,
     };

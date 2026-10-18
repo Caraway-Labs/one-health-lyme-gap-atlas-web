@@ -576,6 +576,7 @@ export function ReviewNationalPicture({
       <ExplorerLowerWorkspace
         fips={selectedFips || null}
         releaseId={releaseId}
+        whatIfActive={scenarioByFips !== null && mapLayer === "gap_score"}
       />
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">

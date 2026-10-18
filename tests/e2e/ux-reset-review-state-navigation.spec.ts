@@ -261,7 +261,7 @@ test.describe("Review national geographic navigation", () => {
     await expect(
       page
         .getByTestId("explorer-map-legend")
-        .getByRole("button", { name: /No published value/ })
+        .getByRole("button", { name: /Gap score unavailable/ })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
     await expect(page.getByLabel("Zoom in")).toBeVisible();
@@ -482,7 +482,7 @@ test.describe("Review national geographic navigation", () => {
     await expect(
       page
         .getByTestId("explorer-map-legend")
-        .getByRole("button", { name: /No published value/ })
+        .getByRole("button", { name: /Gap score unavailable/ })
     ).toBeVisible();
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "County boundaries" }).click();

@@ -7,11 +7,13 @@ export function ExplorerLowerWorkspace({
   governedNextCheck = null,
   releaseId,
   reviewResultState = null,
+  whatIfActive = false,
 }: {
   fips: string | null;
   governedNextCheck?: string | null;
   releaseId: string | null;
   reviewResultState?: GovernedReviewResultState | null;
+  whatIfActive?: boolean;
 }) {
   return (
     <section
@@ -24,6 +26,7 @@ export function ExplorerLowerWorkspace({
         governedNextCheck={governedNextCheck}
         releaseId={releaseId}
         reviewResultState={reviewResultState}
+        whatIfActive={whatIfActive}
       />
       <ExplorerOfficialResources />
     </section>
