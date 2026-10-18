@@ -3970,9 +3970,13 @@ describe("Reset Review scope UI", () => {
         expect(fips).toContain("36001");
         expect(fips).not.toContain("02013");
       });
-      expect(screen.getByTestId("explorer-map-legend").textContent).toContain(
-        "published score colors"
+      fireEvent.click(
+        screen.getByRole("button", { name: "About Atlas gap score" })
       );
+      expect(
+        screen.getByRole("dialog", { name: "About Atlas gap score" })
+          .textContent
+      ).toContain("published score colors");
       expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
       expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
       fireEvent.click(screen.getByTestId("mock-map-select-ny"));

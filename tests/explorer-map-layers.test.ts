@@ -214,8 +214,9 @@ describe("Explorer map layers", () => {
       layerId: "gap_score",
       scoresStatus: "ready",
     });
-    expect(paint.entries[0]?.label).toBe("Published score 55");
-    expect(paint.entries[0]?.label).not.toMatch(/less than 20/);
+    const mismatched = paint.entries.find((entry) => entry.color === "#a9d2db");
+    expect(mismatched?.label).toBe("Published score 55");
+    expect(mismatched?.label).not.toMatch(/less than 20/);
   });
 
   it("uses the same band for an adjusted scenario color token", () => {
@@ -230,8 +231,11 @@ describe("Explorer map layers", () => {
       layerId: "gap_score",
       scoresStatus: "ready",
     });
-    expect(paint.entries[0]?.label).toBe("75 or higher");
-    expect(paint.entries[0]?.color).toBe("var(--map-ramp-6)");
+    const band = paint.entries.find(
+      (entry) => entry.color === "var(--map-ramp-6)"
+    );
+    expect(band?.label).toBe("75 or higher");
+    expect(paint.entries[0]?.label).toBe("No published value");
   });
 
   it("does not paint a failed gap-score request as that layer", () => {
@@ -298,7 +302,6 @@ describe("Explorer map layers", () => {
       "Absent (observed zero or negative finding)",
       "No records (not zero, not confirmed absence)",
       "Unknown (not zero, not confirmed absence)",
-      "No published value",
     ]);
   });
 
@@ -503,11 +506,8 @@ describe("Explorer map layers", () => {
       incidence: incidence.entries.map((entry) => entry.label),
       svi: svi.entries.map((entry) => entry.label),
     }).toStrictEqual({
-      incidence: [
-        "Missing (not zero and not a low value)",
-        "No published value",
-      ],
-      svi: ["Missing (not zero and not a low value)", "No published value"],
+      incidence: ["Missing (not zero and not a low value)"],
+      svi: ["Missing (not zero and not a low value)"],
     });
     expect(incidence.colorsByFips.get("01001")).toBe("var(--mint)");
     expect(svi.colorsByFips.get("08001")).toBe("var(--mint)");
