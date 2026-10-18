@@ -20,6 +20,7 @@ const developPages = [
   "resources",
   "provenance",
   "workflows",
+  "tier1-availability",
   "mcp-clients",
   "support",
 ] as const;
