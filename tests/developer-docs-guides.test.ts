@@ -14,6 +14,7 @@ const developPages = [
   "resources",
   "provenance",
   "workflows",
+  "observation-queries",
   "mcp-clients",
   "support",
 ] as const;
@@ -146,14 +147,26 @@ const headerLiterals = [
 const liveObservedIdentifiers = new Set([
   "YEAR",
   "aggregation",
+  "climate_temperature",
   "fraction",
+  "governed-2026-10-15-january-climate-prod",
   "human",
   "human_confirmed_probable_case_floor_v1",
   "human_disease_burden",
   "land_cover_context",
+  "nclimgrid_prcp_county_day",
+  "nclimgrid_tavg_county_day",
+  "nclimgrid_tmax_county_day",
+  "nclimgrid_tmin_county_day",
   "nlcd_forest_area_share_county_year",
+  "NO_PUBLISHED_RESULTS",
+  "population_2022",
+  "RPL_THEMES",
+  "RUCC_2023",
   "sort",
+  "svi_percentile_2022",
   "tract",
+  "uninsured_percent_2022",
 ]);
 
 const referenceSlugs = new Set([

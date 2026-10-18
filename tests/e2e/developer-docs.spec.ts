@@ -14,6 +14,7 @@ const developerPages = [
   },
   { path: "/docs/develop/provenance", heading: "Provenance and evidence" },
   { path: "/docs/develop/workflows", heading: "Workflow guides" },
+  { path: "/docs/develop/observation-queries", heading: "Observation queries" },
   { path: "/docs/develop/mcp-clients", heading: "MCP clients" },
   {
     path: "/docs/develop/support",
@@ -241,6 +242,87 @@ test("keeps MCP client recipes usable at 375px", async ({ page }, testInfo) => {
   expect(overflow).toBeLessThanOrEqual(1);
   await page.screenshot({
     path: testInfo.outputPath("mcp-clients-phone.png"),
+  });
+});
+
+test("persists the observation slice tab and shows the temporal matrix", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/docs/develop/observation-queries");
+  await expect(
+    page.getByRole("heading", { name: "Observation queries", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "vintage_year", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("tab", { name: "Annual surveillance" })
+  ).toHaveAttribute("aria-selected", "true");
+  await page
+    .getByRole("heading", { name: "Temporal parameters", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("observation-queries-matrix.png"),
+  });
+
+  await page.getByRole("tab", { name: "2023 RUCC" }).click();
+  await expect(page.getByRole("tab", { name: "2023 RUCC" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await expect(
+    page.getByRole("heading", { name: "2023 RUCC", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Annual surveillance", exact: true })
+  ).toBeHidden();
+  await expect(page.getByText("vintage_year=2023").first()).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("observation-queries-rucc.png"),
+  });
+
+  await page.evaluate(() => {
+    sessionStorage.clear();
+  });
+  await page.reload();
+  await expect(page.getByRole("tab", { name: "2023 RUCC" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await expect(
+    page.getByRole("heading", { name: "2023 RUCC", exact: true })
+  ).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).include("main").analyze();
+  const blockingViolations = results.violations.filter((violation) =>
+    ["critical", "serious"].includes(violation.impact ?? "")
+  );
+  expect(blockingViolations).toEqual([]);
+});
+
+test("keeps observation query tabs usable at 375px", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 375),
+    "Phone-width observation query docs run on the mobile project."
+  );
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/docs/develop/observation-queries");
+  await expect(
+    page.getByRole("heading", { name: "Temporal parameters", exact: true })
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "January 2025 environment" }).click();
+  await expect(
+    page.getByRole("tab", { name: "January 2025 environment" })
+  ).toHaveAttribute("aria-selected", "true");
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth - root.clientWidth;
+  });
+  expect(overflow).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: testInfo.outputPath("observation-queries-phone.png"),
   });
 });
 
