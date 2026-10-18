@@ -6,6 +6,7 @@ import {
   explorerAvailableDataGate,
   explorerCountyListCsv,
   explorerCountyListFilename,
+  explorerCountySelectionLabel,
   filterExplorerCountyReference,
   type ExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
@@ -189,10 +190,15 @@ describe("explorer county reference", () => {
     });
   });
 
-  it("matches a selected county label that contains the name and FIPS", () => {
+  it("formats the selected county without using the label as an id", () => {
+    expect(explorerCountySelectionLabel(autauga)).toBe("Autauga, AL - 01001");
+    expect(
+      countyReferenceMatchesQuery(autauga, "Autauga, AL - 01001")
+    ).toBeTruthy();
     expect(
       countyReferenceMatchesQuery(autauga, "Autauga, AL · 01001")
     ).toBeTruthy();
+    expect(countyReferenceMatchesQuery(autauga, "al")).toBeTruthy();
     expect(countyReferenceMatchesQuery(baldwin, "01001")).toBeFalsy();
   });
 

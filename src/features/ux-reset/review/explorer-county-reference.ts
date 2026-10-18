@@ -205,8 +205,15 @@ export function countyReferenceMatchesAvailableData(
   );
 }
 
+/** Presentation only. Canonical selection remains the five-character FIPS. */
+export function explorerCountySelectionLabel(
+  county: Pick<ExplorerCountyReference, "county" | "fips" | "state">
+): string {
+  return `${county.county}, ${county.state} - ${county.fips}`;
+}
+
 export function countyReferenceMatchesQuery(
-  county: Pick<ExplorerCountyReference, "county" | "fips">,
+  county: Pick<ExplorerCountyReference, "county" | "fips" | "state">,
   query: string
 ): boolean {
   const text = query.trim().toLowerCase();
@@ -215,7 +222,8 @@ export function countyReferenceMatchesQuery(
   }
   const name = county.county.trim().toLowerCase();
   const fips = county.fips.trim();
-  if (name.includes(text) || fips.includes(text)) {
+  const state = county.state.trim().toLowerCase();
+  if (name.includes(text) || fips.includes(text) || state === text) {
     return true;
   }
   return name.length > 0 && text.includes(fips) && text.includes(name);

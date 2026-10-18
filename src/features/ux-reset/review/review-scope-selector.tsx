@@ -13,20 +13,23 @@ import { reviewScopeLabel } from "@/lib/atlas-state-geography";
 
 type ReviewScopeSelectorProps = {
   scope: ReviewScope;
+  showVisibleLabel?: boolean;
   stateOptions: readonly AtlasStateOption[];
   onScopeChange: (scope: ReviewScope) => void;
 };
 
 export function ReviewScopeSelector({
   scope,
+  showVisibleLabel = true,
   stateOptions,
   onScopeChange,
 }: ReviewScopeSelectorProps) {
   const value = scope === "ALL" ? "ALL" : scope;
+  const Field = showVisibleLabel ? "label" : "div";
 
   return (
-    <label className="ux-reset-review-scope-field">
-      <span className="type-small">State</span>
+    <Field className="ux-reset-review-scope-field">
+      {showVisibleLabel ? <span className="type-small">State</span> : null}
       <Select
         value={value}
         onValueChange={(next) => {
@@ -39,7 +42,7 @@ export function ReviewScopeSelector({
       >
         <SelectTrigger
           aria-label="State"
-          className="h-11 w-full"
+          className="w-full min-w-0"
           data-testid="review-scope-select"
         >
           <SelectValue>{reviewScopeLabel(scope, stateOptions)}</SelectValue>
@@ -53,6 +56,6 @@ export function ReviewScopeSelector({
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </Field>
   );
 }

@@ -191,9 +191,15 @@ function ResetReviewExperienceInner() {
   const [countyQuery, setCountyQuery] = useState("");
   const [availableData, setAvailableData] = useState<EvidenceView>("all");
   const [countyQueryScope, setCountyQueryScope] = useState(scope);
+  const [pendingSelectedQuery, setPendingSelectedQuery] = useState<
+    string | null
+  >(null);
   if (countyQueryScope !== scope) {
     setCountyQueryScope(scope);
-    setCountyQuery("");
+    setCountyQuery(pendingSelectedQuery ?? "");
+    if (pendingSelectedQuery !== null) {
+      setPendingSelectedQuery(null);
+    }
   }
   const rewrittenScopeKey = useRef<string | null>(null);
   const replacedModeKey = useRef<string | null>(null);
@@ -380,12 +386,18 @@ function ResetReviewExperienceInner() {
         setCounty(county.fips, "push");
         return;
       }
+      setPendingSelectedQuery(county.fips);
       userChoseScopeRef.current = true;
       setUserChoseScope(true);
       void setUrlState({ county: county.fips, scope: county.state });
     },
     [scope, setCounty, setUrlState]
   );
+  const clearToolbarCounty = useCallback(() => {
+    setPendingSelectedQuery(null);
+    setCountyQuery("");
+    setCounty(null, "push");
+  }, [setCounty]);
   const downloadCountyList = useCallback(() => {
     const rows = filterExplorerCountyReference(countyReference.counties, {
       evidence: availableData,
@@ -624,8 +636,10 @@ function ResetReviewExperienceInner() {
         countyQuery={countyQuery}
         downloadDisabled={!countyReference.isSuccess}
         scope={scope}
+        selectedFips={reviewCounty}
         stateOptions={stateOptions}
         onAvailableDataChange={setAvailableData}
+        onClearSelection={clearToolbarCounty}
         onCountyQueryChange={setCountyQuery}
         onCountySelect={selectToolbarCounty}
         onDownload={downloadCountyList}
