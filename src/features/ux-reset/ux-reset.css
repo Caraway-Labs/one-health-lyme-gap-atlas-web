@@ -2161,10 +2161,9 @@
 @media (min-width: 1200px) {
   .ux-reset-explorer-browse {
     align-items: stretch;
-    grid-template-columns: minmax(13rem, 14rem) minmax(0, 1fr) minmax(
-        15.5rem,
-        17rem
-      );
+    /* Desktop workspace: county nav 18%, map 52%, selected county 30%.
+       minmax(0, …fr) keeps long copy from stretching a column. */
+    grid-template-columns: minmax(0, 18fr) minmax(0, 52fr) minmax(0, 30fr);
     height: auto;
     min-height: 0;
   }

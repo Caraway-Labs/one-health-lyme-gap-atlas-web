@@ -21,10 +21,8 @@ const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
 const COLLAPSED_SIDEBAR_PX = 68;
 /** 16rem shell at a 16px root. */
 const EXPANDED_SIDEBAR_PX = 256;
-/** 14rem three-column list cap. The map column keeps the remaining width. */
-const LIST_CAP_PX = 224;
-/** 17rem three-column preview cap. */
-const PREVIEW_CAP_PX = 272;
+/** Desktop three-column tracks: county nav, map, selected county. */
+const THREE_COLUMN_SHARES = [0.18, 0.52, 0.3] as const;
 /** 20rem two-column preview cap below the 1200px breakpoint. */
 const TWO_COLUMN_PREVIEW_CAP_PX = 320;
 
@@ -389,10 +387,11 @@ function trackAt(tracks: readonly number[], index: number): number {
 
 function expectThreeColumn(layout: ExplorerLayout): void {
   expect(layout.tracks).toHaveLength(3);
-  expectNear(layout.listWidth, LIST_CAP_PX);
-  expectNear(layout.previewWidth, PREVIEW_CAP_PX);
-  expectNear(trackAt(layout.tracks, 0), LIST_CAP_PX);
-  expectNear(trackAt(layout.tracks, 2), PREVIEW_CAP_PX);
+  const trackSum = layout.tracks.reduce((sum, track) => sum + track, 0);
+  expectNear(trackAt(layout.tracks, 0), trackSum * THREE_COLUMN_SHARES[0], 2);
+  expectNear(trackAt(layout.tracks, 1), trackSum * THREE_COLUMN_SHARES[1], 2);
+  expectNear(trackAt(layout.tracks, 2), trackSum * THREE_COLUMN_SHARES[2], 2);
+  expect(layout.previewWidth).toBeGreaterThan(layout.listWidth);
   expect(layout.listBottom).toBeLessThanOrEqual(
     layout.mapBottom + EDGE_TOLERANCE_PX
   );
@@ -430,9 +429,15 @@ function expectMapGrew(
   viewportGrowth: number
 ): void {
   expect(wider.mapWidth).toBeGreaterThan(narrower.mapWidth);
-  expectNear(wider.mapWidth - narrower.mapWidth, viewportGrowth);
-  expectNear(wider.listWidth, narrower.listWidth);
-  expectNear(wider.previewWidth, narrower.previewWidth);
+  const browseGrowth = wider.browseWidth - narrower.browseWidth;
+  expectNear(browseGrowth, viewportGrowth, 4);
+  expectNear(
+    wider.mapWidth - narrower.mapWidth,
+    browseGrowth * THREE_COLUMN_SHARES[1],
+    4
+  );
+  expect(wider.previewWidth).toBeGreaterThan(wider.listWidth);
+  expect(narrower.previewWidth).toBeGreaterThan(narrower.listWidth);
 }
 
 test("desktop browse grid fills the main content edge", async ({
