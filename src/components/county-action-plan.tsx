@@ -1,5 +1,10 @@
 import type { CountyDetail } from "@/generated/models";
 import {
+  FOLLOW_UP_QUESTIONS_INTRO,
+  FOLLOW_UP_WHAT_IF_NOTE,
+  FOLLOW_UP_WHAT_IF_TITLE,
+} from "@/lib/follow-up-response-content";
+import {
   buildCountyFollowUp,
   FOLLOW_UP_INTERPRETATION,
   FOLLOW_UP_UNAVAILABLE_INTERPRETATION,
@@ -41,12 +46,14 @@ export function CountyActionPlan({
   idPrefix = "",
   reviewContext,
   showEyebrow = true,
+  whatIfActive = false,
 }: {
   detail: CountyDetail;
   headingLevel?: "h3" | "h4";
   idPrefix?: string;
   reviewContext?: FollowUpReviewContext;
   showEyebrow?: boolean;
+  whatIfActive?: boolean;
 }) {
   const workflow = buildCountyFollowUp(detail, reviewContext);
   const headingId = `${idPrefix}county-action-heading-${detail.fips}`;
@@ -107,6 +114,11 @@ export function CountyActionPlan({
           {workflow.verificationNote}
         </p>
       ) : null}
+      {whatIfActive ? (
+        <p className="action-summary" data-testid="follow-up-what-if-note">
+          <strong>{FOLLOW_UP_WHAT_IF_TITLE}</strong> {FOLLOW_UP_WHAT_IF_NOTE}
+        </p>
+      ) : null}
       <p className="action-caution" data-testid="follow-up-interpretation">
         {workflow.level.status === "unavailable"
           ? FOLLOW_UP_UNAVAILABLE_INTERPRETATION
@@ -117,6 +129,18 @@ export function CountyActionPlan({
           <FollowUpRow key={row.id} row={row} />
         ))}
       </ol>
+      <section
+        className="ux-reset-follow-up-questions"
+        data-testid="follow-up-questions"
+      >
+        <h4>Questions before acting</h4>
+        <p>{FOLLOW_UP_QUESTIONS_INTRO}</p>
+        <ol>
+          {workflow.questions.map((question) => (
+            <li key={question}>{question}</li>
+          ))}
+        </ol>
+      </section>
       <details className="action-resources">
         <summary>Questions, partner roles, and official resources</summary>
         <p>

@@ -3,6 +3,14 @@ import {
   SUGGESTED_FOLLOW_UP_BY_COLOR,
   type ReviewPriorityColor,
 } from "@/lib/atlas-ui";
+import {
+  FOLLOW_UP_PUBLISHED_SOURCE_LABEL,
+  FOLLOW_UP_RESPONSE_CONTENT,
+  GAP_SCORE_UNAVAILABLE_CONTENT,
+  GAP_SCORE_UNAVAILABLE_EXPLANATION,
+  GAP_SCORE_UNAVAILABLE_TITLE,
+  type FollowUpResponseCopy,
+} from "@/lib/follow-up-response-content";
 
 /**
  * Five public-health workstreams for Suggested Follow-up.
@@ -20,8 +28,7 @@ export const FOLLOW_UP_UNAVAILABLE_INTERPRETATION =
 export const FOLLOW_UP_VERIFICATION_NOTE =
   "These rows are evidence-verification considerations, not a scored recommendation or an instruction to escalate surveillance.";
 
-export const FOLLOW_UP_COLOR_RESPONSE_NOTE =
-  "This is the approved Action Center response for the published score color. It is not a model-assisted surveillance priority, and it is not a new score cutoff.";
+export const FOLLOW_UP_COLOR_RESPONSE_NOTE = FOLLOW_UP_PUBLISHED_SOURCE_LABEL;
 
 export const REVIEW_LEVEL_UNAVAILABLE = "Review level unavailable";
 
@@ -39,6 +46,7 @@ export const FOLLOW_UP_CATEGORY_ORDER = [
 export type FollowUpCategoryId = (typeof FOLLOW_UP_CATEGORY_ORDER)[number];
 
 export type FollowUpUnavailableReason =
+  | "gap-score-unavailable"
   | "insufficient-evidence"
   | "recommendation-unassigned"
   | "unsupported-jurisdiction";
@@ -80,6 +88,7 @@ export type FollowUpReviewLevel = {
 
 export type CountyFollowUpWorkflow = {
   level: FollowUpReviewLevel;
+  questions: FollowUpResponseCopy["questions"];
   rows: readonly FollowUpWorkflowRow[];
   verificationNote: string | null;
 };
@@ -291,6 +300,29 @@ function approvedResponse(color: string): ApprovedResponseTitle | null {
   return SUGGESTED_FOLLOW_UP_BY_COLOR[normalizedColor as ReviewPriorityColor];
 }
 
+function publishedGapScoreMissing(county: CountyDetail): boolean {
+  return county.color.trim().length === 0;
+}
+
+function responseCopy(level: FollowUpReviewLevel): FollowUpResponseCopy | null {
+  if (level.status === "assigned") {
+    return FOLLOW_UP_RESPONSE_CONTENT[level.title as ApprovedResponseTitle];
+  }
+  if (level.reason === "gap-score-unavailable") {
+    return GAP_SCORE_UNAVAILABLE_CONTENT;
+  }
+  return null;
+}
+
+function withCategoryCopy(
+  level: FollowUpReviewLevel,
+  id: FollowUpCategoryId,
+  evidence: string
+): string {
+  const base = responseCopy(level)?.rows[id];
+  return base ? `${base} ${evidence}` : evidence;
+}
+
 function documentedTick(county: CountyDetail): boolean {
   return [
     county.tick_status,
@@ -352,27 +384,40 @@ function unallocatedSentence(county: CountyDetail): string | null {
   return `${count.toLocaleString("en-US")} published 2023 human-surveillance ${noun} not allocated to a county in this release. Check whether any belong in this county before interpreting the county figure.`;
 }
 
-function humanRecommendation(county: CountyDetail): {
+function humanRecommendation(
+  county: CountyDetail,
+  level: FollowUpReviewLevel
+): {
   recommendation: string;
   verifyQuestion: string;
 } {
   const unallocated = unallocatedSentence(county);
   if (humanPublished(county)) {
     const observedZero = county.case_count_floor_2023 === 0;
-    const base = observedZero
+    const evidence = observedZero
       ? "Compare the published observed zero with local surveillance records. An observed zero is not a missing record and does not establish that transmission is absent."
       : "Compare the published county case-count floor with state or local surveillance records, including reporting completeness and residence-versus-exposure differences where investigation notes already exist.";
     return {
-      recommendation: unallocated ? `${base} ${unallocated}` : base,
+      recommendation: [
+        withCategoryCopy(level, "human-disease-surveillance", evidence),
+        unallocated,
+      ]
+        .filter(Boolean)
+        .join(" "),
       verifyQuestion: observedZero
         ? "Do local records agree with this published observed zero, including travel-associated exposure where those notes already exist?"
         : "Do local surveillance records, including exposure location where it was collected, agree with this published county floor?",
     };
   }
-  const base =
+  const evidence =
     "Check whether additional county case information is available through local surveillance records, including suppressed or unallocated reports. A missing published count is not a finding of zero cases.";
   return {
-    recommendation: unallocated ? `${base} ${unallocated}` : base,
+    recommendation: [
+      withCategoryCopy(level, "human-disease-surveillance", evidence),
+      unallocated,
+    ]
+      .filter(Boolean)
+      .join(" "),
     verifyQuestion:
       "Are additional county case records available locally, including suppressed or unallocated reports?",
   };
@@ -606,9 +651,25 @@ function reviewLevel(
   context: FollowUpReviewContext
 ): FollowUpReviewLevel {
   const nextCheck = context.governedNextCheck?.trim() || null;
+  const response = approvedResponse(county.color);
+  if (!county.in_contiguous_tick_scope) {
+    return {
+      colorResponseNote: response
+        ? `Published Atlas gap-score category: ${response}. ${FOLLOW_UP_COLOR_RESPONSE_NOTE}`
+        : null,
+      explanation:
+        "This county is outside the contiguous tick scope of the current release, so a review level is not assigned.",
+      governedNextCheck: nextCheck,
+      reason: "unsupported-jurisdiction",
+      status: "unavailable",
+      title: REVIEW_LEVEL_UNAVAILABLE,
+    };
+  }
   if (context.reviewResultState === "insufficient_evidence") {
     return {
-      colorResponseNote: null,
+      colorResponseNote: response
+        ? `Published Atlas gap-score category: ${response}. ${FOLLOW_UP_COLOR_RESPONSE_NOTE}`
+        : null,
       explanation: INSUFFICIENT_REVIEW_LEVEL_EXPLANATION,
       governedNextCheck: nextCheck,
       reason: "insufficient-evidence",
@@ -616,40 +677,45 @@ function reviewLevel(
       title: REVIEW_LEVEL_UNAVAILABLE,
     };
   }
-  if (
-    context.reviewResultState === "unsupported" ||
-    !county.in_contiguous_tick_scope
-  ) {
+  if (response) {
+    return {
+      colorResponseNote: FOLLOW_UP_COLOR_RESPONSE_NOTE,
+      explanation: LEVEL_EXPLANATIONS[response],
+      governedNextCheck: nextCheck,
+      reason: null,
+      status: "assigned",
+      title: response,
+    };
+  }
+  if (publishedGapScoreMissing(county)) {
     return {
       colorResponseNote: null,
-      explanation: county.in_contiguous_tick_scope
-        ? "This jurisdiction is unsupported in the current review release, so a review level is not assigned."
-        : "This county is outside the contiguous tick scope of the current release, so a review level is not assigned.",
+      explanation: GAP_SCORE_UNAVAILABLE_EXPLANATION,
+      governedNextCheck: nextCheck,
+      reason: "gap-score-unavailable",
+      status: "unavailable",
+      title: GAP_SCORE_UNAVAILABLE_TITLE,
+    };
+  }
+  if (context.reviewResultState === "unsupported") {
+    return {
+      colorResponseNote: null,
+      explanation:
+        "This jurisdiction is unsupported in the current review release, so a review level is not assigned.",
       governedNextCheck: nextCheck,
       reason: "unsupported-jurisdiction",
       status: "unavailable",
       title: REVIEW_LEVEL_UNAVAILABLE,
     };
   }
-  const response = approvedResponse(county.color);
-  if (!response) {
-    return {
-      colorResponseNote: null,
-      explanation:
-        "The published score color is not an approved Action Center response, so a review level is not assigned.",
-      governedNextCheck: nextCheck,
-      reason: "recommendation-unassigned",
-      status: "unavailable",
-      title: REVIEW_LEVEL_UNAVAILABLE,
-    };
-  }
   return {
-    colorResponseNote: FOLLOW_UP_COLOR_RESPONSE_NOTE,
-    explanation: LEVEL_EXPLANATIONS[response],
+    colorResponseNote: null,
+    explanation:
+      "The published score color is not an approved Action Center response, so a review level is not assigned.",
     governedNextCheck: nextCheck,
-    reason: null,
-    status: "assigned",
-    title: response,
+    reason: "recommendation-unassigned",
+    status: "unavailable",
+    title: REVIEW_LEVEL_UNAVAILABLE,
   };
 }
 
@@ -669,25 +735,59 @@ function row(
   };
 }
 
+const GOVERNANCE_UNAVAILABLE_QUESTIONS = [
+  "Why is a follow-up category not assigned for this county?",
+  "Which published evidence is missing, limited, or outside the supported scope?",
+  "Are relevant state or local records available to clarify the evidence without assuming a particular response level?",
+  "Should these limitations be documented for routine review rather than treated as an assigned priority?",
+] as const satisfies FollowUpResponseCopy["questions"];
+
+function questionsFor(
+  level: FollowUpReviewLevel
+): FollowUpResponseCopy["questions"] {
+  return responseCopy(level)?.questions ?? GOVERNANCE_UNAVAILABLE_QUESTIONS;
+}
+
+function applyCategoryCopy(
+  level: FollowUpReviewLevel,
+  entry: FollowUpWorkflowRow
+): FollowUpWorkflowRow {
+  const base = responseCopy(level)?.rows[entry.id];
+  if (!base || entry.recommendation.startsWith(base)) {
+    return entry;
+  }
+  return {
+    ...entry,
+    recommendation: `${base} ${entry.recommendation}`,
+  };
+}
+
 export function buildCountyFollowUp(
   county: CountyDetail,
   context: FollowUpReviewContext = {}
 ): CountyFollowUpWorkflow {
   const level = reviewLevel(county, context);
-  const human = humanRecommendation(county);
+  const human = humanRecommendation(county, level);
   const vector = vectorRecommendation(county);
   const clinical = clinicalRecommendation(county);
   const community = communityRecommendation(county);
   const coordination = coordinationRecommendation(level);
+  const copy = responseCopy(level);
   return {
-    level,
+    level: copy
+      ? {
+          ...level,
+          explanation: copy.explanation,
+        }
+      : level,
+    questions: questionsFor(level),
     rows: [
       row("human-disease-surveillance", county, level, human),
       row("vector-pathogen-surveillance", county, level, vector),
       row("clinical-laboratory-reporting", county, level, clinical),
       row("community-context-outreach", county, level, community),
       row("coordination-documentation", county, level, coordination),
-    ],
+    ].map((entry) => applyCategoryCopy(level, entry)),
     verificationNote:
       level.status === "unavailable" ? FOLLOW_UP_VERIFICATION_NOTE : null,
   };

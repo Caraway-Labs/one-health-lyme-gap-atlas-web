@@ -1867,6 +1867,27 @@
   background: var(--action-plan-surface);
 }
 
+.ux-reset-follow-up-questions {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.ux-reset-follow-up-questions h4,
+.ux-reset-follow-up-questions p {
+  margin: 0;
+}
+
+.ux-reset-follow-up-questions ol {
+  margin: 0.45rem 0 0;
+  padding-left: 1.2rem;
+  list-style: decimal;
+}
+
+.ux-reset-follow-up-questions li + li {
+  margin-top: 0.35rem;
+}
+
 .ux-reset-explorer-map-follow-up .action-plan {
   width: 100%;
   margin-top: 0;
