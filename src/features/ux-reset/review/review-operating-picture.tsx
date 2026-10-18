@@ -32,7 +32,7 @@ import {
   EXPLORER_AVAILABLE_DATA_OPEN,
   type ExplorerAvailableDataGate,
 } from "@/features/ux-reset/review/explorer-county-reference";
-import { ExplorerMapFollowUp } from "@/features/ux-reset/review/explorer-map-follow-up";
+import { ExplorerLowerWorkspace } from "@/features/ux-reset/review/explorer-lower-workspace";
 import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
   completenessLayerGate,
@@ -918,6 +918,7 @@ export function ReviewOperatingPicture({
               .map((county) => `${county.fips}:${county.color ?? ""}`)
               .join(" ")}
             data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
+            data-selected-fips={selectedFips}
             data-testid="review-state-map-region"
             aria-busy={
               availableDataGate.kind === "loading" ||
@@ -1004,7 +1005,7 @@ export function ReviewOperatingPicture({
             paint={mapPaint}
           />
         </Card>
-        <ExplorerMapFollowUp
+        <ExplorerLowerWorkspace
           fips={selectedFips}
           governedNextCheck={preview?.followUp ?? null}
           releaseId={releaseId}
