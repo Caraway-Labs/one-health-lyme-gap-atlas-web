@@ -34,7 +34,7 @@ Required measure fields include `measure_id`, `indicator_id`, `label`, `definiti
 | `page_size` | Optional. 1 to 500. Default 100 |
 | `page_token` | Optional opaque token from the previous page |
 
-The published annual surveillance period for `case_count_floor_2023` is 2023. Land-cover measures in the current catalog use temporal semantics `2025`. Read `temporal_semantics` on the measure you selected. The observations operation also says only the annual 2023 period is the published surveillance period, and that separately enabled series can use other labeled periods. The five current slices and the temporal parameters each one rejects are in [Observation queries](/docs/develop/observation-queries).
+The published annual surveillance period for `case_count_floor_2023` is 2023. Land-cover measures in the current catalog use temporal semantics `2025`. Read `temporal_semantics` on the measure you selected. The observations operation also says only the annual 2023 period is the published surveillance period, and that separately enabled series can use other labeled periods. The checked slices, including annual land cover, and the temporal parameters each one rejects are in [Observation queries](/docs/develop/observation-queries).
 
 ```sh
 curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023'
