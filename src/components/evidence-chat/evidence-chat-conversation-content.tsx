@@ -515,7 +515,7 @@ function AskAtlasFrame({
   return <div className="ux-reset-ask-atlas-column">{children}</div>;
 }
 
-/** Keep a new turn readable above the sticky composer without jumping a turn that is already in view. */
+/** Keep a new turn readable above the sticky composer. Tall turns open at their start; turns that fit stay bottom-aligned. */
 function scrollAnchorAboveComposer(scroller: HTMLElement, anchor: HTMLElement) {
   const scrollerBox = scroller.getBoundingClientRect();
   const anchorBox = anchor.getBoundingClientRect();
@@ -534,6 +534,11 @@ function scrollAnchorAboveComposer(scroller: HTMLElement, anchor: HTMLElement) {
         )
       : 0;
   const visibleBottom = scrollerBox.bottom - reserve;
+  const visibleHeight = visibleBottom - scrollerBox.top;
+  if (anchorBox.height > visibleHeight) {
+    scroller.scrollTop += anchorBox.top - scrollerBox.top;
+    return;
+  }
   if (anchorBox.bottom > visibleBottom) {
     scroller.scrollTop += anchorBox.bottom - visibleBottom;
     return;

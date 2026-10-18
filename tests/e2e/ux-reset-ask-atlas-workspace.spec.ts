@@ -745,6 +745,124 @@ test("centers the research column and keeps history in a drawer", async ({
   await expect(page.getByRole("button", { name: /^Line one/ })).toBeVisible();
 });
 
+async function tallAnswerPlacement(page: Page) {
+  return page.evaluate(() => {
+    const scroller = document.querySelector(".ux-reset-pro-scroll");
+    const turn = document.querySelector(".chat-turn.assistant");
+    const composer = document.querySelector(".chat-composer-dock");
+    if (
+      !(scroller instanceof HTMLElement) ||
+      !(turn instanceof HTMLElement) ||
+      !(composer instanceof HTMLElement)
+    ) {
+      return null;
+    }
+    const scrollerBox = scroller.getBoundingClientRect();
+    const turnBox = turn.getBoundingClientRect();
+    const composerBox = composer.getBoundingClientRect();
+    const visibleBottom = Math.min(scrollerBox.bottom, composerBox.top);
+    return {
+      endBelowFold: turnBox.bottom > visibleBottom + 8,
+      startAligned: Math.abs(turnBox.top - scrollerBox.top) <= 4,
+      tallerThanVisible: turnBox.height > visibleBottom - scrollerBox.top + 8,
+    };
+  });
+}
+
+async function shortFollowUpPlacement(page: Page) {
+  return page.evaluate(() => {
+    const scroller = document.querySelector(".ux-reset-pro-scroll");
+    const turn = document.querySelector(".chat-turn.assistant:last-of-type");
+    const composer = document.querySelector(".chat-composer-dock");
+    if (
+      !(scroller instanceof HTMLElement) ||
+      !(turn instanceof HTMLElement) ||
+      !(composer instanceof HTMLElement)
+    ) {
+      return null;
+    }
+    const scrollerBox = scroller.getBoundingClientRect();
+    const turnBox = turn.getBoundingClientRect();
+    const composerBox = composer.getBoundingClientRect();
+    const visibleBottom = Math.min(scrollerBox.bottom, composerBox.top);
+    const visibleHeight = visibleBottom - scrollerBox.top;
+    return {
+      bottomAligned: Math.abs(turnBox.bottom - visibleBottom) <= 8,
+      fits: turnBox.height < visibleHeight,
+      topInView: turnBox.top >= scrollerBox.top - 1,
+    };
+  });
+}
+
+test("opens a tall answer at its start and keeps a short follow-up bottom-aligned", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await installExploreMocks(page);
+  const start = "Tall answer starts with this sentence.";
+  const end = "Tall answer ends with this sentence.";
+  const tallAnswer = `${start} ${"Reviewed evidence continues with attributable detail. ".repeat(80)}${end}`;
+  await page.route("**/v1/knowledge-graph/chat", async (route) => {
+    const body = route.request().postDataJSON() as { message?: string };
+    const followUp = body.message?.includes("short follow-up") ?? false;
+    await fulfillJson(
+      route,
+      chatResponse(
+        followUp ? "Short follow-up fits above the composer." : tallAnswer,
+        followUp ? "request-short" : "request-tall",
+        "conversation-tall"
+      )
+    );
+  });
+
+  await page.goto("/askatlas");
+  const composer = page.getByLabel("Your research question");
+  await composer.fill("Show the start of a long answer");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(page.getByText(start)).toBeVisible();
+  await expect
+    .poll(() => tallAnswerPlacement(page))
+    .toStrictEqual({
+      endBelowFold: true,
+      startAligned: true,
+      tallerThanVisible: true,
+    });
+  await page.screenshot({
+    path: testInfo.outputPath("ask-atlas-desktop-tall-start.png"),
+  });
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (key) => localStorage.getItem(key)?.includes("conversation-tall"),
+        CHAT_STORAGE_KEY
+      )
+    )
+    .toBe(true);
+  await page.goto("/askatlas?conversation=conversation-tall");
+  await expect(page.getByText(start)).toBeVisible();
+  await expect
+    .poll(() => tallAnswerPlacement(page))
+    .toStrictEqual({
+      endBelowFold: true,
+      startAligned: true,
+      tallerThanVisible: true,
+    });
+
+  await composer.fill("Ask a short follow-up");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(
+    page.getByText("Short follow-up fits above the composer.")
+  ).toBeVisible();
+  await expect
+    .poll(() => shortFollowUpPlacement(page))
+    .toStrictEqual({
+      bottomAligned: true,
+      fits: true,
+      topInView: true,
+    });
+});
+
 test("keeps a long answer above a sticky composer without covering the footer", async ({
   page,
 }, testInfo) => {
