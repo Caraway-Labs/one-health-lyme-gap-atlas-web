@@ -206,7 +206,14 @@ test.describe("Explorer and Compare introductions", () => {
     );
     await expect(page.getByTestId("page-introduction-compare")).toHaveCount(0);
     await expect(page.getByTestId("explorer-county-toolbar")).toBeVisible();
-    await expect(page.getByText(EXPLORER_COUNTY_EXPORT_NOTE)).toBeVisible();
+    await page.getByTestId("explorer-download-help").focus();
+    await expect(
+      page.getByTestId("explorer-county-export-tooltip")
+    ).toContainText(EXPLORER_COUNTY_EXPORT_NOTE);
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByTestId("explorer-county-export-tooltip")
+    ).toHaveCount(0);
     await expect(page.getByTestId("explorer-browse")).toBeVisible();
     await page.screenshot({
       path: "/opt/cursor/artifacts/after-explorer-1440.png",
@@ -229,7 +236,9 @@ test.describe("Explorer and Compare introductions", () => {
     const search = page.getByTestId("explorer-county-search");
     await search.fill("01001");
     await search.press("Enter");
+    await expect(search).toHaveValue("Autauga, AL - 01001");
     await expect(page).toHaveURL(/county=01001/);
+    await expect(page).not.toHaveURL(/Autauga/);
     await expect(page).toHaveURL(/scope=AL/);
     await search.fill("");
     await expect(page.getByTestId("review-candidate")).toHaveCount(2);

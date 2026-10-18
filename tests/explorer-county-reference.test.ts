@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  countyQueryAfterSelectionChange,
   countyReferenceFromScoreSummaries,
   countyReferenceMatchesQuery,
   explorerAvailableDataGate,
   explorerCountyListCsv,
   explorerCountyListFilename,
+  explorerCountySelectionLabel,
   filterExplorerCountyReference,
   type ExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
@@ -189,11 +191,38 @@ describe("explorer county reference", () => {
     });
   });
 
-  it("matches a selected county label that contains the name and FIPS", () => {
+  it("formats the selected county without using the label as an id", () => {
+    expect(explorerCountySelectionLabel(autauga)).toBe("Autauga, AL - 01001");
+    expect(
+      countyReferenceMatchesQuery(autauga, "Autauga, AL - 01001")
+    ).toBeTruthy();
     expect(
       countyReferenceMatchesQuery(autauga, "Autauga, AL · 01001")
     ).toBeTruthy();
+    expect(countyReferenceMatchesQuery(autauga, "al")).toBeTruthy();
     expect(countyReferenceMatchesQuery(baldwin, "01001")).toBeFalsy();
+  });
+
+  it("carries a committed FIPS when the selection changes and keeps typed search", () => {
+    expect({
+      backToAutauga: countyQueryAfterSelectionChange("01011", "01011", "01001"),
+      clear: countyQueryAfterSelectionChange("01011", "01011", null),
+      forwardToBullock: countyQueryAfterSelectionChange(
+        "01001",
+        "01001",
+        "01011"
+      ),
+      initialSelection: countyQueryAfterSelectionChange("", null, "01001"),
+      listClick: countyQueryAfterSelectionChange("", "01001", "01011"),
+      typedSearch: countyQueryAfterSelectionChange("bull", "01001", "01011"),
+    }).toStrictEqual({
+      backToAutauga: "01001",
+      clear: "",
+      forwardToBullock: "01011",
+      initialSelection: null,
+      listClick: null,
+      typedSearch: null,
+    });
   });
 
   it("writes a quoted five-digit FIPS and does not include score columns", () => {
