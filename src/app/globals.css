@@ -4410,7 +4410,7 @@ select:focus-visible {
 }
 .front-porch-card-finding em {
   font-style: italic;
-  font-weight: 600;
+  font-weight: 700;
 }
 .front-porch-card-period {
   font-size: 12px;
@@ -4853,6 +4853,7 @@ select:focus-visible {
   }
   .front-porch-mobile-note .front-porch-card-finding em {
     font-style: italic;
+    font-weight: 700;
   }
   .front-porch-trust {
     padding: 80px 24px;

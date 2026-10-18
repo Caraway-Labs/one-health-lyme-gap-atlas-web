@@ -195,6 +195,31 @@ describe("front porch view", () => {
     ).toBeTruthy();
     expect(screen.getByText(FRONT_PORCH_HERO_SUPPORT)).toBeTruthy();
     expect(screen.getAllByText(FRONT_PORCH_GLASS_CALLOUT)).toHaveLength(1);
+    expect(
+      [...document.querySelectorAll(".front-porch-card-finding em")].map(
+        (name) => ({
+          name: name.textContent,
+          line: name.parentElement?.textContent,
+        })
+      )
+    ).toStrictEqual([
+      {
+        name: "Ixodes scapularis",
+        line: "Ixodes scapularis: Established",
+      },
+      {
+        name: "Borrelia burgdorferi",
+        line: "Borrelia burgdorferi: Present",
+      },
+      {
+        name: "Ixodes scapularis",
+        line: "Ixodes scapularis: Established",
+      },
+      {
+        name: "Borrelia burgdorferi",
+        line: "Borrelia burgdorferi: Present",
+      },
+    ]);
     expect({
       documentation: screen
         .getByRole("link", { name: "Documentation" })
