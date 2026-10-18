@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import { releaseViewportRuns } from "./release-phone-viewport";
 
@@ -156,6 +156,156 @@ test("keeps the developer quickstart usable at 375px", async ({
     return root.scrollWidth - root.clientWidth;
   });
   expect(supportOverflow).toBeLessThanOrEqual(1);
+});
+
+const scoringTabLabel = "county-v1 scoring";
+const evidenceTabLabel = "county-v2 evidence";
+const scoringPanelText = "Cache-Control: public, max-age=300, must-revalidate";
+const evidencePanelText =
+  "county-v2 requires release, exact period and distinct measures.";
+
+async function expectTemplatePanel(
+  page: Page,
+  label: string,
+  visibleText: string,
+  hiddenText: string
+) {
+  await expect(
+    page.getByRole("tab", { exact: true, name: label })
+  ).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  await expect(panel).toHaveCount(1);
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText(visibleText);
+  await expect(page.getByText(hiddenText)).toBeHidden();
+}
+
+test("switches county report template tabs and records the selector", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/docs/develop/workflows");
+  await expect(
+    page.getByRole("heading", { name: "Download a county report", exact: true })
+  ).toBeVisible();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.getByRole("tab", { exact: true, name: evidenceTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    evidenceTabLabel,
+    evidencePanelText,
+    "Observation context requires county-v2."
+  );
+  await page.getByRole("tab", { exact: true, name: scoringTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-workflows.png"),
+  });
+
+  const workflowResults = await new AxeBuilder({ page })
+    .include("main")
+    .analyze();
+  expect(
+    workflowResults.violations.filter((violation) =>
+      ["critical", "serious"].includes(violation.impact ?? "")
+    )
+  ).toEqual([]);
+
+  await page.goto(
+    "/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get"
+  );
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.getByRole("tab", { exact: true, name: evidenceTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    evidenceTabLabel,
+    evidencePanelText,
+    "Observation context requires county-v2."
+  );
+  await page.getByRole("tab", { exact: true, name: scoringTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-reference.png"),
+  });
+  const referenceResults = await new AxeBuilder({ page })
+    .include("main")
+    .analyze();
+  expect(
+    referenceResults.violations.filter((violation) =>
+      ["critical", "serious"].includes(violation.impact ?? "")
+    ),
+    "county report reference"
+  ).toEqual([]);
+});
+
+test("keeps county report template tabs usable at 375px", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 375),
+    "Phone-width county report docs run on the mobile project."
+  );
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/docs/develop/workflows");
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  await page.getByRole("tab", { exact: true, name: evidenceTabLabel }).click();
+  await expectTemplatePanel(
+    page,
+    evidenceTabLabel,
+    evidencePanelText,
+    "Observation context requires county-v2."
+  );
+  const workflowOverflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth - root.clientWidth;
+  });
+  expect(workflowOverflow).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-workflows-phone.png"),
+  });
+
+  await page.goto("/docs/api-reference/counties");
+  await page
+    .getByRole("heading", { name: "Download a county report", exact: true })
+    .scrollIntoViewIfNeeded();
+  await expectTemplatePanel(
+    page,
+    scoringTabLabel,
+    scoringPanelText,
+    evidencePanelText
+  );
+  const referenceOverflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth - root.clientWidth;
+  });
+  expect(referenceOverflow).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-reference-phone.png"),
+  });
 });
 
 test("renders MCP client recipes, transport, and copyable guardrails", async ({
