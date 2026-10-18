@@ -115,23 +115,25 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
     );
   });
   await page.goto(EXPLORE_URL);
-  await expect(page.getByTestId("ask-atlas-launcher")).toHaveAttribute(
-    "href",
-    /page_ref=/
-  );
-  await page.getByTestId("ask-atlas-launcher").click();
+  const header = page.locator(".ux-reset-pro-app .app-header");
+  await expect(header.getByRole("link", { name: "Ask Atlas" })).toHaveCount(0);
+  await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
+  const ask = page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name: "Ask Atlas", exact: true });
+  if (!(await ask.isVisible())) {
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  }
+  await ask.click();
   await expect(page).toHaveURL(/\/askatlas\?/);
-  await expect(page).not.toHaveURL(/county=/);
-  await expect(page).toHaveURL(/page_ref=/);
+  await expect(page).toHaveURL(/county=08001/);
+  await expect(page).not.toHaveURL(/page_ref=/);
   await expect(page).not.toHaveURL(/conversation=/);
   await expect(
     page.getByRole("heading", { level: 1, name: "Ask Atlas" })
   ).toBeVisible();
   await expect(page.getByText("Reviewed literature").first()).toBeVisible();
-  await expect(page.getByTestId("ask-atlas-page-reference")).toHaveAttribute(
-    "data-reference-state",
-    "validated"
-  );
+  await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
   await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
   await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
   await page.getByLabel("Your research question").fill(QUESTION);
@@ -156,7 +158,11 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
 
   await page.goBack();
   await expect(page).toHaveURL(/\/explore/);
-  await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
+  await expect(
+    page.locator(".ux-reset-pro-app .app-header").getByRole("link", {
+      name: "Ask Atlas",
+    })
+  ).toHaveCount(0);
   await page.goForward();
   await expect(page).toHaveURL(/\/askatlas\?/);
   await expect(
