@@ -159,7 +159,15 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page).toHaveURL(/\/compare/, { timeout: 20_000 });
     await expect(page).toHaveURL(/mode=follow-up/);
     await expect(page).toHaveURL(/return=review/);
-    await page.getByTestId("compare-return").click();
+    const openNavigation = page.getByRole("button", {
+      name: "Open navigation",
+    });
+    if (await openNavigation.isVisible()) {
+      await openNavigation.click();
+    }
+    await page
+      .getByRole("link", { exact: true, name: "Atlas Explorer" })
+      .click();
     await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/mode=follow-up/);
     await expect(page).toHaveURL(/county=08001/);

@@ -84,9 +84,11 @@ export type CompareRecoveryState =
   | "unknown";
 
 export type CompareCountyOption = {
+  countyName: string;
   disabled: boolean;
   fips: string;
   label: string;
+  stateLabel: string;
 };
 
 export type CompareWorkspace = {
@@ -492,9 +494,11 @@ export function useCompareWorkspace(): CompareWorkspace {
   }
   const options = [...optionRows.entries()]
     .map(([fips, county]) => ({
+      countyName: county?.county ?? `County ${fips}`,
       disabled: false,
       fips,
       label: compareCountyOptionLabel(county, fips),
+      stateLabel: county ? county.stateName || county.state : "",
     }))
     .toSorted(
       (left, right) =>

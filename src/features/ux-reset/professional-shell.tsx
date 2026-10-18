@@ -240,13 +240,18 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   );
 
   const shellHref = useCallback(
-    (route: ResetRoute) =>
-      uxResetShellHandoffHref(
+    (route: ResetRoute) => {
+      const explorerReturn = committedExploreNavigation?.explorerReturnHref;
+      if (route.id === "explorer" && explorerReturn) {
+        return explorerReturn;
+      }
+      return uxResetShellHandoffHref(
         route.externalHref ?? route.href,
         pathname,
         shellSearchParams
-      ),
-    [pathname, shellSearchParams]
+      );
+    },
+    [committedExploreNavigation, pathname, shellSearchParams]
   );
 
   useEffect(() => {

@@ -498,7 +498,7 @@ describe("two-county aligned comparison", () => {
     expect(screen.getByTestId("compare-workspace").dataset.staleUrl).toBe(
       "true"
     );
-    fireEvent.click(screen.getByRole("button", { name: "Clear counties" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear first county" }));
     await waitForPair("");
     expect(screen.getByTestId("compare-workspace").dataset.fips).toBe("");
     expect(navigationSearchParams.get("compare")).toBe("08001,08013");
@@ -968,25 +968,27 @@ describe("two-county aligned comparison", () => {
     );
     await waitForPair("08001");
     const openedHref =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: openedHref.includes("county=08001"),
-      label: screen.getByTestId("compare-return").textContent,
       pair: openedHref.includes("compare="),
       path: openedHref.includes("/explore"),
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
       returnParam: openedHref.includes("return="),
     }).toStrictEqual({
       county: true,
-      label: "Return to Explorer",
       pair: true,
       path: true,
+      returnButton: null,
+      returnLink: null,
       returnParam: false,
     });
 
     await pickCounty("Second county", /Boulder, Colorado/);
     await waitForPair("08001,08013");
     const edited =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
     const investigateHref =
       screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
@@ -1003,10 +1005,12 @@ describe("two-county aligned comparison", () => {
       returnTarget: "review",
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear counties" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Clear both counties" })
+    );
     await waitForPair("");
     const cleared =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: cleared.includes("county=08001"),
       fips: screen.getByTestId("compare-workspace").dataset.fips,
@@ -1026,7 +1030,7 @@ describe("two-county aligned comparison", () => {
     await pickCounty("Second county", /Albany, New York/);
     await waitForPair("08001,36001");
     const href =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: href.includes("county=08001"),
       pair: href.includes("compare=08001%2C36001"),
@@ -1085,23 +1089,30 @@ describe("two-county aligned comparison", () => {
   it("leaves a direct link usable when return is absent or invalid", async () => {
     const direct = renderCompare("?compare=08001,08013&scope=CO");
     await waitForPair("08001,08013");
-    expect(screen.getByTestId("compare-return").textContent).toBe(
-      "Return to Explorer"
-    );
-    expect(screen.getByTestId("compare-workspace").dataset.return).toBe("");
+    expect({
+      pairIssue: screen.getByTestId("compare-workspace").dataset.return,
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
+    }).toStrictEqual({
+      pairIssue: "",
+      returnButton: null,
+      returnLink: null,
+    });
     direct.unmount();
 
     renderCompare("?compare=08001,not-a-fips&return=assistant");
     await waitForPair("08001");
-    expect(screen.getByTestId("compare-return").textContent).toBe(
-      "Return to Explorer"
-    );
-    expect(screen.getByTestId("compare-workspace").dataset.pairIssue).toBe(
-      "invalid"
-    );
-    expect(screen.getByTestId("compare-empty").textContent).toContain(
-      "second county"
-    );
+    expect({
+      empty: screen.getByTestId("compare-empty").textContent,
+      pairIssue: screen.getByTestId("compare-workspace").dataset.pairIssue,
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
+    }).toStrictEqual({
+      empty: expect.stringContaining("second county"),
+      pairIssue: "invalid",
+      returnButton: null,
+      returnLink: null,
+    });
   });
 });
 
