@@ -25,6 +25,11 @@ import {
   renderPublicApiReference,
   syncPublicApiReference,
 } from "@/lib/public-openapi-reference";
+import {
+  getDocsUrl,
+  getPublishedApiOrigin,
+  getSiteOrigin,
+} from "@/lib/public-origins";
 
 const temporaryRoots: string[] = [];
 
@@ -97,6 +102,41 @@ describe("public OpenAPI reference", () => {
     expect(fileMap(pages)).toStrictEqual(
       fileMap(renderPublicApiReference(contract))
     );
+  });
+
+  it("renders county report template tabs from the pinned contract", () => {
+    const pages = renderPublicApiReference(
+      readAndLoadPublicOpenApiContract(process.cwd())
+    );
+    const counties = requiredFile(pages, "counties.mdx");
+    expect(counties).toContain(
+      'import { Tab, Tabs } from "fumadocs-ui/components/tabs";'
+    );
+    expect(
+      missingPhrases(counties, [
+        'items={["county-v1 scoring","county-v2 evidence"]}',
+        'value="county-v1-scoring"',
+        'value="county-v2-evidence"',
+        "Observation context requires county-v2.",
+        "county-v2 requires release, exact period and distinct measures.",
+        "The requested county report template is not available.",
+        "Cache-Control: public, max-age=300, must-revalidate",
+        "Cache-Control: no-store",
+        "lower 48 states",
+        "District of Columbia",
+        `${getPublishedApiOrigin({})}/v1/counties/36061/report.pdf?template=county-v1`,
+        `${getSiteOrigin({})}/problems/http-422`,
+        getDocsUrl({}),
+        "| `ecological_share` | 65 | 40–85, multiple of 5 |",
+        "| `low_incidence_breakpoint` | 10 | 5–25 |",
+        "| `missing_human_weakness` | 75 | 40–90, multiple of 5 |",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      counties.includes("Alaska") || counties.includes("Hawaii")
+    ).toBeFalsy();
+    const states = requiredFile(pages, "states.mdx");
+    expect(states).not.toContain("fumadocs-ui/components/tabs");
   });
 
   it("renders Retry-After, descriptions, and examples for 429 and 503", () => {

@@ -1,7 +1,9 @@
 ---
 title: Workflow guides
-description: Query one county, compare counties, read environmental context, and cite the observation you actually received.
+description: Query one county, compare counties, read environmental context, choose a county PDF template, and cite the observation you actually received.
 ---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 Each workflow is an anonymous GET. Use county FIPS in the lower 48 or the District of Columbia. Replace example ids if discovery returns different ones.
 
@@ -119,3 +121,78 @@ The same URL reads the current release. It is not a permanent snapshot. The save
 | Invalid parameters | Fix the query and retrieve again. A 400 body is not an observation |
 | Rate limited or unavailable | Wait for `Retry-After` when present, then retrieve again. Keep `request_id` if you need support |
 | Gap, suppression, or no linked record | Cite `value_state` and the null or literal value. Do not cite a reconstructed number |
+
+## Download a county report
+
+Goal: download one county PDF with the selector that matches the report you need. The route is `GET /v1/counties/{fips}/report.pdf`. `template` defaults to `county-v1`. Use a county FIPS in the lower 48 states or the District of Columbia. Checked for FIPS `11001`: HTTP `200`.
+
+A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim. Parameter tables stay in the [county report reference](/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get).
+
+<Tabs items={["county-v1 scoring", "county-v2 evidence"]}>
+  <Tab value="county-v1-scoring">
+
+`county-v1` is the scoring selector. `dataset_version` is optional. These score settings are optional and bind the scoring inputs:
+
+| Parameter                  | Default | Bounds               |
+| -------------------------- | ------- | -------------------- |
+| `ecological_share`         | 65      | 40–85, multiple of 5 |
+| `low_incidence_breakpoint` | 10      | 5–25                 |
+| `missing_human_weakness`   | 75      | 40–90, multiple of 5 |
+
+`period_start`, `period_end`, and `measure_id` are forbidden on `county-v1`. Sending one of them returns HTTP `422` and `application/problem+json`. Checked on 18 October 2026 for FIPS `36061` with an observation period:
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-422",
+  "title": "Request failed",
+  "status": 422,
+  "detail": "Observation context requires county-v2.",
+  "instance": "/v1/counties/36061/report.pdf",
+  "request_id": "example-request-id",
+  "errors": null
+}
+```
+
+An unknown template that still matches the operation's template pattern returns HTTP `422` with detail `The requested county report template is not available.` A template outside that pattern returns HTTP `422` with detail `One or more request values are invalid.`
+
+A successful county-v1 response is `application/pdf` and uses `Cache-Control: public, max-age=300, must-revalidate`. `ETag` with `If-None-Match` can return `304`.
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/counties/36061/report.pdf?template=county-v1'
+```
+
+  </Tab>
+  <Tab value="county-v2-evidence">
+
+`county-v2` is the evidence selector. It requires `dataset_version`, `period_start`, `period_end`, and `measure_id`. Pass the observation `release_id` as `dataset_version`. `period_start` and `period_end` are the exact inclusive dates. `measure_id` accepts 1–20 distinct ids, repeated or comma-separated.
+
+A missing release, period, or measure list, a duplicate measure id, more than 20 ids, or a reversed period returns HTTP `422`. Checked on 18 October 2026:
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-422",
+  "title": "Request failed",
+  "status": 422,
+  "detail": "county-v2 requires release, exact period and distinct measures.",
+  "instance": "/v1/counties/36061/report.pdf",
+  "request_id": "example-request-id",
+  "errors": null
+}
+```
+
+A `dataset_version` the service cannot resolve returns HTTP `404` with detail `County or dataset release not found`. An unknown measure returns HTTP `404` `RESOURCE_NOT_FOUND` with detail `Measure has no published county observations.` The contract also returns HTTP `503` when provenance is missing or mismatched, and HTTP `413` when the report exceeds resource limits.
+
+Score settings are the county-v1 inputs above. A checked county-v2 request that also sent `ecological_share=65` still returned HTTP `200` and `Cache-Control: no-store`.
+
+A successful county-v2 response uses `Cache-Control: no-store`. The service revalidates authoritative context before a cache response or `304`. `ETag` is still present.
+
+Replace the release id in this checked URL with the observation `release_id` you are citing:
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/counties/36061/report.pdf?template=county-v2&dataset_version=governed-2026-10-15-january-climate-prod&period_start=2023-01-01&period_end=2023-12-31&measure_id=case_count_floor_2023'
+```
+
+  </Tab>
+</Tabs>
+
+The published documentation home for these guides is [https://onehealthatlas.org/docs](https://onehealthatlas.org/docs).

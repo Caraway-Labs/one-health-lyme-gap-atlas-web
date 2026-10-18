@@ -8,6 +8,12 @@ import {
 } from "node:fs";
 import path from "node:path";
 
+import {
+  getDocsUrl,
+  getPublishedApiOrigin,
+  getSiteOrigin,
+} from "./public-origins.ts";
+
 /**
  * Build-time rendering of the public Atlas OpenAPI contract.
  *
@@ -1156,6 +1162,237 @@ function renderIndex(
   return `${lines.join("\n").trim()}\n`;
 }
 
+const COUNTY_REPORT_OPERATION_ID =
+  "county_report_pdf_v1_counties__fips__report_pdf_get";
+const COUNTY_REPORT_TEMPLATE_TABS = ["county-v1 scoring", "county-v2 evidence"];
+const COUNTY_REPORT_SCORE_PARAMETERS = [
+  "ecological_share",
+  "low_incidence_breakpoint",
+  "missing_human_weakness",
+] as const;
+const COUNTY_REPORT_EVIDENCE_PARAMETERS = [
+  "period_start",
+  "period_end",
+  "measure_id",
+] as const;
+const COUNTY_REPORT_CHECKED_ON = "18 October 2026";
+const COUNTY_REPORT_V1_CACHE =
+  "Cache-Control: public, max-age=300, must-revalidate";
+const COUNTY_REPORT_V2_CACHE = "Cache-Control: no-store";
+const COUNTY_REPORT_V1_SELECTOR_DETAIL =
+  "Observation context requires county-v2.";
+const COUNTY_REPORT_V2_SELECTOR_DETAIL =
+  "county-v2 requires release, exact period and distinct measures.";
+const COUNTY_REPORT_UNKNOWN_TEMPLATE_DETAIL =
+  "The requested county report template is not available.";
+
+type CountyReportSchemaFacts = {
+  defaultValue?: number;
+  maxItems?: number;
+  maximum?: number;
+  minimum?: number;
+  multipleOf?: number;
+  pattern?: string;
+  stringDefault?: string;
+};
+
+function renderCountyReportTemplateGuide(
+  operation: OperationView
+): string | undefined {
+  if (operation.operationId !== COUNTY_REPORT_OPERATION_ID) return undefined;
+  assertCountyReportContract(operation);
+  const parameters = new Map(
+    operation.parameters.map((parameter) => [parameter.name, parameter])
+  );
+  const template = countyReportSchemaFacts(parameters.get("template")?.schema);
+  const measure = countyReportSchemaFacts(parameters.get("measure_id")?.schema);
+  if (
+    template.stringDefault !== "county-v1" ||
+    template.pattern === undefined
+  ) {
+    throw new Error(
+      "County report template schema no longer matches county-v1."
+    );
+  }
+  if (measure.maxItems === undefined) {
+    throw new Error("County report measure_id is missing maxItems.");
+  }
+  const apiOrigin = getPublishedApiOrigin({});
+  const docsUrl = getDocsUrl({});
+  const exampleCounty = "36061";
+  const reportPath = `/v1/counties/${exampleCounty}/report.pdf`;
+  const scoringUrl = `${apiOrigin}${reportPath}?template=county-v1`;
+  const evidenceUrl = `${apiOrigin}${reportPath}?template=county-v2&dataset_version=RELEASE_ID&period_start=2023-01-01&period_end=2023-12-31&measure_id=case_count_floor_2023`;
+  const [scoringTab, evidenceTab] = COUNTY_REPORT_TEMPLATE_TABS;
+  if (!(scoringTab && evidenceTab && template.stringDefault)) {
+    throw new Error("County report template tabs are incomplete.");
+  }
+  const scoreRows = COUNTY_REPORT_SCORE_PARAMETERS.map((name) =>
+    countyReportScoreRow(name, parameters.get(name)?.schema)
+  );
+  const evidenceList = joinProseList([
+    "`dataset_version`",
+    ...COUNTY_REPORT_EVIDENCE_PARAMETERS.map((name) => `\`${name}\``),
+  ]);
+
+  return [
+    "### Template selection",
+    "",
+    `Choose \`template\` on \`${operation.method} ${operation.path}\`. The default is \`${template.stringDefault}\`. Use a county FIPS in the lower 48 states or the District of Columbia. A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim.`,
+    "",
+    "The same selector rules, with the requests checked against the published API, are in the [workflow guides](/docs/develop/workflows#download-a-county-report).",
+    "",
+    `<Tabs items={${JSON.stringify(COUNTY_REPORT_TEMPLATE_TABS)}}>`,
+    `  <Tab value="county-v1-scoring">`,
+    "",
+    `\`county-v1\` is the scoring selector. \`dataset_version\` is optional. These score settings are optional and bind the scoring inputs:`,
+    "",
+    "| Parameter | Default | Bounds |",
+    "| --- | --- | --- |",
+    ...scoreRows,
+    "",
+    `\`period_start\`, \`period_end\`, and \`measure_id\` are forbidden on \`county-v1\`. Sending one of them returns HTTP \`422\`. Checked on ${COUNTY_REPORT_CHECKED_ON} for FIPS \`${exampleCounty}\`:`,
+    "",
+    jsonFence(
+      countyReportProblem(422, COUNTY_REPORT_V1_SELECTOR_DETAIL, reportPath)
+    ),
+    "",
+    `An unknown registered-pattern template returns HTTP \`422\` with detail \`${COUNTY_REPORT_UNKNOWN_TEMPLATE_DETAIL}\` A template outside \`${template.pattern ?? ""}\` returns HTTP \`422\` with detail \`One or more request values are invalid.\``,
+    "",
+    `A successful county-v1 response uses \`${COUNTY_REPORT_V1_CACHE}\`. \`ETag\` with \`If-None-Match\` can return \`304\`.`,
+    "",
+    "```sh",
+    `curl -fsS '${scoringUrl}'`,
+    "```",
+    "",
+    "  </Tab>",
+    `  <Tab value="county-v2-evidence">`,
+    "",
+    `\`county-v2\` is the evidence selector. It requires ${evidenceList}. Pass the observation \`release_id\` as \`dataset_version\`. \`period_start\` and \`period_end\` are the exact inclusive dates. \`measure_id\` accepts 1–${String(measure.maxItems)} distinct ids, repeated or comma-separated.`,
+    "",
+    `A missing release, period, or measure list, a duplicate measure id, more than ${String(measure.maxItems)} ids, or a reversed period returns HTTP \`422\`. Checked on ${COUNTY_REPORT_CHECKED_ON}:`,
+    "",
+    jsonFence(
+      countyReportProblem(422, COUNTY_REPORT_V2_SELECTOR_DETAIL, reportPath)
+    ),
+    "",
+    "An unknown measure returns HTTP `404` `RESOURCE_NOT_FOUND`. The contract also returns HTTP `503` when provenance is missing or mismatched, and HTTP `413` when the report exceeds resource limits.",
+    "",
+    `Score settings are the county-v1 inputs above. A checked county-v2 request that also sent \`ecological_share=65\` still returned HTTP \`200\` and \`${COUNTY_REPORT_V2_CACHE}\`.`,
+    "",
+    `A successful county-v2 response uses \`${COUNTY_REPORT_V2_CACHE}\`. The service revalidates authoritative context before a cache response or \`304\`. \`ETag\` is still present.`,
+    "",
+    "Replace `RELEASE_ID` with the observation `release_id`:",
+    "",
+    "```sh",
+    `curl -fsS '${evidenceUrl}'`,
+    "```",
+    "",
+    `The same checked requests are in the [workflow guides](${docsUrl}/develop/workflows#download-a-county-report).`,
+    "",
+    "  </Tab>",
+    "</Tabs>",
+  ].join("\n");
+}
+
+function joinProseList(items: readonly string[]): string {
+  if (items.length < 2) return items.join("");
+  const last = items.at(-1) ?? "";
+  return `${items.slice(0, -1).join(", ")}, and ${last}`;
+}
+
+function assertCountyReportContract(operation: OperationView): void {
+  const requiredSentences = [
+    "Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id",
+    "V1 rejects observation selectors with 422",
+    "V2 responses use no-store",
+    "V1 public cache TTL 300 seconds with revalidation",
+    "Unknown templates return 422",
+  ];
+  const missing = requiredSentences.filter(
+    (sentence) => !operation.description.includes(sentence)
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `County report template guide is missing contract text: ${missing.join("; ")}`
+    );
+  }
+  const names = new Set(
+    operation.parameters.map((parameter) => parameter.name)
+  );
+  const requiredNames = [
+    "dataset_version",
+    "template",
+    ...COUNTY_REPORT_SCORE_PARAMETERS,
+    ...COUNTY_REPORT_EVIDENCE_PARAMETERS,
+  ];
+  const missingNames = requiredNames.filter((name) => !names.has(name));
+  if (missingNames.length > 0) {
+    throw new Error(
+      `County report template guide is missing parameters: ${missingNames.join(", ")}`
+    );
+  }
+}
+
+function countyReportScoreRow(name: string, schema: unknown): string {
+  const facts = countyReportSchemaFacts(schema);
+  if (
+    facts.defaultValue === undefined ||
+    facts.minimum === undefined ||
+    facts.maximum === undefined
+  ) {
+    throw new Error(
+      `County report parameter ${name} is missing numeric bounds.`
+    );
+  }
+  const step =
+    facts.multipleOf === undefined ? "" : `, multiple of ${facts.multipleOf}`;
+  return `| \`${name}\` | ${facts.defaultValue} | ${facts.minimum}–${facts.maximum}${step} |`;
+}
+
+function countyReportSchemaFacts(schema: unknown): CountyReportSchemaFacts {
+  const facts: CountyReportSchemaFacts = {};
+  walkCountyReportSchema(schema, facts);
+  return facts;
+}
+
+function walkCountyReportSchema(
+  schema: unknown,
+  facts: CountyReportSchemaFacts
+): void {
+  if (!isRecord(schema)) return;
+  if (typeof schema.pattern === "string") facts.pattern = schema.pattern;
+  if (typeof schema.default === "string") facts.stringDefault = schema.default;
+  if (typeof schema.default === "number") facts.defaultValue = schema.default;
+  if (typeof schema.maximum === "number") facts.maximum = schema.maximum;
+  if (typeof schema.minimum === "number") facts.minimum = schema.minimum;
+  if (typeof schema.multipleOf === "number")
+    facts.multipleOf = schema.multipleOf;
+  if (typeof schema.maxItems === "number") facts.maxItems = schema.maxItems;
+  for (const combiner of ["allOf", "anyOf", "oneOf"] as const) {
+    const branches = schema[combiner];
+    if (!Array.isArray(branches)) continue;
+    for (const branch of branches) walkCountyReportSchema(branch, facts);
+  }
+  walkCountyReportSchema(schema.items, facts);
+}
+
+function countyReportProblem(
+  status: number,
+  detail: string,
+  instance: string
+): JsonRecord {
+  return {
+    type: `${getSiteOrigin({})}/problems/http-${status}`,
+    title: "Request failed",
+    status,
+    detail,
+    instance,
+    request_id: "example-request-id",
+    errors: null,
+  };
+}
+
 function renderTagPage(
   tag: TagView,
   schemaAnchors: Map<string, string>
@@ -1166,9 +1403,15 @@ function renderTagPage(
       tag.description ||
         `Generated ${tag.name} operations from the public Atlas OpenAPI contract.`
     ),
-    "Generated from the public OpenAPI contract.",
-    "",
   ];
+  if (
+    tag.operations.some(
+      (operation) => operation.operationId === COUNTY_REPORT_OPERATION_ID
+    )
+  ) {
+    lines.push('import { Tab, Tabs } from "fumadocs-ui/components/tabs";', "");
+  }
+  lines.push("Generated from the public OpenAPI contract.", "");
   if (tag.description) lines.push(escapeMdx(tag.description), "");
   if (tag.externalDocs) lines.push(externalDocsLink(tag.externalDocs), "");
   for (const operation of tag.operations) {
@@ -1202,6 +1445,8 @@ function renderOperation(
     lines.push("", escapeMdx(operation.pathDescription));
   }
   if (operation.description) lines.push("", escapeMdx(operation.description));
+  const templateGuide = renderCountyReportTemplateGuide(operation);
+  if (templateGuide) lines.push("", templateGuide);
   if (operation.servers && operation.servers.length > 0) {
     lines.push("", "### Servers", "");
     for (const server of operation.servers) {

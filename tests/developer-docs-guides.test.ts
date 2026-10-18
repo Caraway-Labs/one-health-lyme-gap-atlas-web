@@ -3,6 +3,12 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import {
+  getDocsUrl,
+  getPublishedApiOrigin,
+  getSiteOrigin,
+} from "../src/lib/public-origins";
+
 const docsRoot = path.join(process.cwd(), "content", "docs");
 const developRoot = path.join(docsRoot, "develop");
 
@@ -78,6 +84,18 @@ describe("developer documentation guides", () => {
       "surveillance_context",
       "10,000",
       "not truncation",
+      "county-v1",
+      "county-v2",
+      "Observation context requires county-v2.",
+      "county-v2 requires release, exact period and distinct measures.",
+      "The requested county report template is not available.",
+      "Cache-Control: public, max-age=300, must-revalidate",
+      "Cache-Control: no-store",
+      "lower 48 states",
+      "District of Columbia",
+      getPublishedApiOrigin({}),
+      getDocsUrl({}),
+      `${getSiteOrigin({})}/problems/http-422`,
     ];
     const missingPhrases = requiredPhrases.filter(
       (phrase) => !developText.includes(phrase)
@@ -153,6 +171,8 @@ const liveObservedIdentifiers = new Set([
   "nlcd_forest_area_share_county_year",
   "sort",
   "tract",
+  "county-v1",
+  "county-v2",
 ]);
 
 const referenceSlugs = new Set([

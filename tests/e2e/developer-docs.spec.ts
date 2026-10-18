@@ -157,6 +157,104 @@ test("keeps the developer quickstart usable at 375px", async ({
   expect(supportOverflow).toBeLessThanOrEqual(1);
 });
 
+test("switches county report template tabs and records the selector", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/docs/develop/workflows");
+  const scoring = page.getByRole("tab", { name: "county-v1 scoring" });
+  const evidence = page.getByRole("tab", { name: "county-v2 evidence" });
+  await expect(
+    page.getByRole("heading", { name: "Download a county report", exact: true })
+  ).toBeVisible();
+  await evidence.click();
+  await expect(page.getByText("Cache-Control: no-store").first()).toBeVisible();
+  await expect(
+    page.getByText(
+      "county-v2 requires release, exact period and distinct measures."
+    )
+  ).toBeVisible();
+  await scoring.click();
+  await expect(
+    page
+      .getByText("Cache-Control: public, max-age=300, must-revalidate")
+      .first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Observation context requires county-v2.")
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-workflows.png"),
+  });
+
+  const workflowResults = await new AxeBuilder({ page })
+    .include("main")
+    .analyze();
+  expect(
+    workflowResults.violations.filter((violation) =>
+      ["critical", "serious"].includes(violation.impact ?? "")
+    )
+  ).toEqual([]);
+
+  await page.goto(
+    "/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get"
+  );
+  await page.getByRole("tab", { name: "county-v2 evidence" }).click();
+  await expect(page.getByText("Cache-Control: no-store").first()).toBeVisible();
+  await page.getByRole("tab", { name: "county-v1 scoring" }).click();
+  await expect(
+    page
+      .getByText("Cache-Control: public, max-age=300, must-revalidate")
+      .first()
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-reference.png"),
+  });
+  const referenceResults = await new AxeBuilder({ page })
+    .include("main")
+    .analyze();
+  expect(
+    referenceResults.violations.filter((violation) =>
+      ["critical", "serious"].includes(violation.impact ?? "")
+    ),
+    "county report reference"
+  ).toEqual([]);
+});
+
+test("keeps county report template tabs usable at 375px", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 375),
+    "Phone-width county report docs run on the mobile project."
+  );
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/docs/develop/workflows");
+  await page.getByRole("tab", { name: "county-v2 evidence" }).click();
+  await expect(page.getByText("Cache-Control: no-store").first()).toBeVisible();
+  const workflowOverflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth - root.clientWidth;
+  });
+  expect(workflowOverflow).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-workflows-phone.png"),
+  });
+
+  await page.goto("/docs/api-reference/counties");
+  await page
+    .getByRole("heading", { name: "Download a county report", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.getByRole("tab", { name: "county-v1 scoring" }).click();
+  const referenceOverflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth - root.clientWidth;
+  });
+  expect(referenceOverflow).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: testInfo.outputPath("county-report-reference-phone.png"),
+  });
+});
+
 test("renders contract value states and separate 413 and 414 rows", async ({
   page,
 }) => {
