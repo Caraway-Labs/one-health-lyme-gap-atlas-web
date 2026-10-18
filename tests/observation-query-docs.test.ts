@@ -26,10 +26,16 @@ describe("observation query documentation", () => {
     expect(page).toContain('groupId="atlas-observation-slice"');
     expect(page).toContain("persist");
     expect(page).toContain('from "fumadocs-ui/components/tabs"');
-    for (const label of sliceLabels) {
-      expect(page).toContain(`"${label}"`);
-      expect(page).toContain(`<Tab value="${label}">`);
-    }
+    const itemsBody = page.match(/items=\{\[(?<body>[^\]]+)\]\}/u)?.groups
+      ?.body;
+    const items = [...(itemsBody ?? "").matchAll(/"(?<label>[^"]+)"/gu)].map(
+      (match) => match.groups?.label
+    );
+    const values = [...page.matchAll(/<Tab value="(?<label>[^"]+)">/gu)].map(
+      (match) => match.groups?.label
+    );
+    expect(items).toStrictEqual([...sliceLabels]);
+    expect(values).toStrictEqual([...sliceLabels]);
   });
 
   it("names supported and rejected temporal parameters from the checked contract", () => {

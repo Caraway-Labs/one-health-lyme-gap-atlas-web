@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { releaseViewportRuns } from "./release-phone-viewport";
 
@@ -245,6 +245,36 @@ test("keeps MCP client recipes usable at 375px", async ({ page }, testInfo) => {
   });
 });
 
+const observationPanels = [
+  { marker: "privacy-protected floor", tab: "Annual surveillance" },
+  { marker: "scapularis_status", tab: "Cumulative vector and pathogen" },
+  { marker: "nclimgrid_tavg_county_day", tab: "January 2025 environment" },
+  { marker: "svi_percentile_2022", tab: "2022 SVI and ACS" },
+  { marker: "Metro: area population at least 1 million", tab: "2023 RUCC" },
+] as const;
+
+async function expectObservationPanel(
+  page: Page,
+  selected: (typeof observationPanels)[number]
+): Promise<void> {
+  await expect(page.getByRole("tab", { name: selected.tab })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await expect(
+    page.getByRole("heading", { exact: true, name: selected.tab })
+  ).toBeVisible();
+  await expect(page.getByText(selected.marker).first()).toBeVisible();
+  for (const panel of observationPanels) {
+    if (panel.tab === selected.tab) {
+      continue;
+    }
+    await expect(
+      page.getByRole("heading", { exact: true, name: panel.tab })
+    ).toBeHidden();
+  }
+}
+
 test("persists the observation slice tab and shows the temporal matrix", async ({
   page,
 }, testInfo) => {
@@ -255,9 +285,6 @@ test("persists the observation slice tab and shows the temporal matrix", async (
   await expect(
     page.getByRole("columnheader", { name: "vintage_year", exact: true })
   ).toBeVisible();
-  await expect(
-    page.getByRole("tab", { name: "Annual surveillance" })
-  ).toHaveAttribute("aria-selected", "true");
   await page
     .getByRole("heading", { name: "Temporal parameters", exact: true })
     .scrollIntoViewIfNeeded();
@@ -265,33 +292,22 @@ test("persists the observation slice tab and shows the temporal matrix", async (
     path: testInfo.outputPath("observation-queries-matrix.png"),
   });
 
-  await page.getByRole("tab", { name: "2023 RUCC" }).click();
-  await expect(page.getByRole("tab", { name: "2023 RUCC" })).toHaveAttribute(
-    "aria-selected",
-    "true"
-  );
-  await expect(
-    page.getByRole("heading", { name: "2023 RUCC", exact: true })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Annual surveillance", exact: true })
-  ).toBeHidden();
-  await expect(page.getByText("vintage_year=2023").first()).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath("observation-queries-rucc.png"),
-  });
-
-  await page.evaluate(() => {
-    sessionStorage.clear();
-  });
-  await page.reload();
-  await expect(page.getByRole("tab", { name: "2023 RUCC" })).toHaveAttribute(
-    "aria-selected",
-    "true"
-  );
-  await expect(
-    page.getByRole("heading", { name: "2023 RUCC", exact: true })
-  ).toBeVisible();
+  for (const [index, panel] of observationPanels.entries()) {
+    if (index > 0) {
+      await page.getByRole("tab", { name: panel.tab }).click();
+    }
+    await expectObservationPanel(page, panel);
+    if (panel.tab === "2023 RUCC") {
+      await page.screenshot({
+        path: testInfo.outputPath("observation-queries-rucc.png"),
+      });
+    }
+    await page.evaluate(() => {
+      sessionStorage.clear();
+    });
+    await page.reload();
+    await expectObservationPanel(page, panel);
+  }
 
   const results = await new AxeBuilder({ page }).include("main").analyze();
   const blockingViolations = results.violations.filter((violation) =>
@@ -314,8 +330,8 @@ test("keeps observation query tabs usable at 375px", async ({
   ).toBeVisible();
   await page.getByRole("tab", { name: "January 2025 environment" }).click();
   await expect(
-    page.getByRole("tab", { name: "January 2025 environment" })
-  ).toHaveAttribute("aria-selected", "true");
+    page.getByText("nclimgrid_tavg_county_day").first()
+  ).toBeVisible();
   const overflow = await page.evaluate(() => {
     const root = document.documentElement;
     return root.scrollWidth - root.clientWidth;
