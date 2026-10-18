@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const API_ORIGIN = "https://api.onehealthatlas.org";
+import { getPublishedApiOrigin } from "@/lib/public-origins";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,10 @@ const proxy = async (
   }
 
   const { path } = await context.params;
-  const target = new URL(`/v1/${path.join("/")}`, API_ORIGIN);
+  const target = new URL(
+    `/v1/${path.join("/")}`,
+    `${getPublishedApiOrigin()}/`
+  );
   target.search = request.nextUrl.search;
   const headers = new Headers(request.headers);
   headers.delete("host");
