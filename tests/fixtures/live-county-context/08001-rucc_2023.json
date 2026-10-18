@@ -1,0 +1,68 @@
+{
+  "data": [
+    {
+      "metadata_revision_id": "metadata-revision:v1:cc303005813febd67830aea1e4d1cec3042e4cab442234dec36da283f98f010b",
+      "observation_id": "681e1a039d213929dfe39f32262671ae2241f2f9b2a48eead69af426bae835a8",
+      "measure_id": "rucc_2023",
+      "geography": { "geography_type": "county", "geography_id": "08001" },
+      "temporal_grain": "VINTAGE_YEAR",
+      "value": 1,
+      "value_state": "OBSERVED",
+      "unit": "code",
+      "denominator": "NONE",
+      "strata": {},
+      "source_id": "context_rucc",
+      "lineage_source_id": "usda_ers",
+      "dataset_id": "rural-urban-continuum-codes-2023",
+      "methodology_id": null,
+      "methodology": "USDA ERS 2023 Rural-Urban Continuum Code category from the RUCC_2023 source attribute for a county.",
+      "release_methodology_version": "semantic-2.0.0",
+      "methodology_version": "semantic_county_assembly_v1",
+      "semantic_version": "2.0.0",
+      "release_id": "governed-2026-10-15-january-climate-prod",
+      "provenance_ref": "681e1a039d213929dfe39f32262671ae2241f2f9b2a48eead69af426bae835a8",
+      "source_label": "USDA ERS Rural-Urban Continuum Codes",
+      "source_vintage": "2023",
+      "source_url": "https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/",
+      "source_published_at": null,
+      "atlas_acquired_at": "2026-09-17T21:28:59.042074-07:00",
+      "atlas_processed_at": null,
+      "limitations": [
+        "Codes 1-9 are vintage-specific categories, not ordered distances, annual observations, causal drivers, or individual risk.",
+        "2023 codes 1-3 are metro population bands; 4-9 are nonmetro urban-population and adjacency categories. The urban threshold changed from 2,500 to 5,000; do not substitute an older vintage.",
+        "The 2023 vintage is a publisher classification year, not a known exact observation day or an annual rate.",
+        "Contextual source measure; not a causal driver or individual risk measure.",
+        "This is a deterministic surveillance follow-up priority release, not a diagnosis, prediction, causal claim, exposure map, or individual risk estimate. Published human values are privacy-protected floors; no records is not absence. Human rows with explicitly unavailable state geography are retained in source provenance but are not allocated to county or state release values. Restricted pathogen source gaps are explicitly unknown source coverage. Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission."
+      ],
+      "evidence": {
+        "resource_type": "observation",
+        "resource_id": "681e1a039d213929dfe39f32262671ae2241f2f9b2a48eead69af426bae835a8",
+        "source_id": "context_rucc",
+        "provenance_ref": "681e1a039d213929dfe39f32262671ae2241f2f9b2a48eead69af426bae835a8",
+        "semantic_version": "2.0.0",
+        "methodology_version": "semantic_county_assembly_v1",
+        "release_id": "governed-2026-10-15-january-climate-prod",
+        "uri": null
+      },
+      "environmental_context": null,
+      "surveillance_context": null,
+      "period_start": null,
+      "period_end": null,
+      "county_context": {
+        "contract_version": "atlas-county-context-consumer/1",
+        "vintage_year": 2023,
+        "source_field": "RUCC_2023",
+        "value_type": "integer",
+        "category_label": "Metro: area population at least 1 million",
+        "definition": "USDA ERS 2023 Rural-Urban Continuum Code category from the RUCC_2023 source attribute for a county.",
+        "allowed_value_states": ["OBSERVED"],
+        "metadata_methodology_version": "semantic-1.0.0"
+      }
+    }
+  ],
+  "meta": {
+    "next_page_token": null,
+    "response_at": "2026-10-18T03:46:47.477802Z"
+  },
+  "links": { "self": null }
+}

@@ -27,6 +27,7 @@ export const EXPLORER_SECTION_IDS = {
   environmental: "explorer-environmental-context",
   evidence: "explorer-evidence",
   followUp: "explorer-follow-up",
+  populationRurality: "explorer-population-rurality",
   sources: "explorer-sources",
   summary: "explorer-summary",
 } as const;
