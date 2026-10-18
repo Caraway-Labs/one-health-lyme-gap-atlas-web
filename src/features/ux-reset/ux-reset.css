@@ -2194,6 +2194,14 @@
     overflow: auto;
   }
 
+  /* Long legend copy wraps hard in the 18% column and was shrinking the
+     county list below one selected row. Keep the list the primary scroller. */
+  .ux-reset-explorer-list .ux-reset-ml-priority-legend {
+    max-height: 35%;
+    min-height: 0;
+    overflow: auto;
+  }
+
   .ux-reset-explorer-preview {
     overflow: auto;
   }

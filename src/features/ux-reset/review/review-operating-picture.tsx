@@ -69,6 +69,7 @@ import {
   buildReviewCandidatePreview,
   reviewCandidateExplanation,
 } from "@/features/ux-reset/review/review-candidate-preview";
+import { alignCandidateRow } from "@/features/ux-reset/review/review-candidate-row-scroll";
 import {
   buildReviewCompareHandoff,
   buildReviewInvestigateHandoff,
@@ -174,26 +175,6 @@ type ReviewOperatingPictureProps = {
   availableDataGate?: ExplorerAvailableDataGate;
   onMapLayerChange?: (layerId: ExplorerMapLayerId) => void;
 };
-
-/** Keep a wrapped county row inside the list when the column is narrow. */
-function alignCandidateRow(list: HTMLElement, row: HTMLElement): void {
-  const rowBox = row.getBoundingClientRect();
-  const listBox = list.getBoundingClientRect();
-  if (rowBox.height <= 0 || list.clientHeight === 0) {
-    return;
-  }
-  if (rowBox.height >= listBox.height) {
-    list.scrollTop += rowBox.top - listBox.top;
-    return;
-  }
-  const above = listBox.top - rowBox.top;
-  const below = rowBox.bottom - listBox.bottom;
-  if (above > 1) {
-    list.scrollTop -= above;
-  } else if (below > 1) {
-    list.scrollTop += below;
-  }
-}
 
 function visibleLines(values: readonly string[]): string[] {
   const lines: string[] = [];
