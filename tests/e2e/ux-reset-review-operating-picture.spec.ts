@@ -90,8 +90,8 @@ test.describe("Review operating picture", () => {
       ).toHaveCount(0);
       await expect(page.getByTestId("review-county-preview")).toHaveCount(0);
       await expect(
-        page.getByRole("combobox", { name: "Published county", exact: true })
-      ).toContainText("Select a published county");
+        page.getByRole("heading", { name: "Choose a county" })
+      ).toBeVisible();
     }
   });
 
@@ -143,13 +143,10 @@ test.describe("Review operating picture", () => {
     ).toHaveAttribute("data-fips", "08013");
 
     await page.goto("/app/investigate?scope=CO&county=nope");
-    const publishedCounty = page.getByRole("combobox", {
-      exact: true,
-      name: "Published county",
-    });
-    await expect(publishedCounty).toBeEnabled();
+    await expect(
+      page.getByRole("heading", { name: "Choose a county" })
+    ).toBeVisible();
     await expect(page.getByTestId("review-candidate")).toHaveCount(3);
-    await expect(publishedCounty).toContainText("Select a published county");
     const invalid = new URL(page.url());
     expect(invalid.pathname).toBe("/explore");
     expect({

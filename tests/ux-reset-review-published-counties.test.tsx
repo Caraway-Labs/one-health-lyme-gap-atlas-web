@@ -128,7 +128,12 @@ describe("Published Review county exploration", () => {
 
   it("keeps all 67 published AL counties mouse-selectable with zero candidates", async () => {
     picture();
-    await screen.findByText(/67 published counties/);
+    await screen.findByRole("heading", { name: "Choose a county" });
+    await waitFor(() => {
+      expect(document.querySelectorAll(".ux-reset-ranked-row")).toHaveLength(
+        67
+      );
+    });
     expect(screen.queryAllByTestId("review-candidate")).toHaveLength(0);
     expect(screen.getByTestId("review-backend-result")).toHaveTextContent(
       "Unsupported"
@@ -233,10 +238,9 @@ describe("Published Review county exploration", () => {
       screen.getByText("A floor, not an exact case total.")
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Pathogen “No records” is not evidence of pathogen absence/
-      )
+      screen.getByText(/does not establish pathogen absence/)
     ).toBeInTheDocument();
+    expect(screen.getByTestId("review-rationale")).toBeInTheDocument();
     for (const detail of [autauga, barbour]) {
       const evidence = reviewHumanFloorEvidence(
         CountyV1CountiesFipsGetResponse.parse(detail)

@@ -94,11 +94,12 @@ async function installPublishedReview(page: Page) {
     route.fulfill({ status: 404, json: { detail: "No matching priority" } })
   );
 }
+function rankedRow(page: Page, fips: string) {
+  return page.locator(`button.ux-reset-ranked-row[data-fips="${fips}"]`);
+}
+
 async function choose(page: Page, fips: string) {
-  await page
-    .getByRole("combobox", { name: "Published county", exact: true })
-    .click();
-  await page.getByRole("option", { name: new RegExp(fips) }).click();
+  await rankedRow(page, fips).click();
   await expect(page).toHaveURL(new RegExp(`county=${fips}`));
   await expect(
     page.getByTestId("review-published-county-preview")
@@ -111,23 +112,15 @@ test.describe("Published Review county exploration", () => {
   }) => {
     await installPublishedReview(page);
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
-    const picker = page.getByRole("combobox", {
-      name: "Published county",
-      exact: true,
-    });
-    await expect(picker).toBeEnabled();
-    await picker.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByRole("option")).toHaveCount(67);
-    await page.keyboard.press("Escape");
+    const rows = page.locator("button.ux-reset-ranked-row");
+    await expect(rows).toHaveCount(67);
     await choose(page, "01003");
     await expect(page.getByText("5 (published count floor)")).toBeVisible();
     await expect(
       page.getByText("A floor, not an exact case total.")
     ).toBeVisible();
-    await picker.focus();
-    await page.keyboard.press("Enter");
-    await page.keyboard.press("ArrowDown");
+    await rankedRow(page, "01003").focus();
+    await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/county=01005/);
     await page.reload();
@@ -154,7 +147,7 @@ test.describe("Published Review county exploration", () => {
     );
     await expect(page).toHaveURL(new RegExp(`dataset=${release}`));
     await page.goBack();
-    await expect(picker).toBeFocused();
+    await expect(rankedRow(page, "01005")).toBeFocused();
     await expect(page.getByTestId("review-candidate")).toHaveCount(0);
     await expect(page.getByTestId("review-backend-result")).toContainText(
       "Unsupported"
@@ -169,7 +162,7 @@ test.describe("Published Review county exploration", () => {
   }) => {
     await installPublishedReview(page);
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01999`);
-    await expect(page.getByText(/67 published counties/)).toBeVisible();
+    await expect(page.locator("button.ux-reset-ranked-row")).toHaveCount(67);
     await expect(page).not.toHaveURL(/county=/);
     await choose(page, "01001");
     await page.getByRole("combobox", { name: "State", exact: true }).click();
