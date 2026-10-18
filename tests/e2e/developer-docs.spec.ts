@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { releaseViewportRuns } from "./release-phone-viewport";
 
@@ -14,6 +14,7 @@ const developerPages = [
   },
   { path: "/docs/develop/provenance", heading: "Provenance and evidence" },
   { path: "/docs/develop/workflows", heading: "Workflow guides" },
+  { path: "/docs/develop/observation-queries", heading: "Observation queries" },
   { path: "/docs/develop/mcp-clients", heading: "MCP clients" },
   {
     path: "/docs/develop/support",
@@ -391,6 +392,132 @@ test("keeps MCP client recipes usable at 375px", async ({ page }, testInfo) => {
   expect(overflow).toBeLessThanOrEqual(1);
   await page.screenshot({
     path: testInfo.outputPath("mcp-clients-phone.png"),
+  });
+});
+
+const observationPanels = [
+  { marker: "privacy-protected floor", tab: "Annual surveillance" },
+  { marker: "scapularis_status", tab: "Cumulative vector and pathogen" },
+  { marker: "nclimgrid_tavg_county_day", tab: "January 2025 environment" },
+  { marker: "nlcd_forest_area_share_county_year", tab: "Land cover" },
+  { marker: "svi_percentile_2022", tab: "2022 SVI and ACS" },
+  { marker: "Metro: area population at least 1 million", tab: "2023 RUCC" },
+] as const;
+
+async function expectObservationPanel(
+  page: Page,
+  selected: (typeof observationPanels)[number]
+): Promise<void> {
+  await expect(page.getByRole("tab", { name: selected.tab })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await expect(
+    page.getByRole("heading", { exact: true, name: selected.tab })
+  ).toBeVisible();
+  await expect(page.getByText(selected.marker).first()).toBeVisible();
+  for (const panel of observationPanels) {
+    if (panel.tab === selected.tab) {
+      continue;
+    }
+    await expect(
+      page.getByRole("heading", { exact: true, name: panel.tab })
+    ).toBeHidden();
+  }
+}
+
+test("persists the observation slice tab and shows the temporal matrix", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/docs/develop/observation-queries");
+  await expect(
+    page.getByRole("heading", { name: "Observation queries", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "vintage_year", exact: true })
+  ).toBeVisible();
+  await page
+    .getByRole("heading", { name: "Temporal parameters", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("observation-queries-matrix.png"),
+  });
+
+  for (const [index, panel] of observationPanels.entries()) {
+    if (index > 0) {
+      await page.getByRole("tab", { name: panel.tab }).click();
+    }
+    await expectObservationPanel(page, panel);
+    if (panel.tab === "2023 RUCC") {
+      await page.screenshot({
+        path: testInfo.outputPath("observation-queries-rucc.png"),
+      });
+    }
+    await page.evaluate(() => {
+      sessionStorage.clear();
+    });
+    await page.reload();
+    await expectObservationPanel(page, panel);
+  }
+
+  const results = await new AxeBuilder({ page }).include("main").analyze();
+  const blockingViolations = results.violations.filter((violation) =>
+    ["critical", "serious"].includes(violation.impact ?? "")
+  );
+  expect(blockingViolations).toEqual([]);
+});
+
+test("opens a hidden observation slice from its heading hash", async ({
+  page,
+}) => {
+  await page.goto(
+    "/docs/develop/observation-queries#cumulative-vector-and-pathogen"
+  );
+  await expect(
+    page.getByRole("heading", {
+      exact: true,
+      name: "Cumulative vector and pathogen",
+    })
+  ).toBeVisible();
+  await expect(page.getByText("scapularis_status").first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { exact: true, name: "Annual surveillance" })
+  ).toBeHidden();
+
+  await page.goto("/docs/develop/observation-queries");
+  await page
+    .getByRole("link", { exact: true, name: "Cumulative vector and pathogen" })
+    .click();
+  await expect(page).toHaveURL(/#cumulative-vector-and-pathogen$/);
+  await expect(page.getByText("scapularis_status").first()).toBeVisible();
+  await expect(
+    page.getByRole("tab", { name: "Cumulative vector and pathogen" })
+  ).toHaveAttribute("aria-selected", "true");
+});
+
+test("keeps observation query tabs usable at 375px", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 375),
+    "Phone-width observation query docs run on the mobile project."
+  );
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/docs/develop/observation-queries");
+  await expect(
+    page.getByRole("heading", { name: "Temporal parameters", exact: true })
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "January 2025 environment" }).click();
+  await expect(
+    page.getByText("nclimgrid_tavg_county_day").first()
+  ).toBeVisible();
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth - root.clientWidth;
+  });
+  expect(overflow).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: testInfo.outputPath("observation-queries-phone.png"),
   });
 });
 

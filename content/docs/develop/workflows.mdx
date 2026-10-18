@@ -70,7 +70,7 @@ There is no separate environmental-context endpoint. `environmental_context` is 
 
 When the object is present, read `coverage_status` before the measure value. The status is `COMPLETE`, `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`. Coverage is independent of `value_state`. `day_convention` is the publisher's labeled 24-hour period. `source_coverage_fraction` is monthly source-supported area over legal county area. `valid_fraction_of_supported_area` is daily valid area over source-supported area, with a completeness threshold of 0.95. Area quantities may be numbers or exact numeric strings. `geometry_version` names analysis geometry and does not include polygons. Null context does not establish absence or temporal comparability.
 
-The current measure catalog does not publish a measure id for that daily weather series. `GET /v1/measures` on 12 October 2026 returned 21 measures and a null `next_page_token`. None of those ids is a daily weather measure. Do not invent one.
+On 12 October 2026, `GET /v1/measures` returned 21 measures and a null `next_page_token`, and none of those ids was a daily weather measure. On 18 October 2026 the catalog includes the January 2025 daily measures. The checked request, and the parameters that request rejects, are in [Observation queries](/docs/develop/observation-queries). Do not invent a measure id that discovery did not return.
 
 The catalog does publish annual land-cover context under indicator `land_cover_context`. Those measures name selected geographies `09110` and `51013` only. Their missingness text says a true zero stays zero, and unselected counties have no observation. Their limitations describe land-cover context only, with no Lyme causal or risk estimate.
 
