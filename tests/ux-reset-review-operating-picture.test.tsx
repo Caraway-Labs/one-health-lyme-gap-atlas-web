@@ -66,13 +66,16 @@ vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
     includeUnscoredCounties = true,
     scores = [],
+    selectedFips = "",
   }: {
     includeUnscoredCounties?: boolean;
     scores?: readonly { fips: string }[];
+    selectedFips?: string;
   }) => (
     <div
       data-include-unscored={includeUnscoredCounties ? "true" : "false"}
       data-map-fips={scores.map((entry) => entry.fips).join(" ")}
+      data-selected-fips={selectedFips}
       data-testid="mock-atlas-map"
     />
   ),
@@ -1352,18 +1355,93 @@ describe("Review operating picture state", () => {
       asksForChoice: heading.textContent === "Choose a county",
       current: rows.map((row) => row.getAttribute("aria-current")),
       fips: rows.map((row) => row.dataset.fips),
+      highlight: screen.getByTestId("review-state-map-region").dataset
+        .selectedFips,
       preview: screen.queryByTestId("review-county-preview"),
       published: onCountyChange.mock.calls,
     }).toStrictEqual({
       asksForChoice: true,
       current: [null, null],
       fips: ["08001", "08013"],
+      highlight: "",
       preview: null,
       published: [],
     });
     fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
     expect(onCountyChange).toHaveBeenCalledWith("08013", "push");
     view.unmount();
+  });
+
+  it("selects the first published candidate when the county is omitted", async () => {
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Adams",
+                fips: "08001",
+                reasonText: "Adams was returned by the method.",
+              }),
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Boulder",
+                fips: "08013",
+                reasonText: "Boulder was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          onCountyChange={onCountyChange}
+        />
+      </QueryClientProvider>
+    );
+    let snapshot: {
+      current: (string | null)[];
+      fips: (string | undefined)[];
+      highlight: string | null;
+      preview: boolean;
+      published: (string | null)[][];
+    };
+    try {
+      await waitFor(() => {
+        if (onCountyChange.mock.calls.length === 0) {
+          throw new Error("the first published candidate was not selected");
+        }
+      });
+      const rows = screen.getAllByTestId("review-candidate");
+      snapshot = {
+        current: rows.map((row) => row.getAttribute("aria-current")),
+        fips: rows.map((row) => row.dataset.fips),
+        highlight:
+          screen.getByTestId("review-state-map-region").dataset.selectedFips ??
+          null,
+        preview: Boolean(
+          screen
+            .getByTestId("review-preview-why")
+            .textContent?.includes("Adams")
+        ),
+        published: onCountyChange.mock.calls.map((call) => [call[0], call[1]]),
+      };
+    } finally {
+      view.unmount();
+    }
+    expect(snapshot).toStrictEqual({
+      current: ["true", null],
+      fips: ["08001", "08013"],
+      highlight: "08001",
+      preview: true,
+      published: [["08001", "replace"]],
+    });
   });
 
   it("clears the URL county when every candidate FIPS is out of scope", async () => {
