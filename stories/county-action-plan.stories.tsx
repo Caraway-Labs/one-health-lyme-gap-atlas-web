@@ -36,7 +36,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "CountyActionPlan from src/components/county-action-plan.tsx shows the priority-derived follow-up plan for synthetic counties without adding scoring logic.",
+          "CountyActionPlan shows five evidence-informed follow-up workflows. An approved score color keeps its existing Action Center title. Unknown colors stay review-level unavailable.",
       },
     },
   },

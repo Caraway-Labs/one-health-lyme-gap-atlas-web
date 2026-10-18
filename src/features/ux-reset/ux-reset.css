@@ -1674,6 +1674,21 @@
   min-height: 20rem;
 }
 
+.ux-reset-explorer-map-follow-up {
+  width: 100%;
+  min-width: 0;
+  border-color: var(--action-plan-border);
+  background: var(--action-plan-surface);
+}
+
+.ux-reset-explorer-map-follow-up .action-plan {
+  width: 100%;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .ux-reset-explorer-map .map-wrap {
   aspect-ratio: auto;
   min-height: 10rem;
@@ -2354,6 +2369,11 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   align-items: center;
 }
 
+.ux-reset-explorer-follow-up .action-plan {
+  width: 100%;
+  margin-top: 0;
+}
+
 .ux-reset-explorer-follow-up-priority {
   display: flex;
   gap: var(--space-2);
@@ -2530,6 +2550,11 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     grid-row: 1;
   }
 
+  .ux-reset-explorer-map-follow-up {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
   /* State orientation keeps the map and state list in one column. The
      national picture's fixed row would crush that list under the map. */
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav) {
@@ -2585,11 +2610,16 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 
   .ux-reset-explorer-list {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
   }
 
   .ux-reset-explorer-preview {
     grid-column: 2;
+    grid-row: 3;
+  }
+
+  .ux-reset-explorer-map-follow-up {
+    grid-column: 1 / -1;
     grid-row: 2;
   }
 }
@@ -2604,12 +2634,16 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     order: 1;
   }
 
-  .ux-reset-explorer-preview {
+  .ux-reset-explorer-map-follow-up {
     order: 2;
   }
 
-  .ux-reset-explorer-list {
+  .ux-reset-explorer-preview {
     order: 3;
+  }
+
+  .ux-reset-explorer-list {
+    order: 4;
   }
 
   .ux-reset-explorer-map .map-wrap {
