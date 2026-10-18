@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 import {
   ANALYTICS_PREFERENCE_CHANGED_EVENT,
@@ -17,9 +17,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  ANALYTICS_PREFERENCE_KEY,
   honorsDoNotTrack,
-  readAnalyticsPreference,
-  writeAnalyticsPreference,
+  readBrowserAnalyticsPreference,
+  writeBrowserAnalyticsPreference,
   type AnalyticsConsentState,
 } from "@/lib/analytics-consent";
 
@@ -35,18 +36,52 @@ type PrivacyPreferencesProps = {
   presentation?: PrivacyPreferencesPresentation;
 };
 
+const preferenceListeners = new Set<() => void>();
+// A failed write returns storage-unavailable while storage still has no record.
+// Cross-tab `storage` events and dialog open clear this before the snapshot is read.
+let consentOverride: AnalyticsConsentState | null = null;
+
+function isAnalyticsPreferenceStorageEvent(event: StorageEvent): boolean {
+  return event.key === null || event.key === ANALYTICS_PREFERENCE_KEY;
+}
+
+function publishPreferenceChange(): void {
+  for (const listener of preferenceListeners) {
+    listener();
+  }
+}
+
 function subscribeAnalyticsPreference(onStoreChange: () => void): () => void {
+  preferenceListeners.add(onStoreChange);
+  const onStorage = (event: StorageEvent) => {
+    if (!isAnalyticsPreferenceStorageEvent(event)) {
+      return;
+    }
+    consentOverride = null;
+    onStoreChange();
+  };
   window.addEventListener(ANALYTICS_PREFERENCE_CHANGED_EVENT, onStoreChange);
+  window.addEventListener("storage", onStorage);
   return () => {
+    preferenceListeners.delete(onStoreChange);
     window.removeEventListener(
       ANALYTICS_PREFERENCE_CHANGED_EVENT,
       onStoreChange
     );
+    window.removeEventListener("storage", onStorage);
+    if (preferenceListeners.size === 0) {
+      consentOverride = null;
+    }
   };
 }
 
+function refreshStoredConsent(): void {
+  consentOverride = null;
+  publishPreferenceChange();
+}
+
 function storedConsentSnapshot(): AnalyticsConsentState {
-  return readAnalyticsPreference(localStorage);
+  return consentOverride ?? readBrowserAnalyticsPreference();
 }
 
 function doNotTrackSnapshot(): boolean {
@@ -135,17 +170,12 @@ export function PrivacyPreferences({
     doNotTrackSnapshot,
     () => false
   );
-  const [writeResult, setWriteResult] = useState<AnalyticsConsentState | null>(
-    null
-  );
-  const consent = writeResult ?? storedConsent;
-
   const saveChoice = (decision: "granted" | "denied") => {
     if (decision === "granted" && honorsDoNotTrack(navigator)) {
       return;
     }
-    const next = writeAnalyticsPreference(localStorage, decision);
-    setWriteResult(next);
+    consentOverride = writeBrowserAnalyticsPreference(decision);
+    publishPreferenceChange();
     notifyAnalyticsPreferenceChanged();
   };
 
@@ -165,7 +195,7 @@ export function PrivacyPreferences({
           starting view or the optional profile fields.
         </p>
         <p className="type-body">{ANALYTICS_PURPOSE}</p>
-        <PrivacyChoiceCopy consent={consent} doNotTrack={doNotTrack} />
+        <PrivacyChoiceCopy consent={storedConsent} doNotTrack={doNotTrack} />
         <div className="flex flex-wrap gap-2">
           <PrivacyChoiceActions
             doNotTrack={doNotTrack}
@@ -185,7 +215,7 @@ export function PrivacyPreferences({
     <Dialog
       onOpenChange={(isOpen) => {
         if (isOpen) {
-          setWriteResult(null);
+          refreshStoredConsent();
         }
       }}
     >
@@ -200,7 +230,7 @@ export function PrivacyPreferences({
           </DialogTitle>
           <DialogDescription>{ANALYTICS_PURPOSE}</DialogDescription>
         </DialogHeader>
-        <PrivacyChoiceCopy consent={consent} doNotTrack={doNotTrack} />
+        <PrivacyChoiceCopy consent={storedConsent} doNotTrack={doNotTrack} />
         <DialogFooter>
           <PrivacyChoiceActions
             doNotTrack={doNotTrack}

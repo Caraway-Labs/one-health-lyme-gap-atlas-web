@@ -7,7 +7,7 @@ import { readAmplitudeApiKey } from "@/lib/amplitude-deployment";
 import {
   analyticsMayStart,
   honorsDoNotTrack,
-  readAnalyticsPreference,
+  readBrowserAnalyticsPreference,
   type AnalyticsConsentState,
 } from "@/lib/analytics-consent";
 import {
@@ -26,7 +26,7 @@ export function AnalyticsClient() {
 
   useEffect(() => {
     const refreshPreference = () =>
-      setConsent(readAnalyticsPreference(window.localStorage));
+      setConsent(readBrowserAnalyticsPreference());
     const onPreferenceChanged = () => refreshPreference();
     refreshPreference();
     window.addEventListener(
@@ -86,7 +86,7 @@ export function notifyAnalyticsPreferenceChanged(): void {
   // not mount that listener, and a grant made on legacy Atlas keeps the
   // module-global SDK alive after the listener unmounts.
   const mayStart = analyticsMayStart({
-    consent: readAnalyticsPreference(window.localStorage),
+    consent: readBrowserAnalyticsPreference(),
     doNotTrack: honorsDoNotTrack(window.navigator),
   });
   if (!mayStart) {

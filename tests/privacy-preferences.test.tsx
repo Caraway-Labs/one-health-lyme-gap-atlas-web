@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { PrivacyPreferences } from "@/components/privacy-preferences";
@@ -118,6 +124,49 @@ describe(PrivacyPreferences, () => {
           "Your browser's Do Not Track preference is on. Atlas will keep optional analytics off.",
       });
     });
+  });
+
+  it("updates the visible choice from a native storage event", () => {
+    render(<PrivacyPreferences presentation="section" />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Allow optional analytics" })
+    );
+    const denied = JSON.stringify({
+      decidedAt: "2026-10-18T00:00:00.000Z",
+      decision: "denied",
+      expiresAt: "2027-04-01T00:00:00.000Z",
+      version: 1,
+    });
+    localStorage.setItem(ANALYTICS_PREFERENCE_KEY, denied);
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: ANALYTICS_PREFERENCE_KEY,
+          newValue: denied,
+          storageArea: localStorage,
+        })
+      );
+    });
+    expect(screen.getByRole("status").textContent).toBe(
+      "Optional analytics are off for this browser."
+    );
+  });
+
+  it("rereads storage when the privacy dialog opens", () => {
+    render(<PrivacyPreferences />);
+    localStorage.setItem(
+      ANALYTICS_PREFERENCE_KEY,
+      JSON.stringify({
+        decidedAt: "2026-10-18T00:00:00.000Z",
+        decision: "denied",
+        expiresAt: "2027-04-01T00:00:00.000Z",
+        version: 1,
+      })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
+    expect(screen.getByRole("status").textContent).toBe(
+      "Optional analytics are off for this browser."
+    );
   });
 
   it("stays off when the browser cannot store a choice", () => {
