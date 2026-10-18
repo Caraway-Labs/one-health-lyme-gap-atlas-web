@@ -87,14 +87,18 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("explorer-county-evidence")).toBeVisible();
     await expect(page.getByTestId("explorer-county-heading")).toBeFocused();
     await expect(page.getByTestId("review-state-panel")).toBeHidden();
-    await expect(page.getByTestId("explorer-follow-up-response")).toContainText(
-      "Prioritize targeted follow-up"
-    );
+    await expect(
+      page
+        .getByTestId("explorer-county-evidence")
+        .getByTestId("explorer-follow-up-response")
+    ).toContainText("Prioritize targeted follow-up");
     await expect(page.getByTestId("explorer-review-priority")).toContainText(
       "Highest review priority"
     );
     const resource = page
-      .locator("summary", { hasText: "Official resources" })
+      .locator("summary", {
+        hasText: "Questions, partner roles, and official resources",
+      })
       .first();
     await resource.focus();
     await page.keyboard.press("Enter");

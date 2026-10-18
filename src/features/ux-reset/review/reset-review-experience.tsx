@@ -725,6 +725,7 @@ function ResetReviewExperienceInner() {
           methodologyLabel={methodologyLabel}
           mode={explorerMode}
           onBackToMap={backToMap}
+          reviewResultState={stateReview.review?.result_state ?? null}
         />
       ) : null}
 
