@@ -139,7 +139,7 @@ Interaction contract ([#409](https://github.com/Caraway-Labs/one-health-lyme-gap
 
 ## Page jobs (do not merge destinations)
 
-Each primary destination has **one job**. Cross-links and shared context hand off work; they do not duplicate full workflows. The October 11, 2026 workspace is six destinations ([#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)). Shell and route homes: [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406).
+Each primary destination has **one job**. Cross-links and shared context hand off work; they do not duplicate full workflows. The October 11, 2026 workspace is six destinations ([#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197)). [#657](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/657) adds **Data Provenance** as a seventh authenticated destination, immediately after Feed and before Docs. The other six destinations keep the jobs below. Shell and route homes: [#406](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/406).
 
 | Destination | Job | Owns | Must not become |
 | --- | --- | --- | --- |
@@ -149,6 +149,7 @@ Each primary destination has **one job**. Cross-links and shared context hand of
 | **Feed (Intelligence Feed)** | **Trusted-source aggregation** ([#402](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/402)): scan recent CDC, PubMed/NIH-style items; **open authoritative external links**; no in-app article reader or investigation trigger required. | Normalized feed list, publisher/source labels, quiet empty states | Personalized news product, alerts, saved items, AI summaries, or scraping in the browser |
 | **Settings** | Account, preferences, data rights | Profile and governance utilities | Analytics configuration surface for epidemiology |
 | **Docs** | Stable product and trust documentation | Links to `/docs`, privacy, responsible use, technical reproducibility reference | Inline replacement for county evidence |
+| **Data Provenance** | Explain where released evidence comes from, how Atlas handles it, and which limitations stay with a result ([#657](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/657)) | Source catalog from the current release, a conceptual lineage, and links to Docs | A second source registry, an execution log, or a replacement for provenance beside a result |
 
 **Assistant / Ask Atlas (Reset rule):** answer-only; **the user navigates**. Do not add assistant-driven page transitions, silent context mutation, or “do this for me” automation in Reset V1. Legacy launcher behavior remains documented in [assistant-entry-points.md](./assistant-entry-points.md) until reset assistant stories supersede it.
 

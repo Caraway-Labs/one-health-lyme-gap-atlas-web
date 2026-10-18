@@ -2,6 +2,7 @@ import {
   ATLAS_EXPLORER_PATH,
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
+  RESET_DATA_PROVENANCE_PATH,
 } from "@/features/ux-reset/routes";
 
 export type AppRouteGuardContext = {
@@ -16,6 +17,7 @@ const CANONICAL_WORKSPACE_PATHS = [
   ATLAS_EXPLORER_PATH,
   RESET_COMPARE_PATH,
   RESET_ASSISTANT_PATH,
+  RESET_DATA_PROVENANCE_PATH,
 ] as const;
 
 function matchesWorkspacePath(pathname: string, path: string): boolean {
@@ -25,7 +27,8 @@ function matchesWorkspacePath(pathname: string, path: string): boolean {
 /**
  * Professional workspace routes require a session.
  * `/app` still covers Feed, Settings, trust, and historical aliases.
- * Issue 608 canonical Explorer, Compare, and Ask Atlas live outside that prefix.
+ * Issue 608 canonical Explorer, Compare, and Ask Atlas, plus Data Provenance,
+ * live outside that prefix.
  */
 export function isProfessionalAppPath(pathname: string): boolean {
   const normalized = pathname.split(/[?#]/, 1)[0] || "/";
