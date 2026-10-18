@@ -2471,8 +2471,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   background: var(--card);
 }
 
-.ux-reset-explorer-scenario-impact h3 {
+.ux-reset-explorer-scenario-impact h2 {
   margin: 0;
+  font-family: var(--font-sans);
   font-size: 0.95rem;
   font-weight: 600;
 }

@@ -468,9 +468,9 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
           data-impact="baseline"
           data-testid="explorer-scenario-impact"
         >
-          <h3 id="explorer-scenario-impact-heading">
+          <h2 id="explorer-scenario-impact-heading">
             Scenario impact — {view.countyName}
-          </h3>
+          </h2>
           <dl className="ux-reset-explorer-scenario-impact-scores">
             <ImpactScoreCell
               detail={view.governedPriority}
@@ -490,9 +490,9 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
           data-impact={view.resultKind}
           data-testid="explorer-scenario-impact"
         >
-          <h3 id="explorer-scenario-impact-heading">
+          <h2 id="explorer-scenario-impact-heading">
             Scenario impact — {view.countyName}
-          </h3>
+          </h2>
           <dl className="ux-reset-explorer-scenario-impact-scores">
             <ImpactScoreCell
               detail={view.governedPriority}
@@ -520,9 +520,9 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
           data-impact="limited"
           data-testid="explorer-scenario-impact"
         >
-          <h3 id="explorer-scenario-impact-heading">
+          <h2 id="explorer-scenario-impact-heading">
             Scenario impact — {view.countyName}
-          </h3>
+          </h2>
           <dl className="ux-reset-explorer-scenario-impact-scores">
             <ImpactScoreCell
               detail={view.governedPriority}
