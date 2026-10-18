@@ -17,7 +17,8 @@ import {
   trackUiInteraction,
 } from "@/lib/atlas-analytics";
 
-const PREFERENCE_CHANGED_EVENT = "atlas:analytics-preference-changed";
+export const ANALYTICS_PREFERENCE_CHANGED_EVENT =
+  "atlas:analytics-preference-changed";
 
 export function AnalyticsClient() {
   const pathname = usePathname();
@@ -28,9 +29,15 @@ export function AnalyticsClient() {
       setConsent(readAnalyticsPreference(window.localStorage));
     const onPreferenceChanged = () => refreshPreference();
     refreshPreference();
-    window.addEventListener(PREFERENCE_CHANGED_EVENT, onPreferenceChanged);
+    window.addEventListener(
+      ANALYTICS_PREFERENCE_CHANGED_EVENT,
+      onPreferenceChanged
+    );
     return () =>
-      window.removeEventListener(PREFERENCE_CHANGED_EVENT, onPreferenceChanged);
+      window.removeEventListener(
+        ANALYTICS_PREFERENCE_CHANGED_EVENT,
+        onPreferenceChanged
+      );
   }, []);
 
   useEffect(() => {
@@ -85,5 +92,5 @@ export function notifyAnalyticsPreferenceChanged(): void {
   if (!mayStart) {
     atlasAnalytics.stop();
   }
-  window.dispatchEvent(new Event(PREFERENCE_CHANGED_EVENT));
+  window.dispatchEvent(new Event(ANALYTICS_PREFERENCE_CHANGED_EVENT));
 }

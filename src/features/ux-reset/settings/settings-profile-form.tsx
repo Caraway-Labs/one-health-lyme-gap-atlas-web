@@ -494,8 +494,9 @@ export function SettingsProfileForm() {
         <CardHeader>
           <h2 className="type-card">Edit profile</h2>
           <CardDescription>
-            Role, organization, and job title are optional. Leaving them empty
-            does not block Review or the rest of the workspace.
+            Starting view is required. Role, organization, and job title are
+            optional. Leaving them empty does not block Review or the rest of
+            the workspace.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid max-w-md gap-4">
