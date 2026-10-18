@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -225,9 +231,13 @@ describe("national Explorer what-if map", () => {
     }).toMatchObject({
       adams: "#a9d2db",
     });
-    expect(screen.getByTestId("explorer-map-legend").textContent).toContain(
-      "keep the governed score and color"
+    fireEvent.click(
+      screen.getByRole("button", { name: "About Adjusted scenario" })
     );
+    expect(
+      screen.getByRole("dialog", { name: "About Adjusted scenario" })
+        .textContent
+    ).toContain("keep the governed score and color");
   });
 
   it("leaves tick status and boundaries on their governed presentation", async () => {

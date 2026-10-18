@@ -998,7 +998,10 @@ export function ReviewOperatingPicture({
               </AtlasStatusMessage>
             )}
           </div>
-          <ExplorerMapLegend paint={mapPaint} />
+          <ExplorerMapLegend
+            key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
+            paint={mapPaint}
+          />
         </Card>
 
         <div className="ux-reset-explorer-list">

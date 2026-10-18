@@ -18,6 +18,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -167,6 +172,14 @@ export function DesignSystemGallery() {
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
+              <Popover>
+                <PopoverTrigger render={<Button variant="outline" />}>
+                  Layer notes
+                </PopoverTrigger>
+                <PopoverContent initialFocus>
+                  <p>Example disclosure anchored to its trigger.</p>
+                </PopoverContent>
+              </Popover>
             </CardContent>
           </Card>
         </div>
