@@ -30,6 +30,7 @@ import {
   RESET_ACTION_PATH,
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
+  RESET_DATA_PROVENANCE_PATH,
   RESET_EXPLORE_PATH,
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
@@ -119,6 +120,11 @@ export const WORKSPACE_DESTINATIONS = [
     path: RESET_FEED_PATH,
   },
   {
+    id: "data-provenance",
+    label: "Data Provenance",
+    path: RESET_DATA_PROVENANCE_PATH,
+  },
+  {
     id: "settings",
     label: "Settings",
     path: RESET_SETTINGS_PATH,
@@ -197,6 +203,8 @@ function isCanonicalDestination(pathname: string): boolean {
     pathname === RESET_COMPARE_PATH ||
     pathname === RESET_ASSISTANT_PATH ||
     pathname === RESET_FEED_PATH ||
+    pathname === RESET_DATA_PROVENANCE_PATH ||
+    pathname.startsWith(`${RESET_DATA_PROVENANCE_PATH}/`) ||
     pathname === RESET_SETTINGS_PATH ||
     pathname === DOCS_PATH ||
     pathname.startsWith(`${DOCS_PATH}/`)

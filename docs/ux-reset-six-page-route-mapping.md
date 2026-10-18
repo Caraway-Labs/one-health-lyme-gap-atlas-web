@@ -8,7 +8,7 @@
 
 This document records the compatibility map. [#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197) installs it from middleware after the auth guard. [#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608) sets the canonical workspace URLs to `/explore`, `/compare`, and `/askatlas` and changes the installed redirect status to HTTP 308. The Explorer view ([#413](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/413)) and the dedicated Ask Atlas page ([#424](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/424)) are the landing surfaces. [#198](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/198) updated product links and docs to the six destinations; #608 retargets those links to the canonical paths. There is one redirect function. `next.config` host redirects stay separate because they cannot apply this query map.
 
-The October 11, 2026 workspace is six destinations: **Atlas Explorer, Compare, Ask Atlas, Feed, Settings, Docs**. Atlas Explorer is map-led review and exploration, expandable county evidence, and Suggested follow-up on one URL. There is no separate Overview, Review, Explore, Investigate, Action, or Assistant side panel in that destination list. This map does not add a seventh destination.
+The October 11, 2026 workspace is six destinations: **Atlas Explorer, Compare, Ask Atlas, Feed, Settings, Docs**. Atlas Explorer is map-led review and exploration, expandable county evidence, and Suggested follow-up on one URL. There is no separate Overview, Review, Explore, Investigate, Action, or Assistant side panel in that destination list. This redirect map does not retarget those six destinations. [#657](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/657) adds Data Provenance at `/data-provenance` beside them. That page is not an alias in this map.
 
 ## Canonical workspace URLs
 
@@ -137,8 +137,8 @@ Product links after #197 and #198:
 
 | Consumer | Where it goes |
 | --- | --- |
-| `paths.ts` `RESET_ROUTES` | Sidebar: Atlas Explorer, Compare, Ask Atlas, Feed, Settings, Docs. Explore, Investigate, and Action stay alias metadata, not sidebar entries. |
-| `professional-shell.tsx` | Those six destinations. |
+| `paths.ts` `RESET_ROUTES` | Sidebar: Atlas Explorer, Compare, Ask Atlas, Feed, Data Provenance, Settings, Docs. Explore, Investigate, and Action stay alias metadata, not sidebar entries. |
+| `professional-shell.tsx` | Those destinations. Data Provenance sits after Feed and before Settings. |
 | `front-porch-copy.ts` | Signed-in entry to `/explore`. |
 | `review-county-preview.ts` | County evidence on `/explore` with `mode=evidence`. |
 | `reset-explore-experience.tsx` | **View county evidence** on `/explore?mode=evidence`. Compare stays `/compare`. |
@@ -205,7 +205,7 @@ Still required in #197, and not claimed here:
 - Session expiry and profile failure do not change county.
 - Browser Back/Forward across an alias does not loop and does not show the retired page.
 - Keyboard focus matches the table above on desktop and mobile.
-- Shell lists only the six destinations. #413 and #424 are present, so the redirect does not land on a placeholder.
+- Shell lists the six mapped destinations plus Data Provenance. #413 and #424 are present, so the redirect does not land on a placeholder.
 - `/variant_1` through `/variant_7` still return 404.
 
 ## Geography

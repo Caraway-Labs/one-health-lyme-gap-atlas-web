@@ -188,6 +188,8 @@ describe("front porch session middleware", () => {
       "/compare/:path*",
       "/askatlas",
       "/askatlas/:path*",
+      "/data-provenance",
+      "/data-provenance/:path*",
     ]);
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");

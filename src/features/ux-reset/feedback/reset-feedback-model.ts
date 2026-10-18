@@ -764,6 +764,7 @@ function geographyPage(id: string): boolean {
     case "assistant": {
       return true;
     }
+    case "data-provenance":
     case "feed":
     case "settings":
     case "docs": {
