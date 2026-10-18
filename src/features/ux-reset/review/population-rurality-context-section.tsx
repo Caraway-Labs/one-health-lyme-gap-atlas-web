@@ -65,62 +65,7 @@ function PopulationRuralityMeasureBody({
       );
     }
     case "ready": {
-      const { presentation } = view;
-      return (
-        <>
-          <EvidenceObject model={presentation.evidence} showReason />
-          <dl className="ux-reset-population-rurality-meta">
-            <div>
-              <dt>Vintage</dt>
-              <dd>{presentation.vintageLabel}</dd>
-            </div>
-            <div>
-              <dt>Reference period</dt>
-              <dd>{presentation.referencePeriod}</dd>
-            </div>
-            <div>
-              <dt>Source</dt>
-              <dd>
-                {presentation.sourceUrl ? (
-                  <a
-                    href={presentation.sourceUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {presentation.sourceLabel}
-                  </a>
-                ) : (
-                  presentation.sourceLabel
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>Source field</dt>
-              <dd>{presentation.sourceField}</dd>
-            </div>
-            <div>
-              <dt>Denominator</dt>
-              <dd>{presentation.denominatorLabel}</dd>
-            </div>
-            <div>
-              <dt>Definition</dt>
-              <dd>{presentation.definition}</dd>
-            </div>
-            <div>
-              <dt>Method version</dt>
-              <dd>{presentation.methodVersion}</dd>
-            </div>
-            <div>
-              <dt>Provenance reference</dt>
-              <dd>{presentation.provenanceRef}</dd>
-            </div>
-            <div>
-              <dt>Value state</dt>
-              <dd>{presentation.valueStateLabel}</dd>
-            </div>
-          </dl>
-        </>
-      );
+      return <EvidenceObject model={view.presentation.evidence} showReason />;
     }
     default: {
       const exhaustive: never = view;
@@ -181,6 +126,9 @@ export function PopulationRuralityContextSection({
   const readyCount = context.measures.filter(
     (measure) => measure.status === "ready"
   ).length;
+  const absentCount = context.measures.filter(
+    (measure) => measure.status === "absent"
+  ).length;
   const failedCount = context.measures.filter(
     (measure) => measure.status === "error" || measure.status === "conflict"
   ).length;
@@ -189,6 +137,12 @@ export function PopulationRuralityContextSection({
     liveText = `Loading population and rurality context for county ${fips}.`;
   } else if (!status && failedCount > 0 && readyCount > 0) {
     liveText = `Population and rurality context is partial for county ${fips}. A failed measure is not zero.`;
+  } else if (
+    !status &&
+    context.measures.length > 0 &&
+    absentCount === context.measures.length
+  ) {
+    liveText = `Population and rurality context finished for county ${fips}. No governed observations were returned. That absence is not zero.`;
   } else if (!status && readyCount === context.measures.length) {
     liveText = `Population and rurality context loaded for county ${fips}.`;
   }

@@ -111,7 +111,9 @@ test.describe("Atlas Explorer population and rurality context", () => {
     await expect(
       page.getByText("Metro: area population at least 1 million (code 1)")
     ).toBeVisible();
-    await expect(page.getByText("2023 classification vintage")).toBeVisible();
+    await expect(
+      section.getByText("Classification vintage 2023").first()
+    ).toBeVisible();
     await expect(
       section.getByText("2018-01-01 through 2022-12-31").first()
     ).toBeVisible();
@@ -133,10 +135,9 @@ test.describe("Atlas Explorer population and rurality context", () => {
     await provenance.focus();
     await page.keyboard.press("Enter");
     await expect(provenance).toBeFocused();
+    await expect(section.getByText("Source field RUCC_2023.")).toBeVisible();
     await expect(
-      section.getByRole("link", {
-        name: "USDA ERS Rural-Urban Continuum Codes",
-      })
+      section.getByRole("link", { name: "Open source reference ↗" })
     ).toBeVisible();
 
     await page.reload();

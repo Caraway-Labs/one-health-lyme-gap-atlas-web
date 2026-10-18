@@ -141,7 +141,14 @@ describe("population and rurality section", () => {
         .textContent?.includes("0.6742 percentile"),
       rurality: screen
         .getByTestId("population-rurality-measure-rucc_2023")
-        .textContent?.includes("2023 classification vintage"),
+        .textContent?.includes("Classification vintage 2023"),
+      provenanceHidden: (() => {
+        const nodes = screen.queryAllByText("Provenance reference");
+        return (
+          nodes.length === 5 &&
+          nodes.every((node) => node.closest("details") !== null)
+        );
+      })(),
       vintages: requested.map((params) => params?.vintage_year).sort(),
     }).toStrictEqual({
       dates: false,
@@ -150,6 +157,7 @@ describe("population and rurality section", () => {
       percent: true,
       percentile: true,
       rurality: true,
+      provenanceHidden: true,
       vintages: [2022, 2022, 2022, 2022, 2023],
     });
   });
@@ -271,6 +279,20 @@ describe("population and rurality section", () => {
         .textContent
     ).toContain("not zero");
     expect(screen.queryByText("0.7264 percentile")).not.toBeInTheDocument();
+  });
+
+  it("announces when every measure is absent", async () => {
+    observationsGet.mockResolvedValue({
+      data: parsedEnvelope([]),
+      headers: new Headers(),
+      status: 200,
+    });
+    renderSection();
+    await expect(screen.findByRole("status")).resolves.toHaveTextContent(
+      "No governed observations were returned. That absence is not zero."
+    );
+    expect(screen.getAllByText(/absence is not zero/i)).toHaveLength(6);
+    expect(screen.queryByText("520,149 people")).not.toBeInTheDocument();
   });
 
   it("does not request observations without a release", async () => {

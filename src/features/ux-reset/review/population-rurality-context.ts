@@ -582,12 +582,19 @@ export function presentPopulationRuralityObservation(input: {
     hasMaterialLimitations: base.provenance.limitations.length > 0,
     valueState: input.observation.value_state,
   });
+  const sourceField =
+    input.observation.county_context.source_field.trim() || "Unavailable";
+  const governedDenominator = denominatorLabel(measure.denominator);
   const evidence: EvidenceObjectModel = {
     ...base,
     displayValue: displayValue(measure, input.observation),
     provenance: {
       ...base.provenance,
       observationPeriod: periodSentence(measure),
+      referenceLines: [
+        `Source field ${sourceField}.`,
+        `Denominator ${governedDenominator}`,
+      ],
     },
     valueNote: valueNote(measure, input.observation),
   };
@@ -595,15 +602,14 @@ export function presentPopulationRuralityObservation(input: {
     claimLabel: input.claimLabel,
     definition:
       input.observation.county_context.definition.trim() || "Unavailable",
-    denominatorLabel: denominatorLabel(measure.denominator),
+    denominatorLabel: governedDenominator,
     evidence,
     measureId: input.observation.measure_id,
     methodVersion:
       input.observation.methodology_version.trim() || "Unavailable",
     provenanceRef: input.observation.provenance_ref.trim() || "Unavailable",
     referencePeriod: referencePeriod(measure),
-    sourceField:
-      input.observation.county_context.source_field.trim() || "Unavailable",
+    sourceField,
     sourceLabel:
       input.observation.source_label?.trim() ||
       input.observation.source_id.trim() ||

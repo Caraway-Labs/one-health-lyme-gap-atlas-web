@@ -100,6 +100,9 @@ describe("population and rurality presentation", () => {
       people: population.evidence.displayValue,
       peoplePeriod: population.referencePeriod,
       rurality: rurality.evidence.displayValue,
+      ruralitySourceField: [
+        ...(rurality.evidence.provenance.referenceLines ?? []),
+      ],
       ruralityVintage: rurality.vintageLabel,
       vulnerability: vulnerability.evidence.displayValue,
       vulnerabilityNote: vulnerability.evidence.valueNote,
@@ -113,6 +116,10 @@ describe("population and rurality presentation", () => {
       people: "520,149 people",
       peoplePeriod: "2018-01-01 through 2022-12-31",
       rurality: "Nonmetro: urban population under 5,000, not adjacent (code 9)",
+      ruralitySourceField: [
+        "Source field RUCC_2023.",
+        "Denominator No person denominator is published.",
+      ],
       ruralityVintage: "2023 classification vintage",
       vulnerability: "0.7264 percentile",
       vulnerabilityNote: expect.stringContaining(
