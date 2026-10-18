@@ -1,5 +1,6 @@
 import { evidenceObjectFromObservation } from "@/features/ux-reset/evidence/from-observation";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
+import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 import { DatedObservationContractError } from "@/features/ux-reset/review/dated-observation-envelope";
 import type {
   CountyContextObservation,
@@ -159,6 +160,7 @@ function provenanceFromObservation(
 }
 
 export type ExplorerMapObservationReady = {
+  knownEmptySelection?: KnownEmptyObservationSelection | null;
   omitted: number;
   period: string;
   rows: ExplorerMapNumericRow[];

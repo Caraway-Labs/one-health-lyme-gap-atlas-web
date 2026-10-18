@@ -2,6 +2,12 @@ import {
   maximumObservationPageToken,
   PUBLIC_OBSERVATION_QUERY_BYTE_LIMIT,
 } from "@/features/ux-reset/explore/load-explore-resources";
+import {
+  createObservationSelectionAccumulator,
+  mergeKnownEmptySelections,
+  type FoldedObservationSelection,
+  type KnownEmptyObservationSelection,
+} from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
   acceptExplorerMapObservations,
@@ -130,14 +136,22 @@ async function fetchPages(input: {
   releaseId: string;
   signal: AbortSignal;
   spec: ExplorerObservationSpec;
-}): Promise<readonly (CountyContextObservation | Observation)[]> {
+}): Promise<{
+  knownEmptySelection: KnownEmptyObservationSelection | null;
+  rows: readonly (CountyContextObservation | Observation)[];
+}> {
   const collected: unknown[] = [];
+  const folds: FoldedObservationSelection[] = [];
   const batches = splitExplorerMapObservationBatches({
     fips: input.fips,
     spec: input.spec,
   });
   for (const batch of batches) {
     const seenTokens = new Set<string>();
+    const selection = createObservationSelectionAccumulator({
+      measureId: input.spec.measureId,
+      requestedReleaseId: input.releaseId,
+    });
     let pageToken: string | null = null;
     for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
       const response = await observationsV1ObservationsGet(
@@ -149,6 +163,11 @@ async function fetchPages(input: {
         ObservationsV1ObservationsGetResponse,
         response.data
       );
+      selection.note({
+        dataCount: parsed.data.length,
+        meta: parsed.meta,
+        pageToken,
+      });
       for (const row of parsed.data) {
         collected.push(row);
       }
@@ -159,11 +178,32 @@ async function fetchPages(input: {
       seenTokens.add(nextToken);
       pageToken = nextToken;
     }
+    folds.push(selection.finish());
   }
-  if (input.spec.context) {
-    return readContextObservations(collected);
+  const folded = mergeKnownEmptySelections(folds);
+  if (folded.kind === "release_mismatch") {
+    throw new ExplorerMapContractError(
+      "Observation availability release does not match the requested release."
+    );
   }
-  return readDatedObservations(collected);
+  const rows = input.spec.context
+    ? readContextObservations(collected)
+    : readDatedObservations(collected);
+  return {
+    knownEmptySelection:
+      folded.kind === "known_unavailable" ? folded.selection : null,
+    rows,
+  };
+}
+
+function knownEmptyPeriod(spec: ExplorerObservationSpec): string {
+  if (!spec.context) {
+    return `${spec.periodStart}–${spec.periodEnd}`;
+  }
+  if (spec.dates === "none") {
+    return `Vintage ${spec.vintageYear}`;
+  }
+  return `${spec.periodStart}–${spec.periodEnd}`;
 }
 
 export async function loadExplorerMapObservations(input: {
@@ -172,11 +212,24 @@ export async function loadExplorerMapObservations(input: {
   signal: AbortSignal;
   spec: ExplorerObservationSpec;
 }): Promise<ExplorerMapObservationReady> {
-  const rows = await fetchPages(input);
-  return acceptExplorerMapObservations({
-    releaseId: input.releaseId,
-    requestedFips: input.fips,
-    rows,
-    spec: input.spec,
-  });
+  const loaded = await fetchPages(input);
+  if (loaded.rows.length === 0 && loaded.knownEmptySelection) {
+    return {
+      knownEmptySelection: loaded.knownEmptySelection,
+      omitted: input.fips.length,
+      period: knownEmptyPeriod(input.spec),
+      rows: [],
+      sourceLabel: null,
+      unit: input.spec.unit,
+    };
+  }
+  return {
+    ...acceptExplorerMapObservations({
+      releaseId: input.releaseId,
+      requestedFips: input.fips,
+      rows: loaded.rows,
+      spec: input.spec,
+    }),
+    knownEmptySelection: null,
+  };
 }

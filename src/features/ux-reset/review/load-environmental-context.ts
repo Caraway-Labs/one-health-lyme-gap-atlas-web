@@ -4,6 +4,10 @@ import {
   InvestigateContractError,
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
+  createObservationSelectionAccumulator,
+  type KnownEmptyObservationSelection,
+} from "@/features/ux-reset/observations/selection-availability";
+import {
   DatedObservationContractError,
   readDatedObservations,
 } from "@/features/ux-reset/review/dated-observation-envelope";
@@ -33,7 +37,7 @@ export class EnvironmentalDateError extends Error {
 
 export type EnvironmentalMeasureLoad =
   | { count: number; kind: "conflict" }
-  | { kind: "absent" }
+  | { kind: "absent"; selection?: KnownEmptyObservationSelection | null }
   | { kind: "observation"; observation: Observation };
 
 /**
@@ -52,6 +56,10 @@ export async function fetchEnvironmentalMeasure(input: {
   }
   const observations: Observation[] = [];
   const seenTokens = new Set<string>();
+  const selection = createObservationSelectionAccumulator({
+    measureId: input.measureId,
+    requestedReleaseId: input.releaseId,
+  });
   let pageToken: string | null = null;
   for (let page = 0; page < MAX_ENVIRONMENTAL_PAGES; page += 1) {
     if (input.signal.aborted) {
@@ -86,6 +94,11 @@ export async function fetchEnvironmentalMeasure(input: {
       ObservationsV1ObservationsGetResponse,
       response.data
     );
+    selection.note({
+      dataCount: parsed.data.length,
+      meta: parsed.meta,
+      pageToken,
+    });
     observations.push(...readDatedObservations(parsed.data));
     const nextToken = parsed.meta.next_page_token ?? null;
     if (!nextToken || seenTokens.has(nextToken)) {
@@ -106,6 +119,16 @@ export async function fetchEnvironmentalMeasure(input: {
     },
   });
   if (accepted.length === 0) {
+    const folded = selection.finish();
+    if (folded.kind === "release_mismatch") {
+      throw new InvestigateContractError(
+        "Observation availability release does not match the requested release.",
+        "release_mismatch"
+      );
+    }
+    if (folded.kind === "known_unavailable") {
+      return { kind: "absent", selection: folded.selection };
+    }
     return { kind: "absent" };
   }
   if (accepted.length > 1) {

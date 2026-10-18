@@ -11,6 +11,7 @@ import { inheritedContextFromInvestigate } from "@/features/ux-reset/ask-atlas/i
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { buildCompareEntryHref } from "@/features/ux-reset/compare/compare-entry";
 import { sharedContextToSearchParams } from "@/features/ux-reset/context-params";
+import { CanonicalGeographyAvailabilityNotice } from "@/features/ux-reset/geography/canonical-geography-availability-notice";
 import { countyEvidenceLoadStates } from "@/features/ux-reset/investigate/county-evidence";
 import { InvestigateEvidenceHierarchy } from "@/features/ux-reset/investigate/investigate-hierarchy";
 import { investigatePdfContext } from "@/features/ux-reset/investigate/investigate-next-step";
@@ -362,6 +363,7 @@ export function ExplorerCountyEvidence({
           {workspace.stateLabel ? ` · ${workspace.stateLabel}` : null}
           {workspace.releaseId ? ` · Release ${workspace.releaseId}` : null}
         </p>
+        <CanonicalGeographyAvailabilityNotice fips={workspace.requestedFips} />
         {followUpSelection ? (
           <ExplorerReviewPriority selection={followUpSelection} />
         ) : null}

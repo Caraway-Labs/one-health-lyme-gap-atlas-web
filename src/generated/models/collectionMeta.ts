@@ -5,10 +5,19 @@
  * Build artifact for existing first-party Web client and validator generation. Not an external developer contract or HTTP surface. Use the public openapi.json for external documentation.
  * OpenAPI spec version: 0.1.0
  */
+import type { CollectionMetaAvailability } from './collectionMetaAvailability';
 
 export interface CollectionMeta {
   /** Opaque query/release-bound continuation. Null means exhaustion; tokens may expire on restart. */
   next_page_token?: string | null;
   /** UTC response construction time; not source freshness or observation time. */
   response_at?: string;
+  /** Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE. */
+  availability?: CollectionMetaAvailability;
+  /** No published rows after a successful initial non-CDC query; otherwise omitted. */
+  reason?: 'NO_PUBLISHED_RESULTS' | null;
+  /** Current governed release actually read for this query. */
+  release_id?: string | null;
+  /** Selection availability caveats; observations only. */
+  limitations?: string[] | null;
 }

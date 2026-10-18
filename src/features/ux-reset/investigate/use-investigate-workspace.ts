@@ -411,6 +411,8 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       measureKey,
       indicatorKey,
     ],
+    staleTime: (query) =>
+      (query.state.data?.knownEmptySelections.length ?? 0) > 0 ? 0 : 300_000,
     retry: (failureCount, error) =>
       shouldRetryInvestigateRequest(failureCount, error, retrySetting),
   });

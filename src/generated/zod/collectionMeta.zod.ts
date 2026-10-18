@@ -9,7 +9,11 @@ import * as zod from 'zod';
 
 export const CollectionMeta = zod.object({
   "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.')
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
+  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
+  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
 })
 
 export type CollectionMeta = zod.input<typeof CollectionMeta>;

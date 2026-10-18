@@ -1,3 +1,4 @@
+import { createObservationSelectionAccumulator } from "@/features/ux-reset/observations/selection-availability";
 import {
   acceptPopulationRuralityRows,
   PopulationRuralityContractError,
@@ -51,6 +52,10 @@ export async function fetchPopulationRuralityMeasure(input: {
 }): Promise<ReturnType<typeof acceptPopulationRuralityRows>> {
   const rows: unknown[] = [];
   const seenTokens = new Set<string>();
+  const selection = createObservationSelectionAccumulator({
+    measureId: input.measureId,
+    requestedReleaseId: input.releaseId,
+  });
   let pageToken: string | null = null;
   for (let page = 0; page < MAX_CONTEXT_PAGES; page += 1) {
     if (input.signal.aborted) {
@@ -84,6 +89,11 @@ export async function fetchPopulationRuralityMeasure(input: {
         ObservationsV1ObservationsGetResponse,
         response.data
       );
+      selection.note({
+        dataCount: parsed.data.length,
+        meta: parsed.meta,
+        pageToken,
+      });
       rows.push(...parsed.data);
       const nextToken = parsed.meta.next_page_token ?? null;
       if (!nextToken || seenTokens.has(nextToken)) {
@@ -98,12 +108,25 @@ export async function fetchPopulationRuralityMeasure(input: {
       throw error;
     }
   }
-  return acceptPopulationRuralityRows({
+  const accepted = acceptPopulationRuralityRows({
     measureId: input.measureId,
     releaseId: input.releaseId,
     requestedFips: input.fips,
     rows: readContextObservations(rows),
   });
+  if (accepted.kind !== "absent") {
+    return accepted;
+  }
+  const folded = selection.finish();
+  if (folded.kind === "release_mismatch") {
+    throw new PopulationRuralityContractError(
+      "Observation availability release does not match the requested release."
+    );
+  }
+  if (folded.kind === "known_unavailable") {
+    return { kind: "absent", selection: folded.selection };
+  }
+  return { kind: "absent" };
 }
 
 export function populationRuralityLoadErrorMessage(error: unknown): string {

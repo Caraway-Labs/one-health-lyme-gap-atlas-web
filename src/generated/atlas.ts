@@ -26,6 +26,7 @@ import type {
 
 import type {
   AtlasMetadata,
+  CanonicalGeographyAvailability,
   CollectionEnvelopeCountyContextObservation,
   CollectionEnvelopeIndicator,
   CollectionEnvelopeMeasure,
@@ -1367,6 +1368,165 @@ export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awa
 
 
 
+export type canonicalGeographyAvailabilityResponse200 = {
+  data: CanonicalGeographyAvailability
+  status: 200
+}
+
+export type canonicalGeographyAvailabilityResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type canonicalGeographyAvailabilityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type canonicalGeographyAvailabilityResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type canonicalGeographyAvailabilityResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type canonicalGeographyAvailabilityResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type canonicalGeographyAvailabilityResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type canonicalGeographyAvailabilityResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type canonicalGeographyAvailabilityResponseSuccess = (canonicalGeographyAvailabilityResponse200) & {
+  headers: Headers;
+};
+export type canonicalGeographyAvailabilityResponseError = (canonicalGeographyAvailabilityResponse400 | canonicalGeographyAvailabilityResponse404 | canonicalGeographyAvailabilityResponse413 | canonicalGeographyAvailabilityResponse414 | canonicalGeographyAvailabilityResponse429 | canonicalGeographyAvailabilityResponse503 | canonicalGeographyAvailabilityResponse4xx) & {
+  headers: Headers;
+};
+
+export type canonicalGeographyAvailabilityResponse = (canonicalGeographyAvailabilityResponseSuccess | canonicalGeographyAvailabilityResponseError)
+
+export const getCanonicalGeographyAvailabilityUrl = (geographyType: GeographyType,
+    geographyId: string,) => {
+
+
+
+
+  return `/v1/geographies/${geographyType}/${geographyId}/availability`
+}
+
+/**
+ * Additive county-only operation. Confirms membership and release from the governed county directory before returning UNAVAILABLE/CANONICAL_GEOGRAPHY_UNPUBLISHED with null data. The canonical resource is identity metadata, not a polygon. No geometry is returned or inferred. State availability is unsupported (400). Malformed county IDs return 400; confirmed absent identities return 404. Unavailable, empty, duplicate or inconsistent directory authority remains 503. The directory uses the existing bounded snapshot cache, checked against a fresh current-release lookup; a mismatch remains 503. Responses use Cache-Control: no-store. The existing canonical resource route and county/map routes are unchanged.
+ * @summary Check canonical county geography publication availability
+ */
+export const canonicalGeographyAvailability = async (geographyType: GeographyType,
+    geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<canonicalGeographyAvailabilityResponse> => {
+
+  return apiMutator<canonicalGeographyAvailabilityResponse>(getCanonicalGeographyAvailabilityUrl(geographyType,geographyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCanonicalGeographyAvailabilityQueryKey = (geographyType: GeographyType,
+    geographyId: string,) => {
+    return [
+    `/v1/geographies/${geographyType}/${geographyId}/availability`
+    ] as const;
+    }
+
+
+export const getCanonicalGeographyAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCanonicalGeographyAvailabilityQueryKey(geographyType,geographyId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof canonicalGeographyAvailability>>> = ({ signal }) => canonicalGeographyAvailability(geographyType,geographyId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: geographyType !== null && geographyType !== undefined && geographyId !== null && geographyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CanonicalGeographyAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof canonicalGeographyAvailability>>>
+export type CanonicalGeographyAvailabilityQueryError = ProblemDetails
+
+
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Check canonical county geography publication availability
+ */
+
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCanonicalGeographyAvailabilityQueryOptions(geographyType,geographyId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type observationsV1ObservationsGetResponse200 = {
   data: CollectionEnvelopeCountyContextObservation | CollectionEnvelopeObservation
   status: 200
@@ -1440,7 +1600,7 @@ export const getObservationsV1ObservationsGetUrl = (params: ObservationsV1Observ
 }
 
 /**
- * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation.
+ * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.
  * @summary Query county observations
  */
 export const observationsV1ObservationsGet = async (params: ObservationsV1ObservationsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<observationsV1ObservationsGetResponse> => {

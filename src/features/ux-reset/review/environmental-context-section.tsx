@@ -7,6 +7,7 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import {
   ENVIRONMENTAL_CONTEXT_MEASURES,
   ENVIRONMENTAL_CONTEXT_WINDOW,
@@ -59,6 +60,14 @@ function EnvironmentalMeasureBody({
       );
     }
     case "absent": {
+      if (view.selection) {
+        return (
+          <KnownEmptySelectionNotice
+            selections={[view.selection]}
+            testId={`environmental-known-empty-${view.measureId}`}
+          />
+        );
+      }
       return (
         <AtlasStatusMessage tone="empty">
           {`No governed observation was returned for ${measureClaim(view.measureId)} on this county and day. That absence is not zero.`}

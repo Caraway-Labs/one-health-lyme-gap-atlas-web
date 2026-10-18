@@ -17,6 +17,10 @@ import {
   mapWithConcurrency,
   investigateObservationRequestRejection,
 } from "@/features/ux-reset/investigate/load-county-evidence";
+import {
+  createObservationSelectionAccumulator,
+  type KnownEmptyObservationSelection,
+} from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import { observationsV1ObservationsGet } from "@/generated/atlas";
 import type {
@@ -400,9 +404,16 @@ async function fetchCompareObservations(input: {
   releaseId: string;
   signal: AbortSignal;
   timeBound: ExploreTimeBound;
-}): Promise<Observation[]> {
+}): Promise<{
+  observations: Observation[];
+  selection: KnownEmptyObservationSelection | null;
+}> {
   const collected: Observation[] = [];
   const seenTokens = new Set<string>();
+  const selection = createObservationSelectionAccumulator({
+    measureId: input.measureId,
+    requestedReleaseId: input.releaseId,
+  });
   let pageToken: string | null = null;
   const scope: CompareCooldownScope = {
     leftFips: input.pair[0],
@@ -428,6 +439,11 @@ async function fetchCompareObservations(input: {
       ObservationsV1ObservationsGetResponse,
       response.data
     );
+    selection.note({
+      dataCount: parsed.data.length,
+      meta: parsed.meta,
+      pageToken,
+    });
     collected.push(...readDatedObservations(parsed.data));
     const nextToken = parsed.meta.next_page_token ?? null;
     if (!nextToken || seenTokens.has(nextToken)) {
@@ -436,13 +452,23 @@ async function fetchCompareObservations(input: {
     seenTokens.add(nextToken);
     pageToken = nextToken;
   }
-  return acceptPairObservations({
-    measureId: input.measureId,
-    observations: collected,
-    pair: input.pair,
-    releaseId: input.releaseId,
-    timeBound: input.timeBound,
-  });
+  const folded = selection.finish();
+  if (folded.kind === "release_mismatch") {
+    throw new CompareContractError(
+      "Observation availability release does not match the requested release.",
+      "release_mismatch"
+    );
+  }
+  return {
+    observations: acceptPairObservations({
+      measureId: input.measureId,
+      observations: collected,
+      pair: input.pair,
+      releaseId: input.releaseId,
+      timeBound: input.timeBound,
+    }),
+    selection: folded.kind === "known_unavailable" ? folded.selection : null,
+  };
 }
 
 export type CompareRetryCooldown = {
@@ -616,7 +642,7 @@ export async function loadCompareEvidence(input: {
           scope,
           signal: input.signal,
         });
-        const observations = await withCompareReadLimit(input.signal, () =>
+        const loaded = await withCompareReadLimit(input.signal, () =>
           fetchCompareObservations({
             measureId: measure.measure_id,
             pair,
@@ -628,7 +654,8 @@ export async function loadCompareEvidence(input: {
         );
         return {
           measureId: measure.measure_id,
-          observations,
+          observations: loaded.observations,
+          selectionAvailability: loaded.selection,
           status: "ready" as const,
         };
       } catch (error) {

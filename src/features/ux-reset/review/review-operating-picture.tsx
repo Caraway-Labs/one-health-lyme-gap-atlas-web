@@ -22,6 +22,7 @@ import {
   type EvidenceProvenanceModel,
 } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 import {
   countyPassesAvailableData,
@@ -93,6 +94,7 @@ import {
   stateFipsPrefix,
 } from "@/features/ux-reset/review/review-state-fips";
 import {
+  knownEmptyMapSelection,
   observationGate,
   observationPaintState,
   useExplorerMapObservations,
@@ -424,6 +426,7 @@ export function ReviewOperatingPicture({
     releaseId,
     scopeCode,
   });
+  const knownEmptySelection = knownEmptyMapSelection(observations, mapLayer);
   const scoresQuery = useExplorerMapScores(releaseId);
   const scenarioBaseline = useMemo(
     () => scoreSettingsFromCollection(scoresQuery.data?.settings),
@@ -898,6 +901,12 @@ export function ReviewOperatingPicture({
                 onLayerChange={onMapLayerChange}
               />
             </div>
+          ) : null}
+          {knownEmptySelection ? (
+            <KnownEmptySelectionNotice
+              selections={[knownEmptySelection]}
+              testId="explorer-map-known-empty"
+            />
           ) : null}
           <div
             className="map-wrap"

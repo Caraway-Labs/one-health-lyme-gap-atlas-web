@@ -170,7 +170,7 @@ export const StructuredAssistantResponse = zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
 }).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.string().describe('Governed observation grain. Daily NOAA nClimGrid rows use DAY. PERIOD and VINTAGE_YEAR are county-context grains, not the only admitted values.'),
+  "temporal_grain": zod.string(),
   "value": zod.union([zod.number(),zod.string(),zod.null()]).describe('Read with value_state and unit; null never means zero.'),
   "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
   "unit": zod.string(),

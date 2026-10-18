@@ -23,7 +23,9 @@
   "paths": {
     "/v1/indicators": {
       "get": {
-        "tags": ["discovery"],
+        "tags": [
+          "discovery"
+        ],
         "summary": "Discover indicators",
         "description": "Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.",
         "operationId": "indicators_v1_indicators_get",
@@ -60,7 +62,9 @@
                 }
               ],
               "description": "Items per page; defaults to 100, configured maximum at most 500.",
-              "examples": [100],
+              "examples": [
+                100
+              ],
               "title": "Page Size"
             },
             "description": "Items per page; defaults to 100, configured maximum at most 500."
@@ -270,7 +274,9 @@
     },
     "/v1/indicators/{indicator_id}": {
       "get": {
-        "tags": ["discovery"],
+        "tags": [
+          "discovery"
+        ],
         "summary": "Get an indicator",
         "description": "Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.",
         "operationId": "indicator_v1_indicators__indicator_id__get",
@@ -474,7 +480,9 @@
     },
     "/v1/measures": {
       "get": {
-        "tags": ["discovery"],
+        "tags": [
+          "discovery"
+        ],
         "summary": "Discover measures",
         "description": "Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.",
         "operationId": "measures_v1_measures_get",
@@ -543,7 +551,9 @@
                 }
               ],
               "description": "Items per page; defaults to 100, configured maximum at most 500.",
-              "examples": [100],
+              "examples": [
+                100
+              ],
               "title": "Page Size"
             },
             "description": "Items per page; defaults to 100, configured maximum at most 500."
@@ -753,7 +763,9 @@
     },
     "/v1/measures/{measure_id}": {
       "get": {
-        "tags": ["discovery"],
+        "tags": [
+          "discovery"
+        ],
         "summary": "Get a measure",
         "description": "Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.",
         "operationId": "measure_v1_measures__measure_id__get",
@@ -957,7 +969,9 @@
     },
     "/v1/sources": {
       "get": {
-        "tags": ["provenance"],
+        "tags": [
+          "provenance"
+        ],
         "summary": "Discover sources",
         "description": "Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.",
         "operationId": "sources_v1_sources_get",
@@ -978,7 +992,9 @@
                 }
               ],
               "description": "Items per page; defaults to 100, configured maximum at most 500.",
-              "examples": [100],
+              "examples": [
+                100
+              ],
               "title": "Page Size"
             },
             "description": "Items per page; defaults to 100, configured maximum at most 500."
@@ -1188,7 +1204,9 @@
     },
     "/v1/sources/{source_id}": {
       "get": {
-        "tags": ["provenance"],
+        "tags": [
+          "provenance"
+        ],
         "summary": "Get a source",
         "description": "Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.",
         "operationId": "source_v1_sources__source_id__get",
@@ -1392,7 +1410,9 @@
     },
     "/v1/methodologies/{methodology_id}": {
       "get": {
-        "tags": ["provenance"],
+        "tags": [
+          "provenance"
+        ],
         "summary": "Get a methodology",
         "description": "Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.",
         "operationId": "methodology_v1_methodologies__methodology_id__get",
@@ -1596,7 +1616,9 @@
     },
     "/v1/geographies/{geography_type}/{geography_id}": {
       "get": {
-        "tags": ["geographies"],
+        "tags": [
+          "geographies"
+        ],
         "summary": "Get geography identity (delivery pending)",
         "description": "Validated county/state FIPS identity; currently returns 503 CANONICAL_DATA_UNAVAILABLE. No geometry is returned.",
         "operationId": "geography_v1_geographies__geography_type___geography_id__get",
@@ -1803,11 +1825,238 @@
         }
       }
     },
+    "/v1/geographies/{geography_type}/{geography_id}/availability": {
+      "get": {
+        "tags": [
+          "geographies"
+        ],
+        "summary": "Check canonical county geography publication availability",
+        "description": "Additive county-only operation. Confirms membership and release from the governed county directory before returning UNAVAILABLE/CANONICAL_GEOGRAPHY_UNPUBLISHED with null data. The canonical resource is identity metadata, not a polygon. No geometry is returned or inferred. State availability is unsupported (400). Malformed county IDs return 400; confirmed absent identities return 404. Unavailable, empty, duplicate or inconsistent directory authority remains 503. The directory uses the existing bounded snapshot cache, checked against a fresh current-release lookup; a mismatch remains 503. Responses use Cache-Control: no-store. The existing canonical resource route and county/map routes are unchanged.",
+        "operationId": "canonicalGeographyAvailability",
+        "parameters": [
+          {
+            "name": "geography_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GeographyType"
+            }
+          },
+          {
+            "name": "geography_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Geography Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed current county identity; canonical publication is pending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanonicalGeographyAvailability"
+                },
+                "examples": {
+                  "unpublished": {
+                    "summary": "Confirmed county identity; canonical geography publication pending",
+                    "value": {
+                      "availability": "UNAVAILABLE",
+                      "reason": "CANONICAL_GEOGRAPHY_UNPUBLISHED",
+                      "data": null,
+                      "release_id": "example-release",
+                      "limitations": [
+                        "Illustrative checked county directory; no geometry is delivered."
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Canonical client errors use application/problem+json.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "illustrative": {
+                    "summary": "Synthetic error example",
+                    "value": {
+                      "type": "https://carawaylabs.com/problems/http-400",
+                      "title": "Request failed",
+                      "status": 400,
+                      "detail": "INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json",
+                      "instance": "/v1/observations",
+                      "request_id": "example-request-id",
+                      "code": "INVALID_REQUEST"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RESOURCE_NOT_FOUND; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "illustrative": {
+                    "summary": "Synthetic error example",
+                    "value": {
+                      "type": "https://carawaylabs.com/problems/http-404",
+                      "title": "Request failed",
+                      "status": 404,
+                      "detail": "RESOURCE_NOT_FOUND; application/problem+json",
+                      "instance": "/v1/observations",
+                      "request_id": "example-request-id",
+                      "code": "RESOURCE_NOT_FOUND"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited; Retry-After; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "illustrative": {
+                    "summary": "Synthetic error example",
+                    "value": {
+                      "type": "https://carawaylabs.com/problems/http-429",
+                      "title": "Request failed",
+                      "status": 429,
+                      "detail": "Rate limited; Retry-After; application/problem+json",
+                      "instance": "/v1/observations",
+                      "request_id": "example-request-id",
+                      "code": "RATE_LIMITED"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry when supplied by the service.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "GET request body rejected; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "illustrative": {
+                    "summary": "Synthetic error example",
+                    "value": {
+                      "type": "https://carawaylabs.com/problems/http-413",
+                      "title": "Request failed",
+                      "status": 413,
+                      "detail": "GET request body rejected; application/problem+json",
+                      "instance": "/v1/observations",
+                      "request_id": "example-request-id",
+                      "code": "INVALID_REQUEST"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "414": {
+            "description": "Query string too long; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "illustrative": {
+                    "summary": "Synthetic error example",
+                    "value": {
+                      "type": "https://carawaylabs.com/problems/http-414",
+                      "title": "Request failed",
+                      "status": 414,
+                      "detail": "Query string too long; application/problem+json",
+                      "instance": "/v1/observations",
+                      "request_id": "example-request-id",
+                      "code": "INVALID_REQUEST"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable; application/problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "illustrative": {
+                    "summary": "Synthetic error example",
+                    "value": {
+                      "type": "https://carawaylabs.com/problems/http-503",
+                      "title": "Request failed",
+                      "status": 503,
+                      "detail": "Service unavailable; application/problem+json",
+                      "instance": "/v1/observations",
+                      "request_id": "example-request-id",
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry when supplied by the service.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/observations": {
       "get": {
-        "tags": ["observations"],
+        "tags": [
+          "observations"
+        ],
         "summary": "Query county observations",
-        "description": "Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation.",
+        "description": "Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.",
         "operationId": "observations_v1_observations_get",
         "parameters": [
           {
@@ -1818,7 +2067,9 @@
               "type": "string",
               "minLength": 1,
               "description": "Exact discovery measure ID.",
-              "examples": ["case_count_floor_2023"],
+              "examples": [
+                "case_count_floor_2023"
+              ],
               "title": "Measure Id"
             },
             "description": "Exact discovery measure ID."
@@ -1843,7 +2094,11 @@
               "minItems": 1,
               "maxItems": 500,
               "description": "Repeat for 1-500 county FIPS strings; preserve leading zeros.",
-              "examples": [["08001"]],
+              "examples": [
+                [
+                  "08001"
+                ]
+              ],
               "title": "Geography Id"
             },
             "description": "Repeat for 1-500 county FIPS strings; preserve leading zeros."
@@ -1884,7 +2139,9 @@
                 }
               ],
               "description": "Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.",
-              "examples": [2023],
+              "examples": [
+                2023
+              ],
               "title": "Year"
             },
             "description": "Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31."
@@ -1904,7 +2161,9 @@
                 }
               ],
               "description": "Inclusive period start; requires end_date and excludes year.",
-              "examples": ["2023-01-01"],
+              "examples": [
+                "2023-01-01"
+              ],
               "title": "Start Date"
             },
             "description": "Inclusive period start; requires end_date and excludes year."
@@ -1924,7 +2183,9 @@
                 }
               ],
               "description": "Inclusive period end; requires start_date and excludes year.",
-              "examples": ["2023-12-31"],
+              "examples": [
+                "2023-12-31"
+              ],
               "title": "End Date"
             },
             "description": "Inclusive period end; requires start_date and excludes year."
@@ -1966,7 +2227,9 @@
                 }
               ],
               "description": "Items per page; defaults to 100, configured maximum at most 500.",
-              "examples": [100],
+              "examples": [
+                100
+              ],
               "title": "Page Size"
             },
             "description": "Items per page; defaults to 100, configured maximum at most 500."
@@ -2008,12 +2271,79 @@
                 },
                 "examples": {
                   "empty": {
-                    "summary": "Illustrative exhausted page; no observations matched",
+                    "summary": "Empty continuation page; not an unavailable selection",
                     "value": {
                       "data": [],
                       "meta": {
                         "next_page_token": null,
-                        "response_at": "2026-01-01T00:00:00Z"
+                        "response_at": "2026-01-01T00:00:00Z",
+                        "availability": "AVAILABLE",
+                        "release_id": "example-release",
+                        "limitations": []
+                      },
+                      "links": {
+                        "self": null
+                      }
+                    }
+                  },
+                  "available": {
+                    "summary": "Synthetic available published observation example",
+                    "value": {
+                      "data": [
+                        {
+                          "observation_id": "example-observation",
+                          "measure_id": "case_count_floor_2023",
+                          "geography": {
+                            "geography_type": "county",
+                            "geography_id": "08001"
+                          },
+                          "period_start": "2023-01-01",
+                          "period_end": "2023-12-31",
+                          "temporal_grain": "year",
+                          "value": 12,
+                          "value_state": "OBSERVED",
+                          "unit": "cases",
+                          "denominator": null,
+                          "source_id": "human",
+                          "methodology_id": null,
+                          "methodology_version": "example-transform-v1",
+                          "semantic_version": "example-semantic-v1",
+                          "release_id": "example-release",
+                          "provenance_ref": "example-observation",
+                          "limitations": [
+                            "Synthetic documentation example; no measured value is asserted."
+                          ],
+                          "evidence": {
+                            "resource_type": "observation",
+                            "resource_id": "example-observation"
+                          }
+                        }
+                      ],
+                      "meta": {
+                        "next_page_token": null,
+                        "response_at": "2026-01-01T00:00:00Z",
+                        "availability": "AVAILABLE",
+                        "release_id": "example-release",
+                        "limitations": []
+                      },
+                      "links": {
+                        "self": null
+                      }
+                    }
+                  },
+                  "known_unavailable": {
+                    "summary": "Successful initial query with no published results; not negative evidence",
+                    "value": {
+                      "data": [],
+                      "meta": {
+                        "next_page_token": null,
+                        "response_at": "2026-01-01T00:00:00Z",
+                        "availability": "UNAVAILABLE",
+                        "reason": "NO_PUBLISHED_RESULTS",
+                        "release_id": "example-release",
+                        "limitations": [
+                          "No published observations match this selection in the checked release. This does not establish biological absence, source coverage, or geography membership."
+                        ]
                       },
                       "links": {
                         "self": null
@@ -2241,7 +2571,9 @@
     },
     "/v1/intelligence/items": {
       "get": {
-        "tags": ["Intelligence feed"],
+        "tags": [
+          "Intelligence feed"
+        ],
         "summary": "Read normalized publication intelligence",
         "description": "First-party read only; no ingestion. Stable identity ordering, source/revision provenance and separate publisher/fetch dates. Optional inclusive publication dates exclude unknown publisher dates. No retention cutoff is applied. page_size 1\u2013500; opaque state/filter-bound tokens may expire on restart or ingestion. no-store; disabled/unavailable is 503, not empty data.",
         "operationId": "listIntelligenceItems",
@@ -2513,7 +2845,9 @@
     },
     "/v1/intelligence/sources": {
       "get": {
-        "tags": ["Intelligence feed"],
+        "tags": [
+          "Intelligence feed"
+        ],
         "summary": "Read source identities represented by published intelligence",
         "description": "First-party read only. Source catalog covers represented item sources, not the private registry or all active sources. Health is explicitly unavailable until DATA publishes it. No freshness thresholds are inferred. page_size 1\u2013500, state-bound tokens, no-store. No ingestion.",
         "operationId": "listIntelligenceSources",
@@ -2734,7 +3068,9 @@
     },
     "/v1/intelligence/feed": {
       "get": {
-        "tags": ["Intelligence feed"],
+        "tags": [
+          "Intelligence feed"
+        ],
         "summary": "Read source-attributed publication metadata",
         "description": "Read only from governed INTELLIGENCE_FEED_V2. No excerpts, article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.",
         "operationId": "listIntelligenceFeed",
@@ -3006,7 +3342,9 @@
     },
     "/health/live": {
       "get": {
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "summary": "Live",
         "operationId": "live_health_live_get",
         "responses": {
@@ -3029,7 +3367,9 @@
     },
     "/health/ready": {
       "get": {
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "summary": "Ready",
         "operationId": "ready_health_ready_get",
         "responses": {
@@ -3052,7 +3392,9 @@
     },
     "/v1/me/profile": {
       "get": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Get Profile",
         "operationId": "get_profile_v1_me_profile_get",
         "parameters": [
@@ -3117,7 +3459,9 @@
         }
       },
       "put": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Save Profile",
         "operationId": "save_profile_v1_me_profile_put",
         "parameters": [
@@ -3194,7 +3538,9 @@
     },
     "/v1/me/privacy-requests": {
       "post": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Create Privacy Request",
         "operationId": "create_privacy_request_v1_me_privacy_requests_post",
         "parameters": [
@@ -3271,7 +3617,9 @@
     },
     "/v1/me/privacy-requests/{request_id}/confirm": {
       "post": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Confirm Privacy Request",
         "operationId": "confirm_privacy_request_v1_me_privacy_requests__request_id__confirm_post",
         "parameters": [
@@ -3388,7 +3736,9 @@
     },
     "/v1/me/privacy-requests/{request_id}": {
       "get": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Get Privacy Request",
         "operationId": "get_privacy_request_v1_me_privacy_requests__request_id__get",
         "parameters": [
@@ -3475,7 +3825,9 @@
     },
     "/v1/me/privacy-requests/{request_id}/export": {
       "get": {
-        "tags": ["account"],
+        "tags": [
+          "account"
+        ],
         "summary": "Download Privacy Export",
         "operationId": "download_privacy_export_v1_me_privacy_requests__request_id__export_get",
         "parameters": [
@@ -3570,7 +3922,9 @@
     },
     "/v1/states/{state}/review": {
       "get": {
-        "tags": ["states"],
+        "tags": [
+          "states"
+        ],
         "summary": "Review a state's county evidence",
         "description": "Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.",
         "operationId": "state_review_v1_states__state__review_get",
@@ -3744,7 +4098,9 @@
     },
     "/v1/atlas/metadata": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Get Atlas release metadata",
         "description": "Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.",
         "operationId": "metadata_v1_atlas_metadata_get",
@@ -3891,7 +4247,9 @@
     },
     "/v1/atlas/geometry": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Get county display geometry",
         "description": "Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.",
         "operationId": "geometry_v1_atlas_geometry_get",
@@ -4041,7 +4399,9 @@
     },
     "/v1/atlas/scores": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Get county gap scores",
         "description": "Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.",
         "operationId": "scores_v1_atlas_scores_get",
@@ -4226,7 +4586,9 @@
     },
     "/v1/counties/{fips}": {
       "get": {
-        "tags": ["counties"],
+        "tags": [
+          "counties"
+        ],
         "summary": "Get county analytics and provenance",
         "description": "Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.",
         "operationId": "county_v1_counties__fips__get",
@@ -4421,7 +4783,9 @@
     },
     "/v1/counties/{fips}/tier1-surveillance-priority": {
       "get": {
-        "tags": ["counties"],
+        "tags": [
+          "counties"
+        ],
         "summary": "Get persisted Tier 1 model-assisted surveillance review priority",
         "description": "Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.",
         "operationId": "county_tier1_surveillance_priority_get",
@@ -4562,7 +4926,9 @@
     },
     "/v1/counties/{fips}/tier1-surveillance-priority/availability": {
       "get": {
-        "tags": ["counties"],
+        "tags": [
+          "counties"
+        ],
         "summary": "Get Tier 1 result availability and persisted data",
         "description": "Additive availability contract for current supported county geographies. A successful lookup returns AVAILABLE with the exact persisted result, or UNAVAILABLE with reason NO_PUBLISHED_MODEL and null data after the current geography release and Tier 1 projection have both been read successfully. geography_release_id identifies the release used to validate the FIPS. This endpoint does not turn null into zero or synthesize model output. NOT_ESTIMABLE is a persisted result state and is distinct from no published model result. Malformed FIPS returns 422; an identity outside the current geography release returns typed 404; dependency or malformed-data failures return 503. Public cache TTL 60 seconds.",
         "operationId": "county_tier1_surveillance_priority_availability_get",
@@ -4704,7 +5070,9 @@
     },
     "/v1/counties/{fips}/report.pdf": {
       "get": {
-        "tags": ["counties"],
+        "tags": [
+          "counties"
+        ],
         "summary": "Download a county report",
         "description": "PDF attachment using the immutable county-v1 registered template by default. Optional dataset_version and score settings bind report inputs. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1\u201320, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. V1 rejects observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; V1 public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.",
         "operationId": "county_report_pdf_v1_counties__fips__report_pdf_get",
@@ -5021,7 +5389,9 @@
     },
     "/v1/states/{state}/report.pdf": {
       "get": {
-        "tags": ["states"],
+        "tags": [
+          "states"
+        ],
         "summary": "Download a state report",
         "description": "PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.",
         "operationId": "state_report_pdf_v1_states__state__report_pdf_get",
@@ -5254,7 +5624,9 @@
     },
     "/v1/atlas/ranking.csv": {
       "get": {
-        "tags": ["atlas"],
+        "tags": [
+          "atlas"
+        ],
         "summary": "Download filtered county rankings",
         "description": "Filtered CSV attachment for current county rankings. Existing state, text and evidence filters and score settings apply; no pagination. This route does not declare a public cache TTL.",
         "operationId": "ranking_csv_v1_atlas_ranking_csv_get",
@@ -5286,7 +5658,12 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": ["all", "ecological", "human", "complete"],
+              "enum": [
+                "all",
+                "ecological",
+                "human",
+                "complete"
+              ],
               "type": "string",
               "default": "all",
               "title": "Evidence"
@@ -5456,7 +5833,9 @@
     },
     "/v1/feedback": {
       "post": {
-        "tags": ["feedback"],
+        "tags": [
+          "feedback"
+        ],
         "summary": "Submit Feedback",
         "operationId": "submit_feedback_v1_feedback_post",
         "parameters": [
@@ -5573,7 +5952,9 @@
     },
     "/v1/assistant/structured": {
       "post": {
-        "tags": ["assistant"],
+        "tags": [
+          "assistant"
+        ],
         "summary": "Ask Atlas over governed structured evidence",
         "description": "Internal Structured-mode Assistant boundary. Answers include cited claims and the bounded typed tool evidence used to form them. Literature and Both are reserved for their governed capability; no arbitrary query is accepted.",
         "operationId": "askAtlasStructured",
@@ -5613,7 +5994,9 @@
     },
     "/v1/assistant/mixed": {
       "post": {
-        "tags": ["assistant"],
+        "tags": [
+          "assistant"
+        ],
         "summary": "Ask Atlas across governed evidence classes",
         "description": "Internal additive mixed-evidence branch bundle. The Structured branch uses bounded Atlas tools; the Literature branch uses the existing governed Research Assistant. Branch claims and citations retain their original identities. Cross-source comparison remains insufficient when material scope cannot be verified. No arbitrary query is accepted.",
         "operationId": "askAtlasMixed",
@@ -5680,7 +6063,9 @@
     },
     "/v1/knowledge-graph/chat": {
       "post": {
-        "tags": ["knowledge graph"],
+        "tags": [
+          "knowledge graph"
+        ],
         "summary": "Knowledge Graph Chat",
         "operationId": "knowledge_graph_chat_v1_knowledge_graph_chat_post",
         "requestBody": {
@@ -5763,13 +6148,20 @@
           },
           "requested_source_mode": {
             "type": "string",
-            "enum": ["Literature", "Structured", "Both"],
+            "enum": [
+              "Literature",
+              "Structured",
+              "Both"
+            ],
             "title": "Requested Source Mode"
           },
           "actual_sources_used": {
             "items": {
               "type": "string",
-              "enum": ["structured_atlas", "literature_evidence"]
+              "enum": [
+                "structured_atlas",
+                "literature_evidence"
+              ]
             },
             "type": "array",
             "title": "Actual Sources Used"
@@ -5851,7 +6243,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["requested_source_mode", "outcome"],
+        "required": [
+          "requested_source_mode",
+          "outcome"
+        ],
         "title": "Answer"
       },
       "AtlasMetadata": {
@@ -6044,11 +6439,57 @@
         ],
         "title": "Candidate"
       },
+      "CanonicalGeographyAvailability": {
+        "properties": {
+          "availability": {
+            "type": "string",
+            "const": "UNAVAILABLE",
+            "title": "Availability"
+          },
+          "reason": {
+            "type": "string",
+            "const": "CANONICAL_GEOGRAPHY_UNPUBLISHED",
+            "title": "Reason"
+          },
+          "data": {
+            "type": "null",
+            "title": "Data",
+            "description": "No canonical geography resource or geometry is fabricated."
+          },
+          "release_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Release Id",
+            "description": "Governed county directory release used to confirm identity."
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Limitations",
+            "description": "Publication and representation boundaries, not scientific absence."
+          }
+        },
+        "type": "object",
+        "required": [
+          "availability",
+          "reason",
+          "data",
+          "release_id",
+          "limitations"
+        ],
+        "title": "CanonicalGeographyAvailability"
+      },
       "ChatHistoryTurn": {
         "properties": {
           "role": {
             "type": "string",
-            "enum": ["user", "assistant"],
+            "enum": [
+              "user",
+              "assistant"
+            ],
             "title": "Role"
           },
           "content": {
@@ -6059,7 +6500,10 @@
           }
         },
         "type": "object",
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "title": "ChatHistoryTurn"
       },
       "Claim": {
@@ -6103,14 +6547,20 @@
           },
           "role": {
             "type": "string",
-            "enum": ["finding", "comparison_limitation"],
+            "enum": [
+              "finding",
+              "comparison_limitation"
+            ],
             "title": "Role",
             "default": "finding"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["claim_id", "text"],
+        "required": [
+          "claim_id",
+          "text"
+        ],
         "title": "Claim"
       },
       "CollectionEnvelope_CountyContextObservation_": {
@@ -6130,7 +6580,11 @@
           }
         },
         "type": "object",
-        "required": ["data", "meta", "links"],
+        "required": [
+          "data",
+          "meta",
+          "links"
+        ],
         "title": "CollectionEnvelope[CountyContextObservation]"
       },
       "CollectionEnvelope_Indicator_": {
@@ -6150,7 +6604,11 @@
           }
         },
         "type": "object",
-        "required": ["data", "meta", "links"],
+        "required": [
+          "data",
+          "meta",
+          "links"
+        ],
         "title": "CollectionEnvelope[Indicator]"
       },
       "CollectionEnvelope_Measure_": {
@@ -6170,7 +6628,11 @@
           }
         },
         "type": "object",
-        "required": ["data", "meta", "links"],
+        "required": [
+          "data",
+          "meta",
+          "links"
+        ],
         "title": "CollectionEnvelope[Measure]"
       },
       "CollectionEnvelope_Observation_": {
@@ -6190,7 +6652,11 @@
           }
         },
         "type": "object",
-        "required": ["data", "meta", "links"],
+        "required": [
+          "data",
+          "meta",
+          "links"
+        ],
         "title": "CollectionEnvelope[Observation]"
       },
       "CollectionEnvelope_Source_": {
@@ -6210,7 +6676,11 @@
           }
         },
         "type": "object",
-        "required": ["data", "meta", "links"],
+        "required": [
+          "data",
+          "meta",
+          "links"
+        ],
         "title": "CollectionEnvelope[Source]"
       },
       "CollectionLinks": {
@@ -6249,6 +6719,62 @@
             "format": "date-time",
             "title": "Response At",
             "description": "UTC response construction time; not source freshness or observation time."
+          },
+          "availability": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "UNAVAILABLE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability",
+            "description": "Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "NO_PUBLISHED_RESULTS"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "No published rows after a successful initial non-CDC query; otherwise omitted."
+          },
+          "release_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Id",
+            "description": "Current governed release actually read for this query."
+          },
+          "limitations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limitations",
+            "description": "Selection availability caveats; observations only."
           }
         },
         "type": "object",
@@ -6272,7 +6798,10 @@
           },
           "value_type": {
             "type": "string",
-            "enum": ["integer", "number"],
+            "enum": [
+              "integer",
+              "number"
+            ],
             "title": "Value Type"
           },
           "category_label": {
@@ -6344,7 +6873,10 @@
           },
           "temporal_grain": {
             "type": "string",
-            "enum": ["PERIOD", "VINTAGE_YEAR"],
+            "enum": [
+              "PERIOD",
+              "VINTAGE_YEAR"
+            ],
             "title": "Temporal Grain"
           },
           "value": {
@@ -6904,7 +7436,10 @@
           },
           "state": {
             "type": "string",
-            "enum": ["present", "absent"],
+            "enum": [
+              "present",
+              "absent"
+            ],
             "title": "State"
           },
           "observation_id": {
@@ -6960,7 +7495,11 @@
           }
         },
         "type": "object",
-        "required": ["county_fips", "code", "detail"],
+        "required": [
+          "county_fips",
+          "code",
+          "detail"
+        ],
         "title": "DataGap"
       },
       "DerivedMetadata": {
@@ -7206,7 +7745,10 @@
           }
         },
         "type": "object",
-        "required": ["resource_type", "resource_id"],
+        "required": [
+          "resource_type",
+          "resource_id"
+        ],
         "title": "EvidenceReference"
       },
       "FeedEntry": {
@@ -7285,7 +7827,12 @@
           },
           "publication_date_state": {
             "type": "string",
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Publication Date State"
           },
           "publisher": {
@@ -7343,7 +7890,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["item", "source"],
+        "required": [
+          "item",
+          "source"
+        ],
         "title": "FeedEvidence"
       },
       "FeedItems": {
@@ -7361,7 +7911,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["data", "meta"],
+        "required": [
+          "data",
+          "meta"
+        ],
         "title": "FeedItems"
       },
       "FeedMeta": {
@@ -7404,7 +7957,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["next_page_token"],
+        "required": [
+          "next_page_token"
+        ],
         "title": "FeedMeta"
       },
       "FeedSource": {
@@ -7479,7 +8034,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["data", "meta"],
+        "required": [
+          "data",
+          "meta"
+        ],
         "title": "FeedSources"
       },
       "FeedbackContext": {
@@ -7551,7 +8109,12 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["all", "ecological", "human", "complete"]
+                "enum": [
+                  "all",
+                  "ecological",
+                  "human",
+                  "complete"
+                ]
               },
               {
                 "type": "null"
@@ -7584,7 +8147,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["score", "completeness"]
+                "enum": [
+                  "score",
+                  "completeness"
+                ]
               },
               {
                 "type": "null"
@@ -7779,7 +8345,11 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["feedback_id", "received_at", "replayed"],
+        "required": [
+          "feedback_id",
+          "received_at",
+          "replayed"
+        ],
         "title": "FeedbackSubmissionResponse"
       },
       "Freshness": {
@@ -7790,7 +8360,11 @@
           },
           "state": {
             "type": "string",
-            "enum": ["current", "stale", "unknown"],
+            "enum": [
+              "current",
+              "stale",
+              "unknown"
+            ],
             "title": "State",
             "default": "unknown"
           },
@@ -7832,7 +8406,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["observation_id"],
+        "required": [
+          "observation_id"
+        ],
         "title": "Freshness"
       },
       "Geography": {
@@ -7856,7 +8432,10 @@
           }
         },
         "type": "object",
-        "required": ["geography", "label"],
+        "required": [
+          "geography",
+          "label"
+        ],
         "title": "Geography",
         "description": "County/state identity metadata; geometry is a separate display resource."
       },
@@ -7872,13 +8451,19 @@
           }
         },
         "type": "object",
-        "required": ["geography_type", "geography_id"],
+        "required": [
+          "geography_type",
+          "geography_id"
+        ],
         "title": "GeographyIdentity",
         "description": "Stable FIPS join identity, independent of display or analysis polygons."
       },
       "GeographyType": {
         "type": "string",
-        "enum": ["county", "state"],
+        "enum": [
+          "county",
+          "state"
+        ],
         "title": "GeographyType"
       },
       "HTTPValidationError": {
@@ -7998,32 +8583,62 @@
         "additionalProperties": false,
         "properties": {
           "canonical_url": {
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Canonical Url",
             "type": "string"
           },
           "title": {
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Title",
             "type": "string"
           },
           "published_at": {
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Published At",
             "type": "string"
           },
           "updated_at": {
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Updated At",
             "type": "string"
           },
           "event_at": {
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Event At",
             "type": "string"
           },
           "excerpt": {
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Excerpt",
             "type": "string"
           }
@@ -8169,7 +8784,12 @@
             "type": "array"
           },
           "transport": {
-            "enum": ["rss", "atom", "email", "web"],
+            "enum": [
+              "rss",
+              "atom",
+              "email",
+              "web"
+            ],
             "title": "Transport",
             "type": "string"
           },
@@ -8364,7 +8984,10 @@
           },
           "transport": {
             "type": "string",
-            "enum": ["rss", "atom"],
+            "enum": [
+              "rss",
+              "atom"
+            ],
             "title": "Transport"
           },
           "transport_identity_sha256": {
@@ -8493,7 +9116,10 @@
             "type": "string"
           },
           "origin": {
-            "enum": ["publisher", "inferred"],
+            "enum": [
+              "publisher",
+              "inferred"
+            ],
             "title": "Origin",
             "type": "string"
           },
@@ -8588,7 +9214,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "title": "KnowledgeChatRequest"
       },
       "KnowledgeChatResponse": {
@@ -8849,7 +9477,11 @@
           }
         },
         "type": "object",
-        "required": ["claim_id", "text", "citation_ids"],
+        "required": [
+          "claim_id",
+          "text",
+          "citation_ids"
+        ],
         "title": "KnowledgeClaim"
       },
       "Measure": {
@@ -9102,7 +9734,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["data", "meta"],
+        "required": [
+          "data",
+          "meta"
+        ],
         "title": "MetadataFeed"
       },
       "MetadataItem": {
@@ -9126,7 +9761,11 @@
           }
         },
         "type": "object",
-        "required": ["observation_id", "source", "methodology"],
+        "required": [
+          "observation_id",
+          "source",
+          "methodology"
+        ],
         "title": "MetadataItem"
       },
       "Methodology": {
@@ -9272,7 +9911,11 @@
           },
           "source_mode": {
             "type": "string",
-            "enum": ["Literature", "Structured", "Both"],
+            "enum": [
+              "Literature",
+              "Structured",
+              "Both"
+            ],
             "title": "Source Mode",
             "default": "Both"
           },
@@ -9282,7 +9925,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["question"],
+        "required": [
+          "question"
+        ],
         "title": "MixedAssistantRequest"
       },
       "MixedAssistantResponse": {
@@ -9295,7 +9940,11 @@
           },
           "requested_source_mode": {
             "type": "string",
-            "enum": ["Literature", "Structured", "Both"],
+            "enum": [
+              "Literature",
+              "Structured",
+              "Both"
+            ],
             "title": "Requested Source Mode"
           },
           "outcome": {
@@ -9314,7 +9963,10 @@
           "actual_sources_used": {
             "items": {
               "type": "string",
-              "enum": ["structured_atlas", "literature_evidence"]
+              "enum": [
+                "structured_atlas",
+                "literature_evidence"
+              ]
             },
             "type": "array",
             "title": "Actual Sources Used"
@@ -9401,9 +10053,7 @@
           },
           "temporal_grain": {
             "type": "string",
-            "title": "Temporal Grain",
-            "description": "Governed observation grain. Daily NOAA nClimGrid rows use DAY. PERIOD and VINTAGE_YEAR are county-context grains, not the only admitted values.",
-            "examples": ["DAY"]
+            "title": "Temporal Grain"
           },
           "value": {
             "anyOf": [
@@ -9683,7 +10333,10 @@
           }
         },
         "type": "object",
-        "required": ["code", "text"],
+        "required": [
+          "code",
+          "text"
+        ],
         "title": "PriorityReason"
       },
       "PrivacyOmission": {
@@ -9694,7 +10347,11 @@
           },
           "reason": {
             "type": "string",
-            "enum": ["not_connected", "not_account_linked", "browser_only"],
+            "enum": [
+              "not_connected",
+              "not_account_linked",
+              "browser_only"
+            ],
             "title": "Reason"
           },
           "detail": {
@@ -9703,7 +10360,11 @@
           }
         },
         "type": "object",
-        "required": ["system", "reason", "detail"],
+        "required": [
+          "system",
+          "reason",
+          "detail"
+        ],
         "title": "PrivacyOmission"
       },
       "PrivacyRequestConfirm": {
@@ -9717,20 +10378,27 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["nonce"],
+        "required": [
+          "nonce"
+        ],
         "title": "PrivacyRequestConfirm"
       },
       "PrivacyRequestCreate": {
         "properties": {
           "action": {
             "type": "string",
-            "enum": ["export", "deletion"],
+            "enum": [
+              "export",
+              "deletion"
+            ],
             "title": "Action"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["action"],
+        "required": [
+          "action"
+        ],
         "title": "PrivacyRequestCreate"
       },
       "PrivacyRequestCreated": {
@@ -9741,7 +10409,10 @@
           },
           "action": {
             "type": "string",
-            "enum": ["export", "deletion"],
+            "enum": [
+              "export",
+              "deletion"
+            ],
             "title": "Action"
           },
           "state": {
@@ -9831,7 +10502,10 @@
           },
           "action": {
             "type": "string",
-            "enum": ["export", "deletion"],
+            "enum": [
+              "export",
+              "deletion"
+            ],
             "title": "Action"
           },
           "state": {
@@ -9900,7 +10574,12 @@
           }
         },
         "type": "object",
-        "required": ["request_id", "action", "state", "created_at"],
+        "required": [
+          "request_id",
+          "action",
+          "state",
+          "created_at"
+        ],
         "title": "PrivacyRequestStatus"
       },
       "ProblemDetails": {
@@ -10086,18 +10765,31 @@
         "properties": {
           "published_at": {
             "type": "string",
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Published At"
           },
           "updated_at": {
             "type": "string",
-            "enum": ["present", "not_provided", "withheld", "invalid"],
+            "enum": [
+              "present",
+              "not_provided",
+              "withheld",
+              "invalid"
+            ],
             "title": "Updated At"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["published_at", "updated_at"],
+        "required": [
+          "published_at",
+          "updated_at"
+        ],
         "title": "PublisherDateStates"
       },
       "PublisherMedia": {
@@ -10116,7 +10808,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["url", "origin"],
+        "required": [
+          "url",
+          "origin"
+        ],
         "title": "PublisherMedia"
       },
       "PublisherMetadata": {
@@ -10322,7 +11017,9 @@
           }
         },
         "type": "object",
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "title": "ResourceEnvelope[Geography]"
       },
       "ResourceEnvelope_Indicator_": {
@@ -10332,7 +11029,9 @@
           }
         },
         "type": "object",
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "title": "ResourceEnvelope[Indicator]"
       },
       "ResourceEnvelope_Measure_": {
@@ -10342,7 +11041,9 @@
           }
         },
         "type": "object",
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "title": "ResourceEnvelope[Measure]"
       },
       "ResourceEnvelope_Methodology_": {
@@ -10352,7 +11053,9 @@
           }
         },
         "type": "object",
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "title": "ResourceEnvelope[Methodology]"
       },
       "ResourceEnvelope_Source_": {
@@ -10362,7 +11065,9 @@
           }
         },
         "type": "object",
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "title": "ResourceEnvelope[Source]"
       },
       "ReviewCoverage": {
@@ -10677,7 +11382,13 @@
           }
         },
         "type": "object",
-        "required": ["key", "label", "vintage", "url", "note"],
+        "required": [
+          "key",
+          "label",
+          "vintage",
+          "url",
+          "note"
+        ],
         "title": "SourceMetadata"
       },
       "StandardsMapping": {
@@ -10711,7 +11422,12 @@
           }
         },
         "type": "object",
-        "required": ["standard", "version", "target", "relationship"],
+        "required": [
+          "standard",
+          "version",
+          "target",
+          "relationship"
+        ],
         "title": "StandardsMapping"
       },
       "StateReview": {
@@ -10819,7 +11535,11 @@
           },
           "source_mode": {
             "type": "string",
-            "enum": ["Literature", "Structured", "Both"],
+            "enum": [
+              "Literature",
+              "Structured",
+              "Both"
+            ],
             "title": "Source Mode",
             "default": "Structured"
           },
@@ -10829,7 +11549,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["question"],
+        "required": [
+          "question"
+        ],
         "title": "StructuredAssistantRequest"
       },
       "StructuredAssistantResponse": {
@@ -10848,7 +11570,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["answer"],
+        "required": [
+          "answer"
+        ],
         "title": "StructuredAssistantResponse"
       },
       "StructuredContext": {
@@ -10894,7 +11618,10 @@
           },
           "geography_type": {
             "type": "string",
-            "enum": ["county", "state"],
+            "enum": [
+              "county",
+              "state"
+            ],
             "title": "Geography Type",
             "default": "county"
           },
@@ -11017,7 +11744,11 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["established", "detected", "unknown"]
+                "enum": [
+                  "established",
+                  "detected",
+                  "unknown"
+                ]
               },
               {
                 "type": "null"
@@ -11235,19 +11966,32 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["expected", "observed", "unit", "partial_allowed"],
+        "required": [
+          "expected",
+          "observed",
+          "unit",
+          "partial_allowed"
+        ],
         "title": "TemporalCoverageContext"
       },
       "TemporalLagContext": {
         "properties": {
           "kind": {
             "type": "string",
-            "enum": ["ZERO", "FIXED", "ROLLING", "SEASONAL"],
+            "enum": [
+              "ZERO",
+              "FIXED",
+              "ROLLING",
+              "SEASONAL"
+            ],
             "title": "Kind"
           },
           "anchor": {
             "type": "string",
-            "enum": ["START", "END_EXCLUSIVE"],
+            "enum": [
+              "START",
+              "END_EXCLUSIVE"
+            ],
             "title": "Anchor"
           },
           "offset_days": {
@@ -11279,7 +12023,11 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["kind", "anchor", "offset_days"],
+        "required": [
+          "kind",
+          "anchor",
+          "offset_days"
+        ],
         "title": "TemporalLagContext"
       },
       "TemporalReferencePeriodContext": {
@@ -11305,7 +12053,12 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id", "start", "end_exclusive", "source_vintage"],
+        "required": [
+          "id",
+          "start",
+          "end_exclusive",
+          "source_vintage"
+        ],
         "title": "TemporalReferencePeriodContext"
       },
       "TemporalWindowContext": {
@@ -11333,7 +12086,12 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["start", "end_exclusive", "calendar", "timezone"],
+        "required": [
+          "start",
+          "end_exclusive",
+          "calendar",
+          "timezone"
+        ],
         "title": "TemporalWindowContext"
       },
       "Tier1CountyPriority": {
@@ -11348,7 +12106,11 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["HIGH", "MEDIUM", "LOW"]
+                "enum": [
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW"
+                ]
               },
               {
                 "type": "null"
@@ -11385,7 +12147,11 @@
           },
           "evidence_sufficiency": {
             "type": "string",
-            "enum": ["SUFFICIENT", "INSUFFICIENT", "NOT_ESTIMABLE"],
+            "enum": [
+              "SUFFICIENT",
+              "INSUFFICIENT",
+              "NOT_ESTIMABLE"
+            ],
             "title": "Evidence Sufficiency",
             "description": "Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score."
           },
@@ -11484,7 +12250,10 @@
         "properties": {
           "availability": {
             "type": "string",
-            "enum": ["AVAILABLE", "UNAVAILABLE"],
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
             "title": "Availability",
             "description": "Whether a persisted Tier 1 result exists for this supported current geography."
           },
@@ -11520,7 +12289,12 @@
           }
         },
         "type": "object",
-        "required": ["availability", "geography_release_id", "reason", "data"],
+        "required": [
+          "availability",
+          "geography_release_id",
+          "reason",
+          "data"
+        ],
         "title": "Tier1CountyPriorityAvailability",
         "description": "Availability lookup that separates confirmed absence from request failure."
       },
@@ -11543,7 +12317,10 @@
           },
           "status": {
             "type": "string",
-            "enum": ["ok", "error"],
+            "enum": [
+              "ok",
+              "error"
+            ],
             "title": "Status"
           },
           "release_id": {
@@ -11602,7 +12379,10 @@
           }
         },
         "type": "object",
-        "required": ["tool", "status"],
+        "required": [
+          "tool",
+          "status"
+        ],
         "title": "ToolResult"
       },
       "UserProfile": {
@@ -11692,7 +12472,9 @@
           }
         },
         "type": "object",
-        "required": ["profile"],
+        "required": [
+          "profile"
+        ],
         "title": "UserProfileResponse"
       },
       "UserProfileWrite": {
@@ -11795,7 +12577,11 @@
           }
         },
         "type": "object",
-        "required": ["loc", "msg", "type"],
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
         "title": "ValidationError"
       },
       "ValueState": {
@@ -11937,7 +12723,11 @@
             "type": "array"
           }
         },
-        "required": ["item", "source", "why_matched"],
+        "required": [
+          "item",
+          "source",
+          "why_matched"
+        ],
         "title": "BriefingEvidence",
         "type": "object"
       },
@@ -12000,7 +12790,12 @@
         "additionalProperties": false,
         "properties": {
           "dimension": {
-            "enum": ["geography", "topic", "source", "unfiltered"],
+            "enum": [
+              "geography",
+              "topic",
+              "source",
+              "unfiltered"
+            ],
             "title": "Dimension",
             "type": "string"
           },
@@ -12010,12 +12805,21 @@
             "type": "string"
           },
           "origin": {
-            "enum": ["publisher", "inferred", "source_identity", "unfiltered"],
+            "enum": [
+              "publisher",
+              "inferred",
+              "source_identity",
+              "unfiltered"
+            ],
             "title": "Origin",
             "type": "string"
           }
         },
-        "required": ["dimension", "value", "origin"],
+        "required": [
+          "dimension",
+          "value",
+          "origin"
+        ],
         "title": "BriefingMatch",
         "type": "object"
       },
@@ -12078,7 +12882,10 @@
             "type": "string"
           }
         },
-        "required": ["start", "end"],
+        "required": [
+          "start",
+          "end"
+        ],
         "title": "BriefingWindow",
         "type": "object"
       },
@@ -12124,7 +12931,12 @@
             "type": "array"
           }
         },
-        "required": ["snapshot_id", "as_of", "items", "sources"],
+        "required": [
+          "snapshot_id",
+          "as_of",
+          "items",
+          "sources"
+        ],
         "title": "IntelligenceSnapshot",
         "type": "object"
       },

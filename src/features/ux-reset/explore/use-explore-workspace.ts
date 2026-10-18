@@ -212,6 +212,7 @@ export function useExploreWorkspace() {
       framedFipsKey,
       timeBoundKey,
     ],
+    staleTime: (query) => (query.state.data?.knownEmptySelection ? 0 : 300_000),
     retry: (failureCount, error) =>
       shouldRetryExploreObservation(
         failureCount,

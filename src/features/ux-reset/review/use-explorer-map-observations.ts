@@ -3,11 +3,13 @@
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 
+import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 import { DatedObservationContractError } from "@/features/ux-reset/review/dated-observation-envelope";
-import type {
-  ExplorerLayerGate,
-  ExplorerMapLayerId,
-  ExplorerObservationPaintState,
+import {
+  isExplorerObservationLayer,
+  type ExplorerLayerGate,
+  type ExplorerMapLayerId,
+  type ExplorerObservationPaintState,
 } from "@/features/ux-reset/review/explorer-map-layers";
 import {
   EXPLORER_OBSERVATION_LAYER_IDS,
@@ -30,6 +32,23 @@ export type ExplorerObservationLayerState =
   | { reason: string; status: "error" | "idle" | "loading" }
   | { status: "unloaded" }
   | ({ status: "ready" } & ExplorerMapObservationReady);
+
+export function knownEmptyMapSelection(
+  observations: Record<
+    ExplorerObservationLayerId,
+    ExplorerObservationLayerState
+  >,
+  mapLayer: ExplorerMapLayerId
+): KnownEmptyObservationSelection | null {
+  if (!isExplorerObservationLayer(mapLayer)) {
+    return null;
+  }
+  const layer = observations[mapLayer];
+  if (layer.status !== "ready" || !layer.knownEmptySelection) {
+    return null;
+  }
+  return layer.knownEmptySelection;
+}
 
 const LOADING_REASON = "Published values for this layer are still loading.";
 const GEOMETRY_LOADING_REASON =
@@ -154,7 +173,8 @@ export function useExplorerMapObservations(input: {
         fipsKey,
       ],
       retry: retryObservation,
-      staleTime: Infinity,
+      staleTime: (query: { state: { data?: ExplorerMapObservationReady } }) =>
+        query.state.data?.knownEmptySelection ? 0 : Number.POSITIVE_INFINITY,
     })),
   });
   return useMemo(() => {

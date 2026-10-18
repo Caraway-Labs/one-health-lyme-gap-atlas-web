@@ -34,6 +34,7 @@ import {
   type PublishedCountyRecord,
   type PublishedHierarchyRow,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
 import type { Measure } from "@/generated/models";
 
@@ -521,6 +522,10 @@ export function InvestigateEvidenceHierarchy({
           ) : null}
         </Card>
       </section>
+      <KnownEmptySelectionNotice
+        selections={bundle.knownEmptySelections}
+        testId="investigate-known-empty"
+      />
 
       <div className="ux-reset-evidence-columns">
         {bundle.families.map((section) => (

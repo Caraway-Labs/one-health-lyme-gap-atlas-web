@@ -1,6 +1,30 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  cleanup,
+  fireEvent,
+  render as renderView,
+  screen,
+} from "@testing-library/react";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+function render(ui: ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const view = renderView(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>
+  );
+  return {
+    ...view,
+    rerender(next: ReactElement) {
+      view.rerender(
+        <QueryClientProvider client={client}>{next}</QueryClientProvider>
+      );
+    },
+  };
+}
 
 import { investigateBundleWithoutObservations } from "@/features/ux-reset/investigate/county-evidence";
 import {

@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
   fireEvent,
@@ -465,14 +465,20 @@ describe("Storybook P0 evidence fixtures", () => {
     const onOpen = vi.fn<(fips: string) => void>();
     const model = reviewPreviewPreset("rationale");
     render(
-      <ReviewCountyPreviewPanel
-        compareHref={model.compareHref}
-        droppedNotes={model.droppedNotes}
-        href={model.href}
-        onOpen={onOpen}
-        preview={model.preview}
-        release={model.release}
-      />
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ReviewCountyPreviewPanel
+          compareHref={model.compareHref}
+          droppedNotes={model.droppedNotes}
+          href={model.href}
+          onOpen={onOpen}
+          preview={model.preview}
+          release={model.release}
+        />
+      </QueryClientProvider>
     );
     clickLink(screen.getByRole("link", { name: "County evidence" }));
     expect(onOpen).toHaveBeenCalledExactlyOnceWith(syntheticCounty.fips);
@@ -485,14 +491,20 @@ describe("Storybook P0 evidence fixtures", () => {
     const onOpen = vi.fn<(fips: string) => void>();
     const model = reviewPreviewPreset("long-references");
     render(
-      <ReviewCountyPreviewPanel
-        compareHref={model.compareHref}
-        droppedNotes={model.droppedNotes}
-        href={model.href}
-        onOpen={onOpen}
-        preview={model.preview}
-        release={model.release}
-      />
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ReviewCountyPreviewPanel
+          compareHref={model.compareHref}
+          droppedNotes={model.droppedNotes}
+          href={model.href}
+          onOpen={onOpen}
+          preview={model.preview}
+          release={model.release}
+        />
+      </QueryClientProvider>
     );
     clickLink(
       screen.getByRole("link", {

@@ -45,6 +45,7 @@ import {
 } from "@/features/ux-reset/explore/explore-model";
 import { exploreHandoffSearchParams } from "@/features/ux-reset/explore/explore-search-params";
 import { useExploreWorkspace } from "@/features/ux-reset/explore/use-explore-workspace";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import {
   EXPLORER_EVIDENCE_MODE,
@@ -346,6 +347,12 @@ function ResetExploreExperienceInner() {
               </>
             ) : null}
           </p>
+          {committed.knownEmptySelection ? (
+            <KnownEmptySelectionNotice
+              selections={[committed.knownEmptySelection]}
+              testId="explore-known-empty"
+            />
+          ) : null}
 
           <div className="ux-reset-explore-layout">
             <Card className="map-card gap-0 py-0">
