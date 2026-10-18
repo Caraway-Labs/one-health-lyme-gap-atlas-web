@@ -268,6 +268,7 @@ export function ReviewNationalPicture({
     [geometryQuery.data]
   );
   const mapCounties = useMemo(() => {
+    const awaitingLayer = mapPaint.kind === "loading";
     const missingColor = noPublishedValueColor();
     return geometryFeatures.flatMap((feature) => {
       const fips = feature.properties.fips;
@@ -290,13 +291,18 @@ export function ReviewNationalPicture({
       const painted = resolveExplorerMapColor(mapPaint.colorsByFips.get(fips));
       return [
         {
-          color: painted ?? missingColor,
+          color: awaitingLayer ? undefined : (painted ?? missingColor),
           fips,
           state,
         },
       ];
     });
-  }, [availableDataGate, geometryFeatures, mapPaint.colorsByFips]);
+  }, [
+    availableDataGate,
+    geometryFeatures,
+    mapPaint.colorsByFips,
+    mapPaint.kind,
+  ]);
   const scoreByFips = useMemo(() => {
     const scores = new Map<string, CountyScoreSummary>();
     for (const entry of scoreCounties) {
@@ -482,7 +488,9 @@ export function ReviewNationalPicture({
           />
         </div>
         <div
-          aria-busy={geometryPending || valuesPending}
+          aria-busy={
+            geometryPending || valuesPending || mapPaint.kind === "loading"
+          }
           className="map-wrap"
           data-map-colors={mapCounties
             .map((entry) => `${entry.fips}:${entry.color ?? ""}`)
