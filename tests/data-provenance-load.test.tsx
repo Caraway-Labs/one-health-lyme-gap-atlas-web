@@ -31,12 +31,19 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
 
 const NO_MEASURE = "No governed measure in this release lists this source.";
 
-function envelope(data: unknown[], nextPageToken: string | null = null) {
+function envelope(
+  data: unknown[],
+  nextPageToken: string | null = null,
+  releaseId?: string
+) {
   return {
     data: {
       data,
       links: { self: "/v1/example" },
-      meta: { next_page_token: nextPageToken },
+      meta: {
+        next_page_token: nextPageToken,
+        ...(releaseId === undefined ? {} : { release_id: releaseId }),
+      },
     },
     status: 200,
   };
@@ -184,6 +191,59 @@ describe("data provenance metadata reads", () => {
 
     const catalog = await loadCatalog();
     expect(measuresV1MeasuresGet).toHaveBeenCalledTimes(20);
+    expect(catalog.measuresRead).toBe("incomplete");
+    expect(
+      catalog.sources
+        .find((card) => card.sourceId === "cdc-lyme")
+        ?.measures.map((item) => item.measureId)
+    ).toStrictEqual(["lyme_cases"]);
+
+    showCatalog(catalog);
+    fireEvent.click(screen.getByText("Source absent from the loaded pages"));
+    expect(
+      screen.getByText(/this source's measures may be missing/)
+    ).toBeTruthy();
+    expect(screen.queryByText(NO_MEASURE)).toBeNull();
+  });
+
+  it("does not join a measure from a different governed release", async () => {
+    sourcesV1SourcesGet.mockResolvedValue(
+      envelope([source("cdc-lyme", "CDC Lyme surveillance")], null, "release-a")
+    );
+    measuresV1MeasuresGet.mockResolvedValue(
+      envelope([measure("lyme_cases", "cdc-lyme")], null, "release-b")
+    );
+    indicatorsV1IndicatorsGet.mockResolvedValue(
+      envelope([indicator()], null, "release-a")
+    );
+
+    const catalog = await loadCatalog();
+    expect(sourcesV1SourcesGet).toHaveBeenCalledTimes(2);
+    expect(catalog.measuresRead).toBe("unavailable");
+    expect(catalog.indicatorsRead).toBe("complete");
+    expect(catalog.sources[0]?.measures).toStrictEqual([]);
+    expect(catalog.sources.map((card) => card.sourceId)).toStrictEqual([
+      "cdc-lyme",
+    ]);
+  });
+
+  it("reports a repeated continuation token as an incomplete read", async () => {
+    sourcesV1SourcesGet.mockResolvedValue(
+      envelope([
+        source("cdc-lyme", "CDC Lyme surveillance"),
+        source("unlisted", "Source absent from the loaded pages"),
+      ])
+    );
+    measuresV1MeasuresGet.mockImplementation(() => {
+      const page = measuresV1MeasuresGet.mock.calls.length;
+      return Promise.resolve(
+        envelope(page === 1 ? [measure("lyme_cases", "cdc-lyme")] : [], "again")
+      );
+    });
+    indicatorsV1IndicatorsGet.mockResolvedValue(envelope([indicator()]));
+
+    const catalog = await loadCatalog();
+    expect(measuresV1MeasuresGet).toHaveBeenCalledTimes(2);
     expect(catalog.measuresRead).toBe("incomplete");
     expect(
       catalog.sources

@@ -28,16 +28,35 @@ type PageReader = (
   signal: AbortSignal
 ) => Promise<{ data: unknown; status: number }>;
 
+type PagedRead<T> = {
+  incomplete: boolean;
+  items: T[];
+  releaseId: string | null;
+};
+
+function releaseIdFromMeta(value: string | null | undefined): string | null {
+  const text = value?.trim() ?? "";
+  return text || null;
+}
+
+function releasesMatch(left: string | null, right: string | null): boolean {
+  if (left === null || right === null) {
+    return true;
+  }
+  return left === right;
+}
+
 async function readPages<T>(input: {
   endpoint: string;
   read: PageReader;
   resource: string;
   schema: Parameters<typeof validateApiResponse>[1];
   signal: AbortSignal;
-}): Promise<{ incomplete: boolean; items: T[] }> {
+}): Promise<PagedRead<T>> {
   const items: T[] = [];
   const seenTokens = new Set<string>();
   let pageToken: string | null = null;
+  let releaseId: string | null | undefined;
   for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
     const response = await input.read(pageToken, input.signal);
     if (response.status !== 200) {
@@ -55,22 +74,29 @@ async function readPages<T>(input: {
     );
     const envelope = parsed as {
       data: T[];
-      meta: { next_page_token?: string | null };
+      meta: { next_page_token?: string | null; release_id?: string | null };
     };
+    const pageRelease = releaseIdFromMeta(envelope.meta.release_id);
+    if (releaseId === undefined) {
+      releaseId = pageRelease;
+    } else if (pageRelease !== releaseId) {
+      return { incomplete: true, items, releaseId };
+    }
     items.push(...envelope.data);
     const nextToken = envelope.meta.next_page_token ?? null;
-    if (!nextToken || seenTokens.has(nextToken)) {
-      return { incomplete: false, items };
+    if (!nextToken) {
+      return { incomplete: false, items, releaseId };
+    }
+    if (seenTokens.has(nextToken)) {
+      return { incomplete: true, items, releaseId };
     }
     seenTokens.add(nextToken);
     pageToken = nextToken;
   }
-  return { incomplete: true, items };
+  return { incomplete: true, items, releaseId: releaseId ?? null };
 }
 
-async function readSources(
-  signal: AbortSignal
-): Promise<{ incomplete: boolean; items: Source[] }> {
+async function readSources(signal: AbortSignal): Promise<PagedRead<Source>> {
   return readPages<Source>({
     endpoint: "/v1/sources",
     read: (pageToken, requestSignal) =>
@@ -89,9 +115,7 @@ async function readSources(
   });
 }
 
-async function readMeasures(
-  signal: AbortSignal
-): Promise<{ incomplete: boolean; items: Measure[] }> {
+async function readMeasures(signal: AbortSignal): Promise<PagedRead<Measure>> {
   return readPages<Measure>({
     endpoint: "/v1/measures",
     read: (pageToken, requestSignal) =>
@@ -112,7 +136,7 @@ async function readMeasures(
 
 async function readIndicators(
   signal: AbortSignal
-): Promise<{ incomplete: boolean; items: Indicator[] }> {
+): Promise<PagedRead<Indicator>> {
   return readPages<Indicator>({
     endpoint: "/v1/indicators",
     read: (pageToken, requestSignal) =>
@@ -134,6 +158,7 @@ async function readIndicators(
 type CollectionResult<T> = {
   items: T[];
   read: CollectionRead;
+  releaseId: string | null;
 };
 
 function collectionRead(incomplete: boolean): CollectionRead {
@@ -148,34 +173,83 @@ function collectionRead(incomplete: boolean): CollectionRead {
  * Sources that already loaded stay on the page either way.
  */
 async function readCollection<T>(
-  read: Promise<{ incomplete: boolean; items: T[] }>
+  read: Promise<PagedRead<T>>
 ): Promise<CollectionResult<T>> {
   try {
     const result = await read;
-    return { items: result.items, read: collectionRead(result.incomplete) };
+    return {
+      items: result.items,
+      read: collectionRead(result.incomplete),
+      releaseId: result.releaseId,
+    };
   } catch {
-    return { items: [], read: "unavailable" };
+    return { items: [], read: "unavailable", releaseId: null };
   }
 }
 
-/**
- * Sources are required. Measure and indicator metadata only assign relationships.
- * A failure there still returns the sources that loaded.
- */
-export async function loadDataProvenanceCatalog(
+type CatalogCollections = {
+  indicators: CollectionResult<Indicator>;
+  measures: CollectionResult<Measure>;
+  sources: PagedRead<Source>;
+};
+
+async function loadCatalogCollections(
   signal: AbortSignal
-): Promise<DataProvenanceCatalog> {
+): Promise<CatalogCollections> {
   const sources = await readSources(signal);
   const [measures, indicators] = await Promise.all([
     readCollection(readMeasures(signal)),
     readCollection(readIndicators(signal)),
   ]);
+  return { indicators, measures, sources };
+}
+
+function metadataForRelease<T>(
+  sourcesReleaseId: string | null,
+  metadata: CollectionResult<T>
+): { items: T[]; read: CollectionRead } {
+  if (!releasesMatch(sourcesReleaseId, metadata.releaseId)) {
+    return { items: [], read: "unavailable" };
+  }
+  return { items: metadata.items, read: metadata.read };
+}
+
+/**
+ * Sources are required. Measure and indicator metadata only assign relationships
+ * from the same governed release. A mismatch is retried once, then dropped.
+ */
+export async function loadDataProvenanceCatalog(
+  signal: AbortSignal
+): Promise<DataProvenanceCatalog> {
+  let loaded = await loadCatalogCollections(signal);
+  const firstMeasures = metadataForRelease(
+    loaded.sources.releaseId,
+    loaded.measures
+  );
+  const firstIndicators = metadataForRelease(
+    loaded.sources.releaseId,
+    loaded.indicators
+  );
+  const releaseMismatch =
+    firstMeasures.read !== loaded.measures.read ||
+    firstIndicators.read !== loaded.indicators.read;
+  if (releaseMismatch) {
+    loaded = await loadCatalogCollections(signal);
+  }
+  const measures = metadataForRelease(
+    loaded.sources.releaseId,
+    loaded.measures
+  );
+  const indicators = metadataForRelease(
+    loaded.sources.releaseId,
+    loaded.indicators
+  );
   return buildDataProvenanceCatalog({
     indicators: indicators.items,
     indicatorsRead: indicators.read,
     measures: measures.items,
     measuresRead: measures.read,
-    sources: sources.items,
-    sourcesIncomplete: sources.incomplete,
+    sources: loaded.sources.items,
+    sourcesIncomplete: loaded.sources.incomplete,
   });
 }

@@ -391,8 +391,8 @@ function CatalogRegion({
       ) : null}
       {catalog.sourcesIncomplete ? (
         <p>
-          The source list stopped after the page limit. It is not a complete
-          inventory of the release.
+          The source list stopped before every page was read. It is not a
+          complete inventory of the release.
         </p>
       ) : null}
       <MetadataStatus catalog={catalog} />
