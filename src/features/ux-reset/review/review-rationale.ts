@@ -22,7 +22,7 @@ export interface ReviewRationaleItem {
   text: string;
 }
 
-const RUCC_2023_LABELS: Record<number, string> = {
+export const RUCC_2023_LABELS: Record<number, string> = {
   1: "metro area of 1 million or more",
   2: "metro area of 250,000 to 1 million",
   3: "metro area of fewer than 250,000",

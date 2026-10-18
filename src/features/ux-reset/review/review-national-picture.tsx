@@ -568,7 +568,10 @@ export function ReviewNationalPicture({
             </AtlasStatusMessage>
           )}
         </div>
-        <ExplorerMapLegend paint={mapPaint} />
+        <ExplorerMapLegend
+          key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
+          paint={mapPaint}
+        />
       </Card>
       <ExplorerMapFollowUp fips={selectedFips || null} releaseId={releaseId} />
       <div className="ux-reset-explorer-list">

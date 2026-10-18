@@ -1,6 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
+import { ValueState } from "@/generated/models";
+
+import { populationRuralityObservation } from "../fixtures/population-rurality-context";
+import { releaseViewportRuns } from "./release-phone-viewport";
+
 const score = (value: number) => ({
   access_signal: 0.5,
   community: 0.5,
@@ -260,47 +266,134 @@ async function installLegendApi(page: Page) {
       await route.fulfill({ json: stateReview(state), status: 200 });
       return;
     }
+    if (url.includes("/v1/observations")) {
+      await route.fulfill({
+        json: {
+          data: observationRows(url),
+          links: { self: "/v1/observations" },
+          meta: { next_page_token: null },
+        },
+        status: 200,
+      });
+      return;
+    }
     await route.fulfill({ json: {}, status: 404 });
   });
 }
 
+function observationRows(url: string) {
+  const request = new URL(url);
+  const measureId = request.searchParams.get("measure_id");
+  const fips = request.searchParams.getAll("geography_id");
+  if (measureId === "rucc_2023") {
+    return fips.map((id, index) => {
+      const code = (index % 9) + 1;
+      return populationRuralityObservation({
+        categoryLabel: RUCC_2023_LABELS[code],
+        fips: id,
+        measureId: "rucc_2023",
+        value: code,
+      });
+    });
+  }
+  if (measureId === "svi_percentile_2022") {
+    return fips.map((id, index) =>
+      populationRuralityObservation({
+        fips: id,
+        measureId: "svi_percentile_2022",
+        value: index === 0 ? 0 : "1",
+        valueState: index === 0 ? ValueState.ZERO : ValueState.OBSERVED,
+      })
+    );
+  }
+  if (measureId === "uninsured_percent_2022") {
+    return fips.map((id, index) =>
+      populationRuralityObservation({
+        fips: id,
+        measureId: "uninsured_percent_2022",
+        value: index === 0 ? 0 : "18.2",
+        valueState: index === 0 ? ValueState.ZERO : ValueState.OBSERVED,
+      })
+    );
+  }
+  if (measureId === "incidence_floor_2023") {
+    return fips.map((id, index) => incidenceRow(id, index));
+  }
+  return [];
+}
+
+function incidenceRow(fips: string, index: number) {
+  const missing = index === 1;
+  return {
+    atlas_acquired_at: null,
+    atlas_processed_at: null,
+    dataset_id: "x5j9-wybp",
+    denominator: null,
+    environmental_context: null,
+    evidence: {
+      provenance_ref: `prov-${fips}`,
+      resource_id: `resource-${fips}`,
+      resource_type: "observation",
+    },
+    geography: { geography_id: fips, geography_type: "county" },
+    limitations: [],
+    lineage_source_id: "cdc_lyme",
+    measure_id: "incidence_floor_2023",
+    methodology: "case floor divided by population",
+    methodology_id: "human_case_floor_population_incidence_v1",
+    methodology_version: "semantic_county_assembly_v1",
+    observation_id: `obs-${fips}`,
+    period_end: "2023-12-31",
+    period_start: "2023-01-01",
+    provenance_ref: `prov-${fips}`,
+    release_id: "alpha-2026",
+    release_methodology_version: "semantic-2.0.0",
+    semantic_version: "2.0.0",
+    source_id: "human",
+    source_label: "CDC Lyme surveillance",
+    source_published_at: null,
+    source_url: "https://data.cdc.gov/resource/x5j9-wybp.json",
+    source_vintage: "2023",
+    surveillance_context: null,
+    temporal_grain: "YEAR",
+    unit: "per 100,000",
+    value: missing ? null : index === 0 ? 0 : 12.4,
+    value_state: missing
+      ? ValueState.MISSING
+      : index === 0
+        ? ValueState.ZERO
+        : ValueState.OBSERVED,
+  };
+}
+
 async function legendSwatchesFit(
   legend: ReturnType<Page["getByTestId"]>
-): Promise<{ clipped: boolean; visible: boolean }> {
+): Promise<{ clipped: boolean; tall: boolean; visible: boolean }> {
   return legend.evaluate((element) => {
     const card = element.closest(".ux-reset-explorer-map");
     if (!card) {
-      return { clipped: true, visible: false };
+      return { clipped: true, tall: true, visible: false };
     }
     const cardBox = card.getBoundingClientRect();
     const legendBox = element.getBoundingClientRect();
+    const pageOverflow =
+      document.documentElement.scrollWidth >
+      document.documentElement.clientWidth + 1;
     const clipped =
-      legendBox.top < cardBox.top - 1 || legendBox.bottom > cardBox.bottom + 1;
-    const items = [...element.querySelectorAll("li")];
-    if (items.length === 0) {
-      return { clipped, visible: false };
-    }
-    element.scrollTop = 0;
-    for (const item of items) {
-      const before = item.getBoundingClientRect();
-      const view = element.getBoundingClientRect();
-      if (before.height > view.height + 2) {
-        return { clipped, visible: false };
-      }
-      if (before.top < view.top) {
-        element.scrollTop -= view.top - before.top;
-      } else if (before.bottom > view.bottom) {
-        element.scrollTop += before.bottom - view.bottom;
-      }
-      const after = item.getBoundingClientRect();
-      const scrolled = element.getBoundingClientRect();
-      const inside =
-        after.top >= scrolled.top - 2 && after.bottom <= scrolled.bottom + 2;
-      if (!inside) {
-        return { clipped, visible: false };
-      }
-    }
-    return { clipped, visible: true };
+      pageOverflow ||
+      legendBox.top < cardBox.top - 1 ||
+      legendBox.bottom > cardBox.bottom + 1 ||
+      legendBox.right > cardBox.right + 1;
+    const items = [...element.querySelectorAll("[data-legend-segment]")];
+    const visible =
+      items.length > 0 &&
+      items.every((item) => {
+        const box = item.getBoundingClientRect();
+        return (
+          box.width > 1 && box.height > 1 && box.right <= cardBox.right + 1
+        );
+      });
+    return { clipped, tall: legendBox.height > 96, visible };
   });
 }
 
@@ -323,31 +416,46 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend).toBeVisible();
     await expect(legend).toContainText("Atlas gap score");
     await expect(legend).toContainText("review-priority score");
-    await expect(legend).toContainText("CDC Lyme surveillance 2023");
-    await expect(legend).toContainText("not personal disease risk");
-    await expect(legend).toContainText(
-      "0 to less than 20 · Lower Atlas priority — Not a safety finding"
+    await expect(legend).toContainText("No data");
+    await expect(legend).toContainText(">=75");
+    await expect(legend).not.toContainText("not personal disease risk");
+    await expect(
+      legend.getByRole("button", { name: /No published value/ })
+    ).toHaveAttribute("aria-label", /Not zero/);
+    await expect(
+      legend.getByRole("button", { name: /0 to <20/ })
+    ).toHaveAttribute("aria-label", /Not a safety finding/);
+    await expect(
+      legend.getByRole("button", { name: /20 to <35/ })
+    ).toHaveAttribute("aria-label", /Monitor signals/);
+    await expect(legend.getByRole("button", { name: />=75/ })).toHaveAttribute(
+      "aria-label",
+      /Investigate/
     );
-    await expect(legend).toContainText(
-      "20 to less than 35 · Lower Atlas priority — Not a safety finding; Watch — Monitor signals"
-    );
-    await expect(legend).toContainText(
-      "75 or higher · Priority 1 — Investigate"
-    );
-    await expect(legend).toContainText(
-      "No published value · Not zero, not low priority, and not confirmed absence"
-    );
+    await legend.getByRole("button", { name: "About Atlas gap score" }).click();
+    const about = page.getByRole("dialog", { name: "About Atlas gap score" });
+    await expect(about).toContainText("CDC Lyme surveillance 2023");
+    await expect(about).toContainText("not personal disease risk");
+    await page.keyboard.press("Escape");
+    await expect(about).toBeHidden();
     await expect
       .poll(() => legendSwatchesFit(legend))
-      .toEqual({ clipped: false, visible: true });
+      .toEqual({ clipped: false, tall: false, visible: true });
 
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "Colorado (CO)" }).click();
     await expect(page).toHaveURL(/scope=CO/);
-    await expect(legend).toContainText("0 to less than 20");
-    await expect(legend).toContainText("75 or higher");
-    await expect(legend).not.toContainText("Watch — Monitor signals");
-    await expect(legend).toContainText("No published value");
+    await expect(
+      legend.getByRole("button", { name: /0 to <20/ })
+    ).toBeVisible();
+    await expect(legend.getByRole("button", { name: />=75/ })).toBeVisible();
+    await expect(legend).not.toContainText("Monitor signals");
+    await expect(
+      legend.getByRole("button", { name: /20 to <35/ })
+    ).toHaveAttribute("aria-label", /Monitor signals/);
+    await expect(
+      legend.getByRole("button", { name: /No published value/ })
+    ).toBeVisible();
     await expect(page.getByTestId("review-state-map-region")).toHaveAttribute(
       "data-map-colors",
       /08014:/
@@ -356,48 +464,83 @@ test.describe("Atlas Explorer layer legends", () => {
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "United States" }).click();
     await expect(page).toHaveURL(/scope=ALL/);
-    await expect(legend).toContainText("Watch — Monitor signals");
+    await expect(
+      legend.getByRole("button", { name: /35 to <50/ })
+    ).toHaveAttribute("aria-label", /Monitor signals/);
     await expect(legend).toContainText("Atlas gap score");
 
     await chooseLayer(page, "Blacklegged tick status");
     await expect(page).toHaveURL(/layer=tick_status/);
     await expect(legend).toContainText("Blacklegged tick status");
     await expect(legend).toContainText("published status category");
-    await expect(legend).toContainText(
+    await expect(legend).not.toContainText("CDC Lyme surveillance");
+    await expect(
+      legend.getByRole("button", { name: "Established" })
+    ).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: /No records \(not zero/ })
+    ).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: /Unknown \(not zero/ })
+    ).toBeVisible();
+    await expect(legend.getByRole("button", { name: /0 to <20/ })).toHaveCount(
+      0
+    );
+    await legend
+      .getByRole("button", { name: "About Blacklegged tick status" })
+      .click();
+    const tickAbout = page.getByRole("dialog", {
+      name: "About Blacklegged tick status",
+    });
+    await expect(tickAbout).toContainText(
       "CDC ArboNET county tick status through 2025-12-31"
     );
-    await expect(legend).not.toContainText("CDC Lyme surveillance");
-    await expect(legend).toContainText("Established");
-    await expect(legend).toContainText(
-      "No records (not zero, not confirmed absence)"
-    );
-    await expect(legend).toContainText(
-      "Unknown (not zero, not confirmed absence)"
-    );
-    await expect(legend).not.toContainText("0 to less than 20");
-    await expect(legend).not.toContainText("not personal disease risk");
+    await expect(tickAbout).not.toContainText("not personal disease risk");
+    await page.keyboard.press("Escape");
     await expect
       .poll(() => legendSwatchesFit(legend))
-      .toEqual({ clipped: false, visible: true });
+      .toEqual({ clipped: false, tall: false, visible: true });
 
     await chooseLayer(page, "B. burgdorferi status");
     await expect(legend).toContainText("B. burgdorferi status");
-    await expect(legend).toContainText(
-      "Absent (observed zero or negative finding)"
-    );
-    await expect(legend).toContainText("Present");
-    await expect(legend).not.toContainText("Established");
-    await expect(legend).toContainText("CDC ArboNET tickborne pathogen status");
+    await expect(
+      legend.getByRole("button", { name: /Absent \(observed zero/ })
+    ).toBeVisible();
+    await expect(legend.getByRole("button", { name: "Present" })).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: "Established" })
+    ).toHaveCount(0);
+    await legend
+      .getByRole("button", { name: "About B. burgdorferi status" })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "About B. burgdorferi status" })
+    ).toContainText("CDC ArboNET tickborne pathogen status");
+    await page.keyboard.press("Escape");
 
     await chooseLayer(page, "County boundaries");
-    await expect(legend).toContainText("County boundary");
-    await expect(legend).toContainText("not an evidence layer");
-    await expect(legend).not.toContainText("Present");
-    await expect(legend).not.toContainText("75 or higher");
+    await expect(
+      legend.getByRole("button", { name: "County boundary" })
+    ).toBeVisible();
+    await legend
+      .getByRole("button", { name: "About County boundaries" })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "About County boundaries" })
+    ).toContainText("not an evidence layer");
+    await expect(legend.getByRole("button", { name: "Present" })).toHaveCount(
+      0
+    );
+    await expect(legend.getByRole("button", { name: />=75/ })).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     await chooseLayer(page, "Atlas gap score");
-    await expect(legend).toContainText("0 to less than 20");
-    await expect(legend).not.toContainText("County boundary");
+    await expect(
+      legend.getByRole("button", { name: /0 to <20/ })
+    ).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: "County boundary" })
+    ).toHaveCount(0);
   });
 
   test("keeps the latest layer after rapid switches and leaves unsupported layers unpainted", async ({
@@ -405,42 +548,124 @@ test.describe("Atlas Explorer layer legends", () => {
   }) => {
     await page.goto("/explore?scope=ALL");
     const legend = page.getByTestId("explorer-map-legend");
-    await expect(legend).toContainText("0 to less than 20");
+    await expect(
+      legend.getByRole("button", { name: /0 to <20/ })
+    ).toBeVisible();
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "Blacklegged tick status" }).click();
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "B. burgdorferi status" }).click();
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "Atlas gap score" }).click();
-    await expect
-      .poll(async () => legend.innerText())
-      .toContain("0 to less than 20");
-    await expect(legend).not.toContainText("Established");
-    await expect(legend).not.toContainText("Present");
+    await expect(
+      legend.getByRole("button", { name: /0 to <20/ })
+    ).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: "Established" })
+    ).toHaveCount(0);
+    await expect(legend.getByRole("button", { name: "Present" })).toHaveCount(
+      0
+    );
 
     await chooseLayer(page, "Lyme incidence floor");
-    await expect(legend).toContainText(
-      "No admitted observations were published for this measure on the current release."
-    );
-    await expect(legend).toHaveAttribute("data-legend-kind", "unavailable");
-    await expect(legend).not.toContainText("lower bound");
-    await expect(legend).not.toContainText("per 100,000");
-    await page.getByTestId("explorer-map-layer").click();
+    await expect(legend).toContainText("Lyme incidence floor");
+    await expect(legend).toContainText("per 100,000");
+    await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await expect(
-      page.getByRole("option", { name: "Lyme incidence floor (unavailable)" })
-    ).toBeDisabled();
-    await page.keyboard.press("Escape");
+      legend.getByRole("button", { name: /Missing \(not zero/ })
+    ).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: /0 to 12\.4 per 100,000/ })
+    ).toBeVisible();
+
+    await chooseLayer(page, "Social vulnerability");
+    await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
+    await expect(legend).toContainText("percentile");
+    await expect(
+      legend.getByRole("button", { name: /0 to 1 percentile/ })
+    ).toBeVisible();
+
+    await chooseLayer(page, "Uninsured population");
+    await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
+    await expect(legend).toContainText("percent");
+    await expect(
+      legend.getByRole("button", { name: /0 to 100 percent/ })
+    ).toBeVisible();
+
+    await chooseLayer(page, "Rurality");
+    await expect(legend).toHaveAttribute("data-legend-scale", "segments");
+    await expect(legend).toContainText("1");
+    await expect(legend).toContainText("9");
+    await expect(legend.locator("[data-legend-segment]")).toHaveCount(9);
+    await expect(
+      legend.getByRole("button", { name: /metro area of 1 million or more/ })
+    ).toBeVisible();
+    await expect(
+      legend.getByRole("button", {
+        name: /not adjacent to a metro area/,
+      })
+    ).toHaveCount(3);
+
+    await chooseLayer(page, "Evidence completeness");
+    await expect(legend).toHaveAttribute("data-legend-scale", "segments");
+    await expect(legend.locator("[data-legend-segment]")).toHaveCount(5);
 
     await chooseLayer(page, "Atlas gap score");
     await expect(legend).toContainText("Atlas gap score");
-    await expect(legend).toContainText("0 to less than 20");
-    await expect(legend).not.toContainText(
-      "No admitted observations were published for this measure on the current release."
-    );
+    await expect(
+      legend.getByRole("button", { name: /0 to <20/ })
+    ).toBeVisible();
+    await expect(legend).not.toContainText("per 100,000");
+
+    await legend.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      fullPage: false,
+      path: "/opt/cursor/artifacts/legend-after-gap-national.png",
+    });
+    await legend.screenshot({
+      path: "/opt/cursor/artifacts/legend-after-gap-strip.png",
+    });
+    await legend.getByRole("button", { name: "About Atlas gap score" }).click();
+    await page.screenshot({
+      path: "/opt/cursor/artifacts/legend-after-gap-about.png",
+    });
+    await page.keyboard.press("Escape");
+    await chooseLayer(page, "Rurality");
+    await expect(legend.locator("[data-legend-segment]")).toHaveCount(9);
+    await legend.screenshot({
+      path: "/opt/cursor/artifacts/legend-after-rucc.png",
+    });
+    await chooseLayer(page, "Lyme incidence floor");
+    await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
+    await legend.screenshot({
+      path: "/opt/cursor/artifacts/legend-after-incidence.png",
+    });
 
     const results = await new AxeBuilder({ page })
       .include("[data-testid='explorer-map-legend']")
       .analyze();
     expect(results.violations).toEqual([]);
+  });
+});
+
+test.describe("Atlas Explorer legend phone reflow", () => {
+  test("keeps every gap-score segment on a phone width", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, 390),
+      "Phone legend reflow runs in the mobile project."
+    );
+    await installLegendApi(page);
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.goto("/explore?scope=ALL");
+    const legend = page.getByTestId("explorer-map-legend");
+    await expect(legend.locator("[data-legend-segment]")).toHaveCount(7);
+    await expect
+      .poll(() => legendSwatchesFit(legend))
+      .toEqual({ clipped: false, tall: false, visible: true });
+    await page.screenshot({
+      path: testInfo.outputPath("explore-legend-phone.png"),
+    });
   });
 });

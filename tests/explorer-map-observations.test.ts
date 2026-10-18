@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -195,7 +196,13 @@ describe("Explorer map observations", () => {
     expect(paint.entries.map((entry) => entry.label)).toStrictEqual([
       "1. Metro: area population at least 1 million",
       "2. Metro: area population 250,000 to 1 million",
-      "No published value",
+      "3. metro area of fewer than 250,000",
+      "4. urban population of 20,000 or more, adjacent to a metro area",
+      "5. urban population of 20,000 or more, not adjacent to a metro area",
+      "6. urban population of 2,500 to 19,999, adjacent to a metro area",
+      "7. urban population of 2,500 to 19,999, not adjacent to a metro area",
+      "8. completely rural or less than 2,500 urban population, adjacent to a metro area",
+      "9. completely rural or less than 2,500 urban population, not adjacent to a metro area",
     ]);
     expect(paint.period).toMatch(/No observation dates/);
     expect(paint.note).toMatch(/not a risk gradient/);
@@ -254,7 +261,7 @@ describe("Explorer map observations", () => {
     expect(ready.rows[0]?.provenance.evidence.resource_id).toBe("resource");
   });
 
-  it("keeps governed limitations and provenance for the selected county", () => {
+  it("keeps governed limitations and provenance for the selected county", async () => {
     const observed = {
       ...dated({ fips: "08001", value: 1.2 }),
       limitations: ["Counts below 10 are suppressed in the source table."],
@@ -298,6 +305,9 @@ describe("Explorer map observations", () => {
       reason: "MATERIAL_LIMITATION",
     });
     render(createElement(ExplorerMapLegend, { paint }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "About Lyme incidence floor" })
+    );
     const suppressedPaint = paintReadyObservationLayer({
       layerId: "incidence_floor",
       omitted: ready.omitted,

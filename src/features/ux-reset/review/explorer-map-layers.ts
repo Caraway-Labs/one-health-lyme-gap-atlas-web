@@ -8,6 +8,7 @@ import type {
   ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
 import { EXPLORER_OBSERVATION_LAYER_IDS } from "@/features/ux-reset/review/explorer-map-observation";
+import { priorityLabel } from "@/features/ux-reset/review/explorer-scenario-score";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyScoreSummary } from "@/generated/models";
 
@@ -178,11 +179,21 @@ type LegendKind =
   | "loading"
   | "unavailable";
 
+export type ExplorerMapLegendRole =
+  | "class"
+  | "endpoint-high"
+  | "endpoint-low"
+  | "missing"
+  | "note";
+
 export type ExplorerMapLegendEntry = {
   color: string;
   detail: string | null;
   label: string;
+  role?: ExplorerMapLegendRole;
 };
+
+export type ExplorerLegendScale = "gradient" | "segments";
 
 export type ExplorerMapPaint = {
   colorsByFips: ReadonlyMap<string, string>;
@@ -190,6 +201,8 @@ export type ExplorerMapPaint = {
   kind: LegendKind;
   layerId: ExplorerMapLayerId;
   note: string;
+  /** Whether map paint interpolates or uses discrete governed classes. */
+  scale: ExplorerLegendScale;
   period: string;
   /** Exact published value for the selected county, when one is selected. */
   selection?: string | null;
@@ -319,7 +332,31 @@ function noPublishedValueEntry(): ExplorerMapLegendEntry {
     color: BOUNDARY_COLOR,
     detail: "Not zero, not low priority, and not confirmed absence",
     label: NO_PUBLISHED_VALUE,
+    role: "missing",
   };
+}
+
+const PRIORITY_LABEL_EDGES = [30, 50, 70] as const;
+
+/** Priority phrases that intersect one score-color band. The edges are the existing scales. */
+function governedPriorityDetail(band: ScoreBand): string {
+  const probes = [band.minInclusive];
+  for (const edge of PRIORITY_LABEL_EDGES) {
+    if (
+      edge > band.minInclusive &&
+      (band.maxExclusive === null || edge < band.maxExclusive)
+    ) {
+      probes.push(edge);
+    }
+  }
+  const labels: string[] = [];
+  for (const probe of probes) {
+    const label = priorityLabel(probe);
+    if (!labels.includes(label)) {
+      labels.push(label);
+    }
+  }
+  return labels.join("; ");
 }
 
 function formatScore(value: number): string {
@@ -494,6 +531,7 @@ function boundaryPaint(
       input,
       layer.id === "boundaries" ? "boundaries" : layer.id
     ),
+    scale: "segments",
     title,
     unit: null,
   };
@@ -510,6 +548,7 @@ function unavailablePaint(input: PaintInput): ExplorerMapPaint {
       layer.unavailableReason ??
       "This layer has no published map color scale. The map shows county boundaries only.",
     period: "Source vintage unavailable.",
+    scale: "segments",
     title: layer.label,
     unit: null,
   };
@@ -542,39 +581,75 @@ function gapScorePaint(input: PaintInput): ExplorerMapPaint {
       group.priorities.set(priority, value);
     }
   }
-  const entries: ExplorerMapLegendEntry[] = [...groups.values()]
-    .toSorted((left, right) => {
-      const leftScore = left.scores.length > 0 ? Math.min(...left.scores) : 0;
-      const rightScore =
-        right.scores.length > 0 ? Math.min(...right.scores) : 0;
-      return leftScore - rightScore || left.color.localeCompare(right.color);
-    })
-    .map((group) => {
-      const band = governedBandForColor(group.color);
-      const fits =
-        band !== null &&
-        group.scores.length > 0 &&
-        group.scores.every((score) => scoreFitsBand(score, band));
-      const priorities = [...group.priorities.entries()].toSorted(
-        (left, right) => left[1] - right[1] || left[0].localeCompare(right[0])
-      );
-      return {
+  const matched = new Set<string>();
+  const entries: ExplorerMapLegendEntry[] = [noPublishedValueEntry()];
+  for (const band of SCORE_COLOR_BANDS) {
+    const group = [...groups.values()].find((candidate) => {
+      if (matched.has(candidate.color)) {
+        return false;
+      }
+      return governedBandForColor(candidate.color)?.id === band.id;
+    });
+    const priorities = group
+      ? [...group.priorities.entries()]
+          .toSorted(
+            (left, right) =>
+              left[1] - right[1] || left[0].localeCompare(right[0])
+          )
+          .map(([label]) => label)
+      : [];
+    const fits =
+      group !== undefined &&
+      group.scores.length > 0 &&
+      group.scores.every((score) => scoreFitsBand(score, band));
+    if (group && !fits) {
+      matched.add(group.color);
+      entries.push({
         color: group.color,
         detail:
-          priorities.map(([label]) => label).join("; ") ||
-          "Published priority label unavailable",
-        label:
-          fits && band ? bandThreshold(band) : observedScoreLabel(group.scores),
-      };
+          priorities.join("; ") ||
+          "Painted scores fall outside this color's governed band.",
+        label: observedScoreLabel(group.scores),
+        role: "class",
+      });
+      continue;
+    }
+    if (group) {
+      matched.add(group.color);
+    }
+    const governedParts = governedPriorityDetail(band).split("; ");
+    const extras = priorities.filter((label) => !governedParts.includes(label));
+    entries.push({
+      color: group?.color ?? band.color,
+      detail: [...governedParts, ...extras].join("; "),
+      label: bandThreshold(band),
+      role: "class",
     });
-  entries.push(noPublishedValueEntry());
+  }
+  for (const group of groups.values()) {
+    if (matched.has(group.color)) {
+      continue;
+    }
+    const priorities = [...group.priorities.entries()]
+      .toSorted(
+        (left, right) => left[1] - right[1] || left[0].localeCompare(right[0])
+      )
+      .map(([label]) => label);
+    entries.push({
+      color: group.color,
+      detail: priorities.join("; ") || "Published priority label unavailable",
+      label: observedScoreLabel(group.scores),
+      role: "class",
+    });
+  }
   return {
     colorsByFips,
     entries,
     kind: "choropleth",
     layerId: layer.id,
-    note: "Colors are the published score colors. A band is shown only when every score painted in that color already falls inside it. Priority labels can span more than one color. This is surveillance review priority, not personal disease risk and not an ML surveillance label. A missing color is not zero or low priority. The county list stays the review ranking.",
+    note: "Colors are the published score colors. Every governed band stays on the legend. A band keeps its numeric range only when every score painted in that color already falls inside it. Priority labels can span more than one color. This is surveillance review priority, not personal disease risk and not an ML surveillance label. A missing color is not zero or low priority. The county list stays the review ranking.",
     period: legendPeriod(input, layer.id),
+    scale: "segments",
     title: "Atlas gap score",
     unit: "review-priority score",
   };
@@ -707,11 +782,15 @@ function categoricalPaint(
   }
   return {
     colorsByFips,
-    entries: [...legend.entries, noPublishedValueEntry()],
+    entries: legend.entries.map((entry) => ({
+      ...entry,
+      role: "class" as const,
+    })),
     kind: "categorical",
     layerId: layer.id,
     note: "Colors are separate published status categories, not a continuous risk gradient or a severity ranking. No records is not absence. An observed zero stays distinct from a missing status.",
     period: legendPeriod(input, layer.id),
+    scale: "segments",
     title: layer.label,
     unit: "published status category",
   };
@@ -726,6 +805,7 @@ function loadingPaint(input: PaintInput, note: string): ExplorerMapPaint {
     layerId: layer.id,
     note,
     period: legendPeriod(input, layer.id),
+    scale: "segments",
     title: layer.label,
     unit: null,
   };

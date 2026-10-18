@@ -999,7 +999,10 @@ export function ReviewOperatingPicture({
               </AtlasStatusMessage>
             )}
           </div>
-          <ExplorerMapLegend paint={mapPaint} />
+          <ExplorerMapLegend
+            key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
+            paint={mapPaint}
+          />
         </Card>
         <ExplorerMapFollowUp
           fips={selectedFips}

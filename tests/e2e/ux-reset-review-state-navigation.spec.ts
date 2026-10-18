@@ -253,12 +253,16 @@ test.describe("Review national geographic navigation", () => {
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
-    await expect(page.getByTestId("explorer-map-legend")).toContainText(
-      "published score colors"
-    );
-    await expect(page.getByTestId("explorer-map-legend")).toContainText(
-      "No published value"
-    );
+    await page.getByRole("button", { name: "About Atlas gap score" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "About Atlas gap score" })
+    ).toContainText("published score colors");
+    await page.keyboard.press("Escape");
+    await expect(
+      page
+        .getByTestId("explorer-map-legend")
+        .getByRole("button", { name: /No published value/ })
+    ).toBeVisible();
     await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
     await expect(page.getByLabel("Zoom in")).toBeVisible();
     await expect(page.getByLabel("Zoom out")).toBeVisible();
@@ -475,9 +479,11 @@ test.describe("Review national geographic navigation", () => {
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
-    await expect(page.getByTestId("explorer-map-legend")).toContainText(
-      "No published value"
-    );
+    await expect(
+      page
+        .getByTestId("explorer-map-legend")
+        .getByRole("button", { name: /No published value/ })
+    ).toBeVisible();
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "County boundaries" }).click();
     await expect(page).toHaveURL(/layer=boundaries/);
