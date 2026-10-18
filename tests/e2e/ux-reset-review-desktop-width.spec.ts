@@ -246,13 +246,13 @@ async function settleSidebar(page: Page, state: SidebarState): Promise<void> {
     await expect(sidebar).toHaveAttribute("data-state", state, {
       timeout: 1_000,
     });
+    expect(Math.round((await sidebar.boundingBox())?.width ?? 0)).toBe(
+      targetWidth
+    );
   }).toPass({
     intervals: [50, 100, 250, 500],
     timeout: 15_000,
   });
-  await expect
-    .poll(async () => Math.round((await sidebar.boundingBox())?.width ?? 0))
-    .toBe(targetWidth);
 }
 
 async function readExplorerLayout(page: Page): Promise<ExplorerLayout> {
