@@ -1347,10 +1347,9 @@ describe("Review operating picture state", () => {
       </QueryClientProvider>
     );
     const rows = await screen.findAllByTestId("review-candidate");
-    const picker =
-      screen.getByTestId("review-published-county-select").textContent ?? "";
+    const heading = screen.getByRole("heading", { name: "Choose a county" });
     expect({
-      asksForChoice: picker.includes("Select a published county"),
+      asksForChoice: heading.textContent === "Choose a county",
       current: rows.map((row) => row.getAttribute("aria-current")),
       fips: rows.map((row) => row.dataset.fips),
       preview: screen.queryByTestId("review-county-preview"),
@@ -2321,12 +2320,9 @@ describe("Review operating picture state", () => {
           />
         </QueryClientProvider>
       );
-      const row =
-        screen.getByTestId("review-candidate").querySelector("small")
-          ?.textContent ?? "";
       const why = screen.getByTestId("review-preview-why").textContent ?? "";
       view.unmount();
-      return { row, why };
+      return { why };
     };
     const withCode = reviewCandidate({
       caveat: "Collection dates are unavailable.",
@@ -2348,9 +2344,8 @@ describe("Review operating picture state", () => {
       withCode: read(withCode),
       withoutCode: read(withoutCode),
     }).toStrictEqual({
-      withCode: { row: reasonCode, why: reasonCode },
+      withCode: { why: reasonCode },
       withoutCode: {
-        row: "The review result did not include a reason for this county.",
         why: "The review result did not include a reason for this county.",
       },
     });
@@ -2387,8 +2382,9 @@ describe("Review operating picture state", () => {
       </QueryClientProvider>
     );
     const rowName =
-      screen.getByTestId("review-candidate").querySelector("strong")
-        ?.textContent ?? "";
+      screen
+        .getByTestId("review-candidate")
+        .querySelector(".ux-reset-ranked-name")?.textContent ?? "";
     const gapRow = screen.getByTestId("review-data-gap").textContent ?? "";
     const omitted = screen.getByTestId("review-omitted-gaps").textContent ?? "";
     const limitations = [

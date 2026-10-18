@@ -1721,6 +1721,118 @@
   margin: 0.15rem 0 0;
 }
 
+.ux-reset-ranked-counties {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.ux-reset-ranked-counties-header {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.15rem 0.7rem;
+}
+
+.ux-reset-ranked-counties-eyebrow {
+  margin: 0;
+  color: var(--teal);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.ux-reset-ranked-counties-header h2 {
+  margin: 0.35rem 0 0;
+  color: var(--navy);
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.ux-reset-ranked-county-list {
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+}
+
+.ux-reset-ranked-row {
+  display: grid;
+  width: 100%;
+  min-height: 3.375rem;
+  grid-template-columns: 1.5rem minmax(0, 1fr) 2.5rem;
+  align-items: center;
+  column-gap: 0.55rem;
+  padding: 0.55rem 0.65rem 0.55rem 0.7rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--white);
+  color: var(--navy);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ux-reset-ranked-row:hover {
+  background: var(--pale);
+}
+
+.ux-reset-ranked-row[aria-current="true"] {
+  background: color-mix(in srgb, var(--mint) 72%, white);
+  box-shadow: inset 3px 0 0 var(--teal);
+}
+
+.ux-reset-ranked-number {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ux-reset-ranked-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ux-reset-ranked-score {
+  display: grid;
+  width: 2.5rem;
+  height: 1.85rem;
+  place-items: center;
+  border-radius: 0.35rem;
+  background: var(--muted);
+  color: var(--navy);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ux-reset-ranked-score.is-unavailable {
+  background: transparent;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.ux-reset-ranked-unscored {
+  padding: 0.45rem 0.75rem 0.2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.ux-reset-ranked-unscored p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .ux-reset-explorer-list .ux-reset-review-candidate-list {
   max-height: none;
   overflow: visible;
@@ -1875,6 +1987,101 @@
 .ux-reset-review-preview-actions button {
   width: 100%;
   justify-content: center;
+}
+
+.ux-reset-review-rationale {
+  margin-top: 0.85rem;
+}
+
+.ux-reset-review-preview-support {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.ux-reset-review-rationale h3 {
+  margin: 0.2rem 0 0.45rem;
+  color: var(--navy);
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.ux-reset-review-rationale-intro,
+.ux-reset-review-rationale-note {
+  margin: 0 0 0.7rem;
+  color: var(--atlas-muted-text);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.ux-reset-review-rationale-note {
+  color: var(--muted-foreground);
+}
+
+.ux-reset-review-rationale h4 {
+  margin: 0.85rem 0 0.45rem;
+  color: var(--teal-dark);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ux-reset-review-rationale ol {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  list-style: none;
+}
+
+.ux-reset-review-rationale li {
+  display: grid;
+  grid-template-columns: 1.65rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.ux-reset-review-rationale ol li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ux-reset-review-rationale li > span {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mint);
+  color: var(--teal-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.ux-reset-review-rationale h4 + ol {
+  margin-bottom: 0.35rem;
+}
+
+.ux-reset-review-rationale li h4 {
+  margin: 0.05rem 0 0.2rem;
+  color: var(--navy);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ux-reset-review-rationale li p {
+  margin: 0;
+  color: var(--atlas-muted-text);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .ux-reset-explorer-release,
@@ -2237,7 +2444,9 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   }
 
   .ux-reset-explorer-list > .gap-0 {
+    display: flex;
     flex: 1 1 auto;
+    flex-direction: column;
     height: 100%;
     min-height: 0;
   }

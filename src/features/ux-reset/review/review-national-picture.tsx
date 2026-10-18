@@ -20,7 +20,6 @@ import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-
 import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 import {
   countyPassesAvailableData,
-  countyReferenceMatchesQuery,
   EXPLORER_AVAILABLE_DATA_EMPTY,
   EXPLORER_AVAILABLE_DATA_ERROR,
   EXPLORER_AVAILABLE_DATA_LOADING,
@@ -40,14 +39,17 @@ import {
   type ExplorerMapLegendSource,
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
-import { ExplorerCountyRowContent } from "@/features/ux-reset/review/explorer-ml-priority";
+import {
+  rankExplorerCounties,
+  type ExplorerRankSource,
+} from "@/features/ux-reset/review/explorer-ranked-counties";
+import { ExplorerRankedCountyList } from "@/features/ux-reset/review/explorer-ranked-county-list";
 import {
   SCENARIO_SCORE_DEFAULTS,
   adjustCountyScenarios,
   scoreSettingsFromCollection,
 } from "@/features/ux-reset/review/explorer-scenario-score";
 import {
-  ExplorerAdjustedScenarioLine,
   applyGapScoreScenarioColors,
   scenarioGapScoreLegend,
 } from "@/features/ux-reset/review/explorer-what-if-scenario";
@@ -64,22 +66,12 @@ import {
   postalCodeForStateFips,
 } from "@/features/ux-reset/review/review-state-fips";
 import {
-  EXPLORER_ML_PRIORITY_PAGE_SIZE,
-  explorerMlListedFips,
-  useExplorerCountyMlPriorities,
-} from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
-import {
   observationGate,
   observationPaintState,
   useExplorerMapObservations,
 } from "@/features/ux-reset/review/use-explorer-map-observations";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
-import {
-  EXPLORER_ML_PRIORITY_LEGEND,
-  EXPLORER_ML_PRIORITY_UNAVAILABLE,
-} from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import type { CountyScoreSummary } from "@/generated/models";
 import { isContiguousUsCounty } from "@/lib/atlas-geometry";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 import type { ScoreSettings } from "@/lib/atlas-ui";
@@ -139,20 +131,18 @@ export function ReviewNationalPicture({
   releaseStates,
   scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   sources = NO_LEGEND_SOURCES,
-  tierRelease,
+  tierRelease: _tierRelease,
 }: ReviewNationalPictureProps) {
   const searchParams = useSearchParams();
   const searchKey = searchParams.toString();
   const selectedFips = county && isLower48CountyFips(county) ? county : "";
   const countyPostal = selectedFips ? postalForFips(selectedFips) : null;
   const [trackedCounty, setTrackedCounty] = useState(selectedFips);
-  const [pickedState, setPickedState] = useState<string | null>(countyPostal);
+  const [pickedState, setPickedState] = useState<string | null>(null);
   if (selectedFips !== trackedCounty) {
     setTrackedCounty(selectedFips);
-    if (countyPostal) {
-      setPickedState(countyPostal);
-    }
   }
+  const listState = pickedState;
   const browseState = pickedState ?? countyPostal;
   const [fitSignal, setFitSignal] = useState(0);
   const [mapFailed, setMapFailed] = useState(false);
@@ -304,13 +294,6 @@ export function ReviewNationalPicture({
     mapPaint.colorsByFips,
     mapPaint.kind,
   ]);
-  const scoreByFips = useMemo(() => {
-    const scores = new Map<string, CountyScoreSummary>();
-    for (const entry of scoreCounties) {
-      scores.set(entry.fips, entry);
-    }
-    return scores;
-  }, [scoreCounties]);
   const identityByFips = useMemo(() => {
     const identities = new Map<string, ExploreCountyIdentity>();
     for (const entry of counties) {
@@ -359,41 +342,56 @@ export function ReviewNationalPicture({
           left.code.localeCompare(right.code)
       );
   }, [browseState, releaseStates]);
-  const listedCounties = useMemo(() => {
-    if (!browseState) {
-      return [];
+  const rankedRows = useMemo(() => {
+    const byFips = new Map<string, ExplorerRankSource>();
+    for (const entry of counties) {
+      if (!isLower48CountyFips(entry.fips)) {
+        continue;
+      }
+      if (listState && entry.state !== listState) {
+        continue;
+      }
+      byFips.set(entry.fips, {
+        county: entry.county,
+        fips: entry.fips,
+        score: null,
+        state: entry.state,
+      });
     }
-    return counties
-      .filter(
-        (entry) =>
-          entry.state === browseState &&
-          isLower48CountyFips(entry.fips) &&
-          countyPassesAvailableData(availableDataGate, entry.fips) &&
-          countyReferenceMatchesQuery(entry, countyQuery)
-      )
-      .toSorted(
-        (left, right) =>
-          left.county.localeCompare(right.county, "en") ||
-          left.fips.localeCompare(right.fips)
-      );
-  }, [availableDataGate, browseState, counties, countyQuery]);
-  const [directoryWindow, setDirectoryWindow] = useState({
-    count: EXPLORER_ML_PRIORITY_PAGE_SIZE,
-    key: "",
-  });
-  const directoryWindowKey = `${browseState ?? ""}\u0000${countyQuery.trim().toLowerCase()}\u0000${availableDataGate.kind}`;
-  const shownDirectoryCount =
-    directoryWindow.key === directoryWindowKey
-      ? directoryWindow.count
-      : EXPLORER_ML_PRIORITY_PAGE_SIZE;
-  const visibleDirectory = listedCounties.slice(0, shownDirectoryCount);
-  const listedFips = explorerMlListedFips({
-    candidateFips: [],
-    directoryFips: listedCounties.map((entry) => entry.fips),
-    selectedFips: selectedFips || null,
-    shownDirectoryCount,
-  });
-  const mlPriorities = useExplorerCountyMlPriorities(listedFips, tierRelease);
+    for (const entry of scoreCounties) {
+      if (listState && entry.state !== listState) {
+        continue;
+      }
+      const existing = byFips.get(entry.fips);
+      const score = entry.in_contiguous_tick_scope ? entry.score.score : null;
+      byFips.set(entry.fips, {
+        color: score === null ? null : entry.color,
+        county: existing?.county || entry.county,
+        fips: entry.fips,
+        score,
+        state: entry.state,
+      });
+    }
+    if (!listState) {
+      for (const [fips, source] of byFips) {
+        if (source.score === null) {
+          byFips.delete(fips);
+        }
+      }
+    }
+    const visibleFips =
+      availableDataGate.kind === "open"
+        ? null
+        : new Set(
+            [...byFips.keys()].filter((fips) =>
+              countyPassesAvailableData(availableDataGate, fips)
+            )
+          );
+    return rankExplorerCounties([...byFips.values()], {
+      query: countyQuery,
+      visibleFips,
+    });
+  }, [availableDataGate, counties, countyQuery, listState, scoreCounties]);
   const identityFor = (fips: string): ExploreCountyIdentity | null =>
     identityByFips.get(fips) ?? null;
   const selectedIdentity = selectedFips ? identityFor(selectedFips) : null;
@@ -436,7 +434,6 @@ export function ReviewNationalPicture({
     if (!countyPassesAvailableData(availableDataGate, fips)) {
       return;
     }
-    setPickedState(postal);
     onCountyChange(fips, "push");
   };
 
@@ -565,16 +562,10 @@ export function ReviewNationalPicture({
       </Card>
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">
-          <h2 className="type-card">Counties</h2>
-          <p className="type-small">
-            {browseName
-              ? `${browseName} counties, alphabetical. Not a national ranking.`
-              : "Choose a state to list its counties. Not a national ranking."}
-          </p>
           <div className="ux-reset-review-scope-field">
             <span className="type-small">Browse a state</span>
             <Select
-              value={browseState}
+              value={listState}
               onValueChange={(next) => {
                 if (next) {
                   chooseState(next);
@@ -587,7 +578,9 @@ export function ReviewNationalPicture({
                 data-testid="national-browse-state"
               >
                 <SelectValue placeholder="Choose a state">
-                  {browseName ? `${browseName} (${browseState})` : undefined}
+                  {listState && browseName
+                    ? `${browseName} (${listState})`
+                    : undefined}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -619,85 +612,35 @@ export function ReviewNationalPicture({
               <p>{EXPLORER_AVAILABLE_DATA_ERROR}</p>
             </AtlasStatusMessage>
           ) : null}
-          {browseState &&
+          {listState &&
           !countiesLoading &&
           !countiesError &&
-          listedCounties.length === 0 &&
+          rankedRows.length === 0 &&
           availableDataGate.kind === "ready" ? (
             <p>{EXPLORER_AVAILABLE_DATA_EMPTY}</p>
           ) : null}
-          {browseState &&
+          {listState &&
           !countiesLoading &&
           !countiesError &&
-          listedCounties.length === 0 &&
+          rankedRows.length === 0 &&
           availableDataGate.kind === "open" ? (
             <p>No published counties were returned for this state.</p>
           ) : null}
-          {visibleDirectory.length > 0 ? (
-            <>
-              <p className="type-small">{EXPLORER_ML_PRIORITY_LEGEND}</p>
-              <div
-                aria-label={`Published counties in ${browseName ?? "the selected state"}`}
-                className="ux-reset-review-candidate-list"
-                role="list"
-              >
-                {visibleDirectory.map((entry) => {
-                  const published = scoreByFips.get(entry.fips);
-                  const classification =
-                    mlPriorities.get(entry.fips) ??
-                    EXPLORER_ML_PRIORITY_UNAVAILABLE;
-                  return (
-                    <div key={entry.fips} role="listitem">
-                      <button
-                        aria-current={
-                          entry.fips === selectedFips ? "true" : undefined
-                        }
-                        className="ux-reset-review-candidate"
-                        data-fips={entry.fips}
-                        data-testid="national-published-county"
-                        type="button"
-                        onClick={() => {
-                          chooseCounty(entry.fips);
-                        }}
-                      >
-                        <ExplorerCountyRowContent
-                          classification={classification}
-                          explanation="Published county record. Not a review ranking."
-                          name={`${entry.county}, ${entry.state}`}
-                          publishedCategory={
-                            published?.priority.trim() || undefined
-                          }
-                          publishedScore={published?.score.score}
-                        />
-                        <ExplorerAdjustedScenarioLine
-                          scenario={scenarioByFips?.get(entry.fips)}
-                          showRank={false}
-                        />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : null}
-          {shownDirectoryCount < listedCounties.length ? (
-            <Button
-              data-testid="national-county-more"
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setDirectoryWindow({
-                  count: shownDirectoryCount + EXPLORER_ML_PRIORITY_PAGE_SIZE,
-                  key: directoryWindowKey,
-                });
-              }}
-            >
-              {`Show ${Math.min(
-                EXPLORER_ML_PRIORITY_PAGE_SIZE,
-                listedCounties.length - shownDirectoryCount
-              )} more counties`}
-            </Button>
-          ) : null}
+          <ExplorerRankedCountyList
+            emptyLabel={
+              countyQuery.trim()
+                ? "No counties match that name or FIPS."
+                : listState
+                  ? "No counties in this state have a published Atlas gap score."
+                  : "No counties have a published Atlas gap score."
+            }
+            rows={rankedRows}
+            scenarios={scenarioByFips}
+            scopeKey={listState ?? "ALL"}
+            selectedFips={selectedFips}
+            testId="national-published-county"
+            onSelect={chooseCounty}
+          />
         </Card>
       </div>
       <div className="ux-reset-explorer-preview">

@@ -283,8 +283,7 @@ test.describe("P1 Storybook catalog", () => {
   }) => {
     const traffic = track(page);
     await openStory(page, "review-operating-picture--none");
-    await page.getByRole("combobox", { name: "Published county" }).click();
-    await page.getByRole("option", { name: /Adams County/ }).click();
+    await page.locator('button.ux-reset-ranked-row[data-fips="08001"]').click();
     await expect(page.getByTestId("operating-selected")).toHaveText(
       "Selected county 08001"
     );

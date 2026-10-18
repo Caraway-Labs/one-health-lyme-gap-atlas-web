@@ -16,7 +16,6 @@ import { ExplorerMlPriorityBadge } from "@/features/ux-reset/review/explorer-ml-
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
   EXPLORER_ML_PRIORITY_FETCH_LIMIT,
-  EXPLORER_ML_PRIORITY_PAGE_SIZE,
   useExplorerCountyMlPriorities,
 } from "@/features/ux-reset/review/use-explorer-county-ml-priorities";
 import {
@@ -161,12 +160,11 @@ function tier1QueryKey(fips: string) {
   ] as const;
 }
 
-function rowLabel(fips: string): string {
+function rowRank(fips: string): string {
   const row = document.querySelector<HTMLElement>(
     `[data-testid="review-candidate"][data-fips="${fips}"]`
   );
-  const badge = row?.querySelector("[data-testid='explorer-ml-priority']");
-  return badge?.textContent ?? "";
+  return row?.querySelector(".ux-reset-ranked-number")?.textContent ?? "";
 }
 
 describe("Explorer county rows show ML surveillance priority", () => {
@@ -271,42 +269,27 @@ describe("Explorer county rows show ML surveillance priority", () => {
 
     await waitFor(() => {
       const adamsScore = document.querySelector(
-        '[data-testid="review-candidate"][data-fips="08001"] .ux-reset-explorer-county-score'
+        '[data-testid="review-candidate"][data-fips="08001"] .ux-reset-ranked-score'
       );
       expect({
-        adams: rowLabel("08001"),
-        boulder: rowLabel("08013"),
-        clearCreek: rowLabel("08019"),
-        denver: rowLabel("08031"),
+        adams: rowRank("08001"),
+        boulder: rowRank("08013"),
+        clearCreek: rowRank("08019"),
+        denver: rowRank("08031"),
         score: adamsScore?.textContent ?? "",
       }).toStrictEqual({
-        adams: "LOW",
-        boulder: "MEDIUM",
-        clearCreek: "Not available",
-        denver: "HIGH",
-        score: "Published score 75",
+        adams: "1",
+        boulder: "2",
+        clearCreek: "Not ranked",
+        denver: "Not ranked",
+        score: "Published score 75. Atlas gap score 75.0",
       });
     });
-    const adams = document.querySelector<HTMLElement>(
-      '[data-testid="review-candidate"][data-fips="08001"]'
-    );
-    expect({
-      adamsTier: adams?.dataset.mlTier,
-      legend: screen.getByTestId("explorer-ml-priority-legend").textContent,
-      publishedCategory: adams?.querySelector("small")?.textContent,
-      publishedScore: adams?.querySelector(".ux-reset-explorer-county-score")
-        ?.textContent,
-    }).toStrictEqual({
-      adamsTier: "LOW",
-      legend: expect.stringContaining(
-        "ML surveillance priority — counties flagged for review, not personal Lyme disease risk"
-      ),
-      publishedCategory: expect.stringContaining(
-        "Published category: Priority 3 — Review."
-      ),
-      publishedScore: "Published score 75",
-    });
-    expect(rowLabel("08019")).not.toBe("LOW");
+    expect(screen.queryByTestId("explorer-ml-priority-legend")).toBeNull();
+    expect(
+      document.querySelector("[data-testid='explorer-ml-priority']")
+    ).toBeNull();
+    expect(rowRank("08019")).toBe("Not ranked");
 
     fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
     expect(onCountyChange).toHaveBeenCalledWith("08013", "push");
@@ -479,15 +462,10 @@ describe("Explorer county rows show ML surveillance priority", () => {
       </QueryClientProvider>
     );
     await waitFor(() => {
-      expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+      expect(screen.getAllByTestId("review-published-county")).toHaveLength(25);
     });
-    expect(screen.getAllByTestId("review-published-county")).toHaveLength(
-      EXPLORER_ML_PRIORITY_PAGE_SIZE
-    );
-    expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
-    fireEvent.click(screen.getByTestId("explorer-ml-priority-more"));
-    expect(screen.getAllByTestId("review-published-county")).toHaveLength(25);
-    expect(tier1Get).toHaveBeenCalledTimes(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
+    expect(tier1Get).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("explorer-ml-priority-more")).toBeNull();
     for (const resolve of pending) {
       resolve({
         data: tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),

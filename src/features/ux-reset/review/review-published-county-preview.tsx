@@ -20,6 +20,7 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import type { CountyDetail } from "@/generated/models";
 import { cn } from "@/lib/utils";
@@ -144,65 +145,68 @@ export function ReviewPublishedCountyPreview({
       <h2 className="type-card">
         {county.county}, {county.stateName}
       </h2>
-      <p className="type-body">Review category unavailable</p>
-      <p className="type-small">
-        FIPS {county.fips} · Release {releaseId}
-      </p>
-      <p className="type-body">
-        Published county evidence is available. This selection is not a review
-        recommendation, and it is not a disease-risk estimate.
-      </p>
-      <p className="type-small">
-        Review recommendations are unavailable for this jurisdiction in the
-        current release.
-      </p>
-      <div className="ux-reset-review-preview-actions">
-        {onViewCountyEvidence ? (
-          <Button
-            data-county={county.fips}
-            data-testid="review-view-county-evidence"
-            type="button"
-            onClick={() => {
-              onViewCountyEvidence(county.fips);
-            }}
+      {detail ? <ReviewRationalePanel detail={detail} /> : null}
+      <div className="ux-reset-review-preview-support">
+        <p className="type-body">Review category unavailable</p>
+        <p className="type-small">
+          FIPS {county.fips} · Release {releaseId}
+        </p>
+        <p className="type-body">
+          Published county evidence is available. This selection is not a review
+          recommendation, and it is not a disease-risk estimate.
+        </p>
+        <p className="type-small">
+          Review recommendations are unavailable for this jurisdiction in the
+          current release.
+        </p>
+        <div className="ux-reset-review-preview-actions">
+          {onViewCountyEvidence ? (
+            <Button
+              data-county={county.fips}
+              data-testid="review-view-county-evidence"
+              type="button"
+              onClick={() => {
+                onViewCountyEvidence(county.fips);
+              }}
+            >
+              View county evidence
+            </Button>
+          ) : null}
+          <Link
+            ref={openRef}
+            className={cn(
+              buttonVariants({ variant: "secondary" }),
+              "ux-reset-review-open"
+            )}
+            data-testid="review-investigate"
+            data-variant="secondary"
+            href={href}
+            onClick={() => onOpen(county.fips)}
           >
-            View county evidence
-          </Button>
-        ) : null}
-        <Link
-          ref={openRef}
-          className={cn(
-            buttonVariants({ variant: "secondary" }),
-            "ux-reset-review-open"
-          )}
-          data-testid="review-investigate"
-          data-variant="secondary"
-          href={href}
-          onClick={() => onOpen(county.fips)}
-        >
-          County evidence
-        </Link>
-        <Link
-          className={cn(
-            buttonVariants({ variant: "secondary" }),
-            "ux-reset-review-open"
-          )}
-          data-testid="review-compare"
-          href={compareHref}
-          onClick={() => onOpen(county.fips)}
-        >
-          Compare this county
-        </Link>
-        <Link
-          className={cn(
-            buttonVariants({ variant: "secondary" }),
-            "ux-reset-review-open"
-          )}
-          data-testid="review-ask-atlas"
-          href={askHref}
-        >
-          Ask Atlas
-        </Link>
+            County evidence
+          </Link>
+          <Link
+            className={cn(
+              buttonVariants({ variant: "secondary" }),
+              "ux-reset-review-open"
+            )}
+            data-testid="review-compare"
+            href={compareHref}
+            onClick={() => onOpen(county.fips)}
+          >
+            Compare this county
+          </Link>
+          <Link
+            className={cn(
+              buttonVariants({ variant: "secondary" }),
+              "ux-reset-review-open"
+            )}
+            data-testid="review-ask-atlas"
+            href={askHref}
+          >
+            Ask Atlas
+          </Link>
+        </div>
       </div>
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">
