@@ -34,7 +34,6 @@ test("an overview bookmark opens Atlas Explorer browse and drops score filters",
 test("a geographic explorer bookmark opens browse and does not invent a county", async ({
   page,
 }) => {
-  await fulfillCompletedStartingView(page);
   await page.goto(
     "/geographic_explorer?view=compare&selected=06085%2C06037&county=06085&metric=score"
   );
