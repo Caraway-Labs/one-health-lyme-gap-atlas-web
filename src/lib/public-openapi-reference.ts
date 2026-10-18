@@ -9,6 +9,10 @@ import {
 import path from "node:path";
 
 import {
+  GEOGRAPHY_IDENTITY_ORIGIN_STATUS,
+  showsPendingDeliveryBadge,
+} from "./endpoint-delivery";
+import {
   getDocsUrl,
   getPublishedApiOrigin,
   getSiteOrigin,
@@ -1099,6 +1103,12 @@ function renderIndex(
       "API reference",
       "Generated from the pinned public Atlas OpenAPI contract, with spec version, source, and the raw schema."
     ),
+  ];
+  const componentImports = pendingDeliveryImports(
+    contract.tags.flatMap((tag) => tag.operations)
+  );
+  if (componentImports) lines.push(componentImports, "");
+  lines.push(
     "This page is generated from the public OpenAPI contract. It is not a second hand-maintained endpoint catalog. Tags, operation IDs, parameters, schemas, examples, and errors below come from that contract.",
     "",
     "## Spec version and source",
@@ -1117,8 +1127,8 @@ function renderIndex(
     "",
     `Raw spec: [OpenAPI schema](${provenance.sourceUrl}).`,
     "",
-    `Pinned source: [${provenance.sourceRepository}@${provenance.sourceCommit}](https://github.com/${provenance.sourceRepository}/blob/${provenance.sourceCommit}/${provenance.sourcePath}).`,
-  ];
+    `Pinned source: [${provenance.sourceRepository}@${provenance.sourceCommit}](https://github.com/${provenance.sourceRepository}/blob/${provenance.sourceCommit}/${provenance.sourcePath}).`
+  );
 
   if (contract.servers.length > 0) {
     lines.push("", "## Servers", "");
@@ -1150,8 +1160,9 @@ function renderIndex(
     lines.push(`### ${escapeInline(tag.name)}`, "");
     if (tag.description) lines.push(escapeMdx(tag.description), "");
     for (const operation of tag.operations) {
+      const badge = pendingDeliveryBadgeMarkup(operation);
       lines.push(
-        `- [\`${operation.method} ${operation.path}\`](/docs/api-reference/${tag.slug}#${operation.operationId}) — ${escapeInline(operation.summary)} — \`${operation.operationId}\``
+        `- [\`${operation.method} ${operation.path}\`](/docs/api-reference/${tag.slug}#${operation.operationId}) — ${escapeInline(operation.summary)} — \`${operation.operationId}\`${badge ? ` ${badge}` : ""}`
       );
     }
     lines.push("");
@@ -1164,6 +1175,49 @@ function renderIndex(
 
 const COUNTY_REPORT_OPERATION_ID =
   "county_report_pdf_v1_counties__fips__report_pdf_get";
+const PENDING_DELIVERY_BADGE_IMPORTS = [
+  'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";',
+  'import { GEOGRAPHY_IDENTITY_ORIGIN_STATUS } from "@/lib/endpoint-delivery";',
+].join("\n");
+
+function operationComponentImports(operations: OperationView[]): string {
+  const imports: string[] = [];
+  if (
+    operations.some(
+      (operation) => operation.operationId === COUNTY_REPORT_OPERATION_ID
+    )
+  ) {
+    imports.push('import { Tab, Tabs } from "fumadocs-ui/components/tabs";');
+  }
+  const delivery = pendingDeliveryImports(operations);
+  if (delivery) imports.push(delivery);
+  return imports.join("\n");
+}
+
+function pendingDeliveryImports(operations: OperationView[]): string {
+  return operations.some((operation) => pendingDeliveryBadgeMarkup(operation))
+    ? PENDING_DELIVERY_BADGE_IMPORTS
+    : "";
+}
+
+function pendingDeliveryBadgeMarkup(operation: OperationView): string {
+  if (
+    !showsPendingDeliveryBadge(
+      operation.method,
+      operation.path,
+      GEOGRAPHY_IDENTITY_ORIGIN_STATUS
+    )
+  ) {
+    return "";
+  }
+  return "<EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />";
+}
+
+function pendingDeliveryBadgeLines(operation: OperationView): string[] {
+  const badge = pendingDeliveryBadgeMarkup(operation);
+  if (!badge) return [];
+  return [badge, ""];
+}
 const COUNTY_REPORT_TEMPLATE_TABS = ["county-v1 scoring", "county-v2 evidence"];
 const COUNTY_REPORT_SCORE_PARAMETERS = [
   "ecological_share",
@@ -1404,13 +1458,8 @@ function renderTagPage(
         `Generated ${tag.name} operations from the public Atlas OpenAPI contract.`
     ),
   ];
-  if (
-    tag.operations.some(
-      (operation) => operation.operationId === COUNTY_REPORT_OPERATION_ID
-    )
-  ) {
-    lines.push('import { Tab, Tabs } from "fumadocs-ui/components/tabs";', "");
-  }
+  const componentImports = operationComponentImports(tag.operations);
+  if (componentImports) lines.push(componentImports, "");
   lines.push("Generated from the public OpenAPI contract.", "");
   if (tag.description) lines.push(escapeMdx(tag.description), "");
   if (tag.externalDocs) lines.push(externalDocsLink(tag.externalDocs), "");
@@ -1429,6 +1478,7 @@ function renderOperation(
     "",
     `\`${operation.method} ${operation.path}\``,
     "",
+    ...pendingDeliveryBadgeLines(operation),
     `Operation ID: \`${operation.operationId}\``,
     "",
     `Tag: ${operation.tags.map((tag) => `\`${escapeInline(tag)}\``).join(", ") || "`untagged`"}`,

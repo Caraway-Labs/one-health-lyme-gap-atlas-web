@@ -2,6 +2,9 @@
 title: "API reference"
 description: "Generated from the pinned public Atlas OpenAPI contract, with spec version, source, and the raw schema."
 ---
+import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";
+import { GEOGRAPHY_IDENTITY_ORIGIN_STATUS } from "@/lib/endpoint-delivery";
+
 This page is generated from the public OpenAPI contract. It is not a second hand-maintained endpoint catalog. Tags, operation IDs, parameters, schemas, examples, and errors below come from that contract.
 
 ## Spec version and source
@@ -97,7 +100,7 @@ Governed source and methodology identities and versions.
 
 Typed geography identity; delivery is not yet available.
 
-- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies#geography_v1_geographies__geography_type___geography_id__get) — Get geography identity (delivery pending) — `geography_v1_geographies__geography_type___geography_id__get`
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies#geography_v1_geographies__geography_type___geography_id__get) — Get geography identity (delivery pending) — `geography_v1_geographies__geography_type___geography_id__get` <EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />
 
 ### atlas
 

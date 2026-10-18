@@ -32,6 +32,41 @@ function readPage(slug: string): string {
 
 const developText = developPages.map((slug) => readPage(slug)).join("\n");
 
+describe("pending endpoints and timestamp guidance", () => {
+  it("badges geography identity from the origin status and points polygons at display geometry", () => {
+    const geography = readPage("geography");
+    const phrases = [
+      "<EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />",
+      "<DisplayGeometryCurl />",
+      "application/geo+json",
+      "Cache-Control: public, max-age=31536000, immutable",
+      "3,144",
+      "lower 48 states",
+    ];
+    expect(
+      phrases.filter((phrase) => !geography.includes(phrase))
+    ).toStrictEqual([]);
+    expect({
+      index: readPage("index").includes("`GET /v1/atlas/geometry`"),
+      support: readPage("support").includes("`GET /v1/atlas/geometry`"),
+    }).toStrictEqual({ index: true, support: true });
+  });
+
+  it("separates deprecated source timestamps from observation timestamps", () => {
+    const provenance = readPage("provenance");
+    const phrases = [
+      "## Deprecated source timestamps",
+      "](/docs/api-reference/schemas#schema-source)",
+      "](/docs/api-reference/schemas#schema-observation)",
+      "2026-09-07T17:21:14.768948-07:00",
+      "`GET /v1/sources`",
+    ];
+    expect(
+      phrases.filter((phrase) => !provenance.includes(phrase))
+    ).toStrictEqual([]);
+  });
+});
+
 describe("developer documentation guides", () => {
   it("lists the MVP guide order in the developers folder", () => {
     const folderNavigation = JSON.parse(

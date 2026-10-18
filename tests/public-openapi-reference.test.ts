@@ -13,6 +13,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { GEOGRAPHY_IDENTITY_PATH } from "@/lib/endpoint-delivery";
 import {
   API_REFERENCE_RELATIVE_DIR,
   type PublicOpenApiFailureCode,
@@ -137,6 +138,37 @@ describe("public OpenAPI reference", () => {
     ).toBeFalsy();
     const states = requiredFile(pages, "states.mdx");
     expect(states).not.toContain("fumadocs-ui/components/tabs");
+  });
+
+  it("badges only the geography identity route while its origin status is 503", () => {
+    const pages = renderPublicApiReference(
+      readAndLoadPublicOpenApiContract(process.cwd())
+    );
+    const geographies = requiredFile(pages, "geographies.mdx");
+    const index = requiredFile(pages, "index.mdx");
+    const badge =
+      "<EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />";
+    const geographiesPhrases = [
+      'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";',
+      `\`GET ${GEOGRAPHY_IDENTITY_PATH}\``,
+      badge,
+    ];
+    expect(
+      geographiesPhrases.filter((phrase) => !geographies.includes(phrase))
+    ).toStrictEqual([]);
+    expect({
+      atlas: requiredFile(pages, "atlas.mdx").includes("EndpointDeliveryBadge"),
+      index: index.includes(badge),
+      indexTabs: index.includes("fumadocs-ui/components/tabs"),
+      provenance: requiredFile(pages, "provenance.mdx").includes(
+        "EndpointDeliveryBadge"
+      ),
+    }).toStrictEqual({
+      atlas: false,
+      index: true,
+      indexTabs: false,
+      provenance: false,
+    });
   });
 
   it("renders Retry-After, descriptions, and examples for 429 and 503", () => {
