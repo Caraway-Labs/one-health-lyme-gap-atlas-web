@@ -69,6 +69,20 @@ vi.mock(
   })
 );
 
+vi.mock(
+  import("@/features/ux-reset/review/population-rurality-context-section"),
+  () => ({
+    PopulationRuralityContextSection: () => (
+      <section
+        data-testid="explorer-population-rurality"
+        id="explorer-population-rurality"
+      >
+        Population and rurality context
+      </section>
+    ),
+  })
+);
+
 function baseWorkspace(
   overrides: Partial<InvestigateWorkspace> = {}
 ): InvestigateWorkspace {
