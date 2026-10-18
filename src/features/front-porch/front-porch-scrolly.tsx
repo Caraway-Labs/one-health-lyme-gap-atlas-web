@@ -4,14 +4,17 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   FRONT_PORCH_BEATS,
+  FRONT_PORCH_DISCLOSURE_LABEL,
   FRONT_PORCH_STAGE_HEADER,
+  FRONT_PORCH_STAGE_INTERPRET,
   FRONT_PORCH_STAGE_NOTE,
+  type FrontPorchBeat,
 } from "@/features/front-porch/front-porch-copy";
+import { FrontPorchEvidenceIcon } from "@/features/front-porch/front-porch-icons";
 import { MONTGOMERY_COUNTY_OUTLINE } from "@/features/front-porch/montgomery-county-outline.generated";
 
 const STAGE_HEADING =
   "Illustrative data view for the Montgomery County example";
-const EVIDENCE_MARKS = ["◌", "⌁", "✳"] as const;
 const COUNTY_MARKERS = [
   { cx: 344, cy: 140, halo: 14, point: 5, opacity: 0.22 },
   { cx: 230, cy: 290, halo: 16, point: 6, opacity: 0.18 },
@@ -27,6 +30,22 @@ const LEFTMOST_LINE_SHIFT = 24;
 const NEXT_LINE_SHIFT = 77.3;
 const VERTICAL_LINE_SHIFT = 16;
 const COUNTY_PLACEMENT = { x: 301.4, y: 260.3, scale: 1.08, lift: 18 } as const;
+
+function CardLines({ beat }: { beat: FrontPorchBeat }) {
+  return beat.cardLines.map((line) => (
+    <span
+      className={
+        line.highlight
+          ? "front-porch-card-line front-porch-card-highlight"
+          : `front-porch-card-line front-porch-card-${line.tone}`
+      }
+      key={`${line.tone}-${line.italicLead ?? ""}-${line.text}`}
+    >
+      {line.italicLead ? <em>{line.italicLead}</em> : null}
+      {line.text}
+    </span>
+  ));
+}
 
 function CountyLines({ clipId }: { clipId: string }) {
   return (
@@ -189,10 +208,33 @@ export function FrontPorchScrolly() {
               <h2 id={`front-porch-${beat.id}`}>{beat.title}</h2>
               <p>{beat.body}</p>
               <p className="front-porch-caveat">{beat.caveat}</p>
+              <details className="front-porch-detail">
+                <summary>{FRONT_PORCH_DISCLOSURE_LABEL}</summary>
+                {beat.sourceDetail.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+                <ul>
+                  {beat.sourceLinks.map((link) => (
+                    <li key={link.href}>
+                      <a
+                        href={link.href}
+                        {...(link.href.startsWith("http")
+                          ? { rel: "noopener noreferrer", target: "_blank" }
+                          : {})}
+                      >
+                        {link.label}
+                        {link.href.startsWith("http")
+                          ? " (opens in a new tab)"
+                          : ""}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
               <div className="front-porch-mobile-note">
                 <strong>{beat.mobileLabel}</strong>
                 <MobileSketch step={index} />
-                <span>{beat.cardDetail}</span>
+                <CardLines beat={beat} />
               </div>
             </article>
           ))}
@@ -289,11 +331,11 @@ export function FrontPorchScrolly() {
                         aria-hidden="true"
                         className="front-porch-evidence-icon"
                       >
-                        {EVIDENCE_MARKS[index]}
+                        <FrontPorchEvidenceIcon index={index} />
                       </span>
                       <span>
                         <strong>{beat.cardTitle}</strong>
-                        <span>{beat.cardDetail}</span>
+                        <CardLines beat={beat} />
                       </span>
                     </div>
                   ))}
@@ -301,7 +343,14 @@ export function FrontPorchScrolly() {
               </div>
             </div>
             <div className="front-porch-stage-bottom">
-              <span>{FRONT_PORCH_STAGE_NOTE}</span>
+              <span>
+                <span className="front-porch-marker-note">
+                  {FRONT_PORCH_STAGE_NOTE}
+                </span>
+                <span className="front-porch-interpret-note">
+                  {FRONT_PORCH_STAGE_INTERPRET}
+                </span>
+              </span>
               <span className="front-porch-stage-status">
                 {activeBeat.status}
               </span>
