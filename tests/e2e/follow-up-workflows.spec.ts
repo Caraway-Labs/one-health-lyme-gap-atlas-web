@@ -130,30 +130,57 @@ test.describe("five-category suggested follow-up", () => {
     );
     await expect(followUp).toContainText("not documented negative findings");
     await expect(followUp).not.toContainText("within 2 weeks");
+    const resources = page.getByTestId("explorer-official-resources");
+    await expect(resources).toBeVisible();
+    await expect(
+      resources.getByRole("heading", { name: "Resources for follow-up" })
+    ).toBeVisible();
+    await expect(resources.getByRole("link")).toHaveCount(8);
     const placement = await page.evaluate(() => {
+      const browse = document.querySelector("[data-testid='explorer-browse']");
       const map = document.querySelector(".ux-reset-explorer-map");
+      const lower = document.querySelector(
+        "[data-testid='explorer-lower-workspace']"
+      );
       const followUpCard = document.querySelector(
         "[data-testid='explorer-map-follow-up']"
       );
+      const resourcesCard = document.querySelector(
+        "[data-testid='explorer-official-resources']"
+      );
       if (
+        !(browse instanceof HTMLElement) ||
         !(map instanceof HTMLElement) ||
-        !(followUpCard instanceof HTMLElement)
+        !(lower instanceof HTMLElement) ||
+        !(followUpCard instanceof HTMLElement) ||
+        !(resourcesCard instanceof HTMLElement)
       ) {
         return null;
       }
+      const browseBox = browse.getBoundingClientRect();
       const mapBox = map.getBoundingClientRect();
-      const cardBox = followUpCard.getBoundingClientRect();
+      const lowerBox = lower.getBoundingClientRect();
+      const followBox = followUpCard.getBoundingClientRect();
+      const resourcesBox = resourcesCard.getBoundingClientRect();
+      const gap = resourcesBox.left - followBox.right;
+      const inner = followBox.width + resourcesBox.width + gap;
       return {
-        aligned: Math.abs(cardBox.left - mapBox.left) < 4,
-        below: cardBox.top >= mapBox.bottom - 2,
-        similarWidth: Math.abs(cardBox.width - mapBox.width) < 8,
+        belowMap: lowerBox.top >= mapBox.bottom - 2,
+        followShare: followBox.width / inner,
+        resourcesShare: resourcesBox.width / inner,
+        sideBySide: followBox.left < resourcesBox.left,
+        spansContent:
+          Math.abs(lowerBox.left - browseBox.left) < 4 &&
+          Math.abs(lowerBox.right - browseBox.right) < 4,
       };
     });
-    expect(placement).toStrictEqual({
-      aligned: true,
-      below: true,
-      similarWidth: true,
-    });
+    expect(placement?.spansContent).toBeTruthy();
+    expect(placement?.belowMap).toBeTruthy();
+    expect(placement?.sideBySide).toBeTruthy();
+    expect(placement?.followShare).toBeGreaterThan(0.58);
+    expect(placement?.followShare).toBeLessThan(0.66);
+    expect(placement?.resourcesShare).toBeGreaterThan(0.34);
+    expect(placement?.resourcesShare).toBeLessThan(0.42);
     await followUp.screenshot({
       path: "test-results/follow-up-available-1792.png",
     });
@@ -162,6 +189,24 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-available-1440.png",
     });
+    const desktopResources = await page.evaluate(() => {
+      const followUpCard = document.querySelector(
+        "[data-testid='explorer-map-follow-up']"
+      );
+      const resourcesCard = document.querySelector(
+        "[data-testid='explorer-official-resources']"
+      );
+      if (
+        !(followUpCard instanceof HTMLElement) ||
+        !(resourcesCard instanceof HTMLElement)
+      ) {
+        return null;
+      }
+      const followBox = followUpCard.getBoundingClientRect();
+      const resourcesBox = resourcesCard.getBoundingClientRect();
+      return followBox.left < resourcesBox.left;
+    });
+    expect(desktopResources).toBeTruthy();
     const narrow = await columnShares(page);
     expect(narrow?.list).toBeGreaterThan(0.16);
     expect(narrow?.map).toBeGreaterThan(0.5);
@@ -189,6 +234,33 @@ test.describe("five-category suggested follow-up", () => {
     ).not.toHaveText("Continue routine review");
     await followUp.screenshot({
       path: "test-results/follow-up-unavailable-1792.png",
+    });
+    await expect(resources.getByRole("link")).toHaveCount(8);
+
+    await page.setViewportSize({ height: 900, width: 800 });
+    const stacked = await page.evaluate(() => {
+      const followUpCard = document.querySelector(
+        "[data-testid='explorer-map-follow-up']"
+      );
+      const resourcesCard = document.querySelector(
+        "[data-testid='explorer-official-resources']"
+      );
+      if (
+        !(followUpCard instanceof HTMLElement) ||
+        !(resourcesCard instanceof HTMLElement)
+      ) {
+        return null;
+      }
+      const followBox = followUpCard.getBoundingClientRect();
+      const resourcesBox = resourcesCard.getBoundingClientRect();
+      return {
+        followFirst: followBox.bottom <= resourcesBox.top + 2,
+        similarWidth: Math.abs(followBox.width - resourcesBox.width) < 8,
+      };
+    });
+    expect(stacked).toStrictEqual({
+      followFirst: true,
+      similarWidth: true,
     });
   });
 });
