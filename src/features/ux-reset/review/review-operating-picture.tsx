@@ -175,6 +175,26 @@ type ReviewOperatingPictureProps = {
   onMapLayerChange?: (layerId: ExplorerMapLayerId) => void;
 };
 
+/** Keep a wrapped county row inside the list when the column is narrow. */
+function alignCandidateRow(list: HTMLElement, row: HTMLElement): void {
+  const rowBox = row.getBoundingClientRect();
+  const listBox = list.getBoundingClientRect();
+  if (rowBox.height <= 0 || list.clientHeight === 0) {
+    return;
+  }
+  if (rowBox.height >= listBox.height) {
+    list.scrollTop += rowBox.top - listBox.top;
+    return;
+  }
+  const above = listBox.top - rowBox.top;
+  const below = rowBox.bottom - listBox.bottom;
+  if (above > 1) {
+    list.scrollTop -= above;
+  } else if (below > 1) {
+    list.scrollTop += below;
+  }
+}
+
 function visibleLines(values: readonly string[]): string[] {
   const lines: string[] = [];
   for (const value of values) {
@@ -689,12 +709,7 @@ export function ReviewOperatingPicture({
         if (!(list instanceof HTMLElement) || !row.isConnected) {
           return;
         }
-        const rowBox = row.getBoundingClientRect();
-        const listBox = list.getBoundingClientRect();
-        list.scrollTop = Math.max(
-          0,
-          rowBox.top - listBox.top + list.scrollTop - 8
-        );
+        alignCandidateRow(list, row);
       };
       alignRow();
       row.focus({ preventScroll: true });
@@ -710,12 +725,7 @@ export function ReviewOperatingPicture({
         ) {
           return;
         }
-        const rowBox = current.getBoundingClientRect();
-        const listBox = currentList.getBoundingClientRect();
-        currentList.scrollTop = Math.max(
-          0,
-          rowBox.top - listBox.top + currentList.scrollTop - 8
-        );
+        alignCandidateRow(currentList, current);
       });
     } else {
       focusPublishedSelect();
@@ -798,16 +808,7 @@ export function ReviewOperatingPicture({
       ) {
         return;
       }
-      const rowBox = row.getBoundingClientRect();
-      const listBox = list.getBoundingClientRect();
-      const inside =
-        rowBox.height > 0 &&
-        rowBox.top >= listBox.top - 1 &&
-        rowBox.bottom <= listBox.bottom + 1;
-      if (inside) {
-        return;
-      }
-      list.scrollTop += rowBox.top - listBox.top - 8;
+      alignCandidateRow(list, row);
     };
     alignSelectedRow();
     const frame = requestAnimationFrame(alignSelectedRow);
