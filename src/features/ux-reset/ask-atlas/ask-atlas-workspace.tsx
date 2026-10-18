@@ -26,7 +26,7 @@ export function AskAtlasWorkspace({
       {requestsEnabled ? (
         <AskAtlasWorkspaceChat initialConversationId={initialConversationId} />
       ) : (
-        <>
+        <div className="ux-reset-ask-atlas-column">
           <header className="ux-reset-ask-atlas-heading">
             <h1>Ask Atlas</h1>
             <Badge variant="outline">Reviewed literature</Badge>
@@ -38,7 +38,7 @@ export function AskAtlasWorkspace({
           <AskAtlasUnavailableNotice
             headingId={ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID}
           />
-        </>
+        </div>
       )}
     </div>
   );

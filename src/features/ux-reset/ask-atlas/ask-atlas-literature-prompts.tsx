@@ -9,7 +9,8 @@ type LiteraturePrompt = {
   question: string;
 };
 
-const PRIMARY_PROMPTS: readonly LiteraturePrompt[] = [
+/** Four curated questions the reviewed-literature corpus can answer. */
+const TRY_ASKING_PROMPTS: readonly LiteraturePrompt[] = [
   {
     id: "reporting_interpretation",
     label: "How should Lyme surveillance reporting be interpreted?",
@@ -25,9 +26,6 @@ const PRIMARY_PROMPTS: readonly LiteraturePrompt[] = [
     label: "What evidence supports prevention education?",
     question: "What evidence supports prevention education?",
   },
-];
-
-const MORE_PROMPTS: readonly LiteraturePrompt[] = [
   {
     id: "vectors_hosts",
     label:
@@ -35,41 +33,7 @@ const MORE_PROMPTS: readonly LiteraturePrompt[] = [
     question:
       "What does reviewed evidence describe about Ixodes tick vectors and reservoir hosts for Lyme disease?",
   },
-  {
-    id: "diagnostics_literature",
-    label:
-      "What diagnostic or laboratory approaches appear in tick-borne disease surveillance literature?",
-    question:
-      "What diagnostic or laboratory approaches appear in tick-borne disease surveillance literature?",
-  },
 ];
-
-function PromptList({
-  onSelect,
-  prompts,
-}: {
-  onSelect: (question: string) => void;
-  prompts: readonly LiteraturePrompt[];
-}) {
-  return (
-    <ul className="chat-starter-prompts-list">
-      {prompts.map((prompt) => (
-        <li key={prompt.id}>
-          <Button
-            className="chat-starter-prompt-button"
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={() => onSelect(prompt.question)}
-            {...analyticsControlAttributes("evidence_chat_starter_prompt")}
-          >
-            {prompt.label}
-          </Button>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export function AskAtlasLiteraturePrompts({
   onSelect,
@@ -83,20 +47,37 @@ export function AskAtlasLiteraturePrompts({
   }
 
   return (
-    <section
-      aria-labelledby="ask-atlas-prompts-label"
-      className="chat-starter-prompts"
-    >
-      <h2 id="ask-atlas-prompts-label">What would you like to understand?</h2>
-      <p className="chat-starter-prompts-label">
-        Start with your own question or adapt one below.
-      </p>
-      <PromptList onSelect={onSelect} prompts={PRIMARY_PROMPTS} />
-      {/* Native disclosure: there is no shared Disclosure primitive. */}
-      <details className="ux-reset-ask-atlas-more-topics">
-        <summary>More research topics</summary>
-        <PromptList onSelect={onSelect} prompts={MORE_PROMPTS} />
-      </details>
-    </section>
+    <div className="ux-reset-ask-atlas-empty">
+      <div className="ux-reset-ask-atlas-welcome">
+        <h2>What would you like to explore?</h2>
+        <p>
+          Explore questions about Lyme disease and ticks in the reviewed
+          literature.
+        </p>
+      </div>
+      <section
+        aria-labelledby="ask-atlas-prompts-label"
+        className="chat-starter-prompts"
+        data-testid="ask-atlas-try-asking"
+      >
+        <h2 id="ask-atlas-prompts-label">Try asking</h2>
+        <ul className="chat-starter-prompts-list">
+          {TRY_ASKING_PROMPTS.map((prompt) => (
+            <li key={prompt.id}>
+              <Button
+                className="chat-starter-prompt-button"
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={() => onSelect(prompt.question)}
+                {...analyticsControlAttributes("evidence_chat_starter_prompt")}
+              >
+                {prompt.label}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
   );
 }

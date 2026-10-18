@@ -309,13 +309,13 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(reference).toContainText("Answers search reviewed literature");
     await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
     await expect(
-      page.getByText("Start with your own question or adapt one below.")
+      page.getByRole("heading", { name: "What would you like to explore?" })
     ).toBeVisible();
     await expect(page.getByText("Data supplied by the NCBI.")).toBeVisible();
     const layout =
       (page.viewportSize()?.width ?? 1280) <= 800 ? "compact" : "desktop";
     await page.screenshot({
-      path: `/opt/cursor/artifacts/ask-atlas-page-${layout}.png`,
+      path: testInfo.outputPath(`ask-atlas-page-${layout}.png`),
     });
 
     await page.getByLabel("Your research question").fill(QUESTION);
@@ -619,6 +619,14 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.getByTestId("ask-atlas-page-reference")).toBeVisible();
     await page.getByLabel("Your research question").scrollIntoViewIfNeeded();
     await expect(page.getByLabel("Your research question")).toBeInViewport();
+    await expect(page.getByTestId("ask-atlas-try-asking")).toBeVisible();
+    const columns = await page
+      .locator(".ux-reset-ask-atlas-workspace .chat-starter-prompts-list")
+      .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+    expect(columns.split(" ").length).toBe(1);
+    await page.screenshot({
+      path: testInfo.outputPath("ask-atlas-phone-empty.png"),
+    });
   });
 
   test("inherits the accepted observation period instead of an unvalidated request", async ({
