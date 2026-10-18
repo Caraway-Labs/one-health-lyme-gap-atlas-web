@@ -204,7 +204,7 @@ describe("Explorer map layers", () => {
     expect(paint.note).toMatch(/not zero/);
     expect(paint.note).toMatch(/not personal disease risk/);
     expect(paint.entries.map((entry) => entry.label)).toContain(
-      "No published value"
+      "Gap score unavailable"
     );
   });
 
@@ -282,7 +282,7 @@ describe("Explorer map layers", () => {
       (entry) => entry.color === "var(--map-ramp-6)"
     );
     expect(band?.label).toBe("75 or higher");
-    expect(paint.entries[0]?.label).toBe("No published value");
+    expect(paint.entries[0]?.label).toBe("Gap score unavailable");
   });
 
   it("does not paint a failed gap-score request as that layer", () => {

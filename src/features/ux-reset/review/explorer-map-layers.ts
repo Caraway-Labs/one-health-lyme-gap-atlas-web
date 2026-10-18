@@ -94,7 +94,6 @@ export type ExplorerMapLegendSource = {
 };
 
 const BOUNDARY_COLOR = "var(--explorer-boundary)";
-const NO_PUBLISHED_VALUE = "No published value";
 
 /**
  * Category hues stay off the review-priority ramp. A heat ramp would read as
@@ -330,8 +329,9 @@ export function parseExplorerMapLayerId(
 function noPublishedValueEntry(): ExplorerMapLegendEntry {
   return {
     color: BOUNDARY_COLOR,
-    detail: "Not zero, not low priority, and not confirmed absence",
-    label: NO_PUBLISHED_VALUE,
+    detail:
+      "Available published data do not support calculation of an Atlas gap score for this county. Not zero, not low priority, and not confirmed absence.",
+    label: "Gap score unavailable",
     role: "missing",
   };
 }
