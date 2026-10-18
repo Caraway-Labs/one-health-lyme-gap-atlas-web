@@ -179,6 +179,91 @@ const RESOURCES = {
   },
 } as const satisfies Record<string, FollowUpResource>;
 
+export type OfficialFollowUpResource = {
+  category: string;
+  description: string;
+  external: boolean;
+  href: string;
+  id: string;
+  label: string;
+};
+
+/** Curated references for the Explorer resources card. URLs come from the
+ * approved follow-up catalog or existing Atlas documentation routes. */
+export const OFFICIAL_FOLLOW_UP_RESOURCES = [
+  {
+    category: "Lyme disease surveillance",
+    description:
+      "National surveillance case definition used for public-health reporting.",
+    external: true,
+    href: RESOURCES.caseDefinition.href,
+    id: RESOURCES.caseDefinition.id,
+    label: RESOURCES.caseDefinition.label,
+  },
+  {
+    category: "Lyme disease surveillance",
+    description:
+      "How published county case counts relate to residence and exposure.",
+    external: true,
+    href: RESOURCES.countyCaseData.href,
+    id: RESOURCES.countyCaseData.id,
+    label: RESOURCES.countyCaseData.label,
+  },
+  {
+    category: "Tick and vector surveillance",
+    description:
+      "Definitions and limitations for published tick and pathogen records.",
+    external: true,
+    href: RESOURCES.tickRecords.href,
+    id: RESOURCES.tickRecords.id,
+    label: RESOURCES.tickRecords.label,
+  },
+  {
+    category: "Tick and vector surveillance",
+    description:
+      "CDC guidance for blacklegged tick surveillance and interpretation.",
+    external: true,
+    href: RESOURCES.blackleggedTickGuidance.href,
+    id: RESOURCES.blackleggedTickGuidance.id,
+    label: RESOURCES.blackleggedTickGuidance.label,
+  },
+  {
+    category: "Clinical testing and reporting",
+    description:
+      "CDC guidance on laboratory testing used in Lyme disease diagnosis.",
+    external: true,
+    href: RESOURCES.clinicalTesting.href,
+    id: RESOURCES.clinicalTesting.id,
+    label: RESOURCES.clinicalTesting.label,
+  },
+  {
+    category: "Prevention and outreach",
+    description:
+      "CDC prevention information for public-health education and outreach.",
+    external: true,
+    href: RESOURCES.prevention.href,
+    id: RESOURCES.prevention.id,
+    label: RESOURCES.prevention.label,
+  },
+  {
+    category: "Atlas data and methodology",
+    description:
+      "Published sources, measures, and the limits of the evidence Atlas shows.",
+    external: false,
+    href: "/docs/sources-and-canonical-evidence",
+    id: "atlas-sources",
+    label: "Sources and canonical evidence",
+  },
+  {
+    category: "Atlas data and methodology",
+    description: "How published releases and scores are produced.",
+    external: false,
+    href: "/docs/releases-and-methodology",
+    id: "atlas-methodology",
+    label: "Releases and methodology",
+  },
+] as const satisfies readonly OfficialFollowUpResource[];
+
 const DOCUMENTED_TICK = new Set(["established", "reported"]);
 const NEGATIVE_PATHOGEN = new Set([
   "negative",
