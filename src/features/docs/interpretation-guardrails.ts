@@ -1,0 +1,4 @@
+export const ATLAS_INTERPRETATION_GUARDRAILS = `Atlas interpretation guardrails:
+- Missing is not zero. MISSING, UNAVAILABLE, SUPPRESSED, NO_COUNTY_LINKED_RECORD, an empty selection, and a failed request are not a published zero. A published ZERO stays a real zero. NO_RECORDS does not establish biological absence.
+- A gap or a review priority is not risk or a diagnosis. A priority score is not individual risk, a disease-burden estimate, or proof of causation. County identity is not evidence that an observation exists, and discovery is not county availability.
+- Cite the release id, methodology id and version, semantic version, source vintage, and limitations from the response you received. Do not invent a release id when it is null. A successful call does not mean every page was retrieved.`;

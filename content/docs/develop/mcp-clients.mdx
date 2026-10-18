@@ -1,0 +1,109 @@
+---
+title: MCP clients
+description: Connect Claude Desktop, Cursor, or a custom client to production Atlas MCP, and copy the interpretation guardrails agents must keep.
+---
+
+import { InterpretationGuardrailCopy } from "@/features/docs/interpretation-guardrail-copy";
+
+Production Atlas MCP is one anonymous Streamable HTTP endpoint. These recipes use that endpoint. They do not add a second tool schema. Arguments, bounds, and error codes stay in the [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/main/docs/public-evidence-tools.md). Scientific reading stays in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+
+Checked against `https://mcp.onehealthatlas.org` on 2026-10-18.
+
+## Transport and auth
+
+| Item | Supported | What was checked |
+| --- | --- | --- |
+| Endpoint | `https://mcp.onehealthatlas.org/mcp` | `initialize` and `tools/list` returned HTTP 200 |
+| Transport | Streamable HTTP, stateless JSON | POST responses were `application/json`. Initialize did not return `Mcp-Session-Id`. Later requests still send `notifications/initialized` and `MCP-Protocol-Version` |
+| Accept header | `application/json` and `text/event-stream` | Both values were sent on the successful POST requests |
+| Protocol | `2025-06-18` | The server returned `protocolVersion` `2025-06-18` and `serverInfo` `atlas-lyme-mcp` `0.1.0` |
+| Auth | None | The same initialize succeeded with no credential header and again when a non-credential token was sent. Do not send an API key, OAuth client, or Settings secret |
+| Process health | `GET https://mcp.onehealthatlas.org/healthz` | HTTP 200 and `{"status":"ok"}`. This route is not an MCP tool |
+
+`GET /mcp` stays open as `text/event-stream`. Tool calls are POST requests. `GET /sse` and `POST /messages` returned HTTP 404, so legacy SSE is not a published transport. Production does not publish a stdio endpoint.
+
+`tools/list` returned exactly four tools: `atlas_discover_indicators`, `atlas_get_county_profile`, `atlas_get_evidence_provenance`, and `atlas_resolve_geographies`. `resources/list` and `prompts/list` returned empty arrays. `server_status` and `atlas_smoke_test` returned `isError: true` with text `Unknown tool: server_status` and `Unknown tool: atlas_smoke_test`. The September 2026 smoke-only receipt is historical. [API, MCP, and access](/docs/api-mcp-and-access) keeps that boundary.
+
+## Claude Desktop
+
+Use a custom connector. Claude Desktop's `claude_desktop_config.json` is for local stdio servers. Do not add this URL there, and do not select SSE.
+
+For Free, Pro, and Max, open **Customize**, then **Connectors**, then **Add custom connector**. Team and Enterprise owners add the same connector under **Organization settings**, then **Connectors**, before members connect it. Free accounts are limited to one custom connector.
+
+| Field                 | Value                                |
+| --------------------- | ------------------------------------ |
+| Name                  | One Health Lyme Gap Atlas            |
+| Remote MCP server URL | `https://mcp.onehealthatlas.org/mcp` |
+| Authentication        | No sign in                           |
+| Request headers       | None                                 |
+
+Claude connects to a custom connector from Anthropic's cloud, including from Claude Desktop. The server must stay reachable on the public internet.
+
+An administrator who pushes managed MCP servers can use this entry. `transport` `http` is Streamable HTTP. Leave out `oauth`, `headers`, and `headersHelper`.
+
+```json
+{
+  "name": "one-health-lyme-gap-atlas",
+  "transport": "http",
+  "url": "https://mcp.onehealthatlas.org/mcp"
+}
+```
+
+## Cursor
+
+Add this server to the user file `~/.cursor/mcp.json`, or to a project `.cursor/mcp.json` when the project should share it. Keep any servers already in the file. `type` `http` is the Streamable HTTP value Cursor's CLI accepts. Do not set `sse` or `streamable-http`. Do not add `headers` or an `auth` object.
+
+```json
+{
+  "mcpServers": {
+    "one-health-lyme-gap-atlas": {
+      "type": "http",
+      "url": "https://mcp.onehealthatlas.org/mcp"
+    }
+  }
+}
+```
+
+Reload MCP, then confirm the four tool names above. `atlas_resolve_geographies` with `{"geographies":[{"county_fips":"01001"}]}` is an identity check. A resolved county is not evidence that an observation exists.
+
+## Custom client
+
+Send one JSON-RPC message per POST. Do not send a credential. The checked initialize response did not include `Mcp-Session-Id`. If a response includes that header, send it on every later request.
+
+After `initialize` succeeds, send `notifications/initialized` before any other request. That notification has no `id`. On 2026-10-18 the server returned HTTP 202 and an empty body. Include `MCP-Protocol-Version: 2025-06-18` on that notification and on every later request. The value is the protocol version negotiated by `initialize`.
+
+```sh
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -X POST 'https://mcp.onehealthatlas.org/mcp' \
+  --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"example","version":"0.0.0"}}}'
+```
+
+```sh
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'MCP-Protocol-Version: 2025-06-18' \
+  -X POST 'https://mcp.onehealthatlas.org/mcp' \
+  --data '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+```
+
+```sh
+curl -fsS \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'MCP-Protocol-Version: 2025-06-18' \
+  -X POST 'https://mcp.onehealthatlas.org/mcp' \
+  --data '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+```
+
+The owning repository's check client is `python -m atlas_lyme_mcp.check_client` with `MCP_URL=https://mcp.onehealthatlas.org/mcp`. It is not required for a REST read.
+
+## Interpretation guardrails
+
+Copy this block into the agent instructions that call these tools. It restates the published evidence rules. It does not add a score, a diagnosis, or a completeness claim.
+
+<InterpretationGuardrailCopy />
+
+Keep the same fields a REST client keeps. [Provenance and evidence](/docs/develop/provenance) names them. Replace example identifiers with the values in the tool result.
