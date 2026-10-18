@@ -1,11 +1,32 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { DATA_PROVENANCE_NAV_DESCRIPTION } from "@/features/ux-reset/paths";
 
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const SOURCE_DESCRIPTION = DATA_PROVENANCE_NAV_DESCRIPTION;
+
+async function focusByTab(page: Page, locator: Locator) {
+  for (let step = 0; step < 30; step += 1) {
+    if (
+      await locator.evaluate((element) => element === document.activeElement)
+    ) {
+      return;
+    }
+    await page.keyboard.press("Tab");
+  }
+  throw new Error("keyboard focus did not reach the expected control");
+}
+
+async function expectProvenanceTooltip(page: Page) {
+  const tooltip = page.locator("[data-slot='tooltip-content']").filter({
+    hasText: SOURCE_DESCRIPTION,
+  });
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip.locator("span").nth(0)).toHaveText("Data Provenance");
+  await expect(tooltip.locator("span").nth(1)).toHaveText(SOURCE_DESCRIPTION);
+}
 
 function envelope(data: unknown[]) {
   return {
@@ -136,8 +157,8 @@ test("adds Data Provenance between Feed and Docs", async ({
     path: testInfo.outputPath("sidebar-expanded.png"),
   });
 
-  await provenance.focus();
-  await expect(page.getByText(SOURCE_DESCRIPTION)).toBeVisible();
+  await provenance.hover();
+  await expectProvenanceTooltip(page);
   await page.screenshot({
     path: testInfo.outputPath("sidebar-tooltip.png"),
   });
@@ -152,8 +173,23 @@ test("adds Data Provenance between Feed and Docs", async ({
     "aria-description",
     SOURCE_DESCRIPTION
   );
-  await provenance.focus();
-  await expect(page.getByText(SOURCE_DESCRIPTION)).toBeVisible();
+  // The collapse click is pointer input. Base UI opens the shared tooltip
+  // only for :focus-visible, so the keyboard check has to be a real Tab.
+  await page.mouse.move(1100, 240);
+  await focusByTab(page, provenance);
+  await expect(provenance).toBeFocused();
+  await expectProvenanceTooltip(page);
+
+  await page.keyboard.press("Shift+Tab");
+  await expect(provenance).not.toBeFocused();
+  await page.mouse.move(1100, 240);
+  await expect(
+    page.locator("[data-slot='tooltip-content']").filter({
+      hasText: SOURCE_DESCRIPTION,
+    })
+  ).toBeHidden();
+  await provenance.hover();
+  await expectProvenanceTooltip(page);
   await page.screenshot({
     path: testInfo.outputPath("sidebar-collapsed.png"),
   });
