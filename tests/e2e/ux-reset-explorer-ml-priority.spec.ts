@@ -141,25 +141,25 @@ test("desktop county rows show labeled ML surveillance priority", async ({
   await installClassifiedCounties(page);
   await page.setViewportSize({ height: 900, width: 1440 });
   await page.goto("/app/review?scope=CO&county=08031");
-  const list = page.getByRole("list", {
-    name: "Counties suggested for review",
-  });
+  const list = page.getByRole("list", { name: "Ranked counties" });
   await expect(list.getByTestId("review-candidate")).toHaveCount(4);
-  await expect(page.getByTestId("explorer-ml-priority-legend")).toContainText(
-    "ML surveillance priority — counties flagged for review, not personal Lyme disease risk"
+  await expect(page.getByTestId("explorer-ml-priority-legend")).toHaveCount(0);
+  await expect(list.locator('[data-fips="08001"]')).toHaveAttribute(
+    "data-rank",
+    "1"
   );
-  await expect(
-    list.locator('[data-fips="08031"] [data-testid="explorer-ml-priority"]')
-  ).toHaveText("HIGH");
-  await expect(
-    list.locator('[data-fips="08013"] [data-testid="explorer-ml-priority"]')
-  ).toHaveText("MEDIUM");
-  await expect(
-    list.locator('[data-fips="08001"] [data-testid="explorer-ml-priority"]')
-  ).toHaveText("LOW");
-  await expect(
-    list.locator('[data-fips="08019"] [data-testid="explorer-ml-priority"]')
-  ).toHaveText("Not available");
+  await expect(list.locator('[data-fips="08013"]')).toHaveAttribute(
+    "data-rank",
+    "2"
+  );
+  await expect(list.locator('[data-fips="08031"]')).toHaveAttribute(
+    "data-rank",
+    "3"
+  );
+  await expect(list.locator('[data-fips="08019"]')).toHaveAttribute(
+    "data-rank",
+    "4"
+  );
   await expect(list.locator('[data-fips="08001"]')).toContainText(
     "Published score 75"
   );
