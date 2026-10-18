@@ -19,6 +19,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 const RELEASE_ID = "alpha-2026";
 const SAMPLE_FIPS = "48277";
@@ -160,12 +161,12 @@ test.describe("Atlas Explorer environmental context", () => {
       .getByRole("heading", { name: "Environmental context" })
       .scrollIntoViewIfNeeded();
     await page.screenshot({
-      path: "/opt/cursor/artifacts/environmental-context-loaded.png",
+      path: testInfo.outputPath("environmental-context-loaded.png"),
     });
     await page
       .getByTestId("environmental-measure-nclimgrid_prcp_county_day")
       .screenshot({
-        path: "/opt/cursor/artifacts/environmental-context-precipitation.png",
+        path: testInfo.outputPath("environmental-context-precipitation.png"),
       });
 
     const provenance = page.getByText("Inspect provenance").first();
@@ -183,8 +184,8 @@ test.describe("Atlas Explorer environmental context", () => {
     await expect(page.getByText("0.0 mm")).toHaveCount(0);
     await expect(page.getByText(/absence is not zero/i).first()).toBeVisible();
     await page.screenshot({
-      path: "/opt/cursor/artifacts/environmental-context-other-day.png",
       fullPage: true,
+      path: testInfo.outputPath("environmental-context-other-day.png"),
     });
 
     await page.getByLabel("Observation date").fill("2025-01-17");
@@ -197,16 +198,18 @@ test.describe("Atlas Explorer environmental context", () => {
       expect(results.violations).toEqual([]);
     }
 
-    await page.setViewportSize({ height: 844, width: 390 });
-    await expect(section).toBeVisible();
-    await expect(page.getByText("0.0 mm")).toBeVisible();
-    const overflows = await section.evaluate(
-      (element) => element.scrollWidth > element.clientWidth + 1
-    );
-    expect(overflows).toBe(false);
-    await page.screenshot({
-      path: "/opt/cursor/artifacts/environmental-context-mobile.png",
-      fullPage: true,
-    });
+    if (releaseViewportRuns(testInfo.project.name, 390)) {
+      await page.setViewportSize({ height: 844, width: 390 });
+      await expect(section).toBeVisible();
+      await expect(page.getByText("0.0 mm")).toBeVisible();
+      const overflows = await section.evaluate(
+        (element) => element.scrollWidth > element.clientWidth + 1
+      );
+      expect(overflows).toBe(false);
+      await page.screenshot({
+        fullPage: true,
+        path: testInfo.outputPath("environmental-context-mobile.png"),
+      });
+    }
   });
 });
