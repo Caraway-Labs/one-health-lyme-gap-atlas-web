@@ -12,6 +12,15 @@
   container: trust-footer / inline-size;
 }
 
+/* Professional routes scroll this bar with the main pane. Relative keeps the
+   bar in normal flow and contains its absolute screen-reader text so that
+   text cannot extend the document. Public pages keep the shared margin-top. */
+.ux-reset-pro-app .ux-reset-trust-footer {
+  position: relative;
+  width: 100%;
+  margin-top: 0;
+}
+
 .ux-reset-trust-footer-bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

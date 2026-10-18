@@ -190,9 +190,9 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
   const sidebarInert = mobileDrawerClosed;
   const sidebarRef = useRef<HTMLElement>(null);
   const insetRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  useProfessionalMainScroll(mainRef, pathname, searchParams.toString());
+  useProfessionalMainScroll(scrollRef, pathname, searchParams.toString());
 
   useLayoutEffect(() => {
     const inset = insetRef.current;
@@ -201,10 +201,8 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     }
     const apply = () => {
       const header = inset.querySelector<HTMLElement>(":scope > .app-header");
-      const footer = inset.querySelector<HTMLElement>(":scope > footer");
       const scrollsWithRoute = insetShouldScrollWithRoute(
         header?.offsetHeight ?? 0,
-        footer?.offsetHeight ?? 0,
         inset.clientHeight
       );
       if (scrollsWithRoute) {
@@ -220,12 +218,8 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     const observer = new ResizeObserver(apply);
     observer.observe(inset);
     const header = inset.querySelector<HTMLElement>(":scope > .app-header");
-    const footer = inset.querySelector<HTMLElement>(":scope > footer");
     if (header) {
       observer.observe(header);
-    }
-    if (footer) {
-      observer.observe(footer);
     }
     return () => {
       observer.disconnect();
@@ -529,11 +523,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
           {askAtlas.launcher}
         </header>
         <div className="ux-reset-workspace-body">
-          <main ref={mainRef} className="app-content ux-reset-pro-main">
-            {children}
-          </main>
+          <div ref={scrollRef} className="ux-reset-pro-scroll">
+            <main className="app-content ux-reset-pro-main">{children}</main>
+            <ProfessionalTrustFooter />
+          </div>
         </div>
-        <ProfessionalTrustFooter />
       </SidebarInset>
     </div>
   );
