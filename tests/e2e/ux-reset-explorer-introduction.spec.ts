@@ -196,10 +196,14 @@ test.describe("Explorer and Compare introductions", () => {
       page.getByRole("heading", { level: 1, name: explorer.headline })
     ).toBeVisible();
     await expect(page.getByText(explorer.supporting)).toBeVisible();
+    await expect(page.getByText(explorer.guidanceLead)).toBeVisible();
+    await expect(page.getByText(explorer.guidance)).toBeVisible();
     await expect(
-      page.getByRole("heading", { level: 2, name: explorer.stripHeading })
+      page.getByRole("heading", { level: 2, name: "Explore county patterns" })
     ).toBeVisible();
-    await expect(page.getByText(explorer.stripBody)).toBeVisible();
+    await expect(page.getByText("From data to better decisions")).toHaveCount(
+      0
+    );
     await expect(page.getByTestId("page-introduction-compare")).toHaveCount(0);
     await expect(page.getByTestId("explorer-county-toolbar")).toBeVisible();
     await expect(page.getByText(EXPLORER_COUNTY_EXPORT_NOTE)).toBeVisible();

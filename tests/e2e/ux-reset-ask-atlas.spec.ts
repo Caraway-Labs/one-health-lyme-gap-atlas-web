@@ -263,7 +263,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore the evidence behind every county.",
+        name: "Explore the One Health Atlas",
       })
     ).toBeVisible();
     await expect
@@ -344,7 +344,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore the evidence behind every county.",
+        name: "Explore the One Health Atlas",
       })
     ).toBeVisible();
     expect(new URL(page.url()).searchParams.get("county")).toBeNull();
@@ -545,7 +545,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore the evidence behind every county.",
+        name: "Explore the One Health Atlas",
       })
     ).toBeVisible();
   });
@@ -588,7 +588,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore the evidence behind every county.",
+        name: "Explore the One Health Atlas",
       })
     ).toBeVisible();
     await expect

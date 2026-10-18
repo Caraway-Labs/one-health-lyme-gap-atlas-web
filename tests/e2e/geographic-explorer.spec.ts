@@ -40,7 +40,7 @@ test.describe("retired Geographic Explorer bookmarks", () => {
       await expect(
         page.getByRole("heading", {
           level: 1,
-          name: "Explore the evidence behind every county.",
+          name: "Explore the One Health Atlas",
         })
       ).toBeVisible();
       await expect(

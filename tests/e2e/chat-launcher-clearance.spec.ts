@@ -13,7 +13,7 @@ test("retired public analytical bookmarks do not open the assistant drawer", asy
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore the evidence behind every county.",
+        name: "Explore the One Health Atlas",
       })
     ).toBeVisible();
     await expect(

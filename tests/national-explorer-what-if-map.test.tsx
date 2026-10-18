@@ -241,10 +241,13 @@ describe("national Explorer what-if map", () => {
       )
     );
     await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Blacklegged tick status" })
-      ).toBeTruthy();
+      expect(screen.getByTestId("explorer-map-layer").textContent).toContain(
+        "Blacklegged tick status"
+      );
     });
+    expect(
+      screen.getByRole("heading", { name: "Explore county patterns" })
+    ).toBeTruthy();
     const region = () => screen.getByTestId("review-national-map-region");
     expect({
       color: featureColor(region(), "08021"),
@@ -262,9 +265,9 @@ describe("national Explorer what-if map", () => {
       )
     );
     await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "County boundaries" })
-      ).toBeTruthy();
+      expect(screen.getByTestId("explorer-map-layer").textContent).toContain(
+        "County boundaries"
+      );
     });
     expect(screen.getByTestId("explorer-map-legend").textContent).not.toContain(
       "Adjusted scenario"

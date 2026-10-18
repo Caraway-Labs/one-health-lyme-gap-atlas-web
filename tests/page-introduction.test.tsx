@@ -11,11 +11,15 @@ describe("page introduction", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: copy.headline })
     ).toBeTruthy();
-    expect(screen.getByText(copy.supporting)).toBeTruthy();
-    expect(
-      screen.getByRole("heading", { level: 2, name: copy.stripHeading })
-    ).toBeTruthy();
-    expect(screen.getByText(copy.stripBody)).toBeTruthy();
+    const introduction = screen.getByTestId("page-introduction-explorer");
+    expect(introduction.textContent).toContain(copy.supporting);
+    expect(introduction.textContent).toContain(
+      `${copy.guidanceLead} ${copy.guidance}`
+    );
+    expect(introduction.textContent).not.toContain(
+      "From data to better decisions"
+    );
+    expect(introduction.textContent).not.toMatch(/environmental evidence/i);
   });
 
   it("renders the approved Compare copy", () => {

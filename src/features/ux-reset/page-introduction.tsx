@@ -18,12 +18,18 @@ export function PageIntroduction({ page }: { page: PageIntroductionId }) {
         headingLevel="h1"
         title={copy.headline}
       />
-      <div className="ux-reset-page-introduction-strip">
-        <h2 className="ux-reset-page-introduction-strip-heading">
-          {copy.stripHeading}
-        </h2>
-        <p>{copy.stripBody}</p>
-      </div>
+      {"guidance" in copy ? (
+        <p className="ux-reset-page-introduction-guidance">
+          <strong>{copy.guidanceLead}</strong> {copy.guidance}
+        </p>
+      ) : (
+        <div className="ux-reset-page-introduction-strip">
+          <h2 className="ux-reset-page-introduction-strip-heading">
+            {copy.stripHeading}
+          </h2>
+          <p>{copy.stripBody}</p>
+        </div>
+      )}
     </header>
   );
 }

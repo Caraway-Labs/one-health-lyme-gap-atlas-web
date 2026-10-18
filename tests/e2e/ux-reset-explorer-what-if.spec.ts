@@ -368,8 +368,11 @@ test.describe("Explorer what-if scenario", () => {
     );
 
     await expect(
-      page.getByRole("heading", { name: "Adjusted scenario" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "Atlas gap score"
+    );
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
       "not personal disease risk"
     );
@@ -403,8 +406,11 @@ test.describe("Explorer what-if scenario", () => {
     const map = page.getByTestId("review-state-map-region");
     await expect(page.locator(".maplibregl-canvas")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "County boundaries" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "County boundaries"
+    );
     await expect(page.getByTestId("review-candidate")).toContainText(
       "Published score 22.9"
     );
@@ -417,21 +423,27 @@ test.describe("Explorer what-if scenario", () => {
       "Adjusted scenario 12.2"
     );
     await expect(
-      page.getByRole("heading", { name: "County boundaries" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "County boundaries"
+    );
 
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "Atlas gap score" }).click();
     await expect(
-      page.getByRole("heading", { name: "Adjusted scenario" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "Atlas gap score"
+    );
     await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
 
     await page.getByTestId("explorer-scenario-reset").click();
     await expect(page).not.toHaveURL(/[?&]missing=/);
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { name: "Atlas gap score" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(map).toHaveAttribute("data-map-colors", /08021:#55a8a3/i);
   });
@@ -738,8 +750,11 @@ test.describe("Explorer what-if scenario", () => {
       "Select a county to compare its published and adjusted score"
     );
     await expect(
-      page.getByRole("heading", { name: "Adjusted scenario" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "Atlas gap score"
+    );
     const map = page.getByTestId("review-national-map-region");
     await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
     await expect(map).not.toHaveAttribute("data-map-colors", /02\d{3}:/);
@@ -747,23 +762,29 @@ test.describe("Explorer what-if scenario", () => {
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "County boundaries" }).click();
     await expect(
-      page.getByRole("heading", { name: "County boundaries" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Adjusted scenario" })
-    ).toHaveCount(0);
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "County boundaries"
+    );
+    await expect(page.getByTestId("explorer-map-layer")).not.toContainText(
+      "Adjusted scenario"
+    );
     await expect(map).not.toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
 
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "Atlas gap score" }).click();
     await expect(
-      page.getByRole("heading", { name: "Adjusted scenario" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "Atlas gap score"
+    );
 
     await page.getByTestId("explorer-scenario-reset").click();
     await expect(page).not.toHaveURL(/[?&]missing=/);
     await expect(
-      page.getByRole("heading", { name: "Atlas gap score" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(missing).toHaveValue("75");
 

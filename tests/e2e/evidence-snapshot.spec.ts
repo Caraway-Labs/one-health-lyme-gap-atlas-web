@@ -8,7 +8,7 @@ test("retired overview and geographic explorer bookmarks leave the public eviden
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Explore the evidence behind every county.",
+      name: "Explore the One Health Atlas",
     })
   ).toBeVisible();
   await expect(page.locator(".atlas-evidence-snapshot")).toHaveCount(0);

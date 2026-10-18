@@ -251,7 +251,7 @@ test.describe("Review national geographic navigation", () => {
     const national = page.getByTestId("review-national-orientation");
     await expect(national).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Atlas gap score" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
       "published score colors"
@@ -473,7 +473,7 @@ test.describe("Review national geographic navigation", () => {
     await page.setViewportSize({ height: 1000, width: 1920 });
     await page.goto("/explore?scope=ALL&county=08013");
     await expect(
-      page.getByRole("heading", { name: "Atlas gap score" })
+      page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
       "No published value"
