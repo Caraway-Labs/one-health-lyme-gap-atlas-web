@@ -167,9 +167,11 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
       "Adjusted scenario"
     );
-    await expect(page.getByTestId("explorer-map-legend")).toContainText(
-      "not personal disease risk"
-    );
+    await page.getByRole("button", { name: "About Adjusted scenario" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "About Adjusted scenario" })
+    ).toContainText("not personal disease risk");
+    await page.keyboard.press("Escape");
     const impactSummary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(
       page.getByTestId("explorer-scenario-impact-description")
@@ -373,12 +375,15 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
       "Atlas gap score"
     );
-    await expect(page.getByTestId("explorer-map-legend")).toContainText(
-      "not personal disease risk"
-    );
-    await expect(page.getByTestId("explorer-map-legend")).toContainText(
+    await page.getByRole("button", { name: "About Adjusted scenario" }).click();
+    const scenarioAbout = page.getByRole("dialog", {
+      name: "About Adjusted scenario",
+    });
+    await expect(scenarioAbout).toContainText("not personal disease risk");
+    await expect(scenarioAbout).toContainText(
       "keep the governed score and color"
     );
+    await page.keyboard.press("Escape");
     await expect(map).toHaveAttribute("data-map-colors", /08012:#a9d2db/i);
     await expect(map).toHaveAttribute("data-map-colors", /08030:#a9d2db/i);
     await expect(map).toHaveAttribute("data-map-colors", /08001:#a9d2db/i);
