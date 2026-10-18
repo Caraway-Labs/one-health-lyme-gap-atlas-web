@@ -285,7 +285,15 @@ test.describe("professional shell scroll containment", () => {
     const headerBox = await box(header);
     expect(sidebarBox.top).toBe(0);
     expect(headerBox.top).toBe(0);
-    await expect(header.getByRole("link", { name: "Ask Atlas" })).toBeVisible();
+    await expect(header.getByRole("link", { name: "Ask Atlas" })).toHaveCount(
+      0
+    );
+    await expect(header).toContainText("Atlas Explorer");
+    await expect(
+      page
+        .getByRole("navigation", { name: "Professional workspace" })
+        .getByRole("link", { name: "Ask Atlas", exact: true })
+    ).toBeVisible();
     expect(await mainScrollTop(page)).toBe(0);
     expect(
       await main.evaluate(
@@ -1096,10 +1104,10 @@ test.describe("professional shell scroll containment mobile", () => {
       await expect(open).toBeFocused();
       expect(await mainScrollTop(page)).toBe(scrolled);
       await page.keyboard.press("Tab");
-      const askAtlas = page.getByTestId("ask-atlas-launcher");
-      await expect(askAtlas).toBeFocused();
+      const scope = page.getByTestId("review-scope-select");
+      await expect(scope).toBeFocused();
       await page.waitForTimeout(400);
-      await expect(askAtlas).toBeFocused();
+      await expect(scope).toBeFocused();
       await page.keyboard.press("Shift+Tab");
       await expect(open).toBeFocused();
       await page.waitForTimeout(400);

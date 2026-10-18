@@ -416,11 +416,11 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend).toBeVisible();
     await expect(legend).toContainText("Atlas gap score");
     await expect(legend).toContainText("review-priority score");
-    await expect(legend).toContainText("No data");
+    await expect(legend).toContainText("Gap score unavailable");
     await expect(legend).toContainText(">=75");
     await expect(legend).not.toContainText("not personal disease risk");
     await expect(
-      legend.getByRole("button", { name: /No published value/ })
+      legend.getByRole("button", { name: /Gap score unavailable/ })
     ).toHaveAttribute("aria-label", /Not zero/);
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })
@@ -454,7 +454,7 @@ test.describe("Atlas Explorer layer legends", () => {
       legend.getByRole("button", { name: /20 to <35/ })
     ).toHaveAttribute("aria-label", /Monitor signals/);
     await expect(
-      legend.getByRole("button", { name: /No published value/ })
+      legend.getByRole("button", { name: /Gap score unavailable/ })
     ).toBeVisible();
     await expect(page.getByTestId("review-state-map-region")).toHaveAttribute(
       "data-map-colors",

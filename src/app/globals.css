@@ -604,6 +604,9 @@ body {
 .atlas-docs-root #nd-docs-layout {
   min-height: 100dvh;
 }
+.atlas-docs-root [role="tabpanel"][data-state="inactive"] {
+  display: none;
+}
 .atlas-docs-brand {
   display: inline-flex;
   gap: 0.55rem;

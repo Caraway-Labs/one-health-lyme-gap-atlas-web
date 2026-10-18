@@ -38,9 +38,9 @@ const reviewRouter = vi.hoisted(() => ({
 
 let mockedSearch = "";
 
-function askAtlasLauncherReference() {
+function askAtlasContentReference() {
   const href = new URL(
-    screen.getByTestId("ask-atlas-launcher").getAttribute("href") ?? "",
+    screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "",
     "http://localhost"
   );
   return {
@@ -1419,7 +1419,7 @@ describe("Reset Review scope UI", () => {
         }
       });
       await waitFor(() => {
-        const { state } = askAtlasLauncherReference();
+        const { state } = askAtlasContentReference();
         if (state.kind !== "validated") {
           throw new Error(state.kind);
         }
@@ -1433,7 +1433,7 @@ describe("Reset Review scope UI", () => {
           );
         }
       });
-      const { href, state } = askAtlasLauncherReference();
+      const { href, state } = askAtlasContentReference();
       const geography =
         state.kind === "validated"
           ? state.reference.context.fields.geography
@@ -1549,7 +1549,7 @@ describe("Reset Review scope UI", () => {
         }
       });
       await waitFor(() => {
-        const { state } = askAtlasLauncherReference();
+        const { state } = askAtlasContentReference();
         if (state.kind !== "validated") {
           throw new Error(state.kind);
         }
@@ -1583,23 +1583,28 @@ describe("Reset Review scope UI", () => {
           ?.getAttribute("href") ?? "";
       const latestUrl = urlUpdates.at(-1) ?? search;
       await waitFor(() => {
-        const { href, state } = askAtlasLauncherReference();
-        if (state.kind !== "absent" || href.href.includes("Denver")) {
-          throw new Error(`${state.kind} ${href.pathname}`);
+        if (screen.queryByTestId("review-ask-atlas")) {
+          throw new Error("in-content Ask Atlas link remained");
+        }
+        if (document.querySelector(".app-header a")) {
+          throw new Error("header still has a link");
         }
       });
-      const launcher = askAtlasLauncherReference();
+      const ask = shellHref("Ask Atlas");
       expect({
-        askCounty: shellHref("Ask Atlas").includes("county=08001"),
+        askCounty: ask.includes("county=08001"),
         candidates: screen.queryAllByTestId("review-candidate").length,
         compareAction: screen.queryByTestId("review-compare"),
         compareCounty: shellHref("Compare").includes("county=08001"),
         failure: screen.getByRole("alert").textContent,
+        headerAskLink: document.querySelector(".app-header a"),
         investigateAction: screen.queryByTestId("review-investigate"),
-        pageReference: launcher.state.kind,
+        pageReference: screen.queryByTestId("review-ask-atlas"),
         picture: screen.queryByTestId("review-state-panel"),
-        shellCounty: launcher.href.searchParams.get("county"),
-        staleGeography: launcher.href.href.includes("Denver"),
+        shellCounty: new URL(ask, "http://localhost").searchParams.get(
+          "county"
+        ),
+        staleGeography: ask.includes("Denver"),
         urlCounty: latestUrl.includes("county=08001"),
       }).toStrictEqual({
         askCounty: true,
@@ -1607,14 +1612,15 @@ describe("Reset Review scope UI", () => {
         compareAction: null,
         compareCounty: true,
         failure: expect.stringContaining("temporarily unavailable"),
+        headerAskLink: null,
         investigateAction: null,
-        pageReference: "absent",
+        pageReference: null,
         picture: null,
         shellCounty: "08001",
         staleGeography: false,
         urlCounty: true,
       });
-      expect(launcher.href.searchParams.has("page_ref")).toBeFalsy();
+      expect(ask.includes("page_ref")).toBeFalsy();
     } finally {
       review.mockImplementation(
         async (state: string, params?: { dataset_version?: string }) =>
@@ -3843,7 +3849,7 @@ describe("Reset Review scope UI", () => {
     });
     const bookmarkedAsk =
       screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
-    const bookmarked = askAtlasLauncherReference();
+    const bookmarked = askAtlasContentReference();
     const bookmarkedGeography =
       bookmarked.state.kind === "validated"
         ? bookmarked.state.reference.context.fields.geography
@@ -3875,7 +3881,7 @@ describe("Reset Review scope UI", () => {
     });
     const previewAsk =
       screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
-    const { href, state } = askAtlasLauncherReference();
+    const { href, state } = askAtlasContentReference();
     const geography =
       state.kind === "validated"
         ? state.reference.context.fields.geography

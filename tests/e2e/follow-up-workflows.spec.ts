@@ -130,6 +130,10 @@ test.describe("five-category suggested follow-up", () => {
     await expect(followUp).toContainText(
       "Compare the published county case-count floor"
     );
+    await expect(followUp.getByTestId("follow-up-questions")).toContainText(
+      "Do locally held case records agree with the published county count"
+    );
+    await expect(followUp.getByTestId("follow-up-what-if-note")).toHaveCount(0);
     await expect(followUp).toContainText("not documented negative findings");
     await expect(followUp).not.toContainText("within 2 weeks");
     const resources = page.getByTestId("explorer-official-resources");

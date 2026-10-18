@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getPublishedApiOrigin } from "@/lib/public-origins";
+import {
+  getPublishedApiOrigin,
+  PRODUCTION_API_ORIGIN,
+} from "@/lib/public-origins";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +20,11 @@ const proxy = async (
   }
 
   const { path } = await context.params;
-  const target = new URL(
-    `/v1/${path.join("/")}`,
-    `${getPublishedApiOrigin()}/`
-  );
+  const configuredOrigin = getPublishedApiOrigin();
+  const upstreamOrigin = loopbackOrigin(configuredOrigin)
+    ? PRODUCTION_API_ORIGIN
+    : configuredOrigin;
+  const target = new URL(`/v1/${path.join("/")}`, `${upstreamOrigin}/`);
   target.search = request.nextUrl.search;
   const headers = new Headers(request.headers);
   headers.delete("host");
@@ -56,6 +60,15 @@ const proxy = async (
     );
   }
 };
+
+function loopbackOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin).hostname;
+    return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  } catch {
+    return false;
+  }
+}
 
 export const GET = proxy;
 export const POST = proxy;
