@@ -39,13 +39,6 @@ function releaseIdFromMeta(value: string | null | undefined): string | null {
   return text || null;
 }
 
-function releasesMatch(left: string | null, right: string | null): boolean {
-  if (left === null || right === null) {
-    return true;
-  }
-  return left === right;
-}
-
 async function readPages<T>(input: {
   endpoint: string;
   read: PageReader;
@@ -204,14 +197,61 @@ async function loadCatalogCollections(
   return { indicators, measures, sources };
 }
 
-function metadataForRelease<T>(
-  sourcesReleaseId: string | null,
-  metadata: CollectionResult<T>
+function knownReleaseIds(loaded: CatalogCollections): string[] {
+  return [
+    loaded.sources.releaseId,
+    loaded.measures.releaseId,
+    loaded.indicators.releaseId,
+  ].filter((releaseId): releaseId is string => releaseId !== null);
+}
+
+function releasesConflict(loaded: CatalogCollections): boolean {
+  return new Set(knownReleaseIds(loaded)).size > 1;
+}
+
+function keepMetadata<T>(
+  metadata: CollectionResult<T>,
+  drop: boolean
 ): { items: T[]; read: CollectionRead } {
-  if (!releasesMatch(sourcesReleaseId, metadata.releaseId)) {
+  if (drop) {
     return { items: [], read: "unavailable" };
   }
   return { items: metadata.items, read: metadata.read };
+}
+
+/**
+ * A missing release id is not a conflict. Two different known ids are.
+ * Sources anchor the comparison when they name a release. Otherwise measures
+ * and indicators still have to agree with each other.
+ */
+function alignedMetadata(loaded: CatalogCollections): {
+  indicators: { items: Indicator[]; read: CollectionRead };
+  measures: { items: Measure[]; read: CollectionRead };
+} {
+  if (!releasesConflict(loaded)) {
+    return {
+      indicators: keepMetadata(loaded.indicators, false),
+      measures: keepMetadata(loaded.measures, false),
+    };
+  }
+  const anchor = loaded.sources.releaseId;
+  if (anchor === null) {
+    return {
+      indicators: keepMetadata(loaded.indicators, true),
+      measures: keepMetadata(loaded.measures, true),
+    };
+  }
+  return {
+    indicators: keepMetadata(
+      loaded.indicators,
+      loaded.indicators.releaseId !== null &&
+        loaded.indicators.releaseId !== anchor
+    ),
+    measures: keepMetadata(
+      loaded.measures,
+      loaded.measures.releaseId !== null && loaded.measures.releaseId !== anchor
+    ),
+  };
 }
 
 /**
@@ -222,33 +262,15 @@ export async function loadDataProvenanceCatalog(
   signal: AbortSignal
 ): Promise<DataProvenanceCatalog> {
   let loaded = await loadCatalogCollections(signal);
-  const firstMeasures = metadataForRelease(
-    loaded.sources.releaseId,
-    loaded.measures
-  );
-  const firstIndicators = metadataForRelease(
-    loaded.sources.releaseId,
-    loaded.indicators
-  );
-  const releaseMismatch =
-    firstMeasures.read !== loaded.measures.read ||
-    firstIndicators.read !== loaded.indicators.read;
-  if (releaseMismatch) {
+  if (releasesConflict(loaded)) {
     loaded = await loadCatalogCollections(signal);
   }
-  const measures = metadataForRelease(
-    loaded.sources.releaseId,
-    loaded.measures
-  );
-  const indicators = metadataForRelease(
-    loaded.sources.releaseId,
-    loaded.indicators
-  );
+  const metadata = alignedMetadata(loaded);
   return buildDataProvenanceCatalog({
-    indicators: indicators.items,
-    indicatorsRead: indicators.read,
-    measures: measures.items,
-    measuresRead: measures.read,
+    indicators: metadata.indicators.items,
+    indicatorsRead: metadata.indicators.read,
+    measures: metadata.measures.items,
+    measuresRead: metadata.measures.read,
     sources: loaded.sources.items,
     sourcesIncomplete: loaded.sources.incomplete,
   });

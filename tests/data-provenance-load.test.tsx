@@ -227,6 +227,74 @@ describe("data provenance metadata reads", () => {
     ]);
   });
 
+  it("does not join measures and indicators when only those releases differ", async () => {
+    sourcesV1SourcesGet.mockResolvedValue(
+      envelope([source("cdc-lyme", "CDC Lyme surveillance")])
+    );
+    measuresV1MeasuresGet.mockResolvedValue(
+      envelope([measure("lyme_cases", "cdc-lyme")], null, "release-a")
+    );
+    indicatorsV1IndicatorsGet.mockResolvedValue(
+      envelope([indicator()], null, "release-b")
+    );
+
+    const catalog = await loadCatalog();
+    expect(sourcesV1SourcesGet).toHaveBeenCalledTimes(2);
+    expect(catalog.measuresRead).toBe("unavailable");
+    expect(catalog.indicatorsRead).toBe("unavailable");
+    expect(catalog.sources[0]?.measures).toStrictEqual([]);
+    expect(catalog.sources[0]?.domains).toStrictEqual([]);
+  });
+
+  it("keeps measures and indicators that name the same release", async () => {
+    sourcesV1SourcesGet.mockResolvedValue(
+      envelope([source("cdc-lyme", "CDC Lyme surveillance")], null, "release-a")
+    );
+    measuresV1MeasuresGet.mockResolvedValue(
+      envelope([measure("lyme_cases", "cdc-lyme")], null, "release-a")
+    );
+    indicatorsV1IndicatorsGet.mockResolvedValue(
+      envelope([indicator()], null, "release-a")
+    );
+
+    const catalog = await loadCatalog();
+    expect(sourcesV1SourcesGet).toHaveBeenCalledOnce();
+    expect(catalog.measuresRead).toBe("complete");
+    expect(catalog.indicatorsRead).toBe("complete");
+    expect(
+      catalog.sources[0]?.measures.map((item) => item.measureId)
+    ).toStrictEqual(["lyme_cases"]);
+    expect(catalog.sources[0]?.domains).toStrictEqual(["human"]);
+  });
+
+  it("keeps metadata after a release mismatch retries onto one release", async () => {
+    sourcesV1SourcesGet.mockResolvedValue(
+      envelope([source("cdc-lyme", "CDC Lyme surveillance")], null, "release-a")
+    );
+    measuresV1MeasuresGet.mockImplementation(() => {
+      const call = measuresV1MeasuresGet.mock.calls.length;
+      return Promise.resolve(
+        envelope(
+          [measure("lyme_cases", "cdc-lyme")],
+          null,
+          call === 1 ? "release-b" : "release-a"
+        )
+      );
+    });
+    indicatorsV1IndicatorsGet.mockResolvedValue(
+      envelope([indicator()], null, "release-a")
+    );
+
+    const catalog = await loadCatalog();
+    expect(sourcesV1SourcesGet).toHaveBeenCalledTimes(2);
+    expect(catalog.measuresRead).toBe("complete");
+    expect(catalog.indicatorsRead).toBe("complete");
+    expect(
+      catalog.sources[0]?.measures.map((item) => item.measureId)
+    ).toStrictEqual(["lyme_cases"]);
+    expect(catalog.sources[0]?.domains).toStrictEqual(["human"]);
+  });
+
   it("reports a repeated continuation token as an incomplete read", async () => {
     sourcesV1SourcesGet.mockResolvedValue(
       envelope([
