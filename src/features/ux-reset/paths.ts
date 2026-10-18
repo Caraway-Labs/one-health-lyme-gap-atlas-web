@@ -187,7 +187,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
   },
   {
     description:
-      "Default jurisdiction, optional profile details, and account controls.",
+      "Required starting view, optional profile details, optional analytics, and account controls.",
     href: RESET_SETTINGS_PATH,
     icon: Settings,
     id: "settings",
@@ -195,7 +195,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "access",
     pageDescription:
-      "Save a national or state default for future Atlas Explorer sessions, plus optional profile details and account controls.",
+      "Save a required national or state starting view for future Atlas Explorer sessions, plus optional profile details, optional analytics, and account controls.",
     pageTitle: "Settings | One Health Lyme Gap Atlas",
   },
   {

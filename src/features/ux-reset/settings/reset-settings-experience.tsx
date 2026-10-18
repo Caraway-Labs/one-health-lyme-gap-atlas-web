@@ -1,5 +1,6 @@
 "use client";
 
+import { PrivacyPreferences } from "@/components/privacy-preferences";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import { DefaultJurisdictionReadout } from "@/features/ux-reset/settings/default-jurisdiction-readout";
 import { SettingsAccountControls } from "@/features/ux-reset/settings/settings-account-controls";
@@ -16,6 +17,7 @@ export function ResetSettingsExperience() {
       </header>
       <DefaultJurisdictionReadout />
       <SettingsProfileForm />
+      <PrivacyPreferences presentation="section" />
       <SettingsAccountControls />
     </>
   );

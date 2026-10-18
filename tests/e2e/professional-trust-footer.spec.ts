@@ -184,7 +184,9 @@ test("opens trust links from the professional footer", async ({
     .click();
   await expect(page).toHaveURL(/\/app\/settings$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Settings" })
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("footer-privacy-settings-destination.png"),
   });
