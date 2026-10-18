@@ -3,6 +3,12 @@ title: Provenance and evidence
 description: Read source, methodology, release, freshness, and value-state fields together before citing an Atlas observation.
 ---
 
+import {
+  ProvenanceCitationSteps,
+  ProvenanceFieldNames,
+  ValueStateNullTable,
+} from "@/features/docs/provenance-evidence";
+
 An observation is reproducible only when the value, the value state, and the provenance fields from that same response stay together. Response time is not publisher freshness. A null timestamp is unknown. Do not fill it in.
 
 ## Fields that travel with the value
@@ -32,16 +38,109 @@ From the observation you received, keep:
 
 `evidence.resource_type` on the contract's synthetic observation example is `observation`, and `resource_id` repeats the observation id. `provenance_ref` on a checked case-floor row was the same string as `observation_id`. That equality is not a second citation format. It is the provenance identity returned for that row.
 
-## Source and methodology resources
+## Cite from discovery
 
-Resolve ids with the canonical detail routes:
+Discover the source and the measure, observe one county row, then resolve the ids that row actually returned. A null on the measure is not a null on the observation.
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
-curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
+<ProvenanceCitationSteps />
+
+## Null value and limitations
+
+`value` null is not zero. `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require a null `value`. Preserve `limitations` with that value. Open a row for the schema sentence.
+
+<ValueStateNullTable />
+
+Checked on 18 October 2026. FIPS `08001`, measure `case_count_floor_2023`, and `year=2023` returned `value` null and `value_state` `MISSING`. FIPS `36061` for the same measure and year returned `value_state` `OBSERVED` and a numeric `value`. `limitations` matched on those two rows. `source_published_at` and `atlas_processed_at` were null. Observation `atlas_acquired_at` was present. The blocks below are those checked fields, not a full response body.
+
+```json title="Checked gap observation fields"
+{
+  "observation_id": "43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273",
+  "geography": {
+    "geography_type": "county",
+    "geography_id": "08001"
+  },
+  "value": null, // [!code highlight]
+  "value_state": "MISSING", // [!code word:MISSING]
+  "source_label": "CDC Lyme surveillance",
+  "source_published_at": null, // [!code highlight]
+  "atlas_acquired_at": "2026-09-07T17:21:14.768948-07:00",
+  "atlas_processed_at": null, // [!code highlight]
+  "methodology_id": "human_confirmed_probable_case_floor_v1",
+  "methodology": "x5j9 confirmed plus probable",
+  "methodology_version": "semantic_county_assembly_v1",
+  "release_methodology_version": "semantic-2.0.0",
+  "release_id": "governed-2026-10-15-january-climate-prod",
+  "provenance_ref": "43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273",
+  "limitations": [
+    "Published surveillance values are privacy-protected floors, not complete incidence estimates.", // [!code highlight]
+    "Privacy-protected floor.", // [!code highlight]
+    "This is a deterministic surveillance follow-up priority release, not a diagnosis, prediction, causal claim, exposure map, or individual risk estimate. Published human values are privacy-protected floors; no records is not absence. Human rows with explicitly unavailable state geography are retained in source provenance but are not allocated to county or state release values. Restricted pathogen source gaps are explicitly unknown source coverage. Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission." // [!code highlight]
+  ],
+  "evidence": {
+    "resource_type": "observation",
+    "resource_id": "43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273",
+    "source_id": "human",
+    "provenance_ref": "43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273",
+    "semantic_version": "2.0.0",
+    "methodology_version": "semantic_county_assembly_v1",
+    "release_id": "governed-2026-10-15-january-climate-prod",
+    "uri": null // [!code highlight]
+  }
+}
 ```
 
-Replace those ids with the ids on your observation. A source resource adds `publisher`, `release_version`, `source_version`, `published_at`, `upstream_updated_at`, and `source_retrieved_at`. On the checked `human` source, `publisher` was present and `published_at`, `atlas_acquired_at`, `upstream_updated_at`, and `source_retrieved_at` were null. Those nulls stay null.
+```json title="Checked observed value"
+{
+  "geography": {
+    "geography_type": "county",
+    "geography_id": "36061"
+  },
+  "value": 1114.0, // [!code highlight]
+  "value_state": "OBSERVED", // [!code word:OBSERVED]
+  "unit": "cases"
+}
+```
+
+## Source and observation field names
+
+Names that look paired are still different properties. Open a row for the schema sentence, then read the checked resources below.
+
+<ProvenanceFieldNames />
+
+```json title="Checked source resource"
+{
+  "source_id": "human",
+  "label": "CDC Lyme surveillance", // [!code word:label]
+  "publisher": "Centers for Disease Control and Prevention",
+  "lineage_source_id": "cdc_lyme",
+  "dataset_id": "x5j9-wybp",
+  "release_version": "governed-2026-10-15-january-climate-prod", // [!code word:release_version]
+  "source_version": null, // [!code highlight]
+  "published_at": null, // [!code highlight]
+  "atlas_acquired_at": null, // [!code highlight]
+  "upstream_updated_at": null, // [!code highlight]
+  "source_retrieved_at": null, // [!code highlight]
+  "limitations": [
+    "County-of-residence surveillance. County-linked values are published privacy-protected floors, not complete incidence estimates." // [!code highlight]
+  ]
+}
+```
+
+```json title="Checked methodology resource"
+{
+  "methodology_id": "human_confirmed_probable_case_floor_v1",
+  "version": "semantic-2.0.0", // [!code word:version]
+  "description": "x5j9 confirmed plus probable", // [!code word:description]
+  "limitations": [
+    "Privacy-protected floor." // [!code highlight]
+  ],
+  "release_version": "governed-2026-10-15-january-climate-prod"
+}
+```
+
+## Source and methodology resources
+
+Resolve `source_id` and `methodology_id` from the observation with the detail routes in [Cite from discovery](#cite-from-discovery). Replace those ids with the ids on your observation. A source resource adds `publisher`, `release_version`, `source_version`, `published_at`, `upstream_updated_at`, and `source_retrieved_at`. On the checked `human` source, `publisher` was present and `published_at`, `atlas_acquired_at`, `upstream_updated_at`, and `source_retrieved_at` were null. Those nulls stay null. The observation field `atlas_acquired_at` is separate. On the checked case-floor rows it was present while the source field was null.
 
 A methodology resource has `methodology_id`, `measure_id`, `version`, `description`, `limitations`, `semantic_version`, and `release_version`. Its `version` is the methodology resource version. The observation's `methodology_version` is the transformation version. Keep both when both are present.
 
