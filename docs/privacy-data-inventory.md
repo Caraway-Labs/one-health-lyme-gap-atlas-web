@@ -51,7 +51,7 @@ This contract governs non-essential browser product analytics. The consent-gated
 
 The first-party preference record is created only after the visitor chooses allow or decline. It contains a decision, decision time, expiry time, and format version—no identifier, route history, or behavior data. It expires after 183 days and is removed if malformed or expired. It is not synchronized across browsers or devices, because Atlas has no account linkage today.
 
-Privacy settings is available from every page footer without account creation. The contract applies to every visitor regardless of location; no consent wall, regional dark pattern, or degraded public exploration is permitted. The owning engineering team is accountable for the implementation and this inventory; future processor access, retention, deletion, and audit evidence must be defined by the vendor and governance story before data collection begins.
+Privacy settings is available from every public page footer without account creation. The signed-in workspace footer opens `/app/settings` in the same tab, where the same `PrivacyPreferences` choice is shown inline. Both surfaces read and write one browser preference and honor Do Not Track the same way. The contract applies to every visitor regardless of location; no consent wall, regional dark pattern, or degraded public exploration is permitted. The owning engineering team is accountable for the implementation and this inventory; future processor access, retention, deletion, and audit evidence must be defined by the vendor and governance story before data collection begins.
 
 ## Change control
 

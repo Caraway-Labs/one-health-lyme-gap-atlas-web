@@ -245,6 +245,14 @@ function clearAmplitudeBrowserStorage(storage: Storage): void {
   }
 }
 
+function clearReachableAmplitudeStorage(readStorage: () => Storage): void {
+  try {
+    clearAmplitudeBrowserStorage(readStorage());
+  } catch {
+    // A denied storage getter must leave the page usable.
+  }
+}
+
 export function getAmplitudeBrowserInitOptions(): Record<string, unknown> {
   return {
     autocapture: false,
@@ -288,8 +296,8 @@ export function createAtlasAnalytics(loadAmplitude: AmplitudeLoader) {
         amplitude.reset();
         amplitude = undefined;
       }
-      clearAmplitudeBrowserStorage(window.sessionStorage);
-      clearAmplitudeBrowserStorage(window.localStorage);
+      clearReachableAmplitudeStorage(() => window.sessionStorage);
+      clearReachableAmplitudeStorage(() => window.localStorage);
     },
     track(event: AnalyticsEvent): void {
       if (!amplitude) return;
