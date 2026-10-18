@@ -27,6 +27,12 @@ export type ExploreCommittedNavigation = {
   county: string | null;
   compare?: readonly string[];
   dataset: string | null;
+  /**
+   * Compare publishes the validated Explorer return link here.
+   * The sidebar Atlas Explorer item uses it so removing the page button
+   * still restores county, pair, release, and Explorer mode.
+   */
+  explorerReturnHref?: string | null;
   period: string | null;
 };
 
@@ -78,6 +84,7 @@ export function usePublishExploreCommittedNavigation(
   const setNavigation = useContext(ExploreCommittedNavigationSetContext);
   const county = next?.county ?? null;
   const dataset = next?.dataset ?? null;
+  const explorerReturnHref = next?.explorerReturnHref ?? null;
   const period = next?.period ?? null;
   const compareProvided = Boolean(next && Object.hasOwn(next, "compare"));
   const clearCounty = next !== null && next.county === null;
@@ -102,6 +109,7 @@ export function usePublishExploreCommittedNavigation(
             county,
             compare,
             dataset,
+            explorerReturnHref,
             period,
           }
         : null
@@ -112,6 +120,7 @@ export function usePublishExploreCommittedNavigation(
     compareProvided,
     county,
     dataset,
+    explorerReturnHref,
     period,
     setNavigation,
   ]);

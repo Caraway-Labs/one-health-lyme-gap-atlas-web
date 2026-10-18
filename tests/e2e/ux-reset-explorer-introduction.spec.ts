@@ -293,11 +293,11 @@ test.describe("Explorer and Compare introductions", () => {
     ).toBeVisible();
     await expect(page.getByText(compare.supporting)).toBeVisible();
     await expect(
-      page.getByRole("heading", { level: 2, name: compare.stripHeading })
-    ).toBeVisible();
+      page.getByRole("heading", { name: compare.stripHeading })
+    ).toHaveCount(0);
     await expect(page.getByText(compare.stripBody)).toBeVisible();
     await expect(page.getByTestId("page-introduction-explorer")).toHaveCount(0);
-    await expect(page.getByTestId("compare-return")).toBeVisible();
+    await expect(page.getByTestId("compare-return")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
     await page.screenshot({
       path: "/opt/cursor/artifacts/after-compare-1440.png",
