@@ -57,9 +57,22 @@ async function installWorkspaceReads(page: Page): Promise<void> {
   });
 }
 
+async function nationalExploreReady(page: Page): Promise<boolean> {
+  const url = new URL(page.url());
+  const renderedScope = await page
+    .getByTestId("review-scope-results")
+    .getAttribute("data-rendered-scope");
+  return (
+    url.pathname === "/explore" &&
+    url.searchParams.get("scope") === "ALL" &&
+    renderedScope === "ALL"
+  );
+}
+
 async function openSettingsFromFooter(page: Page): Promise<Locator> {
   await installWorkspaceReads(page);
   await page.goto("/explore");
+  await expect.poll(() => nationalExploreReady(page)).toBe(true);
   await page
     .getByRole("contentinfo")
     .getByRole("link", { name: "Privacy settings" })
