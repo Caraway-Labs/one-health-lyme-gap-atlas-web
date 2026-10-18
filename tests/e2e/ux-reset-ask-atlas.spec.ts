@@ -4,7 +4,10 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import type { AskAtlasInheritedFieldKey } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { readAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/page-reference";
 
-import { compareObservation } from "../fixtures/compare-api-fixtures";
+import {
+  COMPARE_CASES_MEASURE_ID,
+  compareObservation,
+} from "../fixtures/compare-api-fixtures";
 import {
   EXPLORE_CASES_MEASURE_ID,
   exploreGeometryFixture,
@@ -663,7 +666,19 @@ test.describe("Ask Atlas dedicated page", () => {
 
     await installUniformCompareMocks(page);
     await page.goto("/compare?compare=08001,08013&scope=CO&period=1999-01-01");
-    await expect(page.getByText("Observation period").first()).toBeVisible();
+    const additional = page.getByTestId("compare-group-additional");
+    await expect(additional).toBeVisible();
+    const additionalOpen = await additional.evaluate((element) =>
+      element instanceof HTMLDetailsElement ? element.open : false
+    );
+    if (!additionalOpen) {
+      await additional.locator("> summary").click();
+    }
+    await expect(
+      additional
+        .getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
+        .getByText("Observation period 2023")
+    ).toBeVisible();
     await expect(page.getByTestId("compare-alignment")).toContainText("2023");
     await expect(page.getByTestId("compare-alignment")).not.toContainText(
       "1999"
