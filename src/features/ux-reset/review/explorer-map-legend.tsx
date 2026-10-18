@@ -19,11 +19,13 @@ import type { ExplorerMapPaint } from "@/features/ux-reset/review/explorer-map-l
 
 function LegendSegmentButton({
   gradient,
+  layerTitle,
   onOpenChange,
   open,
   segment,
 }: {
   gradient?: ExplorerLegendGradient;
+  layerTitle: string;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   segment?: ExplorerLegendSegment;
@@ -32,8 +34,11 @@ function LegendSegmentButton({
     gradient?.accessibleName ?? segment?.accessibleName ?? "";
   const tooltip = gradient?.tooltip ?? segment?.tooltip ?? "";
   const label = segment?.label ?? "Continuous color scale";
+  const dialogName = `${layerTitle}: ${accessibleName}`;
   const background = gradient
-    ? `linear-gradient(90deg, ${gradient.lowColor}, ${gradient.highColor})`
+    ? `linear-gradient(90deg, ${gradient.stops
+        .map((stop) => `${stop.color} ${stop.percent}%`)
+        .join(", ")})`
     : segment?.color;
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -46,14 +51,24 @@ function LegendSegmentButton({
         delay={120}
         openOnHover
         type="button"
-        onFocus={() => {
-          onOpenChange(true);
+        onClick={() => {
+          // Base UI toggles a hover-capable popover closed on the click that
+          // follows pointerdown. Keep the segment disclosure open.
+          requestAnimationFrame(() => {
+            onOpenChange(true);
+          });
+        }}
+        onFocus={(event) => {
+          if (event.currentTarget.matches(":focus-visible")) {
+            onOpenChange(true);
+          }
         }}
       >
         <span aria-hidden="true" style={{ background }} />
       </PopoverTrigger>
       <PopoverContent
         align="center"
+        aria-label={dialogName}
         className="ux-reset-explorer-legend-tip w-auto"
         side="top"
       >
@@ -144,6 +159,7 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
             {model.segments.map((segment) => (
               <LegendSegmentButton
                 key={segment.id}
+                layerTitle={model.title}
                 open={openId === segment.id}
                 segment={segment}
                 onOpenChange={(next) => {
@@ -154,6 +170,7 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
             {model.gradient ? (
               <LegendSegmentButton
                 gradient={model.gradient}
+                layerTitle={model.title}
                 open={openId === "gradient"}
                 onOpenChange={(next) => {
                   setOpenId(next ? "gradient" : null);

@@ -9,6 +9,53 @@ import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-
 import type { CountyScoreSummary } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 
+function readyObservation(
+  layerId: "incidence_floor" | "rurality" | "svi" | "uninsured",
+  rows: ExplorerMapNumericRow[],
+  omitted: number,
+  unit: string
+) {
+  return paintExplorerMapLayer({
+    counties: [],
+    layerId,
+    observation: {
+      omitted,
+      period: "Published period.",
+      rows,
+      sourceLabel: "Published source",
+      status: "ready",
+      unit,
+    },
+    scoresStatus: "ready",
+  });
+}
+
+function neutralKey(
+  paint: ReturnType<typeof paintExplorerMapLayer>
+): { color: string; detail: string | null } | undefined {
+  const entry = paint.entries.find(
+    (candidate) => candidate.label === "No published value"
+  );
+  if (!entry) {
+    return undefined;
+  }
+  return { color: entry.color, detail: entry.detail };
+}
+
+function observedZeroColor(
+  paint: ReturnType<typeof paintExplorerMapLayer>
+): string | undefined {
+  return paint.entries.find((entry) => entry.label.includes("observed zero"))
+    ?.color;
+}
+
+function ruralityRow(fips: string, code: number): ExplorerMapNumericRow {
+  return {
+    ...observationRow(fips, ValueState.OBSERVED, code, String(code)),
+    categoryLabel: "metro area of 1 million or more",
+  };
+}
+
 function observationRow(
   fips: string,
   valueState: ValueState,
@@ -558,6 +605,68 @@ describe("Explorer map layers", () => {
       "67",
       "No published value",
     ]);
+  });
+
+  it("keeps a gray key when incidence, SVI, or uninsured omits a requested county", () => {
+    const incidence = readyObservation(
+      "incidence_floor",
+      [
+        observationRow("08001", ValueState.OBSERVED, 3.5, "3.5"),
+        observationRow("11001", ValueState.ZERO, 0, "0"),
+      ],
+      1,
+      "per 100,000"
+    );
+    const svi = readyObservation(
+      "svi",
+      [
+        observationRow("08001", ValueState.OBSERVED, 0.4, "0.4"),
+        observationRow("11001", ValueState.ZERO, 0, "0"),
+      ],
+      1,
+      "percentile"
+    );
+    const uninsured = readyObservation(
+      "uninsured",
+      [
+        observationRow("08001", ValueState.OBSERVED, 12.5, "12.5"),
+        observationRow("11001", ValueState.ZERO, 0, "0"),
+      ],
+      1,
+      "percent"
+    );
+    const boundary = "var(--explorer-boundary)";
+    expect({
+      incidence: neutralKey(incidence)?.color,
+      svi: neutralKey(svi)?.color,
+      uninsured: neutralKey(uninsured)?.color,
+    }).toStrictEqual({
+      incidence: boundary,
+      svi: boundary,
+      uninsured: boundary,
+    });
+    expect(neutralKey(incidence)?.detail).toMatch(/Not zero/);
+    expect(observedZeroColor(incidence)).not.toBe(boundary);
+    expect(observedZeroColor(svi)).not.toBe(boundary);
+    expect(observedZeroColor(uninsured)).not.toBe(boundary);
+  });
+
+  it("keeps a gray rurality key when a requested county is omitted", () => {
+    const paint = readyObservation(
+      "rurality",
+      [ruralityRow("11001", 1)],
+      1,
+      "rural-urban code"
+    );
+    expect(neutralKey(paint)?.color).toBe("var(--explorer-boundary)");
+    expect(neutralKey(paint)?.detail).toMatch(/Not zero/);
+    expect(
+      paint.entries.filter((entry) => entry.role === "class")
+    ).toHaveLength(9);
+    expect(paint.colorsByFips.get("11001")).toBe("hsl(210, 55%, 42%)");
+    expect(paint.colorsByFips.get("11001")).not.toBe(
+      "var(--explorer-boundary)"
+    );
   });
 
   it("keeps a missing map completeness value missing", () => {

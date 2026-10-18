@@ -1,3 +1,4 @@
+import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import type {
   ExplorerLegendScale,
   ExplorerMapLegendEntry,
@@ -15,12 +16,23 @@ export type ExplorerLegendSegment = {
   tooltip: string;
 };
 
+export type ExplorerLegendGradientStop = {
+  color: string;
+  percent: number;
+};
+
 export type ExplorerLegendGradient = {
   accessibleName: string;
   highColor: string;
   lowColor: string;
+  stops: readonly ExplorerLegendGradientStop[];
   tooltip: string;
 };
+
+const GRADIENT_STOP_PERCENTS = [
+  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
+  100,
+] as const;
 
 export type ExplorerLegendAboutSection = {
   heading: string;
@@ -143,6 +155,45 @@ function captionsForSegments(
   return { left: null, right: null };
 }
 
+function scaleGradientStops(
+  low: string,
+  high: string
+): ExplorerLegendGradientStop[] {
+  return GRADIENT_STOP_PERCENTS.map((percent) => ({
+    color: mixExplorerScaleColor(low, high, percent / 100),
+    percent,
+  }));
+}
+
+function constantNumericSwatch(
+  paint: ExplorerMapPaint,
+  low: ExplorerMapLegendEntry,
+  missing: readonly ExplorerLegendSegment[]
+): Pick<
+  ExplorerLegendModel,
+  "gradient" | "leftCaption" | "rightCaption" | "segments"
+> {
+  const value = endpointCaption(low.label);
+  const unit = paint.unit ? ` ${paint.unit}` : "";
+  const detail = low.detail?.trim();
+  const text = detail ? `${value}${unit}. ${detail}` : `${value}${unit}.`;
+  const swatch = toSegment(low, missing.length);
+  return {
+    gradient: null,
+    leftCaption: value,
+    rightCaption: null,
+    segments: [
+      ...missing,
+      {
+        ...swatch,
+        accessibleName: text,
+        label: value,
+        tooltip: text,
+      },
+    ],
+  };
+}
+
 function gradientModel(
   paint: ExplorerMapPaint
 ): Pick<
@@ -155,13 +206,16 @@ function gradientModel(
   const missing = missingEntries(paint.entries).map((entry, index) =>
     toSegment(entry, index)
   );
-  if (!(low && high)) {
+  if (!low) {
     return {
       gradient: null,
       leftCaption: missing.length > 0 ? "No data" : null,
       rightCaption: null,
       segments: missing,
     };
+  }
+  if (!high) {
+    return constantNumericSwatch(paint, low, missing);
   }
   const unit = paint.unit ? ` ${paint.unit}` : "";
   const zero =
@@ -175,6 +229,7 @@ function gradientModel(
       accessibleName: tooltip,
       highColor: high.color,
       lowColor: low.color,
+      stops: scaleGradientStops(low.color, high.color),
       tooltip,
     },
     leftCaption: endpointCaption(low.label),

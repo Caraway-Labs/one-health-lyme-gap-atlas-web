@@ -2017,11 +2017,14 @@
   outline-offset: 2px;
 }
 
-.ux-reset-explorer-legend-segment[data-legend-role="gradient"] {
+.ux-reset-explorer-legend-segment[data-legend-role="gradient"],
+.ux-reset-explorer-legend-segment[data-legend-role="endpoint-low"] {
   flex: 1 1 auto;
 }
 
 .ux-reset-explorer-legend-strip:has([data-legend-role="gradient"])
+  .ux-reset-explorer-legend-segment[data-legend-role="missing"],
+.ux-reset-explorer-legend-strip:has([data-legend-role="endpoint-low"])
   .ux-reset-explorer-legend-segment[data-legend-role="missing"] {
   flex: 0 0 0.7rem;
 }

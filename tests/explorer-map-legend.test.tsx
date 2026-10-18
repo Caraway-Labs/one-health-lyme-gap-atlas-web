@@ -1,10 +1,14 @@
+import { Color } from "@maplibre/maplibre-gl-style-spec";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
+import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
 import type { CountyScoreSummary } from "@/generated/models";
+import { ValueState } from "@/generated/models";
 
 function county(
   fips: string,
@@ -35,6 +39,102 @@ function county(
     tick_status: "Established",
     ...patch,
   };
+}
+
+function numericRow(
+  fips: string,
+  valueState: ValueState,
+  numeric: number | null,
+  raw: string | null
+): ExplorerMapNumericRow {
+  return {
+    categoryLabel: null,
+    fips,
+    numeric,
+    provenance: {
+      atlasAcquiredAt: null,
+      evidence: {
+        provenance_ref: "prov",
+        resource_id: "resource",
+        resource_type: "observation",
+      },
+      limitations: [],
+      measureId: "incidence_floor_2023",
+      methodology: null,
+      methodologyId: null,
+      methodologyVersion: "semantic_county_assembly_v1",
+      observationId: `obs-${fips}`,
+      periodEnd: "2023-12-31",
+      periodStart: "2023-01-01",
+      provenanceRef: "prov",
+      publishedValue: raw,
+      releaseId: "release-1",
+      semanticVersion: "2.0.0",
+      sourceId: "human",
+      sourceLabel: "CDC Lyme surveillance",
+      sourcePublishedAt: null,
+      sourceUrl: null,
+      sourceVintage: "2023",
+      temporalGrain: "YEAR",
+      unit: "per 100,000",
+    },
+    raw,
+    valueState,
+  };
+}
+
+function quantityPaint(
+  layerId: "incidence_floor" | "svi" | "uninsured",
+  rows: ExplorerMapNumericRow[],
+  unit: string
+) {
+  return paintExplorerMapLayer({
+    counties: [],
+    layerId,
+    observation: {
+      omitted: 0,
+      period: "Published period.",
+      rows,
+      sourceLabel: "Published source",
+      status: "ready",
+      unit,
+    },
+    scoresStatus: "ready",
+  });
+}
+
+function swatchStyle(name: RegExp | string): string {
+  return (
+    screen
+      .getByRole("button", { name })
+      .querySelector("span")
+      ?.getAttribute("style") ?? ""
+  );
+}
+
+function paintedBackground(name: RegExp | string): string {
+  const style = swatchStyle(name);
+  const marker = "background:";
+  const start = style.indexOf(marker);
+  if (start === -1) {
+    return "";
+  }
+  const value = style.slice(start + marker.length);
+  const end = value.indexOf(";");
+  return (end === -1 ? value : value.slice(0, end)).trim();
+}
+
+function sameColor(left: string, right: string): boolean {
+  const parsedLeft = Color.parse(left);
+  const parsedRight = Color.parse(right);
+  if (!(parsedLeft && parsedRight)) {
+    return false;
+  }
+  return (
+    Math.abs(parsedLeft.r - parsedRight.r) < 0.002 &&
+    Math.abs(parsedLeft.g - parsedRight.g) < 0.002 &&
+    Math.abs(parsedLeft.b - parsedRight.b) < 0.002
+  );
 }
 
 describe("Explorer map legend", () => {
@@ -163,5 +263,206 @@ describe("Explorer map legend", () => {
       screen.getByRole("dialog", { name: "About Blacklegged tick status" })
         .textContent
     ).toContain("not a continuous risk gradient");
+  });
+
+  it("shows a solid swatch for one nonzero incidence value", () => {
+    const paint = quantityPaint(
+      "incidence_floor",
+      [numericRow("11001", ValueState.OBSERVED, 4.2, "4.2")],
+      "per 100,000"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    const swatch = screen.getByRole("button", { name: /4\.2 per 100,000/ });
+    expect(swatch.dataset.legendRole).toBe("endpoint-low");
+    expect(
+      sameColor(
+        paintedBackground(/4\.2 per 100,000/),
+        paint.colorsByFips.get("11001") ?? ""
+      )
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Color is mixed/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /No published value/ })
+    ).toBeNull();
+    expect(swatch.getAttribute("aria-label")).toMatch(
+      /Every published number in this load is this value/
+    );
+  });
+
+  it("shows one solid swatch when every incidence value repeats", () => {
+    const paint = quantityPaint(
+      "incidence_floor",
+      [
+        numericRow("11001", ValueState.OBSERVED, 4.2, "4.2"),
+        numericRow("08001", ValueState.OBSERVED, 4.2, "4.2"),
+      ],
+      "per 100,000"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    expect(
+      screen.getAllByRole("button", { name: /4\.2 per 100,000/ })
+    ).toHaveLength(1);
+    expect(paint.colorsByFips.get("11001")).toBe(
+      paint.colorsByFips.get("08001")
+    );
+    expect(
+      sameColor(
+        paintedBackground(/4\.2 per 100,000/),
+        paint.colorsByFips.get("11001") ?? ""
+      )
+    ).toBeTruthy();
+    expect(
+      paint.entries.some((entry) => entry.role === "endpoint-high")
+    ).toBeFalsy();
+  });
+
+  it("explains an all-zero incidence load as observed zero", () => {
+    const paint = quantityPaint(
+      "incidence_floor",
+      [
+        numericRow("11001", ValueState.ZERO, 0, "0"),
+        numericRow("08001", ValueState.ZERO, 0, "0"),
+      ],
+      "per 100,000"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    const swatch = screen.getByRole("button", { name: /0 per 100,000/ });
+    expect(swatch.getAttribute("aria-label")).toMatch(/Observed zero/);
+    expect(swatch.getAttribute("aria-label")).toMatch(/not a missing value/);
+    expect(
+      sameColor(
+        paintedBackground(/0 per 100,000/),
+        paint.colorsByFips.get("11001") ?? ""
+      )
+    ).toBeTruthy();
+    expect(paint.colorsByFips.get("11001")).not.toBe(
+      "var(--explorer-boundary)"
+    );
+    expect(screen.queryByRole("button", { name: /Color is mixed/ })).toBeNull();
+  });
+
+  it("keeps a constant incidence value beside missing rows", () => {
+    const paint = quantityPaint(
+      "incidence_floor",
+      [
+        numericRow("11001", ValueState.OBSERVED, 8, "8"),
+        numericRow("08001", ValueState.MISSING, null, null),
+      ],
+      "per 100,000"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    const swatch = screen.getByRole("button", { name: /8 per 100,000/ });
+    const missing = screen.getByRole("button", { name: /Missing \(not zero/ });
+    expect(
+      sameColor(
+        paintedBackground(/8 per 100,000/),
+        paint.colorsByFips.get("11001") ?? ""
+      )
+    ).toBeTruthy();
+    expect(missing.dataset.legendRole).toBe("missing");
+    expect(swatchStyle(/Missing \(not zero/)).not.toContain(
+      paint.colorsByFips.get("11001") ?? "painted"
+    );
+    expect(swatch.getAttribute("aria-label")).toMatch(
+      /Every published number in this load is this value/
+    );
+    expect(screen.queryByRole("button", { name: /Color is mixed/ })).toBeNull();
+  });
+
+  it("names the open segment popover with the layer and the value", async () => {
+    const user = userEvent.setup();
+    const paint = quantityPaint(
+      "incidence_floor",
+      [numericRow("11001", ValueState.OBSERVED, 4.2, "4.2")],
+      "per 100,000"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    await user.click(screen.getByRole("button", { name: /4\.2 per 100,000/ }));
+    expect(
+      screen.getByRole("dialog", {
+        name: "Lyme incidence floor: 4.2 per 100,000. Every published number in this load is this value.",
+      })
+    ).toBeTruthy();
+  });
+
+  it("matches incidence quarter and midpoint colors to the map", () => {
+    const paint = quantityPaint(
+      "incidence_floor",
+      [
+        numericRow("08001", ValueState.ZERO, 0, "0"),
+        numericRow("08005", ValueState.OBSERVED, 10, "10"),
+        numericRow("08013", ValueState.OBSERVED, 20, "20"),
+        numericRow("11001", ValueState.OBSERVED, 40, "40"),
+      ],
+      "per 100,000"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    const low = paint.entries.find((entry) => entry.role === "endpoint-low");
+    const high = paint.entries.find((entry) => entry.role === "endpoint-high");
+    const quarter = paint.colorsByFips.get("08005") ?? "";
+    const midpoint = paint.colorsByFips.get("08013") ?? "";
+    const style = swatchStyle(/Color is mixed/);
+    expect(quarter).toBe(
+      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.25)
+    );
+    expect(midpoint).toBe(
+      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.5)
+    );
+    expect(style).toContain(`${quarter} 25%`);
+    expect(style).toContain(`${midpoint} 50%`);
+  });
+
+  it("matches social vulnerability quarter and midpoint colors to the map", () => {
+    const paint = quantityPaint(
+      "svi",
+      [
+        numericRow("08001", ValueState.ZERO, 0, "0"),
+        numericRow("08005", ValueState.OBSERVED, 0.25, "0.25"),
+        numericRow("08013", ValueState.OBSERVED, 0.5, "0.5"),
+        numericRow("11001", ValueState.OBSERVED, 1, "1"),
+      ],
+      "percentile"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    const low = paint.entries.find((entry) => entry.role === "endpoint-low");
+    const high = paint.entries.find((entry) => entry.role === "endpoint-high");
+    const quarter = paint.colorsByFips.get("08005") ?? "";
+    const midpoint = paint.colorsByFips.get("08013") ?? "";
+    const style = swatchStyle(/Color is mixed/);
+    expect(quarter).toBe(
+      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.25)
+    );
+    expect(midpoint).toBe(
+      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.5)
+    );
+    expect(style).toContain(`${quarter} 25%`);
+    expect(style).toContain(`${midpoint} 50%`);
+  });
+
+  it("matches uninsured quarter and midpoint colors to the map", () => {
+    const paint = quantityPaint(
+      "uninsured",
+      [
+        numericRow("08001", ValueState.ZERO, 0, "0"),
+        numericRow("08005", ValueState.OBSERVED, 25, "25"),
+        numericRow("08013", ValueState.OBSERVED, 50, "50"),
+        numericRow("11001", ValueState.OBSERVED, 100, "100"),
+      ],
+      "percent"
+    );
+    render(<ExplorerMapLegend paint={paint} />);
+    const low = paint.entries.find((entry) => entry.role === "endpoint-low");
+    const high = paint.entries.find((entry) => entry.role === "endpoint-high");
+    const quarter = paint.colorsByFips.get("08005") ?? "";
+    const midpoint = paint.colorsByFips.get("08013") ?? "";
+    const style = swatchStyle(/Color is mixed/);
+    expect(quarter).toBe(
+      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.25)
+    );
+    expect(midpoint).toBe(
+      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.5)
+    );
+    expect(style).toContain(`${quarter} 25%`);
+    expect(style).toContain(`${midpoint} 50%`);
   });
 });

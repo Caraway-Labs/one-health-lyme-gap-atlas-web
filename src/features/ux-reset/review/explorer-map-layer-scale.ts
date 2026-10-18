@@ -116,6 +116,22 @@ export function mixExplorerScaleColor(
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
+function appendUnpaintedKey(
+  entries: ExplorerMapLegendEntry[],
+  rows: readonly ExplorerMapNumericRow[],
+  colorsByFips: ReadonlyMap<string, string>,
+  omitted: number
+): void {
+  const unpaintedRow = rows.some((row) => !colorsByFips.has(row.fips));
+  if (!(omitted > 0 || unpaintedRow)) {
+    return;
+  }
+  if (entries.some((entry) => entry.label === NO_PUBLISHED_VALUE)) {
+    return;
+  }
+  entries.push(noPublishedValueEntry());
+}
+
 function noPublishedValueEntry(): ExplorerMapLegendEntry {
   return {
     color: BOUNDARY_COLOR,
@@ -329,12 +345,19 @@ function paintQuantity(input: {
       (row) =>
         row.valueState === ValueState.ZERO && row.numeric === domain.minimum
     );
+    const constant = domain.maximum === domain.minimum;
     entries.push({
       color: scale.low,
       detail: zeroAtLow
         ? "Observed zero is the low end of this scale. It is not a missing value."
-        : null,
-      label: zeroAtLow ? `${lowRaw} (observed zero)` : `${lowRaw} (low end)`,
+        : constant
+          ? "Every published number in this load is this value."
+          : null,
+      label: zeroAtLow
+        ? `${lowRaw} (observed zero)`
+        : constant
+          ? lowRaw
+          : `${lowRaw} (low end)`,
       role: "endpoint-low",
     });
   }
@@ -373,9 +396,7 @@ function paintQuantity(input: {
     }
   }
   entries.push(...stateEntries(input.rows));
-  if (input.rows.some((row) => !colorsByFips.has(row.fips))) {
-    entries.push(noPublishedValueEntry());
-  }
+  appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
   const title = {
     incidence_floor: "Lyme incidence floor",
     svi: "Social vulnerability",
@@ -466,9 +487,7 @@ function paintRurality(input: {
     });
   }
   entries.push(...stateEntries(input.rows));
-  if (input.rows.some((row) => !colorsByFips.has(row.fips))) {
-    entries.push(noPublishedValueEntry());
-  }
+  appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
   return paintBase({
     colorsByFips,
     entries,
