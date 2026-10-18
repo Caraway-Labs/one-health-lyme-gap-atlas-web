@@ -4409,6 +4409,7 @@ select:focus-visible {
   font-weight: 700;
 }
 .front-porch-card-finding em {
+  color: #133841;
   font-style: italic;
   font-weight: 700;
 }
@@ -4852,6 +4853,7 @@ select:focus-visible {
     font-weight: 700;
   }
   .front-porch-mobile-note .front-porch-card-finding em {
+    color: #133841;
     font-style: italic;
     font-weight: 700;
   }
