@@ -170,6 +170,12 @@
   .ux-reset-pro-app .ux-reset-trust-footer a {
     min-height: var(--control-height);
   }
+
+  /* Match the desktop rule's specificity. The earlier padding-block would
+     otherwise keep the stacked bar at 4px instead of this 16px. */
+  .ux-reset-pro-app .ux-reset-trust-footer-bar {
+    padding-block: var(--space-4);
+  }
 }
 
 /* Full-viewport public pages have no sidebar, so the centered group meets
