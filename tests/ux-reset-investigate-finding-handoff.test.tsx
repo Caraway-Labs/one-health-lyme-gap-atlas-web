@@ -378,6 +378,7 @@ function workspaceFor(
     selection: { kind: "county", fips: "08001" },
     setCounty: () => {},
     stateLabel: "Colorado",
+    countyDetail: null,
     suggestedFollowUpEvidence: null,
   };
 }

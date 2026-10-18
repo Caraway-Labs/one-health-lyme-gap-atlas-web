@@ -6,6 +6,7 @@ import {
   investigateMeasuresFixture,
   investigateObservationsFor,
 } from "../fixtures/investigate-api-fixtures";
+import autaugaCounty from "../fixtures/review-al-01001.json" with { type: "json" };
 import {
   buildStateReview,
   reviewCandidate,
@@ -247,6 +248,31 @@ async function installAvailabilityMocks(
       status: 200,
     });
   });
+  await page.route("**/v1/counties/*", async (route) => {
+    const fips =
+      new URL(route.request().url()).pathname.split("/").at(-1) ?? "";
+    const county = COUNTIES.find((entry) => entry.fips === fips);
+    await route.fulfill({
+      json: {
+        ...autaugaCounty,
+        county: county?.county ?? autaugaCounty.county,
+        fips: county?.fips ?? fips,
+        release: { ...autaugaCounty.release, release_id: RELEASE },
+        state: county?.state ?? autaugaCounty.state,
+        state_name: county?.stateName ?? autaugaCounty.state_name,
+      },
+      status: 200,
+    });
+  });
+  await page.route(
+    "**/v1/counties/*/tier1-surveillance-priority**",
+    async (route) => {
+      await route.fulfill({
+        json: { detail: "No matching priority" },
+        status: 404,
+      });
+    }
+  );
   await page.route("**/v1/observations**", async (route) => {
     const url = new URL(route.request().url());
     const measureId = url.searchParams.get("measure_id") ?? "reported-cases";
