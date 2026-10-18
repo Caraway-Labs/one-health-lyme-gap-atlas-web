@@ -1,45 +1,27 @@
-import { z } from "zod";
+import { getDocsUrl, type PublicOriginEnvironment } from "@/lib/public-origins";
 
-const DEFAULT_DOCS_URL = "https://onehealthatlas.org/docs";
-const docsUrlSchema = z
-  .string()
-  .url()
-  .refine((value) => {
-    const parsed = new URL(value);
-    return parsed.protocol === "https:" && parsed.pathname === "/docs";
-  }, "The Atlas docs URL must be an HTTPS /docs URL.");
+export type { PublicOriginEnvironment as PublicDocsEnvironment } from "@/lib/public-origins";
+export { getDocsUrl } from "@/lib/public-origins";
 
-const deployedDocsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
-
-export type PublicDocsEnvironment = {
-  NEXT_PUBLIC_DOCS_URL?: string;
-};
-
-export function getDocsUrl(environment?: PublicDocsEnvironment): string {
-  const configuredUrl =
-    environment?.NEXT_PUBLIC_DOCS_URL ?? deployedDocsUrl ?? DEFAULT_DOCS_URL;
-  const parsed = docsUrlSchema.safeParse(configuredUrl);
-
-  if (!parsed.success) {
-    throw new Error("NEXT_PUBLIC_DOCS_URL must be an HTTPS /docs URL.");
-  }
-
-  return parsed.data;
-}
-
-export function getDocsHref(anchor?: string): string {
-  if (!anchor) return getDocsUrl();
+export function getDocsHref(
+  anchor?: string,
+  environment?: PublicOriginEnvironment
+): string {
+  const docsUrl = getDocsUrl(environment);
+  if (!anchor) return docsUrl;
   return new URL(
     anchor.startsWith("#") ? anchor : `#${anchor}`,
-    getDocsUrl()
+    docsUrl
   ).toString();
 }
 
 /** Link to a published docs page slug (for example `evidence-and-uncertainty`). */
-export function getDocsPageHref(pageSlug: string): string {
+export function getDocsPageHref(
+  pageSlug: string,
+  environment?: PublicOriginEnvironment
+): string {
+  const docsUrl = getDocsUrl(environment);
   const normalized = pageSlug.replace(/^\/+/, "").replace(/\/+$/, "");
-  if (!normalized) {
-    return getDocsUrl();
-  }
-  return new URL(normalized, `${getDocsUrl().replace(/\/$/, "")}/`).toString();
+  if (!normalized) return docsUrl;
+  return new URL(normalized, `${docsUrl.replace(/\/$/, "")}/`).toString();
 }

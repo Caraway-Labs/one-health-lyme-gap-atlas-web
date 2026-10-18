@@ -9,12 +9,20 @@ describe("documentation configuration", () => {
 
   it("uses the canonical public docs URL by default", () => {
     expect(getDocsUrl({})).toBe("https://onehealthatlas.org/docs");
-    expect(getDocsHref("missing-is-not-zero")).toBe(
+    expect(getDocsHref("missing-is-not-zero", {})).toBe(
       "https://onehealthatlas.org/docs#missing-is-not-zero"
     );
-    expect(getDocsPageHref("evidence-and-uncertainty")).toBe(
+    expect(getDocsPageHref("evidence-and-uncertainty", {})).toBe(
       "https://onehealthatlas.org/docs/evidence-and-uncertainty"
     );
+  });
+
+  it("follows a preview site origin when the docs URL is not set separately", () => {
+    expect(
+      getDocsPageHref("api-reference", {
+        NEXT_PUBLIC_SITE_URL: "https://preview.example",
+      })
+    ).toBe("https://preview.example/docs/api-reference");
   });
 
   it("rejects non-canonical docs origins and paths", () => {

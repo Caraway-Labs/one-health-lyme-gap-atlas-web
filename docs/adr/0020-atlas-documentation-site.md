@@ -10,7 +10,7 @@ Atlas needs a public help center for onboarding, data interpretation, methods, t
 
 Use Fumadocs MDX (`fumadocs-core`, `fumadocs-mdx`, and `fumadocs-ui`) inside the existing web repository. Store source content in `content/docs`, generate the Fumadocs source during install/typecheck/build, and render it through a route-scoped `/docs` layout with static parameters. Keep docs pages outside the Atlas application shell while sharing the existing Next.js build and DigitalOcean service.
 
-Use `https://carawaylabs.com/docs` as the canonical public URL. The Atlas app references it through the single public `NEXT_PUBLIC_DOCS_URL` configuration value, with the same URL as the safe local/default fallback. The Help/Docs control opens a new tab with `target="_blank"` and `rel="noopener noreferrer"`; the original route and query state remain intact.
+Use `https://onehealthatlas.org/docs` as the canonical public URL. The Atlas app reads the site origin, docs URL, and API origin from `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_DOCS_URL`, and `NEXT_PUBLIC_API_BASE_URL`. Those values default to the onehealthatlas hosts, and a preview build supplies its own origins. Canonical HTML, MDX links, the OpenAPI document pointer, and `externalDocs` follow that configuration. Problem-type URIs published in OpenAPI examples stay unchanged. The Help/Docs control opens a new tab with `target="_blank"` and `rel="noopener noreferrer"`; the original route and query state remain intact.
 
 Use Fumadocs built-in navigation, heading anchors, code rendering, and static search backed by the local `/api/search` route. Disable the optional theme switch so the docs surface remains consistent with the current Atlas light-only design. Do not add analytics to docs by default.
 
