@@ -46,6 +46,7 @@ import {
 } from "@/features/ux-reset/review/explorer-mode";
 import {
   ExplorerWhatIfScenario,
+  explorerScenarioScopeSupported,
   resolveExplorerWhatIfImpact,
 } from "@/features/ux-reset/review/explorer-what-if-scenario";
 import {
@@ -225,8 +226,12 @@ function ResetReviewExperienceInner() {
   const countyReference = useExplorerCountyReference(
     scopeUnsupported ? null : confirmedRelease
   );
+  const scenarioScopeSupported = explorerScenarioScopeSupported(
+    scope,
+    scopeUnsupported
+  );
   const scenarioScoresQuery = useExplorerMapScores(
-    isLower48ReviewScope(scope) && !scopeUnsupported ? confirmedRelease : null
+    scenarioScopeSupported ? confirmedRelease : null
   );
   const scenarioImpact = useMemo(
     () =>
@@ -636,7 +641,7 @@ function ResetReviewExperienceInner() {
         </p>
       ) : null}
 
-      {isLower48ReviewScope(scope) && !scopeUnsupported && !explorerMode ? (
+      {scenarioScopeSupported && !explorerMode ? (
         <ExplorerWhatIfScenario
           impact={scenarioImpact}
           scoresRetrying={
@@ -722,6 +727,7 @@ function ResetReviewExperienceInner() {
                 period={urlState.period}
                 releaseId={presentationQuery.metadata.release_id}
                 releaseStates={stateOptions}
+                scenarioSettings={scenarioSettings}
                 sources={presentationQuery.metadata.sources}
                 tierRelease={tierRelease}
                 onCountyChange={setCounty}

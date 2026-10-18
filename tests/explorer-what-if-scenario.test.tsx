@@ -1,10 +1,15 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SCENARIO_SCORE_DEFAULTS } from "../src/features/ux-reset/review/explorer-scenario-score";
+import {
+  SCENARIO_SCORE_DEFAULTS,
+  adjustCountyScenarios,
+} from "../src/features/ux-reset/review/explorer-scenario-score";
 import {
   EXPLORER_SCENARIO_IMPACT_MICROCOPY,
   ExplorerWhatIfScenario,
+  applyGapScoreScenarioColors,
+  explorerScenarioScopeSupported,
   formatExplorerScenarioDelta,
   presentExplorerScenarioImpact,
   resolveExplorerWhatIfImpact,
@@ -109,10 +114,10 @@ describe(ExplorerWhatIfScenario, () => {
 
     expect(
       screen.getByTestId("explorer-scenario-impact-summary").textContent
-    ).toBe("Select a county");
+    ).toBe("Select a county to compare its published and adjusted score");
     expect(
       screen.getByTestId("explorer-scenario-impact").textContent
-    ).toContain("Select a county to see its published score");
+    ).toContain("Select a county to compare its published and adjusted score");
     expect(screen.getAllByRole("slider")).toHaveLength(3);
     expect(
       screen.getByTestId("explorer-scenario-impact-microcopy").textContent
@@ -780,5 +785,227 @@ describe(resolveExplorerWhatIfImpact, () => {
       kind: "limited",
       rank: false,
     });
+  });
+
+  it("keeps the scenario on national and lower-48 scope", () => {
+    expect({
+      ak: explorerScenarioScopeSupported("AK", true),
+      akUngated: explorerScenarioScopeSupported("AK", false),
+      all: explorerScenarioScopeSupported("ALL", false),
+      co: explorerScenarioScopeSupported("CO", false),
+      dc: explorerScenarioScopeSupported("DC", false),
+      hi: explorerScenarioScopeSupported("HI", true),
+    }).toStrictEqual({
+      ak: false,
+      akUngated: false,
+      all: true,
+      co: true,
+      dc: true,
+      hi: false,
+    });
+  });
+
+  it("compares one lower-48 county at national scope and refuses Alaska", () => {
+    const alaska = county({
+      county: "Anchorage Municipality",
+      fips: "02020",
+      priority: INVESTIGATE,
+      score: {
+        access_signal: 0,
+        community: 0,
+        ecological: 100,
+        human_weakness: 100,
+        pathogen_signal: 100,
+        rural_signal: 0,
+        score: 99,
+        svi_signal: 0,
+        tick_signal: 100,
+      },
+      state: "AK",
+      state_name: "Alaska",
+    });
+    const none = resolveExplorerWhatIfImpact({
+      collectionSettings: SCENARIO_SCORE_DEFAULTS,
+      counties: [published, conejos, alaska],
+      countyFips: null,
+      scopeCode: "ALL",
+      scoresStatus: "ready",
+      settings: { ...SCENARIO_SCORE_DEFAULTS, ecological_share: 85 },
+    });
+    const national = resolveExplorerWhatIfImpact({
+      collectionSettings: SCENARIO_SCORE_DEFAULTS,
+      counties: [published, conejos, alaska],
+      countyFips: "01001",
+      scopeCode: "ALL",
+      scoresStatus: "ready",
+      settings: { ...SCENARIO_SCORE_DEFAULTS, ecological_share: 85 },
+    });
+    const nationalView = presentExplorerScenarioImpact(national);
+    const alaskaSelection = resolveExplorerWhatIfImpact({
+      collectionSettings: SCENARIO_SCORE_DEFAULTS,
+      counties: [published, alaska],
+      countyFips: "02020",
+      scopeCode: "ALL",
+      scoresStatus: "ready",
+      settings: SCENARIO_SCORE_DEFAULTS,
+    });
+    const serialized = JSON.stringify(national);
+    expect({
+      alaska: alaskaSelection.status,
+      anchorage: serialized.includes("Anchorage"),
+      national: nationalView,
+      none: presentExplorerScenarioImpact(none),
+      score99: serialized.includes("99"),
+    }).toMatchObject({
+      alaska: "unavailable",
+      anchorage: false,
+      national: {
+        collapsed: "65.0 → 85.0 · +20.0 points",
+        countyName: "Autauga County",
+        kind: "definite",
+        priorityText: `Priority changed: ${REVIEW} → ${INVESTIGATE}`,
+      },
+      none: {
+        collapsed:
+          "Select a county to compare its published and adjusted score",
+        kind: "placeholder",
+        placeholder: "none",
+      },
+      score99: false,
+    });
+  });
+
+  it("compares the District of Columbia and keeps a limited national county honest", () => {
+    const alaska = county({
+      county: "Anchorage Municipality",
+      fips: "02020",
+      score: published.score,
+      state: "AK",
+      state_name: "Alaska",
+    });
+    const district = county({
+      county: "District of Columbia",
+      fips: "11001",
+      human_status: "published_count_floor",
+      priority: REVIEW,
+      score: published.score,
+      state: "DC",
+      state_name: "District of Columbia",
+    });
+    const dc = resolveExplorerWhatIfImpact({
+      collectionSettings: SCENARIO_SCORE_DEFAULTS,
+      counties: [district, alaska],
+      countyFips: "11001",
+      scopeCode: "ALL",
+      scoresStatus: "ready",
+      settings: { ...SCENARIO_SCORE_DEFAULTS, ecological_share: 40 },
+    });
+    const zeroHuman = county({
+      county: "Baldwin County",
+      fips: "01003",
+      human_status: "published_count_floor",
+      score: {
+        access_signal: 0,
+        community: 0,
+        ecological: 100,
+        human_weakness: 0,
+        pathogen_signal: 100,
+        rural_signal: 0,
+        score: 0,
+        svi_signal: 0,
+        tick_signal: 100,
+      },
+    });
+    const limited = resolveExplorerWhatIfImpact({
+      collectionSettings: SCENARIO_SCORE_DEFAULTS,
+      counties: [zeroHuman, published],
+      countyFips: "01003",
+      scopeCode: "ALL",
+      scoresStatus: "ready",
+      settings: { ...SCENARIO_SCORE_DEFAULTS, low_incidence_breakpoint: 20 },
+    });
+    const limitedView = presentExplorerScenarioImpact(limited);
+    const limitedText = JSON.stringify(limitedView);
+    expect({
+      dc: presentExplorerScenarioImpact(dc),
+      kind: limitedView.kind,
+      points: limitedText.includes("points"),
+      rank: limitedText.includes("rank"),
+    }).toMatchObject({
+      dc: {
+        collapsed: "65.0 → 40.0 · \u221225.0 points",
+        countyName: "District of Columbia",
+      },
+      kind: "limited",
+      points: false,
+      rank: false,
+    });
+  });
+});
+
+describe(applyGapScoreScenarioColors, () => {
+  it("recolors adjusted county fills and leaves limited counties on the governed color", () => {
+    const governed = county({
+      color: "#55a8a3",
+      fips: "08021",
+      human_status: "no_county_linked_record",
+      score: {
+        access_signal: 84.8,
+        community: 87.3,
+        ecological: 0,
+        human_weakness: 75,
+        pathogen_signal: 0,
+        rural_signal: 100,
+        score: 22.9,
+        svi_signal: 83.8,
+        tick_signal: 0,
+      },
+      state: "CO",
+    });
+    const limitedCounty = county({
+      color: "#a9d2db",
+      county: "Adams County",
+      fips: "08001",
+      human_status: "published_count_floor",
+      score: {
+        access_signal: 0,
+        community: 0,
+        ecological: 100,
+        human_weakness: 0,
+        pathogen_signal: 100,
+        rural_signal: 0,
+        score: 0,
+        svi_signal: 0,
+        tick_signal: 100,
+      },
+      state: "CO",
+    });
+    const moved = applyGapScoreScenarioColors([governed, limitedCounty], null);
+    expect(moved.counties.map((entry) => entry.color)).toStrictEqual([
+      "#55a8a3",
+      "#a9d2db",
+    ]);
+
+    const scenarios = adjustCountyScenarios(
+      [governed, limitedCounty],
+      { ...SCENARIO_SCORE_DEFAULTS, missing_human_weakness: 40 },
+      SCENARIO_SCORE_DEFAULTS
+    );
+    const colored = applyGapScoreScenarioColors(
+      [governed, limitedCounty],
+      scenarios
+    );
+    expect({
+      adjusted: colored.counties[0]?.color.startsWith("var(--map-ramp-"),
+      governedScore: colored.counties[1]?.score.score,
+      limitedColor: colored.counties[1]?.color,
+      limitedPriority: colored.counties[1]?.priority,
+    }).toStrictEqual({
+      adjusted: true,
+      governedScore: 0,
+      limitedColor: "#a9d2db",
+      limitedPriority: LOWER,
+    });
+    expect(JSON.stringify(colored)).not.toContain("national");
   });
 });
