@@ -932,7 +932,7 @@ export function ReviewOperatingPicture({
             ) : geometryReady && hasMapCounties ? (
               <AtlasMap
                 key={mapContext}
-                ariaLabel={`Map of ${stateName}. Select a published county or use the Published county picker.`}
+                ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
                 cameraFrameState={scopeCode}
                 fitSignal={fitSignal}
                 geometry={geometryQuery.data as never}
