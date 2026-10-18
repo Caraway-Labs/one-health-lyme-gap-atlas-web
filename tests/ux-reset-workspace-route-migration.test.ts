@@ -172,6 +172,7 @@ describe("six-page workspace route migration", () => {
     expect(importers.sort()).toStrictEqual(
       [
         "src/features/ux-reset/ask-atlas/page-reference.ts",
+        "src/features/ux-reset/workspace-header-title.ts",
         "src/features/ux-reset/workspace-route-migration.ts",
         "src/middleware.ts",
       ].sort()

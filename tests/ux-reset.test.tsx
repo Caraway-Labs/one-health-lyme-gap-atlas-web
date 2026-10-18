@@ -236,7 +236,12 @@ describe("UX Reset professional workspace", () => {
       </ResetProfessionalShell>
     );
     expect(document.querySelector(".ux-reset-pro-app")).toBeTruthy();
-    expect(screen.getByText("Professional workspace")).toBeTruthy();
+    expect(document.querySelector(".app-header-label")?.textContent).toBe(
+      "Atlas Explorer"
+    );
+    expect(
+      screen.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeTruthy();
     expect(
       screen.queryByRole("link", { name: "Geographic Explorer" })
     ).toBeNull();
