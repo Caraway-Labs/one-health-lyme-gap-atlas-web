@@ -5,12 +5,12 @@ import {
   isContiguousUsCounty,
 } from "../src/lib/atlas-geometry";
 import {
-  followUpPlanFor,
   matchesEvidence,
   numericParam,
   priorityTone,
   reasonsFor,
 } from "../src/lib/atlas-ui";
+import { followUpPlanFor } from "../src/lib/follow-up-workflows";
 import { countyBelongsToDistrict } from "../src/lib/health-districts";
 
 const county = {
@@ -180,7 +180,9 @@ describe("atlas UI rules", () => {
       "#f49a32",
       "#e9602b",
     ];
-    const plans = colors.map((color) => followUpPlanFor({ ...detail, color }));
+    const plans = colors.map((color) =>
+      followUpPlanFor({ ...detail, color, in_contiguous_tick_scope: true })
+    );
     expect(plans.map((plan) => plan.level)).toStrictEqual([
       "Continue routine review",
       "Monitor the pattern",
@@ -190,17 +192,22 @@ describe("atlas UI rules", () => {
       "Prioritize targeted follow-up",
     ]);
     expect({
-      actions: plans.every((plan) => plan.actions.length >= 3),
+      actions: plans.every((plan) => plan.actions.length === 5),
       neutralWording: plans.every(
         (plan) =>
-          !/diagnos|outbreak|individual risk|transmission/i.test(plan.level)
+          !/diagnos|outbreak|individual risk|within \d|complete within|contact partners/i.test(
+            `${plan.level} ${plan.summary}`
+          )
       ),
-      timeframe: plans.at(-1)?.timeframe ?? "",
+      reviewAvailable: plans.every((plan) => plan.reviewAvailable),
     }).toStrictEqual({
       actions: true,
       neutralWording: true,
-      timeframe: expect.stringContaining("2 weeks"),
+      reviewAvailable: true,
     });
+    expect(followUpPlanFor({ ...detail, color: "#000000" }).level).toBe(
+      "Review level unavailable"
+    );
   });
 
   it("keeps district highlights inside the selected state", () => {

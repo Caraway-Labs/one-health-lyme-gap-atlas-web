@@ -86,6 +86,7 @@ function baseWorkspace(
     selection: { fips: SAMPLE_FIPS, kind: "county" },
     setCounty: vi.fn<(fips: string) => void>(),
     stateLabel: "Texas (TX)",
+    countyDetail: null,
     suggestedFollowUpEvidence: null,
     ...overrides,
   };

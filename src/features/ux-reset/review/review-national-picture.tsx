@@ -28,6 +28,7 @@ import {
   type ExplorerAvailableDataGate,
   type ExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
+import { ExplorerMapFollowUp } from "@/features/ux-reset/review/explorer-map-follow-up";
 import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
   completenessLayerGate,
@@ -572,6 +573,7 @@ export function ReviewNationalPicture({
           paint={mapPaint}
         />
       </Card>
+      <ExplorerMapFollowUp fips={selectedFips || null} releaseId={releaseId} />
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">
           <div className="ux-reset-review-scope-field">

@@ -154,12 +154,8 @@ export function ReviewPublishedCountyPreview({
         </p>
         <CanonicalGeographyAvailabilityNotice fips={county.fips} />
         <p className="type-body">
-          Published county evidence is available. This selection is not a review
-          recommendation, and it is not a disease-risk estimate.
-        </p>
-        <p className="type-small">
-          Review recommendations are unavailable for this jurisdiction in the
-          current release.
+          Published county evidence is available. Selecting a county is not
+          itself a review recommendation, and it is not a disease-risk estimate.
         </p>
         <div className="ux-reset-review-preview-actions">
           {onViewCountyEvidence ? (

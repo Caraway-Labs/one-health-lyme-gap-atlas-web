@@ -38,7 +38,7 @@ Map and data-visualization CSS may sit beside this hierarchy.
 ## Token conventions
 
 - **Semantic chrome:** `--background`, `--foreground`, `--primary`, `--secondary`, `--muted`, `--destructive`, `--success`, `--warning`, `--info`, `--border`, `--input`, `--ring`, radius, spacing, motion.
-- **Domain / viz:** `--navy`, `--teal`, `--mint`, `--priority-*`, `--map-ramp-*`, `--atlas-action-primary`. Do not flatten these into `primary`.
+- **Domain / viz:** `--navy`, `--teal`, `--mint`, `--action-plan-surface`, `--action-plan-border`, `--priority-*`, `--map-ramp-*`, `--atlas-action-primary`. Do not flatten these into `primary`.
 - Consume semantic tokens in reusable UI. Do not add hardcoded chrome hex in feature components.
 - Dark mode: remap the semantic variables on a future `.dark` class. Do not ship a dark theme from this document.
 
