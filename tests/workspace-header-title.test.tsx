@@ -167,6 +167,34 @@ describe("workspace header title resolution", () => {
     });
   });
 
+  it("keeps the evidence brief on the fallback title", () => {
+    const brief =
+      "county=08001&scope=CO&dataset=alpha-2026&plan=evidence-brief";
+    expect({
+      bareAction: workspaceHeaderTitle(RESET_ACTION_PATH),
+      briefArgument: workspaceHeaderTitle(RESET_ACTION_PATH, brief),
+      briefInPath: workspaceHeaderTitle(`${RESET_ACTION_PATH}?${brief}`),
+      otherPlan: workspaceHeaderTitle(
+        RESET_ACTION_PATH,
+        "county=08001&plan=brief"
+      ),
+      repeatedPlan: workspaceHeaderTitle(
+        RESET_ACTION_PATH,
+        "plan=evidence-brief&plan=brief"
+      ),
+      trimmedPlan: workspaceHeaderTitle(
+        `${RESET_ACTION_PATH}?plan=%20evidence-brief%20`
+      ),
+    }).toStrictEqual({
+      bareAction: "Atlas Explorer",
+      briefArgument: WORKSPACE_HEADER_FALLBACK,
+      briefInPath: WORKSPACE_HEADER_FALLBACK,
+      otherPlan: "Atlas Explorer",
+      repeatedPlan: "Atlas Explorer",
+      trimmedPlan: WORKSPACE_HEADER_FALLBACK,
+    });
+  });
+
   it("uses a fallback for routes outside the six destinations", () => {
     expect(
       titlesFor([
@@ -196,6 +224,13 @@ describe("workspace header in the professional shell", () => {
   afterEach(() => {
     cleanup();
     pathname = ATLAS_EXPLORER_PATH;
+    const searchParamKeys: string[] = [];
+    for (const key of searchParams.keys()) {
+      searchParamKeys.push(key);
+    }
+    for (const key of searchParamKeys) {
+      searchParams.delete(key);
+    }
     vi.unstubAllGlobals();
   });
 
@@ -267,6 +302,43 @@ describe("workspace header in the professional shell", () => {
       "Atlas Explorer",
       "Ask Atlas",
       "Intelligence Feed",
+      WORKSPACE_HEADER_FALLBACK,
+    ]);
+    expect(
+      screen.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeTruthy();
+  });
+
+  it("updates the visible title when the evidence-brief query changes", () => {
+    pathname = RESET_ACTION_PATH;
+    searchParams.set("county", "08001");
+    searchParams.set("plan", "evidence-brief");
+    const view = render(
+      <ResetProfessionalShell>
+        <p>Evidence brief</p>
+      </ResetProfessionalShell>
+    );
+    const titles = [headerLabel()];
+
+    searchParams.set("plan", "brief");
+    view.rerender(
+      <ResetProfessionalShell>
+        <p>Evidence brief</p>
+      </ResetProfessionalShell>
+    );
+    titles.push(headerLabel());
+
+    searchParams.set("plan", " evidence-brief ");
+    view.rerender(
+      <ResetProfessionalShell>
+        <p>Evidence brief</p>
+      </ResetProfessionalShell>
+    );
+    titles.push(headerLabel());
+
+    expect(titles).toStrictEqual([
+      WORKSPACE_HEADER_FALLBACK,
+      "Atlas Explorer",
       WORKSPACE_HEADER_FALLBACK,
     ]);
     expect(

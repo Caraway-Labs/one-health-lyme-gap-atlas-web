@@ -60,12 +60,30 @@ function destinationFromNavigation(
   return NAVIGATION_DESTINATIONS[metadata.id] ?? null;
 }
 
+function headerSearchParams(
+  pathname: string,
+  searchParams?: string | URLSearchParams
+): URLSearchParams {
+  if (typeof searchParams === "string") {
+    const query = searchParams.startsWith("?")
+      ? searchParams.slice(1)
+      : searchParams;
+    return new URLSearchParams(query);
+  }
+  if (searchParams) {
+    return new URLSearchParams(searchParams);
+  }
+  const query = pathname.split("?", 2)[1]?.split("#", 1)[0];
+  return new URLSearchParams(query ?? "");
+}
+
 function destinationFromMigration(
-  pathname: string
+  pathname: string,
+  searchParams: URLSearchParams
 ): WorkspaceDestinationId | null {
   const migrated = recordedWorkspaceMigration({
     pathname,
-    searchParams: new URLSearchParams(),
+    searchParams,
   });
   if (migrated.kind !== "redirect") {
     return null;
@@ -81,7 +99,7 @@ function destinationFromResetRoute(
   }
   return (
     destinationIdForCanonicalPath(route.href) ??
-    destinationFromMigration(route.href)
+    destinationFromMigration(route.href, new URLSearchParams())
   );
 }
 
@@ -91,11 +109,12 @@ function destinationFromResetRoute(
  * not inherit the explorer redirect.
  */
 function destinationFromAncestorAlias(
-  pathname: string
+  pathname: string,
+  searchParams: URLSearchParams
 ): WorkspaceDestinationId | null {
   let parent = pathname.slice(0, pathname.lastIndexOf("/"));
   while (parent.includes("/", 1)) {
-    const destination = destinationFromMigration(parent);
+    const destination = destinationFromMigration(parent, searchParams);
     if (destination) {
       return destination;
     }
@@ -105,9 +124,26 @@ function destinationFromAncestorAlias(
 }
 
 export function workspaceHeaderDestination(
-  pathname: string
+  pathname: string,
+  searchParams?: string | URLSearchParams
 ): WorkspaceDestinationId | null {
   const normalized = normalizeMigrationPathname(pathname);
+  const params = headerSearchParams(pathname, searchParams);
+  // `recordedWorkspaceMigration` keeps one `plan=evidence-brief` on Action
+  // through `actionKeepsEvidenceBrief`. That page is not a workspace destination.
+  const migrated = recordedWorkspaceMigration({
+    pathname: normalized,
+    searchParams: params,
+  });
+  if (migrated.kind === "unchanged" && migrated.reason === "evidence-brief") {
+    return null;
+  }
+  if (migrated.kind === "redirect") {
+    const redirected = destinationIdForCanonicalPath(migrated.pathname);
+    if (redirected) {
+      return redirected;
+    }
+  }
   const fromNavigation = destinationFromNavigation(normalized);
   if (fromNavigation) {
     return fromNavigation;
@@ -116,14 +152,14 @@ export function workspaceHeaderDestination(
   if (fromReset) {
     return fromReset;
   }
-  return (
-    destinationFromMigration(normalized) ??
-    destinationFromAncestorAlias(normalized)
-  );
+  return destinationFromAncestorAlias(normalized, params);
 }
 
-export function workspaceHeaderTitle(pathname: string): string {
-  const destination = workspaceHeaderDestination(pathname);
+export function workspaceHeaderTitle(
+  pathname: string,
+  searchParams?: string | URLSearchParams
+): string {
+  const destination = workspaceHeaderDestination(pathname, searchParams);
   if (!destination) {
     return WORKSPACE_HEADER_FALLBACK;
   }

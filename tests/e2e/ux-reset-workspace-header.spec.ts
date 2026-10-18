@@ -162,6 +162,29 @@ test.describe("workspace header titles", () => {
     }
   });
 
+  test("uses the fallback title for the evidence brief and updates after leaving it", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 900, width: 1280 });
+    await page.goto(
+      "/app/action?county=08001&scope=CO&dataset=alpha-2026&plan=evidence-brief"
+    );
+    await expect(page).toHaveURL(/\/app\/action/);
+    await expect(page).toHaveURL(/plan=evidence-brief/);
+    await expectHeaderTitle(page, "One Health Atlas");
+    await expect(page.getByTestId("action-evidence-brief")).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Professional workspace" })
+    ).toBeVisible();
+
+    await page.getByTestId("action-return").click();
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+      .toBe("/explore");
+    await expect(page).not.toHaveURL(/plan=evidence-brief/);
+    await expectHeaderTitle(page, "Atlas Explorer");
+  });
+
   test("uses the fallback on an authenticated page outside the six destinations", async ({
     page,
   }) => {

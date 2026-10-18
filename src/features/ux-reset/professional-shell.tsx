@@ -521,7 +521,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
             <Menu />
           </SidebarTrigger>
           <span className="app-header-label">
-            {workspaceHeaderTitle(pathname)}
+            {workspaceHeaderTitle(pathname, searchParams.toString())}
           </span>
           {askAtlas.launcher}
         </header>
