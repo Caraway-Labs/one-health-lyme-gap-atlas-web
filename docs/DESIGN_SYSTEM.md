@@ -60,7 +60,7 @@ Prefer `--space-1` (4px) through `--space-12` (48px) and `--control-height` (44p
 
 ## Canonical primitives
 
-`src/components/ui` owns Button, Badge, Card, Dialog, DropdownMenu, Input, Progress, Select, Slider, Table, and Tooltip. Search there before creating a control. Do not add a second component framework. Slider is a native range input (`data-slot="slider"`) for shared assumption controls.
+`src/components/ui` owns Button, Badge, Card, Dialog, DropdownMenu, Input, Popover, Progress, Select, Slider, Table, and Tooltip. Search there before creating a control. Do not add a second component framework. Slider is a native range input (`data-slot="slider"`) for shared assumption controls. Popover is the click, keyboard, and touch disclosure; Tooltip stays hover and focus only.
 
 ## Atlas domain patterns
 

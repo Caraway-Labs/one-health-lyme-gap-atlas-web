@@ -567,7 +567,10 @@ export function ReviewNationalPicture({
             </AtlasStatusMessage>
           )}
         </div>
-        <ExplorerMapLegend paint={mapPaint} />
+        <ExplorerMapLegend
+          key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
+          paint={mapPaint}
+        />
       </Card>
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">

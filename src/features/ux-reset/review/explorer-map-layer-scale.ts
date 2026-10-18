@@ -9,6 +9,7 @@ import {
   type ExplorerMapNumericRow,
   type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
+import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
 import { ValueState } from "@/generated/models";
 
 const NO_PUBLISHED_VALUE = "No published value";
@@ -115,11 +116,28 @@ export function mixExplorerScaleColor(
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
+function appendUnpaintedKey(
+  entries: ExplorerMapLegendEntry[],
+  rows: readonly ExplorerMapNumericRow[],
+  colorsByFips: ReadonlyMap<string, string>,
+  omitted: number
+): void {
+  const unpaintedRow = rows.some((row) => !colorsByFips.has(row.fips));
+  if (!(omitted > 0 || unpaintedRow)) {
+    return;
+  }
+  if (entries.some((entry) => entry.label === NO_PUBLISHED_VALUE)) {
+    return;
+  }
+  entries.push(noPublishedValueEntry());
+}
+
 function noPublishedValueEntry(): ExplorerMapLegendEntry {
   return {
     color: BOUNDARY_COLOR,
     detail: "Not zero, not low, and not confirmed absence",
     label: NO_PUBLISHED_VALUE,
+    role: "missing",
   };
 }
 
@@ -190,6 +208,7 @@ function stateEntries(
       color: STATE_COLOR[state] ?? "var(--atlas-muted-text)",
       detail: null,
       label: STATE_LABEL[state] ?? state,
+      role: "missing",
     });
   }
   return entries;
@@ -204,6 +223,7 @@ function paintBase(input: {
   title: string;
   unit: string | null;
   colorsByFips: Map<string, string>;
+  scale: ExplorerMapPaint["scale"];
   selection: string | null;
   selectionEvidence?: EvidenceObjectModel | null;
 }): ExplorerMapPaint {
@@ -214,6 +234,7 @@ function paintBase(input: {
     layerId: input.layerId,
     note: input.note,
     period: input.period,
+    scale: input.scale,
     selection: input.selection,
     selectionEvidence: input.selectionEvidence ?? null,
     title: input.title,
@@ -324,12 +345,20 @@ function paintQuantity(input: {
       (row) =>
         row.valueState === ValueState.ZERO && row.numeric === domain.minimum
     );
+    const constant = domain.maximum === domain.minimum;
     entries.push({
       color: scale.low,
       detail: zeroAtLow
         ? "Observed zero is the low end of this scale. It is not a missing value."
-        : null,
-      label: zeroAtLow ? `${lowRaw} (observed zero)` : `${lowRaw} (low end)`,
+        : constant
+          ? "Every published number in this load is this value."
+          : null,
+      label: zeroAtLow
+        ? `${lowRaw} (observed zero)`
+        : constant
+          ? lowRaw
+          : `${lowRaw} (low end)`,
+      role: "endpoint-low",
     });
   }
   if (domain && highRaw && domain.maximum !== domain.minimum) {
@@ -351,6 +380,7 @@ function paintQuantity(input: {
       label: highIsEndpoint
         ? `${highRaw} (high end)`
         : `${domain.maximum} (scale high end)`,
+      role: "endpoint-high",
     });
     if (highest?.numeric != null && !highIsEndpoint && highest.raw) {
       entries.push({
@@ -361,10 +391,12 @@ function paintQuantity(input: {
         ),
         detail: "Highest published value in this load. Not a separate class.",
         label: `${highest.raw} (highest published value)`,
+        role: "note",
       });
     }
   }
-  entries.push(...stateEntries(input.rows), noPublishedValueEntry());
+  entries.push(...stateEntries(input.rows));
+  appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
   const title = {
     incidence_floor: "Lyme incidence floor",
     svi: "Social vulnerability",
@@ -383,6 +415,7 @@ function paintQuantity(input: {
     kind: "choropleth",
     layerId: input.layerId,
     note: `${note} ${coverageSentence(input.rows, input.omitted)}`,
+    scale: "gradient",
     period: input.period,
     selection: input.selection,
     selectionEvidence: input.selectionEvidence,
@@ -438,14 +471,23 @@ function paintRurality(input: {
       colorsByFips.set(row.fips, color);
     }
   }
-  const entries: ExplorerMapLegendEntry[] = [...classes.entries()]
-    .toSorted((left, right) => left[0] - right[0])
-    .map(([code, label]) => ({
+  const entries: ExplorerMapLegendEntry[] = [];
+  for (let code = 1; code <= 9; code += 1) {
+    const published = classes.get(code);
+    const catalog = RUCC_2023_LABELS[code];
+    const label = published ?? catalog;
+    if (!label) {
+      continue;
+    }
+    entries.push({
       color: RUCC_COLORS[code as keyof typeof RUCC_COLORS],
       detail: null,
       label: `${code}. ${label}`,
-    }));
-  entries.push(...stateEntries(input.rows), noPublishedValueEntry());
+      role: "class",
+    });
+  }
+  entries.push(...stateEntries(input.rows));
+  appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
   return paintBase({
     colorsByFips,
     entries,
@@ -453,6 +495,7 @@ function paintRurality(input: {
     layerId: "rurality",
     note: `2023 USDA ERS rural-urban codes. Nine source categories with their published labels. Colors are separate classes, not a risk gradient and not distances. This vintage has no observation dates. The county list stays the review ranking. ${coverageSentence(input.rows, input.omitted)}`,
     period: input.period,
+    scale: "segments",
     selection: input.selection,
     selectionEvidence: input.selectionEvidence,
     title: "Rurality",
@@ -488,8 +531,11 @@ export function paintReadyCompletenessLayer(input: {
       color,
       detail: "Published integer. Not recomputed in the browser.",
       label: `${score}`,
+      role: "class",
     }));
-  entries.push(noPublishedValueEntry());
+  if (input.counties.some((county) => !colorsByFips.has(county.fips))) {
+    entries.push(noPublishedValueEntry());
+  }
   const selected = input.selectedFips
     ? input.counties.find((county) => county.fips === input.selectedFips)
     : undefined;
@@ -507,6 +553,7 @@ export function paintReadyCompletenessLayer(input: {
     layerId: "completeness",
     note: EVIDENCE_COMPLETENESS_EXPLANATION,
     period: input.period,
+    scale: "segments",
     selection,
     title: "Evidence completeness",
     unit: "published percent of six conditions",
