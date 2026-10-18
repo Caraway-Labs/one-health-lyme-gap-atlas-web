@@ -38,6 +38,7 @@ import {
   ExplorerSuggestedFollowUpPanel,
   type SuggestedFollowUpPanelStatus,
 } from "@/features/ux-reset/review/explorer-suggested-follow-up-panel";
+import { PopulationRuralityContextSection } from "@/features/ux-reset/review/population-rurality-context-section";
 import { selectSuggestedFollowUp } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
@@ -48,6 +49,7 @@ const SECTIONS = [
   ["Summary", EXPLORER_SECTION_IDS.summary],
   ["Evidence", EXPLORER_SECTION_IDS.evidence],
   ["Environmental context", EXPLORER_SECTION_IDS.environmental],
+  ["Population & rurality", EXPLORER_SECTION_IDS.populationRurality],
   ["Context & gaps", EXPLORER_SECTION_IDS.context],
   ["Suggested follow-up", EXPLORER_SECTION_IDS.followUp],
   ["Sources", EXPLORER_SECTION_IDS.sources],
@@ -82,10 +84,10 @@ function reviewCategoryCopy(followUp: ExplorerFollowUpState): string {
   }
 }
 
-function environmentalCountyHold(workspace: InvestigateWorkspace): {
-  message: string;
-  pending: boolean;
-} | null {
+function publishedCountyObservationHold(
+  workspace: InvestigateWorkspace,
+  label: "environmental observations" | "population and rurality observations"
+): { message: string; pending: boolean } | null {
   const validated =
     workspace.identity?.fips === workspace.requestedFips
       ? workspace.identity?.fips
@@ -95,21 +97,18 @@ function environmentalCountyHold(workspace: InvestigateWorkspace): {
   }
   if (workspace.directoryLoading || workspace.metadataLoading) {
     return {
-      message:
-        "Loading the published county list before environmental observations are requested.",
+      message: `Loading the published county list before ${label} are requested.`,
       pending: true,
     };
   }
   if (workspace.directoryError || workspace.recovery === "directory") {
     return {
-      message:
-        "The published county list did not load, so environmental observations were not requested.",
+      message: `The published county list did not load, so ${label} were not requested.`,
       pending: false,
     };
   }
   return {
-    message:
-      "This county is not in the published directory, so environmental observations were not requested.",
+    message: `This county is not in the published directory, so ${label} were not requested.`,
     pending: false,
   };
 }
@@ -296,8 +295,15 @@ export function ExplorerCountyEvidence({
     recovery: workspace.recovery,
     requestedFips: workspace.requestedFips,
   });
-  const environmentalHold = environmentalCountyHold(workspace);
-  const environmentalFips =
+  const environmentalHold = publishedCountyObservationHold(
+    workspace,
+    "environmental observations"
+  );
+  const populationHold = publishedCountyObservationHold(
+    workspace,
+    "population and rurality observations"
+  );
+  const validatedCountyFips =
     workspace.identity?.fips === workspace.requestedFips
       ? (workspace.identity?.fips ?? null)
       : null;
@@ -558,7 +564,15 @@ export function ExplorerCountyEvidence({
       <EnvironmentalContextSection
         countyHold={environmentalHold?.message ?? null}
         countyHoldPending={environmentalHold?.pending ?? false}
-        fips={environmentalFips}
+        fips={validatedCountyFips}
+        releaseId={workspace.releaseId}
+        releaseLoading={workspace.metadataLoading}
+      />
+
+      <PopulationRuralityContextSection
+        countyHold={populationHold?.message ?? null}
+        countyHoldPending={populationHold?.pending ?? false}
+        fips={validatedCountyFips}
         releaseId={workspace.releaseId}
         releaseLoading={workspace.metadataLoading}
       />
