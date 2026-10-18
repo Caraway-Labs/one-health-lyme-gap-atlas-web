@@ -55,6 +55,20 @@ vi.mock(
   })
 );
 
+vi.mock(
+  import("@/features/ux-reset/review/environmental-context-section"),
+  () => ({
+    EnvironmentalContextSection: () => (
+      <section
+        data-testid="explorer-environmental-context"
+        id="explorer-environmental-context"
+      >
+        Environmental context
+      </section>
+    ),
+  })
+);
+
 function baseWorkspace(
   overrides: Partial<InvestigateWorkspace> = {}
 ): InvestigateWorkspace {

@@ -23,7 +23,9 @@ import {
 import {
   useInvestigateWorkspace,
   type InvestigateRecovery,
+  type InvestigateWorkspace,
 } from "@/features/ux-reset/investigate/use-investigate-workspace";
+import { EnvironmentalContextSection } from "@/features/ux-reset/review/environmental-context-section";
 import type { ExplorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
 import {
   EXPLORER_FOLLOW_UP_MODE,
@@ -45,6 +47,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   ["Summary", EXPLORER_SECTION_IDS.summary],
   ["Evidence", EXPLORER_SECTION_IDS.evidence],
+  ["Environmental context", EXPLORER_SECTION_IDS.environmental],
   ["Context & gaps", EXPLORER_SECTION_IDS.context],
   ["Suggested follow-up", EXPLORER_SECTION_IDS.followUp],
   ["Sources", EXPLORER_SECTION_IDS.sources],
@@ -77,6 +80,38 @@ function reviewCategoryCopy(followUp: ExplorerFollowUpState): string {
       return exhaustive;
     }
   }
+}
+
+function environmentalCountyHold(workspace: InvestigateWorkspace): {
+  message: string;
+  pending: boolean;
+} | null {
+  const validated =
+    workspace.identity?.fips === workspace.requestedFips
+      ? workspace.identity?.fips
+      : null;
+  if (validated || !workspace.requestedFips) {
+    return null;
+  }
+  if (workspace.directoryLoading || workspace.metadataLoading) {
+    return {
+      message:
+        "Loading the published county list before environmental observations are requested.",
+      pending: true,
+    };
+  }
+  if (workspace.directoryError || workspace.recovery === "directory") {
+    return {
+      message:
+        "The published county list did not load, so environmental observations were not requested.",
+      pending: false,
+    };
+  }
+  return {
+    message:
+      "This county is not in the published directory, so environmental observations were not requested.",
+    pending: false,
+  };
 }
 
 function recoveryMessage(
@@ -261,6 +296,11 @@ export function ExplorerCountyEvidence({
     recovery: workspace.recovery,
     requestedFips: workspace.requestedFips,
   });
+  const environmentalHold = environmentalCountyHold(workspace);
+  const environmentalFips =
+    workspace.identity?.fips === workspace.requestedFips
+      ? (workspace.identity?.fips ?? null)
+      : null;
   const followUpSelection =
     followUpStatus === "ready" && workspace.suggestedFollowUpEvidence
       ? selectSuggestedFollowUp(workspace.suggestedFollowUpEvidence)
@@ -514,6 +554,14 @@ export function ExplorerCountyEvidence({
           />
         ) : null}
       </section>
+
+      <EnvironmentalContextSection
+        countyHold={environmentalHold?.message ?? null}
+        countyHoldPending={environmentalHold?.pending ?? false}
+        fips={environmentalFips}
+        releaseId={workspace.releaseId}
+        releaseLoading={workspace.metadataLoading}
+      />
 
       {hierarchy ? null : (
         <section

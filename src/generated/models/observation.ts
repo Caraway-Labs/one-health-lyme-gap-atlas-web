@@ -19,6 +19,7 @@ export interface Observation {
   observation_id: string;
   measure_id: string;
   geography: GeographyIdentity;
+  /** Governed observation grain. Daily NOAA nClimGrid rows use DAY. PERIOD and VINTAGE_YEAR are county-context grains, not the only admitted values. */
   temporal_grain: string;
   /** Read with value_state and unit; null never means zero. */
   value: number | string | null;
