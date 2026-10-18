@@ -114,10 +114,11 @@ for (const viewport of frontPorchCompositionViewports) {
     );
     await page.evaluate(() => window.scrollTo(0, 0));
     if (viewport.width >= 1100) {
-      await expect(page.locator(".front-porch-headline-break")).toHaveCSS(
-        "display",
-        "inline"
-      );
+      const headlineBreaks = page.locator(".front-porch-headline-break");
+      await expect(headlineBreaks).toHaveCount(2);
+      for (const headlineBreak of await headlineBreaks.all()) {
+        await expect(headlineBreak).toHaveCSS("display", "inline");
+      }
       expect(
         await page.locator("#front-porch-headline").evaluate((element) => {
           const range = document.createRange();
@@ -139,7 +140,7 @@ for (const viewport of frontPorchCompositionViewports) {
     const firstBeat = page.locator(".front-porch-beat").first();
     await expect(firstBeat).toHaveCSS("min-height", "570px");
     await expect(firstBeat.locator("h2")).toHaveText(
-      "Start with reported human illness."
+      "Start with reported Lyme disease."
     );
     await expect(firstBeat.locator(".front-porch-kicker")).toHaveCSS(
       "text-transform",
