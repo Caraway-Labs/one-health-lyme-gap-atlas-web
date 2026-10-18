@@ -150,6 +150,7 @@ describe("default E2E and Storybook phone viewport sweep", () => {
       "tests/e2e/reset-feedback.spec.ts",
       "tests/e2e/ux-reset-ask-atlas.spec.ts",
       "tests/e2e/ux-reset-compare.spec.ts",
+      "tests/e2e/ux-reset-environmental-context.spec.ts",
       "tests/e2e/ux-reset-shell-scroll.spec.ts",
       "tests/e2e/ux-reset.spec.ts",
       "tests/e2e/workspace-account-menu.spec.ts",
