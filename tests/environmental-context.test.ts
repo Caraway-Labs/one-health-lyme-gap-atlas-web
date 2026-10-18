@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it, vi } from "vitest";
 
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
+import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
   environmentalContextQueryKey,
   environmentalCoverageLabel,
@@ -228,6 +231,51 @@ describe("environmental context presentation", () => {
 });
 
 describe("environmental context loading", () => {
+  it("validates a live DAY response and presents its quantity", () => {
+    const precipitation = ObservationsV1ObservationsGetResponse.parse(
+      JSON.parse(
+        readFileSync(
+          "tests/fixtures/live-nclimgrid-prcp-48277-2025-01-17.json",
+          "utf-8"
+        )
+      )
+    );
+    const minimum = ObservationsV1ObservationsGetResponse.parse(
+      JSON.parse(
+        readFileSync(
+          "tests/fixtures/live-nclimgrid-tmin-48277-2025-01-17.json",
+          "utf-8"
+        )
+      )
+    );
+    const precipitationRow = readDatedObservations(precipitation.data)[0];
+    const minimumRow = readDatedObservations(minimum.data)[0];
+    if (!(precipitationRow && minimumRow)) {
+      throw new Error("Live NOAA rows were not dated observations.");
+    }
+    const precipitationView = presentEnvironmentalObservation({
+      claimLabel: "Precipitation",
+      observation: precipitationRow,
+    });
+    const minimumView = presentEnvironmentalObservation({
+      claimLabel: "Minimum temperature",
+      observation: minimumRow,
+    });
+    expect({
+      minimumGrain: minimumRow.temporal_grain,
+      minimumValue: minimumView.evidence.displayValue,
+      precipitationGrain: precipitationRow.temporal_grain,
+      precipitationValue: precipitationView.evidence.displayValue,
+      zeroState: precipitationView.valueStateLabel.includes("ZERO"),
+    }).toStrictEqual({
+      minimumGrain: "DAY",
+      minimumValue: "-1.992294192037333 °C",
+      precipitationGrain: "DAY",
+      precipitationValue: "0.0 mm",
+      zeroState: true,
+    });
+  });
+
   it("requests one county and accepts the governed envelope", async () => {
     observationsGet.mockResolvedValue({
       data: ObservationsV1ObservationsGetResponse.parse(

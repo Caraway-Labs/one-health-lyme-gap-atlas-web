@@ -117,6 +117,7 @@ function EnvironmentalMeasureBody({
 }
 
 function sectionStatus(input: {
+  countyHold: string | null;
   date: string;
   dateSupport: "invalid" | "outside_coverage" | "supported";
   enabled: boolean;
@@ -125,7 +126,7 @@ function sectionStatus(input: {
   releaseLoading: boolean;
 }): string | null {
   if (!input.fips) {
-    return "Choose a county to load environmental context.";
+    return input.countyHold ?? "Choose a county to load environmental context.";
   }
   if (input.releaseLoading && !input.releaseId) {
     return "Loading the release for environmental context…";
@@ -146,10 +147,14 @@ function sectionStatus(input: {
 }
 
 export function EnvironmentalContextSection({
+  countyHold = null,
+  countyHoldPending = false,
   fips,
   releaseId,
   releaseLoading,
 }: {
+  countyHold?: string | null;
+  countyHoldPending?: boolean;
   fips: string | null;
   releaseId: string | null;
   releaseLoading: boolean;
@@ -159,6 +164,7 @@ export function EnvironmentalContextSection({
   );
   const context = useEnvironmentalContext({ date, fips, releaseId });
   const status = sectionStatus({
+    countyHold,
     date,
     dateSupport: context.dateSupport,
     enabled: context.enabled,
@@ -222,7 +228,11 @@ export function EnvironmentalContextSection({
       </p>
       {status ? (
         <AtlasStatusMessage
-          tone={releaseLoading && !releaseId ? "loading" : "empty"}
+          tone={
+            countyHoldPending || (releaseLoading && !releaseId)
+              ? "loading"
+              : "empty"
+          }
         >
           {status}
         </AtlasStatusMessage>

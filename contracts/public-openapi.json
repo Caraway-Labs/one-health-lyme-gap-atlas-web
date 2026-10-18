@@ -5426,7 +5426,9 @@
           },
           "temporal_grain": {
             "type": "string",
-            "title": "Temporal Grain"
+            "title": "Temporal Grain",
+            "description": "Governed observation grain. Daily NOAA nClimGrid rows use DAY. PERIOD and VINTAGE_YEAR are county-context grains, not the only admitted values.",
+            "examples": ["DAY"]
           },
           "value": {
             "anyOf": [
