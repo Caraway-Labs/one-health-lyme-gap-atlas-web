@@ -918,6 +918,7 @@ export function ReviewOperatingPicture({
               .map((county) => `${county.fips}:${county.color ?? ""}`)
               .join(" ")}
             data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
+            data-selected-fips={selectedFips}
             data-testid="review-state-map-region"
             aria-busy={
               availableDataGate.kind === "loading" ||
