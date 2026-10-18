@@ -1,0 +1,56 @@
+---
+title: Get Atlas release metadata
+description: Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
+      - content: GET /v1/atlas/metadata
+      - content: metadata_v1_atlas_metadata_get
+      - content: Get Atlas release metadata
+      - content: Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
+      - content: 'dataset_version query optional '
+      - content: Dataset Version
+      - content: 200 Successful Response
+      - content: application/json
+      - content: '#/components/schemas/AtlasMetadata'
+      - content: 404 County or dataset release not found.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"County or dataset release not found.","instance":"/v1/atlas/metadata","request_id":"example-request-id"}'
+      - content: 422 One or more request values are invalid.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-422","title":"Request failed","status":422,"detail":"One or more request values are invalid.","instance":"/v1/atlas/metadata","request_id":"example-request-id"}'
+      - content: 429 Rate limit exceeded.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limit exceeded.","instance":"/v1/atlas/metadata","request_id":"example-request-id"}'
+      - content: 503 Atlas data service is unavailable.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Atlas data service is unavailable.","instance":"/v1/atlas/metadata","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/metadata","method":"get"}]} showDescription />
+    </>
+  );
+}

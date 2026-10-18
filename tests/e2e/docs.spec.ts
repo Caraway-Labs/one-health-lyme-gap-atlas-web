@@ -57,6 +57,18 @@ const docsPages = [
     heading: "Observations",
   },
   {
+    path: "/docs/api-reference/observations/observations_v1_observations_get",
+    heading: "Query county observations",
+  },
+  {
+    path: "/docs/api-reference/geographies/canonicalGeographyAvailability",
+    heading: "Check canonical county geography publication availability",
+  },
+  {
+    path: "/docs/api-reference/counties",
+    heading: "Counties",
+  },
+  {
     path: "/docs/api-reference/schemas",
     heading: "Schemas",
   },
@@ -107,6 +119,20 @@ test("keeps every HelpDocs route reachable and accessible", async ({
       )
     );
 
+    await page.waitForFunction(async () => {
+      await document.fonts.ready;
+      const named = [
+        ...document.querySelectorAll('[role="switch"], [role="combobox"]'),
+      ].every((element) => element.getAttribute("aria-label")?.trim());
+      const scrollable = [
+        ...document.querySelectorAll(".overflow-x-auto"),
+      ].every((element) => {
+        if (!(element instanceof HTMLElement)) return true;
+        if (element.scrollWidth <= element.clientWidth + 1) return true;
+        return element.tabIndex >= 0;
+      });
+      return named && scrollable;
+    });
     const results = await new AxeBuilder({ page }).include("main").analyze();
     const blockingViolations = results.violations.filter((violation) =>
       ["critical", "serious"].includes(violation.impact ?? "")
@@ -133,7 +159,9 @@ test("keeps every HelpDocs route reachable and accessible", async ({
   await expect(apiReferenceFolder).toBeVisible();
   await apiReferenceFolder.click();
   await expect(
-    sidebar.getByRole("link", { exact: true, name: "Observations" })
+    sidebar
+      .getByRole("link", { exact: true, name: "Observations" })
+      .or(sidebar.getByRole("button", { exact: true, name: "Observations" }))
   ).toBeVisible();
   await expect(
     sidebar.getByRole("link", { name: "API, MCP, and access" })
@@ -172,34 +200,36 @@ test("renders the generated observations reference with version, source, and raw
   await expect(
     page.getByText("observations_v1_observations_get", { exact: true })
   ).toBeVisible();
-  await expect(page.getByText("case_count_floor_2023").first()).toBeVisible();
+  await page
+    .getByRole("link", { name: "Parameters, responses, and schema" })
+    .click();
+  await expect(page).toHaveURL(
+    /\/docs\/api-reference\/observations\/observations_v1_observations_get$/
+  );
   await expect(
-    page.getByRole("heading", { name: "400", exact: true })
+    page.getByRole("heading", { name: "Query Parameters" })
   ).toBeVisible();
+  await expect(page.getByText("case_count_floor_2023").first()).toBeVisible();
+  const parameterSearch = await page.request.get(
+    "/api/search?query=case_count_floor_2023"
+  );
+  expect(parameterSearch.ok()).toBeTruthy();
+  const parameterHits = await parameterSearch.text();
+  expect(parameterHits).toContain(
+    "/docs/api-reference/observations/observations_v1_observations_get"
+  );
+  await expect(
+    page.getByRole("heading", { name: "Response Body" })
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "429", exact: true }).click();
+  await expect(
+    page.getByText("Rate limited; Retry-After; application/problem+json")
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "503", exact: true }).click();
   await expect(
     page.getByText("application/problem+json").first()
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "429", exact: true })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "503", exact: true })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Retry-After", exact: true }).first()
-  ).toBeVisible();
-  await expect(
-    page.getByText("Seconds before retry when supplied by the service.").first()
-  ).toBeVisible();
-  const schemaLink = page.getByRole("link", { name: "ProblemDetails" }).first();
-  await expect(schemaLink).toHaveAttribute(
-    "href",
-    "/docs/api-reference/schemas#schema-problemdetails"
-  );
-  await schemaLink.click();
-  await expect(page).toHaveURL(
-    /\/docs\/api-reference\/schemas#schema-problemdetails$/
-  );
+  await page.goto("/docs/api-reference/schemas#schema-problemdetails");
   await expect(
     page.getByRole("heading", { name: "ProblemDetails", exact: true })
   ).toBeVisible();

@@ -40,9 +40,12 @@ describe("public OpenAPI reference", () => {
     }
   });
 
-  it("labels the pinned spec version, source, and raw schema", () => {
+  it("labels the pinned spec version, source, and raw schema", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
-    const index = requiredFile(renderPublicApiReference(contract), "index.mdx");
+    const index = requiredFile(
+      await renderPublicApiReference(contract),
+      "index.mdx"
+    );
 
     expect(contract.provenance).toMatchObject({
       applicationVersion: "0.1.0",
@@ -68,47 +71,58 @@ describe("public OpenAPI reference", () => {
     expect(index.includes("Alaska") || index.includes("Hawaii")).toBeFalsy();
   });
 
-  it("renders the observations operation once with its example, schema, and error", () => {
+  it("renders the observations operation once with its example, schema, and error", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
-    const pages = renderPublicApiReference(contract);
-    const observations = requiredFile(pages, "observations.mdx");
+    const pages = await renderPublicApiReference(contract);
+    const observations = operationPage(
+      pages,
+      "observations_v1_observations_get"
+    );
 
     expect(
       missingPhrases(observations, [
-        "[#observations_v1_observations_get]",
-        "`GET /v1/observations`",
-        "Operation ID: `observations_v1_observations_get`",
+        "<OpenAPIPage",
+        '"path":"/v1/observations"',
+        '"method":"get"',
         "case_count_floor_2023",
         "application/problem+json",
-        "#### 400",
-        "[ProblemDetails](/docs/api-reference/schemas#schema-problemdetails)",
+        "measure_id",
+        "#/components/schemas/ProblemDetails",
       ])
     ).toStrictEqual([]);
-    expect(headingCount(pages, "[#observations_v1_observations_get]")).toBe(1);
     const schemaPage = requiredFile(pages, "schemas.mdx");
     const schemaCount = schemaPage.match(/^## /gm)?.length ?? 0;
-    expect(
-      [
-        schemaPage.includes("## ProblemDetails"),
-        schemaCount > 0,
-        requiredFile(pages, "index.mdx").includes(
-          `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaCount}).`
-        ),
-      ].every(Boolean)
-    ).toBeTruthy();
-    expect(requiredFile(pages, "discovery.mdx")).toContain(
-      "This response does not declare a body."
-    );
+    expect({
+      heading: headingCount(pages, "[#observations_v1_observations_get]"),
+      index: requiredFile(pages, "index.mdx").includes(
+        `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaCount}).`
+      ),
+      indicators: operationPage(pages, "indicators_v1_indicators_get").includes(
+        "<OpenAPIPage"
+      ),
+      observationsIndex: requiredFile(pages, "observations/index.mdx").includes(
+        "[#observations_v1_observations_get]"
+      ),
+      problemDetails: schemaPage.includes("## ProblemDetails"),
+      schemaCount: schemaCount > 0,
+    }).toStrictEqual({
+      heading: 1,
+      index: true,
+      indicators: true,
+      observationsIndex: true,
+      problemDetails: true,
+      schemaCount: true,
+    });
     expect(fileMap(pages)).toStrictEqual(
-      fileMap(renderPublicApiReference(contract))
+      fileMap(await renderPublicApiReference(contract))
     );
   });
 
-  it("renders county report template tabs from the pinned contract", () => {
-    const pages = renderPublicApiReference(
+  it("renders county report template tabs from the pinned contract", async () => {
+    const pages = await renderPublicApiReference(
       readAndLoadPublicOpenApiContract(process.cwd())
     );
-    const counties = requiredFile(pages, "counties.mdx");
+    const counties = requiredFile(pages, "counties/index.mdx");
     expect(counties).toContain(
       'import { Tab, Tabs } from "fumadocs-ui/components/tabs";'
     );
@@ -135,44 +149,41 @@ describe("public OpenAPI reference", () => {
     expect(
       counties.includes("Alaska") || counties.includes("Hawaii")
     ).toBeFalsy();
-    const states = requiredFile(pages, "states.mdx");
+    const states = requiredFile(pages, "states/index.mdx");
     expect(states).not.toContain("fumadocs-ui/components/tabs");
   });
 
-  it("renders Retry-After, descriptions, and examples for 429 and 503", () => {
-    const pages = renderPublicApiReference(
+  it("renders Retry-After, descriptions, and examples for 429 and 503", async () => {
+    const pages = await renderPublicApiReference(
       readAndLoadPublicOpenApiContract(process.cwd())
     );
-    const sections = ["429", "503"].flatMap((status) =>
-      [...pages.entries()]
-        .filter(([name]) => name.endsWith(".mdx"))
-        .flatMap(([name, contents]) =>
-          responseSections(contents, status).map((body) => ({
-            body,
-            name,
-            status,
-          }))
-        )
+    const operationFiles = [...pages.entries()].filter(([name]) =>
+      /\/(?!index\.mdx$)[^/]+\.mdx$/.test(name)
     );
-    const incomplete = sections
-      .filter((section) =>
-        [
-          "###### Retry-After",
-          "Seconds before retry when supplied by the service.",
-          "Type: `string`",
-          "application/problem+json",
-          "Synthetic error example",
-        ].some((phrase) => !section.body.includes(phrase))
+    const incomplete = operationFiles
+      .filter(([, contents]) =>
+        ["429", "503"].some(
+          (status) =>
+            contents.includes(`${status} `) &&
+            [
+              "Retry-After",
+              "Seconds before retry when supplied by the service.",
+              "application/problem+json",
+            ].some((phrase) => !contents.includes(phrase))
+        )
       )
-      .map((section) => `${section.name} ${section.status}`);
+      .map(([name]) => name);
 
-    expect(sections).toHaveLength(38);
+    expect(operationFiles.length).toBeGreaterThan(0);
+    expect(
+      operationFiles.filter(([, contents]) => contents.includes("429 "))
+    ).toHaveLength(operationFiles.length);
     expect(incomplete).toStrictEqual([]);
   });
 
-  it("renders each operation id once and keeps authored guides free of that catalog", () => {
+  it("renders each operation id once and keeps authored guides free of that catalog", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
-    const pages = renderPublicApiReference(contract);
+    const pages = await renderPublicApiReference(contract);
     const operationIds = contract.tags.flatMap((tag) =>
       tag.operations.map((operation) => operation.operationId)
     );
@@ -192,30 +203,30 @@ describe("public OpenAPI reference", () => {
     ).toStrictEqual([]);
   });
 
-  it("fails visibly when the contract is unavailable, malformed, or empty", () => {
+  it("fails visibly when the contract is unavailable, malformed, or empty", async () => {
     const empty = pin({ ...minimalDocument(), paths: {} });
 
-    expect(
+    await expect(
       failureCode(() => readAndLoadPublicOpenApiContract(makeRoot()))
-    ).toBe("unavailable");
-    expect(
+    ).resolves.toBe("unavailable");
+    await expect(
       failureCode(() =>
         loadPublicOpenApiContract(Buffer.from("{"), manifestMatching("{"))
       )
-    ).toBe("malformed");
-    expect(
+    ).resolves.toBe("malformed");
+    await expect(
       failureCode(() =>
         loadPublicOpenApiContract(Buffer.from("[]"), manifestMatching("[]"))
       )
-    ).toBe("malformed");
-    expect(
+    ).resolves.toBe("malformed");
+    await expect(
       failureCode(() =>
         loadPublicOpenApiContract(empty.specBytes, empty.manifestText)
       )
-    ).toBe("empty");
+    ).resolves.toBe("empty");
   });
 
-  it("fails visibly for checksum, version, source, and first-party mismatches", () => {
+  it("fails visibly for checksum, version, source, and first-party mismatches", async () => {
     const valid = pin(minimalDocument());
     const flipped = Buffer.from(valid.specBytes);
     const lastByte = flipped.at(-2) ?? 0;
@@ -228,45 +239,45 @@ describe("public OpenAPI reference", () => {
       sourceUrl: "https://example.com/openapi.json",
     });
 
-    expect(
+    await expect(
       failureCode(() => loadPublicOpenApiContract(flipped, valid.manifestText))
-    ).toBe("checksum_mismatch");
-    expect(
+    ).resolves.toBe("checksum_mismatch");
+    await expect(
       failureCode(() =>
         loadPublicOpenApiContract(
           wrongApplicationVersion.specBytes,
           wrongApplicationVersion.manifestText
         )
       )
-    ).toBe("version_mismatch");
-    expect(
+    ).resolves.toBe("version_mismatch");
+    await expect(
       failureCode(() =>
         loadPublicOpenApiContract(
           wrongOpenApiVersion.specBytes,
           wrongOpenApiVersion.manifestText
         )
       )
-    ).toBe("version_mismatch");
-    expect(
+    ).resolves.toBe("version_mismatch");
+    await expect(
       failureCode(() =>
         loadPublicOpenApiContract(
           wrongSource.specBytes,
           wrongSource.manifestText
         )
       )
-    ).toBe("source_mismatch");
-    expect(failureCode(() => loadFirstPartyContract())).toBe(
+    ).resolves.toBe("source_mismatch");
+    await expect(failureCode(() => loadFirstPartyContract())).resolves.toBe(
       "not_public_contract"
     );
   });
 
-  it("renders declared request bodies and refuses a stale generated page", () => {
+  it("renders declared request bodies and refuses a stale generated page", async () => {
     const withBody = pin(documentWithRequestBody());
-    const page = requiredFile(
-      renderPublicApiReference(
+    const page = operationPage(
+      await renderPublicApiReference(
         loadPublicOpenApiContract(withBody.specBytes, withBody.manifestText)
       ),
-      "discovery.mdx"
+      "indicators_post"
     );
     const root = makeRoot();
     writeFileSync(
@@ -277,70 +288,62 @@ describe("public OpenAPI reference", () => {
       path.join(root, PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH),
       withBody.manifestText
     );
-    syncPublicApiReference({ check: false, root });
+    await syncPublicApiReference({ check: false, root });
     const generated = path.join(root, API_REFERENCE_RELATIVE_DIR);
     const removedPage = path.join(generated, "removed-operation.mdx");
-    writeFileSync(path.join(generated, "discovery.mdx"), "stale catalog\n");
+    writeFileSync(
+      path.join(generated, "discovery/indicators_post.mdx"),
+      "stale catalog\n"
+    );
     writeFileSync(removedPage, "old endpoint\n");
 
     expect(
       missingPhrases(page, [
-        "### Request body",
-        "Required: yes",
+        "<OpenAPIPage",
         "human_disease_burden",
-        "### Security",
-        "This response does not declare a body.",
+        "Create is not a public read.",
+        "No content.",
       ])
     ).toStrictEqual([]);
-    expect(
-      failureCode(() => syncPublicApiReference({ check: true, root }))
-    ).toBe("stale_reference");
+    await expect(
+      failureCode(
+        async () => await syncPublicApiReference({ check: true, root })
+      )
+    ).resolves.toBe("stale_reference");
 
-    syncPublicApiReference({ check: false, root });
+    await syncPublicApiReference({ check: false, root });
     expect(
-      readFileSync(path.join(generated, "discovery.mdx"), "utf-8")
+      readFileSync(
+        path.join(generated, "discovery/indicators_post.mdx"),
+        "utf-8"
+      )
     ).toContain("indicators_post");
     expect(existsSync(removedPage)).toBeFalsy();
-    expect(
-      failureCode(() => syncPublicApiReference({ check: true, root }))
-    ).toBe("did-not-fail");
+    await expect(
+      failureCode(
+        async () => await syncPublicApiReference({ check: true, root })
+      )
+    ).resolves.toBe("did-not-fail");
   });
 
-  it("renders inline responses and dereferenced reusable component responses", () => {
+  it("renders inline responses and dereferenced reusable component responses", async () => {
     const pinned = pin(documentWithReusableComponents());
-    const page = requiredFile(
-      renderPublicApiReference(
-        loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
-      ),
-      "discovery.mdx"
+    const pages = await renderPublicApiReference(
+      loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const referenced = between(page, "#### 200", "#### 304");
-    const empty = between(page, "#### 304", "## Submit an indicator");
-    const submitted = page.slice(page.indexOf("## Submit an indicator"));
+    const indicators = operationPage(pages, "indicators_v1_indicators_get");
+    const submitted = operationPage(pages, "indicators_post");
 
     expect(
-      missingPhrases(page, [
+      missingPhrases(indicators, [
         "Reusable indicators.",
         "human_disease_burden",
-        "[Indicator](/docs/api-reference/schemas#schema-indicator)",
+        "#/components/schemas/Indicator",
         "county_fips",
         "08001",
         "Synthetic lower-48 indicator.",
-        "###### Again",
         "Read the indicator again.",
-      ])
-    ).toStrictEqual([]);
-    expect(
-      referenced.includes("This response does not declare a body.")
-    ).toBeFalsy();
-    expect(
-      missingPhrases(empty, [
-        "This response does not declare a body.",
-        "###### ETag",
-        "Required: yes",
         "Entity tag.",
-        "Type: `string`",
-        "example-etag",
       ])
     ).toStrictEqual([]);
     expect(
@@ -349,84 +352,80 @@ describe("public OpenAPI reference", () => {
         "case_count_floor_2023",
         "lower-48",
         "Reusable body.",
-        "Required: yes",
       ])
     ).toStrictEqual([]);
-    expect(
-      submitted.includes("This request body does not declare a media type.")
-    ).toBeFalsy();
   });
 
-  it("fails the reference check for a missing or circular reusable component", () => {
-    expect(failureCode(() => checkDocument(missingResponseRef()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(circularResponseRefs()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(missingParameterRef()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(circularHeaderRefs()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(missingExampleRef()))).toBe(
-      "malformed"
-    );
+  it("fails the reference check for a missing or circular reusable component", async () => {
+    await expect(
+      failureCode(() => checkDocument(missingResponseRef()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(circularResponseRefs()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(missingParameterRef()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(circularHeaderRefs()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(missingExampleRef()))
+    ).resolves.toBe("malformed");
   });
 
-  it("fails the reference check for circular request bodies and examples", () => {
-    expect(failureCode(() => checkDocument(circularRequestBodyRefs()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(circularExampleRefs()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(nonObjectResponseRef()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(missingLinkRef()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(circularLinkRefs()))).toBe(
-      "malformed"
-    );
+  it("fails the reference check for circular request bodies and examples", async () => {
+    await expect(
+      failureCode(() => checkDocument(circularRequestBodyRefs()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(circularExampleRefs()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(nonObjectResponseRef()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(missingLinkRef()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(circularLinkRefs()))
+    ).resolves.toBe("malformed");
   });
 
-  it("rejects malformed contracts that cannot be rendered", () => {
-    expect(failureCode(() => checkDocument(openapi2Document()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(duplicateOperationIds()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(parameterWithoutName()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(headersNotAnObject()))).toBe(
-      "malformed"
-    );
-    expect(failureCode(() => checkDocument(externalSchemaRef()))).toBe(
-      "malformed"
-    );
+  it("rejects malformed contracts that cannot be rendered", async () => {
+    await expect(
+      failureCode(() => checkDocument(openapi2Document()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(duplicateOperationIds()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(parameterWithoutName()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(headersNotAnObject()))
+    ).resolves.toBe("malformed");
+    await expect(
+      failureCode(() => checkDocument(externalSchemaRef()))
+    ).resolves.toBe("malformed");
   });
 
-  it("renders empty request bodies and colliding schema anchors", () => {
+  it("renders empty request bodies and colliding schema anchors", async () => {
     const pinned = pin(documentWithCollidingSchemas());
-    const pages = renderPublicApiReference(
+    const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
 
     expect(
-      missingPhrases(requiredFile(pages, "discovery-2.mdx"), [
-        "This request body does not declare a media type.",
+      missingPhrases(operationPage(pages, "indicators_post"), [
+        "Bare body.",
         "indicators_post",
       ])
     ).toStrictEqual([]);
     expect(requiredFile(pages, "schemas.mdx")).toContain("[#schema-a-b-2]");
   });
 
-  it("checks the pinned contract from the command line", () => {
+  it("checks the pinned contract from the command line", async () => {
     const registerTsExtension = path.join(
       process.cwd(),
       "scripts/register-ts-extension.mjs"
@@ -463,7 +462,7 @@ describe("public OpenAPI reference", () => {
     expect(failure.stderr).toContain("unavailable");
   });
 
-  it("treats a generated page that dropped a dereferenced response body as stale", () => {
+  it("treats a generated page that dropped a dereferenced response body as stale", async () => {
     const pinned = pin(documentWithReusableComponents());
     const root = makeRoot();
     writeFileSync(
@@ -474,11 +473,11 @@ describe("public OpenAPI reference", () => {
       path.join(root, PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH),
       pinned.manifestText
     );
-    syncPublicApiReference({ check: false, root });
+    await syncPublicApiReference({ check: false, root });
     const pagePath = path.join(
       root,
       API_REFERENCE_RELATIVE_DIR,
-      "discovery.mdx"
+      "discovery/indicators_v1_indicators_get.mdx"
     );
     const page = readFileSync(pagePath, "utf-8");
 
@@ -490,20 +489,21 @@ describe("public OpenAPI reference", () => {
         "This response does not declare a body."
       )
     );
-    expect(
-      failureCode(() => syncPublicApiReference({ check: true, root }))
-    ).toBe("stale_reference");
+    await expect(
+      failureCode(
+        async () => await syncPublicApiReference({ check: true, root })
+      )
+    ).resolves.toBe("stale_reference");
   });
 
-  it("renders referenced path items, servers, and security", () => {
+  it("renders referenced path items, servers, and security", async () => {
     const pinned = pin(documentWithPathItemReference());
-    const pages = renderPublicApiReference(
+    const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const page = requiredFile(pages, "discovery.mdx");
-    const indicators = between(page, "## Referenced indicators", "## Health");
-    const health = between(page, "## Health", "## Read measures");
-    const measures = between(page, "## Read measures", "## Submit measures");
+    const indicators = operationPage(pages, "indicators_v1_indicators_get");
+    const health = operationPage(pages, "health_get");
+    const measures = operationPage(pages, "measures_get");
 
     expect(
       missingPhrases(indicators, [
@@ -517,12 +517,11 @@ describe("public OpenAPI reference", () => {
         "Public edge",
         "X-Atlas-Key",
         "Public key",
-        "[Indicator](/docs/api-reference/schemas#schema-indicator)",
+        "#/components/schemas/Indicator",
       ])
     ).toStrictEqual([]);
     expect(
-      indicators.includes("#### limit") ||
-        indicators.includes("Reusable indicators.") ||
+      indicators.includes("Reusable indicators.") ||
         indicators.includes("Upstream origin") ||
         indicators.includes("Colorado county.") ||
         indicators.includes("Origin key")
@@ -537,14 +536,13 @@ describe("public OpenAPI reference", () => {
     ).toStrictEqual([]);
   });
 
-  it("uses path-item security and servers only when the operation omits them", () => {
+  it("uses path-item security and servers only when the operation omits them", async () => {
     const pinned = pin(documentWithPathItemReference());
-    const pages = renderPublicApiReference(
+    const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const page = requiredFile(pages, "discovery.mdx");
-    const measures = between(page, "## Read measures", "## Submit measures");
-    const submitted = between(page, "## Submit measures", "\n## ");
+    const measures = operationPage(pages, "measures_get");
+    const submitted = operationPage(pages, "measures_post");
 
     expect(measures.includes("X-Atlas-Key")).toBeFalsy();
     expect(measures.includes("Path server")).toBeFalsy();
@@ -567,7 +565,7 @@ describe("public OpenAPI reference", () => {
     ).toBeFalsy();
   });
 
-  it("lets a path-item sibling operation override the referenced operation", () => {
+  it("lets a path-item sibling operation override the referenced operation", async () => {
     const document = documentWithPathItemReference();
     const paths = document.paths as {
       "/v1/indicators": Record<string, unknown>;
@@ -579,11 +577,11 @@ describe("public OpenAPI reference", () => {
       tags: ["discovery"],
     };
     const pinned = pin(document);
-    const page = requiredFile(
-      renderPublicApiReference(
+    const page = operationPage(
+      await renderPublicApiReference(
         loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
       ),
-      "discovery.mdx"
+      "outer_indicators_get"
     );
 
     expect(page).toContain("outer_indicators_get");
@@ -591,7 +589,7 @@ describe("public OpenAPI reference", () => {
     expect(page.includes("indicators_v1_indicators_get")).toBeFalsy();
   });
 
-  it("treats a dropped path-item operation as a stale reference", () => {
+  it("treats a dropped path-item operation as a stale reference", async () => {
     const pinned = pin(documentWithPathItemReference());
     const root = makeRoot();
     writeFileSync(
@@ -602,206 +600,214 @@ describe("public OpenAPI reference", () => {
       path.join(root, PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH),
       pinned.manifestText
     );
-    syncPublicApiReference({ check: false, root });
+    await syncPublicApiReference({ check: false, root });
     const pagePath = path.join(
       root,
       API_REFERENCE_RELATIVE_DIR,
-      "discovery.mdx"
+      "discovery/index.mdx"
     );
     const page = readFileSync(pagePath, "utf-8");
 
-    expect(
-      failureCode(() => syncPublicApiReference({ check: true, root }))
-    ).toBe("did-not-fail");
+    await expect(
+      failureCode(
+        async () => await syncPublicApiReference({ check: true, root })
+      )
+    ).resolves.toBe("did-not-fail");
     expect(page).toContain("indicators_v1_indicators_get");
     expect(page).toContain("health_get");
     writeFileSync(
       pagePath,
       page.replace("indicators_v1_indicators_get", "omitted_operation")
     );
-    expect(
-      failureCode(() => syncPublicApiReference({ check: true, root }))
-    ).toBe("stale_reference");
+    await expect(
+      failureCode(
+        async () => await syncPublicApiReference({ check: true, root })
+      )
+    ).resolves.toBe("stale_reference");
   });
 
-  it("fails the reference check for a bad path item or callback reference", () => {
-    expect(failureText(() => checkDocument(missingPathItemRef()))).toContain(
+  it("fails the reference check for a bad path item or callback reference", async () => {
+    await expect(
+      failureText(() => checkDocument(missingPathItemRef()))
+    ).resolves.toContain(
       "Unresolved OpenAPI reference #/components/pathItems/Missing"
     );
-    expect(failureText(() => checkDocument(circularPathItemRefs()))).toContain(
-      "Circular OpenAPI reference"
-    );
-    expect(failureText(() => checkDocument(nonObjectPathItemRef()))).toContain(
-      "must point to an object"
-    );
-    expect(failureText(() => checkDocument(schemaPathItemRef()))).toContain(
-      "must point to components.pathItems"
-    );
-    expect(
+    await expect(
+      failureText(() => checkDocument(circularPathItemRefs()))
+    ).resolves.toContain("Circular OpenAPI reference");
+    await expect(
+      failureText(() => checkDocument(nonObjectPathItemRef()))
+    ).resolves.toContain("must point to an object");
+    await expect(
+      failureText(() => checkDocument(schemaPathItemRef()))
+    ).resolves.toContain("must point to components.pathItems");
+    await expect(
       failureText(() => checkDocument(documentWithCallbackRef()))
-    ).toContain("callbacks are not rendered");
+    ).resolves.toContain("callbacks are not rendered");
   });
 
-  it("fails the reference check for webhooks and unresolved server references", () => {
-    expect(failureText(() => checkDocument(documentWithWebhooks()))).toContain(
-      "webhooks are not rendered"
-    );
-    expect(failureText(() => checkDocument(missingServerRef()))).toContain(
+  it("fails the reference check for webhooks and unresolved server references", async () => {
+    await expect(
+      failureText(() => checkDocument(documentWithWebhooks()))
+    ).resolves.toContain("webhooks are not rendered");
+    await expect(
+      failureText(() => checkDocument(missingServerRef()))
+    ).resolves.toContain(
       "Unresolved OpenAPI reference #/components/servers/Missing"
     );
-    expect(failureText(() => checkDocument(circularServerRefs()))).toContain(
-      "Circular OpenAPI reference"
-    );
-    expect(failureText(() => checkDocument(schemaServerRef()))).toContain(
-      "must point to components.servers"
-    );
-    expect(
+    await expect(
+      failureText(() => checkDocument(circularServerRefs()))
+    ).resolves.toContain("Circular OpenAPI reference");
+    await expect(
+      failureText(() => checkDocument(schemaServerRef()))
+    ).resolves.toContain("must point to components.servers");
+    await expect(
       failureText(() => checkDocument(securityRequirementRef()))
-    ).toContain("security requirements must be objects");
+    ).resolves.toContain("security requirements must be objects");
   });
 
-  it("fails the reference check for security schemes and server shape", () => {
-    expect(failureText(() => checkDocument(missingSecurityScheme()))).toContain(
+  it("fails the reference check for security schemes and server shape", async () => {
+    await expect(
+      failureText(() => checkDocument(missingSecurityScheme()))
+    ).resolves.toContain(
       "Unresolved OpenAPI reference #/components/securitySchemes/Missing"
     );
-    expect(
+    await expect(
       failureText(() => checkDocument(circularSecuritySchemes()))
-    ).toContain("Circular OpenAPI reference");
-    expect(
+    ).resolves.toContain("Circular OpenAPI reference");
+    await expect(
       failureText(() => checkDocument(operationServersNotAnArray()))
-    ).toContain("servers must be an array");
-    expect(failureText(() => checkDocument(serverMissingUrl()))).toContain(
-      "is missing a url"
-    );
-    expect(failureText(() => checkDocument(httpServerDocument()))).toContain(
+    ).resolves.toContain("servers must be an array");
+    await expect(
+      failureText(() => checkDocument(serverMissingUrl()))
+    ).resolves.toContain("is missing a url");
+    await expect(
+      failureText(() => checkDocument(httpServerDocument()))
+    ).resolves.toContain(
       "source_mismatch: Public OpenAPI server URL must be HTTPS"
     );
   });
 
-  it("rejects cross-type references instead of rendering them as empty fields", () => {
-    expect(failureText(() => checkDocument(numericResponseRef()))).toContain(
-      "OpenAPI $ref must be a non-empty string"
-    );
-    expect(failureText(() => checkDocument(schemaExampleRef()))).toContain(
+  it("rejects cross-type references instead of rendering them as empty fields", async () => {
+    await expect(
+      failureText(() => checkDocument(numericResponseRef()))
+    ).resolves.toContain("OpenAPI $ref must be a non-empty string");
+    await expect(
+      failureText(() => checkDocument(schemaExampleRef()))
+    ).resolves.toContain(
       "Unsupported OpenAPI reference #/components/schemas/Indicator"
     );
-    expect(failureText(() => checkDocument(parameterHeaderRef()))).toContain(
+    await expect(
+      failureText(() => checkDocument(parameterHeaderRef()))
+    ).resolves.toContain(
       "Unsupported OpenAPI reference #/components/parameters/County"
     );
-    expect(failureText(() => checkDocument(securityNotAnArray()))).toContain(
-      "security must be an array"
-    );
-    expect(failureText(() => checkDocument(nonObjectServerRef()))).toContain(
-      "must point to an object"
-    );
+    await expect(
+      failureText(() => checkDocument(securityNotAnArray()))
+    ).resolves.toContain("security must be an array");
+    await expect(
+      failureText(() => checkDocument(nonObjectServerRef()))
+    ).resolves.toContain("must point to an object");
   });
 
-  it("rejects empty refs, empty server lists, and non-object components", () => {
-    expect(failureText(() => checkDocument(blankServerRef()))).toContain(
-      "OpenAPI $ref must be a non-empty string"
-    );
-    expect(failureText(() => checkDocument(serverDocument([])))).toContain(
-      "must declare an HTTPS server"
-    );
-    expect(
+  it("rejects empty refs, empty server lists, and non-object components", async () => {
+    await expect(
+      failureText(() => checkDocument(blankServerRef()))
+    ).resolves.toContain("OpenAPI $ref must be a non-empty string");
+    await expect(
+      failureText(() => checkDocument(serverDocument([])))
+    ).resolves.toContain("must declare an HTTPS server");
+    await expect(
       failureText(() =>
         checkDocument(serverDocument({ url: "https://api.onehealthatlas.org" }))
       )
-    ).toContain("must declare an HTTPS server");
-    expect(
+    ).resolves.toContain("must declare an HTTPS server");
+    await expect(
       failureText(() =>
         checkDocument(serverDocument(["https://api.onehealthatlas.org"]))
       )
-    ).toContain("Document server 1 must be an object");
-    expect(
+    ).resolves.toContain("Document server 1 must be an object");
+    await expect(
       failureText(() => checkDocument(inlineNonObjectResponse()))
-    ).toContain("response 200 must be an object");
+    ).resolves.toContain("response 200 must be an object");
   });
 
-  it("rejects a security scheme reference that is not a security scheme", () => {
-    expect(failureText(() => checkDocument(schemaSecurityScheme()))).toContain(
-      "must point to components.securitySchemes"
-    );
+  it("rejects a security scheme reference that is not a security scheme", async () => {
+    await expect(
+      failureText(() => checkDocument(schemaSecurityScheme()))
+    ).resolves.toContain("must point to components.securitySchemes");
   });
 
-  it("inherits document security and renders content parameters and schemaless media", () => {
+  it("inherits document security and renders content parameters and schemaless media", async () => {
     const pinned = pin(documentWithInheritedSecurityAndContent());
-    const page = requiredFile(
-      renderPublicApiReference(
-        loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
-      ),
-      "discovery.mdx"
+    const pages = await renderPublicApiReference(
+      loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const inherited = between(
-      page,
-      "## Referenced indicators",
-      "## Submit an indicator"
-    );
-    const requestBody = between(inherited, "### Request body", "### Security");
-    const response = between(inherited, "#### 200", "\n## ");
-    const published = between(page, "## Submit an indicator", "\n## ");
+    const inherited = operationPage(pages, "indicators_v1_indicators_get");
+    const published = operationPage(pages, "indicators_post");
 
     expect(
-      missingPhrases(page, [
+      missingPhrases(inherited, [
         "X-Atlas-Key",
         "Structured filter.",
         "08001",
-        "- Deprecated.",
-        "- Empty values are allowed.",
-        "- Style: `form`",
-        "- Explode: yes",
-        "- Reserved characters are allowed.",
-        "[Indicator guide](https://onehealthatlas.org/docs)",
-        "[Discovery guide](https://onehealthatlas.org/docs)",
+        "filter deprecated",
+        "filter empty values are allowed",
+        "filter style form",
+        "filter explode yes",
+        "filter reserved characters are allowed",
+        "https://onehealthatlas.org/docs",
         "human_disease_burden",
-        "case_count_floor_2023",
-        "##### text/plain",
+        "text/plain",
         "Seconds before retry.",
-        "Content type: `text/plain`",
-        "**profile**",
+        "profile",
         "Profile token.",
-        "- Server: `https://api.onehealthatlas.org` (Link server)",
+        "https://api.onehealthatlas.org",
+        "Link server",
+        "case_count_floor_2023",
       ])
     ).toStrictEqual([]);
-    expect(requestBody.includes("Schema:")).toBeFalsy();
-    expect(response.includes("Schema:")).toBeFalsy();
+    expect(requiredFile(pages, "discovery/index.mdx")).toContain(
+      "https://onehealthatlas.org/docs"
+    );
     expect(published.includes("X-Atlas-Key")).toBeFalsy();
+    expect(published.includes("case_count_floor_2023")).toBeFalsy();
     expect(published).toContain("[]");
   });
 
-  it("rejects parameters and headers that mix or omit schema and content", () => {
-    expect(
+  it("rejects parameters and headers that mix or omit schema and content", async () => {
+    await expect(
       failureText(() => checkDocument(parameterSchemaAndContent()))
-    ).toContain("must not declare both schema and content");
-    expect(
+    ).resolves.toContain("must not declare both schema and content");
+    await expect(
       failureText(() => checkDocument(parameterWithoutSchemaOrContent()))
-    ).toContain("must declare schema or content");
-    expect(
+    ).resolves.toContain("must declare schema or content");
+    await expect(
       failureText(() => checkDocument(parameterContentWithTwoMediaTypes()))
-    ).toContain("content must contain exactly one media type");
-    expect(
+    ).resolves.toContain("content must contain exactly one media type");
+    await expect(
       failureText(() => checkDocument(parameterContentWithExample()))
-    ).toContain("with content must not declare example or examples");
-    expect(
+    ).resolves.toContain("with content must not declare example or examples");
+    await expect(
       failureText(() => checkDocument(headerWithoutSchemaOrContent()))
-    ).toContain("must declare schema or content");
+    ).resolves.toContain("must declare schema or content");
   });
 
-  it("rejects external documentation and encoding that cannot be rendered", () => {
-    expect(
+  it("rejects external documentation and encoding that cannot be rendered", async () => {
+    await expect(
       failureText(() => checkDocument(externalDocsWithoutHttpUrl()))
-    ).toContain("externalDocs url must be an HTTP(S) URL");
-    expect(failureText(() => checkDocument(encodingNotAnObject()))).toContain(
-      "encoding must be an object"
-    );
+    ).resolves.toContain("externalDocs url must be an HTTP(S) URL");
+    await expect(
+      failureText(() => checkDocument(encodingNotAnObject()))
+    ).resolves.toContain("encoding must be an object");
   });
 });
 
-function failureCode(
-  action: () => void
-): PublicOpenApiFailureCode | "did-not-fail" {
+async function failureCode(
+  action: () => unknown
+): Promise<PublicOpenApiFailureCode | "did-not-fail"> {
   try {
-    action();
+    await action();
   } catch (error) {
     if (error instanceof PublicOpenApiContractError) return error.code;
     throw new Error("Unexpected public OpenAPI failure.", { cause: error });
@@ -809,9 +815,9 @@ function failureCode(
   return "did-not-fail";
 }
 
-function failureText(action: () => void): string {
+async function failureText(action: () => unknown): Promise<string> {
   try {
-    action();
+    await action();
   } catch (error) {
     if (error instanceof PublicOpenApiContractError) {
       return `${error.code}: ${error.message}`;
@@ -819,6 +825,19 @@ function failureText(action: () => void): string {
     throw new Error("Unexpected public OpenAPI failure.", { cause: error });
   }
   return "did-not-fail";
+}
+
+function operationPage(
+  files: Map<string, string>,
+  operationId: string
+): string {
+  const match = [...files.entries()].find(([name]) =>
+    name.endsWith(`/${operationId}.mdx`)
+  );
+  if (!match) {
+    throw new TypeError(`Missing generated API reference file ${operationId}.`);
+  }
+  return match[1];
 }
 
 function requiredFile(files: Map<string, string>, name: string): string {
@@ -909,25 +928,7 @@ function loadFirstPartyContract(): void {
   loadPublicOpenApiContract(firstPartyBytes, manifestText);
 }
 
-function responseSections(contents: string, status: string): string[] {
-  const marker = `\n#### ${status}\n`;
-  return contents
-    .split(marker)
-    .slice(1)
-    .map((piece) => {
-      const next = piece.indexOf("\n#### ");
-      return next === -1 ? piece : piece.slice(0, next);
-    });
-}
-
-function between(contents: string, start: string, end: string): string {
-  const startIndex = contents.indexOf(start);
-  if (startIndex === -1) return "";
-  const endIndex = contents.indexOf(end, startIndex + start.length);
-  return contents.slice(startIndex, endIndex === -1 ? undefined : endIndex);
-}
-
-function checkDocument(document: unknown): void {
+async function checkDocument(document: unknown): Promise<void> {
   const pinned = pin(document);
   const root = makeRoot();
   writeFileSync(
@@ -938,7 +939,7 @@ function checkDocument(document: unknown): void {
     path.join(root, PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH),
     pinned.manifestText
   );
-  syncPublicApiReference({ check: true, root });
+  await syncPublicApiReference({ check: true, root });
 }
 
 function documentWithReusableComponents(): Record<string, unknown> {
@@ -1933,9 +1934,9 @@ function minimalDocument(): Record<string, unknown> {
 }
 
 describe("public OpenAPI drift", () => {
-  it("reports a checksum mismatch without rewriting the pin", () => {
+  it("reports a checksum mismatch without rewriting the pin", async () => {
     const pinnedSha256 = "a".repeat(64);
-    const message = failureText(() => {
+    const message = await failureText(() => {
       compareAuthoritativeOpenApiChecksum(
         pinnedSha256,
         Buffer.from("different-document")
@@ -1952,7 +1953,7 @@ describe("public OpenAPI drift", () => {
     ).toBeTruthy();
   });
 
-  it("accepts bytes whose checksum matches the pin", () => {
+  it("accepts bytes whose checksum matches the pin", async () => {
     const bytes = Buffer.from("accepted-document");
     const pinnedSha256 = createHash("sha256").update(bytes).digest("hex");
 
@@ -1961,7 +1962,7 @@ describe("public OpenAPI drift", () => {
     }).not.toThrow();
   });
 
-  it("pins the CDC cumulative filter beside an optional year", () => {
+  it("pins the CDC cumulative filter beside an optional year", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const observations = contract.tags
       .flatMap((tag) => tag.operations)
@@ -1996,7 +1997,7 @@ describe("public OpenAPI drift", () => {
     });
   });
 
-  it("keeps DAY admissible and records the accepted retrieval", () => {
+  it("keeps DAY admissible and records the accepted retrieval", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const temporalGrain = contract.schemas.Observation;
     const grain = isRecord(temporalGrain)
@@ -2021,8 +2022,8 @@ describe("public OpenAPI drift", () => {
       grainType: "string",
       noRecords: true,
       sha256:
-        "112cb300663f4e8dfd82f48106dd312243c4c2fdeb1aa52b9921d81e276f131b",
-      sourceCommit: "9fcd1ed86fd02e8a84abc5c7c59047263bf98519",
+        "c0a4e2ea4f15a543c3fc1e7705e2e4691cbc7e3ace9910d159b3814d3c049d6a",
+      sourceCommit: "d0472707cfc2badae714a797ec54c83d4f7ad79b",
     });
   });
 });

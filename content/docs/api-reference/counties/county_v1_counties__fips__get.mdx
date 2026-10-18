@@ -1,0 +1,64 @@
+---
+title: Get county analytics and provenance
+description: Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+      - content: GET /v1/counties/{fips}
+      - content: county_v1_counties__fips__get
+      - content: Get county analytics and provenance
+      - content: Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+      - content: 'fips path required '
+      - content: Fips
+      - content: 'dataset_version query optional '
+      - content: Dataset Version
+      - content: 'ecological_share query optional '
+      - content: Ecological Share
+      - content: 'low_incidence_breakpoint query optional '
+      - content: Low Incidence Breakpoint
+      - content: 'missing_human_weakness query optional '
+      - content: Missing Human Weakness
+      - content: 200 Successful Response
+      - content: application/json
+      - content: '#/components/schemas/CountyDetail'
+      - content: 404 County or dataset release not found.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"County or dataset release not found.","instance":"/v1/counties/{fips}","request_id":"example-request-id"}'
+      - content: 422 One or more request values are invalid.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-422","title":"Request failed","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}","request_id":"example-request-id"}'
+      - content: 429 Rate limit exceeded.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limit exceeded.","instance":"/v1/counties/{fips}","request_id":"example-request-id"}'
+      - content: 503 Atlas data service is unavailable.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Atlas data service is unavailable.","instance":"/v1/counties/{fips}","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}","method":"get"}]} showDescription />
+    </>
+  );
+}
