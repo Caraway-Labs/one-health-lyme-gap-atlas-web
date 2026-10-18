@@ -1,7 +1,13 @@
+import { readFileSync } from "node:fs";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+
+const publicOpenApiManifest = JSON.parse(
+  readFileSync("contracts/public-openapi.manifest.json", "utf8")
+) as { sourceCommit: string };
 
 const docsPages = [
   { path: "/docs", heading: "Start with Atlas Lyme" },
@@ -25,6 +31,10 @@ const docsPages = [
     heading: "Evidence, provenance, and uncertainty",
   },
   {
+    path: "/docs/sources-and-canonical-evidence",
+    heading: "Sources and canonical evidence",
+  },
+  {
     path: "/docs/releases-and-methodology",
     heading: "Releases and methodology labels",
   },
@@ -35,6 +45,22 @@ const docsPages = [
   {
     path: "/docs/api-mcp-and-access",
     heading: "API, MCP, and access",
+  },
+  {
+    path: "/docs/develop/mcp-clients",
+    heading: "MCP clients",
+  },
+  {
+    path: "/docs/api-reference",
+    heading: "API reference",
+  },
+  {
+    path: "/docs/api-reference/observations",
+    heading: "Observations",
+  },
+  {
+    path: "/docs/api-reference/schemas",
+    heading: "Schemas",
   },
   {
     path: "/docs/faq-and-troubleshooting",
@@ -90,11 +116,108 @@ test("keeps every HelpDocs route reachable and accessible", async ({
     expect(blockingViolations, docsPage.path).toEqual([]);
   }
 
-  if (testInfo.project.name === "desktop") {
-    await expect(page.locator("#nd-sidebar a")).toHaveCount(
-      docsPages.length + 1
-    );
+  const sidebar =
+    testInfo.project.name === "desktop"
+      ? page.locator("#nd-sidebar")
+      : page.locator("#nd-sidebar-mobile");
+  if (testInfo.project.name !== "desktop") {
+    await page.getByRole("button", { name: "Open Sidebar" }).click();
   }
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "Developer overview" })
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "FAQ and troubleshooting" })
+  ).toBeVisible();
+  const apiReferenceFolder = sidebar.getByRole("button", {
+    name: "API reference",
+  });
+  await expect(apiReferenceFolder).toBeVisible();
+  await apiReferenceFolder.click();
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "Observations" })
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { name: "API, MCP, and access" })
+  ).toBeVisible();
+});
+
+test("renders the generated observations reference with version, source, and raw spec", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/docs/api-reference");
+  await expect(
+    page.getByRole("heading", { name: "API reference", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText("OpenAPI version", { exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Application version", { exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: publicOpenApiManifest.sourceCommit })
+  ).toBeVisible();
+  const rawSpec = page.getByRole("link", { name: "OpenAPI schema" });
+  await expect(rawSpec).toHaveAttribute(
+    "href",
+    "https://api.onehealthatlas.org/openapi.json"
+  );
+
+  await page.goto("/docs/api-reference/observations");
+  await expect(
+    page.getByRole("heading", {
+      name: "Query county observations",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText("observations_v1_observations_get", { exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("case_count_floor_2023").first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "400", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText("application/problem+json").first()
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "429", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "503", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Retry-After", exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Seconds before retry when supplied by the service.").first()
+  ).toBeVisible();
+  const schemaLink = page.getByRole("link", { name: "ProblemDetails" }).first();
+  await expect(schemaLink).toHaveAttribute(
+    "href",
+    "/docs/api-reference/schemas#schema-problemdetails"
+  );
+  await schemaLink.click();
+  await expect(page).toHaveURL(
+    /\/docs\/api-reference\/schemas#schema-problemdetails$/
+  );
+  await expect(
+    page.getByRole("heading", { name: "ProblemDetails", exact: true })
+  ).toBeVisible();
+
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth >
+      document.documentElement.clientWidth + 1
+  );
+  expect(overflow, testInfo.project.name).toBe(false);
+
+  const results = await new AxeBuilder({ page }).include("main").analyze();
+  const blockingViolations = results.violations.filter((violation) =>
+    ["critical", "serious"].includes(violation.impact ?? "")
+  );
+  expect(blockingViolations).toEqual([]);
 });
 
 test("keeps canonical product language and safety boundaries in the rendered guides", async ({
@@ -140,6 +263,27 @@ test("keeps canonical product language and safety boundaries in the rendered gui
   await expect(
     page.getByText(/The current release does not establish this/)
   ).toBeVisible();
+
+  await page.goto("/docs/sources-and-canonical-evidence");
+  await expect(
+    page.getByRole("heading", {
+      name: "What is released and what is intent",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Available now", { exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Planned", { exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("Not supported", { exact: true }).first()
+  ).toBeVisible();
+  await expect(page.getByText(/source-specific adapter/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "OpenAPI schema" })
+  ).toBeVisible();
 });
 
 test("opens HelpDocs search and finds the evidence guide", async ({
@@ -166,11 +310,14 @@ test("opens HelpDocs search and finds the evidence guide", async ({
 test("workspace Docs keeps the analytical URL while search and a heading link survive reload", async ({
   page,
 }, testInfo) => {
-  const reviewPath = "/app/review?scope=NY&county=36061&sort=score";
+  const reviewPath = "/explore?scope=NY&county=36061&sort=score";
   await fulfillCompletedStartingView(page);
   await page.goto(reviewPath);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Review" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the One Health Atlas",
+    })
   ).toBeVisible();
 
   if (testInfo.project.name.includes("mobile")) {
@@ -254,36 +401,59 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   await expect(docsPage.locator("body")).toContainText('"openapi"');
 
   await page.bringToFront();
-  await expect(page).toHaveURL(/\/app\/review\?/);
+  await expect(page).toHaveURL(/\/explore\?/);
   const workspaceUrl = new URL(page.url());
   expect(workspaceUrl.searchParams.get("scope")).toBe("NY");
   expect(workspaceUrl.searchParams.get("county")).toBe("36061");
   expect(workspaceUrl.searchParams.get("sort")).toBe("score");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Review" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the One Health Atlas",
+    })
   ).toBeVisible();
 });
 
-test("opens the configured docs destination from the analytical sidebar", async ({
+test("renders the capability-boundaries table with one column count", async ({
+  page,
+}) => {
+  await page.goto("/docs/current-capabilities");
+  const table = page
+    .locator("main table")
+    .filter({ hasText: "Historical release trends" });
+  await expect(table).toBeVisible();
+  const shape = await table.evaluate((node) => {
+    const headers = [...node.querySelectorAll("thead th")].map(
+      (cell) => cell.textContent?.replace(/\s+/g, " ").trim() ?? ""
+    );
+    const rows = [...node.querySelectorAll("tbody tr")].map(
+      (row) => row.querySelectorAll("td").length
+    );
+    return { headers, rows };
+  });
+  expect(shape).toEqual({
+    headers: ["Capability", "Status", "What this means for you"],
+    rows: [3, 3, 3, 3, 3, 3, 3, 3],
+  });
+});
+
+test("opens the configured docs destination from the workspace sidebar", async ({
   page,
 }, testInfo) => {
-  await page.goto("/overview");
+  await page.goto("/explore");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
   }
   const docsLink = page.getByRole("link", {
-    name: "Docs",
+    name: "Docs, opens in a new tab",
   });
 
-  await expect(docsLink).toHaveAttribute(
-    "href",
-    "https://onehealthatlas.org/docs"
-  );
+  await expect(docsLink).toHaveAttribute("href", "/docs");
   await expect(docsLink).toHaveAttribute("target", "_blank");
   await expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
 
   const newTab = page.waitForEvent("popup");
   await docsLink.click();
   const docsPage = await newTab;
-  await expect(docsPage).toHaveURL("https://onehealthatlas.org/docs");
+  await expect(docsPage).toHaveURL(/\/docs\/?$/);
 });

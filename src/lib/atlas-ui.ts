@@ -9,6 +9,13 @@ export const EVIDENCE_VIEWS = new Set([
 
 export type EvidenceView = "all" | "ecological" | "human" | "complete";
 
+/**
+ * `evidence_completeness` is a whole percent of six scored inputs.
+ * Five of six rounds to 83. A threshold of 5 would treat that percent as a
+ * field count and let low-percent counties through “Most data fields available”.
+ */
+export const MOST_DATA_FIELDS_COMPLETENESS_PERCENT = 83;
+
 export interface ScoreSettings {
   ecological_share: number;
   low_incidence_breakpoint: number;
@@ -71,7 +78,13 @@ export function numericParam(
 }
 
 export function matchesEvidence(
-  county: CountyScoreSummary,
+  county: Pick<
+    CountyScoreSummary,
+    | "burgdorferi_status"
+    | "evidence_completeness"
+    | "human_status"
+    | "tick_status"
+  >,
   evidence: EvidenceView
 ) {
   if (evidence === "ecological") {
@@ -84,7 +97,9 @@ export function matchesEvidence(
     return county.human_status === "published_count_floor";
   }
   if (evidence === "complete") {
-    return county.evidence_completeness >= 5;
+    return (
+      county.evidence_completeness >= MOST_DATA_FIELDS_COMPLETENESS_PERCENT
+    );
   }
   return true;
 }
@@ -171,13 +186,6 @@ export function uncertaintyCuesFor(county: CountyDetail): string[] {
   return cues;
 }
 
-export interface FollowUpPlan {
-  level: string;
-  timeframe: string;
-  summary: string;
-  actions: { owner: string; task: string }[];
-}
-
 /**
  * Suggested follow-up wording for the six review-priority colors.
  * Color order and scoring stay as released. These phrases are review cues,
@@ -194,6 +202,19 @@ export const SUGGESTED_FOLLOW_UP_BY_COLOR = {
 
 export type ReviewPriorityColor = keyof typeof SUGGESTED_FOLLOW_UP_BY_COLOR;
 
+/**
+ * Published score colors from lowest to highest band. Same values as
+ * SUGGESTED_FOLLOW_UP_BY_COLOR so follow-up content can reuse the palette.
+ */
+export const REVIEW_SCORE_RAMP_COLORS = [
+  "#a9d2db",
+  "#55a8a3",
+  "#87b982",
+  "#efc64a",
+  "#f49a32",
+  "#e9602b",
+] as const satisfies readonly ReviewPriorityColor[];
+
 const DEFAULT_REVIEW_PRIORITY_COLOR: ReviewPriorityColor = "#55a8a3";
 
 export function suggestedFollowUpForColor(color: string): string {
@@ -206,85 +227,4 @@ export function suggestedFollowUpForColor(color: string): string {
 
 function isReviewPriorityColor(color: string): color is ReviewPriorityColor {
   return Object.hasOwn(SUGGESTED_FOLLOW_UP_BY_COLOR, color);
-}
-
-const FOLLOW_UP_LEVELS: Record<
-  ReviewPriorityColor,
-  Omit<FollowUpPlan, "actions" | "level">
-> = {
-  "#55a8a3": {
-    summary:
-      "Confirm that the published case and tick records accurately reflect what local and state programs have available.",
-    timeframe: "Complete within 90 days",
-  },
-  "#87b982": {
-    summary:
-      "Compare the county with nearby counties and decide whether reporting, provider outreach, or tick monitoring needs attention.",
-    timeframe: "Complete within 60–90 days",
-  },
-  "#a9d2db": {
-    summary:
-      "Keep a documented baseline and repeat the dashboard review when new surveillance data are released.",
-    timeframe: "Review annually",
-  },
-  "#e9602b": {
-    summary:
-      "Start a structured review with named owners, deadlines, and measures of progress across human and tick surveillance.",
-    timeframe: "Contact partners within 2 weeks",
-  },
-  "#efc64a": {
-    summary:
-      "Ask local surveillance, clinical, laboratory, and vector partners to examine the specific signals that raised the county's ranking.",
-    timeframe: "Begin within 60 days",
-  },
-  "#f49a32": {
-    summary:
-      "Convene county and state partners, document the surveillance gaps, and assign a short-term field or outreach plan.",
-    timeframe: "Begin within 30 days",
-  },
-};
-
-export function followUpPlanFor(county: CountyDetail): FollowUpPlan {
-  const color = county.color.toLowerCase();
-  const level = isReviewPriorityColor(color)
-    ? FOLLOW_UP_LEVELS[color]
-    : FOLLOW_UP_LEVELS[DEFAULT_REVIEW_PRIORITY_COLOR];
-  const plan = {
-    ...level,
-    level: suggestedFollowUpForColor(county.color),
-  };
-  const actions: FollowUpPlan["actions"] = [];
-
-  actions.push(
-    {
-      owner: "County epidemiology or surveillance staff",
-      task:
-        county.human_status === "published_count_floor"
-          ? "Review recent case reports and compare the county rate with prior years and neighboring counties."
-          : "Ask the state program whether county records were absent, suppressed, unallocated, or not reported; document the answer without treating missing data as zero cases.",
-    },
-    {
-      owner: "State vector-borne disease program",
-      task:
-        county.tick_status === "No records"
-          ? "Check for unpublished or newer tick records and decide whether targeted tick identification or standardized field collection is feasible."
-          : "Review when, where, and how the county's tick evidence was collected and whether updated sampling is needed.",
-    },
-    {
-      owner: "Clinical and laboratory liaison",
-      task:
-        county.burgdorferi_status === "Present"
-          ? "Confirm reporting pathways with local laboratories and share current diagnostic and reporting guidance with clinicians."
-          : "Confirm whether pathogen testing has been performed locally; record no testing separately from testing with no detections.",
-    }
-  );
-
-  if (county.uninsured_percent != null && county.uninsured_percent >= 10) {
-    actions.push({
-      owner: "Community health or access partner",
-      task: "Identify practical barriers to evaluation, testing, and reporting, and include accessible prevention outreach in the follow-up plan.",
-    });
-  }
-
-  return { ...plan, actions };
 }

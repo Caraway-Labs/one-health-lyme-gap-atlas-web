@@ -300,8 +300,8 @@ describe("Review county preview", () => {
       county: "36103",
       dataset: "alpha-2026",
       notes: [
-        "The Review list page stays on Review. Browser Back returns to it.",
-        "Review sort stays on Review and is not copied to Investigate.",
+        "The list page stays on Atlas Explorer browse. Browser Back returns to it.",
+        "Sort stays on Atlas Explorer browse and is not copied into county evidence.",
       ],
       page: null,
       period: "2023-01-01",
@@ -333,7 +333,7 @@ describe("Review county preview", () => {
       compare: "36001",
       county: "36001",
       page: null,
-      path: "/app/compare",
+      path: "/compare",
       period: "2023-01-01",
       returnTo: "review",
       sort: null,
@@ -422,7 +422,7 @@ describe("Review county preview", () => {
     const second = buildReviewCountyPreview(east);
     expect(first.countyName).toBe(second.countyName);
     expect(first.fips).not.toBe(second.fips);
-    expect(second.followUp).toBe("Conduct targeted follow-up");
+    expect(second.followUp).toBe("Verify with local information");
     expect(second.why).toContain("Moderate review priority");
   });
 });

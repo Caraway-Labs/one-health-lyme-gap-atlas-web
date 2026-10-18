@@ -163,13 +163,13 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     maturity: "experimental",
     title: "Ask Atlas literature questions",
     summary:
-      "On Review, Explore, Investigate, Compare, and Action, Ask Atlas can send a question to a reviewed PubMed and PMC Open Access literature service when that service is enabled. The answer includes cited evidence or an explicit unavailable-evidence outcome. You stay on the page, and you choose where to go next. Open full workspace continues that same browser-local conversation.",
+      "Ask Atlas opens a dedicated page for reviewed PubMed and PMC Open Access literature when that service is enabled. The answer includes cited evidence or an explicit unavailable-evidence outcome. Explorer and Compare can show a validated page reference with a return link. That reference is not sent with the question.",
     boundary:
-      "The request is a message plus optional conversation history. There is no Structured mode and no mixed mode over Atlas geography or scores. When literature chat is off, the panel and /app/assistant say Ask Atlas is unavailable. That is a service state, not the evidence label Unavailable. Ask Atlas does not change filters, maps, or the address, and it does not run a workflow. The public /assistant route uses the same literature service when the same switch is on. Saved chats stay in this browser.",
+      "The request is a message plus optional conversation history. There is no Structured mode and no mixed mode over Atlas geography or scores. When literature chat is off, /askatlas says Ask Atlas is unavailable. That is a service state, not the evidence label Unavailable. Ask Atlas does not change filters or maps on its own, and it does not run a workflow. The public /assistant route uses the same literature service when the same switch is on. Saved chats stay in this browser.",
     statusBasis:
-      "The workspace sidecar and /app/assistant research workspace are deployed and gated by the literature-chat switch. Product docs classify them as experimental, not as a general release.",
+      "The dedicated /askatlas page is gated by the literature-chat switch. Product docs classify it as experimental, not as a general release.",
     support:
-      "Deployed sidecar and workspace: src/features/ux-reset/ask-atlas/ask-atlas-chrome.tsx, src/features/ux-reset/ask-atlas/ask-atlas-workspace.tsx, gate NEXT_PUBLIC_KG_CHAT_ENABLED, API POST /v1/knowledge-graph/chat. Contract: content/docs/professional-workspace.mdx (Ask Atlas); content/docs/ai-enabled-decision-intelligence.mdx (Experimental/demo); constitution issue 426 answer-only rule. The feature gate and docs keep this Experimental.",
+      "Dedicated page and launcher: src/features/ux-reset/ask-atlas/ask-atlas-chrome.tsx, src/features/ux-reset/ask-atlas/ask-atlas-workspace.tsx, gate NEXT_PUBLIC_KG_CHAT_ENABLED, API POST /v1/knowledge-graph/chat. Contract: content/docs/professional-workspace.mdx (Ask Atlas); content/docs/ai-enabled-decision-intelligence.mdx (Experimental/demo); constitution issue 426 answer-only rule. The feature gate and docs keep this Experimental.",
     docHref: "/docs/professional-workspace",
     docLabel: "Professional workspace",
   },
@@ -180,9 +180,9 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     summary:
       "Questions that combine governed Atlas data with literature, or that use a structured answer mode, are part of the product direction.",
     boundary:
-      "The panel and the /app/assistant workspace do not query live Atlas geography or scores, and they do not offer a Structured or Both mode. They are not an autonomous assistant.",
+      "The /askatlas page does not query live Atlas geography or scores, and it does not offer a Structured or Both mode. It is not an autonomous assistant. A comparison page reference is not a county comparison.",
     statusBasis:
-      "Docs list the broader Atlas evidence assistant as planned. The deployed panel and research workspace document the absence of Structured and Both modes.",
+      "Docs list the broader Atlas evidence assistant as planned. The deployed research page documents the absence of Structured and Both modes.",
     support:
       "Owning contract: content/docs/ai-enabled-decision-intelligence.mdx row “Broader Atlas evidence assistant | Planned”; content/docs/current-capabilities.mdx. Do not treat web issue 426 or the workspace page as a structured-mode release.",
     docHref: "/docs/ai-enabled-decision-intelligence",
@@ -210,7 +210,7 @@ export const capabilityClaims: readonly CapabilityClaim[] = [
     summary:
       "Publishing evidence still follows deterministic ingestion and human governance. Model-assisted extraction, classification, or an agent that loads a dataset into Atlas is not a released workflow.",
     boundary:
-      "Deterministic data engineering and AI stay separate. An AI suggestion does not publish a source. A development MCP server can report its own status. Production Atlas-data MCP is not available.",
+      "Deterministic data engineering and AI stay separate. An AI suggestion does not publish a source. Released MCP tools read public evidence. They do not load a dataset. The September 2026 smoke-only development receipt is historical.",
     statusBasis:
       "Docs list literature monitoring and agent assistance as planned. Dataset Discovery does not own catalog ingestion.",
     support:

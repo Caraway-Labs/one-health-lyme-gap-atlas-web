@@ -22,6 +22,7 @@ jobs:
       - run: npm ci
       - run: npm run build-storybook
       - run: npx playwright install --with-deps chromium
+      # Desktop Chromium only. Pixel 7 is `npm run test:storybook:mobile`.
       - run: npm run test:storybook
       - uses: actions/upload-artifact@v4
         if: always()

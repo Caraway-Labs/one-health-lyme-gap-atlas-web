@@ -6,6 +6,18 @@ import {
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/v1/atlas/scores**", (route) => {
+    const releaseId =
+      new URL(route.request().url()).searchParams.get("dataset_version") ??
+      "alpha-2026";
+    return route.fulfill({
+      json: { ...reviewScopeScoresFixture, release_id: releaseId },
+      status: 200,
+    });
+  });
+});
+
 async function installReviewApiMocks(
   page: import("@playwright/test").Page,
   options: {
@@ -48,14 +60,64 @@ async function installReviewApiMocks(
       status: 200,
     });
   });
+  await installReviewGeometry(page);
+}
+
+function reviewNavigationGeometry() {
+  const box = (
+    fips: string,
+    west: number,
+    south: number,
+    east: number,
+    north: number
+  ) => ({
+    geometry: {
+      coordinates: [
+        [
+          [west, south],
+          [east, south],
+          [east, north],
+          [west, north],
+          [west, south],
+        ],
+      ],
+      type: "Polygon",
+    },
+    properties: { fips },
+    type: "Feature",
+  });
+  return {
+    features: [
+      box("08001", -109.1, 36.9, -102, 41.1),
+      box("36001", -79.8, 40.5, -71.8, 45.1),
+      box("11001", -77.12, 38.79, -76.91, 38.995),
+    ],
+    type: "FeatureCollection",
+  };
+}
+
+async function installReviewGeometry(
+  page: import("@playwright/test").Page,
+  body:
+    | ReturnType<typeof reviewNavigationGeometry>
+    | { detail: string } = reviewNavigationGeometry(),
+  status = 200
+) {
+  await page.route("**/v1/atlas/geometry**", async (route) => {
+    await route.fulfill({ json: body, status });
+  });
 }
 
 test.describe("Review national and state scope controls", () => {
+  test.beforeEach(async ({ page }) => {
+    await installReviewGeometry(page);
+  });
+
   test("writes scope=ALL when selecting United States from profile default state", async ({
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO"
@@ -73,7 +135,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await page.reload();
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
@@ -84,14 +146,14 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: null });
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.getByTestId("review-scope-status")).toHaveAttribute(
       "data-request-scope",
       "ALL"
     );
 
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
@@ -103,7 +165,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "NY"
@@ -121,7 +183,7 @@ test.describe("Review national and state scope controls", () => {
       "Desktop-only history flow"
     );
     await installReviewApiMocks(page, { profileState: null });
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
 
     await page.getByTestId("review-scope-select").click();
@@ -164,7 +226,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }, testInfo) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=CO&county=08001");
+    await page.goto("/explore?scope=CO&county=08001");
     const handoff = page.getByTestId("review-investigate");
     await expect(handoff).toHaveAttribute("data-county", "08001");
     await page.getByRole("button", { name: /Boulder, CO/ }).click();
@@ -176,7 +238,7 @@ test.describe("Review national and state scope controls", () => {
     await expect(handoff).toHaveAttribute("data-county", "08001");
     const investigateNav = page
       .getByRole("navigation", { name: "Professional workspace" })
-      .getByRole("link", { name: "Investigate" });
+      .getByRole("link", { name: "Compare" });
     if (testInfo.project.name.includes("mobile")) {
       await page.getByRole("button", { name: "Open navigation" }).click();
     }
@@ -201,7 +263,7 @@ test.describe("Review national and state scope controls", () => {
   }, testInfo) => {
     const profileMethods: string[] = [];
     await installReviewApiMocks(page, { profileMethods, profileState: "CO" });
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "United States" }).click();
 
@@ -223,7 +285,7 @@ test.describe("Review national and state scope controls", () => {
     );
   });
 
-  test("keeps Review closed until a held profile read classifies the account", async ({
+  test("keeps Atlas Explorer closed until a held profile read classifies the account", async ({
     page,
   }) => {
     const profileMethods: string[] = [];
@@ -249,10 +311,10 @@ test.describe("Review national and state scope controls", () => {
       });
     });
 
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByText("Checking your starting view…")).toBeVisible();
     await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
-    await expect(page).toHaveURL(/\/app\/review\/?$/);
+    await expect(page).toHaveURL(/\/explore\/?$/);
 
     profileHeld.resolve();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
@@ -289,7 +351,7 @@ test.describe("Review national and state scope controls", () => {
       });
     });
 
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     await expect(page.getByText("Checking your starting view…")).toBeVisible();
     await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
     await expect(page).toHaveURL(/scope=ALL/);
@@ -308,7 +370,7 @@ test.describe("Review national and state scope controls", () => {
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
     await page.goto("/app/settings");
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO"
@@ -328,7 +390,7 @@ test.describe("Review national and state scope controls", () => {
     page,
   }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=NOT");
+    await page.goto("/explore?scope=NOT");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.getByTestId("review-scope-status")).toContainText(
       "United States"
@@ -340,7 +402,7 @@ test.describe("Review national and state scope controls", () => {
 
   test("leaves an unrecognized state code unsupported", async ({ page }) => {
     await installReviewApiMocks(page, { profileState: "CO" });
-    await page.goto("/app/review?scope=ZZ");
+    await page.goto("/explore?scope=ZZ");
     await expect(page.getByTestId("review-scope-unsupported")).toHaveText(
       "ZZ is not supported — lower 48 only."
     );
@@ -377,7 +439,7 @@ test.describe("Review national and state scope controls", () => {
       });
     });
 
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "New York (NY)" }).click();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
@@ -425,7 +487,7 @@ test.describe("Review national and state scope controls", () => {
         { timeout: 8000 }
       )
       .catch(() => null);
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "New York (NY)" }).click();
     await expect(page.getByTestId("review-candidate")).toContainText("Albany");

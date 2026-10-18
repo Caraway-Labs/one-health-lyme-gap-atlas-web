@@ -2,7 +2,10 @@
 
 import { EvidenceChatWorkspaceShell } from "@/components/evidence-chat/evidence-chat-layout-shell";
 import { useEvidenceChat } from "@/components/evidence-chat/use-evidence-chat";
+import { Badge } from "@/components/ui/badge";
+import { AskAtlasLiteraturePrompts } from "@/features/ux-reset/ask-atlas/ask-atlas-literature-prompts";
 import { AskAtlasUnavailableNotice } from "@/features/ux-reset/ask-atlas/ask-atlas-unavailable";
+import { AskAtlasPageReferenceStrip } from "@/features/ux-reset/ask-atlas/page-reference-strip";
 import { isAtlasAssistantLiteratureEnabled } from "@/lib/assistant-entry-points";
 
 const ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID =
@@ -21,25 +24,21 @@ export function AskAtlasWorkspace({
       data-testid="ask-atlas-workspace"
     >
       {requestsEnabled ? (
-        <>
-          <p className="ux-reset-ask-atlas-mode-note">
-            Saved chats stay in this browser. Structured and Both modes are not
-            available.
-          </p>
-          <AskAtlasWorkspaceChat
-            initialConversationId={initialConversationId}
-          />
-        </>
+        <AskAtlasWorkspaceChat initialConversationId={initialConversationId} />
       ) : (
-        <>
-          <header className="ux-reset-page-header">
-            <p className="eyebrow">Ask Atlas</p>
-            <h1>Assistant</h1>
+        <div className="ux-reset-ask-atlas-column">
+          <header className="ux-reset-ask-atlas-heading">
+            <h1>Ask Atlas</h1>
+            <Badge variant="outline">Reviewed literature</Badge>
           </header>
+          <p className="ux-reset-ask-atlas-intro">
+            Explore reviewed research on Lyme disease and ticks.
+          </p>
+          <AskAtlasPageReferenceStrip />
           <AskAtlasUnavailableNotice
             headingId={ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID}
           />
-        </>
+        </div>
       )}
     </div>
   );
@@ -55,5 +54,20 @@ function AskAtlasWorkspaceChat({
     mode: "workspace",
     requestsEnabled: true,
   });
-  return <EvidenceChatWorkspaceShell model={model} />;
+  const handleSelectPrompt = (question: string) => {
+    model.editQuestion(question);
+  };
+  return (
+    <EvidenceChatWorkspaceShell
+      emptyLead={
+        <AskAtlasLiteraturePrompts
+          onSelect={handleSelectPrompt}
+          visible={model.showEmptyState}
+        />
+      }
+      leading={<AskAtlasPageReferenceStrip />}
+      model={model}
+      presentation="ask-atlas"
+    />
+  );
 }

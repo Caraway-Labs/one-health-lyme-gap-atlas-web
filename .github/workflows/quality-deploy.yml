@@ -80,12 +80,12 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p test-results
-          npx playwright test --grep "research and sign-in shells fail safely without authentication" --reporter=list --reporter=junit
+          npx playwright test --project=desktop --grep "research and sign-in shells fail safely without authentication" --reporter=list --reporter=junit
         env:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/playwright-auth-junit.xml
 
       - name: Front Porch production visual comparisons
-        run: npx playwright test tests/e2e/front-porch-visual.spec.ts --reporter=list --reporter=junit
+        run: npx playwright test --project=desktop tests/e2e/front-porch-visual.spec.ts --reporter=list --reporter=junit
         env:
           ATLAS_VISUAL_PRODUCTION: "1"
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/front-porch-visual-junit.xml
@@ -202,7 +202,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Required E2E shard
         run: >-
-          npx playwright test --shard=${{ matrix.shard }}/3 --workers=1 --grep-invert "research and sign-in shells fail safely without authentication" --reporter=list,junit,html
+          npx playwright test --project=desktop --shard=${{ matrix.shard }}/3 --workers=1 --grep-invert "research and sign-in shells fail safely without authentication" --reporter=list,junit,html
         env:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-results/playwright-junit.xml
           PLAYWRIGHT_HTML_OPEN: never

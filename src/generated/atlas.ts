@@ -26,6 +26,8 @@ import type {
 
 import type {
   AtlasMetadata,
+  CanonicalGeographyAvailability,
+  CollectionEnvelopeCountyContextObservation,
   CollectionEnvelopeIndicator,
   CollectionEnvelopeMeasure,
   CollectionEnvelopeObservation,
@@ -44,10 +46,12 @@ import type {
   IndicatorsV1IndicatorsGetParams,
   KnowledgeChatRequest,
   KnowledgeChatResponse,
+  ListIntelligenceFeedParams,
   ListIntelligenceItemsParams,
   ListIntelligenceSourcesParams,
   LiveHealthLiveGet200,
   MeasuresV1MeasuresGetParams,
+  MetadataFeed,
   MetadataV1AtlasMetadataGetParams,
   MixedAssistantRequest,
   MixedAssistantResponse,
@@ -73,6 +77,7 @@ import type {
   StructuredAssistantRequest,
   StructuredAssistantResponse,
   Tier1CountyPriority,
+  Tier1CountyPriorityAvailability,
   UserProfileResponse,
   UserProfileWrite
 } from './models';
@@ -1363,8 +1368,167 @@ export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awa
 
 
 
+export type canonicalGeographyAvailabilityResponse200 = {
+  data: CanonicalGeographyAvailability
+  status: 200
+}
+
+export type canonicalGeographyAvailabilityResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type canonicalGeographyAvailabilityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type canonicalGeographyAvailabilityResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type canonicalGeographyAvailabilityResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type canonicalGeographyAvailabilityResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type canonicalGeographyAvailabilityResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type canonicalGeographyAvailabilityResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type canonicalGeographyAvailabilityResponseSuccess = (canonicalGeographyAvailabilityResponse200) & {
+  headers: Headers;
+};
+export type canonicalGeographyAvailabilityResponseError = (canonicalGeographyAvailabilityResponse400 | canonicalGeographyAvailabilityResponse404 | canonicalGeographyAvailabilityResponse413 | canonicalGeographyAvailabilityResponse414 | canonicalGeographyAvailabilityResponse429 | canonicalGeographyAvailabilityResponse503 | canonicalGeographyAvailabilityResponse4xx) & {
+  headers: Headers;
+};
+
+export type canonicalGeographyAvailabilityResponse = (canonicalGeographyAvailabilityResponseSuccess | canonicalGeographyAvailabilityResponseError)
+
+export const getCanonicalGeographyAvailabilityUrl = (geographyType: GeographyType,
+    geographyId: string,) => {
+
+
+
+
+  return `/v1/geographies/${geographyType}/${geographyId}/availability`
+}
+
+/**
+ * Additive county-only operation. Confirms membership and release from the governed county directory before returning UNAVAILABLE/CANONICAL_GEOGRAPHY_UNPUBLISHED with null data. The canonical resource is identity metadata, not a polygon. No geometry is returned or inferred. State availability is unsupported (400). Malformed county IDs return 400; confirmed absent identities return 404. Unavailable, empty, duplicate or inconsistent directory authority remains 503. The directory uses the existing bounded snapshot cache, checked against a fresh current-release lookup; a mismatch remains 503. Responses use Cache-Control: no-store. The existing canonical resource route and county/map routes are unchanged.
+ * @summary Check canonical county geography publication availability
+ */
+export const canonicalGeographyAvailability = async (geographyType: GeographyType,
+    geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<canonicalGeographyAvailabilityResponse> => {
+
+  return apiMutator<canonicalGeographyAvailabilityResponse>(getCanonicalGeographyAvailabilityUrl(geographyType,geographyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCanonicalGeographyAvailabilityQueryKey = (geographyType: GeographyType,
+    geographyId: string,) => {
+    return [
+    `/v1/geographies/${geographyType}/${geographyId}/availability`
+    ] as const;
+    }
+
+
+export const getCanonicalGeographyAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCanonicalGeographyAvailabilityQueryKey(geographyType,geographyId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof canonicalGeographyAvailability>>> = ({ signal }) => canonicalGeographyAvailability(geographyType,geographyId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: geographyType !== null && geographyType !== undefined && geographyId !== null && geographyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CanonicalGeographyAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof canonicalGeographyAvailability>>>
+export type CanonicalGeographyAvailabilityQueryError = ProblemDetails
+
+
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof canonicalGeographyAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Check canonical county geography publication availability
+ */
+
+export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+ geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCanonicalGeographyAvailabilityQueryOptions(geographyType,geographyId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type observationsV1ObservationsGetResponse200 = {
-  data: CollectionEnvelopeObservation
+  data: CollectionEnvelopeCountyContextObservation | CollectionEnvelopeObservation
   status: 200
 }
 
@@ -1436,7 +1600,7 @@ export const getObservationsV1ObservationsGetUrl = (params: ObservationsV1Observ
 }
 
 /**
- * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. A measure and bounded county/time selection are required; no user sorting or aggregation.
+ * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.
  * @summary Query county observations
  */
 export const observationsV1ObservationsGet = async (params: ObservationsV1ObservationsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<observationsV1ObservationsGetResponse> => {
@@ -1833,6 +1997,164 @@ export function useListIntelligenceSources<TData = Awaited<ReturnType<typeof lis
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListIntelligenceSourcesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listIntelligenceFeedResponse200 = {
+  data: MetadataFeed
+  status: 200
+}
+
+export type listIntelligenceFeedResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listIntelligenceFeedResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listIntelligenceFeedResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type listIntelligenceFeedResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type listIntelligenceFeedResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type listIntelligenceFeedResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type listIntelligenceFeedResponse4xx = {
+  data: ProblemDetails
+  status: HTTPStatusCode4xx
+}
+
+export type listIntelligenceFeedResponseSuccess = (listIntelligenceFeedResponse200) & {
+  headers: Headers;
+};
+export type listIntelligenceFeedResponseError = (listIntelligenceFeedResponse400 | listIntelligenceFeedResponse404 | listIntelligenceFeedResponse413 | listIntelligenceFeedResponse414 | listIntelligenceFeedResponse429 | listIntelligenceFeedResponse503 | listIntelligenceFeedResponse4xx) & {
+  headers: Headers;
+};
+
+export type listIntelligenceFeedResponse = (listIntelligenceFeedResponseSuccess | listIntelligenceFeedResponseError)
+
+export const getListIntelligenceFeedUrl = (params?: ListIntelligenceFeedParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/intelligence/feed?${stringifiedParams}` : `/v1/intelligence/feed`
+}
+
+/**
+ * Read only from governed INTELLIGENCE_FEED_V2. No excerpts, article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * @summary Read source-attributed publication metadata
+ */
+export const listIntelligenceFeed = async (params?: ListIntelligenceFeedParams, options?: Parameters<typeof apiMutator>[1]): Promise<listIntelligenceFeedResponse> => {
+
+  return apiMutator<listIntelligenceFeedResponse>(getListIntelligenceFeedUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListIntelligenceFeedQueryKey = (params?: ListIntelligenceFeedParams,) => {
+    return [
+    `/v1/intelligence/feed`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListIntelligenceFeedQueryOptions = <TData = Awaited<ReturnType<typeof listIntelligenceFeed>>, TError = ProblemDetails>(params?: ListIntelligenceFeedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIntelligenceFeed>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListIntelligenceFeedQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listIntelligenceFeed>>> = ({ signal }) => listIntelligenceFeed(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIntelligenceFeed>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListIntelligenceFeedQueryResult = NonNullable<Awaited<ReturnType<typeof listIntelligenceFeed>>>
+export type ListIntelligenceFeedQueryError = ProblemDetails
+
+
+export function useListIntelligenceFeed<TData = Awaited<ReturnType<typeof listIntelligenceFeed>>, TError = ProblemDetails>(
+ params: undefined |  ListIntelligenceFeedParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIntelligenceFeed>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listIntelligenceFeed>>,
+          TError,
+          Awaited<ReturnType<typeof listIntelligenceFeed>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListIntelligenceFeed<TData = Awaited<ReturnType<typeof listIntelligenceFeed>>, TError = ProblemDetails>(
+ params?: ListIntelligenceFeedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIntelligenceFeed>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listIntelligenceFeed>>,
+          TError,
+          Awaited<ReturnType<typeof listIntelligenceFeed>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListIntelligenceFeed<TData = Awaited<ReturnType<typeof listIntelligenceFeed>>, TError = ProblemDetails>(
+ params?: ListIntelligenceFeedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIntelligenceFeed>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read source-attributed publication metadata
+ */
+
+export function useListIntelligenceFeed<TData = Awaited<ReturnType<typeof listIntelligenceFeed>>, TError = ProblemDetails>(
+ params?: ListIntelligenceFeedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIntelligenceFeed>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListIntelligenceFeedQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3652,6 +3974,142 @@ export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCountyTier1SurveillancePriorityGetQueryOptions(fips,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type countyTier1SurveillancePriorityAvailabilityGetResponse200 = {
+  data: Tier1CountyPriorityAvailability
+  status: 200
+}
+
+export type countyTier1SurveillancePriorityAvailabilityGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type countyTier1SurveillancePriorityAvailabilityGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type countyTier1SurveillancePriorityAvailabilityGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type countyTier1SurveillancePriorityAvailabilityGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type countyTier1SurveillancePriorityAvailabilityGetResponseSuccess = (countyTier1SurveillancePriorityAvailabilityGetResponse200) & {
+  headers: Headers;
+};
+export type countyTier1SurveillancePriorityAvailabilityGetResponseError = (countyTier1SurveillancePriorityAvailabilityGetResponse404 | countyTier1SurveillancePriorityAvailabilityGetResponse422 | countyTier1SurveillancePriorityAvailabilityGetResponse429 | countyTier1SurveillancePriorityAvailabilityGetResponse503) & {
+  headers: Headers;
+};
+
+export type countyTier1SurveillancePriorityAvailabilityGetResponse = (countyTier1SurveillancePriorityAvailabilityGetResponseSuccess | countyTier1SurveillancePriorityAvailabilityGetResponseError)
+
+export const getCountyTier1SurveillancePriorityAvailabilityGetUrl = (fips: string,) => {
+
+
+
+
+  return `/v1/counties/${fips}/tier1-surveillance-priority/availability`
+}
+
+/**
+ * Additive availability contract for current supported county geographies. A successful lookup returns AVAILABLE with the exact persisted result, or UNAVAILABLE with reason NO_PUBLISHED_MODEL and null data after the current geography release and Tier 1 projection have both been read successfully. geography_release_id identifies the release used to validate the FIPS. This endpoint does not turn null into zero or synthesize model output. NOT_ESTIMABLE is a persisted result state and is distinct from no published model result. Malformed FIPS returns 422; an identity outside the current geography release returns typed 404; dependency or malformed-data failures return 503. Public cache TTL 60 seconds.
+ * @summary Get Tier 1 result availability and persisted data
+ */
+export const countyTier1SurveillancePriorityAvailabilityGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countyTier1SurveillancePriorityAvailabilityGetResponse> => {
+
+  return apiMutator<countyTier1SurveillancePriorityAvailabilityGetResponse>(getCountyTier1SurveillancePriorityAvailabilityGetUrl(fips),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCountyTier1SurveillancePriorityAvailabilityGetQueryKey = (fips: string,) => {
+    return [
+    `/v1/counties/${fips}/tier1-surveillance-priority/availability`
+    ] as const;
+    }
+
+
+export const getCountyTier1SurveillancePriorityAvailabilityGetQueryOptions = <TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCountyTier1SurveillancePriorityAvailabilityGetQueryKey(fips);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>> = ({ signal }) => countyTier1SurveillancePriorityAvailabilityGet(fips, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CountyTier1SurveillancePriorityAvailabilityGetQueryResult = NonNullable<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>>
+export type CountyTier1SurveillancePriorityAvailabilityGetQueryError = ProblemDetails
+
+
+export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
+ fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>,
+          TError,
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>,
+          TError,
+          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Tier 1 result availability and persisted data
+ */
+
+export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCountyTier1SurveillancePriorityAvailabilityGetQueryOptions(fips,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

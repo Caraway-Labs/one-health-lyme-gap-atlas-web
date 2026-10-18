@@ -22,7 +22,7 @@ async function focusByTab(page: Page, control: Locator) {
 test("opens AI / Responsible Use from the professional footer and keeps the shell", async ({
   page,
 }, testInfo) => {
-  await page.goto("/app/review");
+  await page.goto("/explore");
   const footer = page.getByRole("contentinfo");
   const entry = footer.getByRole("link", { name: "AI / Responsible Use" });
   await expect(entry).toHaveAttribute("href", "/app/ai-responsible-use");

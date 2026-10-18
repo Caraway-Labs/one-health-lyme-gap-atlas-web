@@ -10,6 +10,7 @@ const UNAVAILABLE_VALUE_STATES: ReadonlySet<ValueState> = new Set([
   ValueState.MISSING,
   ValueState.UNAVAILABLE,
   ValueState.NO_COUNTY_LINKED_RECORD,
+  ValueState.NO_RECORDS,
 ]);
 
 const LIMITED_VALUE_STATES: ReadonlySet<ValueState> = new Set([
@@ -59,6 +60,7 @@ const REASON_LABELS: Record<EvidenceReasonCode, string> = {
   [ValueState.SUPPRESSED]: "Suppressed or privacy-protected",
   [ValueState.UNAVAILABLE]: "Unavailable for this release",
   [ValueState.NO_COUNTY_LINKED_RECORD]: "No county-linked record",
+  [ValueState.NO_RECORDS]: "No records (not absence)",
   ENVIRONMENTAL_OUT_OF_SOURCE_COVERAGE: "Outside environmental source coverage",
   ENVIRONMENTAL_SOURCE_MISSING: "Environmental source missing",
   MATERIAL_LIMITATION: "Coverage or methodology limits apply",

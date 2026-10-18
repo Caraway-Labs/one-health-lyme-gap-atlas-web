@@ -4,9 +4,9 @@ import { RESET_ASSISTANT_PATH } from "@/features/ux-reset/routes";
 type SearchParamSource = Pick<URLSearchParams, "get" | "getAll" | "has">;
 
 /**
- * Sidecar handoff into the reset research workspace.
+ * Explicit handoff into the reset Ask Atlas page.
  * Shared county and dataset follow the reset handoff matrix. `conversation`
- * is page-local and is added only for this explicit link.
+ * is page-local and is added only when a saved conversation is selected.
  */
 export function resetAskAtlasWorkspaceHref(
   sourcePathname: string,

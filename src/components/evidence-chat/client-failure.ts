@@ -5,6 +5,7 @@ import {
   AskAtlasAnswerContractError,
   type AskAtlasCloseReason,
 } from "@/lib/ask-atlas-answer-contract";
+import { AskAtlasLiteratureRequestError } from "@/lib/ask-atlas-literature-adapter";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
 export interface ClientFailure {
@@ -57,6 +58,14 @@ function isTimeoutError(error: unknown): boolean {
 }
 
 export function clientFailure(error: unknown): ClientFailure {
+  if (error instanceof AskAtlasLiteratureRequestError) {
+    return {
+      message: error.message,
+      retry: false,
+      state: "request_not_processed",
+      title: "Question not processed.",
+    };
+  }
   if (
     error instanceof ApiResponseValidationError ||
     error instanceof AskAtlasAnswerContractError
@@ -88,6 +97,15 @@ export function clientFailure(error: unknown): ClientFailure {
       retry: true,
       state: "network_failure",
       title: "Connection problem.",
+    };
+  }
+  if (error.status === 502 || error.status === 503) {
+    return {
+      message:
+        "The assistant service is unavailable. This is not a finding that the Atlas corpus lacks relevant literature.",
+      retry: true,
+      state: "network_failure",
+      title: "Service unavailable.",
     };
   }
   if (error.status === 429) {

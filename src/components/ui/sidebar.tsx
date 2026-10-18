@@ -145,6 +145,12 @@ export function SidebarContent({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
+export function SidebarFooter({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div data-slot="sidebar-footer" className={cn(className)} {...props} />
+  );
+}
+
 export function SidebarGroup({
   className,
   ...props
@@ -181,13 +187,25 @@ export function SidebarMenuButton({
   className,
   href,
   tooltip,
+  tooltipDetail,
   ...props
-}: ComponentProps<"a"> & { active?: boolean; tooltip?: string }) {
+}: ComponentProps<"a"> & {
+  active?: boolean;
+  tooltip?: string;
+  /**
+   * Accessible description shown under the tooltip title.
+   * Issue 657 needs a title plus the exact Data Provenance description.
+   * The shared tooltip primitive stays the only tooltip. A string `tooltip`
+   * remains a single line for every other destination.
+   */
+  tooltipDetail?: string;
+}) {
   const shared = {
     "data-active": active || undefined,
     "data-slot": "sidebar-menu-button",
     className: cn(className),
     ...props,
+    "aria-description": props["aria-description"] ?? tooltipDetail,
   };
   const link =
     typeof href === "string" ? (
@@ -201,6 +219,56 @@ export function SidebarMenuButton({
   return (
     <Tooltip>
       <TooltipTrigger render={link} />
+      <TooltipContent
+        className={
+          tooltipDetail ? "max-w-64 flex-col items-start text-left" : undefined
+        }
+        side="right"
+      >
+        {tooltipDetail ? (
+          <>
+            <span className="font-semibold">{tooltip}</span>
+            <span>{tooltipDetail}</span>
+          </>
+        ) : (
+          tooltip
+        )}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Sidebar row that runs an action instead of navigating. */
+export function SidebarMenuAction({
+  active,
+  children,
+  className,
+  tooltip,
+  type = "button",
+  ...props
+}: ComponentProps<typeof Button> & {
+  active?: boolean;
+  tooltip?: string;
+}) {
+  const button = (
+    <Button
+      {...props}
+      className={cn(
+        "h-auto w-full cursor-pointer justify-start px-2 py-2 text-left font-[inherit] text-[0.8rem] whitespace-normal focus-visible:ring-0 active:translate-y-0",
+        className
+      )}
+      data-active={active || undefined}
+      data-slot="sidebar-menu-button"
+      type={type}
+      variant="ghost"
+    >
+      {children}
+    </Button>
+  );
+  if (!tooltip) return button;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={button} />
       <TooltipContent side="right">{tooltip}</TooltipContent>
     </Tooltip>
   );

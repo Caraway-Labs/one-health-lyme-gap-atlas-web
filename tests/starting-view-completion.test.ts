@@ -6,6 +6,7 @@ import {
   explicitInternalDestination,
   isStartingViewComplete,
   startingViewCompletionConfirmed,
+  startingViewStateOptions,
 } from "@/features/ux-reset/onboarding/starting-view-completion";
 import { savedProfileFromUserProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 
@@ -85,17 +86,44 @@ describe("starting view completion", () => {
     expect(
       destinationAfterStartingView(completed, "/app/review?scope=NY")
     ).toBe("/app/review?scope=NY");
-    expect(destinationAfterStartingView(completed, null)).toBe("/app/review");
+    expect(
+      destinationAfterStartingView(completed, "/app/investigate?county=08001")
+    ).toBe("/app/investigate?county=08001");
+    expect(destinationAfterStartingView(completed, null)).toBe("/explore");
     expect(explicitInternalDestination("//evil.example")).toBeNull();
     expect(
       destinationAfterStartingView(completed, "https://evil.example")
-    ).toBe("/app/review");
+    ).toBe("/explore");
   });
 
-  it("sends an incomplete account to Review only after completion, not to the requested path", () => {
+  it("sends an incomplete account to Atlas Explorer, not the requested path", () => {
     const incomplete = savedProfileFromUserProfile({ state_code: "CO" });
     expect(
       destinationAfterStartingView(incomplete, "/app/investigate?county=08001")
-    ).toBe("/app/review");
+    ).toBe("/explore");
+  });
+
+  it("offers only the lower 48 and the District of Columbia", () => {
+    expect(
+      startingViewStateOptions([
+        { code: "AK", name: "Alaska" },
+        { code: "CO", name: "Colorado" },
+        { code: "DC", name: "District of Columbia" },
+        { code: "HI", name: "Hawaii" },
+        { code: "PR", name: "Puerto Rico" },
+      ])
+    ).toStrictEqual([
+      { code: "CO", name: "Colorado" },
+      { code: "DC", name: "District of Columbia" },
+    ]);
+    const rejected = buildStartingViewCompletionWrite(
+      null,
+      { stateCode: "AK" },
+      startingViewStateOptions([
+        { code: "AK", name: "Alaska" },
+        { code: "CO", name: "Colorado" },
+      ])
+    );
+    expect(rejected.ok).toBeFalsy();
   });
 });

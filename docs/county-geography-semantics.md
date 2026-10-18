@@ -14,5 +14,6 @@ Atlas counties are identified in every public contract by **five-digit FIPS** (`
 - TanStack Query caches use `countyDisplayGeometryQueryKey` so display geometry is not confused with identity or context fetches.
 - `parseCountyDisplayGeometry` rejects analysis-tagged collection metadata when present.
 - Environmental or canonical observation records join to county UI state with `indexCountyContextByFips` / `joinCountyScoresWithContextByFips` (FIPS only).
+- `GET /v1/geographies/{type}/{id}/availability` is an additive publication check. A successful response has `data: null` and is not county identity, not a `Geography`, and not map geometry. Display polygons stay on `GET /v1/atlas/geometry`. The published county directory remains the identity source.
 
 Related API contract: `Caraway-Labs/one-health-lyme-gap-atlas-api#85`. Data platform split: `Caraway-Labs/one-health-lyme-gap-atlas-data#424`.

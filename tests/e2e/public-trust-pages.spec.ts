@@ -3,6 +3,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { aiEthicsContent } from "@/lib/ai-ethics-content";
 
+import {
+  publicTrustViewports,
+  releaseViewportRuns,
+} from "./release-phone-viewport";
+
 const TRUST_ROUTES = [
   {
     heading: "About Caraway Labs",
@@ -16,14 +21,6 @@ const TRUST_ROUTES = [
     heading: "How Atlas approaches AI",
     path: "/ai-ethics",
   },
-] as const;
-
-const VIEWPORTS = [
-  { height: 800, width: 320 },
-  { height: 844, width: 390 },
-  { height: 900, width: 768 },
-  { height: 800, width: 1280 },
-  { height: 900, width: 1440 },
 ] as const;
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -61,12 +58,10 @@ test("public trust pages keep one h1, landmarks, and axe-clean chrome", async ({
 test("public trust pages reflow at narrow, mobile, and wide widths", async ({
   page,
 }, testInfo) => {
-  test.skip(
-    testInfo.project.name !== "desktop",
-    "The width matrix sets its own viewport."
-  );
-
-  for (const viewport of VIEWPORTS) {
+  for (const viewport of publicTrustViewports) {
+    if (!releaseViewportRuns(testInfo.project.name, viewport.width)) {
+      continue;
+    }
     await page.setViewportSize(viewport);
     for (const route of TRUST_ROUTES) {
       await page.goto(route.path);

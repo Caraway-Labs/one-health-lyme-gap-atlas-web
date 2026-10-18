@@ -1,0 +1,30 @@
+import { AtlasSectionHeader } from "@/components/atlas-section-header";
+import {
+  PAGE_INTRODUCTION_COPY,
+  type PageIntroductionId,
+} from "@/features/ux-reset/page-introduction-copy";
+
+export function PageIntroduction({ page }: { page: PageIntroductionId }) {
+  const copy = PAGE_INTRODUCTION_COPY[page];
+  return (
+    <header
+      className="ux-reset-page-introduction"
+      data-page={page}
+      data-testid={`page-introduction-${page}`}
+    >
+      <AtlasSectionHeader
+        className="ux-reset-page-introduction-heading"
+        description={copy.supporting}
+        headingLevel="h1"
+        title={copy.headline}
+      />
+      {"guidance" in copy ? (
+        <p className="ux-reset-page-introduction-guidance">
+          <strong>{copy.guidanceLead}</strong> {copy.guidance}
+        </p>
+      ) : (
+        <p className="ux-reset-page-introduction-note">{copy.stripBody}</p>
+      )}
+    </header>
+  );
+}

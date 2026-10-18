@@ -36,9 +36,12 @@ import {
   type InvestigateRecovery,
 } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import {
-  RESET_ACTION_PATH,
+  EXPLORER_FOLLOW_UP_MODE,
+  hrefWithExplorerMode,
+} from "@/features/ux-reset/review/explorer-mode";
+import {
+  ATLAS_EXPLORER_PATH,
   RESET_INVESTIGATE_PATH,
-  RESET_REVIEW_PATH,
 } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
@@ -122,14 +125,17 @@ function InvestigateExperienceInner() {
     workspace.scope,
   ]);
   const returnHref = uxResetShellHandoffHref(
-    RESET_REVIEW_PATH,
+    ATLAS_EXPLORER_PATH,
     RESET_INVESTIGATE_PATH,
     handoffParams
   );
-  const actionHref = uxResetShellHandoffHref(
-    RESET_ACTION_PATH,
-    RESET_INVESTIGATE_PATH,
-    handoffParams
+  const actionHref = hrefWithExplorerMode(
+    uxResetShellHandoffHref(
+      ATLAS_EXPLORER_PATH,
+      RESET_INVESTIGATE_PATH,
+      handoffParams
+    ),
+    EXPLORER_FOLLOW_UP_MODE
   );
   const compareHref = buildCompareEntryHref({
     county: workspace.requestedFips,
@@ -398,7 +404,10 @@ function InvestigateExperienceInner() {
           modelAssisted={modelAssisted}
           retrying={workspace.evidenceFetching}
           onRetryFailures={
-            bundle && bundle.measureFailures.length > 0
+            bundle &&
+            bundle.measureFailures.some(
+              (failure) => failure.retryable !== false
+            )
               ? workspace.retryEvidence
               : undefined
           }

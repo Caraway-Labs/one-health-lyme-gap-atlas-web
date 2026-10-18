@@ -14,6 +14,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetDestinationHref } from "@/features/ux-reset";
+import { readAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/page-reference";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
@@ -37,6 +38,17 @@ const reviewRouter = vi.hoisted(() => ({
 
 let mockedSearch = "";
 
+function askAtlasLauncherReference() {
+  const href = new URL(
+    screen.getByTestId("ask-atlas-launcher").getAttribute("href") ?? "",
+    "http://localhost"
+  );
+  return {
+    href,
+    state: readAskAtlasPageReference(href.pathname, href.searchParams),
+  };
+}
+
 const reviewReleaseControls: {
   metadataReleaseId: string | null;
   metadataStatus: number;
@@ -49,7 +61,7 @@ const reviewReleaseControls: {
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/app/review",
+  usePathname: () => "/explore",
   useRouter: () => reviewRouter,
   useSearchParams: () =>
     new URLSearchParams(mockedSearch) as ReadonlyURLSearchParams,
@@ -105,6 +117,10 @@ vi.mock(import("@/lib/county-geography"), async (importOriginal) => ({
   })),
 }));
 
+vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
+  loadInvestigateCountyRecord: vi.fn<() => Promise<null>>(async () => null),
+}));
+
 vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
     onSelect,
@@ -146,9 +162,14 @@ vi.mock(import("@/generated/atlas"), () => ({
     () => Promise<{ data: typeof reviewScopeMetadataFixture; status: number }>
   >(async () => defaultMetadataResponse()),
   scoresV1AtlasScoresGet: vi.fn<
-    () => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
-  >(async () => ({
-    data: reviewScopeScoresFixture,
+    (params?: {
+      dataset_version?: string;
+    }) => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
+  >(async (params?: { dataset_version?: string }) => ({
+    data: {
+      ...reviewScopeScoresFixture,
+      release_id: params?.dataset_version ?? "alpha-2026",
+    },
     status: 200,
   })),
   saveProfileV1MeProfilePut: vi.fn<
@@ -223,7 +244,7 @@ function renderReview(
         onUrlUpdate={({ options: updateOptions, queryString }) =>
           options.onUrlUpdate?.(queryString, updateOptions.history)
         }
-        searchParams={new URL(`http://localhost/app/review${search}`).search}
+        searchParams={new URL(`http://localhost/explore${search}`).search}
       >
         <ResetReviewExperience />
       </NuqsTestingAdapter>
@@ -237,7 +258,7 @@ function renderReview(
         <QueryClientProvider client={client}>
           <NuqsTestingAdapter
             hasMemory
-            searchParams={new URL(`http://localhost/app/review${next}`).search}
+            searchParams={new URL(`http://localhost/explore${next}`).search}
           >
             <ResetReviewExperience />
           </NuqsTestingAdapter>
@@ -350,7 +371,7 @@ async function observeSettledStartup(input: {
               status: 200,
             })) as never
   );
-  window.history.replaceState(null, "", "/app/review");
+  window.history.replaceState(null, "", "/explore");
   const view = renderReview("", {
     client,
     onUrlUpdate: (query, history) => {
@@ -362,7 +383,7 @@ async function observeSettledStartup(input: {
   }
   if (input.pick && input.back) {
     await chooseReviewScopeOption(input.pick);
-    window.history.replaceState(null, "", "/app/review");
+    window.history.replaceState(null, "", "/explore");
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
   held?.resolve({
@@ -389,7 +410,7 @@ async function observeSettledStartup(input: {
       .every((update) => scopeToken(update.query) === input.settledScope);
   const rendered = renderedReviewScope();
   if (input.forwardScope) {
-    window.history.pushState(null, "", "/app/review?scope=NY");
+    window.history.pushState(null, "", "/explore?scope=NY");
     window.dispatchEvent(new PopStateEvent("popstate"));
     view.rerenderSearch("?scope=NY");
     await waitForRenderedScope(input.forwardScope);
@@ -414,7 +435,19 @@ async function observeSettledStartup(input: {
 }
 
 describe("Reset Review scope UI", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
+    vi.mocked(scoresV1AtlasScoresGet).mockImplementation(
+      async (params) =>
+        ({
+          data: {
+            ...reviewScopeScoresFixture,
+            release_id: params?.dataset_version ?? "alpha-2026",
+          },
+          status: 200,
+        }) as never
+    );
+
     mockedSearch = "";
     lastMapScoreFips = "";
     reviewRouter.push.mockClear();
@@ -433,10 +466,10 @@ describe("Reset Review scope UI", () => {
 
   it("follows Investigate when a malformed Review URL is still canonicalizing", async () => {
     const search = "?scope=state&county=bad&period=2024&dataset=alpha";
-    window.history.pushState(null, "", `/app/review${search}`);
+    window.history.pushState(null, "", `/explore${search}`);
     const destination = uxResetDestinationHref(
       "investigate",
-      "/app/review",
+      "/explore",
       new URLSearchParams(search.slice(1))
     );
     renderReview(search);
@@ -498,26 +531,28 @@ describe("Reset Review scope UI", () => {
     };
     const read = async (search: string) => {
       const view = renderReview(search);
-      await waitFor(() => {
-        if (search.includes("scope=ALL")) {
-          if (!screen.queryByRole("button", { name: "CO, Colorado" })) {
-            throw new Error("lower 48 scope was not offered");
+      if (search.includes("scope=ALL")) {
+        fireEvent.click(await screen.findByTestId("national-browse-state"));
+        await screen.findByRole("option", { name: "Colorado (CO)" });
+      } else {
+        await waitFor(() => {
+          if (!screen.queryByTestId("review-scope-unsupported")) {
+            throw new Error("unsupported scope message did not render");
           }
-          return;
-        }
-        if (!screen.queryByTestId("review-scope-unsupported")) {
-          throw new Error("unsupported scope message did not render");
-        }
-      });
+        });
+      }
       const snapshot = {
         colorado: Boolean(
+          screen.queryByRole("option", { name: "Colorado (CO)" }) ||
           screen.queryByRole("button", { name: "CO, Colorado" })
         ),
         map: Boolean(screen.queryByTestId("mock-atlas-map")),
         offeredAlaska: Boolean(
+          screen.queryByRole("option", { name: "Alaska (AK)" }) ||
           screen.queryByRole("button", { name: "AK, Alaska" })
         ),
         offeredHawaii: Boolean(
+          screen.queryByRole("option", { name: "Hawaii (HI)" }) ||
           screen.queryByRole("button", { name: "HI, Hawaii" })
         ),
         picture: Boolean(screen.queryByTestId("review-state-panel")),
@@ -587,8 +622,8 @@ describe("Reset Review scope UI", () => {
         offeredHawaii: false,
         picture: false,
         unsupported: "",
-        unsupportedAlaska: true,
-        unsupportedHawaii: true,
+        unsupportedAlaska: false,
+        unsupportedHawaii: false,
       },
     });
   });
@@ -638,8 +673,7 @@ describe("Reset Review scope UI", () => {
         ?.getAttribute("href") ?? "";
     const shell = {
       compare: href("Compare"),
-      explore: href("Explore"),
-      investigate: href("Investigate"),
+      ask: href("Ask Atlas"),
     };
     const presence = {
       map: Boolean(screen.queryByTestId("mock-atlas-map")),
@@ -655,8 +689,7 @@ describe("Reset Review scope UI", () => {
       reviewCalls: review.mock.calls.length,
       shellCompare:
         shell.compare.includes("county=") || shell.compare.includes("compare="),
-      shellExplore: shell.explore,
-      shellInvestigate: shell.investigate,
+      shellAsk: shell.ask,
     }).toStrictEqual({
       clearedCounty: false,
       clearedScope: true,
@@ -664,10 +697,7 @@ describe("Reset Review scope UI", () => {
       picture: false,
       reviewCalls: 0,
       shellCompare: false,
-      shellExplore:
-        "/app/explore?scope=AK&dataset=alpha-2026&period=2023-01-01",
-      shellInvestigate:
-        "/app/investigate?scope=AK&dataset=alpha-2026&period=2023-01-01",
+      shellAsk: "/askatlas?dataset=alpha-2026",
     });
   });
 
@@ -684,8 +714,7 @@ describe("Reset Review scope UI", () => {
       picture: boolean;
       reviewCalls: number;
       shellCompare: boolean;
-      shellExplore: string;
-      shellInvestigate: string;
+      shellAsk: string;
     }[] = [];
     for (const code of codes) {
       review.mockClear();
@@ -737,8 +766,7 @@ describe("Reset Review scope UI", () => {
         shellCompare:
           href("Compare").includes("county=") ||
           href("Compare").includes("compare="),
-        shellExplore: href("Explore"),
-        shellInvestigate: href("Investigate"),
+        shellAsk: href("Ask Atlas"),
       });
       view.unmount();
     }
@@ -751,8 +779,7 @@ describe("Reset Review scope UI", () => {
         picture: false,
         reviewCalls: 0,
         shellCompare: false,
-        shellExplore: `/app/explore?scope=${code}&dataset=alpha-2026&period=2023-01-01`,
-        shellInvestigate: `/app/investigate?scope=${code}&dataset=alpha-2026&period=2023-01-01`,
+        shellAsk: `/askatlas?dataset=alpha-2026`,
       }))
     );
   });
@@ -833,7 +860,7 @@ describe("Reset Review scope UI", () => {
           .find((entry) => entry.getAttribute("aria-current") === "true");
         expect(selected?.dataset.fips).toBe("08001");
       });
-      expect(shellCounty("Investigate").county).toBe("08001");
+      expect(shellCounty("Compare").county).toBe("08001");
       mode = "hold";
       fireEvent.click(screen.getByTestId("review-scope-select"));
       const newYork = await screen.findByRole("option", {
@@ -845,7 +872,7 @@ describe("Reset Review scope UI", () => {
         if (!screen.queryByText("Loading review results…")) {
           throw new Error("review did not stay loading");
         }
-        const investigate = shellCounty("Investigate");
+        const investigate = shellCounty("Compare");
         if (
           investigate.scope !== "NY" ||
           investigate.county !== null ||
@@ -858,14 +885,14 @@ describe("Reset Review scope UI", () => {
         action: shellCounty("Action").county,
         compare: shellCounty("Compare").county,
         explore: shellCounty("Explore").county,
-        investigate: shellCounty("Investigate").county,
+        investigate: shellCounty("Compare").county,
         picture: Boolean(screen.queryByTestId("review-state-panel")),
-        scope: shellCounty("Investigate").scope,
+        scope: shellCounty("Compare").scope,
         urlCounty: mockedSearch.includes("county="),
       };
       await client.cancelQueries({ queryKey: ["ux-reset-state-review"] });
       await waitFor(() => {
-        const investigate = shellCounty("Investigate");
+        const investigate = shellCounty("Compare");
         if (
           investigate.scope !== "NY" ||
           investigate.county !== null ||
@@ -876,9 +903,9 @@ describe("Reset Review scope UI", () => {
         }
       });
       const whileAborted = {
-        county: shellCounty("Investigate").county,
+        county: shellCounty("Compare").county,
         picture: Boolean(screen.queryByTestId("review-state-panel")),
-        scope: shellCounty("Investigate").scope,
+        scope: shellCounty("Compare").scope,
         url: mockedSearch,
       };
       mode = "fail";
@@ -887,7 +914,7 @@ describe("Reset Review scope UI", () => {
         if (!screen.queryByText(/temporarily unavailable/)) {
           throw new Error("review error was not shown");
         }
-        const investigate = shellCounty("Investigate");
+        const investigate = shellCounty("Compare");
         if (investigate.county !== null || mockedSearch.includes("county=")) {
           throw new Error(`${mockedSearch} ${investigate.href}`);
         }
@@ -896,9 +923,9 @@ describe("Reset Review scope UI", () => {
         action: shellCounty("Action").county,
         compare: shellCounty("Compare").county,
         explore: shellCounty("Explore").county,
-        investigate: shellCounty("Investigate").county,
+        investigate: shellCounty("Compare").county,
         picture: Boolean(screen.queryByTestId("review-state-panel")),
-        scope: shellCounty("Investigate").scope,
+        scope: shellCounty("Compare").scope,
         urlCounty: mockedSearch.includes("county="),
       };
       view.unmount();
@@ -987,7 +1014,7 @@ describe("Reset Review scope UI", () => {
       });
       const href =
         navigation
-          .querySelector('a[aria-label="Investigate"]')
+          .querySelector('a[aria-label="Compare"]')
           ?.getAttribute("href") ?? "";
       const params = new URL(href, "http://localhost").searchParams;
       return {
@@ -1342,9 +1369,9 @@ describe("Reset Review scope UI", () => {
           defaultStateReviewResponse(state, params)
       );
     }
-  });
+  }, 20_000);
 
-  it("withholds a blank county name from Ask Atlas and keeps that county on handoffs", async () => {
+  it("uses published identity for Ask Atlas when the candidate name is blank", async () => {
     const { stateReviewV1StatesStateReviewGet } =
       await import("@/generated/atlas");
     const review = vi.mocked(stateReviewV1StatesStateReviewGet);
@@ -1391,9 +1418,26 @@ describe("Reset Review scope UI", () => {
           throw new Error(blankRow?.textContent ?? "blank county row missing");
         }
       });
-      fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
-      const panel = await screen.findByTestId("ask-atlas-panel");
-      const geography = panel.querySelector('[data-field="geography"]');
+      await waitFor(() => {
+        const { state } = askAtlasLauncherReference();
+        if (state.kind !== "validated") {
+          throw new Error(state.kind);
+        }
+        const geography = state.reference.context.fields.geography;
+        if (
+          geography.state !== "validated" ||
+          geography.label !== "Denver, Colorado (08001)"
+        ) {
+          throw new Error(
+            geography.state === "validated" ? geography.label : geography.state
+          );
+        }
+      });
+      const { href, state } = askAtlasLauncherReference();
+      const geography =
+        state.kind === "validated"
+          ? state.reference.context.fields.geography
+          : null;
       const navigation = screen.getByRole("navigation", {
         name: "Professional workspace",
       });
@@ -1405,36 +1449,43 @@ describe("Reset Review scope UI", () => {
         screen.getByTestId("review-investigate").getAttribute("href") ?? "";
       const compare =
         screen.getByTestId("review-compare").getAttribute("href") ?? "";
-      const action = shellHref("Action");
-      const explore = shellHref("Explore");
+      const ask = shellHref("Ask Atlas");
       expect({
-        actionCounty: action.includes("county=08001"),
-        actionOtherCounty: action.includes("08013"),
+        askCounty: ask.includes("county=08001"),
+        askOtherCounty: ask.includes("08013"),
         compareCounty: compare.includes("county=08001"),
         compareOtherCounty: compare.includes("08013"),
-        exploreCounty: explore.includes("county=08001"),
-        geographyLabel: geography?.querySelector("dd")?.textContent,
-        geographyState: geography?.dataset.fieldState,
+        geographyLabel:
+          geography?.state === "validated" ? geography.label : null,
+        geographyState: geography?.state ?? null,
         investigateCounty: investigate.includes("county=08001"),
         investigateOtherCounty: investigate.includes("08013"),
-        malformedLabel: panel.textContent?.includes(", Colorado (") ?? false,
-        namedCountyInPanel: panel.textContent?.includes("Boulder") ?? false,
+        otherCountyOnLink: href.href.includes("Boulder"),
+        panel: screen.queryByTestId("ask-atlas-panel"),
         preview: screen
           .getByTestId("review-county-preview")
           .getAttribute("aria-label"),
+        publishedFormat:
+          geography?.state === "validated" &&
+          geography.label.includes(", Colorado ("),
+        returnCounty:
+          state.kind === "validated" &&
+          state.returnHref.includes("/explore?") &&
+          state.returnHref.includes("county=08001"),
       }).toStrictEqual({
-        actionCounty: true,
-        actionOtherCounty: false,
+        askCounty: true,
+        askOtherCounty: false,
         compareCounty: true,
         compareOtherCounty: false,
-        exploreCounty: true,
-        geographyLabel: "Not validated on this page",
-        geographyState: "absent",
+        geographyLabel: "Denver, Colorado (08001)",
+        geographyState: "validated",
         investigateCounty: true,
         investigateOtherCounty: false,
-        malformedLabel: false,
-        namedCountyInPanel: false,
+        otherCountyOnLink: false,
+        panel: null,
         preview: "County preview for Unavailable, Colorado",
+        publishedFormat: true,
+        returnCounty: true,
       });
     } finally {
       review.mockImplementation(
@@ -1497,15 +1548,19 @@ describe("Reset Review scope UI", () => {
           throw new Error(selected.textContent ?? "candidate missing");
         }
       });
-      fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
-      const panel = await screen.findByTestId("ask-atlas-panel");
       await waitFor(() => {
-        const geography = panel.querySelector('[data-field="geography"]');
+        const { state } = askAtlasLauncherReference();
+        if (state.kind !== "validated") {
+          throw new Error(state.kind);
+        }
+        const geography = state.reference.context.fields.geography;
         if (
-          geography?.dataset.fieldState !== "validated" ||
-          !geography.textContent?.includes("Denver, Colorado (08001)")
+          geography.state !== "validated" ||
+          !geography.label.includes("Denver, Colorado (08001)")
         ) {
-          throw new Error(geography?.textContent ?? "geography missing");
+          throw new Error(
+            geography.state === "validated" ? geography.label : geography.state
+          );
         }
       });
       failRefresh = true;
@@ -1527,31 +1582,39 @@ describe("Reset Review scope UI", () => {
           .querySelector(`a[aria-label="${label}"]`)
           ?.getAttribute("href") ?? "";
       const latestUrl = urlUpdates.at(-1) ?? search;
+      await waitFor(() => {
+        const { href, state } = askAtlasLauncherReference();
+        if (state.kind !== "absent" || href.href.includes("Denver")) {
+          throw new Error(`${state.kind} ${href.pathname}`);
+        }
+      });
+      const launcher = askAtlasLauncherReference();
       expect({
-        actionCounty: shellHref("Action").includes("county=08001"),
+        askCounty: shellHref("Ask Atlas").includes("county=08001"),
         candidates: screen.queryAllByTestId("review-candidate").length,
         compareAction: screen.queryByTestId("review-compare"),
-        exploreCounty: shellHref("Explore").includes("county=08001"),
+        compareCounty: shellHref("Compare").includes("county=08001"),
         failure: screen.getByRole("alert").textContent,
         investigateAction: screen.queryByTestId("review-investigate"),
-        investigateCounty: shellHref("Investigate").includes("county=08001"),
-        noContext: screen.getByTestId("ask-atlas-no-context").textContent,
+        pageReference: launcher.state.kind,
         picture: screen.queryByTestId("review-state-panel"),
-        staleGeography: panel.textContent?.includes("Denver") ?? false,
+        shellCounty: launcher.href.searchParams.get("county"),
+        staleGeography: launcher.href.href.includes("Denver"),
         urlCounty: latestUrl.includes("county=08001"),
       }).toStrictEqual({
-        actionCounty: true,
+        askCounty: true,
         candidates: 0,
         compareAction: null,
-        exploreCounty: true,
+        compareCounty: true,
         failure: expect.stringContaining("temporarily unavailable"),
         investigateAction: null,
-        investigateCounty: true,
-        noContext: "No validated page context is available to inherit.",
+        pageReference: "absent",
         picture: null,
+        shellCounty: "08001",
         staleGeography: false,
         urlCounty: true,
       });
+      expect(launcher.href.searchParams.has("page_ref")).toBeFalsy();
     } finally {
       review.mockImplementation(
         async (state: string, params?: { dataset_version?: string }) =>
@@ -1594,7 +1657,7 @@ describe("Reset Review scope UI", () => {
       data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
-    window.history.replaceState(null, "", "/app/review?county=08001");
+    window.history.replaceState(null, "", "/explore?county=08001");
     renderReview("?county=08001", {
       onUrlUpdate: (query) => {
         updates.push(query);
@@ -1777,7 +1840,7 @@ describe("Reset Review scope UI", () => {
   });
 
   it("writes the saved state again when a scope-less entry reverts to national", async () => {
-    window.history.replaceState(null, "", "/app/review");
+    window.history.replaceState(null, "", "/explore");
     mockedSearch = "";
     const writes: string[] = [];
     const onSetScope = (scope: "ALL" | string) => {
@@ -1838,7 +1901,7 @@ describe("Reset Review scope UI", () => {
         screen.getByTestId("review-scope-results").dataset.renderedScope
       ).toBe("NY")
     );
-    window.history.replaceState(null, "", "/app/review");
+    window.history.replaceState(null, "", "/explore");
     window.dispatchEvent(new PopStateEvent("popstate"));
     profileGate.resolve({
       data: { profile: { starting_view_version: 1, state_code: "CO" } },
@@ -2655,9 +2718,9 @@ describe("Reset Review scope UI", () => {
       dossier: null,
       heading: "Boulder, Colorado",
       href: expect.stringMatching(
-        /\/app\/investigate\?.*county=08013.*period=2023-01-01.*scope=CO|scope=CO.*county=08013.*period=2023-01-01/
+        /\/explore\?.*county=08013.*mode=evidence.*period=2023-01-01.*scope=CO|scope=CO.*county=08013.*period=2023-01-01.*mode=evidence/
       ),
-      label: expect.stringContaining("Open Investigate"),
+      label: "County evidence",
       panel: true,
       target: href,
       why: "Boulder is included because the review method returned it.",
@@ -2838,7 +2901,7 @@ describe("Reset Review scope UI", () => {
       county: "08013",
       dataset: "alpha-2026",
       dropped:
-        "The Review list page stays on Review. Browser Back returns to it.Review sort stays on Review and is not copied to Investigate.",
+        "The list page stays on Atlas Explorer browse. Browser Back returns to it.Sort stays on Atlas Explorer browse and is not copied into county evidence.",
       page: null,
       sort: null,
     });
@@ -3142,11 +3205,9 @@ describe("Reset Review scope UI", () => {
           .querySelector(`a[aria-label="${label}"]`)
           ?.getAttribute("href") ?? "";
       return {
-        action: href("Action"),
+        ask: href("Ask Atlas"),
         compare: href("Compare"),
-        explore: href("Explore"),
         feed: href("Feed"),
-        investigate: href("Investigate"),
         settings: href("Settings"),
       };
     };
@@ -3154,12 +3215,13 @@ describe("Reset Review scope UI", () => {
       const query = county
         ? `scope=CO&county=${county}&dataset=${releaseId}&period=${period}`
         : `scope=CO&dataset=${releaseId}&period=${period}`;
+      const ask = county
+        ? `/askatlas?county=${county}&dataset=${releaseId}`
+        : `/askatlas?dataset=${releaseId}`;
       return {
-        action: `/app/action?${query}`,
-        compare: `/app/compare?${query}`,
-        explore: `/app/explore?${query}`,
+        ask,
+        compare: `/compare?${query}`,
         feed: "/app/feed",
-        investigate: `/app/investigate?${query}`,
         settings: "/app/settings",
       };
     };
@@ -3244,9 +3306,7 @@ describe("Reset Review scope UI", () => {
       const view = render(
         <QueryClientProvider client={client}>
           <NuqsTestingAdapter
-            searchParams={
-              new URL(`http://localhost/app/review?${search}`).search
-            }
+            searchParams={new URL(`http://localhost/explore?${search}`).search}
           >
             <ResetProfessionalShell>
               <ResetReviewExperience />
@@ -3257,11 +3317,11 @@ describe("Reset Review scope UI", () => {
       return { client, view };
     };
     const settle = async (releaseId: string, county: string | null) => {
-      const expected = linksFor(releaseId, county).explore;
+      const expected = linksFor(releaseId, county);
       await waitFor(() => {
-        const explore = shellLinks().explore;
-        if (explore !== expected) {
-          throw new Error(explore);
+        const links = shellLinks();
+        if (links.compare !== expected.compare || links.ask !== expected.ask) {
+          throw new Error(`${links.compare} | ${links.ask}`);
         }
       });
       return shellLinks();
@@ -3277,22 +3337,22 @@ describe("Reset Review scope UI", () => {
       const finishLoading = reviewGate;
       reviewGate = null;
       finishLoading?.resolve();
-      const noneStandOut = await settle(activeRelease, null);
+      const noneStandOut = await settle(activeRelease, "08001");
       mode = "insufficient";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const insufficient = await settle(activeRelease, null);
+      const insufficient = await settle(activeRelease, "08001");
       mode = "gaps";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const unsupportedWithGaps = await settle(activeRelease, null);
+      const unsupportedWithGaps = await settle(activeRelease, "08001");
       mode = "unsupported";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const unsupportedWithoutGaps = await settle(activeRelease, null);
+      const unsupportedWithoutGaps = await settle(activeRelease, "08001");
       mode = "candidates";
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
@@ -3302,7 +3362,7 @@ describe("Reset Review scope UI", () => {
       await loading.client.invalidateQueries({
         queryKey: ["ux-reset-state-review"],
       });
-      const afterEmptySwitch = await settle(activeRelease, null);
+      const afterEmptySwitch = await settle(activeRelease, "08001");
       loading.view.unmount();
       mockedSearch = reloadedUrl;
       const reloaded = renderShell(reloadedUrl);
@@ -3334,28 +3394,24 @@ describe("Reset Review scope UI", () => {
         whileFailed,
         whileLoading,
       }).toStrictEqual({
-        afterEmptySwitch: linksFor("release-a", null),
+        afterEmptySwitch: linksFor("release-a", "08001"),
         afterReload: linksFor("release-a", null),
         afterRollover: linksFor("release-b", null),
         candidates: linksFor("release-a", "08001"),
-        insufficient: linksFor("release-a", null),
-        noneStandOut: linksFor("release-a", null),
-        unsupportedWithGaps: linksFor("release-a", null),
-        unsupportedWithoutGaps: linksFor("release-a", null),
+        insufficient: linksFor("release-a", "08001"),
+        noneStandOut: linksFor("release-a", "08001"),
+        unsupportedWithGaps: linksFor("release-a", "08001"),
+        unsupportedWithoutGaps: linksFor("release-a", "08001"),
         whileFailed: {
-          action: `/app/action?scope=CO&county=08001&period=${period}`,
-          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
-          explore: `/app/explore?scope=CO&county=08001&period=${period}`,
+          ask: "/askatlas?county=08001",
+          compare: `/compare?scope=CO&county=08001&period=${period}`,
           feed: "/app/feed",
-          investigate: `/app/investigate?scope=CO&county=08001&period=${period}`,
           settings: "/app/settings",
         },
         whileLoading: {
-          action: `/app/action?scope=CO&county=08001&period=${period}`,
-          compare: `/app/compare?scope=CO&county=08001&period=${period}`,
-          explore: `/app/explore?scope=CO&county=08001&period=${period}`,
+          ask: "/askatlas?county=08001",
+          compare: `/compare?scope=CO&county=08001&period=${period}`,
           feed: "/app/feed",
-          investigate: `/app/investigate?scope=CO&county=08001&period=${period}`,
           settings: "/app/settings",
         },
       });
@@ -3505,7 +3561,9 @@ describe("Reset Review scope UI", () => {
         screen.getByTestId("tier1-surveillance-priority").dataset.state
       ).toBe("release-unaligned")
     );
-    const pageText = document.body.textContent ?? "";
+    const legend =
+      screen.queryByTestId("explorer-ml-priority-legend")?.textContent ?? "";
+    const pageText = (document.body.textContent ?? "").replace(legend, "");
     expect({
       high: /\bHIGH\b/.test(pageText),
       insufficient: /\bINSUFFICIENT\b/.test(pageText),
@@ -3744,6 +3802,205 @@ describe("Reset Review scope UI", () => {
         async (state: string, params?: { dataset_version?: string }) =>
           defaultStateReviewResponse(state, params)
       );
+    }
+  });
+
+  it("opens a listed state from the scope control without writing Settings", async () => {
+    const { saveProfileV1MeProfilePut } = await import("@/generated/atlas");
+    const save = vi.mocked(saveProfileV1MeProfilePut);
+    save.mockClear();
+    renderReview("?scope=ALL");
+    await screen.findByTestId("review-national-orientation");
+    expect(screen.queryByText(/49 of 49 states/)).toBeNull();
+    await chooseReviewScopeOption("Colorado (CO)");
+    await waitFor(() => {
+      expect(renderedReviewScope()).toBe("CO");
+    });
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("review-national-orientation")).toBeNull();
+    expect(screen.queryByTestId("review-state-panel")).toBeTruthy();
+  });
+
+  it("keeps a chosen national county on Ask Atlas and leaves a bookmark county off it", async () => {
+    const search = "scope=ALL&county=08001&dataset=alpha-2026";
+    mockedSearch = search;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <NuqsTestingAdapter hasMemory searchParams={`?${search}`}>
+          <ResetProfessionalShell>
+            <ResetReviewExperience />
+          </ResetProfessionalShell>
+        </NuqsTestingAdapter>
+      </QueryClientProvider>
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("review-published-county-preview").dataset.fips
+      ).toBe("08001");
+    });
+    const bookmarkedAsk =
+      screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
+    const bookmarked = askAtlasLauncherReference();
+    const bookmarkedGeography =
+      bookmarked.state.kind === "validated"
+        ? bookmarked.state.reference.context.fields.geography
+        : null;
+    expect({
+      bookmarkGeography: bookmarkedGeography,
+      bookmarkPreviewCounty: new URL(
+        bookmarkedAsk,
+        "http://localhost"
+      ).searchParams.get("county"),
+    }).toStrictEqual({
+      bookmarkGeography: { state: "absent" },
+      bookmarkPreviewCounty: null,
+    });
+
+    const boulder = screen
+      .getAllByTestId("national-published-county")
+      .find((row) => row.dataset.fips === "08013");
+    if (!boulder) {
+      throw new Error("Boulder was not in the national county list");
+    }
+    fireEvent.click(boulder);
+    await waitFor(() => {
+      const href =
+        screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
+      if (!href.includes("county=08013")) {
+        throw new Error(href);
+      }
+    });
+    const previewAsk =
+      screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
+    const { href, state } = askAtlasLauncherReference();
+    const geography =
+      state.kind === "validated"
+        ? state.reference.context.fields.geography
+        : null;
+    expect({
+      geography,
+      launcherCounty: href.searchParams.get("county"),
+      previewAskCounty: new URL(
+        previewAsk,
+        "http://localhost"
+      ).searchParams.get("county"),
+      previewFips: screen.getByTestId("review-published-county-preview").dataset
+        .fips,
+    }).toStrictEqual({
+      geography: {
+        id: "08013",
+        label: "Boulder, Colorado (08013)",
+        state: "validated",
+      },
+      launcherCounty: "08013",
+      previewAskCounty: "08013",
+      previewFips: "08013",
+    });
+  });
+
+  it("keeps a national county selection on the United States map", async () => {
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const geometry = vi.mocked(fetchCountyDisplayGeometry);
+    geometry.mockResolvedValue({
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-105, 39],
+                [-104, 39],
+                [-104, 40],
+                [-105, 40],
+                [-105, 39],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-74, 42],
+                [-73, 42],
+                [-73, 43],
+                [-74, 43],
+                [-74, 42],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "36001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-150, 60],
+                [-149, 60],
+                [-149, 61],
+                [-150, 61],
+                [-150, 60],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "02013" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const updates: string[] = [];
+    try {
+      renderReview("?scope=ALL", {
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      await waitFor(() => {
+        const fips =
+          screen.getByTestId("mock-atlas-map").dataset.mapScoreFips ?? "";
+        expect(fips).toContain("08001");
+        expect(fips).toContain("36001");
+        expect(fips).not.toContain("02013");
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "About Atlas gap score" })
+      );
+      expect(
+        screen.getByRole("dialog", { name: "About Atlas gap score" })
+          .textContent
+      ).toContain("published score colors");
+      expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
+      expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
+      fireEvent.click(screen.getByTestId("mock-map-select-ny"));
+      await waitFor(() => {
+        expect(
+          updates.some((query) => query.includes("county=36001"))
+        ).toBeTruthy();
+      });
+      expect({
+        national: Boolean(screen.queryByTestId("review-national-orientation")),
+        rendered: renderedReviewScope(),
+        scope: updates.some((query) => query.includes("scope=NY")),
+      }).toStrictEqual({
+        national: true,
+        rendered: "ALL",
+        scope: false,
+      });
+    } finally {
+      geometry.mockResolvedValue({
+        features: [],
+        type: "FeatureCollection",
+      });
     }
   });
 });

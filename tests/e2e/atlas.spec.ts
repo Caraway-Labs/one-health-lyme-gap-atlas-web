@@ -3,8 +3,6 @@ import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { expectNavLinkHandoffMatchesPage } from "./analytical-handoff-assertions";
-
 const metadata = {
   bundle_sha256: "a".repeat(64),
   generated_at: "2026-08-06T05:37:16Z",
@@ -186,35 +184,33 @@ test.beforeEach(async ({ page }) => {
 
 test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages", async ({
   page,
-}, testInfo) => {
+}) => {
   await page.goto("/overview");
+  // Startup replaces the scope-less redirect with explicit national scope.
+  // That history entry is the canonical URL; Back must not restore a bare
+  // /explore that could apply a different saved starting view.
+  await expect(page).toHaveURL(/\/explore\?scope=ALL$/);
+  await page.goto("/docs");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/explore\?scope=ALL$/);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/docs$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/explore\?scope=ALL$/);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the One Health Atlas",
+    })
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", {
       name: "Find counties that may deserve a closer look.",
     })
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
-    page.getByRole("link", { name: "Explore counties" })
-  ).toHaveAttribute("href", "#atlas");
-  await expect(
-    page.getByRole("link", { name: "Understand the limitations" })
-  ).toHaveAttribute("href", "#methods");
-  await expect(
-    page.getByRole("complementary", { name: "Review interpretation note" })
-  ).toContainText("not a Lyme risk estimate");
-  if (testInfo.project.name === "mobile")
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  await page
-    .getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link", { name: "Geographic Explorer" })
-    .click();
-  await expect(page).toHaveURL(/\/geographic_explorer/);
-  await expect(
-    page.getByRole("heading", { name: "Geographic explorer", exact: true })
-  ).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "State" })).toBeVisible();
-  await expect(page.getByRole("table")).toContainText("08001");
-  await expect(page.getByRole("link", { name: /Sign in/ })).toHaveCount(0);
+    page.getByRole("link", { exact: true, name: "Geographic Explorer" })
+  ).toHaveCount(0);
 
   for (const [path, heading] of [
     ["/docs", "Start with Atlas"],
@@ -287,7 +283,7 @@ test("TC22: approved favicon is shared by public and professional routes", async
   ];
   for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
-    for (const path of ["/", "/app/review"]) {
+    for (const path of ["/", "/explore"]) {
       await page.goto(path);
       await expect(page).toHaveURL(new RegExp(`${path === "/" ? "/$" : path}`));
       for (const refresh of [false, true]) {
@@ -361,7 +357,7 @@ test("TC22: approved favicon is shared by public and professional routes", async
 test("drawer hands the local conversation to the accessible workspace", async ({
   page,
 }) => {
-  await page.goto("/overview");
+  await page.goto("/account");
   await page.getByRole("button", { name: "Atlas Assistant" }).click();
   const dialog = page.getByRole("dialog", { name: "Atlas Assistant" });
   await expect(dialog).toContainText("not medical advice");
@@ -395,87 +391,70 @@ test("redirects legacy research links to the single assistant workspace", async 
   expect(results.violations).toEqual([]);
 });
 
-test("renders the atlas and full non-map results", async ({
-  page,
-}, testInfo) => {
-  await page.goto("/overview");
-  const navigation = page.getByRole("navigation", {
-    name: "Primary navigation",
-  });
-  await expect(navigation).toBeVisible();
-  const sidebar = page.locator("#atlas-primary-navigation");
-  await expect(sidebar).toHaveCSS(
-    "position",
-    testInfo.project.name.includes("mobile") ? "fixed" : "sticky"
-  );
-  await expect(
-    page.getByRole("link", { name: "One Health Lyme Gap Atlas home" })
-  ).toHaveCSS("color", "rgb(8, 42, 77)");
-  await expect(
-    page.getByRole("heading", {
-      name: "Find counties that may deserve a closer look.",
-    })
-  ).toBeVisible();
-  await expect(page.getByText("Adams, CO").first()).toBeVisible();
-  const tableButton = page.getByRole("button", {
-    name: "View full county list",
-  });
-  await tableButton.scrollIntoViewIfNeeded();
-  await tableButton.click();
-  await expect(page.getByRole("table")).toContainText("08001");
-  const results = await new AxeBuilder({ page })
-    .exclude(".maplibre-atlas")
-    .analyze();
-  expect(results.violations).toEqual([]);
-});
-
-test("ranked county selection keeps the shareable URL and profile in sync", async ({
+test("retired public analytical bookmarks open Atlas Explorer", async ({
   page,
 }) => {
-  await page.goto("/overview");
-  await expect(
-    page.getByRole("heading", { name: "Los Angeles, California" })
-  ).toBeVisible();
-  await page
-    .getByRole("list", { name: "Counties suggested for review" })
-    .getByRole("button", { name: /Adams, CO/ })
-    .click();
-  await expect(page).toHaveURL(/county=08001/);
-  await expect(
-    page.getByRole("heading", { name: "Adams, Colorado" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Copy county summary" })
-  ).toBeVisible();
-  await expect(
-    page.getByText("Moderate review priority", { exact: true })
-  ).toBeVisible();
-  const results = await new AxeBuilder({ page })
-    .exclude(".maplibre-atlas")
-    .analyze();
-  expect(results.violations).toEqual([]);
-});
+  const cases: { county: string | null; mode: string | null; start: string }[] =
+    [
+      { county: null, mode: null, start: "/overview" },
+      {
+        county: "08001",
+        mode: null,
+        start: "/overview?county=08001&state=CO",
+      },
+      { county: "08001", mode: null, start: "/overview?county=08001" },
+      {
+        county: "08001",
+        mode: null,
+        start: "/overview?county=08001&dataset=alpha-2026-08-06",
+      },
+      { county: null, mode: null, start: "/investigate" },
+      {
+        county: "08001",
+        mode: "evidence",
+        start: "/investigate?county=08001",
+      },
+      {
+        county: "08001",
+        mode: "evidence",
+        start: "/investigate?county=08001&eco=70&breakpoint=15&missing=80",
+      },
+      {
+        county: "08001",
+        mode: null,
+        start: "/geographic_explorer?county=08001",
+      },
+    ];
 
-test("Investigation Workspace county list selection keeps the shareable URL and profile in sync", async ({
-  page,
-}) => {
-  await page.goto("/investigate");
-  await expect(
-    page.getByRole("heading", { name: "Los Angeles, California" })
-  ).toBeVisible();
-  await page
-    .getByRole("list", { name: "Counties to review" })
-    .getByRole("button", { name: /Adams, CO/ })
-    .click();
-  await expect(page).toHaveURL(/county=08001/);
-  await expect(
-    page.getByRole("heading", { name: "Adams, Colorado" })
-  ).toBeVisible();
+  for (const item of cases) {
+    await page.goto(item.start);
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the One Health Atlas",
+      })
+    ).toBeVisible();
+    const params = new URL(page.url()).searchParams;
+    expect(params.get("county")).toBe(item.county);
+    expect(params.get("mode")).toBe(item.mode);
+    if (item.county === null) {
+      expect(params.get("county")).not.toBe("06037");
+    }
+    expect(params.get("eco")).toBeNull();
+    expect(params.get("breakpoint")).toBeNull();
+    expect(params.get("missing")).toBeNull();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Geographic Explorer" })
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { exact: true, name: "Investigation Workspace" })
+    ).toHaveCount(0);
+  }
 });
 
 test("publishes an accessible, clear privacy summary", async ({ page }) => {
-  await page.goto("/overview");
-  await page.getByRole("link", { name: "Privacy" }).click();
+  await page.goto("/privacy");
 
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(
@@ -547,7 +526,7 @@ test("does not contact Amplitude before consent or after opt-out", async ({
     amplitudeCalls.push(route.request().url());
     await route.abort();
   });
-  await page.goto("/overview");
+  await page.goto("/");
   await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
@@ -564,7 +543,7 @@ test("sends Amplitude events after analytics consent", async ({ page }) => {
     amplitudeCalls.push(route.request().url());
     await route.fulfill({ status: 200, body: "{}" });
   });
-  await page.goto("/overview");
+  await page.goto("/");
   await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
@@ -588,458 +567,10 @@ test("keeps Amplitude off when Do Not Track is enabled", async ({ page }) => {
     amplitudeCalls.push(route.request().url());
     await route.abort();
   });
-  await page.goto("/overview");
+  await page.goto("/");
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await expect(
     page.getByRole("button", { name: "Allow optional analytics" })
   ).toBeDisabled();
   await expect.poll(() => amplitudeCalls).toEqual([]);
-});
-
-test("downloads county and state PDF reports with server filenames", async ({
-  page,
-}) => {
-  await page.goto("/overview?county=08001&state=CO");
-  await expect(page.getByText("Adams, Colorado")).toBeVisible();
-
-  const countyDownload = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PDF" }).last().click();
-  expect((await countyDownload).suggestedFilename()).toBe("adams-county.pdf");
-
-  const stateDownload = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export PDF" }).first().click();
-  expect((await stateDownload).suggestedFilename()).toBe("colorado-state.pdf");
-});
-
-test("keeps filters and score settings in the shareable URL", async ({
-  page,
-}) => {
-  await page.goto("/overview");
-  await page.getByRole("combobox", { name: "State" }).click();
-  await page.getByRole("option", { name: "Colorado" }).click();
-  await page.getByLabel("County name or FIPS code").fill("Adams");
-  await page
-    .getByRole("combobox", { name: "Filter counties by available data" })
-    .click();
-  await page
-    .getByRole("option", { name: "Tick or pathogen evidence available" })
-    .click();
-  await page
-    .getByLabel("Weight given to tick and pathogen evidence")
-    .fill("70");
-
-  await expect(page).toHaveURL(/state=CO/);
-  await expect(page).toHaveURL(/q=Adams/);
-  await expect(page).toHaveURL(/evidence=ecological/);
-  await expect(page).toHaveURL(/eco=70/);
-  await expect(
-    page.getByRole("button", { name: "Download county list" })
-  ).toBeVisible();
-});
-
-test("shows a recoverable status when the governed API release is unavailable", async ({
-  page,
-}) => {
-  await page.unroute("http://localhost:8000/**");
-  await page.route("http://localhost:8000/**", async (route) => {
-    if (new URL(route.request().url()).pathname.endsWith("/metadata")) {
-      await route.fulfill({
-        body: JSON.stringify({ detail: "Temporarily unavailable" }),
-        contentType: "application/json",
-        status: 503,
-      });
-      return;
-    }
-    await route.abort();
-  });
-
-  await page.goto("/overview");
-  await expect(
-    page.getByRole("heading", { name: "The Atlas is temporarily unavailable" })
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
-});
-
-test("renders the Investigation Workspace with selected county evidence in the first experience", async ({
-  page,
-}) => {
-  await page.goto("/investigate?county=08001");
-  await expect(
-    page.getByRole("heading", { name: "Explore county evidence in one place" })
-  ).toBeVisible();
-  await expect(page.getByText("Adams, Colorado").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(1);
-  await expect(
-    page.getByText("For surveillance follow-up—not personal risk.")
-  ).toBeVisible();
-  await expect(page.getByText("Current governed snapshot")).toBeVisible();
-  await expect(page.getByText(/Variant \d/)).toHaveCount(0);
-});
-
-test("offers route-aware sidebar navigation, early-access status, and a shared data dictionary", async ({
-  page,
-}, testInfo) => {
-  await page.goto("/geographic_explorer?county=08001");
-  if (testInfo.project.name.includes("mobile")) {
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  }
-  const navigation = page.getByRole("navigation", {
-    name: "Primary navigation",
-  });
-  await expect(navigation).toBeVisible();
-  await expect(
-    navigation.getByRole("link", { name: "Geographic Explorer" })
-  ).toHaveAttribute("aria-current", "page");
-  await expect(page).toHaveURL(/county=08001/);
-  await expect(page).toHaveURL(/dataset=alpha-2026-08-06/);
-  expectNavLinkHandoffMatchesPage(
-    await navigation
-      .getByRole("link", { name: "Geographic Explorer" })
-      .getAttribute("href"),
-    "/geographic_explorer",
-    page.url(),
-    ["county", "dataset"]
-  );
-  await expect(
-    navigation.getByRole("link", { name: "Atlas Assistant" })
-  ).toHaveCount(0);
-  await expect(navigation.getByRole("link", { name: "Docs" })).toHaveAttribute(
-    "target",
-    "_blank"
-  );
-  if (testInfo.project.name.includes("mobile")) {
-    await page
-      .getByRole("dialog", { name: "Primary navigation" })
-      .getByRole("button", { name: "Close navigation" })
-      .click();
-  }
-  await expect(
-    page.getByRole("button", { name: /Atlas Assistant/i })
-  ).toContainText("Early access");
-  await page.getByRole("button", { name: "Data dictionary" }).click();
-  const dialog = page.getByRole("dialog", { name: "Data dictionary" });
-  await expect(dialog).toContainText("County Review Priority");
-  await dialog.getByRole("button", { name: "Close data dictionary" }).click();
-});
-
-test("keeps mobile drawer focus contained and restores it after Escape", async ({
-  page,
-}, testInfo) => {
-  test.skip(!testInfo.project.name.includes("mobile"));
-
-  await page.goto("/overview");
-  const trigger = page.getByRole("button", { name: "Open navigation" });
-  await trigger.focus();
-  await trigger.click();
-
-  const drawer = page.getByRole("dialog");
-  await expect(drawer).toBeVisible();
-  await expect(
-    drawer.getByRole("button", { name: "Close navigation" })
-  ).toBeFocused();
-  await expect(page.locator(".app-inset")).toHaveAttribute("inert", "");
-
-  await page.keyboard.press("Escape");
-
-  await expect(drawer).toHaveCount(0);
-  await expect(trigger).toBeFocused();
-});
-
-test("focus mode compacts the shared shell without changing the analytical route", async ({
-  page,
-}, testInfo) => {
-  test.skip(testInfo.project.name.includes("mobile"));
-
-  await page.goto("/geographic_explorer?county=08001");
-  await page.getByRole("button", { name: "Focus workspace" }).click();
-
-  await expect(page.locator(".app-shell")).toHaveClass(/app-shell-focus/);
-  await expect(page.locator(".atlas-sidebar")).toHaveAttribute(
-    "data-state",
-    "collapsed"
-  );
-  await expect(page).toHaveURL(/geographic_explorer\?county=08001/);
-  await expect(
-    page.getByRole("link", { name: "Geographic Explorer" })
-  ).toBeVisible();
-
-  await page.getByRole("button", { name: "Exit focus", exact: true }).click();
-
-  await expect(page.locator(".app-shell")).not.toHaveClass(/app-shell-focus/);
-  await expect(page).toHaveURL(/geographic_explorer\?county=08001/);
-});
-
-test("keeps the shared shell responsive and preserves deep links during keyboard navigation", async ({
-  page,
-}, testInfo) => {
-  const routes = [
-    "/overview",
-    "/geographic_explorer?county=08001",
-    "/investigate?county=08001",
-    "/assistant",
-  ];
-
-  for (const route of routes) {
-    await page.goto(route);
-    await expect(
-      page.getByRole("navigation", { name: "Primary navigation" })
-    ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth
-      )
-    ).toBe(true);
-  }
-
-  await page.goto("/overview?county=08001");
-  if (testInfo.project.name.includes("mobile")) {
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  }
-
-  const geographicExplorer = page
-    .getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link", { name: "Geographic Explorer" });
-  await geographicExplorer.focus();
-  await expect(geographicExplorer).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/geographic_explorer\?/);
-  expect(new URL(page.url()).pathname).toBe("/geographic_explorer");
-
-  await page.goBack({ waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/\/?county=08001/);
-});
-
-test("reduces shell motion when the user requests it", async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/geographic_explorer?county=08001");
-
-  await expect(page.locator(".atlas-sidebar")).toHaveCSS(
-    "transition-duration",
-    "1e-05s"
-  );
-});
-
-test("keeps the wide workspace score calculation above the county panels and collapsed until requested", async ({
-  page,
-}) => {
-  await page.goto("/investigate?county=08001");
-  const scoreAccordion = page.locator("#scoring");
-  await expect(scoreAccordion).not.toHaveAttribute("open", "");
-  await expect(
-    page.getByRole("heading", {
-      name: "How this follow-up priority score is calculated",
-    })
-  ).not.toBeVisible();
-
-  const summary = scoreAccordion.locator("> summary");
-  await expect(summary.getByText("Tick/pathogen share")).toBeVisible();
-  await expect(summary.getByText("65%", { exact: true })).toBeVisible();
-  await expect(summary.getByText("Published-record threshold")).toBeVisible();
-  await expect(summary.getByText("10 per 100,000")).toBeVisible();
-  await expect(summary.getByText("Missing county-record value")).toBeVisible();
-  await expect(summary.getByText("View & adjust assumptions")).toBeVisible();
-
-  await summary.click();
-  await expect(scoreAccordion).toHaveAttribute("open", "");
-  await expect(summary.getByText("Hide assumptions")).toBeVisible();
-  await page.getByLabel("Tick and pathogen share").fill("70");
-  await expect(page).toHaveURL(/eco=70/);
-  await expect(page.getByText("Selected county", { exact: true })).toHaveCount(
-    1
-  );
-});
-
-test("shows URL-backed scoring assumptions in the collapsed preview before expanding", async ({
-  page,
-}) => {
-  await page.goto("/investigate?county=08001&eco=70&breakpoint=15&missing=80");
-  const scoreAccordion = page.locator("#scoring");
-  const summary = scoreAccordion.locator("> summary");
-
-  await expect(scoreAccordion).not.toHaveAttribute("open", "");
-  await expect(summary.getByText("70%", { exact: true })).toBeVisible();
-  await expect(summary.getByText("15 per 100,000")).toBeVisible();
-  await expect(summary.getByText("80", { exact: true })).toBeVisible();
-});
-
-test("keeps the collapsed scoring accordion accessible via keyboard and axe", async ({
-  page,
-}) => {
-  await page.goto("/investigate?county=08001");
-  const scoreAccordion = page.locator("#scoring");
-  const summary = scoreAccordion.locator("> summary");
-
-  await summary.focus();
-  await expect(summary).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(scoreAccordion).toHaveAttribute("open", "");
-  await page.keyboard.press("Enter");
-  await expect(scoreAccordion).not.toHaveAttribute("open", "");
-
-  const results = await new AxeBuilder({ page }).include("#scoring").analyze();
-  expect(results.violations).toEqual([]);
-});
-
-test("guides the Investigation Workspace from review rationale through evidence, uncertainty, action, and resources", async ({
-  page,
-}) => {
-  await page.goto("/investigate?county=08001");
-
-  await expect(
-    page.getByText("County Review Priority · not personal risk")
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Why it surfaced" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", {
-      name: "Evidence and data used for this county",
-    })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "What to keep in mind" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("region", { name: "Conduct targeted follow-up" })
-  ).toBeVisible();
-
-  await page.getByText("Official program examples and resources").click();
-  await expect(
-    page.getByRole("link", {
-      name: /Wisconsin: reporting and investigation protocol/,
-    })
-  ).toHaveAttribute("rel", "noopener noreferrer");
-
-  await page.getByRole("button", { name: /Los Angeles, CA/ }).click();
-  await expect(
-    page.getByRole("heading", { name: "Los Angeles, California" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", {
-      name: "Evidence and data used for this county",
-    })
-  ).toBeVisible();
-});
-
-const investigationDeepLink =
-  "/investigate?state=CO&county=08001&evidence=ecological&eco=70&breakpoint=15&missing=80&dataset=alpha-2026-08-06&q=Adams";
-
-function expectInvestigationDeepLink(url: string) {
-  const current = new URL(url);
-  expect(current.pathname).toBe("/investigate");
-  expect(current.searchParams.get("state")).toBe("CO");
-  expect(current.searchParams.get("county")).toBe("08001");
-  expect(current.searchParams.get("evidence")).toBe("ecological");
-  expect(current.searchParams.get("eco")).toBe("70");
-  expect(current.searchParams.get("breakpoint")).toBe("15");
-  expect(current.searchParams.get("missing")).toBe("80");
-  expect(current.searchParams.get("dataset")).toBe("alpha-2026-08-06");
-  expect(current.searchParams.get("q")).toBe("Adams");
-}
-
-test("opens the Investigation Workspace from shared navigation and keeps it current", async ({
-  page,
-}, testInfo) => {
-  const mobile = testInfo.project.name.includes("mobile");
-  await page.goto("/overview?county=08001&dataset=alpha-2026-08-06");
-  if (mobile) {
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  }
-  const handoffLink = page
-    .getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("link", { name: "Investigation Workspace" });
-  const handoffHref = await handoffLink.getAttribute("href");
-  expect(handoffHref).toBeTruthy();
-  const handoffUrl = new URL(handoffHref!, "http://localhost");
-  expect(handoffUrl.searchParams.get("county")).toBe("08001");
-  expect(handoffUrl.searchParams.get("dataset")).toBe("alpha-2026-08-06");
-
-  await page.goto("/overview");
-  if (mobile) {
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  }
-
-  const navigation = page.getByRole("navigation", {
-    name: "Primary navigation",
-  });
-  const explore = navigation
-    .locator("section")
-    .filter({ has: page.getByRole("heading", { name: "Explore" }) });
-  const destination = explore.getByRole("link", {
-    name: "Investigation Workspace",
-  });
-  await expect(destination).toBeVisible();
-  await expect(destination).toHaveAttribute("href", "/investigate");
-  await destination.focus();
-  await expect(destination).toBeFocused();
-  await page.keyboard.press("Enter");
-
-  await expect(page).toHaveURL(/\/investigate/);
-  await expect(
-    page.getByRole("heading", { name: "Explore county evidence in one place" })
-  ).toBeVisible();
-  if (mobile) {
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-  }
-
-  if (!mobile) {
-    await page.getByRole("button", { name: "Collapse navigation" }).click();
-  } else {
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  }
-  const collapsedNavigation = page.getByRole("navigation", {
-    name: "Primary navigation",
-  });
-  const activeDestination = collapsedNavigation.getByRole("link", {
-    name: "Investigation Workspace",
-  });
-  await expect(activeDestination).toHaveAttribute("aria-current", "page");
-  if (!mobile) {
-    await expect(page.locator(".atlas-sidebar")).toHaveAttribute(
-      "data-state",
-      "collapsed"
-    );
-    await expect(activeDestination).toHaveAttribute(
-      "aria-label",
-      "Investigation Workspace"
-    );
-    await page.getByRole("button", { name: "Expand navigation" }).click();
-    await expect(page.locator(".atlas-sidebar")).toHaveAttribute(
-      "data-state",
-      "expanded"
-    );
-  } else {
-    await page
-      .getByRole("dialog", { name: "Primary navigation" })
-      .getByRole("button", { name: "Close navigation" })
-      .click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-  }
-
-  const results = await new AxeBuilder({ page })
-    .exclude(".maplibre-atlas")
-    .analyze();
-  expect(results.violations).toEqual([]);
-});
-
-test("initializes Investigation Workspace query state on the canonical route", async ({
-  page,
-}) => {
-  const response = await page.goto(investigationDeepLink);
-
-  expect(response?.request().redirectedFrom()).toBeNull();
-  expect(response?.status()).toBeLessThan(400);
-  expectInvestigationDeepLink(page.url());
-  await expect(
-    page.getByRole("heading", { name: "Adams, Colorado" })
-  ).toBeVisible();
-  await expect(
-    page.locator("#scoring > summary").getByText("70%", { exact: true })
-  ).toBeVisible();
-
-  await page.reload();
-  expectInvestigationDeepLink(page.url());
-  await expect(
-    page.getByRole("heading", { name: "Adams, Colorado" })
-  ).toBeVisible();
 });

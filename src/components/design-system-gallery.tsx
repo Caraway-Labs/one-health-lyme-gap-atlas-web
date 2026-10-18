@@ -18,12 +18,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import {
   EvidenceObject,
   evidenceObjectFromObservation,
@@ -128,6 +134,13 @@ export function DesignSystemGallery() {
             </CardHeader>
             <CardContent className="grid gap-3">
               <Input aria-label="Example county search" placeholder="Search" />
+              <Slider
+                aria-label="Example assumption"
+                defaultValue={65}
+                max={85}
+                min={40}
+                step={5}
+              />
               <Select defaultValue="all">
                 <SelectTrigger aria-label="Example filter">
                   <SelectValue />
@@ -159,6 +172,14 @@ export function DesignSystemGallery() {
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
+              <Popover>
+                <PopoverTrigger render={<Button variant="outline" />}>
+                  Layer notes
+                </PopoverTrigger>
+                <PopoverContent initialFocus>
+                  <p>Example disclosure anchored to its trigger.</p>
+                </PopoverContent>
+              </Popover>
             </CardContent>
           </Card>
         </div>

@@ -18,7 +18,9 @@ import { fulfillCompletedStartingView } from "./completed-starting-view";
 async function expectNoCountyPreselection(page: Page) {
   const url = page.url().toLowerCase();
   expect(url).not.toContain("buncombe");
+  expect(url).not.toContain("montgomery");
   expect(url).not.toContain("37021");
+  expect(url).not.toContain("51121");
   expect(url).not.toContain("alaska");
   expect(url).not.toContain("hawaii");
   expect(new URL(page.url()).searchParams.get("county")).toBeNull();
@@ -47,7 +49,7 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
         weight: style.fontWeight,
       };
     });
-  expect(headlineFont.weight).toBe("500");
+  expect(headlineFont.weight).toBe("700");
   expect(headlineFont.style).toBe("normal");
   expect(headlineFont.color).toBe("rgb(255, 255, 255)");
   expect(headlineFont.family.toLowerCase()).not.toContain("georgia");
@@ -105,7 +107,12 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
     ).toBeVisible();
   }
   await expect(page.getByText(/data pending/i)).toHaveCount(0);
-  await expect(page.getByText(/buncombe/i)).toHaveCount(0);
+  await expect(page.getByText(/underreported/i)).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "Follow the Lyme disease example in Montgomery County, Virginia."
+    )
+  ).toBeVisible();
 
   const follow = page.getByRole("link", {
     name: FRONT_PORCH_FOLLOW_STORY_LABEL,
@@ -131,27 +138,33 @@ test("signed-out front porch tells the qualitative story and keeps auth paths cl
   expect(accessibility.violations).toEqual([]);
 
   await page.getByRole("link", { name: FRONT_PORCH_EXPLORE_LABEL }).click();
-  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview$/);
+  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fexplore$/);
   await expectNoCountyPreselection(page);
   await expect(
     page.getByRole("heading", { name: "Sign in or create an account" })
   ).toBeVisible();
 });
 
-test("sign-in stays on the approved screen and public overview stays open", async ({
+test("sign-in stays on the approved screen and an overview bookmark opens Atlas Explorer", async ({
   page,
 }) => {
-  await page.goto("/auth/sign-in?next=%2Fapp%2Freview");
+  await page.goto("/auth/sign-in?next=%2Fexplore");
   await expect(
     page.getByRole("heading", { name: "Sign in or create an account" })
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fapp%2Freview$/);
+  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fexplore$/);
   await expect(
     page.getByRole("link", { name: "Continue without an account" })
   ).toHaveCount(0);
   await page.goto("/overview");
-  await expect(page).toHaveURL(/\/overview\/?$/);
+  await expect(page).toHaveURL(/\/explore\/?$/);
   await expect(page).not.toHaveURL(/sign-in/);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the One Health Atlas",
+    })
+  ).toBeVisible();
   await expectNoCountyPreselection(page);
 });
 
@@ -190,10 +203,13 @@ test("public privacy shell uses the shared unauthenticated chrome", async ({
 
 test("signed-in review entry does not preselect a county", async ({ page }) => {
   await fulfillCompletedStartingView(page);
-  await page.goto("/app/review");
-  await expect(page).toHaveURL(/\/app\/review\/?$/);
+  await page.goto("/explore");
+  await expect(page).toHaveURL(/\/explore\/?$/);
   await expectNoCountyPreselection(page);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Review" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Explore the One Health Atlas",
+    })
   ).toBeVisible();
 });

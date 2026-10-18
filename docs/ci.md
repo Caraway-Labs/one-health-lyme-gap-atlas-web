@@ -21,11 +21,59 @@ The required check name remains `quality`. It aggregates `quality-gates` and all
 
 Each run starts four independent jobs: `quality-gates` plus `Playwright shard 1/3`, `2/3`, and `3/3`. The matrix has `max-parallel: 3` and `fail-fast: false`, so a failed shard does not cancel sibling diagnostics. After all four finish, the lightweight `quality` aggregate runs, followed by the existing production guard/deploy where applicable. There is no workflow-wide serialization or cross-run four-slot semaphore; account runner capacity can still introduce queue time.
 
-The required E2E command retains the auth grep exclusion and both desktop/mobile projects, uses file-level sharding (no `fullyParallel` change), and sets one worker per shard after the two-worker trial exposed navigation/focus failures. Local defaults, auth shells, and Front Porch production visuals retain one worker. Auth shells run exactly once with their existing soft-fail policy in `quality-gates`; production visual comparisons run exactly once there with `ATLAS_VISUAL_PRODUCTION=1`. Every existing non-browser gate, coverage upload, Next/Docker build, and security scan remains in that job and runs independently of required E2E.
+The required E2E command retains the auth grep exclusion, selects only the desktop Chromium project, uses file-level sharding (no `fullyParallel` change), and sets one worker per shard after the two-worker trial exposed navigation/focus failures. Local defaults, auth shells, and Front Porch production visuals retain one worker. Auth shells run exactly once with their existing soft-fail policy in `quality-gates`; production visual comparisons run exactly once there with `ATLAS_VISUAL_PRODUCTION=1`. Every existing non-browser gate, coverage upload, Next/Docker build, and security scan remains in that job and runs independently of required E2E.
 
 Each shard publishes a uniquely named `playwright-shard-N` artifact containing JUnit, an HTML report, screenshots/attachments, traces, and error contexts, plus a `Playwright Results N/3` check. Reports are per shard; there is no merge job or new reporting service. Test command failures determine the shard outcome regardless of reporter check settings. Existing auth/visual artifacts and result checks remain available.
 
 Expected elapsed time becomes the slower of the general quality job and the longest shard, plus deployment time. Targets are <=15 minutes, stretch <=12; confirm with a successful merged production run rather than assuming a threefold end-to-end speedup.
+
+## Browser projects
+
+Pull-request, `main`, and deploy-required workflows run Playwright's `desktop` project (`Desktop Chrome` on Chromium). The `mobile` project (`Pixel 7`) remains in the Playwright configs for a deliberate local run. It is not a CI job, matrix entry, or selected project.
+
+`quality-gates` (auth shells and Front Porch visuals), each `Playwright shard N/3`, `npm run test:e2e`, and `npm run test:storybook` pass `--project=desktop` and do not set `ATLAS_E2E_MOBILE`. The Pixel 7 project is registered only when that variable is `1`. Playwright workers reload the config without the parent CLI arguments, so a `--project=mobile` flag alone does not keep the project in the worker. `npm run test:e2e:mobile` and `npm run test:storybook:mobile` set `ATLAS_E2E_MOBILE=1` before Playwright starts. Specs, fixtures, and snapshots stay in git.
+
+Both projects use Chromium. CI still runs `npx playwright install --with-deps chromium` for desktop. There is no WebKit, Firefox, or other mobile-only browser install to remove.
+
+The required check name remains `quality`. Shard job names and reporter checks are unchanged. No mobile-named check is defined in these workflows, so this exclusion does not remove a required status check. Branch-protection settings were not readable with the automation token. An administrator needs a ruleset edit only if a required check outside this repository's workflows was bound to a mobile job name.
+
+These mobile-only bodies already skip on the desktop project, and CI no longer runs them on Pixel 7:
+
+| Area | Coverage left out of CI |
+| --- | --- |
+| Workspace account footer | Drawer Sign in target and Escape close |
+| Professional navigation | Review and Compare drawer open, focus, and close |
+| Professional shell scroll | Short phone trust footer; 390px and 768px drawer scroll |
+| UX Reset feedback | Opening the modal from the mobile navigation drawer |
+| Storybook | Header/footer reflow, sidebar and table reflow, narrow grid/table scroll, shell drawer focus, ready-brief reflow |
+
+Desktop Chromium still runs the rest of each spec, including desktop axe and the desktop widths inside mixed loops. Phone widths are 320, 375, and 390. A case at one of those widths runs only on the mobile project:
+
+| Path | Left out of required CI | Still required on desktop |
+| --- | --- | --- |
+| Front Porch composition visuals and axe | 390 and 320 | 1440 and 1280 |
+| Front Porch signed-in boundary loop | 320 and 390 | 768, 800, 801, 850, 851, 1024, and 1440 |
+| Public trust width matrix | 320 and 390 | 768, 1280, and 1440 |
+| In-product feedback | "works on a mobile viewport" at 390×844 | The other feedback dialog cases |
+| Assistant axe, keyboard, and 200% text | 375 | 768, 1280, 1600, and the 1280 drawer landmark |
+| Developer quickstart and support | 375 | The other developer-doc cases |
+| Evidence chat composer | 375 | 1600 composer, transcript, and measure assertions |
+| Ask Atlas narrow page | 390 | Context, launcher, and page-reference cases |
+| Compare direct link | 390 | Invalid, partial, duplicate, and return=review URL checks |
+| Review state list without WebGL | 390 | The same fallback and list selection at 1440 |
+| Review coastal map | 390 refit | 1440 framing and map clicks |
+| Storybook narrow evidence strips | 320 and 390 | The rest of the P0 catalog, including the 1440 shell |
+
+These widths below 768 stay on desktop because they are zoom or short-landscape checks, not phone portraits:
+
+| Path                             | Width | Why it stays                      |
+| -------------------------------- | ----- | --------------------------------- |
+| Ask Atlas 200% desktop zoom      | 640   | Half of the 1280×720 window       |
+| Ask Atlas short landscape height | 740   | Short height at a landscape width |
+
+Tablet width 768 stays on desktop, including the assistant matrix, the Front Porch boundary, public trust, and the national review map. `tests/release-phone-viewport.test.ts` scans every `setViewportSize` in `tests/e2e` and `tests/storybook`. A new width below 768 has to be one of the phone widths behind that guard, or one of the two retained desktop widths above.
+
+Still required: Vitest unit and integration tests, typecheck, lint, design-system and UX Reset guards, OpenAPI generation drift, docs check, desktop Chromium E2E shards, the existing soft-fail auth e2e shells, Front Porch visual comparisons, desktop Storybook browser tests, production build, Docker build, dependency audit, and secret scan.
 
 ## Production concurrency
 

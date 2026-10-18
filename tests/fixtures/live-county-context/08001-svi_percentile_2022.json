@@ -1,0 +1,67 @@
+{
+  "data": [
+    {
+      "metadata_revision_id": "metadata-revision:v1:144b7fecaa83ed51d17ff78b9794607252837a4a90ec1d9cfae2ca6b25ab5ccf",
+      "observation_id": "6a7c65cddc035d29098adf4581a4b25313c6fdb01cb2b9c9e3d44d10cba15a3d",
+      "measure_id": "svi_percentile_2022",
+      "geography": { "geography_type": "county", "geography_id": "08001" },
+      "temporal_grain": "PERIOD",
+      "value": "0.7264",
+      "value_state": "OBSERVED",
+      "unit": "percentile",
+      "denominator": "NONE",
+      "strata": {},
+      "source_id": "context_svi",
+      "lineage_source_id": "cdc_atsdr_svi",
+      "dataset_id": "atsdr-svi-2022-county-layer",
+      "methodology_id": null,
+      "methodology": "Overall county Social Vulnerability Index percentile reported in RPL_THEMES for the 2022 SVI product.",
+      "release_methodology_version": "semantic-2.0.0",
+      "methodology_version": "svi_numeric_projection_v2",
+      "semantic_version": "1.0.0",
+      "release_id": "governed-2026-10-15-january-climate-prod",
+      "provenance_ref": "6a7c65cddc035d29098adf4581a4b25313c6fdb01cb2b9c9e3d44d10cba15a3d",
+      "source_label": "CDC/ATSDR Social Vulnerability Index",
+      "source_vintage": "2022 (2018-2022 ACS)",
+      "source_url": "https://www.atsdr.cdc.gov/placeandhealth/svi/data_documentation_download.html",
+      "source_published_at": null,
+      "atlas_acquired_at": "2026-09-17T21:15:53.910898-07:00",
+      "atlas_processed_at": null,
+      "limitations": [
+        "National county percentile rank for this product and vintage; not a percentage of people, causal driver, or individual risk.",
+        "This is a national county rank in the 2022 SVI product, not a person denominator.",
+        "Contextual source measure; not a causal driver or individual risk measure.",
+        "This is a deterministic surveillance follow-up priority release, not a diagnosis, prediction, causal claim, exposure map, or individual risk estimate. Published human values are privacy-protected floors; no records is not absence. Human rows with explicitly unavailable state geography are retained in source provenance but are not allocated to county or state release values. Restricted pathogen source gaps are explicitly unknown source coverage. Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission."
+      ],
+      "evidence": {
+        "resource_type": "observation",
+        "resource_id": "6a7c65cddc035d29098adf4581a4b25313c6fdb01cb2b9c9e3d44d10cba15a3d",
+        "source_id": "context_svi",
+        "provenance_ref": "6a7c65cddc035d29098adf4581a4b25313c6fdb01cb2b9c9e3d44d10cba15a3d",
+        "semantic_version": "1.0.0",
+        "methodology_version": "svi_numeric_projection_v2",
+        "release_id": "governed-2026-10-15-january-climate-prod",
+        "uri": null
+      },
+      "environmental_context": null,
+      "surveillance_context": null,
+      "period_start": "2018-01-01",
+      "period_end": "2022-12-31",
+      "county_context": {
+        "contract_version": "atlas-county-context-consumer/1",
+        "vintage_year": 2022,
+        "source_field": "RPL_THEMES",
+        "value_type": "number",
+        "category_label": null,
+        "definition": "Overall county Social Vulnerability Index percentile reported in RPL_THEMES for the 2022 SVI product.",
+        "allowed_value_states": ["OBSERVED", "ZERO", "MISSING"],
+        "metadata_methodology_version": "semantic-1.0.0"
+      }
+    }
+  ],
+  "meta": {
+    "next_page_token": null,
+    "response_at": "2026-10-18T03:46:58.323389Z"
+  },
+  "links": { "self": null }
+}

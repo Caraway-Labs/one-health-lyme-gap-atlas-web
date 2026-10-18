@@ -44,8 +44,10 @@ describe("front porch page session", () => {
     render(await FrontPorchPage());
 
     expect(
-      screen.getByRole("link", { name: "Open Review" }).getAttribute("href")
-    ).toBe("/app/review");
+      screen
+        .getByRole("link", { name: "Open Atlas Explorer" })
+        .getAttribute("href")
+    ).toBe("/explore");
     expect(frontPorchHeroFont.variable).toBe("--font-front-porch-hero");
   });
 
@@ -54,7 +56,7 @@ describe("front porch page session", () => {
 
     expect(
       screen.getByRole("link", { name: "Sign in" }).getAttribute("href")
-    ).toBe("/auth/sign-in?next=%2Fapp%2Freview");
+    ).toBe("/auth/sign-in?next=%2Fexplore");
   });
 });
 

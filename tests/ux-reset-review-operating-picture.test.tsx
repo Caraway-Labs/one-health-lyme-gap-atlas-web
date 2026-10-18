@@ -33,12 +33,52 @@ import {
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/app/review",
+  usePathname: () => "/explore",
   useSearchParams: () => new URLSearchParams("") as ReadonlyURLSearchParams,
 }));
 
+vi.mock(
+  import("@/features/ux-reset/review/use-published-review-counties"),
+  () => ({
+    usePublishedReviewCounties: (scope: string, releaseId: string | null) => ({
+      counties: releaseId
+        ? ["08001", "08013", "08031", "08099", "36001", "36003"]
+            .filter((fips) => fips.startsWith(scope === "CO" ? "08" : "36"))
+            .map((fips) => ({
+              fips,
+              county: fips,
+              state: scope,
+              stateName: scope,
+            }))
+        : [],
+      isSuccess: Boolean(releaseId),
+      isLoading: false,
+      isError: false,
+    }),
+  })
+);
+
+vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
+  loadInvestigateCountyRecord: vi.fn<() => Promise<null>>(async () => null),
+}));
+
 vi.mock(import("@/components/atlas-map"), () => ({
-  AtlasMap: () => <div data-testid="mock-atlas-map" />,
+  AtlasMap: ({
+    includeUnscoredCounties = true,
+    scores = [],
+    selectedFips = "",
+  }: {
+    includeUnscoredCounties?: boolean;
+    scores?: readonly { fips: string }[];
+    selectedFips?: string;
+  }) => (
+    <div
+      data-include-unscored={includeUnscoredCounties ? "true" : "false"}
+      data-map-fips={scores.map((entry) => entry.fips).join(" ")}
+      data-selected-fips={selectedFips}
+      data-testid="mock-atlas-map"
+    />
+  ),
 }));
 
 vi.mock(import("@/lib/county-geography"), async (importOriginal) => {
@@ -137,7 +177,9 @@ describe("Review operating picture state", () => {
   it("keeps a review county only when its prefix matches a lower-48 scope", () => {
     expect({
       all: normalizeReviewCounty("ALL", "08001"),
+      alaska: normalizeReviewCounty("ALL", "02013"),
       blank: normalizeReviewCounty("CO", null),
+      hawaii: normalizeReviewCounty("ALL", "15001"),
       dcMatch: normalizeReviewCounty("DC", "11001"),
       dcMismatch: normalizeReviewCounty("DC", "08001"),
       match: normalizeReviewCounty("NY", "36001"),
@@ -146,7 +188,9 @@ describe("Review operating picture state", () => {
       unsupported: normalizeReviewCounty("PR", "08001"),
     }).toStrictEqual({
       all: "08001",
+      alaska: null,
       blank: null,
+      hawaii: null,
       dcMatch: "11001",
       dcMismatch: null,
       match: "36001",
@@ -272,6 +316,192 @@ describe("Review operating picture state", () => {
         geometry.mockImplementation(restore);
       }
     }
+  });
+
+  it("limits the map to eligible counties and names an empty filter", async () => {
+    cleanup();
+    const { fetchCountyDisplayGeometry } =
+      await import("@/lib/county-geography");
+    const geometry = vi.mocked(fetchCountyDisplayGeometry);
+    const restore = geometry.getMockImplementation();
+    geometry.mockResolvedValue({
+      features: [
+        {
+          geometry: { coordinates: [-104.8, 39.8], type: "Point" },
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: { coordinates: [-105.2, 40], type: "Point" },
+          properties: { fips: "08013" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const review = buildStateReview({
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Adams",
+          fips: "08001",
+          reasonText: "Adams was returned by the method.",
+        }),
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Boulder",
+          fips: "08013",
+          reasonText: "Boulder was returned by the method.",
+        }),
+      ],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    try {
+      const { unmount } = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            availableDataGate={{ fips: new Set(["08001"]), kind: "ready" }}
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        if (!screen.queryByTestId("mock-atlas-map")) {
+          throw new Error("filtered map was not drawn");
+        }
+      });
+      expect({
+        candidates: screen
+          .getAllByTestId("review-candidate")
+          .map((row) => row.dataset.fips),
+        includeUnscored:
+          screen.getByTestId("mock-atlas-map").dataset.includeUnscored,
+        mapFips: screen.getByTestId("mock-atlas-map").dataset.mapFips,
+        missingShapes: screen.queryByTestId("review-state-map-empty"),
+        regionFips: screen.getByTestId("review-state-map-region").dataset
+          .mapFips,
+      }).toStrictEqual({
+        candidates: ["08001"],
+        includeUnscored: "false",
+        mapFips: "08001",
+        missingShapes: null,
+        regionFips: "08001",
+      });
+      unmount();
+
+      const empty = render(
+        <QueryClientProvider client={client}>
+          <ReviewOperatingPicture
+            availableDataGate={{ fips: new Set(), kind: "ready" }}
+            review={review}
+            scopeCode="CO"
+            stateName="Colorado"
+          />
+        </QueryClientProvider>
+      );
+      await waitFor(() => {
+        if (!screen.queryByTestId("explorer-map-available-data-empty")) {
+          throw new Error("empty filter message was not shown");
+        }
+      });
+      expect({
+        candidates: screen.queryAllByTestId("review-candidate"),
+        empty: screen.getByTestId("explorer-map-available-data-empty")
+          .textContent,
+        listEmpty: screen.getByTestId("explorer-available-data-empty")
+          .textContent,
+        map: screen.queryByTestId("mock-atlas-map"),
+        missingShapes: screen.queryByTestId("review-state-map-empty"),
+      }).toStrictEqual({
+        candidates: [],
+        empty: "No published counties match the Available data filter.",
+        listEmpty: "No published counties match the Available data filter.",
+        map: null,
+        missingShapes: null,
+      });
+      empty.unmount();
+    } finally {
+      cleanup();
+      if (restore) {
+        geometry.mockImplementation(restore);
+      }
+    }
+  });
+
+  it("hides counties while a restrictive available-data filter is loading or failed", async () => {
+    cleanup();
+    const review = buildStateReview({
+      candidates: [
+        reviewCandidate({
+          caveat: "Collection dates are unavailable.",
+          countyName: "Adams",
+          fips: "08001",
+          reasonText: "Adams was returned by the method.",
+        }),
+      ],
+      resultState: "candidates_found",
+      state: "CO",
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { unmount } = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          availableDataGate={{ kind: "loading" }}
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    expect({
+      candidates: screen.queryByTestId("review-candidate"),
+      empty: screen.queryByTestId("explorer-available-data-empty"),
+      list: screen.getByTestId("explorer-available-data-loading").textContent,
+      map: screen.queryByTestId("mock-atlas-map"),
+      mapMessage: screen.getByTestId("explorer-map-available-data-loading")
+        .textContent,
+    }).toStrictEqual({
+      candidates: null,
+      empty: null,
+      list: "Checking counties for the Available data filter…",
+      map: null,
+      mapMessage: "Checking counties for the Available data filter…",
+    });
+    unmount();
+
+    const failed = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          availableDataGate={{ kind: "error" }}
+          review={review}
+          scopeCode="CO"
+          stateName="Colorado"
+        />
+      </QueryClientProvider>
+    );
+    expect({
+      candidates: screen.queryByTestId("review-candidate"),
+      list: screen.getByTestId("explorer-available-data-error").textContent,
+      map: screen.queryByTestId("mock-atlas-map"),
+      mapMessage: screen.getByTestId("explorer-map-available-data-error")
+        .textContent,
+    }).toStrictEqual({
+      candidates: null,
+      list: "Available data could not be applied. Counties stay hidden until the filter can be checked.",
+      map: null,
+      mapMessage:
+        "Available data could not be applied. Counties stay hidden until the filter can be checked.",
+    });
+    failed.unmount();
+    cleanup();
   });
 
   it("builds a limited candidate preview from the returned record", () => {
@@ -613,7 +843,7 @@ describe("Review operating picture state", () => {
     });
   });
 
-  it("clears a stale county when the result has no candidates", async () => {
+  it("retains a published county when the result has no candidates", async () => {
     const onCountyChange =
       vi.fn<(fips: string | null, history: "push" | "replace") => void>();
     const client = new QueryClient({
@@ -677,23 +907,17 @@ describe("Review operating picture state", () => {
         onCountyChange.mockClear();
         view = render(picture(review));
       }
-      await waitFor(() => {
-        if (onCountyChange.mock.calls.length === 0) {
-          throw new Error("county was not cleared");
-        }
-      });
-      const call = onCountyChange.mock.calls[0];
-      cleared.push(call ? `${String(call[0])}:${call[1]}` : "missing");
+      expect(
+        screen.getByTestId("review-published-county-preview").dataset.fips
+      ).toBe("36001");
+      expect(onCountyChange).not.toHaveBeenCalled();
+      cleared.push("retained");
     }
     view.unmount();
-    expect(cleared).toStrictEqual([
-      "null:replace",
-      "null:replace",
-      "null:replace",
-    ]);
+    expect(cleared).toStrictEqual(["retained", "retained", "retained"]);
   });
 
-  it("does not publish a county when the result state contradicts its candidates", async () => {
+  it("withholds contradictory recommendations while preserving a published factual county", async () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -766,11 +990,7 @@ describe("Review operating picture state", () => {
           />
         </QueryClientProvider>
       );
-      await waitFor(() => {
-        if (onCountyChange.mock.calls[0]?.[0] !== null) {
-          throw new Error("county was still published");
-        }
-      });
+      expect(onCountyChange).not.toHaveBeenCalled();
       const summary =
         screen.getByTestId("review-result-summary").textContent ?? "";
       const backend =
@@ -782,7 +1002,9 @@ describe("Review operating picture state", () => {
           backend.includes("Candidates found"),
         candidate: screen.queryByTestId("review-candidate"),
         compare: screen.queryByTestId("review-compare"),
-        investigate: screen.queryByTestId("review-investigate"),
+        investigate:
+          screen.queryByTestId("review-investigate")?.getAttribute("href") ??
+          null,
         published: publishedCall ? publishedCall[0] : "missing",
         resultState:
           screen.getByTestId("review-state-panel").dataset.resultState,
@@ -832,9 +1054,9 @@ describe("Review operating picture state", () => {
     const unavailable = {
       backendClaimsFinding: false,
       candidate: null,
-      compare: null,
-      investigate: null,
-      published: null,
+      compare: expect.any(HTMLAnchorElement),
+      investigate: expect.stringContaining("county=08001"),
+      published: "missing",
       resultState: "unavailable",
       summary: "Unavailable",
     };
@@ -895,9 +1117,9 @@ describe("Review operating picture state", () => {
       .getAllByTestId("review-candidate")
       .map((entry) => entry.dataset.fips);
     const investigate =
-      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      screen.queryByTestId("review-investigate")?.getAttribute("href") ?? "";
     const compare =
-      screen.getByTestId("review-compare").getAttribute("href") ?? "";
+      screen.queryByTestId("review-compare")?.getAttribute("href") ?? "";
     const note =
       screen.getByTestId("review-omitted-candidates").textContent ?? "";
     view.unmount();
@@ -914,11 +1136,11 @@ describe("Review operating picture state", () => {
       published: onCountyChange.mock.calls,
       wrongState: investigate.includes("36001") || compare.includes("36001"),
     }).toStrictEqual({
-      compareCounty: "08001",
-      investigateCounty: "08001",
+      compareCounty: null,
+      investigateCounty: null,
       listed: ["08001", "08013"],
       note: "2 candidates were omitted because their county FIPS is not in Colorado.",
-      published: [["08001", "replace"]],
+      published: [[null, "replace"]],
       wrongState: false,
     });
   });
@@ -945,9 +1167,9 @@ describe("Review operating picture state", () => {
     };
     const read = () => {
       const investigate =
-        screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+        screen.queryByTestId("review-investigate")?.getAttribute("href") ?? "";
       const compare =
-        screen.getByTestId("review-compare").getAttribute("href") ?? "";
+        screen.queryByTestId("review-compare")?.getAttribute("href") ?? "";
       const regionText = (
         screen.getByTestId("review-state-map-region").textContent ?? ""
       ).replaceAll(/\s+/g, " ");
@@ -1002,7 +1224,7 @@ describe("Review operating picture state", () => {
     expect({ unusable, usable }).toStrictEqual({
       unusable: {
         compareDataset: null,
-        county: "08001",
+        county: null,
         investigateDataset: null,
         loading: false,
         map: false,
@@ -1090,6 +1312,135 @@ describe("Review operating picture state", () => {
         { fips: "08013", name: "Boulder" },
       ],
       secondReason: null,
+    });
+  });
+
+  it("does not substitute a county when an invalid arrival requires a choice", async () => {
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          requireExplicitCountySelection
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Adams",
+                fips: "08001",
+                reasonText: "Adams was returned by the method.",
+              }),
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Boulder",
+                fips: "08013",
+                reasonText: "Boulder was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          onCountyChange={onCountyChange}
+        />
+      </QueryClientProvider>
+    );
+    const rows = await screen.findAllByTestId("review-candidate");
+    const heading = screen.getByRole("heading", { name: "Choose a county" });
+    expect({
+      asksForChoice: heading.textContent === "Choose a county",
+      current: rows.map((row) => row.getAttribute("aria-current")),
+      fips: rows.map((row) => row.dataset.fips),
+      highlight: screen.getByTestId("review-state-map-region").dataset
+        .selectedFips,
+      preview: screen.queryByTestId("review-county-preview"),
+      published: onCountyChange.mock.calls,
+    }).toStrictEqual({
+      asksForChoice: true,
+      current: [null, null],
+      fips: ["08001", "08013"],
+      highlight: "",
+      preview: null,
+      published: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
+    expect(onCountyChange).toHaveBeenCalledWith("08013", "push");
+    view.unmount();
+  });
+
+  it("selects the first published candidate when the county is omitted", async () => {
+    const onCountyChange =
+      vi.fn<(fips: string | null, history: "push" | "replace") => void>();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Adams",
+                fips: "08001",
+                reasonText: "Adams was returned by the method.",
+              }),
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Boulder",
+                fips: "08013",
+                reasonText: "Boulder was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          onCountyChange={onCountyChange}
+        />
+      </QueryClientProvider>
+    );
+    let snapshot: {
+      current: (string | null)[];
+      fips: (string | undefined)[];
+      highlight: string | null;
+      preview: boolean;
+      published: (string | null)[][];
+    };
+    try {
+      await waitFor(() => {
+        if (onCountyChange.mock.calls.length === 0) {
+          throw new Error("the first published candidate was not selected");
+        }
+      });
+      const rows = screen.getAllByTestId("review-candidate");
+      snapshot = {
+        current: rows.map((row) => row.getAttribute("aria-current")),
+        fips: rows.map((row) => row.dataset.fips),
+        highlight:
+          screen.getByTestId("review-state-map-region").dataset.selectedFips ??
+          null,
+        preview: Boolean(
+          screen
+            .getByTestId("review-preview-why")
+            .textContent?.includes("Adams")
+        ),
+        published: onCountyChange.mock.calls.map((call) => [call[0], call[1]]),
+      };
+    } finally {
+      view.unmount();
+    }
+    expect(snapshot).toStrictEqual({
+      current: ["true", null],
+      fips: ["08001", "08013"],
+      highlight: "08001",
+      preview: true,
+      published: [["08001", "replace"]],
     });
   });
 
@@ -1425,22 +1776,18 @@ describe("Review operating picture state", () => {
     fireEvent.click(
       within(provenance).getByText("Technical reproducibility identifiers")
     );
-    const qualification = screen.getByTestId("review-preview-qualification");
-    fireEvent.click(within(qualification).getByText("Inspect provenance"));
-    const reference =
-      within(qualification)
-        .getByTestId("evidence-provenance-references")
-        .querySelector("li")?.textContent ?? "";
-    const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
+    const reference = "";
+    const basis = "";
+    expect(screen.queryByTestId("review-county-preview")).toBeNull();
     const header = (screen.getByTestId("review-methodology").textContent ?? "")
       .replaceAll(/\s+/g, " ")
       .trim();
     const backend =
       screen.getByTestId("review-backend-result").textContent ?? "";
     const investigate =
-      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      screen.queryByTestId("review-investigate")?.getAttribute("href") ?? "";
     const compare =
-      screen.getByTestId("review-compare").getAttribute("href") ?? "";
+      screen.queryByTestId("review-compare")?.getAttribute("href") ?? "";
     const gap = screen.queryByTestId("review-data-gap");
     const omittedGaps =
       screen.getByTestId("review-omitted-gaps").textContent ?? "";
@@ -1470,7 +1817,7 @@ describe("Review operating picture state", () => {
     view.unmount();
     expect(snapshot).toStrictEqual({
       backendNamesBogus: false,
-      basisKeepsSourceDate: true,
+      basisKeepsSourceDate: false,
       compareNamesRelease: false,
       configuration: "Unavailable",
       configurationAttribute: null,
@@ -1491,10 +1838,8 @@ describe("Review operating picture state", () => {
       investigateNamesRelease: false,
       omittedGaps:
         "1 data gap was omitted because its county FIPS is not in Colorado.",
-      reasonCodes: true,
-      reference: expect.stringContaining(
-        "county Unavailable; source as of 2025-02-31; version bad version; retrieved Unavailable; record bad record!!; release bad release"
-      ),
+      reasonCodes: false,
+      reference: "",
       resultState: "unavailable",
       time: null,
     });
@@ -2053,12 +2398,9 @@ describe("Review operating picture state", () => {
           />
         </QueryClientProvider>
       );
-      const row =
-        screen.getByTestId("review-candidate").querySelector("small")
-          ?.textContent ?? "";
       const why = screen.getByTestId("review-preview-why").textContent ?? "";
       view.unmount();
-      return { row, why };
+      return { why };
     };
     const withCode = reviewCandidate({
       caveat: "Collection dates are unavailable.",
@@ -2080,9 +2422,8 @@ describe("Review operating picture state", () => {
       withCode: read(withCode),
       withoutCode: read(withoutCode),
     }).toStrictEqual({
-      withCode: { row: reasonCode, why: reasonCode },
+      withCode: { why: reasonCode },
       withoutCode: {
-        row: "The review result did not include a reason for this county.",
         why: "The review result did not include a reason for this county.",
       },
     });
@@ -2119,8 +2460,9 @@ describe("Review operating picture state", () => {
       </QueryClientProvider>
     );
     const rowName =
-      screen.getByTestId("review-candidate").querySelector("strong")
-        ?.textContent ?? "";
+      screen
+        .getByTestId("review-candidate")
+        .querySelector(".ux-reset-ranked-name")?.textContent ?? "";
     const gapRow = screen.getByTestId("review-data-gap").textContent ?? "";
     const omitted = screen.getByTestId("review-omitted-gaps").textContent ?? "";
     const limitations = [

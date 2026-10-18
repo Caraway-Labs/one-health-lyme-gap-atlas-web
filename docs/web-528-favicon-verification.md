@@ -20,7 +20,7 @@ Next.js 16.3.8 App Router uses the existing root layout metadata. There are no f
 
 The five declared metadata URLs append `?v=summit-compass-north-20261010` to bypass old browser icon caches, including the previous permanent ICO-to-SVG redirect. The canonical unversioned ICO path now returns the actual ICO. No cache rules for unrelated resources change. Browsers that retain bookmark/tab artwork may require a hard refresh or reopening the tab; existing installed/home-screen shortcuts may require recreating them.
 
-Scope: shared icon identity for `/` and `/app/review`, under ADR-0001 frontend platform and the existing UX Reset constitution. No API, authentication, privacy, accessibility, navigation, or scientific interpretation contract changes. Rollback is the previous web release or a reviewed revert of this commit.
+Scope: shared icon identity for `/` and Atlas Explorer, under ADR-0001 frontend platform and the existing UX Reset constitution. Atlas Explorer is now `/explore`. `/app/review` permanently redirects there. No API, authentication, privacy, accessibility, navigation, or scientific interpretation contract changes. Rollback is the previous web release or a reviewed revert of this commit.
 
 ## Source integrity
 
@@ -59,7 +59,7 @@ Local workspace coverage uses the repository's existing development E2E mode; it
 Do not merge or deploy without explicit product-owner approval. Production verification remains pending that approval and deployment. Smoke-test URLs:
 
 - <https://onehealthatlas.org/>
-- <https://onehealthatlas.org/app/review> (owner-authenticated session)
+- <https://onehealthatlas.org/explore> (owner-authenticated session; `/app/review` redirects here)
 - <https://onehealthatlas.org/favicon.ico>
 - <https://onehealthatlas.org/favicon.ico?v=summit-compass-north-20261010>
 - All six PNG paths above under `https://onehealthatlas.org`.

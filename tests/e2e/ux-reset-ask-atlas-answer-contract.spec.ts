@@ -10,10 +10,8 @@ import {
   exploreScoresFixture,
 } from "../fixtures/explore-api-fixtures";
 
-const EXPLORE_URL =
-  "/app/explore?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL";
 const WORKSPACE_URL =
-  "/app/assistant?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL";
+  "/askatlas?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL";
 
 function literatureAnswer(answer: string, requestId: string) {
   return {
@@ -194,10 +192,8 @@ async function installChat(page: Page) {
 }
 
 async function ask(page: Page, question: string) {
-  const root = page.locator(
-    "#ux-reset-ask-atlas, [data-testid='ask-atlas-workspace']"
-  );
-  const input = root.getByLabel("Your question");
+  const root = page.getByTestId("ask-atlas-workspace");
+  const input = root.getByLabel("Your research question");
   await input.fill(question);
   await root.getByRole("button", { name: "Ask", exact: true }).click();
 }
@@ -213,14 +209,8 @@ function preservedFilters(url: string) {
   };
 }
 
-async function expectAnswerContract(
-  page: Page,
-  surface: "sidecar" | "workspace"
-) {
-  const root =
-    surface === "sidecar"
-      ? page.getByTestId("ask-atlas-panel")
-      : page.getByTestId("ask-atlas-workspace");
+async function expectAnswerContract(page: Page) {
+  const root = page.getByTestId("ask-atlas-workspace");
 
   await ask(page, "Literature question");
   await expect(
@@ -234,18 +224,12 @@ async function expectAnswerContract(
     0
   );
   await expect(root.getByRole("tab", { name: /both/i })).toHaveCount(0);
-  if (surface === "workspace") {
-    await expect(
-      root.getByText("Structured and Both modes are not available.")
-    ).toBeVisible();
-  }
+  await expect(
+    root.getByText("Answers search reviewed literature.")
+  ).toHaveCount(0);
 
   const results = await new AxeBuilder({ page })
-    .include(
-      surface === "sidecar"
-        ? "#ux-reset-ask-atlas"
-        : "[data-testid='ask-atlas-workspace']"
-    )
+    .include("[data-testid='ask-atlas-workspace']")
     .analyze();
   expect(results.violations).toEqual([]);
 
@@ -324,95 +308,32 @@ async function expectAnswerContract(
   );
 }
 
-test("sidecar enforces the answer contract without changing Explore", async ({
-  page,
-}) => {
-  await installExploreMocks(page);
-  await installChat(page);
-  await page.goto(EXPLORE_URL);
-  await expect(page).toHaveURL(/period=2023-01-01/);
-  const before = page.url();
-  await page.getByTestId("ask-atlas-launcher").click();
-  await expect(page.getByTestId("ask-atlas-panel")).toBeVisible();
-  await expect(
-    page
-      .getByTestId("ask-atlas-panel")
-      .getByText("Start with a research question")
-  ).toBeVisible();
-  await expectAnswerContract(page, "sidecar");
-  expect(page.url()).toBe(before);
-  expect(new URL(page.url()).searchParams.get("conversation")).toBeNull();
-  expect(preservedFilters(page.url())).toStrictEqual(
-    preservedFilters(EXPLORE_URL)
-  );
-  await expect(page.getByTestId("explore-workspace")).toBeVisible();
-});
-
-test("workspace enforces the same answer contract without changing filters", async ({
+test("workspace enforces the answer contract without changing filters", async ({
   page,
 }) => {
   await installExploreMocks(page);
   await installChat(page);
   await page.goto(WORKSPACE_URL);
   await expect(page.getByTestId("ask-atlas-workspace")).toBeVisible();
-  await expect(page.getByText("Start with a research question")).toBeVisible();
-  await expectAnswerContract(page, "workspace");
+  await expect(
+    page.getByRole("heading", { name: "What would you like to explore?" })
+  ).toBeVisible();
+  await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+  await expectAnswerContract(page);
   const url = new URL(page.url());
-  expect(url.pathname).toBe("/app/assistant");
+  expect(url.pathname).toBe("/askatlas");
   expect(preservedFilters(page.url())).toStrictEqual(
     preservedFilters(WORKSPACE_URL)
   );
   expect(url.searchParams.get("conversation")).toBe("conversation-1");
 });
 
-test("sidecar and workspace ignore an older in-flight answer", async ({
-  page,
-}) => {
+test("workspace ignores an older in-flight answer", async ({ page }) => {
   await installExploreMocks(page);
-  let releaseFirst = () => {};
-  const firstHeld = new Promise<void>((resolve) => {
-    releaseFirst = resolve;
-  });
-  let calls = 0;
-  await page.route("**/v1/knowledge-graph/chat", async (route) => {
-    calls += 1;
-    if (calls === 1) {
-      await firstHeld;
-      try {
-        await fulfillJson(
-          route,
-          literatureAnswer("First answer must not appear.", "request-1")
-        );
-      } catch {
-        // The browser already aborted this request when the chat changed.
-      }
-      return;
-    }
-    await fulfillJson(
-      route,
-      literatureAnswer("Second answer stays.", "request-2")
-    );
-  });
-
-  await page.goto(EXPLORE_URL);
-  await page.getByTestId("ask-atlas-launcher").click();
-  await ask(page, "First question");
-  await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
-  await page.getByRole("button", { name: "New chat" }).click();
-  await ask(page, "Second question");
-  await expect(page.getByText("Second answer stays.")).toBeVisible();
-  releaseFirst();
-  await expect(page.getByText("First answer must not appear.")).toHaveCount(0);
-  await expect(page.getByText("Second answer stays.")).toBeVisible();
-  expect(new URL(page.url()).searchParams.get("county")).toBe("08001");
-
-  await page.goto(WORKSPACE_URL);
-  calls = 0;
   let releaseWorkspace = () => {};
   const workspaceHeld = new Promise<void>((resolve) => {
     releaseWorkspace = resolve;
   });
-  await page.unroute("**/v1/knowledge-graph/chat");
   let workspaceCalls = 0;
   await page.route("**/v1/knowledge-graph/chat", async (route) => {
     workspaceCalls += 1;
@@ -433,6 +354,7 @@ test("sidecar and workspace ignore an older in-flight answer", async ({
       literatureAnswer("Workspace second stays.", "request-w2")
     );
   });
+  await page.goto(WORKSPACE_URL);
   await ask(page, "Workspace first");
   await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
   await page.getByRole("button", { name: "New chat" }).click();

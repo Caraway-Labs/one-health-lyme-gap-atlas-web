@@ -10,7 +10,7 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RESET_APP_PATH, RESET_REVIEW_PATH } from "@/features/ux-reset/paths";
+import { ATLAS_EXPLORER_PATH, RESET_APP_PATH } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
 let pathname: string = RESET_APP_PATH;
@@ -149,30 +149,30 @@ describe("professional workspace navigation", () => {
   });
 
   it("marks only the active route and keeps Docs as an external tab", () => {
-    pathname = RESET_REVIEW_PATH;
+    pathname = ATLAS_EXPLORER_PATH;
     render(
       <ResetProfessionalShell>
         <p>Review</p>
       </ResetProfessionalShell>
     );
 
-    const review = screen.getByRole("link", { name: /^Review$/ });
-    const explore = screen.getByRole("link", { name: /^Explore$/ });
+    const explorer = screen.getByRole("link", { name: /^Atlas Explorer$/ });
+    const compare = screen.getByRole("link", { name: /^Compare$/ });
     const docs = screen.getByRole("link", { name: "Docs, opens in a new tab" });
     expect({
+      compareActive: compare.dataset.active ?? null,
+      compareCurrent: compare.getAttribute("aria-current") ?? null,
       docsRel: docs.getAttribute("rel"),
       docsTarget: docs.getAttribute("target"),
-      exploreActive: explore?.dataset.active ?? null,
-      exploreCurrent: explore?.getAttribute("aria-current") ?? null,
-      reviewActive: review?.dataset.active ?? null,
-      reviewCurrent: review?.getAttribute("aria-current") ?? null,
+      explorerActive: explorer.dataset.active ?? null,
+      explorerCurrent: explorer.getAttribute("aria-current") ?? null,
     }).toStrictEqual({
+      compareActive: null,
+      compareCurrent: null,
       docsRel: "noopener noreferrer",
       docsTarget: "_blank",
-      exploreActive: null,
-      exploreCurrent: null,
-      reviewActive: "true",
-      reviewCurrent: "page",
+      explorerActive: "true",
+      explorerCurrent: "page",
     });
   });
 
@@ -196,5 +196,37 @@ describe("professional workspace navigation", () => {
       []
     );
     expect(css.includes("#092F51") || css.includes("#006978")).toBeFalsy();
+  });
+
+  it("offers Give feedback with the message-square-plus icon above account", () => {
+    render(
+      <ResetProfessionalShell>
+        <p>Overview</p>
+      </ResetProfessionalShell>
+    );
+
+    const feedback = screen.getByRole("button", { name: "Give feedback" });
+    const docs = screen.getByRole("link", { name: "Docs, opens in a new tab" });
+    const account = screen.getByTestId("workspace-account-menu");
+    expect({
+      afterDocs:
+        docs.compareDocumentPosition(feedback) ===
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      beforeAccount:
+        feedback.compareDocumentPosition(account) ===
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      icon: feedback.querySelector("svg")?.getAttribute("class"),
+      sharedButton: feedback.className.includes("group/button"),
+      slot: feedback.dataset.slot ?? null,
+    }).toStrictEqual({
+      afterDocs: true,
+      beforeAccount: true,
+      icon: expect.stringContaining("message-square-plus"),
+      sharedButton: true,
+      slot: "sidebar-menu-button",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide navigation" }));
+    expect(screen.getByRole("button", { name: "Give feedback" })).toBeTruthy();
   });
 });

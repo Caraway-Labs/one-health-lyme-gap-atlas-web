@@ -1,0 +1,23 @@
+name: Public OpenAPI drift
+
+# Compares the pinned public contract with the production document.
+# A failure asks a maintainer to review the diff. This workflow does not
+# rewrite the pin, the manifest, or the generated reference, and it does not
+# run on pull requests.
+on:
+  schedule:
+    - cron: "17 14 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run docs:api:drift

@@ -1,5 +1,7 @@
 # Atlas navigation contract
 
+The signed-in professional workspace lists Atlas Explorer (`/explore`), Compare (`/compare`), Ask Atlas (`/askatlas`), Feed, Data Provenance (`/data-provenance`), Settings, and Docs. Data Provenance is the seventh destination added by [#657](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/657). The compatibility map is [ux-reset-six-page-route-mapping.md](./ux-reset-six-page-route-mapping.md). `/app/review`, `/app/compare`, and `/app/assistant` permanently redirect to those three canonical paths. `/overview`, `/geographic_explorer`, `/investigate`, `/app`, `/app/explore`, `/app/investigate`, and `/app/action` redirect to Atlas Explorer. They are not current sidebar destinations. The inventory below remains the public-shell metadata for routes that still render, including the Front Porch, `/assistant`, Account, and trust pages.
+
 ## Scope
 
 This contract owns primary movement between Atlas workflows and the route metadata used by the application shell. It is implemented by `src/lib/navigation.ts` and consumed by the desktop sidebar, collapsed icon rail, mobile drawer, route chrome, page metadata, and global footer. It does not own page-local filters, tabs, score controls, map controls, or in-page anchors.
@@ -15,7 +17,7 @@ The initial hierarchy is task-oriented for epidemiologists and public-health pro
 | Explore | Geographic Explorer | `/geographic_explorer` | Available | Sidebar |
 | Explore | Investigation Workspace | `/investigate` | Available | Sidebar |
 | Research | Atlas Assistant | `/assistant` | Early access when enabled; Coming Soon when disabled | Sidebar when chat is off, or on `/assistant` when chat is on (see [Assistant entry points](./assistant-entry-points.md)) |
-| Reference | Docs | `https://carawaylabs.com/docs` | Available | Sidebar, new tab |
+| Reference | Docs | `https://onehealthatlas.org/docs` (`NEXT_PUBLIC_DOCS_URL`) | Available | Sidebar, new tab |
 | Utility | Account | `/account` | Available | Top utility bar |
 | Trust | Privacy | `/privacy` | Available | Global footer |
 | Trust | AI Ethics | `/ai-ethics` | Available | Global footer, new tab |
@@ -74,4 +76,4 @@ The shell provides navigation landmarks, `aria-current="page"`, keyboard focus c
 
 ## Route taxonomy audit (#195)
 
-The full App Router inventory, `ATLAS_ROUTES` reconciliation, classification table, and rename recommendations for epic [#194](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/194) live in [atlas-route-taxonomy-audit.md](./product/atlas-route-taxonomy-audit.md). That document is audit-only; implement route changes only after [#196](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/196) approves a compatibility contract.
+The full App Router inventory, `ATLAS_ROUTES` reconciliation, classification table, and rename recommendations for epic [#194](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/194) live in [atlas-route-taxonomy-audit.md](./product/atlas-route-taxonomy-audit.md). That audit is the pre-decision baseline. The approved six-page compatibility map is [ux-reset-six-page-route-mapping.md](./ux-reset-six-page-route-mapping.md) ([#196](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/196)). [#197](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/197) installs the professional sidebar as Atlas Explorer, Compare, Ask Atlas, Feed, Settings, and Docs. [#608](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/608) makes `/explore`, `/compare`, and `/askatlas` the canonical URLs and installs HTTP 308 redirects from the former `/app/review`, `/app/compare`, and `/app/assistant` paths through that same map.

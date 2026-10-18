@@ -13,11 +13,16 @@ npm run storybook
 npm run build-storybook
 npx playwright install chromium
 npm run test:storybook
+npm run test:storybook:mobile
 ```
+
+`npm run test:storybook` runs the desktop Chromium project. `npm run test:storybook:mobile` sets `ATLAS_E2E_MOBILE=1` and runs the Pixel 7 project. It is not part of pull-request or `main` CI. See [CI and production deployment](ci.md).
 
 The static artifact is `storybook-static/`. To inspect it under the actual project subpath, run `node scripts/serve-storybook.mjs` and open `http://127.0.0.1:6007/one-health-lyme-gap-atlas-web/`. Use HTTP, not `file://`. The browser works independently of the Atlas app on Windows, macOS and mobile.
 
-## Initial coverage and adding stories
+## Coverage and adding stories
+
+The original catalog remains:
 
 - Button: variants, sizes, disabled, Lucide icon.
 - Card: information panel and compact spacing.
@@ -26,7 +31,11 @@ The static artifact is `storybook-static/`. To inspect it under the actual proje
 - AtlasStatusMessage: empty, loading and error announcements.
 - AtlasDataStamp: snapshot and inline provenance presentation.
 
-Add `stories/name.stories.tsx`, importing the canonical production component. Use `Meta`/`StoryObj` from `@storybook/nextjs-vite`, a descriptive title, useful `args`/`argTypes`, and a component description. Follow existing story examples. Use local fixtures and narrowly scoped deterministic provider/router mocks when needed. Never import the production providers, routes, API, auth, analytics or environment secrets. Do not put real protected records into fixtures. Scores and provenance examples must explicitly disclose synthetic data and limitations. Add representative coverage to `tests/storybook/catalog.spec.ts` when extending the initial catalog. Stories reuse production CSS and its system font stacks; no separate theme or web-font service is needed.
+[#567](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/567) is expanding the catalog to 46 approved components. Shared fixtures and rows 01–08 are in the catalog: Evidence object, Evidence state strip, Release evidence state strip, Evidence provenance inspect, Tier 1 surveillance priority panel, Investigate evidence hierarchy, Reset professional shell, and County preview panel. Rows 09–15 and 19–21 add the action evidence brief, Review scope selector, state orientation, Review operating picture, county intelligence header, Investigate next steps, Investigate PDF export, inherited context notice, Select, and the professional trust footer. Rows 16–18 add the evidence chat conversation, answer sources, and assistant outcome. Rows 22–33 add Button, Card, Input, Atlas priority badge, Atlas status message, Atlas data stamp, Badge, Dialog, Progress, Sidebar, Table, and Tooltip. This group adds rows 34–46: section header, map legend, evidence snapshot, ranked counties, results table, county evidence and uncertainty, action plan, scoring assumptions, and the geographic explorer grid, evidence table, scatter plot, and view selector. This catalog leaves #567 open.
+
+Storybook aliases production modules so stories do not call production services: the surveillance-priority request hook, Ask Atlas chrome, the brand mark, the Investigate PDF download, county display geometry, the Review state map, and AtlasMap. The PDF substitute never saves a file. Geometry and both maps are synthetic stubs; MapLibre rendering stays in application tests. Scoring-assumption stories import the investigation module through that AtlasMap stub and do not mount MapLibre. The brand substitute bundles `public/android-chrome-192x192.png` because an absolute public URL does not resolve on the project subpath, and `staticDirs` stays empty so `public/` is not published. Vitest and the Next.js app keep the real modules. Each story loader clears the professional sidebar key, per-story sidebar keys, the primitive sidebar key, the knowledge-chat storage key, and the review return-focus session key. Shell stories pass a storage key unique to the story id and the declared open state, so docs frames do not share a collapsed preference. Normal evidence stories use the synthetic release `alpha-2026`. The named release-mismatch story is the withheld cross-release case. Shell, hierarchy, evidence-brief, orientation, operating-picture, conversation, dialog, sidebar, answer-source, evidence-snapshot, scoring-assumption, and view-selector docs render in separate frames so repeated anchors and field ids stay unique.
+
+Add `stories/name.stories.tsx`, importing the canonical production component. Use `Meta`/`StoryObj` from `@storybook/nextjs-vite`, a descriptive title, useful `args`/`argTypes`, and a component description. Follow existing story examples. Use local fixtures and narrowly scoped deterministic provider/router mocks when needed. Never import the production providers, routes, API, auth, analytics or environment secrets. Do not put real protected records into fixtures. Scores and provenance examples must explicitly disclose synthetic data and limitations. Geographic fixtures use the lower 48 states and the District of Columbia. Add representative coverage to `tests/storybook/` when extending the catalog. Stories reuse production CSS and its system font stacks; no separate theme or web-font service is needed. Geographic explorer stories also import `src/features/geographic-explorer/explorer.css`, which the app loads only from the explorer page, so the state grid and evidence table keep their production minimum widths and scroll.
 
 ## Pages deployment and human activation
 

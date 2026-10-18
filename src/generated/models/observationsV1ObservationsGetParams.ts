@@ -21,7 +21,11 @@ geography_type: GeographyType;
  */
 geography_id: string[];
 /**
- * Year or complete date range, not both; current published year is 2023.
+ * Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.
+ */
+vintage_year?: number | null;
+/**
+ * Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.
  */
 year?: number | null;
 /**

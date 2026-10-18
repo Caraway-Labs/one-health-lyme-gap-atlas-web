@@ -38,7 +38,7 @@ Map and data-visualization CSS may sit beside this hierarchy.
 ## Token conventions
 
 - **Semantic chrome:** `--background`, `--foreground`, `--primary`, `--secondary`, `--muted`, `--destructive`, `--success`, `--warning`, `--info`, `--border`, `--input`, `--ring`, radius, spacing, motion.
-- **Domain / viz:** `--navy`, `--teal`, `--mint`, `--priority-*`, `--map-ramp-*`, `--atlas-action-primary`. Do not flatten these into `primary`.
+- **Domain / viz:** `--navy`, `--teal`, `--mint`, `--action-plan-surface`, `--action-plan-border`, `--priority-*`, `--map-ramp-*`, `--atlas-action-primary`. Do not flatten these into `primary`.
 - Consume semantic tokens in reusable UI. Do not add hardcoded chrome hex in feature components.
 - Dark mode: remap the semantic variables on a future `.dark` class. Do not ship a dark theme from this document.
 
@@ -60,7 +60,7 @@ Prefer `--space-1` (4px) through `--space-12` (48px) and `--control-height` (44p
 
 ## Canonical primitives
 
-`src/components/ui` owns Button, Badge, Card, Dialog, DropdownMenu, Input, Progress, Select, Table, and Tooltip. Search there before creating a control. Do not add a second component framework.
+`src/components/ui` owns Button, Badge, Card, Dialog, DropdownMenu, Input, Popover, Progress, Select, Slider, Table, and Tooltip. Search there before creating a control. Do not add a second component framework. Slider is a native range input (`data-slot="slider"`) for shared assumption controls. Popover is the click, keyboard, and touch disclosure; Tooltip stays hover and focus only.
 
 ## Atlas domain patterns
 

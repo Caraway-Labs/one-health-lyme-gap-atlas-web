@@ -193,7 +193,7 @@ describe("compare pair contract", () => {
       "compare=08001,08013&county=08001&scope=CO&dataset=alpha-2026"
     );
     const compareHref = searchParamsWithCommittedExploreContext(
-      "/app/compare",
+      "/compare",
       source,
       {
         county: null,
@@ -205,7 +205,7 @@ describe("compare pair contract", () => {
     expect(compareHref.get("compare")).toBe("08001,36001");
     expect(compareHref.get("dataset")).toBe("alpha-2026");
     const reviewHref = searchParamsWithCommittedExploreContext(
-      "/app/review",
+      "/explore",
       source,
       {
         county: "08001",
@@ -226,7 +226,7 @@ describe("compare pair contract", () => {
       cleared
     );
     const clearedCompareHref = searchParamsWithCommittedExploreContext(
-      "/app/compare",
+      "/compare",
       source,
       cleared
     );
@@ -251,7 +251,7 @@ describe("compare pair contract", () => {
 
   it("puts the resolved release on Compare shell links when the URL omits dataset", () => {
     const omitted = searchParamsWithCommittedExploreContext(
-      "/app/compare",
+      "/compare",
       new URLSearchParams("compare=08001,08013&scope=CO"),
       {
         county: null,
@@ -261,7 +261,7 @@ describe("compare pair contract", () => {
       }
     );
     const requested = searchParamsWithCommittedExploreContext(
-      "/app/compare",
+      "/compare",
       new URLSearchParams("compare=08001,08013&scope=CO&dataset=alpha-2026"),
       {
         county: null,

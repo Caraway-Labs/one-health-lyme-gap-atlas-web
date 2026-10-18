@@ -11,12 +11,21 @@ import {
   type ExploreTimeBound,
 } from "@/features/ux-reset/explore/explore-model";
 import {
+  createObservationSelectionAccumulator,
+  mergeKnownEmptySelections,
+  observationAuthorityFailure,
+  type FoldedObservationSelection,
+  type KnownEmptyObservationSelection,
+} from "@/features/ux-reset/observations/selection-availability";
+import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
+import {
   getObservationsV1ObservationsGetUrl,
   measuresV1MeasuresGet,
   observationsV1ObservationsGet,
   scoresV1AtlasScoresGet,
 } from "@/generated/atlas";
 import type {
+  CollectionMeta,
   Measure,
   MeasuresV1MeasuresGetParams,
   Observation,
@@ -358,7 +367,11 @@ async function fetchObservationPage(input: {
   pageToken: string | null;
   signal: AbortSignal;
   timeBound: ExploreTimeBound;
-}): Promise<{ nextToken: string | null; observations: Observation[] }> {
+}): Promise<{
+  meta: CollectionMeta;
+  nextToken: string | null;
+  observations: Observation[];
+}> {
   const response = await observationsV1ObservationsGet(
     exploreObservationPageParams({
       fips: input.fips,
@@ -382,8 +395,9 @@ async function fetchObservationPage(input: {
     response.data
   );
   return {
+    meta: parsed.meta,
     nextToken: parsed.meta.next_page_token ?? null,
-    observations: parsed.data,
+    observations: readDatedObservations(parsed.data),
   };
 }
 
@@ -394,8 +408,12 @@ export async function fetchExploreObservations(input: {
   releaseId: string;
   signal: AbortSignal;
   timeBound: ExploreTimeBound;
-}): Promise<Observation[]> {
+}): Promise<{
+  knownEmptySelection: KnownEmptyObservationSelection | null;
+  observations: Observation[];
+}> {
   const observations: Observation[] = [];
+  const folds: FoldedObservationSelection[] = [];
   const batches = splitExploreObservationBatches({
     fips: input.fips,
     measureId: input.measureId,
@@ -403,6 +421,10 @@ export async function fetchExploreObservations(input: {
   });
   for (const batch of batches) {
     const seenTokens = new Set<string>();
+    const selection = createObservationSelectionAccumulator({
+      measureId: input.measureId,
+      requestedReleaseId: input.releaseId,
+    });
     let pageToken: string | null = null;
     for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
       const result = await fetchObservationPage({
@@ -411,6 +433,11 @@ export async function fetchExploreObservations(input: {
         pageToken,
         signal: input.signal,
         timeBound: input.timeBound,
+      });
+      selection.note({
+        dataCount: result.observations.length,
+        meta: result.meta,
+        pageToken,
       });
       for (const observation of result.observations) {
         observations.push(observation);
@@ -421,6 +448,19 @@ export async function fetchExploreObservations(input: {
       seenTokens.add(result.nextToken);
       pageToken = result.nextToken;
     }
+    folds.push(selection.finish());
+  }
+  const folded = mergeKnownEmptySelections(folds);
+  const authorityFailure = observationAuthorityFailure(folded);
+  if (authorityFailure === "release_mismatch") {
+    throw new ExploreContractError(
+      "Observation availability release does not match the requested release."
+    );
+  }
+  if (authorityFailure === "malformed_authority") {
+    throw new ExploreContractError(
+      "Observation availability did not include a checked release and limitations."
+    );
   }
   assertExploreObservations({
     catalogReleaseId: input.catalogReleaseId,
@@ -429,7 +469,11 @@ export async function fetchExploreObservations(input: {
     releaseId: input.releaseId,
     timeBound: input.timeBound,
   });
-  return observations;
+  return {
+    knownEmptySelection:
+      folded.kind === "known_unavailable" ? folded.selection : null,
+    observations,
+  };
 }
 
 export async function loadExploreSelection(input: {
@@ -441,7 +485,7 @@ export async function loadExploreSelection(input: {
   timeBound: ExploreTimeBound;
 }): Promise<ExploreCommittedSelection> {
   const fips = input.directory.map((county) => county.fips);
-  const observations = await fetchExploreObservations({
+  const loaded = await fetchExploreObservations({
     catalogReleaseId: input.measure.release_version?.trim() || null,
     fips,
     measureId: input.measure.measure_id,
@@ -451,9 +495,10 @@ export async function loadExploreSelection(input: {
   });
   return buildExploreSelection({
     directory: input.directory,
+    knownEmptySelection: loaded.knownEmptySelection,
     mapScope: input.mapScope,
     measure: input.measure,
-    observations,
+    observations: loaded.observations,
     releaseId: input.releaseId,
     timeBound: input.timeBound,
   });

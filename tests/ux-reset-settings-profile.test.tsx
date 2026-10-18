@@ -172,7 +172,7 @@ describe("Settings profile form", () => {
         confirmed: true,
         role: "status",
         text: expect.stringContaining(
-          "Starting view saved. It will apply the next time you open Review without a specific view."
+          "Starting view saved. It will apply the next time you open Atlas Explorer without a specific view."
         ),
       });
     });
@@ -636,6 +636,47 @@ describe("Settings profile form", () => {
       oneState: true,
       select: expect.stringContaining("New York (NY)"),
     });
+  });
+
+  it("keeps the saved profile when optional analytics consent changes", async () => {
+    getProfile.mockResolvedValue(
+      asResponse({
+        data: {
+          profile: {
+            job_title: "Epidemiologist",
+            organization: "State health department",
+            role: "state_level_epidemiologist",
+            state_code: "CO",
+          },
+        },
+        status: 200,
+      })
+    );
+    renderSettings();
+    const privacy = await screen.findByTestId("settings-privacy-preferences");
+    await screen.findByTestId("settings-organization");
+    await screen.findByRole("button", { name: "Allow optional analytics" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Allow optional analytics" })
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Keep optional analytics off" })
+    );
+    expect(saveProfile).not.toHaveBeenCalled();
+    expect(privacy.textContent).toContain(
+      "does not change the required starting view"
+    );
+    expect(
+      screen
+        .getByTestId("settings-default-jurisdiction")
+        .querySelector("[data-default-jurisdiction='CO']")
+    ).toBeTruthy();
+    expect(
+      (screen.getByTestId("settings-organization") as HTMLInputElement).value
+    ).toBe("State health department");
+    expect(
+      (screen.getByTestId("settings-job-title") as HTMLInputElement).value
+    ).toBe("Epidemiologist");
   });
 });
 

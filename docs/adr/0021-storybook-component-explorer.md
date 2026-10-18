@@ -18,7 +18,7 @@ The existing internal `/design-system` gallery remains useful for application ch
 
 ## Acceptance and rollback
 
-Static builds and desktop/mobile Playwright checks cover six components, relative paths, refresh, controls, keyboard/focus, accessibility and no external requests. Run existing application gates too. Final release acceptance requires owner review, merge, successful Pages deployment and public direct-link verification. Disable the Pages workflow/site or revert this tooling change to roll back; production application rollback is independent.
+Static builds and desktop/mobile Playwright checks cover the original six components plus later catalog groups, relative paths, refresh, controls, keyboard/focus, accessibility and no external requests. [#567](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/567) adds the approved UX Reset groups without a second host, design system, or publication of `public/`. Storybook may alias a request hook, Ask Atlas chrome, or the brand mark so the catalog stays deterministic; the Next.js app keeps the production modules. Run existing application gates too. Final release acceptance requires owner review, merge, successful Pages deployment and public direct-link verification. Disable the Pages workflow/site or revert this tooling change to roll back; production application rollback is independent.
 
 ## References
 

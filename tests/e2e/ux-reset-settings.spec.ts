@@ -9,6 +9,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 type StoredProfile = {
   job_title: string | null;
@@ -188,7 +189,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     await chooseJurisdiction(page, "United States");
     await page.getByTestId("settings-save-profile").click();
     await expect(page.getByTestId("settings-save-notice")).toContainText(
-      "Starting view saved. It will apply the next time you open Review without a specific view."
+      "Starting view saved. It will apply the next time you open Atlas Explorer without a specific view."
     );
     await expect(
       page.locator("[data-default-jurisdiction='ALL']")
@@ -212,7 +213,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     await expect(page.locator("#settings-role")).toContainText(
       "Prefer not to say"
     );
-    const reviewLink = page.getByRole("link", { name: "Review" });
+    const reviewLink = page.getByRole("link", { name: "Atlas Explorer" });
     if (!(await reviewLink.isVisible())) {
       await page.getByRole("button", { name: "Open navigation" }).click();
     }
@@ -241,7 +242,7 @@ test.describe("Settings profile and default jurisdiction", () => {
       page.locator("[data-default-jurisdiction='CO']")
     ).toBeVisible();
 
-    await page.goto("/app/review");
+    await page.goto("/explore");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO"
@@ -256,7 +257,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     ).toBeVisible();
     await page.keyboard.press("Escape");
 
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "NY"
@@ -301,7 +302,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     ).toBeVisible();
 
     const reviewUrl =
-      "/app/review?county=08001&dataset=alpha-2026&period=2023-01-01";
+      "/explore?county=08001&dataset=alpha-2026&period=2023-01-01";
     const getsBeforeReview = api.completedProfileGets();
     api.holdProfileGets();
     await page.goto(reviewUrl);
@@ -451,13 +452,141 @@ test.describe("Settings profile and default jurisdiction", () => {
     ).toBeVisible();
   });
 
+  test("allows, withdraws, and reloads optional analytics without changing the profile", async ({
+    page,
+  }, testInfo) => {
+    const api = await installSettingsApi(page);
+    await page.goto("/app/settings");
+    const privacy = page.getByTestId("settings-privacy-preferences");
+    await expect(privacy).toBeVisible();
+    await expect(
+      privacy.getByRole("heading", { name: "Privacy settings" })
+    ).toBeVisible();
+    await expect(privacy).toContainText("six months");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    await privacy
+      .getByRole("button", { name: "Allow optional analytics" })
+      .click();
+    await expect(privacy.getByRole("status")).toContainText(
+      "Optional analytics are allowed"
+    );
+    await page.reload();
+    await expect(privacy.getByRole("status")).toContainText(
+      "Optional analytics are allowed"
+    );
+    expect(api.writes).toEqual([]);
+
+    await privacy
+      .getByRole("button", { name: "Keep optional analytics off" })
+      .click();
+    await expect(privacy.getByRole("status")).toHaveText(
+      "Optional analytics are off for this browser."
+    );
+    await page.reload();
+    await expect(privacy.getByRole("status")).toHaveText(
+      "Optional analytics are off for this browser."
+    );
+    await expect(
+      page.locator("[data-default-jurisdiction='unselected']")
+    ).toBeVisible();
+    expect(api.writes).toEqual([]);
+    await privacy.screenshot({
+      path: testInfo.outputPath("settings-optional-analytics-withdrawn.png"),
+    });
+  });
+
+  test("keeps optional analytics off when Do Not Track is enabled", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "doNotTrack", {
+        configurable: true,
+        get: () => "1",
+      });
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "atlas.analytics-preference.v1",
+        JSON.stringify({
+          decidedAt: "2026-01-01T00:00:00.000Z",
+          decision: "granted",
+          expiresAt: "2027-04-01T00:00:00.000Z",
+          version: 1,
+        })
+      );
+    });
+    await installSettingsApi(page);
+    await page.goto("/app/settings");
+    const privacy = page.getByTestId("settings-privacy-preferences");
+    const allow = privacy.getByRole("button", {
+      name: "Allow optional analytics",
+    });
+    await expect(allow).toBeDisabled();
+    await expect(privacy.getByRole("status")).toHaveText(
+      "Your browser's Do Not Track preference is on. Atlas will keep optional analytics off."
+    );
+    await allow.click({ force: true });
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem("atlas.analytics-preference.v1")
+        )
+      )
+      .toContain('"decision":"granted"');
+    await privacy
+      .getByRole("button", { name: "Keep optional analytics off" })
+      .click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem("atlas.analytics-preference.v1")
+        )
+      )
+      .toContain('"decision":"denied"');
+    await expect(privacy.getByRole("status")).toHaveText(
+      "Your browser's Do Not Track preference is on. Atlas will keep optional analytics off."
+    );
+  });
+
+  test("keeps optional analytics usable on a phone viewport", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, 390),
+      "Phone-width Settings checks run on the mobile project."
+    );
+    await installSettingsApi(page);
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.goto("/app/settings");
+    const privacy = page.getByTestId("settings-privacy-preferences");
+    await expect(
+      privacy.getByRole("button", { name: "Allow optional analytics" })
+    ).toBeVisible();
+    await expect(
+      privacy.getByRole("button", { name: "Keep optional analytics off" })
+    ).toBeVisible();
+    const box = await privacy.boundingBox();
+    expect(box?.width ?? 0).toBeLessThanOrEqual(390);
+    expect(
+      await privacy.evaluate(
+        (section) => section.scrollWidth <= section.clientWidth + 1
+      )
+    ).toBeTruthy();
+    await privacy.screenshot({
+      path: testInfo.outputPath("settings-optional-analytics-phone.png"),
+    });
+  });
+
   test("has no serious accessibility violations on the settings form", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name.includes("mobile"), "Desktop axe check");
     await installSettingsApi(page);
     await page.goto("/app/settings");
-    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Settings" })
+    ).toBeVisible();
     await expect(page.getByTestId("settings-profile-form")).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations).toEqual([]);

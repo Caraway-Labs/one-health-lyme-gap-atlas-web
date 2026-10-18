@@ -31,7 +31,7 @@ Route authority stays in `src/features/ux-reset/routes.ts` (`RESET_SETTINGS_PATH
 
 `assessSavedProfile` is the only mapping for Settings display and fresh Review start. A postal code is not complete until the loaded state list contains it. Loading and an unavailable list are not the same as a code confirmed to be outside coverage.
 
-The jurisdiction mapping above is how Settings displays a stored `state_code`. It is not onboarding completion. Role, organization, and job title stay optional. A profile saved before the marker existed stays incomplete until an explicit completion write stores version 1. Completed accounts skip setup. A safe explicit internal destination wins for them; otherwise Review opens at the saved view. Incomplete accounts finish setup before Review, and a failed profile read stays on a retry instead of opening setup.
+The jurisdiction mapping above is how Settings displays a stored `state_code`. It is not onboarding completion. Role, organization, and job title stay optional. A profile saved before the marker existed stays incomplete until an explicit completion write stores version 1. Completed accounts skip setup. A safe explicit internal destination wins for them; otherwise Atlas Explorer (`/explore`) opens at the saved view. Incomplete accounts finish setup before Atlas Explorer, and a failed profile read stays on a retry instead of opening setup.
 
 The profile cache key includes the authenticated user id. Sign-out, expiry, and account changes drop the previous cache and the open draft. A read or write checks the session again before its result is kept. A read and a write each send the access token from the same session snapshot as the account identity, so a later session lookup cannot attach a different account's bearer. A response that crosses an authentication generation — a different account or a refreshed token for the same account — is discarded. A save that is still in flight when that generation moves does not apply its outcome and does not overwrite the open draft. The editor leaves the saving state so that same draft can be submitted again. A 401 clears the editor only when it still belongs to the current authentication snapshot. A stale account's 401 does not, and a 401 for an older token does not block the refreshed session.
 
@@ -45,7 +45,7 @@ A lost response, non-200, or unreadable body stays unresolved. A follow-up read 
 
 ## Boundaries
 
-- Changing the saved default affects the next Review open that omits both `scope` and `county`. It does not rewrite an existing explicit Review URL.
+- Changing the saved default affects the next Atlas Explorer open that omits both `scope` and `county`. It does not rewrite an existing explicit Explorer URL.
 - Scope changes on Review do not call `PUT /v1/me/profile`.
 - Onboarding (#436 / #437) must import this adapter instead of inventing completion storage.
 - API credential management stays out of this surface until a backend token contract exists.

@@ -10,6 +10,9 @@ import * as zod from 'zod';
 
 export const observationsV1ObservationsGetParamsGeographyIdMax = 500;
 
+export const observationsV1ObservationsGetParamsVintageYearOneMin = 1900;
+export const observationsV1ObservationsGetParamsVintageYearOneMax = 2100;
+
 export const observationsV1ObservationsGetParamsYearOneMin = 1900;
 export const observationsV1ObservationsGetParamsYearOneMax = 2100;
 
@@ -20,7 +23,8 @@ export const ObservationsV1ObservationsGetParams = zod.object({
   "measure_id": zod.string().min(1).describe('Exact discovery measure ID.'),
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.array(zod.string()).min(1).max(observationsV1ObservationsGetParamsGeographyIdMax).describe('Repeat for 1-500 county FIPS strings; preserve leading zeros.'),
-  "year": zod.union([zod.int().min(observationsV1ObservationsGetParamsYearOneMin).max(observationsV1ObservationsGetParamsYearOneMax),zod.null()]).optional().describe('Year or complete date range, not both; current published year is 2023.'),
+  "vintage_year": zod.union([zod.int().min(observationsV1ObservationsGetParamsVintageYearOneMin).max(observationsV1ObservationsGetParamsVintageYearOneMax),zod.null()]).optional().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
+  "year": zod.union([zod.int().min(observationsV1ObservationsGetParamsYearOneMin).max(observationsV1ObservationsGetParamsYearOneMax),zod.null()]).optional().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),
   "start_date": zod.union([zod.iso.date(),zod.null()]).optional().describe('Inclusive period start; requires end_date and excludes year.'),
   "end_date": zod.union([zod.iso.date(),zod.null()]).optional().describe('Inclusive period end; requires start_date and excludes year.'),
   "stratification": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Current release has no strata; unsupported selections fail explicitly.'),

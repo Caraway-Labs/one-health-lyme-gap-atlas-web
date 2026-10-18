@@ -1,10 +1,30 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getProfile, getUser } = vi.hoisted(() => ({
-  getProfile: vi.fn<() => Promise<never>>(),
-  getUser: vi.fn<() => Promise<{ data: { user: null } }>>(),
-}));
+const { followWorkspaceHref, getProfile, getSession, getUser, signOut } =
+  vi.hoisted(() => ({
+    followWorkspaceHref: vi.fn<(href: string, history?: string) => void>(),
+    getProfile: vi.fn<() => Promise<never>>(),
+    getSession: vi.fn<
+      () => Promise<{
+        data: { session: { user: { id: string } } | null };
+        error: { message: string } | null;
+      }>
+    >(),
+    getUser: vi.fn<() => Promise<{ data: { user: { id: string } | null } }>>(),
+    signOut:
+      vi.fn<
+        (options?: {
+          scope?: string;
+        }) => Promise<{ error: { message: string } | null }>
+      >(),
+  }));
 
 vi.mock(
   import("next/navigation"),
@@ -16,9 +36,14 @@ vi.mock(
 vi.mock(import("../src/lib/supabase/client"), () => ({
   createClient: () => ({
     auth: {
+      getSession,
       getUser,
+      signOut,
     },
   }),
+}));
+vi.mock(import("../src/features/ux-reset/workspace-navigation"), () => ({
+  followWorkspaceHref,
 }));
 vi.mock(import("../src/generated/atlas"), () => ({
   getProfileV1MeProfileGet: getProfile,
@@ -31,14 +56,52 @@ vi.mock(import("../src/generated/atlas"), () => ({
 }));
 
 import AccountPage from "../src/app/account/page";
+import {
+  resetWorkspaceSignOutStateForTests,
+  workspaceSignOutSuppressesExpiryRedirect,
+} from "../src/features/ux-reset/workspace-sign-out";
+
+function pageTransition(type: "pagehide" | "pageshow", persisted: boolean) {
+  const event = new Event(type);
+  Object.defineProperty(event, "persisted", { value: persisted });
+  window.dispatchEvent(event);
+}
+
+function profileHidden(): boolean {
+  const profile = screen.getByDisplayValue("CDPHE");
+  return profile.closest("main")?.hasAttribute("hidden") === true;
+}
+
+async function renderSignedInProfile(userId = "user-1") {
+  getUser.mockResolvedValue({
+    data: { user: { id: userId } },
+  });
+  getProfile.mockResolvedValue({
+    data: {
+      profile: {
+        organization: "CDPHE",
+        role: "state_level_epidemiologist",
+      },
+    },
+    status: 200,
+  } as never);
+  render(<AccountPage />);
+  await screen.findByDisplayValue("CDPHE");
+}
 
 describe("account page", () => {
   beforeEach(() => {
+    resetWorkspaceSignOutStateForTests();
+    followWorkspaceHref.mockReset();
+    getSession.mockReset();
+    signOut.mockReset();
+    signOut.mockResolvedValue({ error: null });
     getUser.mockResolvedValue({ data: { user: null } });
   });
 
   afterEach(() => {
     cleanup();
+    resetWorkspaceSignOutStateForTests();
     getProfile.mockReset();
     getUser.mockReset();
   });
@@ -84,5 +147,143 @@ describe("account page", () => {
     expect(
       screen.getByRole("button", { name: "Remove all data" })
     ).toBeTruthy();
+  });
+
+  it("signs out through the shared workspace flow", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+    getProfile.mockResolvedValue({
+      data: { profile: null },
+      status: 200,
+    } as never);
+
+    render(<AccountPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    expect({
+      scope: signOut.mock.calls,
+      suppressing: workspaceSignOutSuppressesExpiryRedirect(),
+    }).toStrictEqual({
+      scope: [[{ scope: "local" }]],
+      suppressing: true,
+    });
+  });
+
+  it("hides the filled profile before leaving /account", async () => {
+    await renderSignedInProfile();
+    let hiddenBeforeHome = false;
+    followWorkspaceHref.mockImplementation(() => {
+      hiddenBeforeHome = profileHidden();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    expect({
+      hiddenBeforeHome,
+      stillHidden: profileHidden(),
+    }).toStrictEqual({
+      hiddenBeforeHome: true,
+      stillHidden: true,
+    });
+  });
+
+  it("keeps a restored account page hidden and leaves when the session has ended", async () => {
+    await renderSignedInProfile();
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    pageTransition("pageshow", true);
+    expect(profileHidden()).toBeTruthy();
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith(
+        "/auth/sign-in?next=%2Faccount",
+        "replace"
+      );
+    });
+    expect(profileHidden()).toBeTruthy();
+  });
+
+  it("shows a restored account page again when the same account is still signed in", async () => {
+    await renderSignedInProfile();
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-1" } } },
+      error: null,
+    });
+    pageTransition("pageshow", true);
+    expect(profileHidden()).toBeTruthy();
+    await waitFor(() => {
+      expect(profileHidden()).toBeFalsy();
+    });
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+  });
+
+  it("reloads /account instead of revealing account A's profile to account B", async () => {
+    await renderSignedInProfile("user-a");
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/");
+    });
+    followWorkspaceHref.mockClear();
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-b" } } },
+      error: null,
+    });
+    pageTransition("pageshow", true);
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/account", "replace");
+    });
+    expect(profileHidden()).toBeTruthy();
+  });
+
+  it("reloads /account when a restored session has no recorded owner", async () => {
+    const gate = Promise.withResolvers<{ data: { user: { id: string } } }>();
+    getUser.mockReturnValue(gate.promise);
+    render(<AccountPage />);
+    expect(screen.getByText("Checking account session…")).toBeTruthy();
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: "user-b" } } },
+      error: null,
+    });
+    pageTransition("pageshow", true);
+    await waitFor(() => {
+      expect(followWorkspaceHref).toHaveBeenCalledWith("/account", "replace");
+    });
+    gate.resolve({ data: { user: { id: "user-a" } } });
+  });
+
+  it("keeps a restored account page hidden when the session read fails", async () => {
+    await renderSignedInProfile();
+    getSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: "read failed" },
+    });
+    pageTransition("pageshow", true);
+    await waitFor(() => {
+      expect(getSession).toHaveBeenCalledOnce();
+    });
+    expect({
+      hidden: profileHidden(),
+      navigated: followWorkspaceHref.mock.calls,
+    }).toStrictEqual({
+      hidden: true,
+      navigated: [],
+    });
+  });
+
+  it("hides the account page when it enters the back-forward cache", async () => {
+    await renderSignedInProfile();
+    pageTransition("pagehide", true);
+    expect(profileHidden()).toBeTruthy();
+    expect(getSession).not.toHaveBeenCalled();
+  });
+
+  it("does not hide /account on a fresh pageshow", async () => {
+    await renderSignedInProfile();
+    pageTransition("pageshow", false);
+    expect(profileHidden()).toBeFalsy();
+    expect(getSession).not.toHaveBeenCalled();
   });
 });

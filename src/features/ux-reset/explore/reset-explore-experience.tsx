@@ -45,10 +45,15 @@ import {
 } from "@/features/ux-reset/explore/explore-model";
 import { exploreHandoffSearchParams } from "@/features/ux-reset/explore/explore-search-params";
 import { useExploreWorkspace } from "@/features/ux-reset/explore/use-explore-workspace";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import {
+  EXPLORER_EVIDENCE_MODE,
+  hrefWithExplorerMode,
+} from "@/features/ux-reset/review/explorer-mode";
+import {
+  ATLAS_EXPLORER_PATH,
   RESET_COMPARE_PATH,
-  RESET_INVESTIGATE_PATH,
 } from "@/features/ux-reset/routes";
 import { reviewScopeLabel } from "@/lib/atlas-state-geography";
 import { cn } from "@/lib/utils";
@@ -163,10 +168,9 @@ function ResetExploreExperienceInner() {
         }
       : null
   );
-  const investigateHref = uxResetShellHandoffHref(
-    RESET_INVESTIGATE_PATH,
-    pathname,
-    handoffParams
+  const investigateHref = hrefWithExplorerMode(
+    uxResetShellHandoffHref(ATLAS_EXPLORER_PATH, pathname, handoffParams),
+    EXPLORER_EVIDENCE_MODE
   );
   const compareHref = uxResetShellHandoffHref(
     RESET_COMPARE_PATH,
@@ -343,6 +347,12 @@ function ResetExploreExperienceInner() {
               </>
             ) : null}
           </p>
+          {committed.knownEmptySelection ? (
+            <KnownEmptySelectionNotice
+              selections={[committed.knownEmptySelection]}
+              testId="explore-known-empty"
+            />
+          ) : null}
 
           <div className="ux-reset-explore-layout">
             <Card className="map-card gap-0 py-0">
@@ -414,7 +424,7 @@ function ResetExploreExperienceInner() {
                   data-variant="primary"
                   href={investigateHref}
                 >
-                  Investigate this county
+                  View county evidence
                 </Link>
                 <Link
                   className={cn(

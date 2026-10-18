@@ -75,7 +75,7 @@ describe("UX Reset auth redirect contract", () => {
     });
     const expired = await authCallback(
       new Request(
-        "https://atlas.example.test/auth/callback?code=bad&next=%2Fapp%2Freview"
+        "https://atlas.example.test/auth/callback?code=bad&next=%2Fexplore"
       )
     );
     expect(expired.headers.get("location")).toBe(

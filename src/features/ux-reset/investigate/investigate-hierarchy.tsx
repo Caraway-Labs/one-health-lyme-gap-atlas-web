@@ -34,6 +34,8 @@ import {
   type PublishedCountyRecord,
   type PublishedHierarchyRow,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
+import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
 import type { Measure } from "@/generated/models";
 
 const EMPTY_MEASURES: readonly Measure[] = [];
@@ -387,6 +389,12 @@ export function InvestigateEvidenceHierarchy({
   const failedMeasureIds = new Set(
     bundle.measureFailures.map((failure) => failure.measureId)
   );
+  const retryableFailures = bundle.measureFailures.filter(
+    (failure) => failure.retryable !== false
+  );
+  const absentFailures = bundle.measureFailures.filter(
+    (failure) => failure.retryable === false
+  );
   const unsupportedMeasureIds = new Set(bundle.unsupportedPeriodMeasureIds);
   const handleRetryFailures = () => {
     onRetryFailures?.();
@@ -514,96 +522,103 @@ export function InvestigateEvidenceHierarchy({
           ) : null}
         </Card>
       </section>
+      <KnownEmptySelectionNotice
+        selections={bundle.knownEmptySelections}
+        testId="investigate-known-empty"
+      />
 
-      {bundle.families.map((section) => (
-        <div key={section.id}>
-          <FamilySection
-            catalogFailed={catalogFailed}
-            countyFips={bundle.county.fips}
-            countyRecordLoading={countyRecordLoading}
-            domainsRequestFailed={bundle.domainsRequestFailed}
-            failedMeasureIds={failedMeasureIds}
-            hasUnclassifiedMeasures={bundle.unclassifiedMeasureIds.length > 0}
-            section={section}
-            supplementalRows={
-              published ? rowsForFamily(published.rows, section.id) : []
-            }
-            unsupportedMeasureIds={unsupportedMeasureIds}
-          />
-          {section.id === "vector_pathogen" ? (
-            <section
-              aria-label="Evidence sufficiency and coverage"
-              className="ux-reset-investigate-summary"
-              data-evidence-class="coverage"
-              data-testid="investigate-coverage"
-            >
-              <AtlasSectionHeader
-                eyebrow="Coverage"
-                headingLevel="h2"
-                title="Evidence sufficiency and coverage"
-              />
-              {countyRecordLoading ? (
-                <AtlasStatusMessage tone="loading">
-                  Loading published county coverage…
-                </AtlasStatusMessage>
-              ) : null}
-              {countyRecordError ? (
-                <AtlasStatusMessage tone="error">
-                  {countyRecordError}
-                </AtlasStatusMessage>
-              ) : null}
-              {countyRecordRefreshError ? (
-                <AtlasStatusMessage tone="error">
-                  {countyRecordRefreshError}
-                </AtlasStatusMessage>
-              ) : null}
-              {published ? (
-                <p
-                  className="type-body"
-                  data-testid="investigate-coverage-value"
-                >
-                  {`Published input coverage is ${published.completeness}%. This is not a disease risk score. A lower number is not zero evidence.`}
-                </p>
-              ) : null}
-              {!published && !countyRecordLoading && !countyRecordError ? (
-                <p
-                  className="type-body"
-                  data-testid="investigate-coverage-value"
-                >
-                  Published input coverage was not returned for this county.
-                  That is not zero coverage.
-                </p>
-              ) : null}
-              {coverage.length > 0 ? (
-                <div className="ux-reset-investigate-observations">
-                  {coverage.map((row) => (
-                    <div
-                      data-coverage={row.coverageStatus}
-                      data-observation-id={row.observationId}
-                      data-reason-code={row.state.reasonCode}
-                      data-value-state={row.state.valueState}
-                      id={coverageRowAnchor(row.observationId)}
-                      key={row.observationId}
-                    >
-                      <EvidenceObject
-                        claimHeadingLevel="h4"
-                        model={row.evidence}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              {modelAssisted}
-            </section>
-          ) : null}
-        </div>
-      ))}
+      <div className="ux-reset-evidence-columns">
+        {bundle.families.map((section) => (
+          <div key={section.id}>
+            <FamilySection
+              catalogFailed={catalogFailed}
+              countyFips={bundle.county.fips}
+              countyRecordLoading={countyRecordLoading}
+              domainsRequestFailed={bundle.domainsRequestFailed}
+              failedMeasureIds={failedMeasureIds}
+              hasUnclassifiedMeasures={bundle.unclassifiedMeasureIds.length > 0}
+              section={section}
+              supplementalRows={
+                published ? rowsForFamily(published.rows, section.id) : []
+              }
+              unsupportedMeasureIds={unsupportedMeasureIds}
+            />
+            {section.id === "vector_pathogen" ? (
+              <section
+                aria-label="Evidence sufficiency and coverage"
+                className="ux-reset-investigate-summary"
+                data-evidence-class="coverage"
+                data-testid="investigate-coverage"
+              >
+                <AtlasSectionHeader
+                  eyebrow="Coverage"
+                  headingLevel="h2"
+                  title="Evidence sufficiency and coverage"
+                />
+                {countyRecordLoading ? (
+                  <AtlasStatusMessage tone="loading">
+                    Loading published county coverage…
+                  </AtlasStatusMessage>
+                ) : null}
+                {countyRecordError ? (
+                  <AtlasStatusMessage tone="error">
+                    {countyRecordError}
+                  </AtlasStatusMessage>
+                ) : null}
+                {countyRecordRefreshError ? (
+                  <AtlasStatusMessage tone="error">
+                    {countyRecordRefreshError}
+                  </AtlasStatusMessage>
+                ) : null}
+                {published ? (
+                  <p
+                    className="type-body"
+                    data-testid="investigate-coverage-value"
+                  >
+                    {`Published input coverage is ${published.completeness}%. This is not a disease risk score. A lower number is not zero evidence.`}
+                  </p>
+                ) : null}
+                {!published && !countyRecordLoading && !countyRecordError ? (
+                  <p
+                    className="type-body"
+                    data-testid="investigate-coverage-value"
+                  >
+                    Published input coverage was not returned for this county.
+                    That is not zero coverage.
+                  </p>
+                ) : null}
+                {coverage.length > 0 ? (
+                  <div className="ux-reset-investigate-observations">
+                    {coverage.map((row) => (
+                      <div
+                        data-coverage={row.coverageStatus}
+                        data-observation-id={row.observationId}
+                        data-reason-code={row.state.reasonCode}
+                        data-value-state={row.state.valueState}
+                        id={coverageRowAnchor(row.observationId)}
+                        key={row.observationId}
+                      >
+                        <EvidenceObject
+                          claimHeadingLevel="h4"
+                          model={row.evidence}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {modelAssisted}
+              </section>
+            ) : null}
+          </div>
+        ))}
+      </div>
 
       <section
         aria-label="Conflicts, gaps, and limitations"
         className="ux-reset-investigate-summary"
         data-evidence-class="limitation"
         data-testid="investigate-gaps"
+        id={EXPLORER_SECTION_IDS.context}
       >
         <AtlasSectionHeader
           eyebrow="Limits"
@@ -630,7 +645,27 @@ export function InvestigateEvidenceHierarchy({
             ))}
           </ul>
         ) : null}
-        {bundle.measureFailures.length > 0 ? (
+        {absentFailures.length > 0 ? (
+          <div
+            data-county={bundle.county.fips}
+            data-testid="investigate-absent-measures"
+          >
+            <AtlasStatusMessage tone="empty">
+              <p>
+                These measures have no published county observations. That is
+                missing evidence, not a failed request.
+              </p>
+              <ul>
+                {absentFailures.map((failure) => (
+                  <li key={failure.measureId}>
+                    {failure.measureLabel}. {failure.message}
+                  </li>
+                ))}
+              </ul>
+            </AtlasStatusMessage>
+          </div>
+        ) : null}
+        {retryableFailures.length > 0 ? (
           <div
             data-county={bundle.county.fips}
             data-testid="investigate-partial-failure"
@@ -641,7 +676,7 @@ export function InvestigateEvidenceHierarchy({
                 this county and is not marked unavailable.
               </p>
               <ul>
-                {bundle.measureFailures.map((failure) => (
+                {retryableFailures.map((failure) => (
                   <li key={failure.measureId}>{failure.measureLabel}</li>
                 ))}
               </ul>
@@ -670,13 +705,24 @@ export function InvestigateEvidenceHierarchy({
           >
             <AtlasStatusMessage tone="empty">
               <p>
-                These measures were not queried. The selected period is not a
-                supported bound for their published grain.
+                These measures were not queried. Their catalog period is not a
+                governed year or a selected day, and Atlas does not substitute
+                another period.
               </p>
               <ul>
-                {bundle.unsupportedPeriodMeasureIds.map((measureId) => (
-                  <li key={measureId}>{measureId}</li>
-                ))}
+                {bundle.unsupportedPeriodMeasureIds.map((measureId) => {
+                  const catalogPeriod = measures?.find(
+                    (measure) => measure.measure_id === measureId
+                  )?.temporal_semantics;
+                  return (
+                    <li key={measureId}>
+                      {measureId}
+                      {catalogPeriod
+                        ? ` — catalog period: ${catalogPeriod}`
+                        : ""}
+                    </li>
+                  );
+                })}
               </ul>
             </AtlasStatusMessage>
           </div>

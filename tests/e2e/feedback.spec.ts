@@ -1,6 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+import {
+  feedbackPhoneViewport,
+  releaseViewportRuns,
+} from "./release-phone-viewport";
+
 const feedbackId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 
 type FeedbackMock = (route: Route) => Promise<void>;
@@ -75,7 +80,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/overview");
+    await page.goto("/privacy");
     await openFeedback(page);
     await page
       .getByLabel(/^Message/)
@@ -106,7 +111,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/overview");
+    await page.goto("/privacy");
     await openFeedback(page);
     await page.getByLabel("Feedback category").click();
     await page.getByRole("option", { name: "Usability" }).click();
@@ -127,7 +132,7 @@ test.describe("in-product feedback dialog", () => {
         json: { detail: "unused" },
       });
     });
-    await page.goto("/overview");
+    await page.goto("/privacy");
     await page
       .getByRole("button", { name: "Feedback", exact: true })
       .press("Enter");
@@ -157,7 +162,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/overview");
+    await page.goto("/privacy");
     await openFeedback(page);
     const message = "Please keep this draft through temporary API failures.";
     await page.getByLabel(/^Message/).fill(message);
@@ -193,7 +198,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/overview");
+    await page.goto("/privacy");
     await openFeedback(page);
     await page
       .getByLabel(/^Message/)
@@ -211,8 +216,12 @@ test.describe("in-product feedback dialog", () => {
 
   test("works on a mobile viewport with accessible dialog chrome", async ({
     page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, feedbackPhoneViewport.width),
+      "Phone-width feedback runs on the mobile project."
+    );
+    await page.setViewportSize(feedbackPhoneViewport);
     await mockAtlasApi(page, async (route) => {
       await route.fulfill({
         status: 200,
@@ -224,7 +233,7 @@ test.describe("in-product feedback dialog", () => {
       });
     });
 
-    await page.goto("/overview");
+    await page.goto("/privacy");
     const feedback = page.getByRole("button", {
       name: "Feedback",
       exact: true,

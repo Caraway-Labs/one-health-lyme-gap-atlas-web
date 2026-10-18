@@ -1,0 +1,14 @@
+{
+  "title": "API reference",
+  "pages": [
+    "index",
+    "discovery",
+    "observations",
+    "provenance",
+    "geographies",
+    "atlas",
+    "counties",
+    "states",
+    "schemas"
+  ]
+}

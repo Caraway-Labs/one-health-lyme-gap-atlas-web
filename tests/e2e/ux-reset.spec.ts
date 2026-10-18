@@ -105,9 +105,19 @@ async function expectHistoryNavigation(
 
 const WORKSPACE_DESTINATIONS = [
   {
-    heading: "Review",
-    path: "/app/review",
-    title: "Review | One Health Lyme Gap Atlas",
+    heading: "Explore the One Health Atlas",
+    path: "/explore",
+    title: "Atlas Explorer | One Health Lyme Gap Atlas",
+  },
+  {
+    heading: "Two counties. A clearer picture.",
+    path: "/compare",
+    title: "Compare | One Health Lyme Gap Atlas",
+  },
+  {
+    heading: "Ask Atlas",
+    path: "/askatlas",
+    title: "Ask Atlas | One Health Lyme Gap Atlas",
   },
   {
     heading: "Settings",
@@ -115,26 +125,23 @@ const WORKSPACE_DESTINATIONS = [
     title: "Settings | One Health Lyme Gap Atlas",
   },
   {
-    heading: "Workspace overview",
-    path: "/app",
-    title: "Professional workspace | One Health Lyme Gap Atlas",
-  },
-  {
     heading: "Feed",
     path: "/app/feed",
     title: "Feed | One Health Lyme Gap Atlas",
   },
+  {
+    heading: "Data Provenance",
+    path: "/data-provenance",
+    title: "Data Provenance | One Health Lyme Gap Atlas",
+  },
 ] as const;
 
 const WORKSPACE_NAV_LABELS = [
-  "Workspace overview",
-  "Review",
-  "Explore",
-  "Investigate",
+  "Atlas Explorer",
   "Compare",
-  "Action",
-  "Assistant",
+  "Ask Atlas",
   "Feed",
+  "Data Provenance",
   "Settings",
   "Docs",
 ] as const;
@@ -282,13 +289,12 @@ test("professional workspace shell supports navigation, focus, and responsive la
   }
 
   if (!testInfo.project.name.includes("mobile")) {
-    await clickWorkspaceLink(page, "Explore", "/app/explore");
-    const exploreUrl = new URL(page.url());
-    expect(exploreUrl.pathname).toBe("/app/explore");
-    expect(exploreUrl.searchParams.get("county")).toBe("08001");
-    expect(exploreUrl.searchParams.get("scope")).toBe("CO");
-    expect(exploreUrl.searchParams.get("compare")).toBeNull();
-    expect(exploreUrl.searchParams.get("tab")).toBeNull();
+    await clickWorkspaceLink(page, "Compare", "/compare");
+    const compareUrl = new URL(page.url());
+    expect(compareUrl.pathname).toBe("/compare");
+    expect(compareUrl.searchParams.get("county")).toBe("08001");
+    expect(compareUrl.searchParams.get("scope")).toBe("CO");
+    expect(compareUrl.searchParams.get("tab")).toBeNull();
   }
 
   if (testInfo.project.name.includes("mobile")) {
@@ -339,8 +345,8 @@ test("bounded context survives rendered navigation, reload, and browser history"
   );
   await installDeterministicWorkspaceMocks(page);
 
-  const expectInvestigateContext = (target: URL) => {
-    expect(target.pathname).toBe("/app/investigate");
+  const expectExplorerContext = (target: URL) => {
+    expect(target.pathname).toBe("/explore");
     expect(target.searchParams.get("scope")).toBe("CO");
     expect(target.searchParams.get("county")).toBe("08001");
     expect(target.searchParams.get("dataset")).toBe("alpha-2026-08-06");
@@ -349,100 +355,65 @@ test("bounded context survives rendered navigation, reload, and browser history"
   };
 
   const expectCompareSelection = (target: URL) => {
-    expect(target.pathname).toBe("/app/compare");
+    expect(target.pathname).toBe("/compare");
     expect(target.searchParams.get("compare")).toBe("08001,08003");
   };
 
   await page.goto(
-    "/app/review?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
+    "/explore?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
   );
-  await clickWorkspaceLink(page, "Compare", "/app/compare");
+  await clickWorkspaceLink(page, "Compare", "/compare");
 
   let url = new URL(page.url());
   expectCompareSelection(url);
   expect(url.searchParams.get("sort")).toBeNull();
 
-  await clickWorkspaceLink(page, "Investigate", "/app/investigate");
-  expectInvestigateContext(new URL(page.url()));
-
-  await clickWorkspaceLink(page, "Action", "/app/action");
-  url = new URL(page.url());
-  expect(url.pathname).toBe("/app/action");
-  expect(url.searchParams.get("county")).toBe("08001");
+  await clickWorkspaceLink(page, "Atlas Explorer", "/explore");
+  expectExplorerContext(new URL(page.url()));
 
   await page.reload();
   url = new URL(page.url());
-  expect(url.pathname).toBe("/app/action");
-  expect(url.searchParams.get("county")).toBe("08001");
-
-  // Rapid reload→Back: do not wait for metadata. Hydration can still replace
-  // this history entry with /app/action if the router listener is not ready.
-  await expectHistoryNavigation(
-    page,
-    "back",
-    (target) => target.pathname === "/app/investigate"
-  );
-  expectInvestigateContext(new URL(page.url()));
+  expectExplorerContext(url);
 
   await expectHistoryNavigation(
     page,
     "back",
-    (target) => target.pathname === "/app/compare"
+    (target) => target.pathname === "/compare"
   );
   expectCompareSelection(new URL(page.url()));
 
   await expectHistoryNavigation(
     page,
     "forward",
-    (target) => target.pathname === "/app/investigate"
+    (target) => target.pathname === "/explore"
   );
-  expectInvestigateContext(new URL(page.url()));
-  await clickWorkspaceLink(page, "Action", "/app/action");
-  expect(new URL(page.url()).pathname).toBe("/app/action");
+  expectExplorerContext(new URL(page.url()));
 
-  await page.goto(
-    "/app/review?scope=state&county=bad&period=2024&dataset=alpha"
-  );
-  await clickWorkspaceLink(page, "Investigate", "/app/investigate");
+  await page.goto("/explore?scope=state&county=bad&period=2024&dataset=alpha");
+  await clickWorkspaceLink(page, "Compare", "/compare");
   url = new URL(page.url());
-  expect(url.pathname).toBe("/app/investigate");
+  expect(url.pathname).toBe("/compare");
   expect(url.searchParams.get("county")).toBeNull();
   expect(url.searchParams.get("scope")).toBe("ALL");
   expect(url.searchParams.get("period")).toBeNull();
   expect(url.searchParams.get("dataset")).toBe("alpha");
 });
 
-test("settled Action reload stays on Investigate after Back", async ({
+test("an Action bookmark stays on suggested follow-up after reload", async ({
   page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name.includes("mobile"),
-    "Desktop-only: mobile shell requires opening the drawer before each nav click."
-  );
+}) => {
   await installDeterministicWorkspaceMocks(page);
-
   await page.goto(
-    "/app/review?scope=CO&county=08001&compare=08001,08003&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
+    "/app/action?county=08001&scope=CO&dataset=alpha-2026-08-06&period=2023-01-01"
   );
-  await clickWorkspaceLink(page, "Compare", "/app/compare");
-  await clickWorkspaceLink(page, "Investigate", "/app/investigate");
-  await clickWorkspaceLink(page, "Action", "/app/action");
+  await expect(page).toHaveURL(/\/explore/);
+  await expect(page).toHaveURL(/mode=follow-up/);
+  await expect(page).toHaveURL(/county=08001/);
   await page.reload();
-  await expect(page.getByTestId("action-county-identity")).toHaveText(
-    "FIPS 08001 · Colorado (CO)."
-  );
-  await expect(page.getByText("Loading release metadata…")).toHaveCount(0);
-
-  await expectHistoryNavigation(
-    page,
-    "back",
-    (target) => target.pathname === "/app/investigate"
-  );
   const url = new URL(page.url());
-  expect(url.pathname).toBe("/app/investigate");
-  expect(url.searchParams.get("scope")).toBe("CO");
+  expect(url.pathname).toBe("/explore");
+  expect(url.searchParams.get("mode")).toBe("follow-up");
   expect(url.searchParams.get("county")).toBe("08001");
-  expect(url.searchParams.get("dataset")).toBe("alpha-2026-08-06");
-  expect(url.searchParams.get("period")).toBe("2023-01-01");
-  expect(url.searchParams.get("compare")).toBe("08001,08003");
+  expect(url.searchParams.get("scope")).toBe("CO");
+  await expect(page.getByRole("heading", { name: "Action" })).toHaveCount(0);
 });

@@ -2,6 +2,7 @@ import { evidenceObjectFromObservation } from "@/features/ux-reset/evidence/from
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
 import type { ExploreTimeBound } from "@/features/ux-reset/explore/explore-model";
+import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 import {
   ValueState,
   type Geography,
@@ -156,6 +157,11 @@ export type CountyEvidenceMeasureFailure = {
   message: string;
   /** Epoch ms when a server Retry-After allows the next read. Null when none. */
   retryAtMs: number | null;
+  /**
+   * False when the API settled the read as absence, such as a 404 for a
+   * measure with no published observations. Those reads are not retried.
+   */
+  retryable?: boolean;
 };
 
 export type CountyEvidenceFamilySection = {
@@ -199,6 +205,7 @@ export type CountyEvidenceBundle = {
     observation: CountyEvidenceObservation;
     text: string;
   } | null;
+  knownEmptySelections: readonly KnownEmptyObservationSelection[];
   measureFailures: readonly CountyEvidenceMeasureFailure[];
   readyMeasureIds: readonly string[];
   releaseId: string;
@@ -223,6 +230,7 @@ export function investigateBundleWithoutObservations(input: {
       measureIds: [],
       observations: [],
     })),
+    knownEmptySelections: [],
     leadFinding: null,
     leadLimitation: null,
     measureFailures: [],
@@ -238,12 +246,14 @@ export type MeasureObservationOutcome =
   | {
       measureId: string;
       observations: readonly Observation[];
+      selectionAvailability?: KnownEmptyObservationSelection | null;
       status: "ready";
     }
   | {
       measureId: string;
       message: string;
       retryAtMs: number | null;
+      retryable?: boolean;
       status: "failed";
     }
   | {
@@ -887,6 +897,12 @@ export function retryCooldownsFromBundle(
 export function reusableMeasureOutcomes(
   bundle: CountyEvidenceBundle
 ): MeasureObservationOutcome[] {
+  const knownEmptyByMeasure = new Map(
+    bundle.knownEmptySelections.map((selection) => [
+      selection.measureId,
+      selection,
+    ])
+  );
   const observationsByMeasure = new Map<string, Observation[]>();
   const records = [
     ...bundle.families.flatMap((family) => [...family.observations]),
@@ -902,9 +918,15 @@ export function reusableMeasureOutcomes(
   }
   const outcomes: MeasureObservationOutcome[] = [];
   for (const measureId of bundle.readyMeasureIds) {
+    const observations = observationsByMeasure.get(measureId) ?? [];
+    const selectionAvailability = knownEmptyByMeasure.get(measureId) ?? null;
+    if (observations.length === 0 && selectionAvailability) {
+      continue;
+    }
     outcomes.push({
       measureId,
-      observations: observationsByMeasure.get(measureId) ?? [],
+      observations,
+      selectionAvailability,
       status: "ready",
     });
   }
@@ -963,6 +985,7 @@ export function buildCountyEvidenceBundle(input: {
     }
   }
   const unassigned: CountyEvidenceObservation[] = [];
+  const knownEmptySelections: KnownEmptyObservationSelection[] = [];
   const measureFailures: CountyEvidenceMeasureFailure[] = [];
   const readyMeasureIds: string[] = [];
   const unsupportedPeriodMeasureIds: string[] = [];
@@ -975,6 +998,7 @@ export function buildCountyEvidenceBundle(input: {
           measureLabel: measureLabel(input.measures, outcome.measureId),
           message: outcome.message,
           retryAtMs: outcome.retryAtMs,
+          retryable: outcome.retryable,
         });
         break;
       }
@@ -984,6 +1008,12 @@ export function buildCountyEvidenceBundle(input: {
       }
       case "ready": {
         readyMeasureIds.push(outcome.measureId);
+        if (
+          outcome.observations.length === 0 &&
+          outcome.selectionAvailability
+        ) {
+          knownEmptySelections.push(outcome.selectionAvailability);
+        }
         const measure = measuresById.get(outcome.measureId);
         const indicatorId = measure?.indicator_id ?? "";
         // A missing map entry is unresolved, not an explicit blank domain.
@@ -1052,6 +1082,7 @@ export function buildCountyEvidenceBundle(input: {
     county: input.identity,
     domainsRequestFailed: input.domainsRequestFailed,
     families,
+    knownEmptySelections,
     leadFinding: selectLeadFinding(records),
     leadLimitation: selectLeadLimitation(records),
     measureFailures,

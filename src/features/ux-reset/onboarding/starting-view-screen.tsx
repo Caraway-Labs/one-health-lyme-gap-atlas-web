@@ -28,13 +28,14 @@ import {
   destinationAfterStartingView,
   STARTING_VIEW_PATH,
   startingViewCompletionConfirmed,
+  startingViewStateOptions,
 } from "./starting-view-completion";
 
 const COPY = {
   checking: "Checking your starting view…",
-  continue: "Continue to Review",
+  continue: "Continue to Atlas Explorer",
   explanation:
-    "This sets where Review starts. You can explore any county and change your default later in Settings.",
+    "This sets where Atlas Explorer starts. You can explore any county and change your default later in Settings.",
   failure:
     "We couldn’t save your starting view. Your selection is still here. Try again.",
   heading: "Choose your starting view",
@@ -43,7 +44,7 @@ const COPY = {
   loadingStates: "Loading the state list…",
   national: "United States",
   noStates: "No supported states are available. Nothing was saved.",
-  prompt: "Where would you like Review to start?",
+  prompt: "Where would you like Atlas Explorer to start?",
   saving: "Saving…",
   savingStatus: "Saving your starting view…",
   state: "One state",
@@ -93,6 +94,7 @@ function StartingViewForm({
   const router = useRouter();
   const queryClient = useQueryClient();
   const states = useSettingsStateOptions();
+  const stateOptions = startingViewStateOptions(states.stateOptions);
   const explanationId = useId();
   const errorId = useId();
   const statusId = useId();
@@ -137,7 +139,7 @@ function StartingViewForm({
     if (
       choice === "state" &&
       states.stateList.status === "ready" &&
-      states.stateOptions.length === 0
+      stateOptions.length === 0
     ) {
       setError(COPY.noStates);
       return;
@@ -151,7 +153,7 @@ function StartingViewForm({
     const built = buildStartingViewCompletionWrite(
       profile,
       jurisdiction,
-      states.stateOptions
+      stateOptions
     );
     if (!built.ok) {
       setError(built.message);
@@ -254,7 +256,7 @@ function StartingViewForm({
                 value={stateCode}
               >
                 <option value="">{COPY.statePlaceholder}</option>
-                {states.stateOptions.map((state) => (
+                {stateOptions.map((state) => (
                   <option key={state.code} value={state.code}>
                     {state.name}
                   </option>

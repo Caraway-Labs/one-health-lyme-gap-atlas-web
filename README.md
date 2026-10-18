@@ -24,7 +24,7 @@ npm run dev
 
 ## Continuous integration
 
-Pull requests and pushes to `main` run the `quality` check concurrently. A green push to `main` deploys this web app after that check aggregates the general quality gates and all three Playwright shards. Production deploys one at a time, and a commit that is no longer the head of `main` is skipped. See [CI and production deployment](docs/ci.md).
+Pull requests and pushes to `main` run the `quality` check concurrently. A green push to `main` deploys this web app after that check aggregates the general quality gates and all three Playwright shards. Those gates run the desktop Chromium project. The Pixel 7 project stays in the repo and runs only when requested. Production deploys one at a time, and a commit that is no longer the head of `main` is skipped. See [CI and production deployment](docs/ci.md).
 
 ## Documentation
 
@@ -42,4 +42,4 @@ Open **Explore → Geographic Explorer** (`/geographic_explorer`) to use geograp
 
 ## Feature-gated Atlas Assistant
 
-`/assistant` is the feature-gated Atlas Assistant for questions grounded in reviewed PubMed and PMC Open Access literature. Enable its full workspace and compact drawer locally with `NEXT_PUBLIC_KG_CHAT_ENABLED=true`. The browser uses the Python REST API; `/knowledge-graph` redirects to `/assistant` for existing deep links. The internal fixture-only demo components remain for development tests and are not a user-facing route.
+`/assistant` is the feature-gated Atlas Assistant for questions grounded in reviewed PubMed and PMC Open Access literature. Enable its full workspace and compact drawer locally with `NEXT_PUBLIC_KG_CHAT_ENABLED=true`. The browser uses the Python REST API; `/knowledge-graph` redirects to `/assistant` for existing deep links. Conversational UI lives in evidence chat (`src/components/evidence-chat.tsx`) and Ask Atlas (`src/features/ux-reset/ask-atlas`).

@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { installedWorkspaceRedirect } from "@/features/ux-reset/workspace-route-migration";
 import {
+  isProfessionalAppPath,
   isSupabaseAuthConfigured,
   shouldRedirectUnauthenticatedAppRoute,
 } from "@/lib/auth/app-route-guard";
@@ -13,6 +15,18 @@ type PendingCookie = {
   options?: Parameters<NextResponse["cookies"]["set"]>[2];
   value: string;
 };
+
+const WORKSPACE_ROBOTS_TAG = "noindex, nofollow";
+
+function withAccessibleWorkspaceRobots(
+  response: NextResponse,
+  pathname: string
+): NextResponse {
+  if (isProfessionalAppPath(pathname)) {
+    response.headers.set("X-Robots-Tag", WORKSPACE_ROBOTS_TAG);
+  }
+  return response;
+}
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -73,12 +87,42 @@ export async function middleware(request: NextRequest) {
     for (const cookie of pendingCookies) {
       redirect.cookies.set(cookie.name, cookie.value, cookie.options);
     }
-    return redirect;
+    return withAccessibleWorkspaceRobots(redirect, pathname);
   }
 
-  return response;
+  const compatibility = installedWorkspaceRedirect({
+    pathname,
+    searchParams: request.nextUrl.searchParams,
+  });
+  if (compatibility) {
+    const redirect = NextResponse.redirect(
+      new URL(compatibility.href, request.url),
+      compatibility.status
+    );
+    for (const cookie of pendingCookies) {
+      redirect.cookies.set(cookie.name, cookie.value, cookie.options);
+    }
+    return withAccessibleWorkspaceRobots(redirect, pathname);
+  }
+
+  return withAccessibleWorkspaceRobots(response, pathname);
 }
 
 export const config = {
-  matcher: ["/", "/app", "/app/:path*"],
+  matcher: [
+    "/",
+    "/app",
+    "/app/:path*",
+    "/overview",
+    "/geographic_explorer",
+    "/investigate",
+    "/explore",
+    "/explore/:path*",
+    "/compare",
+    "/compare/:path*",
+    "/askatlas",
+    "/askatlas/:path*",
+    "/data-provenance",
+    "/data-provenance/:path*",
+  ],
 };

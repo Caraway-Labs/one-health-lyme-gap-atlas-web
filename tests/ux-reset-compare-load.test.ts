@@ -6,12 +6,17 @@ import {
   type CompareRelation,
 } from "@/features/ux-reset/compare/compare-alignment";
 import {
+  COMPARE_PUBLIC_READ_LIMIT,
+  resetCompareReadLimit,
+} from "@/features/ux-reset/compare/compare-read-limit";
+import {
   clearCompareObservationRetryDeadlines,
   compareObservationRequestRejection,
   compareRetryCooldowns,
   loadCompareEvidence,
   preservedCompareMeasures,
 } from "@/features/ux-reset/compare/load-compare-evidence";
+import { loadCompareCountyProfiles } from "@/features/ux-reset/compare/load-compare-profile";
 import type { Measure } from "@/generated/models";
 import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
 
@@ -28,6 +33,20 @@ import {
 } from "./fixtures/compare-api-fixtures";
 
 const requests: string[] = [];
+const COMPARE_READ_POLL_ATTEMPTS = 20;
+
+async function waitForCompareReads(ready: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < COMPARE_READ_POLL_ATTEMPTS; attempt += 1) {
+    if (ready()) {
+      return;
+    }
+    const pending = Promise.withResolvers<boolean>();
+    setTimeout(() => {
+      pending.resolve(true);
+    }, 0);
+    await pending.promise;
+  }
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return Response.json(body, {
@@ -76,6 +95,7 @@ function observationsForRequest(url: URL) {
 describe("compare evidence loading through the generated client", () => {
   afterEach(() => {
     clearCompareObservationRetryDeadlines();
+    resetCompareReadLimit();
     vi.unstubAllGlobals();
     vi.useRealTimers();
     requests.length = 0;
@@ -492,5 +512,215 @@ describe("compare evidence loading through the generated client", () => {
       secondTick: "ready",
       unchangedCaseCalls: caseCalls,
     });
+  });
+
+  it("refetches a known-empty comparison and then shows rows or a failure", async () => {
+    const phase = {
+      value: "known-empty" as "failure" | "known-empty" | "rows",
+    };
+    const limitation =
+      "No published observations match this selection in the checked release. This does not establish biological absence, source coverage, or geography membership.";
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const measureId = url.searchParams.get("measure_id") ?? "";
+      requests.push(measureId);
+      if (measureId === COMPARE_CASES_MEASURE_ID && phase.value === "failure") {
+        return jsonResponse({ detail: "unavailable" }, 503);
+      }
+      if (
+        measureId === COMPARE_CASES_MEASURE_ID &&
+        phase.value === "known-empty"
+      ) {
+        return jsonResponse(
+          ObservationsV1ObservationsGetResponse.parse({
+            data: [],
+            links: { self: "/v1/observations" },
+            meta: {
+              availability: "UNAVAILABLE",
+              limitations: [limitation],
+              next_page_token: null,
+              reason: "NO_PUBLISHED_RESULTS",
+              release_id: COMPARE_RELEASE_ID,
+              response_at: "2026-10-18T00:00:00.000Z",
+            },
+          })
+        );
+      }
+      return jsonResponse(
+        ObservationsV1ObservationsGetResponse.parse({
+          data: compareObservationsFor({
+            fips: url.searchParams.getAll("geography_id"),
+            measureId,
+          }),
+          links: { self: "/v1/observations" },
+          meta: {},
+        })
+      );
+    });
+    const measures = compareMeasuresFixture.filter((measure) =>
+      [COMPARE_CASES_MEASURE_ID, COMPARE_TICK_MEASURE_ID].includes(
+        measure.measure_id
+      )
+    );
+    const first = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const tickCalls = requests.filter(
+      (measureId) => measureId === COMPARE_TICK_MEASURE_ID
+    ).length;
+    const caseCalls = requests.filter(
+      (measureId) => measureId === COMPARE_CASES_MEASURE_ID
+    ).length;
+    const preserved = preservedCompareMeasures({
+      alignment: first,
+      leftFips: COMPARE_LEFT_FIPS,
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+    });
+    phase.value = "rows";
+    const withRows = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      preserve: preserved,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    phase.value = "failure";
+    const failed = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      preserve: preserved,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const readyCases = (alignment: typeof first) => {
+      const outcome = alignment.outcomes.find(
+        (entry) => entry.measureId === COMPARE_CASES_MEASURE_ID
+      );
+      if (outcome?.status !== "ready") {
+        return null;
+      }
+      return outcome;
+    };
+    const firstCases = readyCases(first);
+    const rowCases = readyCases(withRows);
+    expect({
+      caseCalls: requests.filter(
+        (measureId) => measureId === COMPARE_CASES_MEASURE_ID
+      ).length,
+      failedCases: failed.outcomes.find(
+        (outcome) => outcome.measureId === COMPARE_CASES_MEASURE_ID
+      )?.status,
+      firstKnownEmpty: Boolean(firstCases?.selectionAvailability),
+      firstRows: firstCases?.observations.length ?? -1,
+      rowKnownEmpty: rowCases?.selectionAvailability ?? null,
+      rowRows: rowCases?.observations.length ?? 0,
+      tickCalls: requests.filter(
+        (measureId) => measureId === COMPARE_TICK_MEASURE_ID
+      ).length,
+    }).toStrictEqual({
+      caseCalls: caseCalls + 1 + 3,
+      failedCases: "failed",
+      firstKnownEmpty: true,
+      firstRows: 0,
+      rowKnownEmpty: null,
+      rowRows: 2,
+      tickCalls,
+    });
+  });
+
+  it("keeps county records and observations within five concurrent reads", async () => {
+    const controller = new AbortController();
+    let inFlight = 0;
+    let maxInFlight = 0;
+    let started = 0;
+    const release: (() => void)[] = [];
+    vi.stubGlobal("fetch", (_input: RequestInfo | URL, init?: RequestInit) => {
+      started += 1;
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      const pending = Promise.withResolvers<Response>();
+      const finish = (aborted: boolean) => {
+        inFlight -= 1;
+        if (aborted) {
+          pending.reject(new DOMException("Aborted", "AbortError"));
+          return;
+        }
+        pending.resolve(
+          Response.json(
+            { detail: "held" },
+            {
+              headers: { "content-type": "application/json" },
+              status: 400,
+            }
+          )
+        );
+      };
+      init?.signal?.addEventListener("abort", () => finish(true), {
+        once: true,
+      });
+      release.push(() => finish(false));
+      return pending.promise;
+    });
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const measures = ["m1", "m2", "m3", "m4", "m5"].map((measureId) => ({
+      ...base,
+      measure_id: measureId,
+    }));
+    const evidence = loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: controller.signal,
+    });
+    const profile = loadCompareCountyProfiles({
+      leftFips: COMPARE_LEFT_FIPS,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      signal: controller.signal,
+    });
+    await waitForCompareReads(() => started >= COMPARE_PUBLIC_READ_LIMIT);
+    const first = release.shift();
+    if (!first) {
+      throw new Error("No read was waiting on the shared limit.");
+    }
+    const held = started;
+    const peak = maxInFlight;
+    first();
+    await waitForCompareReads(() => started >= held + 1);
+    expect({
+      nextStarted: started,
+      peak,
+      queued: held,
+    }).toStrictEqual({
+      nextStarted: COMPARE_PUBLIC_READ_LIMIT + 1,
+      peak: COMPARE_PUBLIC_READ_LIMIT,
+      queued: COMPARE_PUBLIC_READ_LIMIT,
+    });
+    controller.abort();
+    await Promise.allSettled([evidence, profile]);
   });
 });

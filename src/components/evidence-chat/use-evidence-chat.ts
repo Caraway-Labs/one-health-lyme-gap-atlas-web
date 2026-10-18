@@ -9,13 +9,13 @@ import {
   useState,
 } from "react";
 
-import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
 import type { KnowledgeChatResponse } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   acceptAskAtlasPayload,
   AskAtlasAnswerContractError,
 } from "@/lib/ask-atlas-answer-contract";
+import { postLiteratureChat } from "@/lib/ask-atlas-literature-adapter";
 import {
   readAssistantConversationId,
   resolveActiveConversation,
@@ -49,6 +49,7 @@ export interface EvidenceChatConversationModel {
   ask: (question: string) => Promise<void>;
   charCountNearLimit: boolean;
   clearAllConversations: () => void;
+  composerHasUnsentText: () => boolean;
   conversations: LocalConversation[];
   deleteOne: (id: string) => void;
   editQuestion: (question: string) => void;
@@ -97,6 +98,7 @@ export function useEvidenceChat({
     string | null
   >(null);
   const [message, setMessage] = useState("");
+  const submittedDraftRef = useRef("");
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<ClientFailure | null>(null);
   const [retryQuestion, setRetryQuestion] = useState("");
@@ -168,6 +170,7 @@ export function useEvidenceChat({
       setFailure(null);
       setRetryQuestion("");
       setMessage("");
+      submittedDraftRef.current = "";
       if (syncWorkspaceUrl) {
         synchronizeAssistantConversationUrl();
       }
@@ -358,6 +361,7 @@ export function useEvidenceChat({
     }
     const serial = requestSerial.current + 1;
     requestSerial.current = serial;
+    submittedDraftRef.current = question;
     const replaceOperationalTurn = shouldReplaceOperationalTurn(
       active,
       question
@@ -367,14 +371,14 @@ export function useEvidenceChat({
     setPending(true);
     setFailure(null);
     try {
-      const result = await knowledgeGraphChatV1KnowledgeGraphChatPost(
+      const result = await postLiteratureChat(
         {
-          message: question,
           history: conversationHistory(
             replaceOperationalTurn && active
               ? { ...active, turns: active.turns.slice(0, -2) }
               : active
           ),
+          message: question,
         },
         { signal: controller.signal }
       );
@@ -485,6 +489,8 @@ export function useEvidenceChat({
     hydrated,
     inputRef,
     message,
+    composerHasUnsentText: () =>
+      message.trim().length > 0 && message.trim() !== submittedDraftRef.current,
     missingConversationId,
     mobileHistoryOpen,
     mobileHistoryToggleRef,

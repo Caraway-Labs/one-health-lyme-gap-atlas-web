@@ -30,6 +30,7 @@ const auth = vi.hoisted(() => {
       access_token: "token-user-a",
       user: { id: "user-a" },
     } as Session,
+    sessionRead: null as "throw" | { error: { message: string } } | null,
     signOut:
       vi.fn<
         (options?: {
@@ -39,6 +40,10 @@ const auth = vi.hoisted(() => {
   };
 });
 
+const followWorkspaceHref = vi.hoisted(() =>
+  vi.fn<(href: string, history?: string) => void>()
+);
+
 vi.mock(
   import("next/navigation"),
   () =>
@@ -46,6 +51,10 @@ vi.mock(
       useRouter: () => ({ push: auth.push }),
     }) as unknown as Partial<typeof import("next/navigation")>
 );
+
+vi.mock(import("@/features/ux-reset/workspace-navigation"), () => ({
+  followWorkspaceHref,
+}));
 
 vi.mock(import("@/lib/supabase/client"), () => ({
   createClient: () => ({
@@ -56,9 +65,12 @@ vi.mock(import("@/lib/supabase/client"), () => ({
           auth.pausedLookups += 1;
           await pause.promise;
         }
+        if (auth.sessionRead === "throw") {
+          throw new Error("session read failed");
+        }
         return {
           data: { session: auth.session },
-          error: null,
+          error: auth.sessionRead?.error ?? null,
         };
       },
       onAuthStateChange: (
@@ -100,6 +112,7 @@ import {
 } from "@/features/ux-reset/profile/saved-profile-client";
 import { savedProfileQueryKey } from "@/features/ux-reset/profile/use-saved-profile";
 import { ResetSettingsExperience } from "@/features/ux-reset/settings/reset-settings-experience";
+import { resetWorkspaceSignOutStateForTests } from "@/features/ux-reset/workspace-sign-out";
 import {
   getProfileV1MeProfileGet,
   metadataV1AtlasMetadataGet,
@@ -167,11 +180,14 @@ function renderSettings(
 describe("saved profile account isolation", () => {
   beforeEach(() => {
     resetSavedProfileCoordinationForTests();
+    resetWorkspaceSignOutStateForTests();
+    followWorkspaceHref.mockReset();
     auth.session = { access_token: "token-user-a", user: { id: "user-a" } };
     auth.listeners.clear();
     auth.pausedLookups = 0;
     auth.pendingPauses.length = 0;
     auth.push.mockReset();
+    auth.sessionRead = null;
     auth.signOut.mockReset();
     vi.mocked(getProfileV1MeProfileGet).mockReset();
     vi.mocked(saveProfileV1MeProfilePut).mockReset();
@@ -748,6 +764,19 @@ describe("saved profile account isolation", () => {
     expect(screen.queryByTestId("settings-organization")).toBeNull();
   });
 
+  it("keeps the page when sign-out fails and the follow-up read errors", async () => {
+    auth.signOut.mockResolvedValue({ error: { message: "remote failed" } });
+    renderSettings();
+    await screen.findByRole("button", { name: "Sign out" });
+    auth.sessionRead = { error: { message: "read failed" } };
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(
+      (await screen.findByTestId("settings-sign-out-notice")).textContent
+    ).toContain("still active");
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
+    expect(auth.push).not.toHaveBeenCalled();
+  });
+
   it("keeps the page when sign-out returns an error and the session remains", async () => {
     auth.signOut.mockResolvedValue({ error: { message: "remote failed" } });
     renderSettings();
@@ -757,7 +786,28 @@ describe("saved profile account isolation", () => {
       (await screen.findByTestId("settings-sign-out-notice")).textContent
     ).toContain("still active");
     expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(followWorkspaceHref).not.toHaveBeenCalled();
     expect(auth.push).not.toHaveBeenCalled();
+  });
+
+  it("ignores a second Settings sign-out click while the first is pending", async () => {
+    const gate = Promise.withResolvers<{ error: null }>();
+    auth.signOut.mockReturnValue(gate.promise);
+    renderSettings();
+    const button = await screen.findByRole("button", { name: "Sign out" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(auth.signOut).toHaveBeenCalledOnce();
+    expect(
+      (
+        (await screen.findByRole("button", {
+          name: "Signing out",
+        })) as HTMLButtonElement
+      ).disabled
+    ).toBeTruthy();
+    gate.resolve({ error: null });
+    await waitFor(() => expect(followWorkspaceHref).toHaveBeenCalledWith("/"));
+    expect(auth.signOut).toHaveBeenCalledOnce();
   });
 
   it("leaves after a sign-out error once the local session is gone", async () => {
@@ -768,7 +818,8 @@ describe("saved profile account isolation", () => {
     renderSettings();
     await screen.findByRole("button", { name: "Sign out" });
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
-    await waitFor(() => expect(auth.push).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(followWorkspaceHref).toHaveBeenCalledWith("/"));
     expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(auth.push).not.toHaveBeenCalled();
   });
 });

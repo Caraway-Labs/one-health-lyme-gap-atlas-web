@@ -5,12 +5,12 @@ import {
   isContiguousUsCounty,
 } from "../src/lib/atlas-geometry";
 import {
-  followUpPlanFor,
   matchesEvidence,
   numericParam,
   priorityTone,
   reasonsFor,
 } from "../src/lib/atlas-ui";
+import { followUpPlanFor } from "../src/lib/follow-up-workflows";
 import { countyBelongsToDistrict } from "../src/lib/health-districts";
 
 const county = {
@@ -89,7 +89,30 @@ describe("atlas UI rules", () => {
     expect(matchesEvidence(county, "all")).toBeTruthy();
     expect(matchesEvidence(county, "ecological")).toBeTruthy();
     expect(matchesEvidence(county, "human")).toBeFalsy();
-    expect(matchesEvidence(county, "complete")).toBeTruthy();
+    expect(matchesEvidence(county, "complete")).toBeFalsy();
+  });
+
+  it("treats most-data-fields completeness as a percent of six inputs", () => {
+    const complete = (evidenceCompleteness: number) =>
+      matchesEvidence(
+        { ...county, evidence_completeness: evidenceCompleteness },
+        "complete"
+      );
+    expect({
+      eighty: complete(80),
+      eightyTwo: complete(82),
+      eightyThree: complete(83),
+      five: complete(5),
+      hundred: complete(100),
+      six: complete(6),
+    }).toStrictEqual({
+      eighty: false,
+      eightyTwo: false,
+      eightyThree: true,
+      five: false,
+      hundred: true,
+      six: false,
+    });
   });
 
   it("keeps missing human records distinct from zero cases", () => {
@@ -157,7 +180,9 @@ describe("atlas UI rules", () => {
       "#f49a32",
       "#e9602b",
     ];
-    const plans = colors.map((color) => followUpPlanFor({ ...detail, color }));
+    const plans = colors.map((color) =>
+      followUpPlanFor({ ...detail, color, in_contiguous_tick_scope: true })
+    );
     expect(plans.map((plan) => plan.level)).toStrictEqual([
       "Continue routine review",
       "Monitor the pattern",
@@ -167,17 +192,22 @@ describe("atlas UI rules", () => {
       "Prioritize targeted follow-up",
     ]);
     expect({
-      actions: plans.every((plan) => plan.actions.length >= 3),
+      actions: plans.every((plan) => plan.actions.length === 5),
       neutralWording: plans.every(
         (plan) =>
-          !/diagnos|outbreak|individual risk|transmission/i.test(plan.level)
+          !/diagnos|outbreak|individual risk|within \d|complete within|contact partners/i.test(
+            `${plan.level} ${plan.summary}`
+          )
       ),
-      timeframe: plans.at(-1)?.timeframe ?? "",
+      reviewAvailable: plans.every((plan) => plan.reviewAvailable),
     }).toStrictEqual({
       actions: true,
       neutralWording: true,
-      timeframe: expect.stringContaining("2 weeks"),
+      reviewAvailable: true,
     });
+    expect(followUpPlanFor({ ...detail, color: "#000000" }).level).toBe(
+      "Review level unavailable"
+    );
   });
 
   it("keeps district highlights inside the selected state", () => {

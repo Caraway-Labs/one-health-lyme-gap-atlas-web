@@ -6,6 +6,7 @@ import { pageMetadataForRoute } from "@/lib/navigation";
 export const metadata = {
   ...pageMetadataForRoute("/investigate"),
   alternates: { canonical: "/investigate" },
+  robots: { follow: false, index: false },
 };
 
 export default function InvestigationWorkspacePage() {

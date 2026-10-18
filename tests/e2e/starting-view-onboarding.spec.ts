@@ -9,6 +9,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 type StoredProfile = {
   job_title: string | null;
@@ -183,7 +184,7 @@ test.describe("Starting view onboarding", () => {
     await expectUnselectedSetup(page);
   });
 
-  test("saves United States, opens national Review, and skips setup after reload", async ({
+  test("saves United States, opens national Atlas Explorer, and skips setup after reload", async ({
     page,
   }) => {
     const api = await installOnboardingApi(page, null);
@@ -192,29 +193,37 @@ test.describe("Starting view onboarding", () => {
     );
     await expectUnselectedSetup(page);
     await page.getByRole("radio", { name: "United States" }).check();
-    await page.getByRole("button", { name: "Continue to Review" }).click();
-    await expect(page).toHaveURL(/\/app\/review(?:\?scope=ALL)?$/, {
+    await page
+      .getByRole("button", { name: "Continue to Atlas Explorer" })
+      .click();
+    await expect(page).toHaveURL(/\/explore(?:\?scope=ALL)?$/, {
       timeout: 20_000,
     });
     await expect(page.getByTestId("review-national-orientation")).toBeVisible({
       timeout: 20_000,
+    });
+    await page.screenshot({
+      fullPage: true,
+      path: "test-results/onboarding-explorer-national.png",
     });
     expect(api.writes.at(-1)).toMatchObject({
       complete_starting_view: true,
       state_code: null,
     });
     await page.reload();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(
       page.getByRole("heading", { name: "Choose your starting view" })
     ).toHaveCount(0);
     await page.goto("/auth/continue");
-    await expect(page).toHaveURL(/\/app\/review(?:\?scope=ALL)?$/, {
+    await expect(page).toHaveURL(/\/explore(?:\?scope=ALL)?$/, {
       timeout: 20_000,
     });
   });
 
-  test("saves one state and reaches that Review view", async ({ page }) => {
+  test("saves one state and reaches that Atlas Explorer view", async ({
+    page,
+  }) => {
     const api = await installOnboardingApi(page, legacyProfile);
     await page.goto("/auth/starting-view");
     await expectUnselectedSetup(page);
@@ -225,7 +234,9 @@ test.describe("Starting view onboarding", () => {
     await page
       .getByRole("combobox", { exact: true, name: "State" })
       .selectOption("CO");
-    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await page
+      .getByRole("button", { name: "Continue to Atlas Explorer" })
+      .click();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO",
@@ -257,7 +268,7 @@ test.describe("Starting view onboarding", () => {
       state_code: "CO",
     });
     await page.goto("/auth/continue?next=%2Fapp%2Freview%3Fscope%3DNY");
-    await expect(page).toHaveURL(/\/app\/review\?scope=NY/);
+    await expect(page).toHaveURL(/\/explore\?scope=NY/);
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "NY"
@@ -284,7 +295,9 @@ test.describe("Starting view onboarding", () => {
     await installOnboardingApi(page, null, { uncertainSaves: 1 });
     await page.goto("/auth/starting-view");
     await page.getByRole("radio", { name: "United States" }).check();
-    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await page
+      .getByRole("button", { name: "Continue to Atlas Explorer" })
+      .click();
     await expect(
       page.getByText("We couldn’t save your starting view.")
     ).toBeVisible();
@@ -292,7 +305,9 @@ test.describe("Starting view onboarding", () => {
       page.getByRole("radio", { name: "United States" })
     ).toBeChecked();
     await expect(page).toHaveURL(/\/auth\/starting-view/);
-    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await page
+      .getByRole("button", { name: "Continue to Atlas Explorer" })
+      .click();
     await expect(page.getByTestId("review-national-orientation")).toBeVisible({
       timeout: 20_000,
     });
@@ -309,7 +324,9 @@ test.describe("Starting view onboarding", () => {
     await page
       .getByRole("combobox", { exact: true, name: "State" })
       .selectOption("CO");
-    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await page
+      .getByRole("button", { name: "Continue to Atlas Explorer" })
+      .click();
     await expect(page.getByTestId("review-state-panel")).toBeVisible({
       timeout: 20_000,
     });
@@ -327,7 +344,9 @@ test.describe("Starting view onboarding", () => {
     await installOnboardingApi(page, null, { failMetadata: 1 });
     await page.goto("/auth/starting-view");
     await page.getByRole("radio", { name: "One state" }).check();
-    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await page
+      .getByRole("button", { name: "Continue to Atlas Explorer" })
+      .click();
     await expect(
       page.getByText("We couldn’t load the state list.")
     ).toBeVisible();
@@ -338,7 +357,9 @@ test.describe("Starting view onboarding", () => {
     await page
       .getByRole("combobox", { exact: true, name: "State" })
       .selectOption("CO");
-    await page.getByRole("button", { name: "Continue to Review" }).click();
+    await page
+      .getByRole("button", { name: "Continue to Atlas Explorer" })
+      .click();
     await expect(page).toHaveURL(/scope=CO/, { timeout: 20_000 });
   });
 
@@ -391,10 +412,18 @@ test.describe("Starting view onboarding", () => {
   test("matches the approved starting-view layout", async ({
     page,
   }, testInfo) => {
+    const width = testInfo.project.name === "mobile" ? 390 : 1280;
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, width),
+      "Phone layout runs on the mobile project."
+    );
+    await page.setViewportSize({
+      height: width === 390 ? 844 : 800,
+      width,
+    });
     await installOnboardingApi(page, null);
     await page.goto("/auth/starting-view");
     await expectUnselectedSetup(page);
-    const width = page.viewportSize()?.width ?? 0;
     const heading = page.getByRole("heading", {
       name: "Choose your starting view",
     });
@@ -411,7 +440,9 @@ test.describe("Starting view onboarding", () => {
       .first()
       .evaluate((element) => getComputedStyle(element).minHeight);
     expect(rowHeight).toBe("64px");
-    const button = page.getByRole("button", { name: "Continue to Review" });
+    const button = page.getByRole("button", {
+      name: "Continue to Atlas Explorer",
+    });
     const buttonBox = await button.boundingBox();
     expect(buttonBox?.height ?? 0).toBeGreaterThanOrEqual(44);
     const buttonColor = await button.evaluate(
@@ -425,6 +456,10 @@ test.describe("Starting view onboarding", () => {
 
     const unselectedPath = testInfo.outputPath("unselected.png");
     await page.screenshot({ fullPage: true, path: unselectedPath });
+    await page.screenshot({
+      fullPage: true,
+      path: "test-results/onboarding-starting-view.png",
+    });
     await page.getByRole("radio", { name: "One state" }).check();
     const selected = page.locator(".auth-entrance-choice", {
       has: page.getByRole("radio", { name: "One state" }),

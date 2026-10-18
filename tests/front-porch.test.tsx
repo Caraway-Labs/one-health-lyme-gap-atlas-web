@@ -11,71 +11,174 @@ import {
   FRONT_PORCH_BEATS,
   FRONT_PORCH_EXPLORE_LABEL,
   FRONT_PORCH_EXPLORE_SUPPORT,
+  FRONT_PORCH_FINALE,
+  FRONT_PORCH_HERO_AUDIENCE,
+  FRONT_PORCH_TRUST,
+  FRONT_PORCH_TRUST_LINES,
   FRONT_PORCH_FOLLOW_STORY_LABEL,
   FRONT_PORCH_FOOTER_LINKS,
   FRONT_PORCH_GLASS_CALLOUT,
+  FRONT_PORCH_INTRO,
+  FRONT_PORCH_HERO_EXAMPLE,
   FRONT_PORCH_HERO_HEADLINE,
   FRONT_PORCH_HERO_IMAGE,
   FRONT_PORCH_HERO_SUPPORT,
   FRONT_PORCH_STORY_ID,
+  FRONT_PORCH_SYNTHESIS,
   frontPorchExploreHref,
   frontPorchExploreHrefSelectsCounty,
+  frontPorchHrefSelectsUnrelatedCounty,
 } from "@/features/front-porch/front-porch-copy";
 import { FrontPorchView } from "@/features/front-porch/front-porch-view";
 import {
   ABOUT_CARAWAY_LABS_PATH,
-  RESET_REVIEW_PATH,
+  ATLAS_EXPLORER_PATH,
 } from "@/features/ux-reset/routes";
 import { ANALYTICS_PREFERENCE_KEY } from "@/lib/analytics-consent";
 
 const FORBIDDEN_PUBLIC_COPY =
-  /buncombe|alaska|hawaii|37021|data pending|underreported/i;
+  /buncombe|montgomery|alaska|hawaii|37021|51121|data pending|underreported/i;
 
 describe("front porch copy", () => {
   it("keeps the locked hero copy", () => {
-    expect(FRONT_PORCH_HERO_HEADLINE).toBe(
-      "The data is telling more than one story."
-    );
-    expect(FRONT_PORCH_HERO_SUPPORT).toBe(
-      "Human health, vectors, and environmental conditions each reveal part of the picture. One Health Atlas helps epidemiologists connect those perspectives and decide what deserves a closer look."
-    );
-    expect(FRONT_PORCH_GLASS_CALLOUT).toBe(
-      "Human health + Vectors + Environment"
-    );
-    expect(FRONT_PORCH_HERO_IMAGE).toMatchObject({
-      approved: true,
-      src: "/images/one-health-ecosystem.png",
+    expect({
+      audience: FRONT_PORCH_HERO_AUDIENCE,
+      example: FRONT_PORCH_HERO_EXAMPLE,
+      headline: FRONT_PORCH_HERO_HEADLINE,
+      support: FRONT_PORCH_HERO_SUPPORT,
+    }).toStrictEqual({
+      audience:
+        "Designed for epidemiologists and vector-borne disease programs.",
+      example:
+        "Follow the Lyme disease example in Montgomery County, Virginia.",
+      headline: "Connect the data. See the bigger picture.",
+      support:
+        "One Health Atlas brings county-level Lyme surveillance, tick and pathogen data, and community context into one place. It helps public health professionals compare counties, review data gaps, and identify questions for local follow-up.",
+    });
+    expect({
+      callout: FRONT_PORCH_GLASS_CALLOUT,
+      image: FRONT_PORCH_HERO_IMAGE,
+    }).toStrictEqual({
+      callout: "Human health + Vectors + Environment",
+      image: {
+        approved: true,
+        src: "/images/one-health-ecosystem.png",
+      },
+    });
+    expect(FRONT_PORCH_INTRO).toStrictEqual({
+      eyebrow: "The question worth asking",
+      paragraph:
+        "Start with reported Lyme disease, then add tick surveillance and community context. This illustrative walkthrough uses published data from Montgomery County, Virginia, to explore what the sources tell us and what questions remain.",
+      title: "What can we learn by looking at the data together?",
     });
   });
 
-  it("keeps a six-beat story free of invented claims", () => {
+  it("keeps the approved ending copy free of em dashes", () => {
+    expect(FRONT_PORCH_TRUST).toStrictEqual({
+      eyebrow: "Confidence through clarity",
+      paragraph:
+        "Every finding has a source, a time period, and limits to its interpretation. One Health Atlas makes these details visible so public health professionals can assess what the data support and where additional information is needed.",
+      title: "What's missing from the data matters, too.",
+    });
+    expect(FRONT_PORCH_TRUST_LINES.map((line) => line.href)).toStrictEqual([
+      "/docs/sources-and-canonical-evidence",
+      "/docs/releases-and-methodology",
+      "/docs/evidence-and-uncertainty",
+      "/docs/current-capabilities",
+    ]);
+    expect(FRONT_PORCH_FINALE).toStrictEqual({
+      eyebrow: "Continue exploring",
+      lines: ["One place to see", "the bigger picture."],
+      paragraph:
+        "Explore county-level Lyme disease data, review the findings in context, and consider questions for local follow-up. One Health Atlas brings the sources together to support informed public health review.",
+      title: "One place to see the bigger picture.",
+    });
+    expect(FRONT_PORCH_EXPLORE_SUPPORT).toBe(
+      "Workspace access requires sign-in."
+    );
+    expect(
+      `${FRONT_PORCH_TRUST.paragraph} ${FRONT_PORCH_FINALE.paragraph} ${FRONT_PORCH_EXPLORE_SUPPORT}`
+    ).not.toMatch(/—/);
+  });
+
+  it("keeps the scrollytelling steps free of invented claims", () => {
     const story = FRONT_PORCH_BEATS.map(
       (beat) => `${beat.title} ${beat.paragraphs.join(" ")}`
     ).join(" ");
 
-    expect(FRONT_PORCH_BEATS.map((beat) => beat.id)).toStrictEqual([
-      "question",
-      "human-surveillance",
-      "vector-pathogen",
-      "environment-community",
-      "sources-limits",
-      "atlas",
-    ]);
-    expect(story).not.toMatch(FORBIDDEN_PUBLIC_COPY);
-    expect(story).not.toMatch(/\d{4}/);
+    expect({
+      details: FRONT_PORCH_BEATS.map((beat) =>
+        beat.cardLines.map((line) => `${line.italicLead ?? ""}${line.text}`)
+      ),
+      ids: FRONT_PORCH_BEATS.map((beat) => beat.id),
+      statuses: FRONT_PORCH_BEATS.map((beat) => beat.status),
+      titles: FRONT_PORCH_BEATS.map((beat) => beat.title),
+    }).toStrictEqual({
+      details: [
+        [
+          "Reported cases provide a starting point for review.",
+          "At least 71 reported probable cases",
+          "Lyme disease · 2023",
+        ],
+        [
+          "Tick observations and testing add another perspective.",
+          "Ixodes scapularis: Established",
+          "Borrelia burgdorferi: Present",
+          "Cumulative records through December 2025",
+        ],
+        [
+          "Community conditions help frame local public health questions.",
+          "5.3% uninsured",
+          "CDC/ATSDR SVI · 2018\u20132022 ACS",
+        ],
+      ],
+      ids: ["human-surveillance", "vector-pathogen", "community-context"],
+      statuses: ["Human data", "Vector data", "One Health view"],
+      titles: [
+        "Start with reported Lyme disease.",
+        "Add tick and pathogen data.",
+        "Place the data in context.",
+      ],
+    });
+    const humanDetail = FRONT_PORCH_BEATS[0]?.sourceDetail.join(" ") ?? "";
+    const storyAndCards = `${story} ${FRONT_PORCH_BEATS.map((beat) => beat.cardTitle).join(" ")}`;
+    expect({
+      environmental: /environmental/i.test(storyAndCards),
+      fullRate: humanDetail.includes("71.45"),
+      priority: FRONT_PORCH_SYNTHESIS.priorityTerm,
+      probableMinimum: humanDetail.includes(
+        "published privacy-protected minimum"
+      ),
+      rateOnCard: FRONT_PORCH_BEATS[0]?.cardLines.some((line) =>
+        line.text.includes("71.5")
+      ),
+      storyDash: /—/.test(story),
+      storyForbidden: FORBIDDEN_PUBLIC_COPY.test(story),
+    }).toStrictEqual({
+      environmental: false,
+      fullRate: true,
+      priority: "Lower Atlas priority",
+      probableMinimum: true,
+      rateOnCard: false,
+      storyDash: false,
+      storyForbidden: false,
+    });
   });
 
-  it("routes the professional CTA to Review without a county", () => {
-    expect(frontPorchExploreHref(true)).toBe(RESET_REVIEW_PATH);
-    expect(frontPorchExploreHref(false)).toBe(
-      "/auth/sign-in?next=%2Fapp%2Freview"
-    );
-    expect(
-      frontPorchExploreHrefSelectsCounty(frontPorchExploreHref(true))
-    ).toBeFalsy();
-    expect(
-      frontPorchExploreHrefSelectsCounty(frontPorchExploreHref(false))
-    ).toBeFalsy();
+  it("keeps generic Explorer entry free of a preselected county", () => {
+    expect({
+      signedIn: frontPorchExploreHref(true),
+      signedOut: frontPorchExploreHref(false),
+    }).toStrictEqual({
+      signedIn: ATLAS_EXPLORER_PATH,
+      signedOut: "/auth/sign-in?next=%2Fexplore",
+    });
+    expect([
+      frontPorchExploreHrefSelectsCounty(frontPorchExploreHref(true)),
+      frontPorchExploreHrefSelectsCounty(frontPorchExploreHref(false)),
+      frontPorchHrefSelectsUnrelatedCounty("/explore?county=37021"),
+      frontPorchHrefSelectsUnrelatedCounty(frontPorchExploreHref(true)),
+    ]).toStrictEqual([false, false, true, false]);
   });
 });
 
@@ -93,15 +196,60 @@ describe("front porch view", () => {
     expect(screen.getByText(FRONT_PORCH_HERO_SUPPORT)).toBeTruthy();
     expect(screen.getAllByText(FRONT_PORCH_GLASS_CALLOUT)).toHaveLength(1);
     expect(
-      screen
-        .getByRole("link", { name: FRONT_PORCH_FOLLOW_STORY_LABEL })
-        .getAttribute("href")
-    ).toBe(`#${FRONT_PORCH_STORY_ID}`);
-    expect(
-      screen
+      [...document.querySelectorAll(".front-porch-card-finding em")].map(
+        (name) => ({
+          name: name.textContent,
+          line: name.parentElement?.textContent,
+        })
+      )
+    ).toStrictEqual([
+      {
+        name: "Ixodes scapularis",
+        line: "Ixodes scapularis: Established",
+      },
+      {
+        name: "Borrelia burgdorferi",
+        line: "Borrelia burgdorferi: Present",
+      },
+      {
+        name: "Ixodes scapularis",
+        line: "Ixodes scapularis: Established",
+      },
+      {
+        name: "Borrelia burgdorferi",
+        line: "Borrelia burgdorferi: Present",
+      },
+    ]);
+    expect({
+      documentation: screen
+        .getByRole("link", { name: "Documentation" })
+        .getAttribute("href"),
+      explore: screen
         .getByRole("link", { name: FRONT_PORCH_EXPLORE_LABEL })
-        .getAttribute("href")
-    ).toBe("/auth/sign-in?next=%2Fapp%2Freview");
+        .getAttribute("href"),
+      how: screen
+        .getByRole("link", { name: "How it works" })
+        .getAttribute("href"),
+      workspace: screen
+        .getAllByRole("link", { name: "Explore One Health Atlas" })
+        .map((link) => link.getAttribute("href")),
+      sources: screen
+        .getByRole("link", { name: "Sources and limitations" })
+        .getAttribute("href"),
+      story: screen
+        .getByRole("link", { name: FRONT_PORCH_FOLLOW_STORY_LABEL })
+        .getAttribute("href"),
+    }).toStrictEqual({
+      documentation: "/docs",
+      explore: "/auth/sign-in?next=%2Fexplore",
+      how: "#front-porch-how",
+      workspace: [
+        "/auth/sign-in?next=%2Fexplore",
+        "/auth/sign-in?next=%2Fexplore",
+      ],
+      sources: "#front-porch-trust",
+      story: `#${FRONT_PORCH_STORY_ID}`,
+    });
   });
 
   it("keeps the signed-out professional path and footer free of county claims", () => {
@@ -114,7 +262,7 @@ describe("front porch view", () => {
     ]).toStrictEqual([FRONT_PORCH_EXPLORE_SUPPORT, "Privacy settings"]);
     expect(
       screen.getByRole("link", { name: "Sign in" }).getAttribute("href")
-    ).toBe("/auth/sign-in?next=%2Fapp%2Freview");
+    ).toBe("/auth/sign-in?next=%2Fexplore");
     expect([
       image?.getAttribute("src"),
       image?.getAttribute("alt"),
@@ -135,7 +283,16 @@ describe("front porch view", () => {
           .some((link) => link.getAttribute("href") === item.href)
       )
     ).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(FORBIDDEN_PUBLIC_COPY);
+    expect({
+      example: screen.getByText(FRONT_PORCH_HERO_EXAMPLE).textContent,
+      forbidden:
+        /buncombe|alaska|hawaii|37021|51121|data pending|underreported/i.test(
+          document.body.textContent ?? ""
+        ),
+    }).toStrictEqual({
+      example: FRONT_PORCH_HERO_EXAMPLE,
+      forbidden: false,
+    });
   });
 
   it("renders each story beat heading", () => {
@@ -157,10 +314,12 @@ describe("front porch view", () => {
       screen
         .getByRole("link", { name: FRONT_PORCH_EXPLORE_LABEL })
         .getAttribute("href")
-    ).toBe(RESET_REVIEW_PATH);
+    ).toBe(ATLAS_EXPLORER_PATH);
     expect(
-      screen.getByRole("link", { name: "Open Review" }).getAttribute("href")
-    ).toBe(RESET_REVIEW_PATH);
+      screen
+        .getByRole("link", { name: "Open Atlas Explorer" })
+        .getAttribute("href")
+    ).toBe(ATLAS_EXPLORER_PATH);
   });
 
   it("uses the approved trust footer for signed-out and signed-in visitors", () => {
@@ -184,12 +343,6 @@ describe("front porch view", () => {
           target: brand.getAttribute("target"),
         },
         brandMark: footer.querySelector("img.atlas-brand-mark"),
-        evidenceHref: screen
-          .getByRole("link", { name: "Evidence and uncertainty" })
-          .getAttribute("href"),
-        methodologyHref: screen
-          .getByRole("link", { name: "Methodology" })
-          .getAttribute("href"),
         feedback: trust.queryByRole("button", { name: "Feedback" }),
         privacySettings: trust.getByRole("button", { name: "Privacy settings" })
           .textContent,
@@ -206,8 +359,6 @@ describe("front porch view", () => {
           target: "_blank",
         },
         brandMark: null,
-        evidenceHref: "/docs/evidence-and-uncertainty",
-        methodologyHref: "/docs/releases-and-methodology",
         feedback: null,
         privacySettings: "Privacy settings",
         trustLinks: [

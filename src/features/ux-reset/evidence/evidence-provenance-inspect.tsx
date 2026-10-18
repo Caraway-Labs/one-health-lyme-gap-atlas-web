@@ -1,5 +1,6 @@
 "use client";
 
+import { dataProvenanceHref } from "@/features/ux-reset/data-provenance/catalog";
 import type { ContentSurface } from "@/lib/atlas-analytics";
 import { trackProvenanceOpened } from "@/lib/atlas-analytics";
 import {
@@ -56,6 +57,8 @@ type EvidenceProvenanceInspectProps = {
   provenance: EvidenceProvenanceModel;
   /** Overrides the evidence-state row label. Shared evidence keeps “Evidence state”. */
   stateHeading?: string;
+  /** Compare uses “Sources and limitations”. Other surfaces keep provenance inspect. */
+  summaryLabel?: string;
 } & (
   | {
       availability: EvidenceAvailability;
@@ -79,7 +82,12 @@ function evidenceStateText(props: EvidenceProvenanceInspectProps): string {
 export function EvidenceProvenanceInspect(
   props: EvidenceProvenanceInspectProps
 ) {
-  const { className, contentSurface = "source_card", provenance } = props;
+  const {
+    className,
+    contentSurface = "source_card",
+    provenance,
+    summaryLabel = "Inspect provenance",
+  } = props;
   const technical = provenance.technical;
   const evaluatedAt = technical
     ? evaluatedAtText(technical.evaluatedAt, technical.evaluatedAtRaw)
@@ -108,7 +116,7 @@ export function EvidenceProvenanceInspect(
         }
       }}
     >
-      <summary>Inspect provenance</summary>
+      <summary>{summaryLabel}</summary>
       <div className="ux-reset-evidence-provenance-body">
         <dl className="ux-reset-evidence-provenance-fields">
           <div data-testid="evidence-provenance-source">
@@ -235,6 +243,13 @@ export function EvidenceProvenanceInspect(
             </a>
           </p>
         )}
+        <p data-testid="evidence-provenance-page-link">
+          <a href={dataProvenanceHref(technical?.sourceId)}>
+            {technical?.sourceId?.trim()
+              ? "Open Data Provenance for this source"
+              : "Open Data Provenance"}
+          </a>
+        </p>
       </div>
     </details>
   );

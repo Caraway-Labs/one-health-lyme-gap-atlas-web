@@ -1,7 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-import { compareObservation } from "../fixtures/compare-api-fixtures";
+import type { AskAtlasInheritedFieldKey } from "@/features/ux-reset/ask-atlas/inherited-context";
+import { readAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/page-reference";
+
+import {
+  COMPARE_CASES_MEASURE_ID,
+  compareObservation,
+} from "../fixtures/compare-api-fixtures";
 import {
   EXPLORE_CASES_MEASURE_ID,
   exploreGeometryFixture,
@@ -19,6 +25,7 @@ import {
 } from "../fixtures/investigate-api-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 const EXPLORE_URL = "/app/explore?county=08001&metric=reported-cases&scope=ALL";
 const QUESTION = "How do reviewed studies describe tick exposure?";
@@ -126,85 +133,6 @@ async function installReviewMocks(page: Page) {
   });
 }
 
-async function openSidecar(page: Page) {
-  const launcher = page.getByTestId("ask-atlas-launcher");
-  await expect(launcher).toBeVisible();
-  await launcher.click();
-  await expect(page.getByTestId("ask-atlas-panel")).toBeVisible();
-  return launcher;
-}
-
-function inheritedField(page: Page, field: string) {
-  return page.locator(`[data-field="${field}"]`);
-}
-
-type LayoutBox = {
-  bottom: number;
-  height: number;
-  left: number;
-  right: number;
-  top: number;
-};
-
-async function readSidecarLayout(page: Page) {
-  return page.evaluate(() => {
-    function box(element: Element | null): LayoutBox | null {
-      if (!element) {
-        return null;
-      }
-      const rect = element.getBoundingClientRect();
-      return {
-        bottom: rect.bottom,
-        height: rect.height,
-        left: rect.left,
-        right: rect.right,
-        top: rect.top,
-      };
-    }
-    const ask = [...document.querySelectorAll("button")].find(
-      (button) => button.textContent?.trim() === "Ask"
-    );
-    return {
-      ask: box(ask ?? null),
-      composer: box(document.querySelector("#ux-reset-ask-atlas textarea")),
-      panel: box(document.querySelector('[data-testid="ask-atlas-panel"]')),
-      transcript: box(
-        document.querySelector("#ux-reset-ask-atlas .chat-transcript")
-      ),
-      viewport: { height: window.innerHeight, width: window.innerWidth },
-    };
-  });
-}
-
-function expectInsidePanel(
-  target: LayoutBox | null,
-  panel: LayoutBox | null,
-  viewport: { height: number; width: number },
-  minimumHeight: number
-) {
-  expect(target).not.toBeNull();
-  expect(panel).not.toBeNull();
-  if (!(target && panel)) {
-    return;
-  }
-  const visibleBottom = Math.min(panel.bottom, viewport.height) + 1;
-  expect(target.height).toBeGreaterThanOrEqual(minimumHeight);
-  expect(target.top).toBeGreaterThanOrEqual(panel.top - 1);
-  expect(
-    target.bottom,
-    `bottom ${target.bottom} panel ${panel.bottom} viewport ${viewport.width}x${viewport.height}`
-  ).toBeLessThanOrEqual(visibleBottom);
-  expect(target.left).toBeGreaterThanOrEqual(-1);
-  expect(target.right).toBeLessThanOrEqual(viewport.width + 1);
-}
-
-async function expectComposerVisibleInPanel(page: Page) {
-  const layout = await readSidecarLayout(page);
-  expectInsidePanel(layout.composer, layout.panel, layout.viewport, 24);
-  expectInsidePanel(layout.ask, layout.panel, layout.viewport, 16);
-  expectInsidePanel(layout.transcript, layout.panel, layout.viewport, 24);
-}
-
 async function installInvestigateMocks(page: Page) {
   await page.route("**/v1/me/profile", async (route) => {
     await fulfillJson(route, {
@@ -293,8 +221,36 @@ async function installUniformCompareMocks(page: Page) {
   });
 }
 
-test.describe("Ask Atlas contextual sidecar", () => {
-  test("asks from Explore through the chat adapter without changing the page", async ({
+async function readLauncher(page: Page) {
+  const href = await page
+    .getByTestId("ask-atlas-launcher")
+    .getAttribute("href");
+  const url = new URL(href ?? "", "http://127.0.0.1");
+  return {
+    state: readAskAtlasPageReference(url.pathname, url.searchParams),
+    url,
+  };
+}
+
+function fieldId(
+  state: ReturnType<typeof readAskAtlasPageReference>,
+  key: AskAtlasInheritedFieldKey
+): string | null {
+  if (state.kind !== "validated") {
+    return null;
+  }
+  const field = state.reference.context.fields[key];
+  return field.state === "validated" ? field.id : null;
+}
+
+function referenceField(page: Page, field: string) {
+  return page.locator(
+    `[data-testid="ask-atlas-page-reference"] [data-field="${field}"]`
+  );
+}
+
+test.describe("Ask Atlas dedicated page", () => {
+  test("carries Explore context to the page and returns without sending it", async ({
     page,
   }, testInfo) => {
     const requests: Record<string, unknown>[] = [];
@@ -310,42 +266,70 @@ test.describe("Ask Atlas contextual sidecar", () => {
       );
     });
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/period=2023-01-01/);
-    const urlBefore = page.url();
-    await expect(page.getByTestId("explore-measure-select")).toContainText(
-      "Reported Lyme cases"
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).not.toHaveURL(/metric=/);
+    await expect(page).not.toHaveURL(/period=/);
+    const exploreUrl = page.url();
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the One Health Atlas",
+      })
+    ).toBeVisible();
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "release"))
+      .toBe("alpha-2026");
+    const launcher = await readLauncher(page);
+    expect(launcher.state.kind).toBe("validated");
+    expect({
+      geography: fieldId(launcher.state, "geography"),
+      measure: fieldId(launcher.state, "measure"),
+      period: fieldId(launcher.state, "period"),
+      release: fieldId(launcher.state, "release"),
+      source: fieldId(launcher.state, "source"),
+    }).toStrictEqual({
+      geography: null,
+      measure: null,
+      period: null,
+      release: "alpha-2026",
+      source: null,
+    });
+    expect(launcher.url.searchParams.get("period")).toBeNull();
+    expect(launcher.url.searchParams.get("compare")).toBeNull();
+    await expect(page.getByTestId("ask-atlas-panel")).toHaveCount(0);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
+
+    await page.getByTestId("ask-atlas-launcher").click();
+    await expect(page).toHaveURL(/\/askatlas/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Ask Atlas" })
+    ).toBeVisible();
+    await expect(page.getByText("Reviewed literature").first()).toBeVisible();
+    const reference = page.getByTestId("ask-atlas-page-reference");
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
     );
-    await openSidecar(page);
-    await expect(inheritedField(page, "geography")).toHaveAttribute(
-      "data-field-id",
-      "08001"
-    );
-    await expect(inheritedField(page, "measure")).toHaveAttribute(
-      "data-field-id",
-      "reported-cases"
-    );
-    await expect(inheritedField(page, "period")).toHaveAttribute(
-      "data-field-id",
-      "2023-01-01"
-    );
-    await expect(inheritedField(page, "release")).toHaveAttribute(
+    await expect(referenceField(page, "release")).toHaveAttribute(
       "data-field-id",
       "alpha-2026"
     );
-    await expect(inheritedField(page, "source")).toHaveAttribute(
-      "data-field-id",
-      "reported-cases"
-    );
-    await expect(page.getByTestId("ask-atlas-inherited-context")).toContainText(
-      "did not retrieve this context"
-    );
+    await expect(referenceField(page, "geography")).toHaveCount(0);
+    await expect(reference).toContainText("Answers search reviewed literature");
+    await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "What would you like to explore?" })
+    ).toBeVisible();
+    await expect(page.getByText("Data supplied by the NCBI.")).toBeVisible();
     const layout =
       (page.viewportSize()?.width ?? 1280) <= 800 ? "compact" : "desktop";
-    await expectComposerVisibleInPanel(page);
     await page.screenshot({
-      path: `/opt/cursor/artifacts/ask-atlas-${layout}.png`,
+      path: testInfo.outputPath(`ask-atlas-page-${layout}.png`),
     });
-    await page.getByLabel("Your question").fill(QUESTION);
+
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Source paper")).toBeVisible();
     expect(requests).toHaveLength(1);
@@ -354,67 +338,154 @@ test.describe("Ask Atlas contextual sidecar", () => {
       "message",
     ]);
     expect(requests[0]?.message).toBe(QUESTION);
+    expect(JSON.stringify(requests)).not.toContain("08001");
+    expect(JSON.stringify(requests)).not.toContain("must-not-persist");
     const transcript = page.getByRole("region", {
       name: "Conversation transcript",
     });
     await expect(transcript).not.toContainText("08001");
     await expect(transcript).not.toContainText("alpha-2026");
-    await expect(transcript).not.toContainText("CDC surveillance");
-    await expect(page).toHaveURL(urlBefore);
-    await expect(page.getByTestId("explore-measure-select")).toContainText(
-      "Reported Lyme cases"
-    );
-    expect(testInfo.project.name.length).toBeGreaterThan(0);
     const axe = await new AxeBuilder({ page })
-      .include("#ux-reset-ask-atlas")
+      .include("[data-testid='ask-atlas-workspace']")
       .analyze();
     expect(axe.violations).toEqual([]);
+    await page.getByTestId("ask-atlas-return").click();
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page).not.toHaveURL(/\/app\/explore/);
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the One Health Atlas",
+      })
+    ).toBeVisible();
+    expect(new URL(page.url()).searchParams.get("county")).toBeNull();
+    expect(exploreUrl).toContain("/explore");
+    expect(testInfo.project.name.length).toBeGreaterThan(0);
   });
 
-  test("keeps no context, then a validated selection, and ignores a failed page load", async ({
+  test("can remove one field and clear an unverified page reference", async ({
     page,
   }) => {
-    const { promise: held, resolve: releaseObservations } =
-      Promise.withResolvers<void>();
-    await installExploreMocks(page, { holdObservations: held });
-    await page.goto(EXPLORE_URL);
-    await openSidecar(page);
-    await expect(page.getByTestId("ask-atlas-no-context")).toBeVisible();
-    releaseObservations();
-    await expect(inheritedField(page, "geography")).toHaveAttribute(
+    await installUniformCompareMocks(page);
+    await page.goto("/compare?compare=08001,08013&scope=CO");
+    await expect(page.getByTestId("compare-workspace")).toBeVisible();
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
+      .toBe("08001,08013");
+    const launcher = await readLauncher(page);
+    await page.goto(`${launcher.url.pathname}${launcher.url.search}`);
+    await page.getByRole("link", { name: "Remove geography" }).click();
+    await expect(referenceField(page, "geography")).toHaveCount(0);
+    await expect(referenceField(page, "release")).toHaveAttribute(
       "data-field-id",
-      "08001"
+      "alpha-2026"
     );
-    await page.getByTestId("ask-atlas-close").click();
-    await page.unroute("**/v1/observations**");
-    await page.route("**/v1/observations**", async (route) => {
-      await fulfillJson(route, { detail: "observations unavailable" }, 500);
-    });
+    await page.getByRole("link", { name: "Clear page reference" }).click();
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
     await page.goto(
-      "/app/explore?county=36001&metric=reported-cases&scope=ALL"
+      "/askatlas?page_ref=not-json&county=08001&dataset=alpha-2026"
     );
-    await openSidecar(page);
-    await expect(page.getByTestId("ask-atlas-no-context")).toBeVisible();
-    await expect(
-      page.getByTestId("ask-atlas-inherited-context")
-    ).not.toContainText("36001");
+    const unverified = page.getByTestId("ask-atlas-page-reference");
+    await expect(unverified).toHaveAttribute(
+      "data-reference-state",
+      "unverified"
+    );
+    await expect(unverified).toContainText("could not be verified");
+    await expect(unverified).not.toContainText("08001");
+    await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
+    await page.getByRole("link", { name: "Clear page reference" }).click();
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await expect(page).not.toHaveURL(/page_ref=/);
   });
 
-  test("closes from the keyboard, restores focus, and keeps hidden content out of tab order", async ({
+  test("keeps an accepted page reference across reload and browser history", async ({
+    page,
+  }) => {
+    await installUniformCompareMocks(page);
+    await page.goto("/compare?compare=08001,08013&scope=CO");
+    await expect(page.getByTestId("compare-workspace")).toBeVisible();
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
+      .toBe("08001,08013");
+    await page.getByTestId("ask-atlas-launcher").click();
+    const reference = page.getByTestId("ask-atlas-page-reference");
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
+    );
+    await expect(referenceField(page, "geography")).toHaveAttribute(
+      "data-field-id",
+      "08001,08013"
+    );
+
+    await page.reload();
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
+    );
+    await expect(referenceField(page, "geography")).toHaveAttribute(
+      "data-field-id",
+      "08001,08013"
+    );
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/compare/);
+    await page.goForward();
+    await expect(page).toHaveURL(/\/askatlas/);
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
+    );
+    await expect(referenceField(page, "geography")).toHaveAttribute(
+      "data-field-id",
+      "08001,08013"
+    );
+  });
+
+  test("does not publish a county from an Explorer browse bookmark", async ({
     page,
   }) => {
     await installExploreMocks(page);
     await page.goto(EXPLORE_URL);
-    const launcher = await openSidecar(page);
-    await page.keyboard.press("Escape");
-    await expect(launcher).toBeFocused();
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "release"))
+      .toBe("alpha-2026");
+    expect(fieldId((await readLauncher(page)).state, "geography")).toBeNull();
+    await page.goto(
+      "/app/explore?county=not-a-county&metric=reported-cases&scope=ALL"
+    );
+    await expect(page).toHaveURL(/\/explore/);
+    const landed = new URL(page.url());
+    expect(landed.searchParams.get("county")).toBeNull();
+    expect(landed.searchParams.get("metric")).toBeNull();
+    expect(landed.searchParams.get("selection")).toBe("required");
+    expect(landed.pathname).toBe("/explore");
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
+      .toBeNull();
+  });
+
+  test("follows the launcher from the keyboard without a panel", async ({
+    page,
+  }) => {
+    await installExploreMocks(page);
+    await page.goto(EXPLORE_URL);
+    const launcher = page.getByTestId("ask-atlas-launcher");
+    await expect(launcher).toBeVisible();
+    await launcher.focus();
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
-    await page.keyboard.press("Tab");
-    await expect(page.locator("#ux-reset-ask-atlas textarea")).toHaveCount(0);
-    await launcher.click();
-    await expect(page.getByTestId("ask-atlas-panel")).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/askatlas/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Ask Atlas" })
+    ).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(launcher).toBeFocused();
+    await expect(page.getByTestId("ask-atlas-workspace")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
+    await expect(page.getByLabel("Your research question")).toBeVisible();
   });
 
   test("drops a late answer after New chat", async ({ page }) => {
@@ -445,13 +516,12 @@ test.describe("Ask Atlas contextual sidecar", () => {
         chatResponse("Second answer stays.", `request-${call}`)
       );
     });
-    await page.goto(EXPLORE_URL);
-    await openSidecar(page);
-    await page.getByLabel("Your question").fill("First question");
+    await page.goto("/askatlas");
+    await page.getByLabel("Your research question").fill("First question");
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Searching reviewed evidence…")).toBeVisible();
     await page.getByRole("button", { name: "New chat" }).click();
-    await page.getByLabel("Your question").fill("A later question");
+    await page.getByLabel("Your research question").fill("A later question");
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Second answer stays.")).toBeVisible();
     resolveFirst();
@@ -462,7 +532,7 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await expect(page.getByText("Second answer stays.")).toBeVisible();
   });
 
-  test("shows an operational chat failure without changing Explore", async ({
+  test("shows an operational chat failure and can return to Explore", async ({
     page,
   }) => {
     await installExploreMocks(page);
@@ -470,167 +540,104 @@ test.describe("Ask Atlas contextual sidecar", () => {
       await fulfillJson(route, { detail: "upstream unavailable" }, 503);
     });
     await page.goto(EXPLORE_URL);
-    await expect(page).toHaveURL(/period=2023-01-01/);
-    const urlBefore = page.url();
-    await openSidecar(page);
-    await page.getByLabel("Your question").fill(QUESTION);
+    await expect(page).toHaveURL(/\/explore/);
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "release"))
+      .toBe("alpha-2026");
+    await page.getByTestId("ask-atlas-launcher").click();
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     const failure = page.locator("[data-assistant-state='network_failure']");
     await expect(failure).toBeVisible();
     await expect(failure).toContainText("not a finding");
-    await expect(page).toHaveURL(urlBefore);
-    await expect(page.getByTestId("explore-workspace")).toBeVisible();
+    await page.getByTestId("ask-atlas-return").click();
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page).not.toHaveURL(/county=/);
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the One Health Atlas",
+      })
+    ).toBeVisible();
   });
 
-  test("reloads a direct link without keeping the sidecar or changing geography", async ({
-    page,
-  }) => {
+  test("reloads Explorer browse without opening a panel", async ({ page }) => {
     await installExploreMocks(page);
     await page.goto(EXPLORE_URL);
-    await openSidecar(page);
+    await expect(page).toHaveURL(/\/explore/);
     await page.reload();
     await expect(page).toHaveURL(/county=08001/);
-    await expect(page).toHaveURL(/metric=reported-cases/);
+    await expect(page).not.toHaveURL(/metric=/);
+    await expect(page).not.toHaveURL(/period=/);
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
-    await expect(page.getByTestId("ask-atlas-launcher")).toHaveAttribute(
-      "aria-expanded",
-      "false"
+    await expect(page.getByTestId("ask-atlas-launcher")).not.toHaveAttribute(
+      "aria-expanded"
     );
-    await openSidecar(page);
-    await expect(inheritedField(page, "geography")).toHaveAttribute(
-      "data-field-id",
-      "08001"
-    );
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "release"))
+      .toBe("alpha-2026");
   });
 
-  test("navigates while open and drops stale Explore geography on national Review", async ({
-    page,
-  }) => {
-    test.skip(
-      (page.viewportSize()?.width ?? 1280) <= 800,
-      "Compact sidecar is modal, so page navigation stays inert until it closes."
-    );
-    await installExploreMocks(page);
-    await installReviewMocks(page);
-    await page.goto(EXPLORE_URL);
-    await openSidecar(page);
-    await expect(inheritedField(page, "geography")).toHaveAttribute(
-      "data-field-id",
-      "08001"
-    );
-    await page.getByRole("link", { name: "Review", exact: true }).click();
-    await expect(page).toHaveURL(/\/app\/review/);
-    await expect(page.getByTestId("ask-atlas-panel")).toBeVisible();
-    const scope = page.getByTestId("review-scope-select");
-    await expect(scope).toBeVisible();
-    if (!(await scope.textContent())?.includes("United States")) {
-      await scope.click();
-      await page.getByRole("option", { name: "United States" }).click();
-    }
-    await expect(inheritedField(page, "geography")).toHaveAttribute(
-      "data-field-state",
-      "absent"
-    );
-    await expect(inheritedField(page, "geography")).not.toHaveAttribute(
-      "data-field-id"
-    );
-    await expect(inheritedField(page, "release")).toHaveAttribute(
-      "data-field-state",
-      "validated"
-    );
-    const inset = page.locator(".app-inset");
-    await expect(inset).not.toHaveAttribute("inert");
-  });
-
-  test("matches modal inert behavior to the compact layout and restores the page", async ({
-    page,
-  }, testInfo) => {
-    test.skip(
-      testInfo.project.name !== "desktop",
-      "Resize from the desktop project."
-    );
-    await installExploreMocks(page);
-    await page.goto(EXPLORE_URL);
-    await openSidecar(page);
-    const inset = page.locator(".app-inset");
-    await expect(inset).not.toHaveAttribute("inert");
-    const select = page.getByTestId("explore-measure-select");
-    const panel = page.getByTestId("ask-atlas-panel");
-    const selectBox = await select.boundingBox();
-    const panelBox = await panel.boundingBox();
-    expect(selectBox).not.toBeNull();
-    expect(panelBox).not.toBeNull();
-    expect((selectBox?.x ?? 0) + (selectBox?.width ?? 0)).toBeLessThanOrEqual(
-      (panelBox?.x ?? 0) + 1
-    );
-    await page.setViewportSize({ height: 800, width: 390 });
-    await expect(page.getByRole("dialog")).toHaveAttribute(
-      "aria-modal",
-      "true"
-    );
-    await expect(inset).toHaveAttribute("inert", "");
-    await page.setViewportSize({ height: 720, width: 1280 });
-    await expect(page.getByTestId("ask-atlas-panel")).toHaveAttribute(
-      "data-ask-atlas-layout",
-      "desktop"
-    );
-    await expect(inset).not.toHaveAttribute("inert");
-    await expect(select).toBeVisible();
-  });
-
-  test("offers the sidecar on Investigate, Compare, and Action", async ({
+  test("offers the page from Investigate, Compare, and Action", async ({
     page,
   }) => {
     await installExploreMocks(page);
     await page.goto("/app/investigate?county=08001");
-    const launcher = await openSidecar(page);
-    await page.keyboard.press("Escape");
-    await expect(launcher).toBeFocused();
-    await page.goto("/app/compare?compare=08001,08013");
-    await openSidecar(page);
+    await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
+    await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.goto("/compare?compare=08001,08013");
     await expect(page.getByTestId("compare-workspace")).toBeVisible();
-    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("ask-atlas-launcher")).toHaveAttribute(
+      "href",
+      /\/askatlas/
+    );
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await page.goto("/app/action");
-    await expect(page.getByRole("heading", { name: "Action" })).toBeVisible();
-    await openSidecar(page);
-    await expect(page.getByTestId("ask-atlas-no-context")).toHaveCount(0);
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page.getByRole("heading", { name: "Action" })).toHaveCount(0);
     await expect(
-      page.getByTestId("ask-atlas-inherited-context")
-    ).toHaveAttribute("data-context-state", "partial");
-    await expect(inheritedField(page, "geography")).toHaveAttribute(
-      "data-field-state",
-      "absent"
-    );
-    await expect(inheritedField(page, "release")).toHaveAttribute(
-      "data-field-id",
-      "alpha-2026"
-    );
+      page.getByRole("heading", {
+        level: 1,
+        name: "Explore the One Health Atlas",
+      })
+    ).toBeVisible();
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "release"))
+      .toBe("alpha-2026");
+    const action = await readLauncher(page);
+    expect(fieldId(action.state, "geography")).toBeNull();
+    expect(action.state.kind).toBe("validated");
   });
 
-  test("keeps the composer inside the panel at short, resized, and keyboard viewports", async ({
+  test("uses the same page on a narrow viewport", async ({
     page,
   }, testInfo) => {
     test.skip(
-      testInfo.project.name !== "desktop",
-      "Viewport matrix starts from the desktop project."
+      !releaseViewportRuns(testInfo.project.name, 390),
+      "Phone-width Ask Atlas checks run on the mobile project."
     );
     await installExploreMocks(page);
-    await page.setViewportSize({ height: 720, width: 1280 });
+    await page.setViewportSize({ height: 800, width: 390 });
     await page.goto(EXPLORE_URL);
-    await openSidecar(page);
-    const viewports = [
-      { height: 720, width: 1280 },
-      { height: 800, width: 390 },
-      { height: 480, width: 1280 },
-      { height: 360, width: 390 },
-      { height: 720, width: 1280 },
-    ];
-    for (const viewport of viewports) {
-      await page.setViewportSize(viewport);
-      await expect(page.getByTestId("ask-atlas-panel")).toBeVisible();
-      await expectComposerVisibleInPanel(page);
-    }
+    await expect(page).toHaveURL(/\/explore/);
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "release"))
+      .toBe("alpha-2026");
+    await page.getByTestId("ask-atlas-launcher").click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
+    await expect(page.getByTestId("ask-atlas-page-reference")).toBeVisible();
+    await page.getByLabel("Your research question").scrollIntoViewIfNeeded();
+    await expect(page.getByLabel("Your research question")).toBeInViewport();
+    await expect(page.getByTestId("ask-atlas-try-asking")).toBeVisible();
+    const columns = await page
+      .locator(".ux-reset-ask-atlas-workspace .chat-starter-prompts-list")
+      .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+    expect(columns.split(" ").length).toBe(1);
+    await page.screenshot({
+      path: testInfo.outputPath("ask-atlas-phone-empty.png"),
+    });
   });
 
   test("inherits the accepted observation period instead of an unvalidated request", async ({
@@ -648,24 +655,16 @@ test.describe("Ask Atlas contextual sidecar", () => {
       );
     });
     await page.goto("/app/investigate?county=08001&scope=CO&period=1999-01-01");
-    await expect(page.getByTestId("investigate-finding-text")).toContainText(
-      "Period 2023"
-    );
-    await expect(
-      page.getByTestId("investigate-finding-text")
-    ).not.toContainText("1999");
-    await openSidecar(page);
-    await expect(inheritedField(page, "period")).toHaveAttribute(
-      "data-field-state",
-      "validated"
-    );
-    await expect(inheritedField(page, "period")).toHaveAttribute(
-      "data-field-id",
-      "2023-01-01"
-    );
-    await expect(inheritedField(page, "period")).toContainText("2023");
-    await expect(inheritedField(page, "period")).not.toContainText("1999");
-    await page.getByLabel("Your question").fill(QUESTION);
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page).toHaveURL(/mode=evidence/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page.getByTestId("investigate-finding-text")).toHaveCount(0);
+    await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
+    await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
+    await page.getByTestId("ask-atlas-launcher").click();
+    await expect(page).toHaveURL(/\/askatlas/);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(page.getByText("Source paper")).toBeVisible();
     expect(Object.keys(chatBodies[0] ?? {}).toSorted()).toEqual([
@@ -674,67 +673,89 @@ test.describe("Ask Atlas contextual sidecar", () => {
     ]);
 
     await installUniformCompareMocks(page);
-    await page.goto(
-      "/app/compare?compare=08001,08013&scope=CO&period=1999-01-01"
+    await page.goto("/compare?compare=08001,08013&scope=CO&period=1999-01-01");
+    const additional = page.getByTestId("compare-group-additional");
+    await expect(additional).toBeVisible();
+    const additionalOpen = await additional.evaluate((element) =>
+      element instanceof HTMLDetailsElement ? element.open : false
     );
-    await expect(page.getByText("Observation period").first()).toBeVisible();
+    if (!additionalOpen) {
+      await additional.locator("> summary").click();
+    }
+    await expect(
+      additional
+        .getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
+        .getByText("Observation period 2023")
+    ).toBeVisible();
     await expect(page.getByTestId("compare-alignment")).toContainText("2023");
     await expect(page.getByTestId("compare-alignment")).not.toContainText(
       "1999"
     );
-    await openSidecar(page);
-    await expect(inheritedField(page, "period")).toHaveAttribute(
-      "data-field-id",
-      "2023-01-01"
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "period"))
+      .toBe("2023-01-01");
+    await expect
+      .poll(async () => fieldId((await readLauncher(page)).state, "geography"))
+      .toBe("08001,08013");
+    const compare = await readLauncher(page);
+    expect(compare.url.searchParams.get("compare")).toBeNull();
+    expect(compare.url.searchParams.get("period")).toBeNull();
+    if (compare.state.kind === "validated") {
+      expect(compare.state.returnHref).toContain("/compare?");
+      expect(compare.state.returnHref).toContain("compare=08001%2C08013");
+      expect(compare.state.returnHref).toContain("period=2023-01-01");
+      expect(compare.state.returnHref).not.toContain("1999");
+    }
+    await page.getByTestId("ask-atlas-launcher").click();
+    await expect(page.getByTestId("ask-atlas-page-reference")).toContainText(
+      "does not compare these counties"
     );
-    await expect(inheritedField(page, "period")).not.toContainText("1999");
+    await page.getByTestId("ask-atlas-return").click();
+    await expect(page).toHaveURL(/\/compare/);
+    await expect(page).toHaveURL(/compare=08001/);
+    await expect(page).toHaveURL(/period=2023-01-01/);
+    await expect(page).not.toHaveURL(/1999/);
   });
 
-  test("recovers from back, forward, sidecar links, and leaving for sign-in", async ({
+  test("recovers from back, forward, and leaving for sign-in", async ({
     page,
-  }, testInfo) => {
-    test.skip(
-      testInfo.project.name !== "desktop",
-      "Compact history recovery is set explicitly."
-    );
+  }) => {
     await installExploreMocks(page);
     await installReviewMocks(page);
-    await page.setViewportSize({ height: 800, width: 390 });
     await page.goto("/app/settings");
     await page.goto(EXPLORE_URL);
-    await openSidecar(page);
-    await expect(page.locator(".app-inset")).toHaveAttribute("inert", "");
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page.getByTestId("ask-atlas-launcher")).toBeVisible();
+    await page.getByTestId("ask-atlas-launcher").click();
+    await expect(page).toHaveURL(/\/askatlas/);
     await page.goBack();
-    await expect(page).toHaveURL(/\/app\/settings/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert");
     await page.goForward();
-    await expect(page).toHaveURL(/\/app\/explore/);
-    await expectRecoveredSidecar(page);
+    await expect(page).toHaveURL(/\/askatlas/);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
-    await openSidecar(page);
     await page.route("**/v1/knowledge-graph/chat", async (route) => {
       await fulfillJson(
         route,
         chatResponse("Reviewed studies describe exposure.", "request-link")
       );
     });
-    await page.getByLabel("Your question").fill(QUESTION);
+    await page.getByLabel("Your research question").fill(QUESTION);
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     const source = page.getByRole("link", { name: "Source paper" });
     await expect(source).toBeVisible();
     const popup = page.waitForEvent("popup");
     await source.click();
     const sourcePage = await popup;
-    // PubMed commit can outlast the 5s expect timeout. Wait for the navigation
-    // itself, then assert the same URL without also waiting for the full load.
     await sourcePage.waitForURL(/pubmed\.ncbi\.nlm\.nih\.gov/, {
       waitUntil: "commit",
     });
     expect(sourcePage.url()).toMatch(/pubmed\.ncbi\.nlm\.nih\.gov/);
     await sourcePage.close();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.locator(".app-inset")).toHaveAttribute("inert", "");
+    await expect(page.getByTestId("ask-atlas-workspace")).toBeVisible();
+    await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
 
     await page.goto("/auth/sign-in");
     await expect(
@@ -744,7 +765,7 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await expect(page.locator("[inert]")).toHaveCount(0);
 
     await page.goto(EXPLORE_URL);
-    await openSidecar(page);
+    await page.getByTestId("ask-atlas-launcher").click();
     await page.goto("/account");
     await expect(
       page.getByRole("heading", { name: "Your account" })
@@ -754,16 +775,3 @@ test.describe("Ask Atlas contextual sidecar", () => {
     await expect(page.locator("[inert]")).toHaveCount(0);
   });
 });
-
-async function expectRecoveredSidecar(page: Page) {
-  const panel = page.locator("#ux-reset-ask-atlas");
-  const inset = page.locator(".app-inset");
-  if ((await panel.count()) === 0) {
-    await expect(inset).not.toHaveAttribute("inert");
-    return;
-  }
-  await expect(panel).toBeVisible();
-  await page.getByTestId("ask-atlas-close").click();
-  await expect(panel).toHaveCount(0);
-  await expect(inset).not.toHaveAttribute("inert");
-}

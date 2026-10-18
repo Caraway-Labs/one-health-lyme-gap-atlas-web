@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, type RefObject } from "react";
+import { History } from "lucide-react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import {
@@ -29,6 +31,7 @@ interface ChatHistoryActionsProps {
   onDelete: (id: string) => void;
   onMobileHistoryOpenChange: (open: boolean) => void;
   onSelect: (id: string) => void;
+  showRetentionCopy?: boolean;
 }
 
 function ChatHistoryList({
@@ -48,6 +51,8 @@ function ChatHistoryList({
     <ul className="chat-history-list">
       {conversations.map((item) => {
         const isActive = activeConversationId === item.id;
+        const title =
+          item.title.trim().replaceAll(/\s+/g, " ") || "Untitled conversation";
         const preview = isActive ? null : conversationTurnPreview(item);
         const evidenceLabel = conversationEvidenceStrengthLabel(item);
         const showMeta = preview || evidenceLabel;
@@ -60,7 +65,7 @@ function ChatHistoryList({
               onClick={() => onSelect(item.id)}
               {...analyticsControlAttributes("evidence_chat_history_select")}
             >
-              <span className="history-row-title">{item.title}</span>
+              <span className="history-row-title">{title}</span>
               {showMeta ? (
                 <span className="history-row-meta">
                   <time dateTime={item.updatedAt}>
@@ -87,7 +92,7 @@ function ChatHistoryList({
             <button
               type="button"
               className="history-row-delete"
-              aria-label={`Delete ${item.title}`}
+              aria-label={`Delete ${title}`}
               onClick={() => onDelete(item.id)}
               {...analyticsControlAttributes("evidence_chat_history_delete")}
             >
@@ -157,6 +162,142 @@ function ChatHistoryClearDialog({
   );
 }
 
+const SAVED_IN_BROWSER =
+  "Up to five conversations stay in this browser for 30 days. Nothing is stored until a response is saved. Deleting a chat removes that local copy only.";
+
+export function AskAtlasHistoryControl({
+  activeConversationId,
+  composerFocusRef,
+  conversations,
+  onClearAll,
+  onDelete,
+  onSelect,
+}: {
+  activeConversationId?: string;
+  composerFocusRef: RefObject<HTMLTextAreaElement | null>;
+  conversations: LocalConversation[];
+  onClearAll: () => void;
+  onDelete: (id: string) => void;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const focusComposerOnClose = useRef(false);
+  const [relativeTimeNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "ux-reset-ask-atlas-history-open",
+      open
+    );
+    return () => {
+      document.documentElement.classList.remove(
+        "ux-reset-ask-atlas-history-open"
+      );
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open || !focusComposerOnClose.current) {
+      return;
+    }
+    focusComposerOnClose.current = false;
+    const frame = window.requestAnimationFrame(() => {
+      composerFocusRef.current?.focus();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [composerFocusRef, open]);
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+  }
+
+  function closeForComposer() {
+    focusComposerOnClose.current = true;
+    setOpen(false);
+  }
+
+  return (
+    <div className="ux-reset-ask-atlas-history">
+      <Dialog onOpenChange={handleOpenChange} open={open}>
+        <DialogTrigger
+          render={
+            <Button
+              ref={buttonRef}
+              type="button"
+              variant="outline"
+              {...analyticsControlAttributes("evidence_chat_history_open")}
+            />
+          }
+        >
+          <History aria-hidden="true" />
+          History
+        </DialogTrigger>
+        <DialogContent
+          className="ux-reset-ask-atlas-history-panel top-0 right-0 bottom-0 left-auto flex h-dvh max-h-none w-[min(22rem,calc(100vw-1rem))] max-w-none translate-x-0 translate-y-0 flex-col gap-3 overflow-hidden rounded-none p-4 sm:max-w-none"
+          id="ask-atlas-history-panel"
+        >
+          <DialogHeader className="pr-8">
+            <div className="chat-history-header">
+              <DialogTitle>Chat history</DialogTitle>
+              {conversations.length > 0 ? (
+                <button
+                  aria-haspopup="dialog"
+                  className="chat-history-clear"
+                  type="button"
+                  onClick={() => {
+                    focusComposerOnClose.current = false;
+                    setOpen(false);
+                    setClearDialogOpen(true);
+                  }}
+                >
+                  Clear all
+                </button>
+              ) : null}
+            </div>
+            <DialogDescription
+              data-testid="ask-atlas-browser-storage"
+              id="ask-atlas-browser-storage"
+            >
+              {SAVED_IN_BROWSER}
+            </DialogDescription>
+          </DialogHeader>
+          {conversations.length === 0 ? (
+            <p className="chat-history-empty-hint">
+              No chats are saved in this browser yet. A chat is saved here only
+              after a response arrives.
+            </p>
+          ) : (
+            <ChatHistoryList
+              activeConversationId={activeConversationId}
+              conversations={conversations}
+              now={relativeTimeNow}
+              onDelete={onDelete}
+              onSelect={(id) => {
+                onSelect(id);
+                closeForComposer();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <ChatHistoryClearDialog
+        focusReturnRef={buttonRef}
+        onConfirm={() => {
+          onClearAll();
+          setClearDialogOpen(false);
+          composerFocusRef.current?.focus();
+        }}
+        onOpenChange={setClearDialogOpen}
+        open={clearDialogOpen}
+      />
+    </div>
+  );
+}
+
 export function ChatHistoryEmptyHint() {
   return (
     <p className="chat-history-empty-hint">
@@ -168,11 +309,13 @@ export function ChatHistoryEmptyHint() {
 
 export function ChatHistoryMobileToggle({
   conversationCount,
+  label = "Recent chats",
   mobileToggleRef,
   onOpenChange,
   open,
 }: {
   conversationCount: number;
+  label?: string;
   mobileToggleRef: RefObject<HTMLButtonElement | null>;
   onOpenChange: (open: boolean) => void;
   open: boolean;
@@ -191,7 +334,7 @@ export function ChatHistoryMobileToggle({
       onClick={() => onOpenChange(!open)}
       {...analyticsControlAttributes("evidence_chat_history_open")}
     >
-      Recent chats ({conversationCount})
+      {label} ({conversationCount})
     </Button>
   );
 }
@@ -206,6 +349,7 @@ export function ChatHistoryWorkspace({
   onDelete,
   onMobileHistoryOpenChange,
   onSelect,
+  showRetentionCopy = true,
 }: ChatHistoryActionsProps) {
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [clearDialogFocusTarget, setClearDialogFocusTarget] = useState<
@@ -267,10 +411,12 @@ export function ChatHistoryWorkspace({
           </button>
         </div>
         {list}
-        <p className="retention-copy">
-          Up to five conversations are stored in this browser for 30 days.
-          Deleting here removes the local copy.
-        </p>
+        {showRetentionCopy ? (
+          <p className="retention-copy">
+            Up to five conversations are stored in this browser for 30 days.
+            Deleting here removes the local copy.
+          </p>
+        ) : null}
       </aside>
       {mobileHistoryOpen && (
         <div
@@ -313,10 +459,12 @@ export function ChatHistoryWorkspace({
               </div>
             </header>
             {list}
-            <p className="retention-copy">
-              Up to five conversations are stored in this browser for 30 days.
-              Deleting here removes the local copy.
-            </p>
+            {showRetentionCopy ? (
+              <p className="retention-copy">
+                Up to five conversations are stored in this browser for 30 days.
+                Deleting here removes the local copy.
+              </p>
+            ) : null}
           </section>
         </div>
       )}

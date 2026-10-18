@@ -122,13 +122,18 @@ function ExplorerMapRuntime(props: Props & { onRetry: () => void }) {
               includeUnscoredCounties={false}
               fillColor={
                 [
-                  "interpolate",
-                  ["linear"],
-                  ["get", "completeness"],
-                  0,
-                  "#dff1eb",
-                  props.maximum,
-                  "#075760",
+                  "case",
+                  ["==", ["typeof", ["get", "completeness"]], "number"],
+                  [
+                    "interpolate",
+                    ["linear"],
+                    ["get", "completeness"],
+                    0,
+                    "#dff1eb",
+                    props.maximum,
+                    "#075760",
+                  ],
+                  "#e4e9ea",
                 ] as AtlasMapFillColor
               }
               onSelect={(fips) => props.onSelect(fips)}

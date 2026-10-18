@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { ChatHistoryWorkspace } from "@/components/evidence-chat-history";
 
 import { EvidenceChatConversationContent } from "./evidence-chat-conversation-content";
@@ -18,11 +20,17 @@ export function EvidenceChatDrawerShell({
 }
 
 export function EvidenceChatWorkspaceShell({
+  emptyLead,
   headingLevel = 1,
+  leading,
   model,
+  presentation = "default",
 }: {
+  emptyLead?: ReactNode;
   headingLevel?: 1 | 2;
+  leading?: ReactNode;
   model: EvidenceChatConversationModel;
+  presentation?: "ask-atlas" | "default";
 }) {
   const { conversations, hasSavedConversations, active } = model;
   const workspaceClassName = [
@@ -34,8 +42,8 @@ export function EvidenceChatWorkspaceShell({
     .join(" ");
 
   return (
-    <div className={workspaceClassName}>
-      {hasSavedConversations && (
+    <div className={workspaceClassName} data-presentation={presentation}>
+      {hasSavedConversations && presentation !== "ask-atlas" && (
         <ChatHistoryWorkspace
           activeConversationId={active?.id}
           composerFocusRef={model.inputRef}
@@ -54,11 +62,16 @@ export function EvidenceChatWorkspaceShell({
           onSelect={(id) => {
             model.selectConversation(id);
           }}
+          showRetentionCopy
         />
       )}
       <EvidenceChatConversationContent
+        emptyLead={emptyLead}
         headingLevel={headingLevel}
+        leading={leading}
         model={model}
+        presentation={presentation}
+        showCountyNotice={presentation !== "ask-atlas"}
       />
     </div>
   );

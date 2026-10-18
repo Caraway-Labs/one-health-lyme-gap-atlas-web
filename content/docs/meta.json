@@ -9,9 +9,12 @@
     "current-capabilities",
     "investigation-workflows",
     "evidence-and-uncertainty",
+    "sources-and-canonical-evidence",
     "releases-and-methodology",
     "ai-enabled-decision-intelligence",
     "api-mcp-and-access",
-    "faq-and-troubleshooting"
+    "api-reference",
+    "faq-and-troubleshooting",
+    "develop"
   ]
 }

@@ -278,4 +278,16 @@ describe("Ask Atlas answer contract", () => {
     }
     expect(accepted.response).not.toHaveProperty("confidence");
   });
+
+  it("does not treat an uncontracted freshness field as literature staleness", () => {
+    const accepted = acceptAskAtlasPayload({
+      ...literatureResponse(),
+      freshness: [{ observation_id: "obs-1", state: "stale" }],
+    });
+    expect(accepted.ok).toBeTruthy();
+    if (!accepted.ok) {
+      return;
+    }
+    expect(accepted.response).not.toHaveProperty("freshness");
+  });
 });

@@ -18,11 +18,17 @@ describe("safe return path", () => {
       overview: accountFreeContinueHref("/overview?county=08001&state=CO"),
       review: accountFreeContinueHref("/app/review"),
       reviewQuery: accountFreeContinueHref("/app/review?scope=CO"),
+      explore: accountFreeContinueHref("/explore?scope=CO"),
+      compare: accountFreeContinueHref("/compare?compare=08001,08013"),
+      askAtlas: accountFreeContinueHref("/askatlas?conversation=abc"),
     }).toStrictEqual({
       bareQuery: "?county=08001",
       overview: "/overview?county=08001&state=CO",
-      review: "/overview",
-      reviewQuery: "/overview",
+      review: "/explore",
+      reviewQuery: "/explore",
+      explore: "/explore",
+      compare: "/explore",
+      askAtlas: "/explore",
     });
   });
 

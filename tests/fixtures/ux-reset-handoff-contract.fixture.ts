@@ -42,7 +42,7 @@ export const FIXTURE_ACCEPT_POLICY: Record<
   explore: ["scope", "county", "dataset", "period"],
   feed: [],
   investigate: FIXTURE_SHARED_KEYS,
-  review: ["scope", "county", "dataset", "period"],
+  review: ["scope", "county", "compare", "dataset", "period"],
   settings: [],
 };
 
@@ -146,6 +146,9 @@ export function fixtureRichSourceQuery(
 
   switch (source) {
     case "review": {
+      params.set("breakpoint", "20");
+      params.set("eco", "40");
+      params.set("missing", "40");
       params.set("sort", "score");
       break;
     }

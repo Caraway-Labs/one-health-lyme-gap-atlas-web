@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { mockApi } from "./geographic-explorer-mock";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 const VIEWPORTS = [
   { width: 375, height: 812, name: "375" },
@@ -43,7 +44,11 @@ function chatResponse(id: number) {
 for (const viewport of VIEWPORTS) {
   test(`assistant workspace passes axe and keyboard landmarks at ${viewport.name}px`, async ({
     page,
-  }) => {
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, viewport.width),
+      "Phone-width assistant checks run on the mobile project."
+    );
     let calls = 0;
     await page.route("**/v1/knowledge-graph/chat", async (route) => {
       calls += 1;
@@ -88,7 +93,11 @@ for (const viewport of VIEWPORTS) {
 
 test("assistant workspace reflows at 200% zoom without horizontal overflow", async ({
   page,
-}) => {
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 375),
+    "Phone-width assistant checks run on the mobile project."
+  );
   await page.route("**/v1/knowledge-graph/chat", async (route) => {
     await route.fulfill({ json: chatResponse(1) });
   });
@@ -119,7 +128,7 @@ test("drawer assistant exposes one dialog landmark and returns focus on close", 
 }) => {
   await mockApi(page);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/geographic_explorer?state=CA&county=06085");
+  await page.goto("/account");
   const launcher = page.getByRole("button", { name: "Atlas Assistant" });
   await launcher.click();
   await expect(

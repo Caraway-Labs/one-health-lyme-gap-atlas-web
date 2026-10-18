@@ -14,6 +14,10 @@ import {
   waitForCompareCatalogCooldown,
 } from "@/features/ux-reset/compare/compare-catalog-cooldown";
 import {
+  alignCompareCountyProfiles,
+  type CompareProfileAlignment,
+} from "@/features/ux-reset/compare/compare-county-profile";
+import {
   classifyCompareEntry,
   compareCountyOptionLabel,
   compareRecoveryMessages,
@@ -33,6 +37,10 @@ import {
   preservedCompareMeasures,
   shouldRetryCompareRequest,
 } from "@/features/ux-reset/compare/load-compare-evidence";
+import {
+  compareProfileCoolingDown,
+  loadCompareCountyProfiles,
+} from "@/features/ux-reset/compare/load-compare-profile";
 import { uxResetShellHandoffHref } from "@/features/ux-reset/context-handoff";
 import {
   parseCompareFipsList,
@@ -46,11 +54,16 @@ import {
   fetchExploreMeasures,
 } from "@/features/ux-reset/explore/load-explore-resources";
 import {
+  compareReturnHrefWithExplorerMode,
+  EXPLORER_EVIDENCE_MODE,
+  hrefWithExplorerMode,
+} from "@/features/ux-reset/review/explorer-mode";
+import {
+  ATLAS_EXPLORER_PATH,
   RESET_COMPARE_PATH,
-  RESET_INVESTIGATE_PATH,
 } from "@/features/ux-reset/routes";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
-import type { AtlasMetadata } from "@/generated/models";
+import type { AtlasMetadata, Measure } from "@/generated/models";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -61,6 +74,7 @@ import {
 } from "@/lib/atlas-state-geography";
 
 const EMPTY_COUNTY_DIRECTORY: readonly ExploreCountyIdentity[] = [];
+const EMPTY_MEASURES: readonly Measure[] = [];
 
 export type CompareRecoveryState =
   | "directory"
@@ -70,9 +84,11 @@ export type CompareRecoveryState =
   | "unknown";
 
 export type CompareCountyOption = {
+  countyName: string;
   disabled: boolean;
   fips: string;
   label: string;
+  stateLabel: string;
 };
 
 export type CompareWorkspace = {
@@ -95,6 +111,11 @@ export type CompareWorkspace = {
   options: readonly CompareCountyOption[];
   pairIssue: string;
   period: string | null;
+  profile: CompareProfileAlignment | null;
+  profileCoolingDown: boolean;
+  profileError: string | null;
+  profileLoading: boolean;
+  profileRetrying: boolean;
   recoveryMessages: string[];
   recoveryState: CompareRecoveryState;
   releaseId: string | null;
@@ -103,6 +124,7 @@ export type CompareWorkspace = {
   returnTarget: CompareReturnTarget | null;
   retryCatalog: () => void;
   retryEvidence: () => void;
+  retryProfile: () => void;
   scopeLabel: string;
   setSlot: (slot: 0 | 1, fips: string) => void;
   slotMessage: string | null;
@@ -299,7 +321,7 @@ export function useCompareWorkspace(): CompareWorkspace {
         queryClient.getDefaultOptions().queries?.retryDelay
       ),
   });
-  const measures = measuresQuery.data ?? [];
+  const measures = measuresQuery.data ?? EMPTY_MEASURES;
   const measureIds = measures.map((measure) => measure.measure_id);
   const leftFips = entry.pair[0] ?? "";
   const rightFips = entry.pair[1] ?? "";
@@ -355,6 +377,15 @@ export function useCompareWorkspace(): CompareWorkspace {
         : ["ux-reset-compare-evidence", "idle"],
     retry: (failureCount, error) =>
       shouldRetryCompareRequest(failureCount, error, retrySetting),
+    staleTime: (query) => {
+      const knownEmpty = query.state.data?.outcomes.some(
+        (outcome) =>
+          outcome.status === "ready" &&
+          outcome.observations.length === 0 &&
+          outcome.selectionAvailability
+      );
+      return knownEmpty ? 0 : 300_000;
+    },
   });
   const retryGateRef = useRef(false);
   const retryEvidence = async () => {
@@ -370,6 +401,36 @@ export function useCompareWorkspace(): CompareWorkspace {
   };
   const retryCatalog = () => {
     void measuresQuery.refetch();
+  };
+
+  const profileQuery = useQuery({
+    enabled: Boolean(releaseId && pairReady && leftFips && rightFips),
+    queryFn: ({ signal }) => {
+      if (!(releaseId && leftFips && rightFips)) {
+        throw new CompareContractError(
+          "County records require two counties and a release.",
+          "rejected"
+        );
+      }
+      return loadCompareCountyProfiles({
+        leftFips,
+        releaseId,
+        rightFips,
+        signal,
+      });
+    },
+    queryKey: ["ux-reset-compare-profile", releaseId, leftFips, rightFips],
+    retry: (failureCount, error) =>
+      shouldRetryCompareRequest(failureCount, error, retrySetting),
+    retryDelay: (failureCount, error) =>
+      compareCatalogRetryDelay(
+        failureCount,
+        error,
+        queryClient.getDefaultOptions().queries?.retryDelay
+      ),
+  });
+  const retryProfile = () => {
+    void profileQuery.refetch();
   };
 
   const currentPair = pairKey.length > 0 ? pairKey.split(",") : [];
@@ -402,19 +463,26 @@ export function useCompareWorkspace(): CompareWorkspace {
     scope: urlState.scope,
   });
   const investigateHref = (fips: string) =>
-    uxResetShellHandoffHref(
-      RESET_INVESTIGATE_PATH,
-      RESET_COMPARE_PATH,
-      sharedContextToSearchParams(contextFor(fips, currentPair))
+    hrefWithExplorerMode(
+      uxResetShellHandoffHref(
+        ATLAS_EXPLORER_PATH,
+        RESET_COMPARE_PATH,
+        sharedContextToSearchParams(contextFor(fips, currentPair))
+      ),
+      EXPLORER_EVIDENCE_MODE
     );
   const returnTarget = urlState.return;
-  const returnHref = returnTarget
-    ? uxResetShellHandoffHref(
-        compareReturnPath(returnTarget),
-        RESET_COMPARE_PATH,
-        sharedContextToSearchParams(contextFor(urlState.county, currentPair))
-      )
-    : null;
+  const returnHref = compareReturnHrefWithExplorerMode({
+    href: returnTarget
+      ? uxResetShellHandoffHref(
+          compareReturnPath(returnTarget),
+          RESET_COMPARE_PATH,
+          sharedContextToSearchParams(contextFor(urlState.county, currentPair))
+        )
+      : null,
+    modeValues: searchParams.getAll("mode"),
+    returnTarget,
+  });
   const optionRows = new Map<string, ExploreCountyIdentity | null>();
   for (const county of directory) {
     optionRows.set(county.fips, county);
@@ -426,9 +494,11 @@ export function useCompareWorkspace(): CompareWorkspace {
   }
   const options = [...optionRows.entries()]
     .map(([fips, county]) => ({
+      countyName: county?.county ?? `County ${fips}`,
       disabled: false,
       fips,
       label: compareCountyOptionLabel(county, fips),
+      stateLabel: county ? county.stateName || county.state : "",
     }))
     .toSorted(
       (left, right) =>
@@ -441,6 +511,31 @@ export function useCompareWorkspace(): CompareWorkspace {
     pairLength: entry.pair.length,
     unknownCount: unknownFips.length,
   });
+  // A failed refresh keeps the previous county payload. Hide it so cached
+  // facts are not shown next to the error. Catalog metadata stays separate.
+  const profileRecords =
+    recoveryState === "ready" &&
+    !profileQuery.isError &&
+    profileQuery.data?.leftFips === leftFips &&
+    profileQuery.data.rightFips === rightFips
+      ? profileQuery.data
+      : null;
+  const profile = useMemo(
+    () =>
+      profileRecords
+        ? alignCompareCountyProfiles({
+            left: profileRecords.left,
+            leftFips: profileRecords.leftFips,
+            // Retained query data is the last accepted catalog for this
+            // release. A failed refetch sets isSuccess to false without
+            // clearing that data, so known types and limitations stay.
+            measures,
+            right: profileRecords.right,
+            rightFips: profileRecords.rightFips,
+          })
+        : null,
+    [measures, profileRecords]
+  );
 
   return {
     alignment:
@@ -489,6 +584,19 @@ export function useCompareWorkspace(): CompareWorkspace {
     options,
     pairIssue: pairIssue(entry),
     period: urlState.period,
+    profile,
+    profileCoolingDown: compareProfileCoolingDown(
+      profileQuery.failureCount >= 0 ? releaseId : null
+    ),
+    profileError:
+      recoveryState === "ready" && profileQuery.isError
+        ? "Published county records did not load for these two counties."
+        : null,
+    profileLoading: recoveryState === "ready" && profileQuery.isLoading,
+    profileRetrying:
+      recoveryState === "ready" &&
+      profileQuery.isFetching &&
+      (profileQuery.isError || Boolean(profileQuery.data)),
     recoveryMessages: compareRecoveryMessages({
       entry,
       unknownFips,
@@ -500,6 +608,7 @@ export function useCompareWorkspace(): CompareWorkspace {
     returnTarget,
     retryCatalog,
     retryEvidence,
+    retryProfile,
     scopeLabel: reviewScopeLabel(urlState.scope, stateOptions),
     setSlot,
     slotMessage,

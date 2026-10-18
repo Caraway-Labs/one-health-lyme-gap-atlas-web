@@ -12,13 +12,30 @@
   container: trust-footer / inline-size;
 }
 
+/* Professional routes scroll this bar with the main pane. Relative keeps the
+   bar in normal flow and contains its absolute screen-reader text so that
+   text cannot extend the document. Public pages keep the shared margin-top. */
+.ux-reset-pro-app .ux-reset-trust-footer {
+  position: relative;
+  width: 100%;
+  margin-top: 0;
+}
+
 .ux-reset-trust-footer-bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  /* Approved desktop band is 60–64px. 3.875rem is 62px at a 16px root. */
+  /* Public pages keep the 60–64px band. 3.875rem is 62px at a 16px root. */
   min-height: 3.875rem;
   padding: var(--space-2) var(--space-6);
+}
+
+/* Signed-in workspace only (issue 658). 2.75rem is the 44px desktop target.
+   The 1px top border sits outside the bar, so the bar minimum is 43px.
+   Four pixels of padding keep the focus ring inside the bar. */
+.ux-reset-pro-app .ux-reset-trust-footer-bar {
+  min-height: calc(2.75rem - 1px);
+  padding-block: var(--space-1);
 }
 
 .ux-reset-trust-brand,
@@ -61,6 +78,12 @@
   font-weight: 500;
   line-height: 1.25;
   text-decoration: none;
+}
+
+/* 5.5px hit padding around the 24px mark. With the 4px bar padding above,
+   the signed-in footer border box is 44px. Public footers keep 4px. */
+.ux-reset-pro-app .ux-reset-trust-footer a {
+  padding-block: calc((2.75rem - 1px - 2 * var(--space-1) - 1.5rem) / 2);
 }
 
 .ux-reset-pro-app .ux-reset-trust-footer a:hover,
@@ -146,6 +169,12 @@
 
   .ux-reset-pro-app .ux-reset-trust-footer a {
     min-height: var(--control-height);
+  }
+
+  /* Match the desktop rule's specificity. The earlier padding-block would
+     otherwise keep the stacked bar at 4px instead of this 16px. */
+  .ux-reset-pro-app .ux-reset-trust-footer-bar {
+    padding-block: var(--space-4);
   }
 }
 

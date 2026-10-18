@@ -6,7 +6,22 @@ import {
   reviewCandidate,
   reviewEvidenceReference,
 } from "../fixtures/review-operating-picture-fixtures";
-import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
+import {
+  reviewScopeMetadataFixture,
+  reviewScopeScoresFixture,
+} from "../fixtures/review-scope-api-fixtures";
+
+test.beforeEach(async ({ page }) => {
+  await page.route("**/v1/atlas/scores**", (route) => {
+    const releaseId =
+      new URL(route.request().url()).searchParams.get("dataset_version") ??
+      "alpha-2026";
+    return route.fulfill({
+      json: { ...reviewScopeScoresFixture, release_id: releaseId },
+      status: 200,
+    });
+  });
+});
 
 async function installOperatingPicture(
   page: Page,
@@ -35,6 +50,122 @@ async function installOperatingPicture(
 }
 
 test.describe("Review operating picture", () => {
+  test("an invalid county alias does not select a published county", async ({
+    page,
+  }) => {
+    await installOperatingPicture(page, (state) =>
+      buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Adams",
+            fips: "08001",
+            reasonText: "Adams was returned by the method.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Boulder",
+            fips: "08013",
+            reasonText: "Boulder was returned by the method.",
+          }),
+        ],
+        resultState: "candidates_found",
+        state,
+      })
+    );
+    for (const source of [
+      "/app/action?scope=CO&county=nope",
+      "/app/investigate?scope=CO&county=nope",
+    ]) {
+      await page.goto(source, { waitUntil: "commit" });
+      await expect(page.getByTestId("review-candidate")).toHaveCount(2);
+      await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
+        "data-result-state",
+        "candidates_found"
+      );
+      const landed = new URL(page.url());
+      expect(landed.pathname).toBe("/explore");
+      expect(landed.searchParams.get("county")).toBeNull();
+      expect(landed.searchParams.get("scope")).toBe("CO");
+      expect(landed.searchParams.get("selection")).toBe("required");
+      await expect(
+        page.locator('[data-testid="review-candidate"][aria-current="true"]')
+      ).toHaveCount(0);
+      await expect(page.getByTestId("review-county-preview")).toHaveCount(0);
+      await expect(
+        page.getByRole("heading", { name: "Choose a county" })
+      ).toBeVisible();
+    }
+  });
+
+  test("selects the first published candidate only when the address omits a county", async ({
+    page,
+  }) => {
+    await installOperatingPicture(page, (state) =>
+      buildStateReview({
+        candidates: [
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Broomfield",
+            fips: "08014",
+            reasonText: "Broomfield was returned before any published county.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Boulder",
+            fips: "08013",
+            reasonText: "Boulder is the first published candidate.",
+          }),
+          reviewCandidate({
+            caveat: "Collection dates are unavailable.",
+            countyName: "Adams",
+            fips: "08001",
+            reasonText: "Adams was returned after Boulder.",
+          }),
+        ],
+        resultState: "candidates_found",
+        state,
+      })
+    );
+
+    await page.goto("/explore?scope=CO");
+    await expect(page).toHaveURL(/county=08013/);
+    const omitted = new URL(page.url());
+    expect(omitted.pathname).toBe("/explore");
+    expect({
+      county: omitted.searchParams.get("county"),
+      scope: omitted.searchParams.get("scope"),
+      selection: omitted.searchParams.get("selection"),
+    }).toStrictEqual({
+      county: "08013",
+      scope: "CO",
+      selection: null,
+    });
+    await expect(
+      page.locator('[data-testid="review-candidate"][aria-current="true"]')
+    ).toHaveAttribute("data-fips", "08013");
+
+    await page.goto("/app/investigate?scope=CO&county=nope");
+    await expect(
+      page.getByRole("heading", { name: "Choose a county" })
+    ).toBeVisible();
+    await expect(page.getByTestId("review-candidate")).toHaveCount(3);
+    const invalid = new URL(page.url());
+    expect(invalid.pathname).toBe("/explore");
+    expect({
+      county: invalid.searchParams.get("county"),
+      scope: invalid.searchParams.get("scope"),
+      selection: invalid.searchParams.get("selection"),
+    }).toStrictEqual({
+      county: null,
+      scope: "CO",
+      selection: "required",
+    });
+    await expect(
+      page.locator('[data-testid="review-candidate"][aria-current="true"]')
+    ).toHaveCount(0);
+  });
+
   test("shows a candidate reason, basis, caveat, and Investigate path", async ({
     page,
   }, testInfo) => {
@@ -60,7 +191,7 @@ test.describe("Review operating picture", () => {
         state,
       })
     );
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "candidates_found"
@@ -82,9 +213,11 @@ test.describe("Review operating picture", () => {
     const href =
       (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
     expect(href).toContain("county=08001");
-    expect(href).toContain("/app/investigate");
+    expect(href).toContain("/explore");
+    expect(href).toContain("mode=evidence");
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/\/explore/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
 
     if (!testInfo.project.name.includes("mobile")) {
@@ -115,7 +248,7 @@ test.describe("Review operating picture", () => {
         status: 503,
       });
     });
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.locator("[data-atlas-status='error']")).toContainText(
       "temporarily unavailable"
     );
@@ -139,7 +272,7 @@ test.describe("Review operating picture", () => {
         state,
       })
     );
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "insufficient_evidence"
@@ -172,7 +305,7 @@ test.describe("Review operating picture", () => {
         state,
       })
     );
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "data_gap_only"
@@ -209,7 +342,7 @@ test.describe("Review operating picture", () => {
         state,
       });
     });
-    await page.goto("/app/review?scope=CO&county=08001");
+    await page.goto("/explore?scope=CO&county=08001");
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
       "data-county",
       "08001"
@@ -249,7 +382,7 @@ test.describe("Review operating picture", () => {
         status: 200,
       });
     });
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     await expect(page.getByText("Loading review results…")).toBeVisible();
     await expect(page.getByText("Nothing stands out")).toHaveCount(0);
     releaseReview();
@@ -389,6 +522,19 @@ test.describe("Review operating picture", () => {
     });
 
     const openResultProvenance = async () => {
+      const scoreSummaries = page.locator("summary", {
+        hasText: "Score and methodology",
+      });
+      const summaryCount = await scoreSummaries.count();
+      for (let index = 0; index < summaryCount; index += 1) {
+        const scoreSummary = scoreSummaries.nth(index);
+        const collapsed = await scoreSummary.evaluate(
+          (element) => element.parentElement?.hasAttribute("open") !== true
+        );
+        if (collapsed) {
+          await scoreSummary.click();
+        }
+      }
       const provenance = page.getByTestId("review-result-provenance");
       const summary = provenance.locator("summary", {
         hasText: "Inspect provenance",
@@ -417,7 +563,7 @@ test.describe("Review operating picture", () => {
       return provenance;
     };
 
-    await page.goto("/app/review?scope=CO&dataset=alpha-2026");
+    await page.goto("/explore?scope=CO&dataset=alpha-2026");
     const methodology = page.getByTestId("review-methodology");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
@@ -512,7 +658,7 @@ test.describe("Review operating picture", () => {
     await expect(methodology).toContainText("1.1.0");
     await expect(methodology).toContainText("Human snapshot 2022");
 
-    await page.goto("/app/review?scope=CO&dataset=release-insufficient");
+    await page.goto("/explore?scope=CO&dataset=release-insufficient");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "insufficient_evidence"
@@ -532,7 +678,7 @@ test.describe("Review operating picture", () => {
       insufficientHash
     );
 
-    await page.goto("/app/review?scope=CO&dataset=release-unsupported");
+    await page.goto("/explore?scope=CO&dataset=release-unsupported");
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
       "data-result-state",
       "data_gap_only"

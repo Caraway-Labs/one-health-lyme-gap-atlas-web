@@ -22,7 +22,7 @@ export const CollectionEnvelopeMeasure = zod.object({
   "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
+  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
   "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
   "methodology_id": zod.union([zod.string(),zod.null()]).optional().describe('Exact governed methodology resource ID; null when not governed.'),
@@ -39,7 +39,11 @@ export const CollectionEnvelopeMeasure = zod.object({
 })),
   "meta": zod.object({
   "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.')
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
+  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
+  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
   "self": zod.union([zod.string(),zod.null()]).optional()

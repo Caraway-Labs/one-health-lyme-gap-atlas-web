@@ -1,123 +1,122 @@
 ---
 title: Professional workspace
-description: Use the signed-in Atlas workspace for Review, Explore, Investigate, Compare, and Settings, and see which destinations are still reserved.
+description: Use the signed-in workspace for Atlas Explorer, Compare, Ask Atlas, Feed, Data Provenance, Settings, and Docs.
 ---
 
-The professional workspace is the signed-in Atlas experience at `/app`. It is one place to review a geography, inspect one county, compare two counties, and set a default jurisdiction. It is not a second help system, a saved-work library, or a replacement for the public Explorer.
+The professional workspace is the signed-in Atlas experience. It has seven destinations: **Atlas Explorer**, **Compare**, **Ask Atlas**, **Feed**, **Data Provenance**, **Settings**, and **Docs**. Atlas Explorer is the map, the county list, expandable county evidence, and suggested follow-up on one address. Compare and Ask Atlas stay dedicated pages. There is no separate Review, Explore, Investigate, or Action destination, and Ask Atlas does not open a side panel.
 
-The public [Atlas Explorer](/overview) and [Geographic Explorer](/geographic_explorer) stay available. Use this guide when you are working in the signed-in workspace. Use [current capabilities](/docs/current-capabilities) for the status of each surface.
+Sign-in is required. A signed-out visit to a workspace address goes to sign-in and comes back to the address you asked for. An older bookmark is then opened as the matching Atlas Explorer state. Reading these docs does not require a sign-in.
+
+Use [current capabilities](/docs/current-capabilities) for what is released, planned, or experimental.
 
 ## Open Docs from the workspace
 
-**Docs** is in the Access group of the workspace navigation. It opens this documentation site in a new browser tab. The workspace tab keeps the page and URL you already had, including supported geography, release, and compare context.
+**Docs** is in the workspace navigation. It opens this documentation site in a new browser tab. The workspace tab keeps the page and URL you already had, including supported geography, release, and compare context.
 
-Docs always opens at the documentation home. It does not change with the page you were on, and it does not add field-level help inside Review, Explore, Investigate, or Compare. Search and the sidebar are how you move through this reference. A heading link stays on that heading after you reload the documentation tab.
+Docs always opens at the documentation home. It does not change with the page you were on, and it does not add field-level help inside Atlas Explorer or Compare. Search and the sidebar are how you move through this reference. A heading link stays on that heading after you reload the documentation tab.
 
 To resume the review, return to the original workspace tab. Its address still has the context you had before you opened Docs.
 
-Documentation itself stays public. Reading these pages does not require a sign-in.
-
-## Professional workspace routes
-
-Sign-in is required for `/app` routes. After you sign in, Atlas returns you to the workspace address you asked for.
+## Workspace destinations
 
 | Destination | Address | Status | What you can do |
 | --- | --- | --- | --- |
-| Workspace overview | [/app](/app) | Reserved | The route is present. It does not yet replace Review as the working start. |
-| Review | [/app/review](/app/review) | Available now | See a national or one-state operating picture, with map and list together, and open a county investigation. |
-| Explore | [/app/explore](/app/explore) | Available now | Discover a governed measure on a map, with the same values in a table. |
-| Investigate | [/app/investigate](/app/investigate) | Available now | Read one county's evidence, limitations, and the path back to Review. |
-| Compare | [/app/compare](/app/compare) | Available now | Compare two counties on aligned measures. Availability stays visible. The page does not rank a winner. |
-| Action | [/app/action](/app/action) | Reserved | The route is present. Surveillance-planning and evidence-brief workflows are not released. |
-| Assistant | [/app/assistant](/app/assistant) | Experimental | Full research workspace for reviewed-literature questions when that service is enabled. It uses the same browser-local conversation as the Ask Atlas side panel. Structured and Both modes are not available. |
-| Feed | [/app/feed](/app/feed) | Reserved | The route is present. There is no item list, alert, or saved-article library. |
+| Atlas Explorer | [/explore](/explore) | Available now | See a national or one-state picture, with the map and county list together. Open county evidence or suggested follow-up on that same address. |
+| Compare | [/compare](/compare) | Available now | Compare two counties on aligned measures. Availability stays visible. The page does not rank a winner. |
+| Ask Atlas | [/askatlas](/askatlas) | Experimental | Ask reviewed-literature questions when that service is enabled. A validated Explorer or Compare reference can be shown and changed, with a return link. |
+| Feed | [/app/feed](/app/feed) | Present, empty | The destination is in the navigation. It does not yet list items, alerts, or a saved-article library. |
+| Data Provenance | [/data-provenance](/data-provenance) | Available now | Read where the current release's evidence comes from, open a source card, and follow Docs for methodology. Provenance beside a result stays on that result. |
 | Settings | [/app/settings](/app/settings) | Available now | Save a default jurisdiction and optional profile details, then use account sign-out, export, and removal. |
 | Docs | [/docs](/docs) | Available now | Open this reference in a new tab from the workspace navigation. |
 
-Legacy Atlas remains linked from the workspace header until a later cutover. Opening it leaves the `/app` routes in place.
+`/app/review`, `/app/compare`, and `/app/assistant` permanently open `/explore`, `/compare`, and `/askatlas`. Supported details on those addresses stay. Older addresses such as `/overview`, `/geographic_explorer`, `/investigate`, `/app/explore`, `/app/investigate`, and `/app/action` are not extra destinations. After sign-in they open Atlas Explorer. A valid county on an old investigation address opens county evidence. A valid county on an old action address opens suggested follow-up. An address with no county opens that scope's picture. On a state picture, Atlas Explorer then selects the first published review candidate and writes that county into the address. An address that names a county which does not validate opens with `selection=required` and does not substitute another county.
 
-The workspace footer links to the public [Privacy page](/privacy) and to [AI / Responsible Use](/app/ai-responsible-use). AI / Responsible Use explains capability maturity for signed-in readers. It does not replace this guide. Evidence labels on Review, Explore, Investigate, and Compare stay separate from those maturity labels.
+One saved evidence-brief address, `plan=evidence-brief` on `/app/action`, still opens that brief. It is not a navigation destination. **Return to county evidence** goes back to Atlas Explorer with the county, scope, release, and period that brief was using. Surveillance planning is not a released workflow.
+
+The workspace footer links to the public [Privacy page](/privacy) and to [AI / Responsible Use](/app/ai-responsible-use). AI / Responsible Use explains capability maturity for signed-in readers. It does not replace this guide. Evidence labels stay separate from those maturity labels.
 
 ## How context travels
 
 Workspace pages share a small set of URL details so a direct link or reload can show the same review:
 
-- **scope** — the Review geography, either the United States or one state;
+- **scope** — United States or one state;
 - **county** — one five-digit county FIPS code;
 - **compare** — up to two county FIPS codes;
 - **dataset** — the governed release id when the page has one;
-- **period** — a calendar date when the page supports a period.
+- **period** — a calendar date when the page supports a period;
+- **mode** — on Atlas Explorer only. Omitted means the map and list. `evidence` opens county evidence. `follow-up` opens suggested follow-up for that county.
 
-Review, Explore, Investigate, Compare, and Action pass the details that destination accepts. Investigate does not keep the compare pair. Feed and Settings do not carry this context. Docs does not receive it, because the original workspace tab keeps it.
+Atlas Explorer, Compare, and Ask Atlas keep the details that destination accepts. A validated compare pair stays with the county. It is not dropped when you open county evidence. Feed, Data Provenance, and Settings do not carry this context. Docs does not receive it, because the original workspace tab keeps it.
 
-Page controls such as Explore's map framing, Investigate's evidence focus, and Review's list sort stay on that page. They are not copied when you move to another destination.
+List sort and page position stay on Atlas Explorer browse. They are not copied into county evidence or Compare.
 
-## Review
+## Atlas Explorer
 
-Review answers where you are looking, whether anything warrants attention, how complete the evidence is, and what to inspect next.
+Atlas Explorer answers where you are looking, whether anything warrants attention, how complete the evidence is, and what to inspect next.
 
 - Choose **United States** or one state. National scope orients you by state and a bounded county set. It is not a ranking of every U.S. county.
 - The map and the county list describe the same release. Use the list when the map is unavailable.
 - A review-priority signal focuses follow-up. It is not a diagnosis, a disease-burden estimate, or an individual risk.
-- Open **Investigate** for the selected county. The link keeps the Review scope, county, and release.
+- **View county evidence** expands that county on this address. **Back to map** returns to the map and list. **Compare this county** opens Compare. **Ask Atlas** opens the dedicated Ask Atlas page.
+- **Suggested follow-up** is a section of the same county view. It reads the review result for that county. It does not start an intervention.
 
-A saved default jurisdiction applies only when Review opens without `scope` in the address. An address that already names a scope stays on that scope. Changing the default does not rewrite a Review page you already have open, and it does not hide other states or counties.
+A saved default jurisdiction applies only when Atlas Explorer opens without `scope` or `county` in the address. An address that already names a scope or county stays on that place. Changing the default does not rewrite a page you already have open, and it does not hide other states or counties.
 
-## Explore
+### Loading, empty, unavailable, and error
 
-Explore is for pattern discovery across a governed measure.
+These are different states. Do not read one as another.
 
-- The map and the table show the same measure values. The table is the path that does not depend on the map.
-- **Investigate this county** opens that county in Investigate.
-- **Add to compare**, **Remove from compare**, and **Replace in compare** maintain a two-county pair. **Open Compare** opens that pair. **Clear compare** empties it.
-- Evidence on the selected county uses **Available**, **Limited**, or **Unavailable**. A request that is still loading, or that failed, is a request state. It is not the same label as unavailable evidence.
-
-## Investigate
-
-Investigate is a deep read of one county.
-
-- The page opens only the county in the address. If the link does not name one published county, Atlas asks you to choose one. It does not substitute a different county.
-- Observations are grouped by evidence family. Each value keeps its availability, source family, period, and caveat when the release provides them.
-- **Inspect provenance** opens the next layer of source context. Technical release and methodology identifiers sit in that layer.
-- **Return to Review** goes back to the scope you came from.
-
-Ask Atlas on this page is optional. The county can be read without it.
+- **Loading** means the request has not finished. A loading message is not an evidence label and not a score.
+- **Empty** means the release returned no row for that question. An empty county list, or a county with no suggested follow-up, says that nothing was returned. Atlas does not invent a county or a next step.
+- **Available** means governed inputs exist for the claim, including a published zero.
+- **Limited** means a signal exists, and coverage, suppression, sample size, staleness, or another documented limitation constrains how to read it.
+- **Unavailable** means the governed value is absent, invalid, or out of scope. Atlas shows Unavailable. It does not show that gap as zero.
+- **Unknown** stays unknown. An unknown observation period or evidence type is not inferred from a source date.
+- **Error** means the request failed. Retry does not turn that failure into Unavailable evidence. A failed refresh does not keep showing the previous facts as if they were current.
 
 ## Compare
 
 Compare places two counties side by side.
 
-- Choose **First county** and **Second county**. The workspace accepts two counties in this release.
+- Choose **First county** and **Second county**. The workspace accepts two counties.
 - Each measure row keeps that county's unit, period, and availability. Similar values, different values, and withheld comparisons are labeled. A withheld comparison explains why the values were not treated as a simple difference.
 - The page does not produce a winner, a combined score, or a rank.
+- **View first county evidence** and **View second county evidence** open that county in Atlas Explorer. **Ask Atlas about this comparison** opens Ask Atlas with the pair as a page reference, not as a request to compare the counties for you.
+- **Return to Atlas Explorer** or **Return to county evidence** appears when you opened Compare from that place.
 
-The public [Geographic Explorer](/geographic_explorer) still has its own comparison of up to five counties. That legacy comparison is separate from this two-county page.
+If the county list is still loading, the selectors say so. If the list fails, Compare says the published counties could not be loaded. If evidence fails, the page says aligned evidence did not load. Those messages are request states.
 
 ## Settings
 
-Settings at [/app/settings](/app/settings) stores a profile for future Review sessions.
+Settings at [/app/settings](/app/settings) stores a profile for future Atlas Explorer sessions.
 
 - **Default jurisdiction** is **United States** or one state from the current Atlas state list.
-- **Role**, **organization**, and **job title** are optional. Leaving them empty does not block Review or the rest of the workspace. Role choices include preferring not to say, general public citizen, and district, state, state-director, and national epidemiologist roles.
+- **Role**, **organization**, and **job title** are optional. Leaving them empty does not block Atlas Explorer or the rest of the workspace. Role choices include preferring not to say, general public citizen, and district, state, state-director, and national epidemiologist roles.
 - **Save profile** confirms the default only after the account profile accepts the same values. If the save cannot be confirmed, the form keeps what you typed and says the save was not confirmed.
-- The note under the jurisdiction control states that saved defaults apply the next time Review opens without a scope in the URL.
+- The note under the jurisdiction control states that saved defaults apply the next time Atlas Explorer opens without a scope in the URL.
 - **Sign out** ends this session. **Export** and **Remove all data** are the existing account data-rights actions. Privacy commitments stay on the [Privacy page](/privacy). The workspace footer links to that same public page, links to [AI / Responsible Use](/app/ai-responsible-use), and includes Privacy settings for the existing browser analytics choice. Opening Privacy leaves the signed-in workspace and does not ask you to sign in again. AI / Responsible Use stays inside the signed-in workspace.
 
 Settings does not generate, display, or revoke an API key. It does not manage saved comparisons, saved investigations, or alert subscriptions. Those controls are not in this release. API and MCP access are described in [API, MCP, and access](/docs/api-mcp-and-access).
 
 ## Ask Atlas
 
-Review, Explore, Investigate, Compare, and Action include an **Ask Atlas** control. It opens a side panel on a wide screen and a dialog on a narrow screen. You close it and return to the same page.
+Atlas Explorer and Compare include an **Ask Atlas** control. It opens the [Ask Atlas page](/askatlas). It does not open a side panel or a dialog.
 
-When reviewed-literature chat is enabled for that deployment, the panel asks the literature service and shows cited evidence or an explicit unavailable-evidence outcome. The notice of inherited county or release context is context for the question. It is not a citation.
+When reviewed-literature chat is enabled for that deployment, that page asks the literature service and shows cited evidence or an explicit unavailable-evidence outcome. Explorer and Compare can carry a validated page reference. That reference is labeled on the page, can be changed or cleared, and is not a citation or retrieved surveillance evidence. The return link restores Atlas Explorer or the Compare pair, including the relevant geography, period, and release. An address that does not verify is not shown as evidence.
 
-When literature chat is not enabled, the panel says Ask Atlas is unavailable and that the workspace pages stay usable. That message is a service state. It does not mean the county's evidence is absent.
+When literature chat is not enabled, the page says Ask Atlas is unavailable and the other workspace pages stay usable. That message is a service state. It does not mean the county's evidence is absent.
 
-Ask Atlas does not change filters, maps, or the address, and it does not run a workflow for you. It has no Structured mode and no Both mode.
+Ask Atlas does not change filters or maps on its own, and it does not run a workflow for you. It has no Structured mode and no Both mode. Showing a comparison reference does not ask the service to compare counties.
 
-After a saved answer, **Open full workspace** opens [/app/assistant](/app/assistant) on that same local conversation. The link does not send the question again. Unsent text in the panel is not carried over. A direct link to a conversation that is not saved in this browser says so and lets you start a new chat. History stays in this browser for up to 30 days. It is not a saved research library on Atlas servers.
+A direct link to a conversation that is not saved in this browser says so and lets you start a new chat. History stays in this browser for up to 30 days. It is not a saved research library on Atlas servers.
 
-The separate legacy workspace at [/assistant](/assistant) remains available when that route is enabled. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence).
+The separate public workspace at [/assistant](/assistant) remains available when that route is enabled. It is not the signed-in Ask Atlas page. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence).
+
+## County PDF
+
+County evidence can offer a county PDF when published measures share one county, release, and observation period, and Atlas can verify that the file matches the county, observations, sources, period, and caveats on screen.
+
+If that check cannot be completed, the PDF is unavailable. That is not a statement that the report contains none of a period, and it is not a claim that the county has no evidence. A failed download stays an error and can be tried again. The file is not reused from an earlier attempt.
 
 ## Evidence labels
 
@@ -127,4 +126,4 @@ Workspace evidence uses three labels after a successful response:
 - **Limited** — a signal exists, and coverage, suppression, sample size, staleness, or another documented limitation constrains how to read it.
 - **Unavailable** — the governed value is absent, invalid, or out of scope. Atlas shows Unavailable. It does not show that gap as zero.
 
-Loading and request failures use their own messages. Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) before treating a label as a conclusion.
+Loading, empty results, unknown fields, and request failures use their own messages. Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) before treating a label as a conclusion.

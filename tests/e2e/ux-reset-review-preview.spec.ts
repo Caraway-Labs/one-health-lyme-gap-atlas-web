@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { reviewNationalCameraPoint } from "../../src/features/ux-reset/review/review-national-camera";
 import {
   investigateIndicatorsFixture,
   investigateMeasuresFixture,
@@ -107,6 +108,53 @@ const reviewSequenceCounties = [
     })
   ),
 ];
+
+async function mappedCountyPoint(
+  page: Page,
+  longitude: number,
+  latitude: number
+) {
+  const map = page.locator(".maplibre-atlas");
+  let previousZoom = Number.NaN;
+  const readPoint = async () => {
+    const box = await map.boundingBox();
+    const camera = await map.evaluate((element) => ({
+      height: element.clientHeight,
+      lat: Number(element.dataset.mapCameraLat),
+      lng: Number(element.dataset.mapCameraLng),
+      width: element.clientWidth,
+      zoom: Number(element.dataset.mapCameraZoom),
+    }));
+    const zoomSettled = Math.abs(camera.zoom - previousZoom) < 0.01;
+    previousZoom = camera.zoom;
+    if (!zoomSettled || !box || !(camera.width > 0) || !(camera.height > 0)) {
+      return null;
+    }
+    const projected = reviewNationalCameraPoint(
+      { center: [camera.lng, camera.lat], zoom: camera.zoom },
+      camera.width,
+      camera.height,
+      longitude,
+      latitude
+    );
+    if (
+      !projected ||
+      projected.x < 0 ||
+      projected.y < 0 ||
+      projected.x > camera.width ||
+      projected.y > camera.height
+    ) {
+      return null;
+    }
+    return { x: box.x + projected.x, y: box.y + projected.y };
+  };
+  await expect.poll(readPoint).not.toBeNull();
+  const point = await readPoint();
+  if (!point) {
+    throw new Error("expected the county to be inside the map");
+  }
+  return point;
+}
 
 async function installPreviewMocks(
   page: Page,
@@ -240,7 +288,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       geometry: false,
     });
     await page.goto(
-      "/app/review?period=2023-01-01&dataset=alpha-2026&sort=score&page=2&compare=08001,08013"
+      "/explore?period=2023-01-01&dataset=alpha-2026&sort=score&page=2&compare=08001,08013"
     );
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
@@ -251,7 +299,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     await page.getByRole("option", { name: "New York (NY)" }).click();
     const albany = page.getByTestId("review-county-preview");
     await expect(albany).toHaveAttribute("data-fips", "36001");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     await expect(albany).toHaveAttribute(
       "data-follow-up",
@@ -265,7 +313,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     await suffolkRow.click();
     const suffolk = page.getByTestId("review-county-preview");
     await expect(suffolk).toHaveAttribute("data-fips", "36024");
-    await expect(page).toHaveURL(/\/app\/review\?/);
+    await expect(page).toHaveURL(/\/explore\?/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     const previewState = await suffolk.evaluate((element) => ({
       availability: element.getAttribute("data-availability"),
@@ -293,6 +341,10 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(
       page.getByTestId("review-preview-qualification")
     ).toContainText("not treated as zero");
+    const scoreSummary = page
+      .getByTestId("review-county-preview")
+      .locator("summary", { hasText: "Score and methodology" });
+    await scoreSummary.click();
     await expect(
       page.getByTestId("review-county-preview").getByText("Inspect provenance")
     ).toBeVisible();
@@ -306,7 +358,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(previewState.target).toContain("compare=08001");
     expect(previewState.target).toContain("08013");
     await expect(page.getByTestId("review-preview-dropped")).toContainText(
-      "Review sort stays on Review"
+      "Sort stays on Atlas Explorer browse"
     );
     await expect(page.getByTestId("review-preview-guardrail")).toContainText(
       "not a diagnosis"
@@ -314,7 +366,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(await rowVisibleInRankList(page, "36024")).toBe(true);
 
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36024/);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
@@ -322,18 +374,23 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page).not.toHaveURL(/sort=/);
     await expect(page).not.toHaveURL(/page=/);
     await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
       "36024"
     );
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-release",
       "alpha-2026"
     );
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Suffolk");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Explore the One Health Atlas"
+    );
+    await expect(page.getByTestId("explorer-county-heading")).toHaveText(
+      "Suffolk"
+    );
 
     await page.goBack({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/county=36024/);
     await expect(page).toHaveURL(/sort=score/);
@@ -351,8 +408,8 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page.locator('button[data-fips="36024"]')).toBeFocused();
 
     await page.goForward({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/\/app\/investigate/);
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page).toHaveURL(/mode=evidence/);
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
       "36024"
     );
@@ -387,14 +444,14 @@ test.describe("Review county preview and Investigate handoff", () => {
     ];
     await installPreviewMocks(page, counties);
     await page.goto(
-      "/app/review?scope=NY&dataset=alpha-2026&period=2023-01-01&sort=score"
+      "/explore?scope=NY&dataset=alpha-2026&period=2023-01-01&sort=score"
     );
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
       "36001"
     );
     await page.locator('button[data-fips="36001"]').click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     await expect(page.getByTestId("review-investigate")).toHaveAttribute(
       "href",
@@ -406,32 +463,11 @@ test.describe("Review county preview and Investigate handoff", () => {
     await canvas.scrollIntoViewIfNeeded();
     // The state frame shows both counties. Selecting from the list afterwards
     // can zoom the camera onto that county, so the map click happens first.
-    await page.waitForTimeout(1500);
-    const box = await canvas.boundingBox();
-    expect(box).toBeTruthy();
-    if (!box) {
-      return;
-    }
-    const mapPoints = [
-      [0.72, 0.5],
-      [0.82, 0.46],
-      [0.64, 0.58],
-    ] as const;
-    for (const [xFraction, yFraction] of mapPoints) {
-      await page.mouse.click(
-        box.x + box.width * xFraction,
-        box.y + box.height * yFraction
-      );
-      const selected = await page
-        .getByTestId("review-county-preview")
-        .getAttribute("data-fips");
-      if (selected === "36003") {
-        break;
-      }
-    }
+    const orange = await mappedCountyPoint(page, -74, 43);
+    await page.mouse.click(orange.x, orange.y);
     const mapPreview = page.getByTestId("review-county-preview");
     await expect(mapPreview).toHaveAttribute("data-fips", "36003");
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     const mapHref =
       (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
@@ -455,11 +491,16 @@ test.describe("Review county preview and Investigate handoff", () => {
     expect(listHref).toBe(mapHref);
 
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36003/);
     await expect(page).toHaveURL(/period=2023-01-01/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Orange");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Explore the One Health Atlas"
+    );
+    await expect(page.getByTestId("explorer-county-heading")).toHaveText(
+      "Orange"
+    );
   });
 
   test("keeps a direct county link and reload on the preview", async ({
@@ -469,7 +510,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       geometry: false,
     });
     await page.goto(
-      "/app/review?scope=NY&county=36005&dataset=alpha-2026&period=2023-01-01"
+      "/explore?scope=NY&county=36005&dataset=alpha-2026&period=2023-01-01"
     );
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
@@ -511,7 +552,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       ],
       { geometry: false }
     );
-    await page.goto("/app/review?scope=NY");
+    await page.goto("/explore?scope=NY");
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
       "36045"
@@ -542,23 +583,23 @@ test.describe("Review county preview and Investigate handoff", () => {
       geometry: false,
     });
     await page.goto(
-      "/app/review?scope=NY&county=36024&dataset=alpha-2026&period=2023-01-01&sort=score"
+      "/explore?scope=NY&county=36024&dataset=alpha-2026&period=2023-01-01&sort=score"
     );
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
       "36024"
     );
     await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(/\/app\/investigate/);
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(
       page.getByText("Governed measures could not be loaded.")
     ).toBeVisible();
-    await expect(page.getByTestId("investigate-header")).toHaveAttribute(
+    await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
       "36024"
     );
     await page.goBack({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/county=36024/);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/sort=score/);

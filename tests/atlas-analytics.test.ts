@@ -49,19 +49,37 @@ describe("Atlas Amplitude boundary", () => {
     expect(amplitude.track).not.toHaveBeenCalled();
   });
 
-  it("keeps Front Porch route views distinct from Overview", () => {
+  it("classifies supported routes and keeps retired variant views distinct", () => {
     expect({
+      account: routeIdForPathname("/account"),
+      aiEthics: routeIdForPathname("/ai-ethics"),
+      assistant: routeIdForPathname("/assistant"),
+      assistantNested: routeIdForPathname("/assistant/conversation"),
       frontPorch: routeIdForPathname("/"),
-      known: routeIds.includes("front_porch"),
+      geographicExplorer: routeIdForPathname("/geographic_explorer"),
+      investigate: routeIdForPathname("/investigate"),
+      knowledgeGraph: routeIdForPathname("/knowledge-graph"),
+      knownFrontPorch: routeIds.includes("front_porch"),
+      knownVariant: routeIds.includes("atlas_variant"),
       overview: routeIdForPathname("/overview"),
       privacy: routeIdForPathname("/privacy"),
       retiredVariant: routeIdForPathname("/variant_1"),
+      retiredVariantSeven: routeIdForPathname("/variant_7"),
     }).toStrictEqual({
+      account: "account",
+      aiEthics: "ai_ethics",
+      assistant: "assistant",
+      assistantNested: "assistant",
       frontPorch: "front_porch",
-      known: true,
+      geographicExplorer: "geographic_explorer",
+      investigate: "atlas_home",
+      knowledgeGraph: "knowledge_graph",
+      knownFrontPorch: true,
+      knownVariant: true,
       overview: "atlas_home",
       privacy: "privacy",
       retiredVariant: "atlas_variant",
+      retiredVariantSeven: "atlas_variant",
     });
   });
 
@@ -70,6 +88,39 @@ describe("Atlas Amplitude boundary", () => {
     expect(new Set(uiControlIds)).toHaveLength(uiControlIds.length);
     expect(isUiControlId("not_a_real_control")).toBeFalsy();
     expect(isUiControlId("hero_explore_counties")).toBeTruthy();
+  });
+
+  it("rejects retired prototype control ids so they cannot be reused", () => {
+    const retiredControlIds = [
+      "assistant_demo_send",
+      "assistant_demo_stop",
+      "nav_atlas",
+      "nav_home",
+      "nav_methods",
+      "nav_scoring",
+      "nav_variant_link",
+      "nav_variants",
+      "summary_copy",
+    ] as const;
+
+    expect(
+      Object.fromEntries(
+        retiredControlIds.map((controlId) => [
+          controlId,
+          isUiControlId(controlId),
+        ])
+      )
+    ).toStrictEqual({
+      assistant_demo_send: false,
+      assistant_demo_stop: false,
+      nav_atlas: false,
+      nav_home: false,
+      nav_methods: false,
+      nav_scoring: false,
+      nav_variant_link: false,
+      nav_variants: false,
+      summary_copy: false,
+    });
   });
 
   it("uses a unique, typed control allowlist for JSX instrumentation", () => {
@@ -88,8 +139,7 @@ describe("Atlas Amplitude boundary", () => {
         "evidence_chat_history_clear",
         "evidence_chat_history_select",
         "evidence_chat_history_delete",
-        "assistant_demo_send",
-        "assistant_demo_stop",
+        "evidence_chat_submit",
       ])
     );
   });
@@ -301,7 +351,7 @@ describe("Atlas Amplitude boundary", () => {
       eventType: "atlas_ui_interaction",
       properties: {
         route_id: "assistant",
-        control_id: "assistant_demo_send",
+        control_id: "evidence_chat_submit",
         action: "activated",
       },
     });

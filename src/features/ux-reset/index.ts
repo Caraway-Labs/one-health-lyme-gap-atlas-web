@@ -27,8 +27,11 @@ export {
 } from "@/features/ux-reset/context-params";
 export {
   ABOUT_CARAWAY_LABS_PATH,
+  ATLAS_EXPLORER_PATH,
   DOCS_PATH,
   isUxResetRoutePath,
+  LEGACY_ASSISTANT_PATH,
+  LEGACY_COMPARE_PATH,
   RESET_ACTION_PATH,
   RESET_AI_RESPONSIBLE_USE_PATH,
   RESET_ASSISTANT_PATH,

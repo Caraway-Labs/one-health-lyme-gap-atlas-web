@@ -13,16 +13,23 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearCompareCatalogRetryDeadlines } from "@/features/ux-reset/compare/compare-catalog-cooldown";
+import { alignCompareCountyProfiles } from "@/features/ux-reset/compare/compare-county-profile";
+import { CompareCountyProfileSection } from "@/features/ux-reset/compare/compare-county-profile-section";
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
+import { clearCompareProfileRetryDeadlines } from "@/features/ux-reset/compare/load-compare-profile";
 import { ResetCompareExperience } from "@/features/ux-reset/compare/reset-compare-experience";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
+import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
   COMPARE_CANOPY_MEASURE_ID,
   COMPARE_CASES_MEASURE_ID,
+  COMPARE_LEFT_FIPS,
+  COMPARE_RIGHT_FIPS,
   COMPARE_TICK_MEASURE_ID,
   COMPARE_WASHINGTON_MN,
   COMPARE_WASHINGTON_RI,
+  compareCountyDetail,
   compareMeasuresFixture,
   compareObservationsFor,
   compareScoresFixture,
@@ -35,11 +42,17 @@ const observationFailureBudgets = new Map<string, number>();
 let catalogFailureStatus = 503;
 let catalogFailuresRemaining = 0;
 let catalogRetryAfter: string | null = null;
+let blankContextSourceNote = false;
+let extraCatalogMeasures: typeof compareMeasuresFixture = [];
+const countyRecordRequests: string[] = [];
+const countyPriorityOverrides = new Map<string, string>();
+let countyRateLimitRemaining = 0;
+let countyRetryAfterSeconds: number | null = null;
 let navigationSearchParams = new URLSearchParams();
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
-  usePathname: () => "/app/compare",
+  usePathname: () => "/compare",
   useSearchParams: () => navigationSearchParams as ReadonlyURLSearchParams,
 }));
 
@@ -47,6 +60,46 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
+    countyV1CountiesFipsGet: vi.fn<
+      typeof import("@/generated/atlas").countyV1CountiesFipsGet
+    >(async (fips) => {
+      countyRecordRequests.push(fips);
+      if (countyRateLimitRemaining > 0) {
+        countyRateLimitRemaining -= 1;
+        throw new AtlasApiError(
+          "The published county record could not be loaded.",
+          `/v1/counties/${fips}`,
+          429,
+          null,
+          countyRetryAfterSeconds
+        );
+      }
+      if (fips === "08013") {
+        return {
+          data: null,
+          headers: new Headers(),
+          status: 404,
+        } as never;
+      }
+      const detail = compareCountyDetail(fips);
+      const priorityOverride = countyPriorityOverrides.get(fips);
+      if (priorityOverride) {
+        detail.priority = priorityOverride;
+      }
+      if (blankContextSourceNote) {
+        detail.release = {
+          ...detail.release,
+          sources: detail.release.sources.map((source) =>
+            source.key === "context_svi" ? { ...source, note: "" } : source
+          ),
+        };
+      }
+      return {
+        data: detail,
+        headers: new Headers(),
+        status: 200,
+      } as never;
+    }),
     measuresV1MeasuresGet: vi.fn<
       typeof import("@/generated/atlas").measuresV1MeasuresGet
     >(async (params) => {
@@ -72,7 +125,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
       }
       return {
         data: {
-          data: [...compareMeasuresFixture]
+          data: [...compareMeasuresFixture, ...extraCatalogMeasures]
             .toReversed()
             .filter(
               (measure) =>
@@ -162,6 +215,7 @@ function renderCompare(search: string, retry: boolean | number = false) {
   );
   return {
     ...view,
+    client,
     rerenderSearch(next: string) {
       setSearch(next);
       view.rerender(
@@ -213,14 +267,35 @@ function cell(measureId: string, fips: string) {
   return screen.getByTestId(`compare-cell-${measureId}-${fips}`);
 }
 
+function populationCatalogState() {
+  const population = screen.getByTestId(
+    "compare-profile-cell-population_2022-08001"
+  );
+  const text = population.textContent ?? "";
+  return {
+    availability:
+      within(population).getByTestId("ux-reset-evidence-object").dataset
+        .evidenceAvailability ?? "",
+    caveat: text.includes("Coverage is incomplete"),
+    evidenceType: text.includes("Count"),
+  };
+}
+
 describe("two-county aligned comparison", () => {
   afterEach(() => {
     cleanup();
+    blankContextSourceNote = false;
     catalogFailureStatus = 503;
     catalogFailuresRemaining = 0;
     catalogRequests.length = 0;
     catalogRetryAfter = null;
+    extraCatalogMeasures = [];
     clearCompareCatalogRetryDeadlines();
+    clearCompareProfileRetryDeadlines();
+    countyPriorityOverrides.clear();
+    countyRateLimitRemaining = 0;
+    countyRecordRequests.length = 0;
+    countyRetryAfterSeconds = null;
     vi.useRealTimers();
     observationFailureBudgets.clear();
     observationRequests.length = 0;
@@ -232,7 +307,7 @@ describe("two-county aligned comparison", () => {
     expect(screen.getByTestId("compare-workspace").dataset.recovery).toBe(
       "empty"
     );
-    expect(screen.getByTestId("compare-recovery").textContent).toContain(
+    expect(screen.getByTestId("compare-empty").textContent).toContain(
       "will not select"
     );
     expect(screen.queryByTestId("compare-alignment")).toBeNull();
@@ -252,10 +327,76 @@ describe("two-county aligned comparison", () => {
     expect(screen.getByTestId("compare-workspace").dataset.recovery).toBe(
       "partial"
     );
-    expect(screen.getByTestId("compare-recovery").textContent).toContain(
+    expect(screen.getByTestId("compare-empty").textContent).toContain(
       "second county"
     );
     expect(observationRequests).toStrictEqual([]);
+  });
+
+  it("describes withheld counts as not comparable, including failed requests", async () => {
+    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const summary = await screen.findByTestId("compare-summary");
+    await waitFor(() => {
+      if (
+        !(summary.textContent ?? "").includes(
+          "Withheld counts are not comparable"
+        )
+      ) {
+        throw new Error("Waiting for the withheld overview.");
+      }
+    });
+    const text = summary.textContent ?? "";
+    expect({
+      failedAsMatched: text.includes("not treated as matched"),
+      fieldMatchLimitedToShared:
+        text.includes("Shared and differing counts") &&
+        text.includes("whose measure, unit, period, release, and method match"),
+      partial: text.includes("failed requests stay in the withheld count"),
+      treatsWithheldAsMatched: text.includes("already match"),
+      withheldNotComparable: text.includes(
+        "Withheld counts are not comparable"
+      ),
+    }).toStrictEqual({
+      failedAsMatched: true,
+      fieldMatchLimitedToShared: true,
+      partial: true,
+      treatsWithheldAsMatched: false,
+      withheldNotComparable: true,
+    });
+  });
+
+  it("uses priority pills for recognized review categories and stays neutral otherwise", async () => {
+    const samples = [
+      ["Priority 1 — Investigate", "urgent", "Highest review priority"],
+      ["Priority 2 — Review", "review", "Moderate review priority"],
+      ["Watch", "watch", "Monitor for changes"],
+      ["Lower", "lower", "Lower review priority"],
+      ["Priority 10 — Review", "neutral", "Priority 10 — Review"],
+    ] as const;
+    const seen: { text: string; tone: string | undefined }[] = [];
+    for (const [priority, tone] of samples) {
+      cleanup();
+      countyPriorityOverrides.set(COMPARE_LEFT_FIPS, priority);
+      renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+      await waitForPair("08001,08013");
+      const badge = await screen.findByTestId(
+        `compare-review-category-${COMPARE_LEFT_FIPS}`
+      );
+      const pill = badge.querySelector(".priority-pill");
+      seen.push({
+        text: badge.textContent ?? "",
+        tone:
+          tone === "neutral"
+            ? badge.dataset.reviewTone
+            : pill?.classList.contains(tone)
+              ? tone
+              : pill?.className,
+      });
+    }
+    expect(seen).toStrictEqual(
+      samples.map(([, tone, text]) => ({ text, tone }))
+    );
   });
 
   it("aligns a comparable value and a real zero on stable measure rows", async () => {
@@ -325,7 +466,9 @@ describe("two-county aligned comparison", () => {
       county: investigate.includes("county=08001"),
       left: caseRequest?.includes("08001"),
       pair: investigate.includes("compare=08001%2C08013"),
-      path: investigate.includes("/app/investigate"),
+      path:
+        investigate.includes("/explore") &&
+        investigate.includes("mode=evidence"),
       right: caseRequest?.includes("08013"),
     }).toStrictEqual({
       action: null,
@@ -420,14 +563,14 @@ describe("two-county aligned comparison", () => {
     renderCompare("?compare=08001,08013&scope=CO");
     await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
     fireEvent.click(
-      screen.getByRole("button", { name: /Remove Boulder, Colorado/ })
+      screen.getByRole("button", { name: "Clear second county" })
     );
     await waitForPair("08001");
     expect(navigationSearchParams.get("compare")).toBe("08001,08013");
     expect(screen.getByTestId("compare-workspace").dataset.staleUrl).toBe(
       "true"
     );
-    fireEvent.click(screen.getByRole("button", { name: "Clear counties" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear first county" }));
     await waitForPair("");
     expect(screen.getByTestId("compare-workspace").dataset.fips).toBe("");
     expect(navigationSearchParams.get("compare")).toBe("08001,08013");
@@ -516,7 +659,7 @@ describe("two-county aligned comparison", () => {
     });
     const sidebarHref =
       navigation
-        .querySelector('a[href^="/app/action"]')
+        .querySelector('a[aria-label="Atlas Explorer"]')
         ?.getAttribute("href") ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
     const pageHref =
@@ -579,6 +722,126 @@ describe("two-county aligned comparison", () => {
       recovery: "ready",
       samePair: true,
     });
+  });
+
+  it("keeps catalog limitations when a later catalog refresh fails", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    blankContextSourceNote = true;
+    extraCatalogMeasures = [
+      {
+        ...base,
+        definition: "Resident population.",
+        indicator_id: "population",
+        label: "Population",
+        limitations: ["Coverage is incomplete"],
+        measure_id: "population_2022",
+        measure_type: "count",
+        unit: "people",
+      },
+    ];
+    const view = renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026"
+    );
+    await screen.findByTestId("compare-profile-cell-population_2022-08001");
+    expect(populationCatalogState()).toStrictEqual({
+      availability: "limited",
+      caveat: true,
+      evidenceType: true,
+    });
+    catalogFailuresRemaining = 1;
+    await act(async () => {
+      await view.client.refetchQueries({
+        queryKey: ["ux-reset-compare-measures"],
+      });
+    });
+    await waitFor(() => {
+      expect({
+        ...populationCatalogState(),
+        refreshError: (screen.queryByRole("alert")?.textContent ?? "").includes(
+          "could not be loaded"
+        ),
+      }).toStrictEqual({
+        availability: "limited",
+        caveat: true,
+        evidenceType: true,
+        refreshError: true,
+      });
+    });
+    catalogFailuresRemaining = 0;
+    fireEvent.click(screen.getByTestId("compare-retry-catalog"));
+    await waitFor(() => {
+      if (screen.queryByText("Governed measures could not be loaded.")) {
+        throw new Error("Catalog refresh error is still showing.");
+      }
+    });
+    expect(populationCatalogState()).toStrictEqual({
+      availability: "limited",
+      caveat: true,
+      evidenceType: true,
+    });
+  });
+
+  it("hides cached county records after a failed refresh", async () => {
+    const view = renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026"
+    );
+    await screen.findByTestId("compare-profile");
+    expect(screen.queryByTestId("compare-profile-error")).toBeNull();
+    countyRateLimitRemaining = 2;
+    countyRetryAfterSeconds = 0;
+    await act(async () => {
+      await view.client.refetchQueries({
+        queryKey: ["ux-reset-compare-profile"],
+      });
+    });
+    expect({
+      error: (
+        screen.getByTestId("compare-profile-error").textContent ?? ""
+      ).includes("did not load"),
+      table: screen.queryByTestId("compare-profile"),
+    }).toStrictEqual({
+      error: true,
+      table: null,
+    });
+    countyRateLimitRemaining = 0;
+    countyRetryAfterSeconds = null;
+    clearCompareProfileRetryDeadlines();
+    fireEvent.click(screen.getByTestId("compare-retry-profile"));
+    await screen.findByTestId("compare-profile");
+    expect(screen.queryByTestId("compare-profile-error")).toBeNull();
+  });
+
+  it("waits out Retry-After before another county-record request", async () => {
+    countyRateLimitRemaining = 2;
+    countyRetryAfterSeconds = 60;
+    vi.useFakeTimers();
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    await flushCompare(
+      () =>
+        countyRecordRequests.length === 2 &&
+        screen.queryByTestId("compare-retry-profile") !== null
+    );
+    fireEvent.click(screen.getByTestId("compare-retry-profile"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(59_000);
+    });
+    const waiting = screen.getByTestId("compare-retry-profile");
+    expect({
+      calls: countyRecordRequests.length,
+      waiting: waiting.dataset.waiting,
+    }).toStrictEqual({
+      calls: 2,
+      waiting: "true",
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await flushCompare(() => countyRecordRequests.length === 4);
+    expect(screen.getByTestId("compare-profile")).toBeTruthy();
+    expect(screen.queryByTestId("compare-profile-error")).toBeNull();
   });
 
   it("waits out Retry-After before a manual catalog retry", async () => {
@@ -777,25 +1040,27 @@ describe("two-county aligned comparison", () => {
     );
     await waitForPair("08001");
     const openedHref =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: openedHref.includes("county=08001"),
-      label: screen.getByTestId("compare-return").textContent,
       pair: openedHref.includes("compare="),
-      path: openedHref.includes("/app/review"),
+      path: openedHref.includes("/explore"),
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
       returnParam: openedHref.includes("return="),
     }).toStrictEqual({
       county: true,
-      label: "Return to Review",
-      pair: false,
+      pair: true,
       path: true,
+      returnButton: null,
+      returnLink: null,
       returnParam: false,
     });
 
     await pickCounty("Second county", /Boulder, Colorado/);
     await waitForPair("08001,08013");
     const edited =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
     const investigateHref =
       screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
@@ -808,14 +1073,16 @@ describe("two-county aligned comparison", () => {
     }).toStrictEqual({
       actionPair: true,
       county: true,
-      editedPair: false,
+      editedPair: true,
       returnTarget: "review",
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear counties" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Clear both counties" })
+    );
     await waitForPair("");
     const cleared =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: cleared.includes("county=08001"),
       fips: screen.getByTestId("compare-workspace").dataset.fips,
@@ -835,11 +1102,11 @@ describe("two-county aligned comparison", () => {
     await pickCounty("Second county", /Albany, New York/);
     await waitForPair("08001,36001");
     const href =
-      screen.getByTestId("compare-return").getAttribute("href") ?? "";
+      screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect({
       county: href.includes("county=08001"),
       pair: href.includes("compare=08001%2C36001"),
-      path: href.includes("/app/investigate"),
+      path: href.includes("/explore") && href.includes("mode=evidence"),
       period: href.includes("period=2023-01-01"),
       returnParam: href.includes("return="),
     }).toStrictEqual({
@@ -851,21 +1118,246 @@ describe("two-county aligned comparison", () => {
     });
   });
 
+  it("does not show a county-record table until two counties are selected", async () => {
+    renderCompare("?compare=08001&scope=CO&dataset=alpha-2026");
+    await waitForPair("08001");
+    expect(screen.queryByTestId("compare-profile")).toBeNull();
+    expect(screen.queryByTestId("compare-profile-loading")).toBeNull();
+  });
+
+  it("aligns the published county record and hands the pair to Ask Atlas", async () => {
+    renderCompare(
+      "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=1999-01-01"
+    );
+    await waitForPair("08001,08013");
+    const floor = await screen.findByTestId(
+      "compare-profile-cell-human_case_floor-08001"
+    );
+    const missing = screen.getByTestId(
+      "compare-profile-cell-human_case_floor-08013"
+    );
+    const ask = await screen.findByTestId("compare-ask-atlas");
+    expect({
+      ask: ask.getAttribute("href")?.includes("page_ref="),
+      first: screen.getByTestId("compare-investigate-08001").textContent,
+      floor: floor.textContent?.includes("12"),
+      missing: missing.dataset.observation,
+      missingDigits: /\d/.test(missing.textContent ?? ""),
+      period: screen
+        .getByTestId("compare-profile-comparability")
+        .textContent?.includes("1999-01-01"),
+      second: screen.getByTestId("compare-investigate-08013").textContent,
+    }).toStrictEqual({
+      ask: true,
+      first: "View first county evidence",
+      floor: true,
+      missing: "missing",
+      missingDigits: false,
+      period: true,
+      second: "View second county evidence",
+    });
+  });
+
   it("leaves a direct link usable when return is absent or invalid", async () => {
     const direct = renderCompare("?compare=08001,08013&scope=CO");
     await waitForPair("08001,08013");
-    expect(screen.queryByTestId("compare-return")).toBeNull();
-    expect(screen.getByTestId("compare-workspace").dataset.return).toBe("");
+    expect({
+      pairIssue: screen.getByTestId("compare-workspace").dataset.return,
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
+    }).toStrictEqual({
+      pairIssue: "",
+      returnButton: null,
+      returnLink: null,
+    });
     direct.unmount();
 
     renderCompare("?compare=08001,not-a-fips&return=assistant");
     await waitForPair("08001");
-    expect(screen.queryByTestId("compare-return")).toBeNull();
-    expect(screen.getByTestId("compare-workspace").dataset.pairIssue).toBe(
-      "invalid"
+    expect({
+      empty: screen.getByTestId("compare-empty").textContent,
+      pairIssue: screen.getByTestId("compare-workspace").dataset.pairIssue,
+      returnButton: screen.queryByTestId("compare-return"),
+      returnLink: screen.queryByRole("link", { name: "Return to Explorer" }),
+    }).toStrictEqual({
+      empty: expect.stringContaining("second county"),
+      pairIssue: "invalid",
+      returnButton: null,
+      returnLink: null,
+    });
+  });
+});
+
+function handleRetryProfile() {}
+
+function renderProfileSection(detail: ReturnType<typeof compareCountyDetail>) {
+  const alignment = alignCompareCountyProfiles({
+    left: { detail, status: "ready" },
+    leftFips: detail.fips,
+    right: {
+      detail: compareCountyDetail(COMPARE_RIGHT_FIPS),
+      status: "ready",
+    },
+    rightFips: COMPARE_RIGHT_FIPS,
+  });
+  render(
+    <CompareCountyProfileSection
+      alignment={alignment}
+      error={null}
+      leftLabel="Denver, Colorado (08001)"
+      loading={false}
+      period={null}
+      retrying={false}
+      rightLabel="Boulder, Colorado (08013)"
+      onRetry={handleRetryProfile}
+    />
+  );
+}
+
+describe("published county profile section", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders unavailable and unfamiliar priorities without a lower category", () => {
+    const absent = ["unknown", "Unavailable", "missing", "suppressed"] as const;
+    const displays = absent.map((priority) => {
+      const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+      detail.priority = priority;
+      renderProfileSection(detail);
+      const display =
+        within(
+          screen.getByTestId(
+            `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
+          )
+        ).getByTestId("evidence-display-value").textContent ?? "";
+      cleanup();
+      return display;
+    });
+    const unfamiliar = compareCountyDetail(COMPARE_LEFT_FIPS);
+    unfamiliar.priority = "Priority 3 — Review";
+    renderProfileSection(unfamiliar);
+    const unfamiliarDisplay =
+      within(
+        screen.getByTestId(
+          `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
+        )
+      ).getByTestId("evidence-display-value").textContent ?? "";
+    cleanup();
+    const numbered = compareCountyDetail(COMPARE_LEFT_FIPS);
+    numbered.priority = "Priority 10 — Review";
+    renderProfileSection(numbered);
+    const priority10 =
+      within(
+        screen.getByTestId(
+          `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
+        )
+      ).getByTestId("evidence-display-value").textContent ?? "";
+    cleanup();
+    const mixed = compareCountyDetail(COMPARE_LEFT_FIPS);
+    mixed.priority = "Lower — Priority 10";
+    renderProfileSection(mixed);
+    const lowerWithPriority10 =
+      within(
+        screen.getByTestId(
+          `compare-profile-cell-review_category-${COMPARE_LEFT_FIPS}`
+        )
+      ).getByTestId("evidence-display-value").textContent ?? "";
+    expect({
+      displays,
+      lowerWithPriority10,
+      priority10,
+      unfamiliar: unfamiliarDisplay,
+    }).toStrictEqual({
+      displays: ["Unavailable", "Unavailable", "Unavailable", "Suppressed"],
+      lowerWithPriority10: "Lower — Priority 10",
+      priority10: "Priority 10 — Review",
+      unfamiliar: "Priority 3 — Review",
+    });
+  });
+
+  it("renders a small incidence floor without rounding it to zero", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.incidence_floor_2023 = 0.04;
+    renderProfileSection(detail);
+    const incidence = within(
+      screen.getByTestId(
+        `compare-profile-cell-incidence_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const reasons = screen.getByTestId(
+      `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
     );
-    expect(screen.getByTestId("compare-recovery").textContent).toContain(
-      "second county"
+    const section =
+      screen.getByTestId("compare-profile-section").textContent ?? "";
+    expect(incidence.textContent).toBe(
+      "0.04 cases per 100,000 (published incidence floor)"
+    );
+    expect(reasons.textContent).toContain(incidence.textContent);
+    expect(reasons.textContent).not.toContain("0.0 cases");
+    expect(section).not.toContain("0.0 cases");
+  });
+
+  it("does not repeat a rejected negative floor in the section", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.case_count_floor_2023 = 12;
+    detail.incidence_floor_2023 = -4;
+    renderProfileSection(detail);
+    const section =
+      screen.getByTestId("compare-profile-section").textContent ?? "";
+    const count = within(
+      screen.getByTestId(
+        `compare-profile-cell-human_case_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const incidence = within(
+      screen.getByTestId(
+        `compare-profile-cell-incidence_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const reasons = screen.getByTestId(
+      `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
+    );
+    expect({
+      count: count.textContent,
+      deniesCount: reasons.textContent?.includes(
+        "No county-level 2023 Lyme case count was published"
+      ),
+      incidence: incidence.textContent,
+      repeatsRate: section.includes("-4"),
+      showsCount: reasons.textContent?.includes("12 (published count floor)"),
+    }).toStrictEqual({
+      count: "12 (published count floor)",
+      deniesCount: false,
+      incidence: "Unavailable",
+      repeatsRate: false,
+      showsCount: true,
+    });
+  });
+
+  it("keeps a published case count when incidence is null", () => {
+    const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
+    detail.case_count_floor_2023 = 12;
+    detail.incidence_floor_2023 = null;
+    renderProfileSection(detail);
+    const count = within(
+      screen.getByTestId(
+        `compare-profile-cell-human_case_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const incidence = within(
+      screen.getByTestId(
+        `compare-profile-cell-incidence_floor-${COMPARE_LEFT_FIPS}`
+      )
+    ).getByTestId("evidence-display-value");
+    const reasons = screen.getByTestId(
+      `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
+    );
+    expect(count.textContent).toBe("12 (published count floor)");
+    expect(incidence.textContent).toBe("Unavailable");
+    expect(reasons.textContent).toContain("12 (published count floor)");
+    expect(reasons.textContent).not.toContain(
+      "No county-level 2023 Lyme case count was published"
     );
   });
 });

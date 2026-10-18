@@ -83,7 +83,7 @@ test("professional brand placements preserve independent navigation controls", a
 }, testInfo) => {
   const phase = baseline ? "before" : "after";
   await fulfillCompletedStartingView(page);
-  await page.goto("/app/review");
+  await page.goto("/explore");
   const mobile = testInfo.project.name === "mobile";
   if (mobile)
     await page

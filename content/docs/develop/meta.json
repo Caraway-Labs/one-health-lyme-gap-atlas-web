@@ -1,0 +1,16 @@
+{
+  "title": "Developers",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "quickstart",
+    "rest",
+    "geography",
+    "resources",
+    "provenance",
+    "workflows",
+    "tier1-availability",
+    "mcp-clients",
+    "support"
+  ]
+}

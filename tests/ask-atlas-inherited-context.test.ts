@@ -523,6 +523,7 @@ function investigateBundle(
     },
     domainsRequestFailed: false,
     families: [],
+    knownEmptySelections: [],
     leadFinding: observations[0] ?? null,
     leadLimitation: null,
     measureFailures: options.failedMeasureId

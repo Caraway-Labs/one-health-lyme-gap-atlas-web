@@ -29,16 +29,11 @@ export type RouteId = (typeof routeIds)[number];
 export const uiControlIds = [
   "hero_explore_counties",
   "hero_methodology",
-  "nav_atlas",
-  "nav_scoring",
-  "nav_methods",
-  "nav_variants",
   "nav_data_dictionary",
   "filter_state",
   "filter_evidence",
   "csv_download",
   "results_table_toggle",
-  "summary_copy",
   "score_ecological_share",
   "score_low_incidence_breakpoint",
   "score_missing_human_weakness",
@@ -49,8 +44,6 @@ export const uiControlIds = [
   "footer_privacy",
   "footer_back_to_atlas",
   "page_retry",
-  "nav_home",
-  "nav_variant_link",
   "nav_data_dictionary_close",
   "results_table_county_select",
   "methods_source_open",
@@ -67,8 +60,6 @@ export const uiControlIds = [
   "evidence_chat_history_delete",
   "experiment_retry",
   "experiment_county_select",
-  "assistant_demo_send",
-  "assistant_demo_stop",
   "geo_retry",
   "geo_use_current_release",
   "geo_view_tiles",
@@ -232,8 +223,9 @@ export function routeIdForPathname(pathname: string): RouteId {
   if (pathname === "/overview") return "atlas_home";
   if (pathname === "/privacy") return "privacy";
   if (pathname === "/knowledge-graph") return "knowledge_graph";
-  // Retired /variant_* URLs 404. If the analytical shell still records a view,
-  // keep them distinct from Overview instead of labeling the miss as atlas_home.
+  // Retired /variant_* URLs 404. Unmatched paths still use the analytical shell,
+  // so a consented visit still records a route view. Keep atlas_variant so that
+  // miss stays distinct from Overview (atlas_home). Do not reuse this ID.
   if (pathname.startsWith("/variant_")) return "atlas_variant";
   if (pathname === "/account") return "account";
   if (pathname === "/assistant" || pathname.startsWith("/assistant/")) {
@@ -250,6 +242,14 @@ function clearAmplitudeBrowserStorage(storage: Storage): void {
     if (key?.startsWith("AMP_") || key?.startsWith("amplitude")) {
       storage.removeItem(key);
     }
+  }
+}
+
+function clearReachableAmplitudeStorage(readStorage: () => Storage): void {
+  try {
+    clearAmplitudeBrowserStorage(readStorage());
+  } catch {
+    // A denied storage getter must leave the page usable.
   }
 }
 
@@ -296,8 +296,8 @@ export function createAtlasAnalytics(loadAmplitude: AmplitudeLoader) {
         amplitude.reset();
         amplitude = undefined;
       }
-      clearAmplitudeBrowserStorage(window.sessionStorage);
-      clearAmplitudeBrowserStorage(window.localStorage);
+      clearReachableAmplitudeStorage(() => window.sessionStorage);
+      clearReachableAmplitudeStorage(() => window.localStorage);
     },
     track(event: AnalyticsEvent): void {
       if (!amplitude) return;

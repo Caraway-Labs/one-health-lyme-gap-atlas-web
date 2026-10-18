@@ -9,10 +9,6 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  AskAtlasChromeProvider,
-  useAskAtlasChrome,
-} from "@/features/ux-reset/ask-atlas/ask-atlas-chrome";
 import { AskAtlasWorkspace } from "@/features/ux-reset/ask-atlas/ask-atlas-workspace";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { CHAT_STORAGE_KEY } from "@/lib/knowledge-chat-storage";
@@ -49,16 +45,6 @@ function stubMatchMedia(mobile: boolean) {
         onchange: null,
         removeEventListener: () => {},
       }) as unknown as MediaQueryList
-  );
-}
-
-function ChromeProbe() {
-  const chrome = useAskAtlasChrome();
-  return (
-    <div>
-      <div data-testid="launcher-slot">{chrome.launcher}</div>
-      <div data-testid="desktop-slot">{chrome.desktopPanel}</div>
-    </div>
   );
 }
 
@@ -109,7 +95,7 @@ function storedConversations(): {
 }
 
 async function ask(question: string) {
-  fireEvent.change(screen.getByLabelText("Your question"), {
+  fireEvent.change(screen.getByLabelText("Your research question"), {
     target: { value: question },
   });
   fireEvent.click(screen.getByRole("button", { name: /^Ask$/ }));
@@ -118,13 +104,13 @@ async function ask(question: string) {
 
 describe("Ask Atlas research workspace", () => {
   beforeEach(() => {
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
     localStorage.clear();
     chatRequest.mockReset();
     stubMatchMedia(false);
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
   });
 
   afterEach(() => {
@@ -133,7 +119,7 @@ describe("Ask Atlas research workspace", () => {
     vi.unstubAllGlobals();
   });
 
-  it("asks once in the sidecar and opens that conversation in the workspace", async () => {
+  it("asks once on the dedicated page and restores that conversation without a second request", async () => {
     chatRequest.mockResolvedValue(
       chatResult(
         "Reviewed studies describe exposure.",
@@ -141,37 +127,35 @@ describe("Ask Atlas research workspace", () => {
         "conversation-1"
       )
     );
-    pathname = "/app/explore";
-    search = new URLSearchParams(
-      "scope=ALL&county=08001&metric=reported-cases"
-    );
-    window.history.replaceState({}, "", "/app/explore?county=08001");
-    const sidecar = render(
-      <AskAtlasChromeProvider>
-        <ChromeProbe />
-      </AskAtlasChromeProvider>
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Ask Atlas" }));
+    pathname = "/askatlas";
+    search = new URLSearchParams("county=08001");
+    window.history.replaceState({}, "", "/askatlas?county=08001");
+    const first = render(<AskAtlasWorkspace />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Ask Atlas" })
+    ).toBeTruthy();
+    expect(screen.getByText("Reviewed literature")).toBeTruthy();
+    expect(screen.queryByTestId("ask-atlas-page-reference")).toBeNull();
     await ask("How do reviewed studies describe tick exposure?");
     await screen.findByText("Reviewed studies describe exposure.");
-    const handoff = screen.getByRole("link", { name: "Open full workspace" });
     expect({
       calls: chatRequest.mock.calls.length,
-      href: handoff.getAttribute("href"),
       keys: Object.keys(chatRequest.mock.calls[0]?.[0] as object).toSorted(),
+      pageReferenceCopy: screen.queryByText(
+        /Answers search reviewed literature/
+      ),
     }).toStrictEqual({
       calls: 1,
-      href: "/app/assistant?county=08001&conversation=conversation-1",
       keys: ["history", "message"],
+      pageReferenceCopy: null,
     });
 
-    sidecar.unmount();
-    pathname = "/app/assistant";
+    first.unmount();
     search = new URLSearchParams("conversation=conversation-1");
     window.history.replaceState(
       {},
       "",
-      "/app/assistant?conversation=conversation-1"
+      "/askatlas?conversation=conversation-1"
     );
     render(<AskAtlasWorkspace initialConversationId="conversation-1" />);
     await screen.findByText("Reviewed studies describe exposure.");
@@ -179,33 +163,25 @@ describe("Ask Atlas research workspace", () => {
       both: screen.queryByRole("tab", { name: /both/i }),
       calls: chatRequest.mock.calls.length,
       conversations: storedConversations().length,
-      modes: screen.getByText(/Structured and Both modes are not available/)
-        .textContent,
       structured: screen.queryByRole("button", { name: /structured/i }),
     }).toStrictEqual({
       both: null,
       calls: 1,
       conversations: 1,
-      modes: expect.stringMatching(
-        /Structured and Both modes are not available/
-      ),
       structured: null,
     });
   });
 
   it("recovers a direct link when the conversation is not in this browser", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/app/assistant?conversation=missing-id"
-    );
+    window.history.replaceState({}, "", "/askatlas?conversation=missing-id");
     render(<AskAtlasWorkspace initialConversationId="missing-id" />);
     const notice = await screen.findByText(
       "Conversation not found in this browser."
     );
     expect(notice).toBeTruthy();
     expect(
-      (screen.getByLabelText("Your question") as HTMLTextAreaElement).disabled
+      (screen.getByLabelText("Your research question") as HTMLTextAreaElement)
+        .disabled
     ).toBeFalsy();
     expect(chatRequest).not.toHaveBeenCalled();
     expect(localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
@@ -215,25 +191,30 @@ describe("Ask Atlas research workspace", () => {
     chatRequest.mockResolvedValue(
       chatResult("Saved answer.", "request-clear", "conversation-clear")
     );
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Question to clear");
     await screen.findByText("Saved answer.");
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
     fireEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", {
+      within(
+        screen.getByRole("dialog", { name: "Clear all saved chats?" })
+      ).getByRole("button", {
         name: "Clear all",
       })
     );
-    await screen.findByText("Start with a research question");
+    await screen.findByRole("heading", {
+      name: "What would you like to explore?",
+    });
     expect(storedConversations()).toStrictEqual([]);
 
     window.history.pushState(
       {},
       "",
-      "/app/assistant?conversation=conversation-clear"
+      "/askatlas?conversation=conversation-clear"
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
     await screen.findByText("Conversation not found in this browser.");
@@ -248,9 +229,9 @@ describe("Ask Atlas research workspace", () => {
       .mockResolvedValueOnce(
         chatResult("Second saved answer.", "request-b", "conversation-b")
       );
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("First question");
     await screen.findByText("First saved answer.");
@@ -258,11 +239,7 @@ describe("Ask Atlas research workspace", () => {
     await ask("Second question");
     await screen.findByText("Second saved answer.");
 
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-a"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-a");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(document.querySelector(".chat-transcript")?.textContent).toContain(
@@ -273,11 +250,7 @@ describe("Ask Atlas research workspace", () => {
       document.querySelector(".chat-transcript")?.textContent
     ).not.toContain("Second saved answer.");
 
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-b"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-b");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(document.querySelector(".chat-transcript")?.textContent).toContain(
@@ -296,8 +269,8 @@ describe("Ask Atlas research workspace", () => {
           "conversation-up"
         )
       );
-    pathname = "/app/assistant";
-    window.history.replaceState({}, "", "/app/assistant");
+    pathname = "/askatlas";
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("What does the evidence say?");
     const alert = await screen.findByRole("alert");
@@ -315,8 +288,8 @@ describe("Ask Atlas research workspace", () => {
         pubmedUrl: "https://example.com/not-pubmed",
       })
     );
-    pathname = "/app/assistant";
-    window.history.replaceState({}, "", "/app/assistant");
+    pathname = "/askatlas";
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Show the source");
     await screen.findByText("Cited answer.");
@@ -331,18 +304,17 @@ describe("Ask Atlas research workspace", () => {
     chatRequest.mockResolvedValue(
       chatResult("Literature only.", "request-stale", "conversation-stale")
     );
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams("county=12abc&dataset=alpha-2026");
     window.history.replaceState(
       {},
       "",
-      "/app/assistant?county=12abc&dataset=alpha-2026"
+      "/askatlas?county=12abc&dataset=alpha-2026"
     );
     render(<AskAtlasWorkspace />);
-    expect(
-      document.querySelector("[data-assistant-county-state='invalid']")
-        ?.textContent
-    ).toContain("County context not applied");
+    expect(document.querySelector("[data-assistant-county-state]")).toBeNull();
+    expect(screen.queryByTestId("ask-atlas-page-reference")).toBeNull();
+    expect(screen.queryByText("12abc")).toBeNull();
     await ask("Question without county evidence");
     await screen.findByText("Literature only.");
     expect(chatRequest.mock.calls[0]?.[0]).toStrictEqual({
@@ -376,8 +348,9 @@ describe("Ask Atlas research workspace", () => {
       alerts: screen
         .queryAllByRole("alert")
         .map((item) => item.textContent ?? ""),
-      composer: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
-        .value,
+      composer: (
+        screen.getByLabelText("Your research question") as HTMLTextAreaElement
+      ).value,
       ids: storedConversations().map((item) => item.id),
       transcript: document.querySelector(".chat-transcript")?.textContent ?? "",
       url: window.location.search,
@@ -400,11 +373,12 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the selected chat when a history click outruns a late success", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "success");
@@ -424,11 +398,12 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the selected chat when a history click outruns a late error", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: /^First question/ }));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "error");
@@ -445,16 +420,12 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the popped conversation when a late success arrives", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-a"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-a");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "success");
@@ -474,16 +445,12 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps the popped conversation when a late error arrives", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
-    window.history.pushState(
-      {},
-      "",
-      "/app/assistant?conversation=conversation-a"
-    );
+    window.history.pushState({}, "", "/askatlas?conversation=conversation-a");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await waitFor(() => {
       expect(window.location.search).toContain("conversation-a");
     });
-    fireEvent.change(screen.getByLabelText("Your question"), {
+    fireEvent.change(screen.getByLabelText("Your research question"), {
       target: { value: "Draft that must stay" },
     });
     await settleHeld(held, "error");
@@ -500,6 +467,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("does not restore a deleted pending chat when its response arrives late", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete Second question" })
     );
@@ -523,6 +491,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("does not leak a late error after the pending chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete Second question" })
     );
@@ -543,6 +512,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps a late success on the open chat after another saved chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete First question" })
     );
@@ -566,6 +536,7 @@ describe("Ask Atlas research workspace", () => {
 
   it("keeps a late error on the open chat after another saved chat is deleted", async () => {
     const held = await saveTwoChatsThenHoldFollowUp();
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Delete First question" })
     );
@@ -594,9 +565,9 @@ describe("Ask Atlas research workspace", () => {
     const second = Promise.withResolvers<unknown>();
     chatRequest.mockReturnValueOnce(first.promise);
     chatRequest.mockReturnValueOnce(second.promise);
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     search = new URLSearchParams();
-    window.history.replaceState({}, "", "/app/assistant");
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Old question");
     fireEvent.click(screen.getAllByRole("button", { name: "New chat" })[0]);
@@ -624,14 +595,140 @@ describe("Ask Atlas research workspace", () => {
     ).toBeNull();
   });
 
+  it("fills the composer from a Try asking card without sending", () => {
+    render(<AskAtlasWorkspace />);
+    const prompts = screen.getByTestId("ask-atlas-try-asking");
+    fireEvent.click(
+      within(prompts).getByRole("button", {
+        name: "What can tick surveillance tell us?",
+      })
+    );
+    const composer = screen.getByLabelText(
+      "Your research question"
+    ) as HTMLTextAreaElement;
+    expect({
+      calls: chatRequest.mock.calls.length,
+      cards: within(prompts).getAllByRole("button").length,
+      focused: document.activeElement === composer,
+      moreTopics: screen.queryByText("More research topics"),
+      value: composer.value,
+      welcome: screen.getByRole("heading", {
+        name: "What would you like to explore?",
+      }).textContent,
+    }).toStrictEqual({
+      calls: 0,
+      cards: 4,
+      focused: true,
+      moreTopics: null,
+      value: "What can tick surveillance tell us?",
+      welcome: "What would you like to explore?",
+    });
+  });
+
+  it("sends on Enter, keeps Shift+Enter and IME composition in the composer", async () => {
+    chatRequest.mockResolvedValue(
+      chatResult("Sent from the keyboard.", "request-key", "conversation-key")
+    );
+    render(<AskAtlasWorkspace />);
+    const composer = screen.getByLabelText(
+      "Your research question"
+    ) as HTMLTextAreaElement;
+    fireEvent.change(composer, { target: { value: "   " } });
+    fireEvent.keyDown(composer, { key: "Enter" });
+    fireEvent.change(composer, { target: { value: "Still composing" } });
+    const composing = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      isComposing: true,
+      key: "Enter",
+    });
+    composer.dispatchEvent(composing);
+    const newline = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: "Enter",
+      shiftKey: true,
+    });
+    composer.dispatchEvent(newline);
+    expect({
+      calls: chatRequest.mock.calls.length,
+      composingPrevented: composing.defaultPrevented,
+      newlinePrevented: newline.defaultPrevented,
+    }).toStrictEqual({
+      calls: 0,
+      composingPrevented: false,
+      newlinePrevented: false,
+    });
+
+    fireEvent.change(composer, { target: { value: "Send from Enter" } });
+    fireEvent.keyDown(composer, { key: "Enter" });
+    await screen.findByText("Sent from the keyboard.");
+    expect({
+      calls: chatRequest.mock.calls.length,
+      prompts: screen.queryByRole("heading", { name: "Try asking" }),
+    }).toStrictEqual({
+      calls: 1,
+      prompts: null,
+    });
+  });
+
+  it("restores a saved chat from the history drawer and keeps it after New chat", async () => {
+    chatRequest.mockResolvedValue(
+      chatResult("Drawer answer.", "request-drawer", "conversation-drawer")
+    );
+    render(<AskAtlasWorkspace />);
+    await ask("Question kept in history");
+    await screen.findByText("Drawer answer.");
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    const welcome = screen.getByRole("heading", {
+      name: "What would you like to explore?",
+    }).textContent;
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    const drawer = screen.getByRole("dialog", { name: "Chat history" });
+    expect({
+      crossDevice: /other devices|synced/i.test(drawer.textContent ?? ""),
+      localCopy: drawer.textContent?.includes("this browser") ?? false,
+      saved: storedConversations().length,
+      welcome,
+    }).toStrictEqual({
+      crossDevice: false,
+      localCopy: true,
+      saved: 1,
+      welcome: "What would you like to explore?",
+    });
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: /^Question kept in history/ })
+    );
+    await screen.findByText("Drawer answer.");
+    expect({
+      calls: chatRequest.mock.calls.length,
+      drawer: screen.queryByRole("dialog", { name: "Chat history" }),
+    }).toStrictEqual({
+      calls: 1,
+      drawer: null,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => {
+      expect({
+        drawer: screen.queryByRole("dialog", { name: "Chat history" }),
+        saved: storedConversations().length,
+      }).toStrictEqual({
+        drawer: null,
+        saved: 1,
+      });
+    });
+  });
+
   it("shows unavailable without a composer or a request when literature chat is off", () => {
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "false");
-    pathname = "/app/assistant";
+    pathname = "/askatlas";
     render(<AskAtlasWorkspace />);
     expect(screen.getByTestId("ask-atlas-disabled").textContent).toContain(
       "service availability state"
     );
-    expect(screen.queryByLabelText("Your question")).toBeNull();
+    expect(screen.queryByLabelText("Your research question")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Ask$/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /structured/i })).toBeNull();
     expect(chatRequest).not.toHaveBeenCalled();
@@ -657,8 +754,8 @@ describe("Ask Atlas research workspace", () => {
         }
       )
     );
-    pathname = "/app/assistant";
-    window.history.replaceState({}, "", "/app/assistant");
+    pathname = "/askatlas";
+    window.history.replaceState({}, "", "/askatlas");
     render(<AskAtlasWorkspace />);
     await ask("Question during an outage");
     await screen.findByText("Service could not finish.");

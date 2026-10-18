@@ -5,7 +5,8 @@ import {
   type ProfileWriteBuild,
   type SavedProfile,
 } from "../profile/default-jurisdiction-contract";
-import { RESET_REVIEW_PATH } from "../routes";
+import { isLower48ReviewScope } from "../review/review-state-fips";
+import { ATLAS_EXPLORER_PATH } from "../routes";
 
 export const STARTING_VIEW_PATH = "/auth/starting-view";
 export const STARTING_VIEW_CONTINUE_PATH = "/auth/continue";
@@ -40,18 +41,25 @@ export function continueHref(requested: string | null): string {
 }
 
 /**
- * Completed accounts keep a safe explicit destination. Otherwise Review opens
- * without a scope so the saved starting view applies. Incomplete accounts
- * always finish on that same Review path after a confirmed save.
+ * Completed accounts keep a safe explicit destination. Otherwise Atlas Explorer
+ * opens without a scope so the saved starting view applies. Incomplete accounts
+ * always finish on that same Explorer path after a confirmed save.
  */
 export function destinationAfterStartingView(
   profile: SavedProfile,
   requested: string | null
 ): string {
   if (!isStartingViewComplete(profile)) {
-    return RESET_REVIEW_PATH;
+    return ATLAS_EXPLORER_PATH;
   }
-  return explicitInternalDestination(requested) ?? RESET_REVIEW_PATH;
+  return explicitInternalDestination(requested) ?? ATLAS_EXPLORER_PATH;
+}
+
+/** United States is separate. One state is a lower-48 state or the District of Columbia. */
+export function startingViewStateOptions(
+  options: readonly AtlasStateOption[]
+): AtlasStateOption[] {
+  return options.filter((option) => isLower48ReviewScope(option.code));
 }
 
 export function startingViewCompletionConfirmed(

@@ -113,6 +113,19 @@ describe("Tier 1 surveillance priority presentation", () => {
     tier1Get.mockReset();
   });
 
+  it("renders the presentation panel without calling the surveillance request", () => {
+    const view = presentTier1SurveillancePriority({
+      errorStatus: null,
+      release: alignedRelease,
+      requestedFips: tier1HighSufficientFixture.county_fips,
+      result: tier1HighSufficientFixture,
+      status: "success",
+    });
+    renderPanel(view);
+    expect(tier1Get).not.toHaveBeenCalled();
+    expect(screen.getByTestId("tier1-priority-tier").textContent).toBe("HIGH");
+  });
+
   it("shows a returned HIGH result, model-assisted label, reasons, and limitation", () => {
     const view = presentTier1SurveillancePriority({
       errorStatus: null,

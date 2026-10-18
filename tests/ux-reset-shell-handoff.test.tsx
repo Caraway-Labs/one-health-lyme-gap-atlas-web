@@ -4,7 +4,7 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import ResetReviewPage from "@/app/app/review/page";
+import ResetReviewPage from "@/app/explore/page";
 import { uxResetDestinationHref } from "@/features/ux-reset";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { UX_RESET_ROUTE_PATHS } from "@/features/ux-reset/routes";
@@ -122,19 +122,34 @@ describe("UX Reset shell rendered handoff", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",
     });
-    const investigate = navigation.querySelector(
-      'a[href="/app/investigate?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01"]'
-    );
-    expect(investigate).toBeTruthy();
-    expect(
-      navigation.querySelector('a[href="/app/feed?"]') ??
-        navigation.querySelector('a[href^="/app/feed?"]')
-    ).toBeNull();
-    expect(navigation.querySelector('a[href="/app/feed"]')).toBeTruthy();
-
-    expect(uxResetDestinationHref("investigate", pathname, searchParams)).toBe(
-      "/app/investigate?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01"
-    );
+    expect({
+      action: navigation.querySelector('a[aria-label="Action"]'),
+      ask: navigation
+        .querySelector('a[aria-label="Ask Atlas"]')
+        ?.getAttribute("href"),
+      compare: navigation
+        .querySelector(
+          'a[href="/compare?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01"]'
+        )
+        ?.getAttribute("aria-label"),
+      explore: navigation.querySelector('a[aria-label="Explore"]'),
+      feed: navigation
+        .querySelector('a[href="/app/feed"]')
+        ?.getAttribute("href"),
+      feedQuery: navigation.querySelector('a[href^="/app/feed?"]'),
+      investigate: navigation.querySelector('a[aria-label="Investigate"]'),
+      serializer: uxResetDestinationHref("compare", pathname, searchParams),
+    }).toStrictEqual({
+      action: null,
+      ask: "/askatlas?county=08001&dataset=alpha-2026-08-06",
+      compare: "Compare",
+      explore: null,
+      feed: "/app/feed",
+      feedQuery: null,
+      investigate: null,
+      serializer:
+        "/compare?scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01",
+    });
   });
 
   it("drops invalid shared context from malformed direct links on outbound handoff", () => {
@@ -146,14 +161,22 @@ describe("UX Reset shell rendered handoff", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",
     });
-    const investigate = navigation.querySelector('a[href^="/app/investigate"]');
-    expect(investigate).toBeTruthy();
-    const href = investigate?.getAttribute("href");
-    expect(href).toBe(
-      uxResetDestinationHref("investigate", pathname, searchParams)
-    );
-    expect(href).not.toContain("county=");
-    expect(href).toContain("scope=ALL");
-    expect(href).not.toContain("period=");
+    const href =
+      navigation
+        .querySelector('a[aria-label="Compare"]')
+        ?.getAttribute("href") ?? "";
+    expect({
+      county: href.includes("county="),
+      href,
+      period: href.includes("period="),
+      scope: href.includes("scope=ALL"),
+      serializer: uxResetDestinationHref("compare", pathname, searchParams),
+    }).toStrictEqual({
+      county: false,
+      href: uxResetDestinationHref("compare", pathname, searchParams),
+      period: false,
+      scope: true,
+      serializer: uxResetDestinationHref("compare", pathname, searchParams),
+    });
   });
 });

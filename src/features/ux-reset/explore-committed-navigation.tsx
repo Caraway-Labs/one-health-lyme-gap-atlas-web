@@ -11,6 +11,8 @@ import {
 
 import { serializeCompareFipsList } from "@/features/ux-reset/context-params";
 import {
+  ATLAS_EXPLORER_PATH,
+  LEGACY_COMPARE_PATH,
   RESET_COMPARE_PATH,
   RESET_EXPLORE_PATH,
   RESET_INVESTIGATE_PATH,
@@ -25,6 +27,12 @@ export type ExploreCommittedNavigation = {
   county: string | null;
   compare?: readonly string[];
   dataset: string | null;
+  /**
+   * Compare publishes the validated Explorer return link here.
+   * The sidebar Atlas Explorer item uses it so removing the page button
+   * still restores county, pair, release, and Explorer mode.
+   */
+  explorerReturnHref?: string | null;
   period: string | null;
 };
 
@@ -76,6 +84,7 @@ export function usePublishExploreCommittedNavigation(
   const setNavigation = useContext(ExploreCommittedNavigationSetContext);
   const county = next?.county ?? null;
   const dataset = next?.dataset ?? null;
+  const explorerReturnHref = next?.explorerReturnHref ?? null;
   const period = next?.period ?? null;
   const compareProvided = Boolean(next && Object.hasOwn(next, "compare"));
   const clearCounty = next !== null && next.county === null;
@@ -100,6 +109,7 @@ export function usePublishExploreCommittedNavigation(
             county,
             compare,
             dataset,
+            explorerReturnHref,
             period,
           }
         : null
@@ -110,6 +120,7 @@ export function usePublishExploreCommittedNavigation(
     compareProvided,
     county,
     dataset,
+    explorerReturnHref,
     period,
     setNavigation,
   ]);
@@ -121,6 +132,7 @@ function normalizePath(pathname: string): string {
 }
 
 const COMMITTED_SHELL_PATHS = new Set<string>([
+  ATLAS_EXPLORER_PATH,
   RESET_EXPLORE_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
@@ -140,8 +152,9 @@ export function searchParamsWithCommittedExploreContext(
 ): Pick<URLSearchParams, "get" | "getAll" | "has"> {
   const path = normalizePath(pathname);
   const onCommittedShell = COMMITTED_SHELL_PATHS.has(path);
-  const comparePair =
-    path === RESET_COMPARE_PATH ? committed?.compare : undefined;
+  const onComparePath =
+    path === RESET_COMPARE_PATH || path === LEGACY_COMPARE_PATH;
+  const comparePair = onComparePath ? committed?.compare : undefined;
   if (!(onCommittedShell || comparePair !== undefined) || !committed) {
     return searchParams;
   }
@@ -163,7 +176,7 @@ export function searchParamsWithCommittedExploreContext(
       params.delete("county");
     }
   }
-  if (path === RESET_COMPARE_PATH && committed.dataset) {
+  if (onComparePath && committed.dataset) {
     params.set("dataset", committed.dataset);
   }
   if (comparePair !== undefined) {

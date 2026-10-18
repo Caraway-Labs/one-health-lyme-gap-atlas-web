@@ -9,6 +9,7 @@ import {
   COMPARE_TICK_MEASURE_ID,
   COMPARE_WASHINGTON_MN,
   COMPARE_WASHINGTON_RI,
+  compareCountyDetail,
   compareMeasuresFixture,
   compareObservationsFor,
   compareScoresFixture,
@@ -19,6 +20,7 @@ import {
   reviewCandidate,
   stateReviewResponseForUrl,
 } from "../fixtures/review-operating-picture-fixtures";
+import { releaseViewportRuns } from "./release-phone-viewport";
 
 async function installCompareMocks(page: Page, requested: string[]) {
   const fulfill = async (route: Route, body: unknown, status = 200) => {
@@ -59,6 +61,15 @@ async function installCompareMocks(page: Page, requested: string[]) {
       links: { self: "/v1/measures" },
       meta: {},
     });
+  });
+  await page.route(/\/v1\/counties\/\d{5}(?:\?|$)/, async (route) => {
+    const fips = new URL(route.request().url()).pathname.split("/").at(-1);
+    if (!fips) {
+      await route.fulfill({ json: { detail: "missing county" }, status: 404 });
+      return;
+    }
+    requested.push(route.request().url());
+    await fulfill(route, compareCountyDetail(fips));
   });
   await page.route("**/v1/observations**", async (route) => {
     const url = new URL(route.request().url());
@@ -102,6 +113,25 @@ async function installCompareMocks(page: Page, requested: string[]) {
       meta: {},
     });
   });
+}
+
+async function showAdditionalObservations(page: Page) {
+  const group = page.getByTestId("compare-group-additional");
+  await expect(group).toBeVisible();
+  const open = await group.evaluate((element) =>
+    element instanceof HTMLDetailsElement ? element.open : false
+  );
+  if (!open) {
+    await group.locator("> summary").click();
+  }
+}
+
+async function explorerReturnLink(page: Page) {
+  const open = page.getByRole("button", { name: "Open navigation" });
+  if (await open.isVisible()) {
+    await open.click();
+  }
+  return page.getByRole("link", { exact: true, name: "Atlas Explorer" });
 }
 
 const REVIEW_OVERFLOW_FIPS = "08041";
@@ -158,20 +188,20 @@ async function installOverflowReviewScores(page: Page) {
 }
 
 async function openOverflowCountyCompare(page: Page, fips: string) {
-  await page.goto("/app/review?scope=CO&dataset=alpha-2026");
+  await page.goto("/explore?scope=CO&dataset=alpha-2026");
   await page.locator(`button[data-fips="${fips}"]`).click();
   await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
     "data-fips",
     fips
   );
   await page.getByTestId("review-compare").click();
-  await expect(page).toHaveURL(/\/app\/compare/);
+  await expect(page).toHaveURL(/\/compare/);
   await expect(page.getByTestId("compare-pair")).toHaveAttribute(
     "data-fips",
     fips
   );
   await page.reload();
-  await expect(page.getByTestId("compare-return")).toBeVisible();
+  await expect(page.getByTestId("compare-return")).toHaveCount(0);
 }
 
 async function expectOverflowCountyRestored(page: Page, fips: string) {
@@ -203,7 +233,7 @@ async function expectOverflowCountyRestored(page: Page, fips: string) {
 }
 
 async function expectConsumedReviewReturn(page: Page, fips: string) {
-  await page.goto(`/app/review?scope=CO&dataset=alpha-2026&county=${fips}`);
+  await page.goto(`/explore?scope=CO&dataset=alpha-2026&county=${fips}`);
   const row = page.locator(`button[data-fips="${fips}"]`);
   await expect(row).toBeVisible();
   await expect(row).not.toBeFocused();
@@ -214,7 +244,7 @@ test.describe("two-county Compare", () => {
     page,
   }) => {
     await installCompareMocks(page, []);
-    await page.goto("/app/compare");
+    await page.goto("/compare");
     await expect(page.getByTestId("compare-workspace")).toHaveAttribute(
       "data-recovery",
       "empty"
@@ -223,7 +253,7 @@ test.describe("two-county Compare", () => {
       "will not select"
     );
 
-    await page.goto("/app/compare?compare=08001&scope=CO");
+    await page.goto("/compare?compare=08001&scope=CO");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001"
@@ -234,7 +264,7 @@ test.describe("two-county Compare", () => {
     );
     await expect(page.getByTestId("compare-pair")).toContainText("Denver");
 
-    await page.goto("/app/compare?compare=08001,not-a-fips");
+    await page.goto("/compare?compare=08001,not-a-fips");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001"
@@ -244,7 +274,7 @@ test.describe("two-county Compare", () => {
       "invalid"
     );
 
-    await page.goto("/app/compare?compare=08001,08001");
+    await page.goto("/compare?compare=08001,08001");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001"
@@ -261,11 +291,10 @@ test.describe("two-county Compare", () => {
   }, testInfo) => {
     const requested: string[] = [];
     await installCompareMocks(page, requested);
-    await page.goto(
-      "/app/compare?compare=08001,08013&scope=CO&dataset=alpha-2026"
-    );
+    await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
     const cases = page.getByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
     await expect(cases).toHaveAttribute("data-row-index", "0");
+    await showAdditionalObservations(page);
     await expect(
       page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
     ).toContainText("12");
@@ -288,6 +317,50 @@ test.describe("two-county Compare", () => {
       "href",
       /compare=08001(?:%2C|,)08013/
     );
+    await expect(page.getByTestId("compare-investigate-08001")).toHaveText(
+      "View first county evidence"
+    );
+    await expect(page.getByTestId("compare-investigate-08013")).toHaveText(
+      "View second county evidence"
+    );
+    const floor = page.getByTestId(
+      "compare-profile-cell-human_case_floor-08001"
+    );
+    await expect(floor).toContainText("12");
+    await expect(floor).toContainText("floor");
+    const suppressed = page
+      .getByTestId("compare-profile-cell-incidence_floor-08013")
+      .getByTestId("evidence-display-value");
+    await expect(suppressed).toHaveText("Suppressed");
+    await expect(suppressed).not.toContainText("0");
+    await expect(
+      page.getByTestId("compare-profile-row-human_case_floor")
+    ).not.toContainText("differ by");
+    await expect(page.getByTestId("compare-ask-atlas")).toHaveAttribute(
+      "href",
+      /page_ref=/
+    );
+    await expect(page.getByTestId("compare-return")).toHaveCount(0);
+    await expect(page.getByTestId("compare-group-review")).toHaveJSProperty(
+      "open",
+      true
+    );
+    await expect(page.getByTestId("compare-group-human")).toHaveJSProperty(
+      "open",
+      false
+    );
+    await expect(page.getByTestId("compare-summary")).toBeVisible();
+    if (testInfo.project.name.includes("mobile")) {
+      const scrolls = await page
+        .getByTestId("compare-profile")
+        .evaluate((element) => element.scrollWidth > element.clientWidth);
+      expect(scrolls).toBe(false);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth
+        )
+      ).toBe(true);
+    }
 
     const observationUrls = requested.filter((url) =>
       url.includes("/v1/observations")
@@ -314,13 +387,12 @@ test.describe("two-county Compare", () => {
       "data-fips",
       "08001,08013"
     );
+    await showAdditionalObservations(page);
     await expect(
       page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
     ).toContainText("12");
 
-    await page
-      .getByRole("button", { name: /Remove Boulder, Colorado/ })
-      .click();
+    await page.getByRole("button", { name: "Clear second county" }).click();
     await expect(page).toHaveURL(/compare=08001(?!,)/);
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
@@ -331,6 +403,7 @@ test.describe("two-county Compare", () => {
       "data-fips",
       "08001,08013"
     );
+    await showAdditionalObservations(page);
     await expect(
       page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08013`)
     ).toContainText("0");
@@ -355,7 +428,7 @@ test.describe("two-county Compare", () => {
     page,
   }) => {
     await installCompareMocks(page, []);
-    await page.goto("/app/compare?compare=08001,08013&scope=CO");
+    await page.goto("/compare?compare=08001,08013&scope=CO");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001,08013"
@@ -369,6 +442,7 @@ test.describe("two-county Compare", () => {
       "08001,36001"
     );
     await expect(page).toHaveURL(/36001/);
+    await showAdditionalObservations(page);
     await expect(
       page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-36001`)
     ).toBeVisible();
@@ -384,7 +458,7 @@ test.describe("two-county Compare", () => {
       "08001,36001"
     );
 
-    const clear = page.getByRole("button", { name: "Clear counties" });
+    const clear = page.getByRole("button", { name: "Clear both counties" });
     await clear.focus();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
@@ -392,7 +466,7 @@ test.describe("two-county Compare", () => {
       ""
     );
 
-    await page.goto("/app/compare?compare=08001");
+    await page.goto("/compare?compare=08001");
     await expect(page.getByTestId("compare-pair")).toContainText("Denver");
     const secondCounty = page.getByRole("combobox", { name: "Second county" });
     await secondCounty.focus();
@@ -426,7 +500,7 @@ test.describe("two-county Compare", () => {
   }, testInfo) => {
     await installCompareMocks(page, []);
     await page.goto(
-      "/app/review?scope=CO&county=08001&dataset=alpha-2026&sort=score&page=2"
+      "/explore?scope=CO&county=08001&dataset=alpha-2026&sort=score&page=2"
     );
     const compare = page.getByTestId("review-compare");
     await expect(compare).toHaveAttribute("href", /compare=08001(?!\d)/);
@@ -435,7 +509,7 @@ test.describe("two-county Compare", () => {
     await expect(compare).not.toHaveAttribute("href", /sort=/);
     await compare.click();
 
-    await expect(page).toHaveURL(/\/app\/compare/);
+    await expect(page).toHaveURL(/\/compare/);
     await expect(page).toHaveURL(/compare=08001(?!\d)/);
     await expect(page).toHaveURL(/return=review/);
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
@@ -449,14 +523,12 @@ test.describe("two-county Compare", () => {
     await expect(page.getByTestId("compare-recovery")).toContainText(
       "second county"
     );
-    await expect(page.getByTestId("compare-return")).toHaveAttribute(
-      "href",
-      /\/app\/review/
-    );
-    await expect(page.getByTestId("compare-return")).not.toHaveAttribute(
-      "href",
-      /compare=/
-    );
+    const explorer = await explorerReturnLink(page);
+    await expect(explorer).toHaveAttribute("href", /\/explore/);
+    await expect(explorer).toHaveAttribute("href", /compare=08001(?!\d)/);
+    if (testInfo.project.name.includes("mobile")) {
+      await page.getByRole("button", { name: "Close navigation" }).click();
+    }
 
     await page.getByTestId("compare-slot-1").click();
     await page.getByRole("option", { name: /Boulder, Colorado/ }).click();
@@ -465,14 +537,12 @@ test.describe("two-county Compare", () => {
       "08001,08013"
     );
     await expect(page).toHaveURL(/return=review/);
-    await expect(page.getByTestId("compare-return")).toHaveAttribute(
-      "href",
-      /county=08001/
-    );
-    await expect(page.getByTestId("compare-return")).not.toHaveAttribute(
-      "href",
-      /08013/
-    );
+    const editedExplorer = await explorerReturnLink(page);
+    await expect(editedExplorer).toHaveAttribute("href", /county=08001/);
+    await expect(editedExplorer).toHaveAttribute("href", /08013/);
+    if (testInfo.project.name.includes("mobile")) {
+      await page.getByRole("button", { name: "Close navigation" }).click();
+    }
 
     await page.reload();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
@@ -487,7 +557,7 @@ test.describe("two-county Compare", () => {
       "08001"
     );
     await page.goBack();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).toHaveURL(/sort=score/);
     await expect(page).toHaveURL(/page=2/);
@@ -508,18 +578,17 @@ test.describe("two-county Compare", () => {
       "08001,08013"
     );
 
-    await page
-      .getByRole("button", { name: /Remove Boulder, Colorado/ })
-      .click();
+    await page.getByRole("button", { name: "Clear second county" }).click();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001"
     );
     await expect(page).toHaveURL(/return=review/);
-    await expect(page.getByTestId("compare-return")).toHaveAttribute(
-      "href",
-      /county=08001/
-    );
+    const clearedExplorer = await explorerReturnLink(page);
+    await expect(clearedExplorer).toHaveAttribute("href", /county=08001/);
+    if (testInfo.project.name.includes("mobile")) {
+      await page.getByRole("button", { name: "Close navigation" }).click();
+    }
 
     if (!testInfo.project.name.includes("mobile")) {
       const results = await new AxeBuilder({ page })
@@ -537,26 +606,76 @@ test.describe("two-county Compare", () => {
     const fips = REVIEW_OVERFLOW_FIPS;
 
     await openOverflowCountyCompare(page, fips);
-    await page.getByTestId("compare-return").click();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await (await explorerReturnLink(page)).click();
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(new RegExp(`county=${fips}`));
     await expectOverflowCountyRestored(page, fips);
     await expectConsumedReviewReturn(page, fips);
 
     await openOverflowCountyCompare(page, fips);
     await page.goBack();
-    await expect(page).toHaveURL(/\/app\/review/);
+    await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(new RegExp(`county=${fips}`));
     await expectOverflowCountyRestored(page, fips);
     await expectConsumedReviewReturn(page, fips);
   });
 
-  test("keeps a direct Compare link usable without a return target", async ({
+  test("shows loading, then recovers a failed county record", async ({
     page,
   }) => {
+    let failCounty = true;
+    let released = false;
+    let releaseGate: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+    await installCompareMocks(page, []);
+    await page.route(/\/v1\/counties\/\d{5}(?:\?|$)/, async (route) => {
+      if (!released) {
+        await gate;
+      }
+      if (failCounty) {
+        await route.fulfill({
+          json: { detail: "unavailable" },
+          status: 503,
+        });
+        return;
+      }
+      await route.fallback();
+    });
+    await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    await expect(page.getByTestId("compare-profile-loading")).toBeVisible();
+    await expect(page.getByTestId("compare-profile")).toHaveCount(0);
+    released = true;
+    releaseGate();
+    await expect(page.getByTestId("compare-retry-profile")).toBeVisible();
+    await expect(
+      page.getByTestId("compare-profile-cell-human_case_floor-08001")
+    ).toContainText("Couldn’t load this evidence.");
+    await expect(
+      page.getByTestId("compare-profile-cell-human_case_floor-08001")
+    ).not.toContainText("12");
+    failCounty = false;
+    await page.getByTestId("compare-retry-profile").click();
+    await expect(
+      page.getByTestId("compare-profile-cell-human_case_floor-08001")
+    ).toContainText("12");
+    await expect(page.getByTestId("compare-profile-section")).toHaveAttribute(
+      "data-records-ready",
+      "true"
+    );
+  });
+
+  test("keeps a direct Compare link usable without a return target", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !releaseViewportRuns(testInfo.project.name, 390),
+      "Phone-width Compare checks run on the mobile project."
+    );
     await installCompareMocks(page, []);
     await page.setViewportSize({ height: 800, width: 390 });
-    await page.goto("/app/compare?compare=08001,not-a-fips&return=assistant");
+    await page.goto("/compare?compare=08001,not-a-fips&return=assistant");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001"
@@ -566,9 +685,20 @@ test.describe("two-county Compare", () => {
       "invalid"
     );
     await expect(page.getByTestId("compare-return")).toHaveCount(0);
-    await page.goto("/app/compare?compare=08001,08013");
+    await expect(
+      page.getByRole("link", { name: "Return to Explorer" })
+    ).toHaveCount(0);
+    await page.goto("/compare?compare=08001,08013");
     await expect(page.getByTestId("compare-alignment")).toBeVisible();
     await expect(page.getByTestId("compare-return")).toHaveCount(0);
+    await expect(page.getByTestId("compare-group-review")).toHaveJSProperty(
+      "open",
+      true
+    );
+    await expect(page.getByTestId("compare-group-human")).toHaveJSProperty(
+      "open",
+      false
+    );
     await page.reload();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",

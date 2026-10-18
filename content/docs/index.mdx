@@ -14,13 +14,16 @@ Start with the orientation guides:
 - [What is Atlas Lyme?](/docs/what-is-atlas) — the product category, purpose, and boundaries.
 - [Who is Atlas for?](/docs/who-is-atlas-for) — the people and questions the platform is designed to support.
 - [The Atlas decision-support workflow](/docs/atlas-workflow) — how Atlas moves from One Health evidence to an investigation question.
-- [Professional workspace](/docs/professional-workspace) — the signed-in Review, Explore, Investigate, Compare, and Settings routes, and which destinations are still reserved.
+- [Professional workspace](/docs/professional-workspace) — the signed-in Atlas Explorer, Compare, Ask Atlas, Feed, Settings, and Docs destinations.
 - [Current capabilities](/docs/current-capabilities) — what is available now, planned, experimental, or not supported.
 - [Investigation workflows](/docs/investigation-workflows) — practical question-to-next-step guides for reviewing a signal.
 - [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) — how to interpret outputs and distinguish missing evidence from low observed signal.
+- [Sources and canonical evidence](/docs/sources-and-canonical-evidence) — how governed sources are designed to become one evidence model, and what is released today.
 - [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) — what AI means in Atlas and the status of current, planned, and experimental capabilities.
 - [API, MCP, and access](/docs/api-mcp-and-access) — the public REST contract, and the current status of MCP and API keys.
+- [API reference](/docs/api-reference) — the public OpenAPI contract rendered from the pinned spec, including version and source.
 - [FAQ and troubleshooting](/docs/faq-and-troubleshooting) — answers for interpretation, loading, filters, data availability, and HelpDocs navigation.
+- [Developer overview](/docs/develop) — anonymous REST reads, from one county request through citation.
 
 ## Who Atlas is for
 
@@ -43,19 +46,14 @@ The current release is an early public prototype and situational-awareness found
 
 ## A quick start
 
-Public Explorer:
-
-1. Open the [Atlas Explorer](/overview) and choose a state or county.
-2. Review the county list, map, and evidence panels together. The table and text summaries provide the same key findings without requiring a map.
-3. Inspect the evidence behind a signal, including its source, release or time period, methodology, and limitations.
-4. Share the URL when you want another person to review the same supported geography and filter state.
-
 Signed-in workspace:
 
-1. Open [Review](/app/review) and choose the United States or one state.
-2. Use the map and the county list together, then open Investigate for one county.
-3. Use Explore to scan a measure, or Compare for two counties. Read [the professional workspace](/docs/professional-workspace) for which routes are released.
+1. Sign in and open [Atlas Explorer](/explore). Choose the United States or one state.
+2. Use the map and the county list together, then open county evidence for one county. Suggested follow-up is on that same page.
+3. Open [Compare](/compare) for two counties. Read [the professional workspace](/docs/professional-workspace) for the six destinations and for what is still empty or experimental.
 4. Open **Docs** from the workspace navigation when you need this reference. It opens in a new tab and leaves the review address in the original tab.
+
+Older public bookmarks such as `/overview`, `/geographic_explorer`, and `/investigate` open Atlas Explorer after sign-in. They are not separate pages.
 
 ## Read the evidence carefully
 
@@ -75,4 +73,4 @@ Use **Docs** in the public Atlas utility bar, or **Docs** in the professional wo
 
 ## Developer and agent access
 
-The public REST API is documented by its owning service. Start with [API, MCP, and access](/docs/api-mcp-and-access) and the machine-readable [OpenAPI schema](https://api.onehealthatlas.org/openapi.json). Public reads do not use an API key. The Atlas MCP repository publishes a development server with smoke tools only; REST remains the supported interface for Atlas data. Settings does not generate API keys in this release.
+The public REST API is documented by its owning service. Start with [API, MCP, and access](/docs/api-mcp-and-access), the [developer overview](/docs/develop), the generated [API reference](/docs/api-reference), and the machine-readable [OpenAPI schema](https://api.onehealthatlas.org/openapi.json). Public reads do not use an API key. Production MCP exposes bounded anonymous read-only evidence tools for that same governed evidence. Connection recipes and agent guardrails are in [MCP clients](/docs/develop/mcp-clients). The September 2026 smoke-only development receipt is historical. Settings does not generate API keys in this release.

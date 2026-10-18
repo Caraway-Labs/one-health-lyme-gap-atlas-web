@@ -15,14 +15,16 @@ import {
   availabilityFromGovernedValueState,
   evidenceAvailabilityLabel,
 } from "@/features/ux-reset/evidence/value-state-contract";
-import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
-import { reviewCandidateFipsForScope } from "@/features/ux-reset/review/review-operating-state";
 import {
-  RESET_INVESTIGATE_PATH,
-  RESET_REVIEW_PATH,
-} from "@/features/ux-reset/routes";
+  EXPLORER_EVIDENCE_MODE,
+  hrefWithExplorerMode,
+} from "@/features/ux-reset/review/explorer-mode";
+import { reviewDatasetId } from "@/features/ux-reset/review/review-governed-values";
+import { reviewCountyFipsForScope } from "@/features/ux-reset/review/review-operating-state";
+import { approvedFollowUpTitleForColor } from "@/features/ux-reset/review/suggested-follow-up-content";
+import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { ValueState, type CountyScoreSummary } from "@/generated/models";
-import { plainPriority, suggestedFollowUpForColor } from "@/lib/atlas-ui";
+import { plainPriority } from "@/lib/atlas-ui";
 
 const ABSENT_COUNTY_STATUSES = new Set([
   "",
@@ -33,12 +35,12 @@ const ABSENT_COUNTY_STATUSES = new Set([
 ]);
 
 /**
- * Review-only list controls stay on Review. A validated compare pair is a
- * shared key Investigate accepts, so it is not described as dropped.
+ * Browse-only list controls stay on Atlas Explorer browse. A validated
+ * compare pair is accepted on the Explorer URL, so it is not described as dropped.
  */
 const REVIEW_INVESTIGATE_DROP_NOTES: Record<string, string> = {
-  page: "The Review list page stays on Review. Browser Back returns to it.",
-  sort: "Review sort stays on Review and is not copied to Investigate.",
+  page: "The list page stays on Atlas Explorer browse. Browser Back returns to it.",
+  sort: "Sort stays on Atlas Explorer browse and is not copied into county evidence.",
 };
 
 export type ReviewCountyPreviewModel = {
@@ -185,7 +187,7 @@ export function buildReviewCountyPreview(
     caveat: reviewCountyPreviewCaveat(county),
     countyName: county.county,
     fips: county.fips,
-    followUp: suggestedFollowUpForColor(county.color),
+    followUp: approvedFollowUpTitleForColor(county.color),
     qualification: reviewCountyPreviewQualification(county),
     reasonCodes: [],
     stateCode: county.state,
@@ -240,7 +242,7 @@ function writeReviewHandoffCounty(
   selectedFips: string,
   scopeCode: string
 ): string | null {
-  const county = reviewCandidateFipsForScope(selectedFips, scopeCode);
+  const county = reviewCountyFipsForScope(selectedFips, scopeCode);
   if (county) {
     source.set("county", county);
     return county;
@@ -287,16 +289,15 @@ export function buildReviewInvestigateHandoff(input: {
   writeReviewHandoffDataset(source, input.releaseId);
   writeReviewHandoffPeriod(source, input.period);
   const handoff = uxResetContextHandoffSearchParams(
-    RESET_REVIEW_PATH,
-    RESET_INVESTIGATE_PATH,
+    ATLAS_EXPLORER_PATH,
+    ATLAS_EXPLORER_PATH,
     source
   );
   return {
     droppedNotes: reviewInvestigateDropNotes(handoff.dropped),
-    href: uxResetShellHandoffHref(
-      RESET_INVESTIGATE_PATH,
-      RESET_REVIEW_PATH,
-      source
+    href: hrefWithExplorerMode(
+      uxResetShellHandoffHref(ATLAS_EXPLORER_PATH, ATLAS_EXPLORER_PATH, source),
+      EXPLORER_EVIDENCE_MODE
     ),
   };
 }
@@ -327,7 +328,7 @@ export function buildReviewCompareHandoff(input: {
     period: input.period,
     returnTo: "review",
     scope: input.scopeCode,
-    sourcePath: RESET_REVIEW_PATH,
+    sourcePath: ATLAS_EXPLORER_PATH,
     sourceSearchParams: source,
   });
 }

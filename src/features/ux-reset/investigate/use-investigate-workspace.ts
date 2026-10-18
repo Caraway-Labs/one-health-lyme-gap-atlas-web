@@ -36,8 +36,11 @@ import {
 } from "@/features/ux-reset/investigate/load-county-evidence";
 import { publishedCountyRecordFromDetail } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import type { PublishedCountyRecord } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { evidenceFromCounty } from "@/features/ux-reset/review/suggested-follow-up-content";
+import type { SuggestedFollowUpEvidence } from "@/features/ux-reset/review/suggested-follow-up-content";
+import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
-import type { AtlasMetadata, Measure } from "@/generated/models";
+import type { AtlasMetadata, CountyDetail, Measure } from "@/generated/models";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -64,8 +67,15 @@ export type InvestigateWorkspace = {
   catalogRefreshError: string | null;
   compare: readonly string[];
   countyRecord: PublishedCountyRecord | null;
+  /** Published county record used to build the five follow-up workflows. */
+  countyDetail: CountyDetail | null;
   /** Successful county read that returned no record (HTTP 404). */
   countyRecordAbsent: boolean;
+  /**
+   * Published county fields used to choose suggested follow-up. Score,
+   * priority, and color stay out of the evidence hierarchy.
+   */
+  suggestedFollowUpEvidence: SuggestedFollowUpEvidence | null;
   countyRecordError: string | null;
   countyRecordLoading: boolean;
   countyRecordRefreshError: string | null;
@@ -288,7 +298,17 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
         releaseId,
         signal,
       });
-      return detail ? publishedCountyRecordFromDetail(detail) : null;
+      if (!detail) {
+        return null;
+      }
+      return {
+        detail,
+        followUpEvidence: evidenceFromCounty(
+          detail,
+          EXPLORER_SCORE_SETTINGS.low_incidence_breakpoint
+        ),
+        record: publishedCountyRecordFromDetail(detail),
+      };
     },
     queryKey: ["ux-reset-investigate-county-record", releaseId, requestedFips],
     retry: (failureCount, error) =>
@@ -394,6 +414,8 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       measureKey,
       indicatorKey,
     ],
+    staleTime: (query) =>
+      (query.state.data?.knownEmptySelections.length ?? 0) > 0 ? 0 : 300_000,
     retry: (failureCount, error) =>
       shouldRetryInvestigateRequest(failureCount, error, retrySetting),
   });
@@ -473,8 +495,9 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
     catalogError: catalogState.failure,
     catalogRefreshError: catalogState.refreshFailure,
     compare: urlState.compare,
-    countyRecord:
-      countyRecordQuery.data === undefined ? null : countyRecordQuery.data,
+    countyRecord: countyRecordQuery.data?.record ?? null,
+    countyDetail: countyRecordQuery.data?.detail ?? null,
+    suggestedFollowUpEvidence: countyRecordQuery.data?.followUpEvidence ?? null,
     countyRecordAbsent: countyState.absent,
     countyRecordError: countyState.failure,
     countyRecordLoading:

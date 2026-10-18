@@ -300,6 +300,9 @@ export function publishedValueStateRole(
     case ValueState.UNAVAILABLE: {
       return "uncertainty";
     }
+    case ValueState.NO_RECORDS: {
+      return "uncertainty";
+    }
     default: {
       const exhaustive: never = valueState;
       return exhaustive;
@@ -331,6 +334,9 @@ function unavailableStatusReason(
       return ValueState.UNAVAILABLE;
     }
     case ValueState.NO_COUNTY_LINKED_RECORD: {
+      return ValueState.UNAVAILABLE;
+    }
+    case ValueState.NO_RECORDS: {
       return ValueState.UNAVAILABLE;
     }
     case ValueState.OBSERVED: {
@@ -420,6 +426,11 @@ export function governedStatusDisclosure(input: {
         }
         case ValueState.NO_COUNTY_LINKED_RECORD: {
           statusText = evidenceReasonLabel(ValueState.NO_COUNTY_LINKED_RECORD);
+          statusGap = `${input.claimLabel} ${UNAVAILABLE_GAP_SENTENCE}`;
+          break;
+        }
+        case ValueState.NO_RECORDS: {
+          statusText = evidenceReasonLabel(ValueState.NO_RECORDS);
           statusGap = `${input.claimLabel} ${UNAVAILABLE_GAP_SENTENCE}`;
           break;
         }

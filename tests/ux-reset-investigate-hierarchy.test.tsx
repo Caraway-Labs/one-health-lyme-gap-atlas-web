@@ -944,6 +944,7 @@ function valueStatesSeen(
     [ValueState.NO_COUNTY_LINKED_RECORD]: seen.has(
       ValueState.NO_COUNTY_LINKED_RECORD
     ),
+    [ValueState.NO_RECORDS]: seen.has(ValueState.NO_RECORDS),
     [ValueState.OBSERVED]: seen.has(ValueState.OBSERVED),
     [ValueState.SUPPRESSED]: seen.has(ValueState.SUPPRESSED),
     [ValueState.UNAVAILABLE]: seen.has(ValueState.UNAVAILABLE),
@@ -2045,6 +2046,7 @@ describe("County Investigate evidence hierarchy", () => {
       valueStates: {
         [ValueState.MISSING]: true,
         [ValueState.NO_COUNTY_LINKED_RECORD]: true,
+        [ValueState.NO_RECORDS]: false,
         [ValueState.OBSERVED]: true,
         [ValueState.SUPPRESSED]: true,
         [ValueState.UNAVAILABLE]: true,

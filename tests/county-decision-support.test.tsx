@@ -121,10 +121,21 @@ describe("Investigation Workspace county decision support", () => {
       screen.getByRole("region", { name: "Conduct targeted follow-up" })
     ).toBeTruthy();
     expect(
-      screen.getByText("County epidemiology or surveillance staff")
+      screen.getByTestId("follow-up-interpretation").textContent ?? ""
+    ).toContain(
+      "This is a review recommendation, not a measure of individual risk or proof that Lyme disease is undercounted."
+    );
+    expect(
+      [
+        "Human disease surveillance",
+        "Vector and pathogen surveillance",
+        "Clinical and laboratory reporting",
+        "Community context and outreach",
+        "Coordination and documentation",
+      ].every((label) => screen.getByText(label))
     ).toBeTruthy();
     fireEvent.click(
-      screen.getByText("Official program examples and resources")
+      screen.getByText("Questions, partner roles, and official resources")
     );
     expect(
       screen
@@ -133,5 +144,15 @@ describe("Investigation Workspace county decision support", () => {
         })
         .getAttribute("target")
     ).toBe("_blank");
+  });
+
+  it("does not call an unavailable review level a recommendation", () => {
+    render(<CountyActionPlan detail={{ ...detail, color: "#111111" }} />);
+    const interpretation =
+      screen.getByTestId("follow-up-interpretation").textContent ?? "";
+    expect(interpretation).toContain(
+      "These are suggested evidence-verification activities, not an assigned review priority, a measure of individual risk, or proof that Lyme disease is undercounted."
+    );
+    expect(interpretation).not.toContain("This is a review recommendation");
   });
 });

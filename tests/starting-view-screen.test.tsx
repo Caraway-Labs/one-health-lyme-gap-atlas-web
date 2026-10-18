@@ -38,14 +38,20 @@ vi.mock(
       useSettingsStateOptions: () => ({
         stateList: {
           options: [
+            { code: "AK", name: "Alaska" },
             { code: "CO", name: "Colorado" },
+            { code: "DC", name: "District of Columbia" },
+            { code: "HI", name: "Hawaii" },
             { code: "NY", name: "New York" },
           ],
           status: "ready",
         },
         refetch: () => Promise.resolve(),
         stateOptions: [
+          { code: "AK", name: "Alaska" },
           { code: "CO", name: "Colorado" },
+          { code: "DC", name: "District of Columbia" },
+          { code: "HI", name: "Hawaii" },
           { code: "NY", name: "New York" },
         ],
       }),
@@ -100,7 +106,9 @@ describe("Choose your starting view", () => {
   it("asks for a choice and then a state without saving", () => {
     renderScreen(incomplete);
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Review" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
     expect(screen.getByRole("alert").textContent).toBe(
       "Choose United States or one state to continue."
     );
@@ -108,11 +116,24 @@ describe("Choose your starting view", () => {
 
     fireEvent.click(screen.getByRole("radio", { name: "One state" }));
     expect(screen.getByLabelText("State")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Review" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
     expect(screen.getByRole("alert").textContent).toBe(
       "Select a state to continue."
     );
     expect(writeSavedProfile).not.toHaveBeenCalled();
+  });
+
+  it("lists the lower 48 and the District of Columbia", () => {
+    renderScreen(incomplete);
+
+    fireEvent.click(screen.getByRole("radio", { name: "One state" }));
+    const stateList = screen.getByLabelText("State");
+    expect(stateList.textContent).toContain("Colorado");
+    expect(stateList.textContent).toContain("District of Columbia");
+    expect(stateList.textContent).not.toContain("Alaska");
+    expect(stateList.textContent).not.toContain("Hawaii");
   });
 
   it("continues only after version 1 matches the selected state", async () => {
@@ -132,7 +153,9 @@ describe("Choose your starting view", () => {
     fireEvent.change(screen.getByLabelText("State"), {
       target: { value: "NY" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Review" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
 
     await expect(
       screen.findByText("Saving your starting view…")
@@ -148,7 +171,7 @@ describe("Choose your starting view", () => {
       { kind: "unconfigured" },
       incomplete
     );
-    expect(replace).toHaveBeenCalledWith("/app/review");
+    expect(replace).toHaveBeenCalledWith("/explore");
   });
 
   it("keeps the selection when the save is not confirmed", async () => {
@@ -159,7 +182,9 @@ describe("Choose your starting view", () => {
     renderScreen(incomplete);
 
     fireEvent.click(screen.getByRole("radio", { name: "United States" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Review" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
 
     expect((await screen.findByRole("alert")).textContent).toBe(
       "We couldn’t save your starting view. Your selection is still here. Try again."
