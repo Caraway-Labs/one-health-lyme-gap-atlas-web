@@ -270,6 +270,34 @@ test.describe("Explorer county toolbar", () => {
       "placeholder",
       "Search county or FIPS"
     );
+    await expect(page).toHaveURL(/selection=required/);
+    await expect(page).not.toHaveURL(/[?&]county=/);
+    await page.waitForTimeout(500);
+    await expect(page).not.toHaveURL(/[?&]county=/);
+    await expect(page.locator("[aria-current='true']")).toHaveCount(0);
+    await expect(page.getByTestId("review-county-preview")).toHaveCount(0);
+    await expect(
+      page.getByTestId("review-published-county-preview")
+    ).toHaveCount(0);
+    await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
+    await expect(page.getByTestId("review-state-map-region")).toHaveAttribute(
+      "data-selected-fips",
+      ""
+    );
+
+    await page.getByRole("button", { name: /Bullock County, AL/ }).click();
+    await expect(page).toHaveURL(/county=01011/);
+    await expect(page).not.toHaveURL(/selection=required/);
+    await expect(search).toHaveValue("Bullock County, AL - 01011");
+    await expect(page.getByTestId("explorer-county-clear")).toBeVisible();
+    await expect(
+      page.locator("[data-testid='review-candidate'][aria-current='true']")
+    ).toHaveAttribute("data-fips", "01011");
+    await expect(page.getByTestId("review-county-preview")).toBeVisible();
+    await expect(page.getByTestId("review-state-map-region")).toHaveAttribute(
+      "data-selected-fips",
+      "01011"
+    );
 
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "United States" }).click();
@@ -278,11 +306,39 @@ test.describe("Explorer county toolbar", () => {
     await expect(search).toHaveValue("Bullock County, AL - 01011");
     await expect(page).toHaveURL(/scope=AL/);
     await expect(page).toHaveURL(/county=01011/);
+    await expect(page).not.toHaveURL(/selection=required/);
 
     const toolbarAxe = await new AxeBuilder({ page })
       .include("[data-testid='explorer-county-toolbar']")
       .analyze();
     expect(toolbarAxe.violations).toEqual([]);
+  });
+
+  test("shows the county label for a direct URL, history, and a list click", async ({
+    page,
+  }) => {
+    await installExplorer(page);
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/explore?scope=AL&county=01001");
+    const search = page.getByTestId("explorer-county-search");
+    await expect(search).toHaveValue("Autauga, AL - 01001");
+    await expect(page.getByTestId("explorer-county-clear")).toBeVisible();
+
+    await page.getByRole("button", { name: /Bullock County, AL/ }).click();
+    await expect(page).toHaveURL(/county=01011/);
+    await expect(search).toHaveValue("Bullock County, AL - 01011");
+    await expect(page.getByTestId("explorer-county-clear")).toBeVisible();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/county=01001/);
+    await expect(page).not.toHaveURL(/county=01011/);
+    await expect(search).toHaveValue("Autauga, AL - 01001");
+    await expect(page.getByTestId("explorer-county-clear")).toBeVisible();
+
+    await page.goForward();
+    await expect(page).toHaveURL(/county=01011/);
+    await expect(search).toHaveValue("Bullock County, AL - 01011");
+    await expect(page.getByTestId("explorer-county-clear")).toBeVisible();
   });
 
   test("keeps one row at 1280 and wraps at 768 without horizontal scroll", async ({

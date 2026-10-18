@@ -30,6 +30,16 @@ const counties: ExplorerCountyReference[] = [
     stateName: "Alabama",
     tickStatus: "No records",
   },
+  {
+    burgdorferiStatus: "Present",
+    county: "Bullock County",
+    evidenceCompleteness: 80,
+    fips: "01011",
+    humanStatus: "published_count_floor",
+    state: "AL",
+    stateName: "Alabama",
+    tickStatus: "Established",
+  },
 ];
 
 function ToolbarHarness({
@@ -164,5 +174,57 @@ describe("explorer county toolbar", () => {
     expect(onClearSelection).toHaveBeenCalledOnce();
     expect((search as HTMLInputElement).value).toBe("");
     expect(search.getAttribute("placeholder")).toBe("Search county or FIPS");
+  });
+
+  it("shows the county label when a selection arrives without a matching query", () => {
+    const view = render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        downloadDisabled={false}
+        scope="AL"
+        selectedFips="01001"
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onDownload={vi.fn<() => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    expect({
+      clear: screen.queryByRole("button", { name: "Clear county" }) !== null,
+      value: (search as HTMLInputElement).value,
+    }).toStrictEqual({
+      clear: true,
+      value: "Autauga, AL - 01001",
+    });
+    view.rerender(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery="auta"
+        downloadDisabled={false}
+        scope="AL"
+        selectedFips="01011"
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onDownload={vi.fn<() => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    expect({
+      clear: screen.queryByRole("button", { name: "Clear county" }) !== null,
+      value: (search as HTMLInputElement).value,
+    }).toStrictEqual({
+      clear: true,
+      value: "Bullock County, AL - 01011",
+    });
   });
 });

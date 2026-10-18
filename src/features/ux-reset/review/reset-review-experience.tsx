@@ -338,12 +338,17 @@ function ResetReviewExperienceInner() {
         setChosenNationalFips(county);
       }
       const generation = nationalChoiceGenerationRef.current;
+      const clearSelectionGuard =
+        county !== null && urlState.selection === EXPLORER_SELECTION_REQUIRED;
       // nuqs pushes the next entry inside a throttled transition and passes
       // null history state. Stamp this choice only after that write, and only
       // onto the entry whose URL still shows it.
       void (async () => {
         try {
-          await setUrlState({ county }, { history });
+          await setUrlState(
+            clearSelectionGuard ? { county, selection: null } : { county },
+            { history }
+          );
         } catch {
           // A failed history write leaves the entry unstamped, so Back withholds it.
           return;
@@ -360,7 +365,7 @@ function ResetReviewExperienceInner() {
         stampExplicitNationalCounty(county);
       })();
     },
-    [scope, setUrlState]
+    [scope, setUrlState, urlState.selection]
   );
   const availableDataGate = useMemo(
     () =>
@@ -389,15 +394,28 @@ function ResetReviewExperienceInner() {
       setPendingSelectedQuery(county.fips);
       userChoseScopeRef.current = true;
       setUserChoseScope(true);
-      void setUrlState({ county: county.fips, scope: county.state });
+      void setUrlState({
+        county: county.fips,
+        scope: county.state,
+        ...(urlState.selection === EXPLORER_SELECTION_REQUIRED
+          ? { selection: null }
+          : {}),
+      });
     },
-    [scope, setCounty, setUrlState]
+    [scope, setCounty, setUrlState, urlState.selection]
   );
   const clearToolbarCounty = useCallback(() => {
     setPendingSelectedQuery(null);
     setCountyQuery("");
-    setCounty(null, "push");
-  }, [setCounty]);
+    nationalChoiceGenerationRef.current += 1;
+    if (scope === "ALL") {
+      setChosenNationalFips(null);
+    }
+    void setUrlState(
+      { county: null, selection: EXPLORER_SELECTION_REQUIRED },
+      { history: "push" }
+    );
+  }, [scope, setUrlState]);
   const downloadCountyList = useCallback(() => {
     const rows = filterExplorerCountyReference(countyReference.counties, {
       evidence: availableData,

@@ -100,12 +100,10 @@ export function ExplorerCountyToolbar({
     selectedFips === null
       ? undefined
       : counties.find((county) => county.fips === selectedFips);
-  const queryIsSelection =
-    selectedCounty !== undefined && countyQuery.trim() === selectedCounty.fips;
-  const displayValue =
-    !editingQuery && queryIsSelection && selectedCounty
-      ? explorerCountySelectionLabel(selectedCounty)
-      : countyQuery;
+  const showingSelection = !editingQuery && selectedCounty !== undefined;
+  const displayValue = showingSelection
+    ? explorerCountySelectionLabel(selectedCounty)
+    : countyQuery;
 
   const selectCounty = (county: ExplorerCountyReference | undefined) => {
     if (!county) {
@@ -231,8 +229,9 @@ export function ExplorerCountyToolbar({
               setOpen(true);
             }}
             onFocus={(event) => {
-              if (!editingQuery && queryIsSelection) {
+              if (showingSelection) {
                 event.currentTarget.select();
+                return;
               }
               if (countyQuery.trim().length > 0) {
                 setOpen(true);
