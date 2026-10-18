@@ -151,6 +151,25 @@ async function installExplorer(page: Page) {
   });
 }
 
+async function rankedFips(page: Page) {
+  return page
+    .locator("button.ux-reset-ranked-row")
+    .evaluateAll((rows) =>
+      rows.map((row) =>
+        row instanceof HTMLElement ? (row.dataset.fips ?? "") : ""
+      )
+    );
+}
+
+async function downloadCountyFips(page: Page) {
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByTestId("explorer-download-counties").click(),
+  ]);
+  const csv = await readFile((await download.path()) ?? "", "utf8");
+  return [...csv.matchAll(/"(\d{5})"/g)].map((match) => match[1] ?? "");
+}
+
 async function toolbarMetrics(page: Page) {
   return page.evaluate(() => {
     const toolbar = document.querySelector(
@@ -339,6 +358,37 @@ test.describe("Explorer county toolbar", () => {
     await expect(page).toHaveURL(/county=01011/);
     await expect(search).toHaveValue("Bullock County, AL - 01011");
     await expect(page.getByTestId("explorer-county-clear")).toBeVisible();
+  });
+
+  test("keeps the list and CSV on the selected county across Back and Forward", async ({
+    page,
+  }) => {
+    await installExplorer(page);
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/explore?scope=AL&county=01001");
+    const search = page.getByTestId("explorer-county-search");
+    await expect(search).toHaveValue("Autauga, AL - 01001");
+    await search.fill("Bullock");
+    await page
+      .getByRole("option", { name: "Bullock County, AL - 01011" })
+      .click();
+    await expect(page).toHaveURL(/county=01011/);
+    await expect(search).toHaveValue("Bullock County, AL - 01011");
+    await expect.poll(() => rankedFips(page)).toEqual(["01011"]);
+    expect(await downloadCountyFips(page)).toEqual(["01011"]);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/county=01001/);
+    await expect(page).not.toHaveURL(/county=01011/);
+    await expect(search).toHaveValue("Autauga, AL - 01001");
+    await expect.poll(() => rankedFips(page)).toEqual(["01001"]);
+    expect(await downloadCountyFips(page)).toEqual(["01001"]);
+
+    await page.goForward();
+    await expect(page).toHaveURL(/county=01011/);
+    await expect(search).toHaveValue("Bullock County, AL - 01011");
+    await expect.poll(() => rankedFips(page)).toEqual(["01011"]);
+    expect(await downloadCountyFips(page)).toEqual(["01011"]);
   });
 
   test("keeps one row at 1280 and wraps at 768 without horizontal scroll", async ({

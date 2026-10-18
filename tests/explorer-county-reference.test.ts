@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  countyQueryAfterSelectionChange,
   countyReferenceFromScoreSummaries,
   countyReferenceMatchesQuery,
   explorerAvailableDataGate,
@@ -200,6 +201,28 @@ describe("explorer county reference", () => {
     ).toBeTruthy();
     expect(countyReferenceMatchesQuery(autauga, "al")).toBeTruthy();
     expect(countyReferenceMatchesQuery(baldwin, "01001")).toBeFalsy();
+  });
+
+  it("carries a committed FIPS when the selection changes and keeps typed search", () => {
+    expect({
+      backToAutauga: countyQueryAfterSelectionChange("01011", "01011", "01001"),
+      clear: countyQueryAfterSelectionChange("01011", "01011", null),
+      forwardToBullock: countyQueryAfterSelectionChange(
+        "01001",
+        "01001",
+        "01011"
+      ),
+      initialSelection: countyQueryAfterSelectionChange("", null, "01001"),
+      listClick: countyQueryAfterSelectionChange("", "01001", "01011"),
+      typedSearch: countyQueryAfterSelectionChange("bull", "01001", "01011"),
+    }).toStrictEqual({
+      backToAutauga: "01001",
+      clear: "",
+      forwardToBullock: "01011",
+      initialSelection: null,
+      listClick: null,
+      typedSearch: null,
+    });
   });
 
   it("writes a quoted five-digit FIPS and does not include score columns", () => {

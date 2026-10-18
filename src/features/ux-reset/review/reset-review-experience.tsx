@@ -27,6 +27,7 @@ import {
   explorerAvailableDataGate,
   explorerCountyListCsv,
   explorerCountyListFilename,
+  countyQueryAfterSelectionChange,
   filterExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerCountyToolbar } from "@/features/ux-reset/review/explorer-county-toolbar";
@@ -211,6 +212,19 @@ function ResetReviewExperienceInner() {
   const modeQuery = resolveExplorerModeQuery(rawModeValues);
   const explorerMode = modeQuery.mode;
   const reviewCounty = normalizeReviewCounty(scope, urlState.county);
+  const [trackedCountyQueryCounty, setTrackedCountyQueryCounty] =
+    useState(reviewCounty);
+  if (trackedCountyQueryCounty !== reviewCounty) {
+    const nextQuery = countyQueryAfterSelectionChange(
+      countyQuery,
+      trackedCountyQueryCounty,
+      reviewCounty
+    );
+    setTrackedCountyQueryCounty(reviewCounty);
+    if (nextQuery !== null) {
+      setCountyQuery(nextQuery);
+    }
+  }
   const profileQuery = useProfileDefaultJurisdiction();
 
   const scopeUnsupported = isUnsupportedReviewScope(scope);
