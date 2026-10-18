@@ -14,6 +14,7 @@ import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { formatGovernedEvidenceValue } from "@/features/ux-reset/evidence/value-state-contract";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
+import { CanonicalGeographyAvailabilityNotice } from "@/features/ux-reset/geography/canonical-geography-availability-notice";
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
 import {
   mapPublishedRow,
@@ -151,6 +152,7 @@ export function ReviewPublishedCountyPreview({
         <p className="type-small">
           FIPS {county.fips} · Release {releaseId}
         </p>
+        <CanonicalGeographyAvailabilityNotice fips={county.fips} />
         <p className="type-body">
           Published county evidence is available. This selection is not a review
           recommendation, and it is not a disease-risk estimate.

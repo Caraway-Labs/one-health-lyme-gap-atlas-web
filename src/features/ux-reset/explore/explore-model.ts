@@ -5,6 +5,7 @@ import type {
   EvidenceObjectModel,
 } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityValues } from "@/features/ux-reset/evidence/types";
+import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 import type { Measure, Observation } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 import {
@@ -82,6 +83,8 @@ export type ExploreCountyRow = {
 export type ExploreCommittedSelection = {
   /** Period that belongs to this successful selection. */
   handoffPeriod: string;
+  /** Initial non-CDC selection the API classified as no published results. */
+  knownEmptySelection?: KnownEmptyObservationSelection | null;
   mapScope: string;
   measureId: string;
   measureLabel: string;
@@ -462,6 +465,7 @@ function sortDirectory(
 
 export function buildExploreSelection(input: {
   directory: readonly ExploreCountyIdentity[];
+  knownEmptySelection?: KnownEmptyObservationSelection | null;
   mapScope: string;
   measure: Measure;
   observations: readonly Observation[];
@@ -536,6 +540,10 @@ export function buildExploreSelection(input: {
 
   return {
     handoffPeriod: input.timeBound.handoffPeriod,
+    knownEmptySelection:
+      input.observations.length === 0
+        ? (input.knownEmptySelection ?? null)
+        : null,
     mapScope: input.mapScope,
     measureId: input.measure.measure_id,
     measureLabel: input.measure.label,

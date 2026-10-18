@@ -32,6 +32,12 @@ const storyAliases = [
     replacement: path.resolve("stories/support/tier1-hook-substitute.tsx"),
   },
   {
+    find: "@/features/ux-reset/geography/canonical-geography-availability-notice",
+    replacement: path.resolve(
+      "stories/support/canonical-geography-availability-notice-substitute.tsx"
+    ),
+  },
+  {
     find: "@/features/ux-reset/investigate/download-investigate-pdf",
     replacement: path.resolve(
       "stories/support/download-investigate-pdf-substitute.ts"

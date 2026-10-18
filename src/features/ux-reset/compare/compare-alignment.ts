@@ -2,6 +2,10 @@ import { formatObservationPeriod } from "@/features/ux-reset/evidence/format-per
 import { evidenceObjectFromObservation } from "@/features/ux-reset/evidence/from-observation";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { formatGovernedEvidenceValue } from "@/features/ux-reset/evidence/value-state-contract";
+import {
+  knownEmptySelectionMessage,
+  type KnownEmptyObservationSelection,
+} from "@/features/ux-reset/observations/selection-availability";
 import type { Measure, Observation } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 
@@ -85,6 +89,7 @@ export type CompareMeasureOutcome =
   | {
       measureId: string;
       observations: readonly Observation[];
+      selectionAvailability?: KnownEmptyObservationSelection | null;
       status: "ready";
     }
   | {
@@ -381,6 +386,16 @@ function cellForOutcome(input: {
     input.measureType
   );
   if (records.length === 0) {
+    if (
+      outcome?.status === "ready" &&
+      outcome.observations.length === 0 &&
+      outcome.selectionAvailability
+    ) {
+      return emptyCell(
+        "missing",
+        knownEmptySelectionMessage(outcome.selectionAvailability)
+      );
+    }
     return emptyCell("missing", MISSING_MESSAGE);
   }
   return { kind: "observations", records };

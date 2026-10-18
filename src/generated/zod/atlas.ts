@@ -43,7 +43,11 @@ export const IndicatorsV1IndicatorsGetResponse = zod.object({
 })),
   "meta": zod.object({
   "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.')
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
+  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
+  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
   "self": zod.union([zod.string(),zod.null()]).optional()
@@ -129,7 +133,11 @@ export const MeasuresV1MeasuresGetResponse = zod.object({
 })),
   "meta": zod.object({
   "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.')
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
+  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
+  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
   "self": zod.union([zod.string(),zod.null()]).optional()
@@ -211,7 +219,11 @@ export const SourcesV1SourcesGetResponse = zod.object({
 })),
   "meta": zod.object({
   "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.')
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
+  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
+  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
   "self": zod.union([zod.string(),zod.null()]).optional()
@@ -294,7 +306,29 @@ export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.obj
 
 
 /**
- * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation.
+ * Additive county-only operation. Confirms membership and release from the governed county directory before returning UNAVAILABLE/CANONICAL_GEOGRAPHY_UNPUBLISHED with null data. The canonical resource is identity metadata, not a polygon. No geometry is returned or inferred. State availability is unsupported (400). Malformed county IDs return 400; confirmed absent identities return 404. Unavailable, empty, duplicate or inconsistent directory authority remains 503. The directory uses the existing bounded snapshot cache, checked against a fresh current-release lookup; a mismatch remains 503. Responses use Cache-Control: no-store. The existing canonical resource route and county/map routes are unchanged.
+ * @summary Check canonical county geography publication availability
+ */
+export const CanonicalGeographyAvailabilityParams = zod.object({
+  "geography_type": zod.enum(['county', 'state']),
+  "geography_id": zod.string()
+})
+
+
+
+
+
+export const CanonicalGeographyAvailabilityResponse = zod.object({
+  "availability": zod.literal("UNAVAILABLE"),
+  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED"),
+  "data": zod.null().describe('No canonical geography resource or geometry is fabricated.'),
+  "release_id": zod.string().min(1).describe('Governed county directory release used to confirm identity.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Publication and representation boundaries, not scientific absence.')
+})
+
+
+/**
+ * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.
  * @summary Query county observations
  */
 
@@ -472,7 +506,11 @@ export const ObservationsV1ObservationsGetResponse = zod.union([zod.object({
 })),
   "meta": zod.object({
   "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.')
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
+  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
+  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
   "self": zod.union([zod.string(),zod.null()]).optional()
@@ -486,7 +524,7 @@ export const ObservationsV1ObservationsGetResponse = zod.union([zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
 }).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.string().describe('Governed observation grain. Daily NOAA nClimGrid rows use DAY. PERIOD and VINTAGE_YEAR are county-context grains, not the only admitted values.'),
+  "temporal_grain": zod.string(),
   "value": zod.union([zod.number(),zod.string(),zod.null()]).describe('Read with value_state and unit; null never means zero.'),
   "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
   "unit": zod.string(),
@@ -608,7 +646,11 @@ export const ObservationsV1ObservationsGetResponse = zod.union([zod.object({
 })),
   "meta": zod.object({
   "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.')
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
+  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
+  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
   "self": zod.union([zod.string(),zod.null()]).optional()
@@ -2055,7 +2097,7 @@ export const AskAtlasStructuredResponse = zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
 }).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.string().describe('Governed observation grain. Daily NOAA nClimGrid rows use DAY. PERIOD and VINTAGE_YEAR are county-context grains, not the only admitted values.'),
+  "temporal_grain": zod.string(),
   "value": zod.union([zod.number(),zod.string(),zod.null()]).describe('Read with value_state and unit; null never means zero.'),
   "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
   "unit": zod.string(),
@@ -2436,7 +2478,7 @@ export const AskAtlasMixedResponse = zod.object({
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
 }).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.string().describe('Governed observation grain. Daily NOAA nClimGrid rows use DAY. PERIOD and VINTAGE_YEAR are county-context grains, not the only admitted values.'),
+  "temporal_grain": zod.string(),
   "value": zod.union([zod.number(),zod.string(),zod.null()]).describe('Read with value_state and unit; null never means zero.'),
   "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
   "unit": zod.string(),

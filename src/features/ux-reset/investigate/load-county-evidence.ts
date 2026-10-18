@@ -17,6 +17,11 @@ import {
   type MeasureRetryCooldown,
   type ResolvedCountyIdentity,
 } from "@/features/ux-reset/investigate/county-evidence";
+import {
+  createObservationSelectionAccumulator,
+  observationAuthorityFailure,
+  type KnownEmptyObservationSelection,
+} from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
   countyV1CountiesFipsGet,
@@ -423,9 +428,16 @@ async function fetchMeasureObservations(input: {
   releaseId: string;
   signal: AbortSignal;
   timeBound: ExploreTimeBound;
-}): Promise<Observation[]> {
+}): Promise<{
+  observations: Observation[];
+  selection: KnownEmptyObservationSelection | null;
+}> {
   const collected: Observation[] = [];
   const seenTokens = new Set<string>();
+  const selection = createObservationSelectionAccumulator({
+    measureId: input.measureId,
+    requestedReleaseId: input.releaseId,
+  });
   let pageToken: string | null = null;
   for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
     const params = buildInvestigateObservationParams({
@@ -449,6 +461,11 @@ async function fetchMeasureObservations(input: {
       ObservationsV1ObservationsGetResponse,
       response.data
     );
+    selection.note({
+      dataCount: parsed.data.length,
+      meta: parsed.meta,
+      pageToken,
+    });
     collected.push(...readDatedObservations(parsed.data));
     const nextToken = parsed.meta.next_page_token ?? null;
     if (!nextToken || seenTokens.has(nextToken)) {
@@ -457,13 +474,30 @@ async function fetchMeasureObservations(input: {
     seenTokens.add(nextToken);
     pageToken = nextToken;
   }
-  return acceptCountyObservations({
-    measureId: input.measureId,
-    observations: collected,
-    releaseId: input.releaseId,
-    requestedFips: input.fips,
-    timeBound: input.timeBound,
-  });
+  const folded = selection.finish();
+  const authorityFailure = observationAuthorityFailure(folded);
+  if (authorityFailure === "release_mismatch") {
+    throw new InvestigateContractError(
+      "Observation availability release does not match the requested release.",
+      "release_mismatch"
+    );
+  }
+  if (authorityFailure === "malformed_authority") {
+    throw new InvestigateContractError(
+      "Observation availability did not include a checked release and limitations.",
+      "rejected"
+    );
+  }
+  return {
+    observations: acceptCountyObservations({
+      measureId: input.measureId,
+      observations: collected,
+      releaseId: input.releaseId,
+      requestedFips: input.fips,
+      timeBound: input.timeBound,
+    }),
+    selection: folded.kind === "known_unavailable" ? folded.selection : null,
+  };
 }
 
 async function readObservationPage(
@@ -579,9 +613,16 @@ function preservedOutcomesForRequest(input: {
   const measureIds = new Set(
     input.measures.map((measure) => measure.measure_id)
   );
-  return preserve.outcomes.filter((outcome) =>
-    measureIds.has(outcome.measureId)
-  );
+  return preserve.outcomes.filter((outcome) => {
+    if (!measureIds.has(outcome.measureId)) {
+      return false;
+    }
+    return !(
+      outcome.status === "ready" &&
+      outcome.observations.length === 0 &&
+      outcome.selectionAvailability
+    );
+  });
 }
 
 export async function loadCountyEvidenceBundle(input: {
@@ -636,7 +677,7 @@ export async function loadCountyEvidenceBundle(input: {
           scope,
           signal: input.signal,
         });
-        const observations = await fetchMeasureObservations({
+        const loaded = await fetchMeasureObservations({
           fips: input.fips,
           measureId: measure.measure_id,
           period: input.period,
@@ -646,7 +687,8 @@ export async function loadCountyEvidenceBundle(input: {
         });
         return {
           measureId: measure.measure_id,
-          observations,
+          observations: loaded.observations,
+          selectionAvailability: loaded.selection,
           status: "ready" as const,
         };
       } catch (error) {

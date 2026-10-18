@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
   fireEvent,
@@ -325,6 +325,30 @@ describe("Storybook P0 evidence fixtures", () => {
     expect(geographies.some((row) => row.fips.startsWith("15"))).toBeFalsy();
   });
 
+  it("keeps county preview geography fixtures isolated from the API", () => {
+    expect({
+      error: reviewPreviewPreset("geography-error").availability,
+      loading: reviewPreviewPreset("geography-loading").availability,
+      rationale: reviewPreviewPreset("rationale").availability.status,
+      unpublished: reviewPreviewPreset("geography-unpublished").availability,
+    }).toStrictEqual({
+      error: {
+        message:
+          "Canonical geography publication could not be checked. Published county facts and map display stay available.",
+        status: "error",
+      },
+      loading: { status: "loading" },
+      rationale: "unpublished",
+      unpublished: {
+        limitations: [
+          "Canonical geography identity delivery is not published by this API capability.",
+        ],
+        releaseId: syntheticReleaseId,
+        status: "unpublished",
+      },
+    });
+  });
+
   it("keeps review qualification and dropped context truthful", () => {
     const rationale = reviewPreviewPreset("rationale");
     const limited = reviewPreviewPreset("limited-qualification");
@@ -465,14 +489,20 @@ describe("Storybook P0 evidence fixtures", () => {
     const onOpen = vi.fn<(fips: string) => void>();
     const model = reviewPreviewPreset("rationale");
     render(
-      <ReviewCountyPreviewPanel
-        compareHref={model.compareHref}
-        droppedNotes={model.droppedNotes}
-        href={model.href}
-        onOpen={onOpen}
-        preview={model.preview}
-        release={model.release}
-      />
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ReviewCountyPreviewPanel
+          compareHref={model.compareHref}
+          droppedNotes={model.droppedNotes}
+          href={model.href}
+          onOpen={onOpen}
+          preview={model.preview}
+          release={model.release}
+        />
+      </QueryClientProvider>
     );
     clickLink(screen.getByRole("link", { name: "County evidence" }));
     expect(onOpen).toHaveBeenCalledExactlyOnceWith(syntheticCounty.fips);
@@ -485,14 +515,20 @@ describe("Storybook P0 evidence fixtures", () => {
     const onOpen = vi.fn<(fips: string) => void>();
     const model = reviewPreviewPreset("long-references");
     render(
-      <ReviewCountyPreviewPanel
-        compareHref={model.compareHref}
-        droppedNotes={model.droppedNotes}
-        href={model.href}
-        onOpen={onOpen}
-        preview={model.preview}
-        release={model.release}
-      />
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ReviewCountyPreviewPanel
+          compareHref={model.compareHref}
+          droppedNotes={model.droppedNotes}
+          href={model.href}
+          onOpen={onOpen}
+          preview={model.preview}
+          release={model.release}
+        />
+      </QueryClientProvider>
     );
     clickLink(
       screen.getByRole("link", {

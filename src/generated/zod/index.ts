@@ -18,6 +18,7 @@ export * from './briefingScope.zod';
 export * from './briefingSource.zod';
 export * from './briefingWindow.zod';
 export * from './candidate.zod';
+export * from './canonicalGeographyAvailability.zod';
 export * from './chatHistoryTurn.zod';
 export * from './claim.zod';
 export * from './collectionEnvelopeCountyContextObservation.zod';

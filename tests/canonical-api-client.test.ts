@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getCanonicalGeographyAvailabilityUrl,
   getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl,
   getIndicatorV1IndicatorsIndicatorIdGetUrl,
   getIndicatorsV1IndicatorsGetUrl,
@@ -42,6 +43,10 @@ describe("canonical Atlas public API client", () => {
         "county",
         "36061"
       ),
+      geographyAvailability: getCanonicalGeographyAvailabilityUrl(
+        "county",
+        "36061"
+      ),
       observations: getObservationsV1ObservationsGetUrl({
         measure_id: "case-rate",
         geography_type: "county",
@@ -57,6 +62,7 @@ describe("canonical Atlas public API client", () => {
       source: "/v1/sources/cdc-lyme",
       methodology: "/v1/methodologies/county-aggregation-v1",
       geography: "/v1/geographies/county/36061",
+      geographyAvailability: "/v1/geographies/county/36061/availability",
       observations:
         "/v1/observations?measure_id=case-rate&geography_type=county&geography_id=36061&geography_id=36005&year=2023",
     });

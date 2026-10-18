@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 import {
   countyPassesAvailableData,
@@ -66,6 +67,7 @@ import {
   postalCodeForStateFips,
 } from "@/features/ux-reset/review/review-state-fips";
 import {
+  knownEmptyMapSelection,
   observationGate,
   observationPaintState,
   useExplorerMapObservations,
@@ -165,6 +167,7 @@ export function ReviewNationalPicture({
     geometryStatus,
     releaseId,
   });
+  const knownEmptySelection = knownEmptyMapSelection(observations, mapLayer);
   const layer = explorerMapLayerById(mapLayer);
   const scoreCounties = useMemo(
     () =>
@@ -485,6 +488,12 @@ export function ReviewNationalPicture({
             onLayerChange={onMapLayerChange}
           />
         </div>
+        {knownEmptySelection ? (
+          <KnownEmptySelectionNotice
+            selections={[knownEmptySelection]}
+            testId="national-map-known-empty"
+          />
+        ) : null}
         <div
           aria-busy={
             geometryPending || valuesPending || mapPaint.kind === "loading"

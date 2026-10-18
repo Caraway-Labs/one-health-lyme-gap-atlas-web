@@ -514,6 +514,137 @@ describe("compare evidence loading through the generated client", () => {
     });
   });
 
+  it("refetches a known-empty comparison and then shows rows or a failure", async () => {
+    const phase = {
+      value: "known-empty" as "failure" | "known-empty" | "rows",
+    };
+    const limitation =
+      "No published observations match this selection in the checked release. This does not establish biological absence, source coverage, or geography membership.";
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const measureId = url.searchParams.get("measure_id") ?? "";
+      requests.push(measureId);
+      if (measureId === COMPARE_CASES_MEASURE_ID && phase.value === "failure") {
+        return jsonResponse({ detail: "unavailable" }, 503);
+      }
+      if (
+        measureId === COMPARE_CASES_MEASURE_ID &&
+        phase.value === "known-empty"
+      ) {
+        return jsonResponse(
+          ObservationsV1ObservationsGetResponse.parse({
+            data: [],
+            links: { self: "/v1/observations" },
+            meta: {
+              availability: "UNAVAILABLE",
+              limitations: [limitation],
+              next_page_token: null,
+              reason: "NO_PUBLISHED_RESULTS",
+              release_id: COMPARE_RELEASE_ID,
+              response_at: "2026-10-18T00:00:00.000Z",
+            },
+          })
+        );
+      }
+      return jsonResponse(
+        ObservationsV1ObservationsGetResponse.parse({
+          data: compareObservationsFor({
+            fips: url.searchParams.getAll("geography_id"),
+            measureId,
+          }),
+          links: { self: "/v1/observations" },
+          meta: {},
+        })
+      );
+    });
+    const measures = compareMeasuresFixture.filter((measure) =>
+      [COMPARE_CASES_MEASURE_ID, COMPARE_TICK_MEASURE_ID].includes(
+        measure.measure_id
+      )
+    );
+    const first = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const tickCalls = requests.filter(
+      (measureId) => measureId === COMPARE_TICK_MEASURE_ID
+    ).length;
+    const caseCalls = requests.filter(
+      (measureId) => measureId === COMPARE_CASES_MEASURE_ID
+    ).length;
+    const preserved = preservedCompareMeasures({
+      alignment: first,
+      leftFips: COMPARE_LEFT_FIPS,
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+    });
+    phase.value = "rows";
+    const withRows = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      preserve: preserved,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    phase.value = "failure";
+    const failed = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures,
+      period: null,
+      preserve: preserved,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const readyCases = (alignment: typeof first) => {
+      const outcome = alignment.outcomes.find(
+        (entry) => entry.measureId === COMPARE_CASES_MEASURE_ID
+      );
+      if (outcome?.status !== "ready") {
+        return null;
+      }
+      return outcome;
+    };
+    const firstCases = readyCases(first);
+    const rowCases = readyCases(withRows);
+    expect({
+      caseCalls: requests.filter(
+        (measureId) => measureId === COMPARE_CASES_MEASURE_ID
+      ).length,
+      failedCases: failed.outcomes.find(
+        (outcome) => outcome.measureId === COMPARE_CASES_MEASURE_ID
+      )?.status,
+      firstKnownEmpty: Boolean(firstCases?.selectionAvailability),
+      firstRows: firstCases?.observations.length ?? -1,
+      rowKnownEmpty: rowCases?.selectionAvailability ?? null,
+      rowRows: rowCases?.observations.length ?? 0,
+      tickCalls: requests.filter(
+        (measureId) => measureId === COMPARE_TICK_MEASURE_ID
+      ).length,
+    }).toStrictEqual({
+      caseCalls: caseCalls + 1 + 3,
+      failedCases: "failed",
+      firstKnownEmpty: true,
+      firstRows: 0,
+      rowKnownEmpty: null,
+      rowRows: 2,
+      tickCalls,
+    });
+  });
+
   it("keeps county records and observations within five concurrent reads", async () => {
     const controller = new AbortController();
     let inFlight = 0;

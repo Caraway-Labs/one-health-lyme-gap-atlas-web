@@ -23,8 +23,13 @@ const calls: string[] = [];
 let inFlight = 0;
 let maxInFlight = 0;
 const transientRemaining = new Map<string, number>();
+const knownEmptyMeasures = new Set<string>();
+const hardFailMeasures = new Set<string>();
 let retryAfterSeconds = 0;
 let transientStatus = 429;
+
+const KNOWN_EMPTY_LIMITATION =
+  "No published observations match this selection in the checked release. This does not establish biological absence, source coverage, or geography membership.";
 
 vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
@@ -49,6 +54,27 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           null,
           retryAfterSeconds
         );
+      }
+      if (hardFailMeasures.has(measureId)) {
+        throw new AtlasApiError("unavailable", "/v1/observations", 503, null);
+      }
+      if (knownEmptyMeasures.has(measureId)) {
+        return {
+          data: {
+            data: [],
+            links: { self: "/v1/observations" },
+            meta: {
+              availability: "UNAVAILABLE",
+              limitations: [KNOWN_EMPTY_LIMITATION],
+              next_page_token: null,
+              reason: "NO_PUBLISHED_RESULTS",
+              release_id: INVESTIGATE_RELEASE_ID,
+              response_at: "2026-10-18T00:00:00.000Z",
+            },
+          },
+          headers: new Headers(),
+          status: 200,
+        } as never;
       }
       return {
         data: {
@@ -84,6 +110,8 @@ describe("county evidence loading", () => {
     transientStatus = 429;
     retryAfterSeconds = 0;
     transientRemaining.clear();
+    knownEmptyMeasures.clear();
+    hardFailMeasures.clear();
   });
 
   it("limits concurrent reads and retries a rate limit", async () => {
@@ -217,6 +245,121 @@ describe("county evidence loading", () => {
       firstFailures: ["measure-1"],
       ready: ["measure-0", "measure-1"],
       unchangedCaseCalls: caseCalls,
+    });
+  });
+
+  it("refetches a known-empty measure and replaces it with rows", async () => {
+    calls.length = 0;
+    knownEmptyMeasures.add("measure-0");
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    const first = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(2),
+      period: null,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    const populatedCalls = calls.filter(
+      (measureId) => measureId === "measure-1"
+    ).length;
+    const emptyCalls = calls.filter(
+      (measureId) => measureId === "measure-0"
+    ).length;
+    knownEmptyMeasures.clear();
+    const second = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(2),
+      period: null,
+      preserve: {
+        fips: "08001",
+        outcomes: reusableMeasureOutcomes(first),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+      },
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    const published = [
+      ...second.unassigned,
+      ...second.families.flatMap((family) => family.observations),
+    ];
+    expect({
+      emptyCalls: calls.filter((measureId) => measureId === "measure-0").length,
+      failures: second.measureFailures.map((failure) => failure.measureId),
+      firstEmpty: first.knownEmptySelections.map(
+        (selection) => selection.measureId
+      ),
+      populatedCalls: calls.filter((measureId) => measureId === "measure-1")
+        .length,
+      published: published.map((record) => record.measureId).toSorted(),
+      secondEmpty: second.knownEmptySelections.length,
+    }).toStrictEqual({
+      emptyCalls: emptyCalls + 1,
+      failures: [],
+      firstEmpty: ["measure-0"],
+      populatedCalls,
+      published: ["measure-0", "measure-1"],
+      secondEmpty: 0,
+    });
+  });
+
+  it("refetches a known-empty measure when the service returns 503", async () => {
+    calls.length = 0;
+    knownEmptyMeasures.add("measure-0");
+    const identity = identityFromPublishedCounty({
+      county: "Denver",
+      fips: "08001",
+      state: "CO",
+    });
+    const first = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(1),
+      period: null,
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    const firstCalls = calls.length;
+    knownEmptyMeasures.clear();
+    hardFailMeasures.add("measure-0");
+    const second = await loadCountyEvidenceBundle({
+      domainsRequestFailed: false,
+      fips: "08001",
+      identity: identity!,
+      indicators: [],
+      measures: measures(1),
+      period: null,
+      preserve: {
+        fips: "08001",
+        outcomes: reusableMeasureOutcomes(first),
+        period: null,
+        releaseId: INVESTIGATE_RELEASE_ID,
+      },
+      releaseId: INVESTIGATE_RELEASE_ID,
+      signal: new AbortController().signal,
+    });
+    expect({
+      failures: second.measureFailures.map((failure) => failure.measureId),
+      firstEmpty: first.knownEmptySelections.length,
+      refetched: calls.length > firstCalls,
+      secondEmpty: second.knownEmptySelections.length,
+    }).toStrictEqual({
+      failures: ["measure-0"],
+      firstEmpty: 1,
+      refetched: true,
+      secondEmpty: 0,
     });
   });
 

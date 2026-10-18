@@ -375,6 +375,15 @@ export function useCompareWorkspace(): CompareWorkspace {
         : ["ux-reset-compare-evidence", "idle"],
     retry: (failureCount, error) =>
       shouldRetryCompareRequest(failureCount, error, retrySetting),
+    staleTime: (query) => {
+      const knownEmpty = query.state.data?.outcomes.some(
+        (outcome) =>
+          outcome.status === "ready" &&
+          outcome.observations.length === 0 &&
+          outcome.selectionAvailability
+      );
+      return knownEmpty ? 0 : 300_000;
+    },
   });
   const retryGateRef = useRef(false);
   const retryEvidence = async () => {

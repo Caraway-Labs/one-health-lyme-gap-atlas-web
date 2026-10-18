@@ -4,6 +4,7 @@ import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
+import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
 import { POPULATION_RURALITY_MEASURES } from "@/features/ux-reset/review/population-rurality-context";
 import {
@@ -51,6 +52,14 @@ function PopulationRuralityMeasureBody({
       );
     }
     case "absent": {
+      if (view.selection) {
+        return (
+          <KnownEmptySelectionNotice
+            selections={[view.selection]}
+            testId={`population-known-empty-${view.measureId}`}
+          />
+        );
+      }
       return (
         <AtlasStatusMessage tone="empty">
           {`No governed observation was returned for ${measureClaim(view.measureId)}. That absence is not zero.`}

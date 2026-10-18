@@ -1,3 +1,4 @@
+import type { CanonicalGeographyAvailabilityView } from "@/features/ux-reset/geography/canonical-geography-availability";
 import { buildReviewCandidatePreview } from "@/features/ux-reset/review/review-candidate-preview";
 import {
   buildReviewCompareHandoff,
@@ -20,6 +21,11 @@ import {
   tier1PriorityForCounty,
   tier1PriorityForRelease,
 } from "../../tests/fixtures/tier1-surveillance-priority";
+import {
+  storyGeographyError,
+  storyGeographyLoading,
+  storyGeographyUnpublished,
+} from "../support/canonical-geography-availability-notice-substitute";
 import type { Tier1StoryQuery } from "../support/tier1-hook-substitute";
 import {
   syntheticCounty,
@@ -33,11 +39,15 @@ export const reviewPreviewPresetIds = [
   "missing-metadata",
   "long-references",
   "dropped-context",
+  "geography-unpublished",
+  "geography-loading",
+  "geography-error",
 ] as const;
 
 export type ReviewPreviewPresetId = (typeof reviewPreviewPresetIds)[number];
 
 export type ReviewPreviewStoryModel = {
+  availability: CanonicalGeographyAvailabilityView;
   compareHref: string;
   droppedNotes: readonly string[];
   href: string;
@@ -189,12 +199,19 @@ function longReferenceCandidate(): Candidate {
   };
 }
 
+function withUnpublishedGeography(
+  model: Omit<ReviewPreviewStoryModel, "availability">
+): ReviewPreviewStoryModel {
+  return { ...model, availability: storyGeographyUnpublished };
+}
+
 export function reviewPreviewPreset(
   preset: ReviewPreviewPresetId
 ): ReviewPreviewStoryModel {
   switch (preset) {
-    case "rationale": {
-      return {
+    case "rationale":
+    case "geography-unpublished": {
+      return withUnpublishedGeography({
         ...keptContext,
         preview: buildReviewCountyPreview(scoreCounty({})),
         query: {
@@ -202,10 +219,38 @@ export function reviewPreviewPreset(
           status: "success",
         },
         release: storyRelease,
+      });
+    }
+    case "geography-loading": {
+      return {
+        ...withUnpublishedGeography({
+          ...keptContext,
+          preview: buildReviewCountyPreview(scoreCounty({})),
+          query: {
+            data: alignedPriority(tier1HighSufficientFixture),
+            status: "success",
+          },
+          release: storyRelease,
+        }),
+        availability: storyGeographyLoading,
+      };
+    }
+    case "geography-error": {
+      return {
+        ...withUnpublishedGeography({
+          ...keptContext,
+          preview: buildReviewCountyPreview(scoreCounty({})),
+          query: {
+            data: alignedPriority(tier1HighSufficientFixture),
+            status: "success",
+          },
+          release: storyRelease,
+        }),
+        availability: storyGeographyError,
       };
     }
     case "limited-qualification": {
-      return {
+      return withUnpublishedGeography({
         ...keptContext,
         preview: buildReviewCountyPreview(
           scoreCounty({
@@ -218,10 +263,10 @@ export function reviewPreviewPreset(
           status: "success",
         },
         release: storyRelease,
-      };
+      });
     }
     case "missing-metadata": {
-      return {
+      return withUnpublishedGeography({
         ...keptContext,
         preview: buildReviewCountyPreview(
           scoreCounty({
@@ -233,10 +278,10 @@ export function reviewPreviewPreset(
         ),
         query: { errorStatus: 404, status: "error" },
         release: storyRelease,
-      };
+      });
     }
     case "long-references": {
-      return {
+      return withUnpublishedGeography({
         ...keptContext,
         preview: withSyntheticSourceLink(
           buildReviewCandidatePreview({
@@ -259,10 +304,10 @@ export function reviewPreviewPreset(
           status: "success",
         },
         release: storyRelease,
-      };
+      });
     }
     case "dropped-context": {
-      return {
+      return withUnpublishedGeography({
         ...droppedContext,
         preview: buildReviewCountyPreview(scoreCounty({})),
         query: {
@@ -270,7 +315,7 @@ export function reviewPreviewPreset(
           status: "success",
         },
         release: storyRelease,
-      };
+      });
     }
     default: {
       const exhaustive: never = preset;

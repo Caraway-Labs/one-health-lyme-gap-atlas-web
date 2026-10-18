@@ -4,6 +4,7 @@ import {
   evidenceReasonLabel,
   reasonCodeForEvidence,
 } from "@/features/ux-reset/evidence/value-state-contract";
+import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 import {
   CountyContextObservationTemporalGrain,
   CountyContextValueType,
@@ -167,7 +168,10 @@ export class PopulationRuralityContractError extends Error {
 
 export type PopulationRuralityLoad =
   | { count: number; kind: "conflict" }
-  | { kind: "absent" }
+  | {
+      kind: "absent";
+      selection?: KnownEmptyObservationSelection | null;
+    }
   | { kind: "observation"; observation: CountyContextObservation };
 
 function fail(message: string): never {

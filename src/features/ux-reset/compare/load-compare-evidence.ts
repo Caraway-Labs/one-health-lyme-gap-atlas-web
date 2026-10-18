@@ -17,6 +17,11 @@ import {
   mapWithConcurrency,
   investigateObservationRequestRejection,
 } from "@/features/ux-reset/investigate/load-county-evidence";
+import {
+  createObservationSelectionAccumulator,
+  observationAuthorityFailure,
+  type KnownEmptyObservationSelection,
+} from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import { observationsV1ObservationsGet } from "@/generated/atlas";
 import type {
@@ -400,9 +405,16 @@ async function fetchCompareObservations(input: {
   releaseId: string;
   signal: AbortSignal;
   timeBound: ExploreTimeBound;
-}): Promise<Observation[]> {
+}): Promise<{
+  observations: Observation[];
+  selection: KnownEmptyObservationSelection | null;
+}> {
   const collected: Observation[] = [];
   const seenTokens = new Set<string>();
+  const selection = createObservationSelectionAccumulator({
+    measureId: input.measureId,
+    requestedReleaseId: input.releaseId,
+  });
   let pageToken: string | null = null;
   const scope: CompareCooldownScope = {
     leftFips: input.pair[0],
@@ -428,6 +440,11 @@ async function fetchCompareObservations(input: {
       ObservationsV1ObservationsGetResponse,
       response.data
     );
+    selection.note({
+      dataCount: parsed.data.length,
+      meta: parsed.meta,
+      pageToken,
+    });
     collected.push(...readDatedObservations(parsed.data));
     const nextToken = parsed.meta.next_page_token ?? null;
     if (!nextToken || seenTokens.has(nextToken)) {
@@ -436,13 +453,30 @@ async function fetchCompareObservations(input: {
     seenTokens.add(nextToken);
     pageToken = nextToken;
   }
-  return acceptPairObservations({
-    measureId: input.measureId,
-    observations: collected,
-    pair: input.pair,
-    releaseId: input.releaseId,
-    timeBound: input.timeBound,
-  });
+  const folded = selection.finish();
+  const authorityFailure = observationAuthorityFailure(folded);
+  if (authorityFailure === "release_mismatch") {
+    throw new CompareContractError(
+      "Observation availability release does not match the requested release.",
+      "release_mismatch"
+    );
+  }
+  if (authorityFailure === "malformed_authority") {
+    throw new CompareContractError(
+      "Observation availability did not include a checked release and limitations.",
+      "rejected"
+    );
+  }
+  return {
+    observations: acceptPairObservations({
+      measureId: input.measureId,
+      observations: collected,
+      pair: input.pair,
+      releaseId: input.releaseId,
+      timeBound: input.timeBound,
+    }),
+    selection: folded.kind === "known_unavailable" ? folded.selection : null,
+  };
 }
 
 export type CompareRetryCooldown = {
@@ -462,10 +496,17 @@ export type PreservedCompareMeasures = {
 function reusableCompareOutcomes(
   outcomes: readonly CompareMeasureOutcome[]
 ): CompareMeasureOutcome[] {
-  return outcomes.filter(
-    (outcome) =>
-      outcome.status === "ready" || outcome.status === "unsupported_period"
-  );
+  return outcomes.filter((outcome) => {
+    if (outcome.status === "unsupported_period") {
+      return true;
+    }
+    if (outcome.status !== "ready") {
+      return false;
+    }
+    return !(
+      outcome.observations.length === 0 && outcome.selectionAvailability
+    );
+  });
 }
 
 function preservedForRequest(input: {
@@ -616,7 +657,7 @@ export async function loadCompareEvidence(input: {
           scope,
           signal: input.signal,
         });
-        const observations = await withCompareReadLimit(input.signal, () =>
+        const loaded = await withCompareReadLimit(input.signal, () =>
           fetchCompareObservations({
             measureId: measure.measure_id,
             pair,
@@ -628,7 +669,8 @@ export async function loadCompareEvidence(input: {
         );
         return {
           measureId: measure.measure_id,
-          observations,
+          observations: loaded.observations,
+          selectionAvailability: loaded.selection,
           status: "ready" as const,
         };
       } catch (error) {

@@ -2,6 +2,7 @@
 
 import { useQueries } from "@tanstack/react-query";
 
+import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 import {
   ENVIRONMENTAL_CONTEXT_MEASURES,
   environmentalContextQueryKey,
@@ -26,7 +27,11 @@ export type EnvironmentalMeasureView =
       retry: () => void;
       status: "error";
     }
-  | { measureId: string; status: "absent" }
+  | {
+      measureId: string;
+      selection?: KnownEmptyObservationSelection | null;
+      status: "absent";
+    }
   | { count: number; measureId: string; status: "conflict" }
   | {
       measureId: string;
@@ -44,7 +49,11 @@ function viewForLoad(input: {
 }): EnvironmentalMeasureView {
   switch (input.load.kind) {
     case "absent": {
-      return { measureId: input.measureId, status: "absent" };
+      return {
+        measureId: input.measureId,
+        selection: input.load.selection ?? null,
+        status: "absent",
+      };
     }
     case "conflict": {
       return {
@@ -120,7 +129,13 @@ export function useEnvironmentalContext(input: {
         releaseId,
       }),
       retry: false,
-      staleTime: 300_000,
+      staleTime: (query: { state: { data?: EnvironmentalMeasureLoad } }) => {
+        const data = query.state.data;
+        if (data?.kind === "absent" && data.selection) {
+          return 0;
+        }
+        return 300_000;
+      },
     })),
   });
   const measures = ENVIRONMENTAL_CONTEXT_MEASURES.map((measure, index) => {
