@@ -21,6 +21,7 @@ const developPages = [
   "provenance",
   "workflows",
   "observation-queries",
+  "tier1-availability",
   "mcp-clients",
   "support",
 ] as const;
