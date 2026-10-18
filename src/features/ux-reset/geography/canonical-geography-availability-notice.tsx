@@ -1,12 +1,14 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import {
   CANONICAL_GEOGRAPHY_UNPUBLISHED_COPY,
+  canonicalGeographyAvailabilityRetryDelay,
   canonicalGeographyViewFromError,
   fetchCanonicalGeographyAvailability,
+  shouldRetryCanonicalGeographyAvailability,
   unsupportedCanonicalGeographyView,
   type CanonicalGeographyAvailabilityView,
 } from "@/features/ux-reset/geography/canonical-geography-availability";
@@ -19,12 +21,28 @@ export function useCanonicalGeographyAvailability(
 ): CanonicalGeographyAvailabilityView {
   const countyFips = fips?.trim() ?? "";
   const enabled = isCountyFips(countyFips);
+  const queryClient = useQueryClient();
+  const configuredRetry = queryClient.getDefaultOptions().queries?.retry;
+  const configuredRetryDelay =
+    queryClient.getDefaultOptions().queries?.retryDelay;
   const query = useQuery({
     enabled,
     gcTime: 0,
     queryFn: ({ signal }) =>
       fetchCanonicalGeographyAvailability(countyFips, signal),
     queryKey: [AVAILABILITY_QUERY_KEY, "county", countyFips],
+    retry: (failureCount, error) =>
+      shouldRetryCanonicalGeographyAvailability(
+        failureCount,
+        error,
+        configuredRetry
+      ),
+    retryDelay: (failureCount, error) =>
+      canonicalGeographyAvailabilityRetryDelay(
+        failureCount,
+        error,
+        configuredRetryDelay
+      ),
     staleTime: 0,
   });
 

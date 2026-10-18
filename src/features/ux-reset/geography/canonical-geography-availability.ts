@@ -7,6 +7,83 @@ import {
 } from "@/lib/api-response-validation";
 import { isCountyFips } from "@/lib/county-geography";
 
+const MILLISECONDS_PER_SECOND = 1000;
+const UNSCHEDULED_RETRY_CAP_MS = 30_000;
+
+type QueryRetrySetting =
+  | boolean
+  | number
+  | ((failureCount: number, error: Error) => boolean)
+  | undefined;
+
+type RetryDelaySetting =
+  | number
+  | ((failureCount: number, error: Error) => number)
+  | undefined;
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+/**
+ * Contract mismatches and 4xx responses, including 429, are not retried.
+ * Transient failures follow the surrounding QueryClient retry setting.
+ */
+export function shouldRetryCanonicalGeographyAvailability(
+  failureCount: number,
+  error: unknown,
+  configured: QueryRetrySetting
+): boolean {
+  if (error instanceof ApiResponseValidationError || isAbortError(error)) {
+    return false;
+  }
+  if (
+    error instanceof AtlasApiError &&
+    error.status >= 400 &&
+    error.status < 500
+  ) {
+    return false;
+  }
+  if (configured === false || configured === 0) {
+    return false;
+  }
+  if (typeof configured === "number") {
+    return failureCount < configured;
+  }
+  if (typeof configured === "function") {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    return configured(failureCount, error);
+  }
+  return failureCount < 3;
+}
+
+/** Server Retry-After is the wait. A missing header uses a short capped backoff. */
+export function canonicalGeographyAvailabilityRetryDelay(
+  failureCount: number,
+  error: unknown,
+  configured?: RetryDelaySetting
+): number {
+  if (
+    error instanceof AtlasApiError &&
+    error.retryAfterSeconds !== null &&
+    error.retryAfterSeconds >= 0
+  ) {
+    return error.retryAfterSeconds * MILLISECONDS_PER_SECOND;
+  }
+  if (typeof configured === "number") {
+    return configured;
+  }
+  if (typeof configured === "function" && error instanceof Error) {
+    return configured(failureCount, error);
+  }
+  return Math.min(
+    MILLISECONDS_PER_SECOND * 2 ** failureCount,
+    UNSCHEDULED_RETRY_CAP_MS
+  );
+}
+
 export const CANONICAL_GEOGRAPHY_UNPUBLISHED_COPY =
   "Canonical geography is not yet published for this county.";
 

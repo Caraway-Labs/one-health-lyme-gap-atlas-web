@@ -19,6 +19,7 @@ import {
 } from "@/features/ux-reset/investigate/load-county-evidence";
 import {
   createObservationSelectionAccumulator,
+  observationAuthorityFailure,
   type KnownEmptyObservationSelection,
 } from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
@@ -453,10 +454,17 @@ async function fetchCompareObservations(input: {
     pageToken = nextToken;
   }
   const folded = selection.finish();
-  if (folded.kind === "release_mismatch") {
+  const authorityFailure = observationAuthorityFailure(folded);
+  if (authorityFailure === "release_mismatch") {
     throw new CompareContractError(
       "Observation availability release does not match the requested release.",
       "release_mismatch"
+    );
+  }
+  if (authorityFailure === "malformed_authority") {
+    throw new CompareContractError(
+      "Observation availability did not include a checked release and limitations.",
+      "rejected"
     );
   }
   return {
@@ -488,10 +496,17 @@ export type PreservedCompareMeasures = {
 function reusableCompareOutcomes(
   outcomes: readonly CompareMeasureOutcome[]
 ): CompareMeasureOutcome[] {
-  return outcomes.filter(
-    (outcome) =>
-      outcome.status === "ready" || outcome.status === "unsupported_period"
-  );
+  return outcomes.filter((outcome) => {
+    if (outcome.status === "unsupported_period") {
+      return true;
+    }
+    if (outcome.status !== "ready") {
+      return false;
+    }
+    return !(
+      outcome.observations.length === 0 && outcome.selectionAvailability
+    );
+  });
 }
 
 function preservedForRequest(input: {

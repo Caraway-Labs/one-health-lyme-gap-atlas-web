@@ -918,10 +918,15 @@ export function reusableMeasureOutcomes(
   }
   const outcomes: MeasureObservationOutcome[] = [];
   for (const measureId of bundle.readyMeasureIds) {
+    const observations = observationsByMeasure.get(measureId) ?? [];
+    const selectionAvailability = knownEmptyByMeasure.get(measureId) ?? null;
+    if (observations.length === 0 && selectionAvailability) {
+      continue;
+    }
     outcomes.push({
       measureId,
-      observations: observationsByMeasure.get(measureId) ?? [],
-      selectionAvailability: knownEmptyByMeasure.get(measureId) ?? null,
+      observations,
+      selectionAvailability,
       status: "ready",
     });
   }

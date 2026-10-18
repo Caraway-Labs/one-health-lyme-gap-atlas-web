@@ -1,4 +1,7 @@
-import { createObservationSelectionAccumulator } from "@/features/ux-reset/observations/selection-availability";
+import {
+  createObservationSelectionAccumulator,
+  observationAuthorityFailure,
+} from "@/features/ux-reset/observations/selection-availability";
 import {
   acceptPopulationRuralityRows,
   PopulationRuralityContractError,
@@ -118,9 +121,15 @@ export async function fetchPopulationRuralityMeasure(input: {
     return accepted;
   }
   const folded = selection.finish();
-  if (folded.kind === "release_mismatch") {
+  const authorityFailure = observationAuthorityFailure(folded);
+  if (authorityFailure === "release_mismatch") {
     throw new PopulationRuralityContractError(
       "Observation availability release does not match the requested release."
+    );
+  }
+  if (authorityFailure === "malformed_authority") {
+    throw new PopulationRuralityContractError(
+      "Observation availability did not include a checked release and limitations."
     );
   }
   if (folded.kind === "known_unavailable") {

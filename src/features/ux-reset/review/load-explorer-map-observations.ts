@@ -5,6 +5,7 @@ import {
 import {
   createObservationSelectionAccumulator,
   mergeKnownEmptySelections,
+  observationAuthorityFailure,
   type FoldedObservationSelection,
   type KnownEmptyObservationSelection,
 } from "@/features/ux-reset/observations/selection-availability";
@@ -181,9 +182,15 @@ async function fetchPages(input: {
     folds.push(selection.finish());
   }
   const folded = mergeKnownEmptySelections(folds);
-  if (folded.kind === "release_mismatch") {
+  const authorityFailure = observationAuthorityFailure(folded);
+  if (authorityFailure === "release_mismatch") {
     throw new ExplorerMapContractError(
       "Observation availability release does not match the requested release."
+    );
+  }
+  if (authorityFailure === "malformed_authority") {
+    throw new ExplorerMapContractError(
+      "Observation availability did not include a checked release and limitations."
     );
   }
   const rows = input.spec.context

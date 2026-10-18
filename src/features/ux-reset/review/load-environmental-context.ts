@@ -5,6 +5,7 @@ import {
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
   createObservationSelectionAccumulator,
+  observationAuthorityFailure,
   type KnownEmptyObservationSelection,
 } from "@/features/ux-reset/observations/selection-availability";
 import {
@@ -120,10 +121,17 @@ export async function fetchEnvironmentalMeasure(input: {
   });
   if (accepted.length === 0) {
     const folded = selection.finish();
-    if (folded.kind === "release_mismatch") {
+    const authorityFailure = observationAuthorityFailure(folded);
+    if (authorityFailure === "release_mismatch") {
       throw new InvestigateContractError(
         "Observation availability release does not match the requested release.",
         "release_mismatch"
+      );
+    }
+    if (authorityFailure === "malformed_authority") {
+      throw new InvestigateContractError(
+        "Observation availability did not include a checked release and limitations.",
+        "rejected"
       );
     }
     if (folded.kind === "known_unavailable") {

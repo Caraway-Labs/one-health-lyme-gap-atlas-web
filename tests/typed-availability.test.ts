@@ -112,6 +112,48 @@ describe("observation selection availability", () => {
     ).toBe("unclassified_empty");
   });
 
+  it("requires a matching release and meaningful limitations before known-empty", () => {
+    const read = (overrides: Partial<CollectionMeta>) =>
+      readObservationSelectionAvailability({
+        dataCount: 0,
+        measureId: "reported-cases",
+        meta: meta(overrides),
+        pageToken: null,
+        requestedReleaseId: RELEASE,
+      }).kind;
+    const omitted = createObservationSelectionAccumulator({
+      measureId: "reported-cases",
+      requestedReleaseId: RELEASE,
+    });
+    omitted.note({
+      dataCount: 0,
+      meta: {
+        next_page_token: null,
+        response_at: "2026-10-18T00:00:00.000Z",
+      },
+      pageToken: null,
+    });
+    expect({
+      blankLimitations: read({ limitations: ["  "] }),
+      blankRelease: read({ release_id: "   " }),
+      emptyLimitations: read({ limitations: [] }),
+      emptyRelease: read({ release_id: "" }),
+      legacy: omitted.finish().kind,
+      nullLimitations: read({ limitations: null }),
+      nullRelease: read({ release_id: null }),
+      valid: read({}),
+    }).toStrictEqual({
+      blankLimitations: "malformed_authority",
+      blankRelease: "malformed_authority",
+      emptyLimitations: "malformed_authority",
+      emptyRelease: "malformed_authority",
+      legacy: "not_known_empty",
+      nullLimitations: "malformed_authority",
+      nullRelease: "malformed_authority",
+      valid: "known_unavailable",
+    });
+  });
+
   it("rejects a known-empty release that is not the requested release", () => {
     const accumulator = createObservationSelectionAccumulator({
       measureId: "reported-cases",

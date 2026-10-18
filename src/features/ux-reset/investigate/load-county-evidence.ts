@@ -19,6 +19,7 @@ import {
 } from "@/features/ux-reset/investigate/county-evidence";
 import {
   createObservationSelectionAccumulator,
+  observationAuthorityFailure,
   type KnownEmptyObservationSelection,
 } from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
@@ -474,10 +475,17 @@ async function fetchMeasureObservations(input: {
     pageToken = nextToken;
   }
   const folded = selection.finish();
-  if (folded.kind === "release_mismatch") {
+  const authorityFailure = observationAuthorityFailure(folded);
+  if (authorityFailure === "release_mismatch") {
     throw new InvestigateContractError(
       "Observation availability release does not match the requested release.",
       "release_mismatch"
+    );
+  }
+  if (authorityFailure === "malformed_authority") {
+    throw new InvestigateContractError(
+      "Observation availability did not include a checked release and limitations.",
+      "rejected"
     );
   }
   return {
@@ -605,9 +613,16 @@ function preservedOutcomesForRequest(input: {
   const measureIds = new Set(
     input.measures.map((measure) => measure.measure_id)
   );
-  return preserve.outcomes.filter((outcome) =>
-    measureIds.has(outcome.measureId)
-  );
+  return preserve.outcomes.filter((outcome) => {
+    if (!measureIds.has(outcome.measureId)) {
+      return false;
+    }
+    return !(
+      outcome.status === "ready" &&
+      outcome.observations.length === 0 &&
+      outcome.selectionAvailability
+    );
+  });
 }
 
 export async function loadCountyEvidenceBundle(input: {

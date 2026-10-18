@@ -23,13 +23,19 @@ export type ObservationSelectionRead =
   | { kind: "available" }
   | { kind: "continuation" }
   | { kind: "known_unavailable"; selection: KnownEmptyObservationSelection }
+  | { kind: "malformed_authority" }
   | { kind: "release_mismatch" }
   | { kind: "unclassified_empty" };
 
 export type FoldedObservationSelection =
   | { kind: "known_unavailable"; selection: KnownEmptyObservationSelection }
+  | { kind: "malformed_authority" }
   | { kind: "not_known_empty" }
   | { kind: "release_mismatch" };
+
+export type ObservationAuthorityFailure =
+  | "malformed_authority"
+  | "release_mismatch";
 
 export type ObservationSelectionPage = {
   dataCount: number;
@@ -89,16 +95,30 @@ export function readObservationSelectionAvailability(input: {
   if (releaseId && requested && releaseId !== requested) {
     return { kind: "release_mismatch" };
   }
+  const limitations = limitationLines(input.meta.limitations);
+  if (!(releaseId && requested && limitations.length > 0)) {
+    return { kind: "malformed_authority" };
+  }
   return {
     kind: "known_unavailable",
     selection: {
       availability: "UNAVAILABLE",
-      limitations: limitationLines(input.meta.limitations),
+      limitations,
       measureId: input.measureId,
       reason: NO_PUBLISHED_RESULTS_REASON,
       releaseId,
     },
   };
+}
+
+/** Typed availability that cannot be shown as known-empty. Callers fail closed. */
+export function observationAuthorityFailure(
+  fold: FoldedObservationSelection
+): ObservationAuthorityFailure | null {
+  if (fold.kind === "malformed_authority" || fold.kind === "release_mismatch") {
+    return fold.kind;
+  }
+  return null;
 }
 
 export function createObservationSelectionAccumulator(input: {
@@ -131,6 +151,9 @@ export function createObservationSelectionAccumulator(input: {
       if (sawRows) {
         return { kind: "not_known_empty" };
       }
+      if (initial?.kind === "malformed_authority") {
+        return { kind: "malformed_authority" };
+      }
       if (initial?.kind === "release_mismatch") {
         return { kind: "release_mismatch" };
       }
@@ -149,6 +172,9 @@ export function createObservationSelectionAccumulator(input: {
 export function mergeKnownEmptySelections(
   folds: readonly FoldedObservationSelection[]
 ): FoldedObservationSelection {
+  if (folds.some((fold) => fold.kind === "malformed_authority")) {
+    return { kind: "malformed_authority" };
+  }
   if (folds.some((fold) => fold.kind === "release_mismatch")) {
     return { kind: "release_mismatch" };
   }
