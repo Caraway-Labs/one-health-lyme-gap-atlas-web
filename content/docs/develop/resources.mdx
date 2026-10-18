@@ -60,6 +60,7 @@ There is no caller sort and no aggregation. `sort=value`, `aggregation=sum`, and
 | `SUPPRESSED` | Withheld. `value` is null |
 | `UNAVAILABLE` | Unavailable. `value` is null |
 | `NO_COUNTY_LINKED_RECORD` | The literal `no_county_linked_record`. The schema says this is not evidence of absence |
+| `NO_RECORDS` | CDC's publisher literal `No records`. The schema says this does not establish biological absence |
 
 `strata` on a checked case-floor row was an empty object. An empty object is not a breakdown.
 
@@ -77,6 +78,6 @@ Each observation also carries period, unit, denominator, source, methodology, `s
 | Query too broad | Declared as HTTP 400 `QUERY_TOO_BROAD` | Same code. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
 | Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` | Same |
 | Server unavailable | HTTP 503 and `Retry-After` | Same |
-| Unknown or limited data | Null definition, denominator, methodology, or source list fields stay null | `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, a null `environmental_context`, and a null or omitted `surveillance_context` stay as returned |
+| Unknown or limited data | Null definition, denominator, methodology, or source list fields stay null | `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, `NO_RECORDS`, a null `environmental_context`, and a null or omitted `surveillance_context` stay as returned |
 
 Detail resources also return HTTP 304 with an empty body when `If-None-Match` matches the current `ETag`.

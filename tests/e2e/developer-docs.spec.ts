@@ -130,9 +130,11 @@ test("renders contract value states and separate 413 and 414 rows", async ({
   page,
 }) => {
   await page.goto("/docs/develop/resources");
-  await expect(page.getByText("NO_RECORDS")).toHaveCount(0);
   await expect(
     page.getByRole("cell", { exact: true, name: "NO_COUNTY_LINKED_RECORD" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { exact: true, name: "NO_RECORDS" })
   ).toBeVisible();
 
   await page.goto("/docs/develop/rest");

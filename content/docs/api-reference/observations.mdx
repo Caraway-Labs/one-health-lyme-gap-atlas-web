@@ -14,7 +14,7 @@ Operation ID: `observations_v1_observations_get`
 
 Tag: `observations`
 
-Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Missing context does not establish absence or temporal comparability. A measure and bounded county/time selection are required; no user sorting or aggregation.
+Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation.
 
 ### Parameters
 
@@ -95,11 +95,11 @@ Examples:
 ]
 ```
 
-#### year
+#### vintage_year
 
 - Location: `query`
 - Required: no
-- Year or complete date range, not both; current published year is 2023.
+- Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.
 
 Schema:
 
@@ -115,7 +115,32 @@ Schema:
       "type": "null"
     }
   ],
-  "description": "Year or complete date range, not both; current published year is 2023.",
+  "description": "Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.",
+  "title": "Vintage Year"
+}
+```
+
+#### year
+
+- Location: `query`
+- Required: no
+- Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.
+
+Schema:
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "integer",
+      "maximum": 2100,
+      "minimum": 1900
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.",
   "examples": [
     2023
   ],
@@ -295,13 +320,22 @@ Bounded current-release observations.
 
 ##### application/json
 
+Schema: [CollectionEnvelope_CountyContextObservation_](/docs/api-reference/schemas#schema-collectionenvelope-countycontextobservation) (`#/components/schemas/CollectionEnvelope_CountyContextObservation_`)
 Schema: [CollectionEnvelope_Observation_](/docs/api-reference/schemas#schema-collectionenvelope-observation) (`#/components/schemas/CollectionEnvelope_Observation_`)
 
 Schema:
 
 ```json
 {
-  "$ref": "#/components/schemas/CollectionEnvelope_Observation_"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/CollectionEnvelope_CountyContextObservation_"
+    },
+    {
+      "$ref": "#/components/schemas/CollectionEnvelope_Observation_"
+    }
+  ],
+  "title": "Response Observations V1 Observations Get"
 }
 ```
 
@@ -558,7 +592,7 @@ Synthetic error example
 
 #### 503
 
-Canonical data service unavailable; application/problem+json
+Service unavailable; application/problem+json
 
 ##### Headers
 
@@ -599,9 +633,10 @@ Synthetic error example
   "type": "https://carawaylabs.com/problems/http-503",
   "title": "Request failed",
   "status": 503,
-  "detail": "Canonical data service unavailable; application/problem+json",
+  "detail": "Service unavailable; application/problem+json",
   "instance": "/v1/observations",
-  "request_id": "example-request-id"
+  "request_id": "example-request-id",
+  "code": "SERVICE_UNAVAILABLE"
 }
 ```
 

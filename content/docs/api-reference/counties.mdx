@@ -286,7 +286,8 @@ Synthetic error example
   "status": 503,
   "detail": "Atlas data service is unavailable.",
   "instance": "/v1/observations",
-  "request_id": "example-request-id"
+  "request_id": "example-request-id",
+  "code": "SERVICE_UNAVAILABLE"
 }
 ```
 
@@ -733,7 +734,8 @@ Synthetic error example
   "status": 503,
   "detail": "Atlas data service is unavailable.",
   "instance": "/v1/observations",
-  "request_id": "example-request-id"
+  "request_id": "example-request-id",
+  "code": "SERVICE_UNAVAILABLE"
 }
 ```
 
@@ -943,6 +945,219 @@ Synthetic error example
   "status": 503,
   "detail": "Atlas data service is unavailable.",
   "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "SERVICE_UNAVAILABLE"
+}
+```
+
+## Get Tier 1 result availability and persisted data [#county_tier1_surveillance_priority_availability_get]
+
+`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`
+
+Operation ID: `county_tier1_surveillance_priority_availability_get`
+
+Tag: `counties`
+
+Additive availability contract for current supported county geographies. A successful lookup returns AVAILABLE with the exact persisted result, or UNAVAILABLE with reason NO_PUBLISHED_MODEL and null data after the current geography release and Tier 1 projection have both been read successfully. geography_release_id identifies the release used to validate the FIPS. This endpoint does not turn null into zero or synthesize model output. NOT_ESTIMABLE is a persisted result state and is distinct from no published model result. Malformed FIPS returns 422; an identity outside the current geography release returns typed 404; dependency or malformed-data failures return 503. Public cache TTL 60 seconds.
+
+### Parameters
+
+#### fips
+
+- Location: `path`
+- Required: yes
+
+Schema:
+
+```json
+{
+  "type": "string",
+  "pattern": "^\\d{5}$",
+  "title": "Fips"
+}
+```
+
+
+### Responses
+
+#### 200
+
+Successful Response
+
+##### application/json
+
+Schema: [Tier1CountyPriorityAvailability](/docs/api-reference/schemas#schema-tier1countypriorityavailability) (`#/components/schemas/Tier1CountyPriorityAvailability`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/Tier1CountyPriorityAvailability"
+}
+```
+
+#### 404
+
+County is not in the current geography release.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-404",
+  "title": "Request failed",
+  "status": 404,
+  "detail": "County is not in the current geography release.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "RESOURCE_NOT_FOUND"
+}
+```
+
+#### 422
+
+One or more request values are invalid.
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-422",
+  "title": "Request failed",
+  "status": 422,
+  "detail": "One or more request values are invalid.",
+  "instance": "/v1/observations",
   "request_id": "example-request-id"
+}
+```
+
+#### 429
+
+Rate limit exceeded.
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-429",
+  "title": "Request failed",
+  "status": 429,
+  "detail": "Rate limit exceeded.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id"
+}
+```
+
+#### 503
+
+Atlas data service is unavailable.
+
+##### Headers
+
+###### Retry-After
+
+- Required: no
+- Seconds before retry when supplied by the service.
+- Type: `string`
+
+Schema:
+
+```json
+{
+  "type": "string"
+}
+```
+
+##### application/problem+json
+
+Schema: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails) (`#/components/schemas/ProblemDetails`)
+
+Schema:
+
+```json
+{
+  "$ref": "#/components/schemas/ProblemDetails"
+}
+```
+
+Examples:
+
+###### illustrative
+
+Synthetic error example
+
+```json
+{
+  "type": "https://carawaylabs.com/problems/http-503",
+  "title": "Request failed",
+  "status": 503,
+  "detail": "Atlas data service is unavailable.",
+  "instance": "/v1/observations",
+  "request_id": "example-request-id",
+  "code": "SERVICE_UNAVAILABLE"
 }
 ```

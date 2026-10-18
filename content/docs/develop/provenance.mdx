@@ -71,6 +71,7 @@ The contract states that response time is not publisher freshness. A generated o
 - `ZERO` is a published numeric zero. It remains bounded by the measure's coverage and method.
 - `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require a null `value`. `SUPPRESSED` means the value was withheld. `MISSING` and `UNAVAILABLE` are gaps.
 - `NO_COUNTY_LINKED_RECORD` retains the literal `no_county_linked_record`. The schema says this is not evidence of absence.
+- `NO_RECORDS` retains CDC's publisher literal `No records`. The schema says this does not establish biological absence.
 
 Surveillance floors and gap scores are not diagnoses, individual risk estimates, or causal claims. `environmental_context`, when an observation includes it, is descriptive weather coverage. A null `environmental_context` does not supply that coverage. A null or omitted `surveillance_context` does not establish absence or temporal comparability.
 
