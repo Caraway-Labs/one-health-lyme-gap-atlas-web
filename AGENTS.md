@@ -83,7 +83,7 @@ npm run check:design-system
 npm run check:ux-reset
 npm test
 npm run build
-docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.carawaylabs.com .
+docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.onehealthatlas.org --build-arg NEXT_PUBLIC_SITE_URL=https://onehealthatlas.org --build-arg NEXT_PUBLIC_DOCS_URL=https://onehealthatlas.org/docs .
 ```
 
 `npm run format` applies the repository's deterministic Ultracite/Oxlint/Oxfmt standard. `npm run lint` is the non-mutating CI check; do not reintroduce a second lint or formatter configuration.
