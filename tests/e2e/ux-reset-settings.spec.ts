@@ -460,6 +460,9 @@ test.describe("Settings profile and default jurisdiction", () => {
     const privacy = page.getByTestId("settings-privacy-preferences");
     await expect(privacy).toBeVisible();
     await expect(
+      page.locator("[data-default-jurisdiction='ALL']")
+    ).toBeVisible();
+    await expect(
       privacy.getByRole("heading", { name: "Privacy settings" })
     ).toBeVisible();
     await expect(privacy).toContainText("six months");
@@ -488,7 +491,7 @@ test.describe("Settings profile and default jurisdiction", () => {
       "Optional analytics are off for this browser."
     );
     await expect(
-      page.locator("[data-default-jurisdiction='unselected']")
+      page.locator("[data-default-jurisdiction='ALL']")
     ).toBeVisible();
     expect(api.writes).toEqual([]);
     await privacy.screenshot({

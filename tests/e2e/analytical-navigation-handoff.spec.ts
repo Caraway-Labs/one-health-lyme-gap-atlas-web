@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 test("an overview bookmark opens Atlas Explorer browse and drops score filters", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/overview?dataset=alpha-explorer&county=06085&eco=70");
   await expect(page).toHaveURL(/\/explore/);
   const url = new URL(page.url());
@@ -31,6 +34,7 @@ test("an overview bookmark opens Atlas Explorer browse and drops score filters",
 test("a geographic explorer bookmark opens browse and does not invent a county", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto(
     "/geographic_explorer?view=compare&selected=06085%2C06037&county=06085&metric=score"
   );
@@ -50,6 +54,7 @@ test("a geographic explorer bookmark opens browse and does not invent a county",
 test("a legacy analytical root URL opens Atlas Explorer and drops unsupported filters", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/?county=08001&state=CO&dataset=alpha-explorer&eco=70");
   await expect(page).toHaveURL(/\/explore/);
   const url = new URL(page.url());
@@ -78,6 +83,7 @@ test("a legacy analytical root URL opens Atlas Explorer and drops unsupported fi
 test("drops a legacy root section hash and keeps the Front Porch story anchor", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/#atlas");
   await expect(page).toHaveURL(/\/explore/);
   expect(new URL(page.url()).pathname).toBe("/explore");

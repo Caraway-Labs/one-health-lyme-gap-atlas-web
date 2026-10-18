@@ -156,6 +156,7 @@ test("sign-in stays on the approved screen and an overview bookmark opens Atlas 
   await expect(
     page.getByRole("link", { name: "Continue without an account" })
   ).toHaveCount(0);
+  await fulfillCompletedStartingView(page);
   await page.goto("/overview");
   await expect(page).toHaveURL(/\/explore\/?$/);
   await expect(page).not.toHaveURL(/sign-in/);

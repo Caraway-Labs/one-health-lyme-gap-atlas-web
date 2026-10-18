@@ -23,6 +23,9 @@ async function mockAtlasApi(
     }
     await route.fulfill({ json: {} });
   });
+  // Register after the catch-all. Playwright matches the newest route first,
+  // so this completed read stays ahead of the empty API fallback.
+  await fulfillCompletedStartingView(page);
 }
 
 async function openFeedback(page: Page) {

@@ -133,6 +133,12 @@ test("adds Data Provenance between Feed and Docs", async ({
   const navigation = page.getByRole("navigation", {
     name: "Professional workspace",
   });
+  await expect(
+    navigation.getByRole("link", { name: "Atlas Explorer" })
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("link", { name: "Docs, opens in a new tab" })
+  ).toBeVisible();
   const labels = await navigation
     .locator("a")
     .evaluateAll((nodes) =>
@@ -217,7 +223,9 @@ test("opens source cards, deep links, and keeps inline provenance", async ({
   });
   await expect(pipeline.getByRole("heading").nth(0)).toContainText("Source");
   await expect(pipeline.getByRole("heading").nth(4)).toContainText("Explore");
-  await expect(page.getByText("Literature")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { exact: true, level: 4, name: "Literature" })
+  ).toBeVisible();
   await expect(page.getByText("not predicted Lyme risk")).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("data-provenance-page.png"),

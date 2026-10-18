@@ -440,6 +440,7 @@ test("renders the capability-boundaries table with one column count", async ({
 test("opens the configured docs destination from the workspace sidebar", async ({
   page,
 }, testInfo) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/explore");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();

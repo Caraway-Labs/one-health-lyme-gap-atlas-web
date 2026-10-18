@@ -6,6 +6,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const PREFERENCE_KEY = "atlas.analytics-preference.v1";
@@ -90,6 +91,7 @@ async function openSettingsFromFooter(page: Page): Promise<Locator> {
 test("opens the live About page from the workspace footer", async ({
   page,
 }, testInfo) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/explore");
   const brand = page.getByRole("contentinfo").getByRole("link", {
     name: "One Health Atlas by Caraway Labs (opens in a new tab)",

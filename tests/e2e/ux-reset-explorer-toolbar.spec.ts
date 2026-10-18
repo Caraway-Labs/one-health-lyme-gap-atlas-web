@@ -173,38 +173,63 @@ async function downloadCountyFips(page: Page) {
   return [...csv.matchAll(/"(\d{5})"/g)].map((match) => match[1] ?? "");
 }
 
+const TOOLBAR_CONTROL_IDS = [
+  "review-scope-select",
+  "explorer-county-search",
+  "explorer-available-data",
+  "explorer-download-counties",
+  "explorer-download-help",
+] as const;
+
+async function expectVisibleToolbar(page: Page) {
+  const toolbar = page.getByTestId("explorer-county-toolbar");
+  await expect(toolbar).toBeVisible();
+  for (const id of TOOLBAR_CONTROL_IDS) {
+    await expect(toolbar.getByTestId(id)).toBeVisible();
+  }
+}
+
 async function toolbarMetrics(page: Page) {
-  return page.evaluate(() => {
-    const toolbar = document.querySelector(
-      "[data-testid='explorer-county-toolbar']"
-    );
-    if (!(toolbar instanceof HTMLElement)) {
-      return null;
-    }
-    const ids = [
-      "review-scope-select",
-      "explorer-county-search",
-      "explorer-available-data",
-      "explorer-download-counties",
-      "explorer-download-help",
-    ];
-    const controls = ids.map((id) => {
-      const element = toolbar.querySelector(`[data-testid='${id}']`);
-      if (!(element instanceof HTMLElement)) {
+  return page.evaluate(
+    (ids) => {
+      const toolbar = document.querySelector(
+        "[data-testid='explorer-county-toolbar']"
+      );
+      if (!(toolbar instanceof HTMLElement)) {
         return null;
       }
-      const box = element.getBoundingClientRect();
-      return { height: box.height, id, top: box.top };
-    });
-    const toolbarBox = toolbar.getBoundingClientRect();
-    return {
-      controls,
-      height: toolbarBox.height,
-      overflow:
-        document.documentElement.scrollWidth -
-        document.documentElement.clientWidth,
-    };
-  });
+      const controls = ids.map((id) => {
+        const element = toolbar.querySelector(`[data-testid='${id}']`);
+        if (!(element instanceof HTMLElement)) {
+          return null;
+        }
+        const box = element.getBoundingClientRect();
+        return { height: box.height, id, top: box.top };
+      });
+      const toolbarBox = toolbar.getBoundingClientRect();
+      return {
+        controls,
+        height: toolbarBox.height,
+        overflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      };
+    },
+    [...TOOLBAR_CONTROL_IDS]
+  );
+}
+
+function measuredControlTops(
+  metrics: Awaited<ReturnType<typeof toolbarMetrics>>
+): number[] {
+  const tops =
+    metrics?.controls.flatMap((control) =>
+      control === null ? [] : [control.top]
+    ) ?? [];
+  if (!metrics || tops.length !== TOOLBAR_CONTROL_IDS.length) {
+    throw new Error("Explorer toolbar controls were not in the document.");
+  }
+  return tops;
 }
 
 test.describe("Explorer county toolbar", () => {
@@ -400,20 +425,19 @@ test.describe("Explorer county toolbar", () => {
     await installExplorer(page);
     await page.setViewportSize({ height: 800, width: 1280 });
     await page.goto("/explore?scope=AL");
+    await expectVisibleToolbar(page);
     const wide = await toolbarMetrics(page);
-    const wideTops = (wide?.controls ?? []).map((control) => control?.top ?? 0);
+    const wideTops = measuredControlTops(wide);
     expect(Math.max(...wideTops) - Math.min(...wideTops)).toBeLessThanOrEqual(
       1
     );
     expect(wide?.overflow).toBe(0);
 
     await page.setViewportSize({ height: 900, width: 768 });
-    await expect(page.getByTestId("explorer-county-search")).toBeVisible();
+    await expectVisibleToolbar(page);
     const narrow = await toolbarMetrics(page);
+    const narrowTops = measuredControlTops(narrow);
     expect(narrow?.overflow).toBe(0);
-    const narrowTops = (narrow?.controls ?? []).map(
-      (control) => control?.top ?? 0
-    );
     expect(Math.max(...narrowTops) - Math.min(...narrowTops)).toBeGreaterThan(
       8
     );

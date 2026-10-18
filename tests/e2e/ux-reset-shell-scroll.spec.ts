@@ -9,6 +9,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 
 const DESKTOP = { height: 900, width: 1440 };
 const MOBILE = { height: 844, width: 390 };
@@ -571,6 +572,7 @@ test.describe("professional shell scroll containment", () => {
     page,
   }) => {
     await page.setViewportSize({ height: 420, width: 1280 });
+    await fulfillCompletedStartingView(page);
     await page.goto("/app/feed");
     const content = page.locator(
       "#ux-reset-pro-navigation [data-slot='sidebar-content']"
@@ -640,6 +642,7 @@ test.describe("professional shell scroll containment", () => {
     page,
   }) => {
     await page.setViewportSize({ height: 80, width: 1280 });
+    await fulfillCompletedStartingView(page);
     await page.goto("/app/settings");
     await expectRouteContentReachable(page);
     await expectTrustFooterReachable(page);
@@ -649,6 +652,7 @@ test.describe("professional shell scroll containment", () => {
     page,
   }) => {
     await page.setViewportSize(DESKTOP);
+    await fulfillCompletedStartingView(page);
     for (const path of [
       "/app/explore",
       "/app/investigate",
@@ -918,6 +922,7 @@ test.describe("professional shell scroll containment", () => {
     page,
   }) => {
     await page.setViewportSize(DESKTOP);
+    await fulfillCompletedStartingView(page);
     await page.goto("/app/settings");
     await expect
       .poll(() => page.evaluate(() => history.scrollRestoration))
@@ -969,7 +974,9 @@ test.describe("professional shell scroll containment", () => {
     page,
   }) => {
     await page.setViewportSize(DESKTOP);
+    await fulfillCompletedStartingView(page);
     await page.goto("/app/settings");
+    await expect(page.locator(".ux-reset-pro-app")).toBeVisible();
     await page.emulateMedia({ media: "print" });
     const overflow = await page
       .locator(".ux-reset-pro-app")
