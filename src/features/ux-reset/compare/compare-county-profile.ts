@@ -15,7 +15,11 @@ import {
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-published-county-preview";
 import type { CountyDetail, Measure, SourceMetadata } from "@/generated/models";
-import { reviewReasonsFor, type CountyReviewReason } from "@/lib/atlas-ui";
+import {
+  reviewReasonsFor,
+  type CountyReviewReason,
+  type PriorityTone,
+} from "@/lib/atlas-ui";
 
 /**
  * Side-by-side county-record rows for Compare.
@@ -360,7 +364,13 @@ function hasUnfamiliarNumberedCategory(priority: string): boolean {
  * published. Token checks replace substring matching so "Priority 10" is
  * not read as "Priority 1".
  */
-function recognizedReviewLabel(priority: string): string | null {
+type RecognizedReviewLabel =
+  | "Highest review priority"
+  | "Lower review priority"
+  | "Moderate review priority"
+  | "Monitor for changes";
+
+function recognizedReviewLabel(priority: string): RecognizedReviewLabel | null {
   if (hasUnfamiliarNumberedCategory(priority)) {
     return null;
   }
@@ -377,6 +387,49 @@ function recognizedReviewLabel(priority: string): string | null {
     return "Lower review priority";
   }
   return null;
+}
+
+const PUBLISHED_PRIORITY_NOTE =
+  /^Published priority label: (?<priority>.*)\. Not a rank against the other county\.$/;
+
+/** Raw published priority from a review-category note. Unfamiliar labels stay intact. */
+export function publishedReviewPriority(
+  note: string | null | undefined
+): string | null {
+  const priority =
+    note?.match(PUBLISHED_PRIORITY_NOTE)?.groups?.priority?.trim() ?? "";
+  return priority.length > 0 ? priority : null;
+}
+
+/**
+ * Validated tone for a recognized review category.
+ * Unfamiliar labels, including "Priority 10", return null so callers stay neutral.
+ */
+export function compareReviewCategoryTone(
+  priority: string
+): PriorityTone | null {
+  const label = recognizedReviewLabel(priority);
+  switch (label) {
+    case "Highest review priority": {
+      return "urgent";
+    }
+    case "Moderate review priority": {
+      return "review";
+    }
+    case "Monitor for changes": {
+      return "watch";
+    }
+    case "Lower review priority": {
+      return "lower";
+    }
+    case null: {
+      return null;
+    }
+    default: {
+      const exhaustive: never = label;
+      return exhaustive;
+    }
+  }
 }
 
 function reviewCategoryDisplay(

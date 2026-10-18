@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
+import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,7 +31,11 @@ import {
   CompareCompactEvidence,
   compareReaderState,
 } from "@/features/ux-reset/compare/compare-compact-evidence";
-import type { CompareProfileAlignment } from "@/features/ux-reset/compare/compare-county-profile";
+import {
+  compareReviewCategoryTone,
+  publishedReviewPriority,
+  type CompareProfileAlignment,
+} from "@/features/ux-reset/compare/compare-county-profile";
 import {
   CompareCountyProfileSection,
   CompareEvidenceGroup,
@@ -128,10 +133,14 @@ function CompareCellView({
   );
 }
 
-function reviewCategoryLabel(
+type ReviewCategoryBadge =
+  | { kind: "published"; label: string }
+  | { kind: "recognized"; priority: string };
+
+function reviewCategoryBadge(
   profile: CompareProfileAlignment | null,
   fips: string
-): string | null {
+): ReviewCategoryBadge | null {
   if (!profile || !fips) {
     return null;
   }
@@ -152,7 +161,11 @@ function reviewCategoryLabel(
   if (!value || value === "Unavailable") {
     return null;
   }
-  return value;
+  const priority = publishedReviewPriority(cell.evidence.valueNote);
+  if (priority && compareReviewCategoryTone(priority)) {
+    return { kind: "recognized", priority };
+  }
+  return { kind: "published", label: value };
 }
 
 function failedMeasureLabels(alignment: CompareAlignment | null): string[] {
@@ -391,7 +404,7 @@ function CompareExperienceInner() {
             fips={leftFips}
             label="First county"
             options={leftOptions}
-            reviewCategory={reviewCategoryLabel(workspace.profile, leftFips)}
+            reviewCategory={reviewCategoryBadge(workspace.profile, leftFips)}
             selectedCounty={leftOption?.countyName}
             selectedFips={leftFips}
             selectedLabel={leftOption?.label}
@@ -418,7 +431,7 @@ function CompareExperienceInner() {
             fips={rightFips}
             label="Second county"
             options={rightOptions}
-            reviewCategory={reviewCategoryLabel(workspace.profile, rightFips)}
+            reviewCategory={reviewCategoryBadge(workspace.profile, rightFips)}
             selectedCounty={rightOption?.countyName}
             selectedFips={rightFips}
             selectedLabel={rightOption?.label}
@@ -786,11 +799,13 @@ function CompareOverview({
             </li>
           </ul>
           <p className="type-small">
-            These counts cover additional catalog observations whose measure,
-            unit, period, release, and method already match. Unknown and
-            withheld observations are not counted as shared or different. Zero
-            differing observations does not mean the counties are equivalent. A
-            missing value stays missing and is not zero.
+            Shared and differing counts include only additional catalog
+            observations whose measure, unit, period, release, and method match.
+            Withheld counts are not comparable: one side may be missing, a
+            request may have failed, or the unit, period, release, or method may
+            differ. Withheld observations are not counted as shared or
+            different. Zero differing observations does not mean the counties
+            are equivalent. A missing value stays missing and is not zero.
           </p>
         </>
       ) : (
@@ -801,12 +816,59 @@ function CompareOverview({
       )}
       {partial ? (
         <p data-testid="compare-overview-partial">
-          Some additional observations did not load. Counts use observations
-          that loaded, and loaded county records stay visible.
+          Some additional observations did not load. Those failed requests stay
+          in the withheld count. They are not treated as matched, shared, or
+          different. Loaded county records stay visible.
         </p>
       ) : null}
     </section>
   );
+}
+
+function ReviewCategoryMark({
+  badge,
+  fips,
+}: {
+  badge: ReviewCategoryBadge;
+  fips: string;
+}) {
+  const testId = `compare-review-category-${fips}`;
+  switch (badge.kind) {
+    case "recognized": {
+      const tone = compareReviewCategoryTone(badge.priority);
+      if (!tone) {
+        return (
+          <Badge
+            data-review-tone="neutral"
+            data-testid={testId}
+            variant="outline"
+          >
+            {badge.priority}
+          </Badge>
+        );
+      }
+      return (
+        <span data-review-tone={tone} data-testid={testId}>
+          <AtlasPriorityBadge priority={badge.priority} />
+        </span>
+      );
+    }
+    case "published": {
+      return (
+        <Badge
+          data-review-tone="neutral"
+          data-testid={testId}
+          variant="outline"
+        >
+          {badge.label}
+        </Badge>
+      );
+    }
+    default: {
+      const exhaustive: never = badge;
+      return exhaustive;
+    }
+  }
 }
 
 function CountySlot({
@@ -835,7 +897,7 @@ function CountySlot({
   onClear: (() => void) | null;
   onSelect: (fips: string) => void;
   options: readonly { disabled: boolean; fips: string; label: string }[];
-  reviewCategory: string | null;
+  reviewCategory: ReviewCategoryBadge | null;
   selectedCounty: string | undefined;
   selectedFips: string;
   selectedLabel: string | undefined;
@@ -856,12 +918,7 @@ function CountySlot({
         </p>
       ) : null}
       {reviewCategory ? (
-        <Badge
-          data-testid={`compare-review-category-${fips}`}
-          variant="outline"
-        >
-          {reviewCategory}
-        </Badge>
+        <ReviewCategoryMark badge={reviewCategory} fips={fips} />
       ) : null}
       <Select
         disabled={disabled}

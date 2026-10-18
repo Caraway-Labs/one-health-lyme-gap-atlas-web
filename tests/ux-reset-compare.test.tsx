@@ -45,6 +45,7 @@ let catalogRetryAfter: string | null = null;
 let blankContextSourceNote = false;
 let extraCatalogMeasures: typeof compareMeasuresFixture = [];
 const countyRecordRequests: string[] = [];
+const countyPriorityOverrides = new Map<string, string>();
 let countyRateLimitRemaining = 0;
 let countyRetryAfterSeconds: number | null = null;
 let navigationSearchParams = new URLSearchParams();
@@ -81,6 +82,10 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         } as never;
       }
       const detail = compareCountyDetail(fips);
+      const priorityOverride = countyPriorityOverrides.get(fips);
+      if (priorityOverride) {
+        detail.priority = priorityOverride;
+      }
       if (blankContextSourceNote) {
         detail.release = {
           ...detail.release,
@@ -287,6 +292,7 @@ describe("two-county aligned comparison", () => {
     extraCatalogMeasures = [];
     clearCompareCatalogRetryDeadlines();
     clearCompareProfileRetryDeadlines();
+    countyPriorityOverrides.clear();
     countyRateLimitRemaining = 0;
     countyRecordRequests.length = 0;
     countyRetryAfterSeconds = null;
@@ -325,6 +331,72 @@ describe("two-county aligned comparison", () => {
       "second county"
     );
     expect(observationRequests).toStrictEqual([]);
+  });
+
+  it("describes withheld counts as not comparable, including failed requests", async () => {
+    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const summary = await screen.findByTestId("compare-summary");
+    await waitFor(() => {
+      if (
+        !(summary.textContent ?? "").includes(
+          "Withheld counts are not comparable"
+        )
+      ) {
+        throw new Error("Waiting for the withheld overview.");
+      }
+    });
+    const text = summary.textContent ?? "";
+    expect({
+      failedAsMatched: text.includes("not treated as matched"),
+      fieldMatchLimitedToShared:
+        text.includes("Shared and differing counts") &&
+        text.includes("whose measure, unit, period, release, and method match"),
+      partial: text.includes("failed requests stay in the withheld count"),
+      treatsWithheldAsMatched: text.includes("already match"),
+      withheldNotComparable: text.includes(
+        "Withheld counts are not comparable"
+      ),
+    }).toStrictEqual({
+      failedAsMatched: true,
+      fieldMatchLimitedToShared: true,
+      partial: true,
+      treatsWithheldAsMatched: false,
+      withheldNotComparable: true,
+    });
+  });
+
+  it("uses priority pills for recognized review categories and stays neutral otherwise", async () => {
+    const samples = [
+      ["Priority 1 — Investigate", "urgent", "Highest review priority"],
+      ["Priority 2 — Review", "review", "Moderate review priority"],
+      ["Watch", "watch", "Monitor for changes"],
+      ["Lower", "lower", "Lower review priority"],
+      ["Priority 10 — Review", "neutral", "Priority 10 — Review"],
+    ] as const;
+    const seen: { text: string; tone: string | undefined }[] = [];
+    for (const [priority, tone] of samples) {
+      cleanup();
+      countyPriorityOverrides.set(COMPARE_LEFT_FIPS, priority);
+      renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+      await waitForPair("08001,08013");
+      const badge = await screen.findByTestId(
+        `compare-review-category-${COMPARE_LEFT_FIPS}`
+      );
+      const pill = badge.querySelector(".priority-pill");
+      seen.push({
+        text: badge.textContent ?? "",
+        tone:
+          tone === "neutral"
+            ? badge.dataset.reviewTone
+            : pill?.classList.contains(tone)
+              ? tone
+              : pill?.className,
+      });
+    }
+    expect(seen).toStrictEqual(
+      samples.map(([, tone, text]) => ({ text, tone }))
+    );
   });
 
   it("aligns a comparable value and a real zero on stable measure rows", async () => {
