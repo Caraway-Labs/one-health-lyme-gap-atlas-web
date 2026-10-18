@@ -32,9 +32,9 @@
 .ux-reset-pro-app .app-inset[data-slot="sidebar-inset"] {
   max-height: 100%;
   min-height: 0;
-  /* Main scrolls for route content. The inset scrolls when the header and
-     trust footer leave no usable route strip, and then it scrolls the route
-     with that chrome. */
+  /* Main scrolls the route and the trust footer. The inset scrolls only when
+     the header leaves no usable route strip, and then it scrolls that header
+     with the route. */
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -42,10 +42,7 @@
 .ux-reset-pro-app
   .app-inset[data-chrome-overflow="true"]
   .ux-reset-workspace-body,
-.ux-reset-pro-app
-  .app-inset[data-chrome-overflow="true"]
-  .ux-reset-workspace-body
-  > .ux-reset-pro-main {
+.ux-reset-pro-app .app-inset[data-chrome-overflow="true"] .ux-reset-pro-scroll {
   flex: none;
   height: auto;
   min-height: auto;
@@ -1053,8 +1050,10 @@
   overflow: hidden;
 }
 
-.ux-reset-workspace-body > .ux-reset-pro-main {
+.ux-reset-pro-scroll {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow: auto;
@@ -1062,7 +1061,16 @@
   scroll-padding: var(--space-2);
 }
 
-.ux-reset-pro-main :focus-visible {
+/* Grows on short routes so the footer rests at the bottom of the scroll pane.
+   Does not shrink, so a long route reveals the footer after the content. */
+.ux-reset-pro-scroll > .ux-reset-pro-main {
+  flex: 1 0 auto;
+  align-content: start;
+  min-width: 0;
+  min-height: min-content;
+}
+
+.ux-reset-pro-scroll :focus-visible {
   scroll-margin-bottom: 1.5rem;
 }
 
@@ -1194,16 +1202,15 @@
   padding: var(--space-3);
 }
 
-/* The workspace fills the main pane. The page scrolls; the transcript does not
-   trap focus inside a second scroller. When notices and the composer exceed
-   that pane, the pane scrolls so they stay reachable without moving the
-   sidebar or header. */
-.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace) .ux-reset-pro-main {
+/* The workspace fills the route column. The pane scrolls; the transcript does
+   not trap focus inside a second scroller. When notices and the composer
+   exceed that pane, the pane scrolls to them and then to the footer without
+   moving the sidebar or header. */
+.ux-reset-pro-app:has(.ux-reset-ask-atlas-workspace)
+  .ux-reset-pro-scroll
+  > .ux-reset-pro-main {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  min-height: 0;
-  overflow: auto;
   padding-bottom: var(--space-3);
 }
 
@@ -1211,7 +1218,7 @@
   .app-shell.ux-reset-pro-app,
   .ux-reset-pro-app .app-inset[data-slot="sidebar-inset"],
   .ux-reset-pro-app .ux-reset-workspace-body,
-  .ux-reset-pro-app .ux-reset-workspace-body > .ux-reset-pro-main,
+  .ux-reset-pro-app .ux-reset-pro-scroll,
   .ux-reset-pro-app .atlas-sidebar,
   .ux-reset-pro-app .atlas-sidebar [data-slot="sidebar-content"] {
     height: auto;
