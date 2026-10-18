@@ -12,6 +12,10 @@ import {
   scenarioSettingsEqual,
   type AdjustedCountyScenario,
 } from "@/features/ux-reset/review/explorer-scenario-score";
+import {
+  isLower48CountyFips,
+  isLower48ReviewScope,
+} from "@/features/ux-reset/review/review-state-fips";
 import type { CountyScoreSummary } from "@/generated/models";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 
@@ -120,6 +124,33 @@ function collectionSettingsRecord(
   };
 }
 
+/**
+ * National browse uses the same lower-48 and DC scores as a state Explorer.
+ * Alaska, Hawaii, and any other scope stay outside the scenario.
+ */
+export function explorerScenarioScopeSupported(
+  scopeCode: string,
+  scopeUnsupported: boolean
+): boolean {
+  if (scopeUnsupported) {
+    return false;
+  }
+  return scopeCode === "ALL" || isLower48ReviewScope(scopeCode);
+}
+
+function scenarioCountiesForScope(
+  counties: readonly CountyScoreSummary[],
+  scopeCode: string
+): CountyScoreSummary[] {
+  if (scopeCode === "ALL") {
+    return counties.filter(
+      (county) =>
+        isLower48ReviewScope(county.state) && isLower48CountyFips(county.fips)
+    );
+  }
+  return counties.filter((county) => county.state === scopeCode);
+}
+
 export function resolveExplorerWhatIfImpact(input: {
   collectionSettings: Record<string, number> | ScoreSettings | undefined;
   counties: readonly CountyScoreSummary[] | undefined;
@@ -140,17 +171,21 @@ export function resolveExplorerWhatIfImpact(input: {
   if (!input.counties) {
     return { status: "unavailable" };
   }
-  const inScope = input.counties.filter(
-    (county) => county.state === input.scopeCode
-  );
+  const inScope = scenarioCountiesForScope(input.counties, input.scopeCode);
   const selected = inScope.find((county) => county.fips === input.countyFips);
   if (!selected) {
     return { status: "unavailable" };
   }
+  // A national selection is still that county's state calculation. The peer
+  // set is the state, so the result matches opening that state.
+  const peers =
+    input.scopeCode === "ALL"
+      ? inScope.filter((county) => county.state === selected.state)
+      : inScope;
   const baseline = scoreSettingsFromCollection(
     collectionSettingsRecord(input.collectionSettings)
   );
-  const scenarios = adjustCountyScenarios(inScope, input.settings, baseline);
+  const scenarios = adjustCountyScenarios(peers, input.settings, baseline);
   return {
     assumptionsChanged: !scenarioSettingsEqual(input.settings, baseline),
     countyName: selected.county.trim() || "Selected county",
@@ -158,6 +193,82 @@ export function resolveExplorerWhatIfImpact(input: {
     governedScore: selected.score.score,
     scenario: scenarios?.get(selected.fips) ?? null,
     status: "ready",
+  };
+}
+
+/**
+ * Gap-score county fills only. Other layers keep the governed rows.
+ * Limited counties keep their published color. No state or national rollup.
+ */
+export function applyGapScoreScenarioColors(
+  counties: readonly CountyScoreSummary[],
+  scenarios: ReadonlyMap<string, AdjustedCountyScenario> | null
+): {
+  counties: CountyScoreSummary[];
+  hasAdjustedColor: boolean;
+  hasLimitedScenario: boolean;
+} {
+  if (!scenarios) {
+    return {
+      counties: [...counties],
+      hasAdjustedColor: false,
+      hasLimitedScenario: false,
+    };
+  }
+  let hasAdjustedColor = false;
+  let hasLimitedScenario = false;
+  const next = counties.map((county) => {
+    const scenario = scenarios.get(county.fips);
+    if (!scenario) {
+      return county;
+    }
+    switch (scenario.kind) {
+      case "adjusted": {
+        hasAdjustedColor = true;
+        return {
+          ...county,
+          color: scenario.colorToken,
+          priority: `Adjusted scenario · ${scenario.priority}`,
+          score: {
+            ...county.score,
+            score: scenario.score,
+          },
+        };
+      }
+      case "limited": {
+        hasLimitedScenario = true;
+        return county;
+      }
+      case "unchanged": {
+        return county;
+      }
+      default: {
+        const exhaustive: never = scenario;
+        return exhaustive;
+      }
+    }
+  });
+  return {
+    counties: next,
+    hasAdjustedColor,
+    hasLimitedScenario,
+  };
+}
+
+export function scenarioGapScoreLegend(input: {
+  hasAdjustedColor: boolean;
+  hasLimitedScenario: boolean;
+}): { note: string; title: string; unit: string } | null {
+  if (!(input.hasAdjustedColor || input.hasLimitedScenario)) {
+    return null;
+  }
+  const limitedNote = input.hasLimitedScenario
+    ? " Counties without a published incidence on this collection keep the governed score and color."
+    : "";
+  return {
+    note: `Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.${limitedNote}`,
+    title: "Adjusted scenario",
+    unit: "adjusted review-priority score",
   };
 }
 
@@ -248,9 +359,9 @@ export function presentExplorerScenarioImpact(
   switch (state.status) {
     case "none": {
       return {
-        collapsed: "Select a county",
-        expanded:
-          "Select a county to see its published score and any adjusted scenario.",
+        collapsed:
+          "Select a county to compare its published and adjusted score",
+        expanded: "Select a county to compare its published and adjusted score",
         kind: "placeholder",
         placeholder: "none",
       };
@@ -637,8 +748,11 @@ export function explorerScenarioSelectionText(
 
 export function ExplorerAdjustedScenarioLine({
   scenario,
+  showRank = true,
 }: {
   scenario?: AdjustedCountyScenario | null;
+  /** National browse is not a ranking. State Explorer keeps the state rank. */
+  showRank?: boolean;
 }) {
   if (!scenario) {
     return null;
@@ -646,14 +760,14 @@ export function ExplorerAdjustedScenarioLine({
   switch (scenario.kind) {
     case "adjusted":
     case "unchanged": {
+      const rank = showRank ? ` Scenario rank ${scenario.rank}.` : "";
       return (
         <span
           className="ux-reset-explorer-scenario-result"
           data-scenario={scenario.kind}
           data-testid="explorer-scenario-score"
         >
-          Adjusted scenario {scenario.score}. {scenario.priority}. Scenario rank{" "}
-          {scenario.rank}.
+          {`Adjusted scenario ${scenario.score}. ${scenario.priority}.${rank}`}
         </span>
       );
     }

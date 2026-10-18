@@ -59,8 +59,10 @@ import {
   scoreSettingsFromCollection,
 } from "@/features/ux-reset/review/explorer-scenario-score";
 import {
+  applyGapScoreScenarioColors,
   ExplorerAdjustedScenarioLine,
   explorerScenarioSelectionText,
+  scenarioGapScoreLegend,
 } from "@/features/ux-reset/review/explorer-what-if-scenario";
 import {
   buildReviewCandidatePreview,
@@ -504,45 +506,13 @@ export function ReviewOperatingPicture({
         sources,
       });
     }
-    let counties = (scoresQuery.data?.counties ?? []).filter(
+    const governedCounties = (scoresQuery.data?.counties ?? []).filter(
       (county) => county.state === scopeCode
     );
     const scenarioColors = scenarioByFips !== null && layer.id === "gap_score";
-    let hasAdjustedColor = false;
-    let hasLimitedScenario = false;
-    if (scenarioColors && scenarioByFips) {
-      counties = counties.map((county) => {
-        const scenario = scenarioByFips.get(county.fips);
-        if (!scenario) {
-          return county;
-        }
-        switch (scenario.kind) {
-          case "adjusted": {
-            hasAdjustedColor = true;
-            return {
-              ...county,
-              color: scenario.colorToken,
-              priority: `Adjusted scenario · ${scenario.priority}`,
-              score: {
-                ...county.score,
-                score: scenario.score,
-              },
-            };
-          }
-          case "limited": {
-            hasLimitedScenario = true;
-            return county;
-          }
-          case "unchanged": {
-            return county;
-          }
-          default: {
-            const exhaustive: never = scenario;
-            return exhaustive;
-          }
-        }
-      });
-    }
+    const colored = scenarioColors
+      ? applyGapScoreScenarioColors(governedCounties, scenarioByFips)
+      : null;
     const scoresStatus = layer.needsScores
       ? !releaseId || scoresQuery.isError
         ? "error"
@@ -551,26 +521,22 @@ export function ReviewOperatingPicture({
           : "ready"
       : "ready";
     const paint = paintExplorerMapLayer({
-      counties,
+      counties: colored?.counties ?? governedCounties,
       layerId: layer.id,
       releaseId,
       scoresStatus,
       sources,
     });
-    if (!scenarioColors || scoresStatus !== "ready") {
+    const legend =
+      colored && scoresStatus === "ready"
+        ? scenarioGapScoreLegend(colored)
+        : null;
+    if (!legend) {
       return paint;
     }
-    if (!hasAdjustedColor && !hasLimitedScenario) {
-      return paint;
-    }
-    const limitedNote = hasLimitedScenario
-      ? " Counties without a published incidence on this collection keep the governed score and color."
-      : "";
     return {
       ...paint,
-      note: `Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.${limitedNote}`,
-      title: "Adjusted scenario",
-      unit: "adjusted review-priority score",
+      ...legend,
     };
   }, [
     lower48Scores,
