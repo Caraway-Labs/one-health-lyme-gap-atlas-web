@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const publicOpenApiManifest = JSON.parse(
   readFileSync("contracts/public-openapi.manifest.json", "utf8")
@@ -168,6 +168,17 @@ test("keeps every HelpDocs route reachable and accessible", async ({
   ).toBeVisible();
 });
 
+async function expectVisibleRetryAfterHeader(page: Page) {
+  const headers = page.getByRole("region", { name: "Response Headers" });
+  await expect(
+    headers.getByRole("heading", { name: "Retry-After", exact: true })
+  ).toBeVisible();
+  await expect(headers.getByText("string", { exact: true })).toBeVisible();
+  await expect(
+    headers.getByText("Seconds before retry when supplied by the service.")
+  ).toBeVisible();
+}
+
 test("renders the generated observations reference with version, source, and raw spec", async ({
   page,
 }, testInfo) => {
@@ -221,14 +232,26 @@ test("renders the generated observations reference with version, source, and raw
   await expect(
     page.getByRole("heading", { name: "Response Body" })
   ).toBeVisible();
+  await page.goto("/docs/api-reference/atlas/geometry_v1_atlas_geometry_get");
+  const geometryDescription =
+    "Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.";
+  await expect(
+    page.getByText(geometryDescription, { exact: true })
+  ).toHaveCount(1);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    geometryDescription
+  );
+  await expect(
+    page.getByRole("heading", { name: "Response Body" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Response Headers" })
+  ).toHaveCount(0);
   await page.getByRole("tab", { name: "429", exact: true }).click();
-  await expect(
-    page.getByText("Rate limited; Retry-After; application/problem+json")
-  ).toBeVisible();
+  await expectVisibleRetryAfterHeader(page);
   await page.getByRole("tab", { name: "503", exact: true }).click();
-  await expect(
-    page.getByText("application/problem+json").first()
-  ).toBeVisible();
+  await expectVisibleRetryAfterHeader(page);
   await page.goto("/docs/api-reference/schemas#schema-problemdetails");
   await expect(
     page.getByRole("heading", { name: "ProblemDetails", exact: true })

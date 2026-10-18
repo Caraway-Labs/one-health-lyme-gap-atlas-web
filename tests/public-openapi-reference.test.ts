@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
+import { parse } from "yaml";
 
 import {
   API_REFERENCE_RELATIVE_DIR,
@@ -179,6 +180,42 @@ describe("public OpenAPI reference", () => {
       operationFiles.filter(([, contents]) => contents.includes("429 "))
     ).toHaveLength(operationFiles.length);
     expect(incomplete).toStrictEqual([]);
+  });
+
+  it("keeps each operation description in page metadata and out of the native renderer", async () => {
+    const contract = readAndLoadPublicOpenApiContract(process.cwd());
+    const pages = await renderPublicApiReference(contract);
+    const problems: string[] = [];
+
+    for (const tag of contract.tags) {
+      for (const operation of tag.operations) {
+        const page = operationPage(pages, operation.operationId);
+        const split =
+          /^---\n(?<frontmatter>[\s\S]*?)\n---\n(?<body>[\s\S]*)$/.exec(page);
+        const frontmatter = split?.groups?.frontmatter;
+        const body = split?.groups?.body ?? "";
+        const parsed: unknown = frontmatter ? parse(frontmatter) : undefined;
+        const description =
+          parsed &&
+          typeof parsed === "object" &&
+          "description" in parsed &&
+          typeof parsed.description === "string"
+            ? parsed.description
+            : undefined;
+        const expected = operation.description.replaceAll(/\s+/g, " ").trim();
+        const visibleCopies = expected ? body.split(expected).length - 1 : 0;
+        if (description !== expected) {
+          problems.push(`${operation.operationId} metadata`);
+        }
+        if (body.includes("showDescription") || visibleCopies !== 0) {
+          problems.push(
+            `${operation.operationId} rendered ${visibleCopies} time(s)`
+          );
+        }
+      }
+    }
+
+    expect(problems).toStrictEqual([]);
   });
 
   it("renders each operation id once and keeps authored guides free of that catalog", async () => {

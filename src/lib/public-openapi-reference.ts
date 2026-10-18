@@ -345,7 +345,9 @@ export async function renderPublicApiReference(
       description: flattenContractText(description ?? ""),
     }),
     groupBy: "tag",
-    includeDescription: true,
+    // DocsDescription already renders frontmatter description. Leave the
+    // native OpenAPI description off so each operation page shows it once.
+    includeDescription: false,
     input: server,
     per: "operation",
   });
