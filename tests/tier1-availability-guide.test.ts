@@ -166,6 +166,12 @@ describe("Tier 1 availability guide", () => {
       unpublished: guide.includes(
         "There is no retrieved `NO_PUBLISHED_MODEL` payload"
       ),
+      nationalSweep: guide.includes("national API sweep"),
+      productScope: guide.includes(
+        "Keep county calls inside the lower 48 states and the District of Columbia."
+      ),
+      geographyGuide: guide.includes("](/docs/develop/geography)"),
+      outsideProductGeography: /Alaska|Hawaii|\b(?:AK|HI)\b/u.test(guide),
     }).toStrictEqual({
       absence: true,
       abstention: true,
@@ -177,6 +183,10 @@ describe("Tier 1 availability guide", () => {
       nullData: true,
       predictedIncidence: 1,
       unpublished: true,
+      nationalSweep: true,
+      productScope: true,
+      geographyGuide: true,
+      outsideProductGeography: false,
     });
   });
 });

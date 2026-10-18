@@ -152,7 +152,7 @@ The same county on the priority route returned the `data` object and no envelope
 
 `NOT_ESTIMABLE` is a persisted result. It is not `UNAVAILABLE`, and it is not HTTP 404. The published schema requires `availability` `AVAILABLE`, `reason` null, and a `data` object whose `evidence_sufficiency` is `NOT_ESTIMABLE`. On that object, `priority_tier`, `priority_percentile`, and `raw_model_score` are null. `SUFFICIENT` and `INSUFFICIENT` are invalid if any of those three is null. `NOT_ESTIMABLE` is invalid if any of them is present.
 
-There is no retrieved abstention payload from this check. `GET /v1/atlas/scores` on 18 October 2026 listed 3,144 counties. The scores release id was the same value as `geography_release_id` in the bodies above. Availability for every listed FIPS returned HTTP 200, `AVAILABLE`, and `reason` null. Of those reads, 651 were `SUFFICIENT` (315 `HIGH` and 336 `MEDIUM`) and 2,493 were `INSUFFICIENT` (292 `MEDIUM` and 2,201 `LOW`). None was `NOT_ESTIMABLE`. Those counts describe this batch. They are not limits on which tier can accompany which sufficiency state.
+There is no retrieved abstention payload from this check. On 18 October 2026, `GET /v1/atlas/scores` returned a national list of 3,144 counties. That read is a national API sweep. It is not the product geography for these guides. Keep county calls inside the lower 48 states and the District of Columbia. [Geography](/docs/develop/geography) states that scope. The scores release id was the same value as `geography_release_id` in the bodies above. Availability for every FIPS in that national sweep returned HTTP 200, `AVAILABLE`, and `reason` null. Of those reads, 651 were `SUFFICIENT` (315 `HIGH` and 336 `MEDIUM`) and 2,493 were `INSUFFICIENT` (292 `MEDIUM` and 2,201 `LOW`). None was `NOT_ESTIMABLE`. Those counts describe this batch. They are not limits on which tier can accompany which sufficiency state, and they do not widen the product geography.
 
 When a later batch returns an abstention, say that the batch did not assign a tier. Do not substitute `LOW`, zero, or "no disease." Keep `model_version`, `release_id`, `prediction_batch_version`, `tier_policy_version`, `generated_at_utc`, and `limitation_ref` from that `data` object.
 
@@ -162,7 +162,7 @@ When a later batch returns an abstention, say that the batch did not assign a ti
 
 That state is distinct from `NOT_ESTIMABLE`, which is a published `data` object, and from HTTP 404, which means the FIPS was not in the geography release. It is also distinct from HTTP 503, which means the read failed.
 
-There is no retrieved `NO_PUBLISHED_MODEL` payload from this check. The same 3,144 county reads returned no `UNAVAILABLE` body. Do not invent a county to illustrate it. Branch on the four required fields when a later batch returns them, and describe the gap as no published model result. A null `data` value is not low priority.
+There is no retrieved `NO_PUBLISHED_MODEL` payload from this check. The same national sweep of 3,144 counties returned no `UNAVAILABLE` body. Do not invent a county to illustrate it. Branch on the four required fields when a later batch returns them, and describe the gap as no published model result. A null `data` value is not low priority.
 
 ## Five-digit FIPS outside the release
 
