@@ -13,6 +13,7 @@ import {
   ATLAS_EXPLORER_PATH,
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
+  RESET_DATA_PROVENANCE_PATH,
 } from "@/features/ux-reset/routes";
 
 export type NavigationGroupId = "explore" | "research" | "reference";
@@ -290,6 +291,20 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     pageDescription:
       "Two-county evidence comparison with each measure's unit, period, and availability.",
     pageTitle: "Compare | One Health Lyme Gap Atlas",
+    placement: "none",
+    shell: "none",
+    status: "hidden",
+  },
+  {
+    auth: "required",
+    description:
+      "Explore data sources, lineage, methods, and limitations behind One Health Atlas.",
+    href: RESET_DATA_PROVENANCE_PATH,
+    id: "data-provenance",
+    label: "Data Provenance",
+    match: "prefix",
+    pageDescription: "Understand the evidence behind One Health Atlas.",
+    pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
     placement: "none",
     shell: "none",
     status: "hidden",

@@ -27,6 +27,11 @@ const CANONICAL_DESTINATIONS = [
     title: "Intelligence Feed",
   },
   {
+    heading: "Data Provenance",
+    path: "/data-provenance",
+    title: "Data Provenance",
+  },
+  {
     heading: "Settings",
     path: "/app/settings",
     title: "Settings",
@@ -37,6 +42,11 @@ const SIDEBAR_TRANSITIONS = [
   { name: "Compare", pathname: "/compare", title: "Compare Counties" },
   { name: "Ask Atlas", pathname: "/askatlas", title: "Ask Atlas" },
   { name: "Feed", pathname: "/app/feed", title: "Intelligence Feed" },
+  {
+    name: "Data Provenance",
+    pathname: "/data-provenance",
+    title: "Data Provenance",
+  },
   { name: "Settings", pathname: "/app/settings", title: "Settings" },
   { name: "Atlas Explorer", pathname: "/explore", title: "Atlas Explorer" },
 ] as const;

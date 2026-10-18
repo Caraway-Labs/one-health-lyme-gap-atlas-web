@@ -3,6 +3,7 @@ import {
   Bell,
   Compass,
   FileText,
+  FingerprintPattern,
   GitCompare,
   LayoutDashboard,
   Map,
@@ -18,6 +19,7 @@ export {
   RESET_ACTION_PATH,
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
+  RESET_DATA_PROVENANCE_PATH,
   RESET_EXPLORE_PATH,
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
@@ -34,6 +36,7 @@ import {
   RESET_ACTION_PATH,
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
+  RESET_DATA_PROVENANCE_PATH,
   RESET_EXPLORE_PATH,
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
@@ -59,7 +62,16 @@ export type ResetRoute = {
   pageTitle: string;
   /** When set, navigation opens this href instead of an in-shell page. */
   externalHref?: string;
+  /**
+   * Extra tooltip description. The tooltip title stays `label`.
+   * SidebarMenuButton renders this with the shared tooltip primitive.
+   */
+  tooltipDetail?: string;
 };
+
+/** Exact hover and focus description for the Data Provenance destination. */
+export const DATA_PROVENANCE_NAV_DESCRIPTION =
+  "Explore data sources, lineage, methods, and limitations behind One Health Atlas.";
 
 export const RESET_ROUTES: readonly ResetRoute[] = [
   {
@@ -160,6 +172,18 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     navGroup: "access",
     pageDescription: "Placeholder for the professional Feed destination.",
     pageTitle: "Feed | One Health Lyme Gap Atlas",
+  },
+  {
+    description: DATA_PROVENANCE_NAV_DESCRIPTION,
+    href: RESET_DATA_PROVENANCE_PATH,
+    icon: FingerprintPattern,
+    id: "data-provenance",
+    label: "Data Provenance",
+    match: "prefix",
+    navGroup: "access",
+    pageDescription: "Understand the evidence behind One Health Atlas.",
+    pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
+    tooltipDetail: DATA_PROVENANCE_NAV_DESCRIPTION,
   },
   {
     description:

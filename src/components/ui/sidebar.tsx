@@ -187,13 +187,25 @@ export function SidebarMenuButton({
   className,
   href,
   tooltip,
+  tooltipDetail,
   ...props
-}: ComponentProps<"a"> & { active?: boolean; tooltip?: string }) {
+}: ComponentProps<"a"> & {
+  active?: boolean;
+  tooltip?: string;
+  /**
+   * Accessible description shown under the tooltip title.
+   * Issue 657 needs a title plus the exact Data Provenance description.
+   * The shared tooltip primitive stays the only tooltip. A string `tooltip`
+   * remains a single line for every other destination.
+   */
+  tooltipDetail?: string;
+}) {
   const shared = {
     "data-active": active || undefined,
     "data-slot": "sidebar-menu-button",
     className: cn(className),
     ...props,
+    "aria-description": props["aria-description"] ?? tooltipDetail,
   };
   const link =
     typeof href === "string" ? (
@@ -207,7 +219,21 @@ export function SidebarMenuButton({
   return (
     <Tooltip>
       <TooltipTrigger render={link} />
-      <TooltipContent side="right">{tooltip}</TooltipContent>
+      <TooltipContent
+        className={
+          tooltipDetail ? "max-w-64 flex-col items-start text-left" : undefined
+        }
+        side="right"
+      >
+        {tooltipDetail ? (
+          <>
+            <span className="font-semibold">{tooltip}</span>
+            <span>{tooltipDetail}</span>
+          </>
+        ) : (
+          tooltip
+        )}
+      </TooltipContent>
     </Tooltip>
   );
 }

@@ -63,6 +63,7 @@ describe("UX Reset professional workspace", () => {
       "Compare",
       "Ask Atlas",
       "Feed",
+      "Data Provenance",
       "Settings",
       "Docs",
     ];
@@ -83,6 +84,7 @@ describe("UX Reset professional workspace", () => {
       "Compare",
       "Ask Atlas",
       "Feed",
+      "Data Provenance",
       "Settings",
       "Docs, opens in a new tab",
     ]);

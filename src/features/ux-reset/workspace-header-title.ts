@@ -1,7 +1,7 @@
 /**
  * Visible title for the authenticated workspace header (issue 640).
  *
- * The six approved strings are the header contract. Sidebar labels, document
+ * Header strings are the header contract, including Data Provenance. Sidebar labels, document
  * titles, and the "Professional workspace" navigation landmark stay as they are.
  * Destination identity comes from navigation metadata, the reset route table,
  * and recorded workspace aliases.
@@ -20,18 +20,20 @@ import { findRouteMetadata } from "@/lib/navigation";
 export const WORKSPACE_HEADER_TITLES = {
   "ask-atlas": "Ask Atlas",
   compare: "Compare Counties",
+  "data-provenance": "Data Provenance",
   docs: "Documentation",
   explorer: "Atlas Explorer",
   feed: "Intelligence Feed",
   settings: "Settings",
 } as const satisfies Record<WorkspaceDestinationId, string>;
 
-/** Used when the path is not one of the six destinations or a recorded alias. */
+/** Used when the path is not a workspace destination or a recorded alias. */
 export const WORKSPACE_HEADER_FALLBACK = "One Health Atlas";
 
 const NAVIGATION_DESTINATIONS: Record<string, WorkspaceDestinationId> = {
   "ask-atlas": "ask-atlas",
   "atlas-explorer": "explorer",
+  "data-provenance": "data-provenance",
   docs: "docs",
   "workspace-compare": "compare",
 };

@@ -3,6 +3,7 @@ import {
   type AskAtlasInheritedContext,
   type AskAtlasInheritedFieldKey,
 } from "@/features/ux-reset/ask-atlas/inherited-context";
+import { RESET_DATA_PROVENANCE_PATH } from "@/features/ux-reset/routes";
 
 const FIELD_LABELS: Record<AskAtlasInheritedFieldKey, string> = {
   geography: "Inherited geography",
@@ -49,7 +50,10 @@ export function InheritedContextNotice({
       </h2>
       <p>
         Ask Atlas did not retrieve this context. It is not a citation, and it is
-        not evidence the answer used.
+        not evidence the answer used.{" "}
+        <a href={RESET_DATA_PROVENANCE_PATH}>Open Data Provenance</a> for the
+        current release catalog. An inherited source label is not a source-card
+        link.
       </p>
       {state === "none" ? (
         <p data-testid="ask-atlas-no-context">
