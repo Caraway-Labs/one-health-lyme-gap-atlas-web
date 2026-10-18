@@ -3,42 +3,23 @@ import { describe, expect, it } from "vitest";
 import { displayGeometryUrl } from "@/features/docs/display-geometry-example";
 import {
   DISPLAY_GEOMETRY_PATH,
-  GEOGRAPHY_IDENTITY_CLIENT_STATUS,
-  GEOGRAPHY_IDENTITY_ORIGIN_STATUS,
   GEOGRAPHY_IDENTITY_PATH,
   pendingDeliveryLabel,
+  PENDING_DELIVERY_BADGE_LABEL,
   showsPendingDeliveryBadge,
 } from "@/lib/endpoint-delivery";
 import { getPublishedApiOrigin } from "@/lib/public-origins";
 
 describe("pending delivery badge", () => {
-  it("badges the geography identity route only while the origin status is 503", () => {
+  it("labels the geography identity route from the production snapshot", () => {
     expect({
-      clientStatus: showsPendingDeliveryBadge(
-        "GET",
-        GEOGRAPHY_IDENTITY_PATH,
-        GEOGRAPHY_IDENTITY_CLIENT_STATUS
-      ),
-      geometry: showsPendingDeliveryBadge(
-        "GET",
-        DISPLAY_GEOMETRY_PATH,
-        GEOGRAPHY_IDENTITY_ORIGIN_STATUS
-      ),
-      label: pendingDeliveryLabel(GEOGRAPHY_IDENTITY_ORIGIN_STATUS),
-      otherLabel: pendingDeliveryLabel(200),
-      published: showsPendingDeliveryBadge("GET", GEOGRAPHY_IDENTITY_PATH, 200),
-      unavailable: showsPendingDeliveryBadge(
-        "GET",
-        GEOGRAPHY_IDENTITY_PATH,
-        503
-      ),
+      geometry: showsPendingDeliveryBadge("GET", DISPLAY_GEOMETRY_PATH),
+      identity: showsPendingDeliveryBadge("GET", GEOGRAPHY_IDENTITY_PATH),
+      label: pendingDeliveryLabel(),
     }).toStrictEqual({
-      clientStatus: false,
       geometry: false,
-      label: "Delivery pending",
-      otherLabel: null,
-      published: false,
-      unavailable: true,
+      identity: true,
+      label: PENDING_DELIVERY_BADGE_LABEL,
     });
   });
 

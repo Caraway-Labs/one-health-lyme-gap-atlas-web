@@ -532,7 +532,10 @@ async function saveBadgeScreenshot(
 ) {
   const output = testInfo.outputPath(filename);
   await page
-    .getByText("Delivery pending", { exact: true })
+    .getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
     .first()
     .screenshot({ path: output });
   copyDocsArtifact(output, filename);
@@ -546,7 +549,13 @@ test("shows the pending geography badge, display geometry, and deprecated source
     page.getByRole("heading", { name: "Geography", exact: true })
   ).toBeVisible();
   await expect(
-    page.getByText("Delivery pending", { exact: true }).first()
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("not a live health indicator").first()
   ).toBeVisible();
   await expect(page.getByText("GET /v1/atlas/geometry").first()).toBeVisible();
   await expect(page.locator("main")).toContainText("application/geo+json");
@@ -566,19 +575,36 @@ test("shows the pending geography badge, display geometry, and deprecated source
     page.getByRole("heading", { name: "Geographies", exact: true })
   ).toBeVisible();
   await expect(
-    page.getByText("Delivery pending", { exact: true }).first()
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("Production API, 18 October 2026").first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("not a live health indicator").first()
   ).toBeVisible();
   await expectNoBlockingViolations(page, "geographies reference");
   await page
-    .getByText("Delivery pending", { exact: true })
-    .first()
+    .getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
     .scrollIntoViewIfNeeded();
   await saveDocsScreenshot(page, testInfo, "docs-geographies-reference.png");
   await saveBadgeScreenshot(page, testInfo, "docs-geographies-badge.png");
 
   await page.goto("/docs/api-reference");
   await expect(
-    page.getByText("Delivery pending", { exact: true }).first()
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("Production API, 18 October 2026").first()
   ).toBeVisible();
 
   await page.goto("/docs/develop/provenance");
@@ -608,7 +634,13 @@ test("keeps the pending geography badge usable at 375px", async ({
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/docs/develop/geography");
   await expect(
-    page.getByText("Delivery pending", { exact: true }).first()
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("not a live health indicator").first()
   ).toBeVisible();
   await page.goto("/docs/develop/provenance");
   await expect(

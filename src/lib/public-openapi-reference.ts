@@ -8,10 +8,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 
-import {
-  GEOGRAPHY_IDENTITY_ORIGIN_STATUS,
-  showsPendingDeliveryBadge,
-} from "./endpoint-delivery";
+import { showsPendingDeliveryBadge } from "./endpoint-delivery";
 import {
   getDocsUrl,
   getPublishedApiOrigin,
@@ -1175,10 +1172,8 @@ function renderIndex(
 
 const COUNTY_REPORT_OPERATION_ID =
   "county_report_pdf_v1_counties__fips__report_pdf_get";
-const PENDING_DELIVERY_BADGE_IMPORTS = [
-  'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";',
-  'import { GEOGRAPHY_IDENTITY_ORIGIN_STATUS } from "@/lib/endpoint-delivery";',
-].join("\n");
+const PENDING_DELIVERY_BADGE_IMPORTS =
+  'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";';
 
 function operationComponentImports(operations: OperationView[]): string {
   const imports: string[] = [];
@@ -1201,16 +1196,8 @@ function pendingDeliveryImports(operations: OperationView[]): string {
 }
 
 function pendingDeliveryBadgeMarkup(operation: OperationView): string {
-  if (
-    !showsPendingDeliveryBadge(
-      operation.method,
-      operation.path,
-      GEOGRAPHY_IDENTITY_ORIGIN_STATUS
-    )
-  ) {
-    return "";
-  }
-  return "<EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />";
+  if (!showsPendingDeliveryBadge(operation.method, operation.path)) return "";
+  return "<EndpointDeliveryBadge />";
 }
 
 function pendingDeliveryBadgeLines(operation: OperationView): string[] {

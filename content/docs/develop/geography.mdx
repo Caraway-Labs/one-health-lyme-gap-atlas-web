@@ -5,7 +5,6 @@ description: Identify Atlas counties by FIPS, stay within the lower 48 and DC, a
 
 import { DisplayGeometryCurl } from "@/features/docs/display-geometry-example";
 import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";
-import { GEOGRAPHY_IDENTITY_ORIGIN_STATUS } from "@/lib/endpoint-delivery";
 
 Atlas joins public records on geography identity. Identity is a type plus an id. It is independent of map polygons.
 
@@ -45,13 +44,11 @@ The public contract declares:
 GET /v1/geographies/{geography_type}/{geography_id}
 ```
 
-<EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />
+<EndpointDeliveryBadge />
 
 The operation summary is "Get geography identity (delivery pending)". The description says the route validates a county or state FIPS and currently returns `503` `CANONICAL_DATA_UNAVAILABLE`. No geometry is returned. The success schema exists on the operation for a later delivery. Callers do not receive a `Geography` label or parent from this route today.
 
-The badge above is shown only while the deployed origin status is `503`. A client status of `504` does not add the badge by itself.
-
-A request to `/v1/geographies/county/08001` on 18 October 2026 returned an HTML error page. The origin status was `503`. The client status line was `504`. There was no `Geography` JSON body and no `Retry-After` header on that response. Treat geography identity delivery as unavailable. Do not parse the HTML page as a resource, and do not invent a label from the FIPS.
+A request to `/v1/geographies/county/08001` on 18 October 2026 returned an HTML error page. The origin status was `503`. The client status line was `504`. There was no `Geography` JSON body and no `Retry-After` header on that response. Treat geography identity delivery as unavailable. Do not parse the HTML page as a resource, and do not invent a label from the FIPS. The badge records that production check. It is not a live health indicator.
 
 The same operation still declares the canonical problem statuses, including `400`, `404` `RESOURCE_NOT_FOUND`, `429` with `Retry-After`, `413`, `414`, and `503` with `Retry-After`.
 

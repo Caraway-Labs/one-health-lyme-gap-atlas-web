@@ -36,7 +36,8 @@ describe("pending endpoints and timestamp guidance", () => {
   it("badges geography identity from the origin status and points polygons at display geometry", () => {
     const geography = readPage("geography");
     const phrases = [
-      "<EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />",
+      "<EndpointDeliveryBadge />",
+      "It is not a live health indicator.",
       "<DisplayGeometryCurl />",
       "application/geo+json",
       "Cache-Control: public, max-age=31536000, immutable",

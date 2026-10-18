@@ -140,14 +140,13 @@ describe("public OpenAPI reference", () => {
     expect(states).not.toContain("fumadocs-ui/components/tabs");
   });
 
-  it("badges only the geography identity route while its origin status is 503", () => {
+  it("badges the geography identity route as a dated production check", () => {
     const pages = renderPublicApiReference(
       readAndLoadPublicOpenApiContract(process.cwd())
     );
     const geographies = requiredFile(pages, "geographies.mdx");
     const index = requiredFile(pages, "index.mdx");
-    const badge =
-      "<EndpointDeliveryBadge originStatus={GEOGRAPHY_IDENTITY_ORIGIN_STATUS} />";
+    const badge = "<EndpointDeliveryBadge />";
     const geographiesPhrases = [
       'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";',
       `\`GET ${GEOGRAPHY_IDENTITY_PATH}\``,
