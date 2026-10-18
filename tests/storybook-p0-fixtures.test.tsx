@@ -325,6 +325,30 @@ describe("Storybook P0 evidence fixtures", () => {
     expect(geographies.some((row) => row.fips.startsWith("15"))).toBeFalsy();
   });
 
+  it("keeps county preview geography fixtures isolated from the API", () => {
+    expect({
+      error: reviewPreviewPreset("geography-error").availability,
+      loading: reviewPreviewPreset("geography-loading").availability,
+      rationale: reviewPreviewPreset("rationale").availability.status,
+      unpublished: reviewPreviewPreset("geography-unpublished").availability,
+    }).toStrictEqual({
+      error: {
+        message:
+          "Canonical geography publication could not be checked. Published county facts and map display stay available.",
+        status: "error",
+      },
+      loading: { status: "loading" },
+      rationale: "unpublished",
+      unpublished: {
+        limitations: [
+          "Canonical geography identity delivery is not published by this API capability.",
+        ],
+        releaseId: syntheticReleaseId,
+        status: "unpublished",
+      },
+    });
+  });
+
   it("keeps review qualification and dropped context truthful", () => {
     const rationale = reviewPreviewPreset("rationale");
     const limited = reviewPreviewPreset("limited-qualification");

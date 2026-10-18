@@ -117,8 +117,9 @@ const NOT_FOUND_MESSAGE =
   "This county is not in the current geography release.";
 const RATE_LIMITED_MESSAGE =
   "Canonical geography publication could not be checked because the request was rate limited.";
-const ERROR_MESSAGE =
+export const CANONICAL_GEOGRAPHY_CHECK_ERROR_COPY =
   "Canonical geography publication could not be checked. Published county facts and map display stay available.";
+const ERROR_MESSAGE = CANONICAL_GEOGRAPHY_CHECK_ERROR_COPY;
 const MALFORMED_MESSAGE =
   "The geography availability response did not match the governed contract.";
 

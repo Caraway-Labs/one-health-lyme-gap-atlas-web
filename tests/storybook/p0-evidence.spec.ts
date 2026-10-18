@@ -102,6 +102,18 @@ const stories: { id: string; text: string }[] = [
     id: `${preview}--dropped-context`,
     text: "Sort stays on Atlas Explorer browse",
   },
+  {
+    id: `${preview}--geography-unpublished`,
+    text: "Canonical geography is not yet published for this county.",
+  },
+  {
+    id: `${preview}--geography-loading`,
+    text: "Checking canonical geography publication",
+  },
+  {
+    id: `${preview}--geography-error`,
+    text: "Canonical geography publication could not be checked",
+  },
 ];
 
 const axeStories = [
@@ -330,6 +342,30 @@ test.describe("P0 evidence catalog", () => {
     ).toHaveAttribute("data-tier", "HIGH");
     await expect(page.getByText("not low priority")).toHaveCount(0);
     expect(traffic.blocked).toEqual([]);
+    expect(traffic.errors).toEqual([]);
+  });
+
+  test("county preview availability fixtures stay local", async ({ page }) => {
+    const traffic = track(page);
+    await openStory(page, `${preview}--rationale`);
+    const unpublished = page.getByTestId("canonical-geography-availability");
+    await expect(unpublished).toHaveAttribute("data-status", "unpublished");
+    await expect(unpublished).toHaveAttribute("data-release", "alpha-2026");
+    await expect(unpublished).toContainText(
+      "Canonical geography is not yet published for this county."
+    );
+    await openStory(page, `${preview}--geography-loading`);
+    await expect(
+      page.getByTestId("canonical-geography-availability")
+    ).toHaveAttribute("data-status", "loading");
+    await openStory(page, `${preview}--geography-error`);
+    const failed = page.getByTestId("canonical-geography-availability");
+    await expect(failed).toHaveAttribute("data-status", "error");
+    await expect(failed.getByRole("alert")).toContainText(
+      "Canonical geography publication could not be checked. Published county facts and map display stay available."
+    );
+    expect(traffic.blocked).toEqual([]);
+    expect(traffic.errors).toEqual([]);
   });
 
   test("normal tier and provenance use alpha-2026 while mismatch stays withheld", async ({
