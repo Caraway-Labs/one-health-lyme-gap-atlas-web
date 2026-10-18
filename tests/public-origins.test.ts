@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import robots from "../src/app/robots";
 import sitemap from "../src/app/sitemap";
+import { docsCanonicalUrl } from "../src/lib/docs-config";
 import {
   getMetadataBase,
   getPublishedApiOrigin,
@@ -104,6 +105,99 @@ describe("public documentation origins", () => {
         "[Atlas documentation and developer guides](https://onehealthatlas.org/docs)",
         "Canonical: https://onehealthatlas.org/docs/api-reference",
         '  "type": "https://carawaylabs.com/problems/http-404",',
+      ].join("\n")
+    );
+  });
+
+  it("keeps production docs when only the site origin is a preview host", () => {
+    const origins = resolvePublicOrigins({
+      NEXT_PUBLIC_DOCS_URL: "https://onehealthatlas.org/docs",
+      NEXT_PUBLIC_SITE_URL: "https://preview.example",
+    });
+    expect(origins).toMatchObject({
+      docsUrl: "https://onehealthatlas.org/docs",
+      siteOrigin: "https://preview.example",
+    });
+    const externalDocs =
+      "[Atlas documentation and developer guides](https://onehealthatlas.org/docs)";
+    expect(
+      rewritePublicOriginText(
+        [
+          "https://onehealthatlas.org/docs/develop/support",
+          externalDocs,
+          '"externalDocs": { "url": "https://onehealthatlas.org/docs" }',
+          "https://onehealthatlas.org/explore",
+        ].join("\n"),
+        origins
+      )
+    ).toBe(
+      [
+        "https://onehealthatlas.org/docs/develop/support",
+        externalDocs,
+        '"externalDocs": { "url": "https://onehealthatlas.org/docs" }',
+        "https://preview.example/explore",
+      ].join("\n")
+    );
+    expect(
+      docsCanonicalUrl("/docs/develop/support", {
+        NEXT_PUBLIC_DOCS_URL: "https://onehealthatlas.org/docs",
+        NEXT_PUBLIC_SITE_URL: "https://preview.example",
+      })
+    ).toBe("https://onehealthatlas.org/docs/develop/support");
+    expect(
+      docsCanonicalUrl("/docs", {
+        NEXT_PUBLIC_DOCS_URL: "https://onehealthatlas.org/docs",
+        NEXT_PUBLIC_SITE_URL: "https://preview.example",
+      })
+    ).toBe("https://onehealthatlas.org/docs");
+  });
+
+  it("keeps production docs links in the MDX tree on a preview site", () => {
+    const externalDocs =
+      "[Atlas documentation and developer guides](https://onehealthatlas.org/docs)";
+    const origins = resolvePublicOrigins({
+      NEXT_PUBLIC_DOCS_URL: "https://onehealthatlas.org/docs",
+      NEXT_PUBLIC_SITE_URL: "https://preview.example",
+    });
+    const tree = {
+      children: [
+        {
+          children: [{ type: "text", value: "Support" }],
+          type: "link",
+          url: "https://onehealthatlas.org/docs/develop/support",
+        },
+        { type: "text", value: externalDocs },
+      ],
+      type: "root",
+    };
+    rewriteOriginTree(tree, origins);
+    expect(tree.children[0]?.url).toBe(
+      "https://onehealthatlas.org/docs/develop/support"
+    );
+    expect(tree.children[1]?.value).toBe(externalDocs);
+  });
+
+  it("rewrites legacy docs to the configured docs URL on a preview site", () => {
+    const origins = resolvePublicOrigins({
+      NEXT_PUBLIC_DOCS_URL: "https://onehealthatlas.org/docs",
+      NEXT_PUBLIC_SITE_URL: "https://preview.example",
+    });
+    expect(
+      rewritePublicOriginText(
+        [
+          "https://carawaylabs.com/docs/develop/support",
+          "https://www.carawaylabs.com/docs",
+          "https://www.onehealthatlas.org/docs/api-reference",
+          "https://carawaylabs.com/about",
+        ].join("\n"),
+        origins
+      )
+    ).toBe(
+      [
+        "https://onehealthatlas.org/docs/develop/support",
+        "https://onehealthatlas.org/docs",
+        "https://onehealthatlas.org/docs/api-reference",
+        "https://preview.example/about",
       ].join("\n")
     );
   });

@@ -15,6 +15,27 @@ export function getDocsHref(
   ).toString();
 }
 
+/**
+ * Absolute canonical URL for a docs page.
+ * Relative Fumadocs URLs are joined to the configured docs origin, so a
+ * preview site metadataBase cannot replace an explicit docs URL.
+ */
+export function docsCanonicalUrl(
+  pageUrl: string,
+  environment?: PublicOriginEnvironment
+): string {
+  const docsUrl = getDocsUrl(environment);
+  const pathname =
+    pageUrl.startsWith("http://") || pageUrl.startsWith("https://")
+      ? new URL(pageUrl).pathname
+      : pageUrl;
+  if (pathname === "/docs" || pathname === "/docs/") return docsUrl;
+  const suffix = pathname.startsWith("/docs/")
+    ? pathname.slice("/docs/".length)
+    : pathname.replace(/^\/+/, "");
+  return new URL(suffix, `${docsUrl.replace(/\/$/, "")}/`).href;
+}
+
 /** Link to a published docs page slug (for example `evidence-and-uncertainty`). */
 export function getDocsPageHref(
   pageSlug: string,

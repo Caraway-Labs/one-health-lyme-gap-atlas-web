@@ -100,9 +100,15 @@ export function rewritePublicOriginText(
   const docsUrls = new Set<string>([PRODUCTION_DOCS_URL, ...LEGACY_DOCS_URLS]);
   for (const docsUrl of docsUrls) {
     if (docsUrl !== origins.docsUrl) {
-      rewritten = rewritten.replaceAll(docsUrl, origins.docsUrl);
+      rewritten = replaceUrlPrefix(rewritten, docsUrl, origins.docsUrl);
     }
   }
+
+  // A configured docs URL can still start with a site origin that is about to
+  // be replaced, for example production docs on a preview site. Hide those
+  // destinations so the site pass cannot rewrite them.
+  const protectedDocs: string[] = [];
+  rewritten = maskUrlPrefix(rewritten, origins.docsUrl, protectedDocs);
 
   const siteOrigins = new Set<string>([
     PRODUCTION_SITE_ORIGIN,
@@ -110,13 +116,112 @@ export function rewritePublicOriginText(
   ]);
   for (const origin of siteOrigins) {
     if (origin !== origins.siteOrigin) {
-      rewritten = rewritten.replaceAll(origin, origins.siteOrigin);
+      rewritten = replaceUrlPrefix(rewritten, origin, origins.siteOrigin);
     }
   }
 
-  let restored = rewritten;
+  rewritten = restoreMasked(rewritten, protectedDocs, "@@ATLAS_DOCS_");
+
+  return restoreMasked(rewritten, masked, "@@ATLAS_PROBLEM_");
+}
+
+const URL_CONTINUATION = new Set(["#", "/", "?"]);
+const URL_TERMINATOR = new Set([")", "]", '"', "'", "<", ">"]);
+
+function replaceUrlPrefix(
+  value: string,
+  prefix: string,
+  replacement: string
+): string {
+  if (
+    prefix.length === 0 ||
+    prefix === replacement ||
+    !value.includes(prefix)
+  ) {
+    return value;
+  }
+  let cursor = 0;
+  let result = "";
+  while (cursor < value.length) {
+    const index = value.indexOf(prefix, cursor);
+    if (index === -1) {
+      result += value.slice(cursor);
+      break;
+    }
+    result += value.slice(cursor, index);
+    if (!hasUrlPrefixBoundary(value, index, prefix)) {
+      result += prefix;
+      cursor = index + prefix.length;
+      continue;
+    }
+    const end = urlTokenEnd(value, index + prefix.length);
+    result += replacement;
+    result += value.slice(index + prefix.length, end);
+    cursor = end;
+  }
+  return result;
+}
+
+function maskUrlPrefix(
+  value: string,
+  prefix: string,
+  masked: string[]
+): string {
+  if (prefix.length === 0 || !value.includes(prefix)) return value;
+  let cursor = 0;
+  let result = "";
+  while (cursor < value.length) {
+    const index = value.indexOf(prefix, cursor);
+    if (index === -1) {
+      result += value.slice(cursor);
+      break;
+    }
+    result += value.slice(cursor, index);
+    if (!hasUrlPrefixBoundary(value, index, prefix)) {
+      result += prefix;
+      cursor = index + prefix.length;
+      continue;
+    }
+    const end = urlTokenEnd(value, index);
+    const token = `@@ATLAS_DOCS_${masked.length}@@`;
+    masked.push(value.slice(index, end));
+    result += token;
+    cursor = end;
+  }
+  return result;
+}
+
+function hasUrlPrefixBoundary(
+  value: string,
+  index: number,
+  prefix: string
+): boolean {
+  if (!value.startsWith(prefix, index)) return false;
+  const next = value[index + prefix.length];
+  if (next === undefined) return true;
+  return (
+    URL_CONTINUATION.has(next) || URL_TERMINATOR.has(next) || /\s/u.test(next)
+  );
+}
+
+function urlTokenEnd(value: string, start: number): number {
+  let end = start;
+  while (end < value.length) {
+    const character = value[end] ?? "";
+    if (URL_TERMINATOR.has(character) || /\s/u.test(character)) break;
+    end += 1;
+  }
+  return end;
+}
+
+function restoreMasked(
+  value: string,
+  masked: string[],
+  tokenPrefix: string
+): string {
+  let restored = value;
   for (const [index, match] of masked.entries()) {
-    restored = restored.replaceAll(`@@ATLAS_PROBLEM_${index}@@`, match);
+    restored = restored.replaceAll(`${tokenPrefix}${index}@@`, match);
   }
   return restored;
 }
