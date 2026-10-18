@@ -17,7 +17,7 @@ The initial hierarchy is task-oriented for epidemiologists and public-health pro
 | Explore | Geographic Explorer | `/geographic_explorer` | Available | Sidebar |
 | Explore | Investigation Workspace | `/investigate` | Available | Sidebar |
 | Research | Atlas Assistant | `/assistant` | Early access when enabled; Coming Soon when disabled | Sidebar when chat is off, or on `/assistant` when chat is on (see [Assistant entry points](./assistant-entry-points.md)) |
-| Reference | Docs | `https://carawaylabs.com/docs` | Available | Sidebar, new tab |
+| Reference | Docs | `https://onehealthatlas.org/docs` (`NEXT_PUBLIC_DOCS_URL`) | Available | Sidebar, new tab |
 | Utility | Account | `/account` | Available | Top utility bar |
 | Trust | Privacy | `/privacy` | Available | Global footer |
 | Trust | AI Ethics | `/ai-ethics` | Available | Global footer, new tab |

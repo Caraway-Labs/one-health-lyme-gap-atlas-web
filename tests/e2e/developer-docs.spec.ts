@@ -43,6 +43,37 @@ test("renders developer guides with accessible headings", async ({ page }) => {
   }
 });
 
+test("publishes onehealthatlas canonical URLs and contract links", async ({
+  page,
+}) => {
+  await page.goto("/docs/api-reference");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://onehealthatlas.org/docs/api-reference"
+  );
+  await expect(
+    page.getByRole("link", { name: "OpenAPI schema" })
+  ).toHaveAttribute("href", "https://api.onehealthatlas.org/openapi.json");
+  await expect(
+    page.getByRole("link", {
+      name: "Atlas documentation and developer guides",
+    })
+  ).toHaveAttribute("href", "https://onehealthatlas.org/docs");
+
+  const html = await page.content();
+  expect(html).not.toContain("api.carawaylabs.com");
+  expect(html).not.toContain("carawaylabs.com/docs");
+
+  await page.goto("/docs/develop/support");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://onehealthatlas.org/docs/develop/support"
+  );
+  await expect(
+    page.getByRole("link", { name: "openapi.json" })
+  ).toHaveAttribute("href", "https://api.onehealthatlas.org/openapi.json");
+});
+
 test("follows the quickstart county request from the developer overview", async ({
   page,
 }) => {
