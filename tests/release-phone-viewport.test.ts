@@ -162,6 +162,7 @@ describe("default E2E and Storybook phone viewport sweep", () => {
       "tests/e2e/ux-reset-explorer-selected-state-outline.spec.ts",
       "tests/e2e/ux-reset-explorer-toolbar.spec.ts",
       "tests/e2e/ux-reset-population-rurality.spec.ts",
+      "tests/e2e/ux-reset-selected-county-card.spec.ts",
       "tests/e2e/ux-reset-selected-county-response-tier.spec.ts",
       "tests/e2e/ux-reset-settings.spec.ts",
       "tests/e2e/ux-reset-shell-scroll.spec.ts",
