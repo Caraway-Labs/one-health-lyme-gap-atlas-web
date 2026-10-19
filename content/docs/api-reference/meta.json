@@ -1,14 +1,16 @@
 {
-  "title": "API reference",
   "pages": [
     "index",
+    "---Canonical Evidence---",
     "discovery",
     "observations",
     "provenance",
     "geographies",
+    "---Atlas Analytics/Reports---",
     "atlas",
     "counties",
     "states",
     "schemas"
-  ]
+  ],
+  "title": "API reference"
 }

@@ -2,7 +2,7 @@
 title: "API reference"
 description: "Generated from the pinned public Atlas OpenAPI contract, with spec version, source, and the raw schema."
 ---
-This page is generated from the public OpenAPI contract. It is not a second hand-maintained endpoint catalog. Tags, operation IDs, parameters, schemas, examples, and errors below come from that contract.
+This page is generated from the public OpenAPI contract. It is not a second hand-maintained endpoint catalog. Tags, operation IDs, parameters, schemas, examples, and errors are rendered from that contract by the native OpenAPI reference.
 
 ## Spec version and source
 
@@ -12,15 +12,15 @@ This page is generated from the public OpenAPI contract. It is not a second hand
 | Application version | `0.1.0` |
 | HTTP contract | `/v1` |
 | Source repository | `Caraway-Labs/one-health-lyme-gap-atlas-api` |
-| Source commit | `9fcd1ed86fd02e8a84abc5c7c59047263bf98519` |
+| Source commit | `d0472707cfc2badae714a797ec54c83d4f7ad79b` |
 | Source file | `openapi.json` |
-| Checksum | `112cb300663f4e8dfd82f48106dd312243c4c2fdeb1aa52b9921d81e276f131b` |
+| Checksum | `c0a4e2ea4f15a543c3fc1e7705e2e4691cbc7e3ace9910d159b3814d3c049d6a` |
 
 Application version `0.1.0` identifies the OpenAPI `info.version` field. The HTTP contract is `/v1`. Those identifiers are different. This reference build is identified by the source commit and checksum.
 
 Raw spec: [OpenAPI schema](https://api.onehealthatlas.org/openapi.json).
 
-Pinned source: [Caraway-Labs/one-health-lyme-gap-atlas-api@9fcd1ed86fd02e8a84abc5c7c59047263bf98519](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api/blob/9fcd1ed86fd02e8a84abc5c7c59047263bf98519/openapi.json).
+Pinned source: [Caraway-Labs/one-health-lyme-gap-atlas-api@d0472707cfc2badae714a797ec54c83d4f7ad79b](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api/blob/d0472707cfc2badae714a797ec54c83d4f7ad79b/openapi.json).
 
 ## Servers
 
@@ -70,58 +70,63 @@ AI, literature retrieval, account, and feedback product routes are excluded.
 
 ## Operations
 
-### discovery
+### Canonical Evidence
+
+#### discovery
 
 Current-release indicators and measurable variables.
 
-- [`GET /v1/indicators`](/docs/api-reference/discovery#indicators_v1_indicators_get) — Discover indicators — `indicators_v1_indicators_get`
-- [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery#indicator_v1_indicators__indicator_id__get) — Get an indicator — `indicator_v1_indicators__indicator_id__get`
-- [`GET /v1/measures`](/docs/api-reference/discovery#measures_v1_measures_get) — Discover measures — `measures_v1_measures_get`
-- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery#measure_v1_measures__measure_id__get) — Get a measure — `measure_v1_measures__measure_id__get`
+- [`GET /v1/indicators`](/docs/api-reference/discovery/indicators_v1_indicators_get) — Discover indicators — `indicators_v1_indicators_get`
+- [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/indicator_v1_indicators__indicator_id__get) — Get an indicator — `indicator_v1_indicators__indicator_id__get`
+- [`GET /v1/measures`](/docs/api-reference/discovery/measures_v1_measures_get) — Discover measures — `measures_v1_measures_get`
+- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/measure_v1_measures__measure_id__get) — Get a measure — `measure_v1_measures__measure_id__get`
 
-### observations
+#### observations
 
 Bounded county observations with explicit value states.
 
-- [`GET /v1/observations`](/docs/api-reference/observations#observations_v1_observations_get) — Query county observations — `observations_v1_observations_get`
+- [`GET /v1/observations`](/docs/api-reference/observations/observations_v1_observations_get) — Query county observations — `observations_v1_observations_get`
 
-### provenance
+#### provenance
 
 Governed source and methodology identities and versions.
 
-- [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance#methodology_v1_methodologies__methodology_id__get) — Get a methodology — `methodology_v1_methodologies__methodology_id__get`
-- [`GET /v1/sources`](/docs/api-reference/provenance#sources_v1_sources_get) — Discover sources — `sources_v1_sources_get`
-- [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance#source_v1_sources__source_id__get) — Get a source — `source_v1_sources__source_id__get`
+- [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance/methodology_v1_methodologies__methodology_id__get) — Get a methodology — `methodology_v1_methodologies__methodology_id__get`
+- [`GET /v1/sources`](/docs/api-reference/provenance/sources_v1_sources_get) — Discover sources — `sources_v1_sources_get`
+- [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance/source_v1_sources__source_id__get) — Get a source — `source_v1_sources__source_id__get`
 
-### geographies
+#### geographies
 
 Typed geography identity; delivery is not yet available.
 
-- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies#geography_v1_geographies__geography_type___geography_id__get) — Get geography identity (delivery pending) — `geography_v1_geographies__geography_type___geography_id__get`
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/geography_v1_geographies__geography_type___geography_id__get) — Get geography identity (delivery pending) — `geography_v1_geographies__geography_type___geography_id__get`
+- [`GET /v1/geographies/{geography_type}/{geography_id}/availability`](/docs/api-reference/geographies/canonicalGeographyAvailability) — Check canonical county geography publication availability — `canonicalGeographyAvailability`
 
-### atlas
+### Atlas Analytics/Reports
+
+#### atlas
 
 Existing release analytics and separate display geometry.
 
-- [`GET /v1/atlas/geometry`](/docs/api-reference/atlas#geometry_v1_atlas_geometry_get) — Get county display geometry — `geometry_v1_atlas_geometry_get`
-- [`GET /v1/atlas/metadata`](/docs/api-reference/atlas#metadata_v1_atlas_metadata_get) — Get Atlas release metadata — `metadata_v1_atlas_metadata_get`
-- [`GET /v1/atlas/ranking.csv`](/docs/api-reference/atlas#ranking_csv_v1_atlas_ranking_csv_get) — Download filtered county rankings — `ranking_csv_v1_atlas_ranking_csv_get`
-- [`GET /v1/atlas/scores`](/docs/api-reference/atlas#scores_v1_atlas_scores_get) — Get county gap scores — `scores_v1_atlas_scores_get`
+- [`GET /v1/atlas/geometry`](/docs/api-reference/atlas/geometry_v1_atlas_geometry_get) — Get county display geometry — `geometry_v1_atlas_geometry_get`
+- [`GET /v1/atlas/metadata`](/docs/api-reference/atlas/metadata_v1_atlas_metadata_get) — Get Atlas release metadata — `metadata_v1_atlas_metadata_get`
+- [`GET /v1/atlas/ranking.csv`](/docs/api-reference/atlas/ranking_csv_v1_atlas_ranking_csv_get) — Download filtered county rankings — `ranking_csv_v1_atlas_ranking_csv_get`
+- [`GET /v1/atlas/scores`](/docs/api-reference/atlas/scores_v1_atlas_scores_get) — Get county gap scores — `scores_v1_atlas_scores_get`
 
-### counties
+#### counties
 
 Existing county details and versioned PDF reports.
 
-- [`GET /v1/counties/{fips}`](/docs/api-reference/counties#county_v1_counties__fips__get) — Get county analytics and provenance — `county_v1_counties__fips__get`
-- [`GET /v1/counties/{fips}/report.pdf`](/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get) — Download a county report — `county_report_pdf_v1_counties__fips__report_pdf_get`
-- [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties#county_tier1_surveillance_priority_get) — Get persisted Tier 1 model-assisted surveillance review priority — `county_tier1_surveillance_priority_get`
-- [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties#county_tier1_surveillance_priority_availability_get) — Get Tier 1 result availability and persisted data — `county_tier1_surveillance_priority_availability_get`
+- [`GET /v1/counties/{fips}`](/docs/api-reference/counties/county_v1_counties__fips__get) — Get county analytics and provenance — `county_v1_counties__fips__get`
+- [`GET /v1/counties/{fips}/report.pdf`](/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get) — Download a county report — `county_report_pdf_v1_counties__fips__report_pdf_get`
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/county_tier1_surveillance_priority_get) — Get persisted Tier 1 model-assisted surveillance review priority — `county_tier1_surveillance_priority_get`
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/county_tier1_surveillance_priority_availability_get) — Get Tier 1 result availability and persisted data — `county_tier1_surveillance_priority_availability_get`
 
-### states
+#### states
 
 Existing state PDF reports.
 
-- [`GET /v1/states/{state}/report.pdf`](/docs/api-reference/states#state_report_pdf_v1_states__state__report_pdf_get) — Download a state report — `state_report_pdf_v1_states__state__report_pdf_get`
-- [`GET /v1/states/{state}/review`](/docs/api-reference/states#state_review_v1_states__state__review_get) — Review a state's county evidence — `state_review_v1_states__state__review_get`
+- [`GET /v1/states/{state}/report.pdf`](/docs/api-reference/states/state_report_pdf_v1_states__state__report_pdf_get) — Download a state report — `state_report_pdf_v1_states__state__report_pdf_get`
+- [`GET /v1/states/{state}/review`](/docs/api-reference/states/state_review_v1_states__state__review_get) — Review a state's county evidence — `state_review_v1_states__state__review_get`
 
-Component schemas: [Schemas](/docs/api-reference/schemas) (49).
+Component schemas: [Schemas](/docs/api-reference/schemas) (50).
