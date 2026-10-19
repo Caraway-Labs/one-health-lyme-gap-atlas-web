@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "@testing-library/jest-dom/vitest";
 import {
   cleanup,
   fireEvent,
@@ -241,6 +242,72 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("keeps Arizona map chrome compact and moves provenance below the map", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          mapLayer="gap_score"
+          period={null}
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Maricopa",
+                fips: "04013",
+                reasonText: "Maricopa was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "AZ",
+          })}
+          scopeCode="AZ"
+          stateName="Arizona"
+          onMapLayerChange={() => {}}
+        />
+      </QueryClientProvider>
+    );
+    const heading = screen.getByRole("heading", {
+      name: "Explore county patterns",
+    });
+    const layer = screen.getByTestId("explorer-map-layer");
+    const map = screen.getByTestId("review-state-map-region");
+    const availability = screen.getByTestId("explorer-layer-availability");
+    const provenance = screen.getByTestId("explorer-map-provenance");
+    const visibleLabel = "Fit AZ";
+    const fit = screen.getByRole("button", { name: "Fit AZ (Arizona)" });
+    const order = [heading, layer, map, availability, provenance].map((node) =>
+      node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
+    );
+    fireEvent.click(screen.getByText("Layer availability"));
+    expect({
+      availabilityNote: availability.textContent?.includes(
+        "Changing the layer does not rank counties by this measure."
+      ),
+      fitLabel: fit.textContent?.includes(visibleLabel),
+      headingOmitsRelease:
+        heading.parentElement?.textContent?.includes("Release"),
+      headingOmitsSource:
+        heading.parentElement?.textContent?.includes("Source periods"),
+      labelFor: screen.getByText("Map layer").getAttribute("for"),
+      order,
+      provenance: provenance.textContent,
+    }).toStrictEqual({
+      availabilityNote: true,
+      fitLabel: true,
+      headingOmitsRelease: false,
+      headingOmitsSource: false,
+      labelFor: "explorer-map-layer",
+      order: [...order].toSorted((left, right) => left - right),
+      provenance: "Source periods vary by evidence · Release alpha-2026",
+    });
+    expect(fit).toHaveAccessibleName("Fit AZ (Arizona)");
+    expect(fit).toHaveAccessibleName(expect.stringContaining(visibleLabel));
+    view.unmount();
+  });
+
   it("shows an empty map when geometry has no features in the requested state", async () => {
     const { fetchCountyDisplayGeometry } =
       await import("@/lib/county-geography");
@@ -316,6 +383,61 @@ describe("Review operating picture state", () => {
         geometry.mockImplementation(restore);
       }
     }
+  });
+
+  it("keeps the reviewed PDF on the verified release when metadata refresh fails", () => {
+    cleanup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Adams",
+                fips: "08001",
+                reasonText: "Adams was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          tierRelease={{ status: "unknown" }}
+        />
+      </QueryClientProvider>
+    );
+    const download = screen.getByTestId("explore-download-pdf");
+    const surveillance = screen.getByTestId("tier1-surveillance-priority");
+    const investigate =
+      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+    expect({
+      county: download.dataset.county,
+      disabled: download.hasAttribute("disabled"),
+      investigate: new URL(investigate, "http://localhost").searchParams.get(
+        "dataset"
+      ),
+      reason: surveillance.dataset.releaseReason,
+      release: download.dataset.release,
+      state: download.dataset.state,
+      surveillance: surveillance.dataset.state,
+      text: surveillance.textContent,
+    }).toStrictEqual({
+      county: "08001",
+      disabled: false,
+      investigate: "alpha-2026",
+      reason: "unknown",
+      release: "alpha-2026",
+      state: "idle",
+      surveillance: "release-unaligned",
+      text: expect.stringContaining(
+        "governed release for this page is not known"
+      ),
+    });
   });
 
   it("limits the map to eligible counties and names an empty filter", async () => {
@@ -1055,7 +1177,7 @@ describe("Review operating picture state", () => {
       backendClaimsFinding: false,
       candidate: null,
       compare: expect.any(HTMLAnchorElement),
-      investigate: expect.stringContaining("county=08001"),
+      investigate: null,
       published: "missing",
       resultState: "unavailable",
       summary: "Unavailable",
@@ -1351,8 +1473,11 @@ describe("Review operating picture state", () => {
     );
     const rows = await screen.findAllByTestId("review-candidate");
     const heading = screen.getByRole("heading", { name: "Choose a county" });
+    const list = document.querySelector(".ux-reset-explorer-list");
     expect({
       asksForChoice: heading.textContent === "Choose a county",
+      eyebrow: list?.querySelector(".ux-reset-ranked-counties-eyebrow") ?? null,
+      firstHeading: list?.querySelector("h1, h2, h3")?.textContent ?? "",
       current: rows.map((row) => row.getAttribute("aria-current")),
       fips: rows.map((row) => row.dataset.fips),
       highlight: screen.getByTestId("review-state-map-region").dataset
@@ -1361,6 +1486,8 @@ describe("Review operating picture state", () => {
       published: onCountyChange.mock.calls,
     }).toStrictEqual({
       asksForChoice: true,
+      eyebrow: null,
+      firstHeading: "Choose a county",
       current: [null, null],
       fips: ["08001", "08013"],
       highlight: "",

@@ -298,6 +298,8 @@ test.describe("Explorer and Compare introductions", () => {
     await expect(
       page.getByRole("heading", { name: compare.stripHeading })
     ).toHaveCount(0);
+    await expect(page.getByText(compare.stripBody)).toBeHidden();
+    await page.getByText("Release and coverage").click();
     await expect(page.getByText(compare.stripBody)).toBeVisible();
     await expect(page.getByTestId("page-introduction-explorer")).toHaveCount(0);
     await expect(page.getByTestId("compare-return")).toHaveCount(0);

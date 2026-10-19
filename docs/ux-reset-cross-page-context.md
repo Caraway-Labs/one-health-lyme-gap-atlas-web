@@ -42,7 +42,7 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 
 | Destination | Local keys (dropped on navigation) |
 | --- | --- |
-| Review | `sort`, `page`, `mode`, `selection`, `layer`, `eco`, `breakpoint`, `missing` |
+| Review | `sort`, `page`, `mode`, `selection`, `layer`, `eco`, `breakpoint`, `missing`, `focus` |
 | Explore | `view`, `metric`, `page`, `selected`, `map_scope` |
 | Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q` |
 | Compare | `metric`, `return` |
@@ -58,6 +58,8 @@ Review `mode` is the in-page Atlas Explorer county view. Omitted means browse. `
 Review `selection=required` marks an alias that named `county` but did not yield one FIPS. Browse does not select a county until the user chooses one. Handoff does not copy `selection`.
 
 Review `layer` selects the map layer. Omitted means the Atlas gap score layer.
+
+Review `focus` is the national Explorer map's state focus: one lower-48 or DC postal code. Omitted means the national extent. It does not change Review `scope`, and handoff does not copy it. Alaska, Hawaii, repeats, and any other token are removed.
 
 Review `eco`, `breakpoint`, and `missing` are the what-if scenario assumptions (tick and pathogen share, published-record threshold, and missing county-record value). Omitted values are the governed defaults 65, 10, and 75. A value outside the slider range or step is invalid and falls back to that default. Handoff does not copy them, and they are not written to the release.
 

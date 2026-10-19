@@ -127,8 +127,11 @@ test.describe("five-category suggested follow-up", () => {
     ]) {
       await expect(followUp.getByText(label, { exact: true })).toBeVisible();
     }
+    await expect(followUp.getByTestId("follow-up-interpretation")).toHaveText(
+      "Atlas supports professional review, not individual risk measurement, proof of underreporting, or a mandate for investigation."
+    );
     await expect(followUp).toContainText(
-      "Compare the published county case-count floor"
+      "compare the published county case-count floor"
     );
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
       "Do locally held case records agree with the published county count"
@@ -220,7 +223,7 @@ test.describe("five-category suggested follow-up", () => {
 
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
     await expect(followUp).toContainText(
-      "Check whether additional county case information is available"
+      "check whether additional county case information is available"
     );
     await expect(followUp).not.toContainText(
       "Compare the published county case-count floor"

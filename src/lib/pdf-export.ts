@@ -15,6 +15,13 @@ type ReportGeography =
   | { identifier: string; level: "state" };
 
 export type PdfDownloadOptions = {
+  /**
+   * Saved name when the server filename is missing or not approved.
+   * An approved server filename still wins.
+   */
+  approvedFilename?: string;
+  /** True only for a server filename that matches the approved naming standard. */
+  isApprovedServerFilename?: (filename: string) => boolean;
   /** When this flips, the response is discarded and no file is saved. */
   shouldCommit?: () => boolean;
   signal?: AbortSignal;
@@ -40,9 +47,63 @@ export function governedCountyReportScoreSettings(): ScoreSettings {
   };
 }
 
-function filenameFromDisposition(header: string | null, fallback: string) {
+/**
+ * Exact `application/pdf` only. Letter case and parameters are ignored.
+ * Prefixed subtypes such as `application/pdf+json` are not PDFs.
+ */
+function isPdfContentType(contentType: string | null): boolean {
+  const [mediaType = ""] = (contentType ?? "").split(";", 1);
+  return mediaType.trim().toLowerCase() === "application/pdf";
+}
+
+function serverFilename(header: string | null): string | null {
   const match = /filename="?(?<filename>[^";]+)"?/i.exec(header ?? "");
-  return match?.groups?.filename ?? fallback;
+  const filename = match?.groups?.filename?.trim();
+  return filename || null;
+}
+
+const ATLAS_BRIEF_FILENAME =
+  /^[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*_[A-Z]{2}_AtlasBrief\.pdf$/;
+
+/**
+ * Approved browser filename, for example `Worth_IA_AtlasBrief.pdf`.
+ * A trailing "County" is omitted. Other punctuation becomes underscores.
+ */
+export function atlasBriefFilename(
+  countyName: string,
+  stateCode: string
+): string | null {
+  const state = stateCode.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(state)) {
+    return null;
+  }
+  const county = countyName
+    .trim()
+    .replace(/ county$/i, "")
+    .normalize("NFKD")
+    .replaceAll(/[\u0300-\u036F]/g, "")
+    .replaceAll(/[^A-Za-z0-9]+/g, "_")
+    .replaceAll(/^_+|_+$/g, "");
+  if (!county) {
+    return null;
+  }
+  const filename = `${county}_${state}_AtlasBrief.pdf`;
+  return ATLAS_BRIEF_FILENAME.test(filename) ? filename : null;
+}
+
+function savedDownloadName(
+  header: string | null,
+  fallback: string,
+  options: PdfDownloadOptions | undefined
+): string {
+  const serverName = serverFilename(header);
+  if (!options?.approvedFilename) {
+    return serverName ?? fallback;
+  }
+  if (serverName && options.isApprovedServerFilename?.(serverName) === true) {
+    return serverName;
+  }
+  return options.approvedFilename;
 }
 
 function isAbortError(error: unknown): boolean {
@@ -106,12 +167,17 @@ export async function downloadPdfReport(
   if (!(blob.size > 0)) {
     throw new Error("PDF export failed (empty file).");
   }
+  const mediaType = response.headers.get("content-type") || blob.type;
+  if (!isPdfContentType(mediaType)) {
+    throw new Error("PDF export failed (unexpected type).");
+  }
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = objectUrl;
-  link.download = filenameFromDisposition(
+  link.download = savedDownloadName(
     response.headers.get("content-disposition"),
-    `lyme-gap-atlas-${geography.level}-${geography.identifier}.pdf`
+    `lyme-gap-atlas-${geography.level}-${geography.identifier}.pdf`,
+    options
   );
   document.body.append(link);
   link.click();

@@ -123,7 +123,7 @@ describe("Investigation Workspace county decision support", () => {
     expect(
       screen.getByTestId("follow-up-interpretation").textContent ?? ""
     ).toContain(
-      "This is a review recommendation, not a measure of individual risk or proof that Lyme disease is undercounted."
+      "Atlas supports professional review, not individual risk measurement, proof of underreporting, or a mandate for investigation."
     );
     expect(
       [
@@ -151,8 +151,11 @@ describe("Investigation Workspace county decision support", () => {
     const interpretation =
       screen.getByTestId("follow-up-interpretation").textContent ?? "";
     expect(interpretation).toContain(
-      "These are suggested evidence-verification activities, not an assigned review priority, a measure of individual risk, or proof that Lyme disease is undercounted."
+      "Atlas supports professional review, not individual risk measurement, proof of underreporting, or a mandate for investigation."
     );
+    expect(
+      screen.getByTestId("follow-up-verification-note").textContent ?? ""
+    ).toContain("not a scored recommendation");
     expect(interpretation).not.toContain("This is a review recommendation");
   });
 });

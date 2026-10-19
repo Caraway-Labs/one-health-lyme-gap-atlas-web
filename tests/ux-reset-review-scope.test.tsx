@@ -123,26 +123,35 @@ vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
 
 vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
+    onCountyPointer,
     onSelect,
     scores,
   }: {
-    onSelect: (fips: string) => void;
+    onCountyPointer?: (click: { clickDetail: number; fips: string }) => void;
+    onSelect: (fips: string, surface: "map") => void;
     scores: { fips: string }[];
   }) => {
     lastMapScoreFips = scores.map((entry) => entry.fips).join(",");
+    const choose = (fips: string) => {
+      if (onCountyPointer) {
+        onCountyPointer({ clickDetail: 1, fips });
+        return;
+      }
+      onSelect(fips, "map");
+    };
     return (
       <div data-map-score-fips={lastMapScoreFips} data-testid="mock-atlas-map">
         <button
           data-testid="mock-map-select-ny"
           type="button"
-          onClick={() => onSelect("36001", "map")}
+          onClick={() => choose("36001")}
         >
           Select NY county on map
         </button>
         <button
           data-testid="mock-map-select-boulder"
           type="button"
-          onClick={() => onSelect("08013", "map")}
+          onClick={() => choose("08013")}
         >
           Select Boulder on map
         </button>
@@ -532,7 +541,7 @@ describe("Reset Review scope UI", () => {
     const read = async (search: string) => {
       const view = renderReview(search);
       if (search.includes("scope=ALL")) {
-        fireEvent.click(await screen.findByTestId("national-browse-state"));
+        fireEvent.click(await screen.findByTestId("review-scope-select"));
         await screen.findByRole("option", { name: "Colorado (CO)" });
       } else {
         await waitFor(() => {
@@ -1683,6 +1692,56 @@ describe("Reset Review scope UI", () => {
       rendered: "ALL",
       stateWrite: false,
     });
+  });
+
+  it("keeps a focus-only URL on the national map when the saved view is a state", async () => {
+    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    const updates: string[] = [];
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
+      status: 200,
+    } as never);
+    window.history.replaceState(null, "", "/explore?focus=ID");
+    renderReview("?focus=ID", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      if (screen.queryByText("Loading review scope…")) {
+        throw new Error("startup still pending");
+      }
+    });
+    expect({
+      focusKept: updates.every((query) => query.includes("focus=ID")),
+      rendered: renderedReviewScope(),
+      stateWrite: updates.some((query) => query.includes("scope=CO")),
+    }).toStrictEqual({
+      focusKept: true,
+      rendered: "ALL",
+      stateWrite: false,
+    });
+  });
+
+  it("clears a county that is outside the focused state", async () => {
+    const updates: string[] = [];
+    window.history.replaceState(
+      null,
+      "",
+      "/explore?scope=ALL&focus=ID&county=56039"
+    );
+    renderReview("?scope=ALL&focus=ID&county=56039", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      const latest = updates.at(-1) ?? "";
+      if (!(latest.includes("focus=ID") && !latest.includes("county="))) {
+        throw new Error(latest || "mismatched county is still in the URL");
+      }
+    });
+    expect(renderedReviewScope()).toBe("ALL");
   });
 
   it("keeps explicit national scope when profile default is a state", async () => {
@@ -3210,8 +3269,11 @@ describe("Reset Review scope UI", () => {
         navigation
           .querySelector(`a[aria-label="${label}"]`)
           ?.getAttribute("href") ?? "";
+      const ask = new URL(href("Ask Atlas"), "http://localhost");
+      ask.searchParams.delete("page_ref");
+      const askQuery = ask.searchParams.toString();
       return {
-        ask: href("Ask Atlas"),
+        ask: askQuery ? `${ask.pathname}?${askQuery}` : ask.pathname,
         compare: href("Compare"),
         feed: href("Feed"),
         settings: href("Settings"),
@@ -3847,19 +3909,39 @@ describe("Reset Review scope UI", () => {
         screen.getByTestId("review-published-county-preview").dataset.fips
       ).toBe("08001");
     });
-    const bookmarkedAsk =
-      screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
-    const bookmarked = askAtlasContentReference();
+    expect(
+      screen
+        .getByTestId("review-published-county-preview")
+        .querySelector("[data-testid='review-ask-atlas']")
+    ).toBeNull();
+    const dedicatedAsk = () => {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href = new URL(
+        navigation
+          .querySelector('a[aria-label="Ask Atlas"]')
+          ?.getAttribute("href") ?? "",
+        "http://localhost"
+      );
+      return {
+        county: href.searchParams.get("county"),
+        state: readAskAtlasPageReference(href.pathname, href.searchParams),
+      };
+    };
+    await waitFor(() => {
+      if (dedicatedAsk().county !== null) {
+        throw new Error(dedicatedAsk().county ?? "county still present");
+      }
+    });
+    const bookmarked = dedicatedAsk();
     const bookmarkedGeography =
       bookmarked.state.kind === "validated"
         ? bookmarked.state.reference.context.fields.geography
         : null;
     expect({
       bookmarkGeography: bookmarkedGeography,
-      bookmarkPreviewCounty: new URL(
-        bookmarkedAsk,
-        "http://localhost"
-      ).searchParams.get("county"),
+      bookmarkPreviewCounty: bookmarked.county,
     }).toStrictEqual({
       bookmarkGeography: { state: "absent" },
       bookmarkPreviewCounty: null,
@@ -3873,26 +3955,24 @@ describe("Reset Review scope UI", () => {
     }
     fireEvent.click(boulder);
     await waitFor(() => {
-      const href =
-        screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
-      if (!href.includes("county=08013")) {
-        throw new Error(href);
+      const chosen = dedicatedAsk();
+      if (chosen.county !== "08013") {
+        throw new Error(chosen.county ?? "missing county");
       }
     });
-    const previewAsk =
-      screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "";
-    const { href, state } = askAtlasContentReference();
+    expect(
+      screen
+        .getByTestId("review-published-county-preview")
+        .querySelector("[data-testid='review-ask-atlas']")
+    ).toBeNull();
+    const chosen = dedicatedAsk();
     const geography =
-      state.kind === "validated"
-        ? state.reference.context.fields.geography
+      chosen.state.kind === "validated"
+        ? chosen.state.reference.context.fields.geography
         : null;
     expect({
       geography,
-      launcherCounty: href.searchParams.get("county"),
-      previewAskCounty: new URL(
-        previewAsk,
-        "http://localhost"
-      ).searchParams.get("county"),
+      launcherCounty: chosen.county,
       previewFips: screen.getByTestId("review-published-county-preview").dataset
         .fips,
     }).toStrictEqual({
@@ -3902,7 +3982,6 @@ describe("Reset Review scope UI", () => {
         state: "validated",
       },
       launcherCounty: "08013",
-      previewAskCounty: "08013",
       previewFips: "08013",
     });
   });
@@ -3987,6 +4066,15 @@ describe("Reset Review scope UI", () => {
       ).toContain("published score colors");
       expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
       expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
+      fireEvent.click(screen.getByTestId("mock-map-select-ny"));
+      await waitFor(() => {
+        expect(
+          updates.some((query) => query.includes("focus=NY"))
+        ).toBeTruthy();
+      });
+      expect(
+        updates.some((query) => query.includes("county=36001"))
+      ).toBeFalsy();
       fireEvent.click(screen.getByTestId("mock-map-select-ny"));
       await waitFor(() => {
         expect(

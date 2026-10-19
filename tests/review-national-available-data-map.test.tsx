@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   countyReferenceFromScoreSummaries,
@@ -225,10 +225,6 @@ function nationalPicture(
         mapLayer="gap_score"
         period={null}
         releaseId="alpha-2026"
-        releaseStates={[
-          { code: "CO", name: "Colorado" },
-          { code: "NY", name: "New York" },
-        ]}
         tierRelease={{ status: "unknown" }}
         onCountyChange={options.onCountyChange ?? (() => {})}
         onMapLayerChange={() => {}}
@@ -238,14 +234,54 @@ function nationalPicture(
 }
 
 describe("national available-data map source", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", () => ({
+      addEventListener() {},
+      addListener() {},
+      dispatchEvent() {
+        return false;
+      },
+      matches: false,
+      media: "",
+      onchange: null,
+      removeEventListener() {},
+      removeListener() {},
+    }));
+  });
+
   afterEach(async () => {
     cleanup();
     engine.instances.length = 0;
+    vi.unstubAllGlobals();
     const { fetchCountyDisplayGeometry } =
       await import("@/lib/county-geography");
     vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
       features: [box("08001", -105), box("36001", -74)],
       type: "FeatureCollection",
+    });
+  });
+
+  it("starts the county card at Choose a county without a local state filter", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(nationalPicture("all", client));
+    const card = document.querySelector(".ux-reset-explorer-list");
+    const heading = screen.getByRole("heading", { name: "Choose a county" });
+    expect({
+      browseLabel: screen.queryByText("Browse a state"),
+      browseState: screen.queryByTestId("national-browse-state"),
+      chooseState: screen.queryByText("Choose a state"),
+      eyebrow: card?.querySelector(".ux-reset-ranked-counties-eyebrow") ?? null,
+      firstHeading: card?.querySelector("h1, h2, h3") ?? null,
+      headingInCard: card?.contains(heading) ?? false,
+    }).toStrictEqual({
+      browseLabel: null,
+      browseState: null,
+      chooseState: null,
+      eyebrow: null,
+      firstHeading: heading,
+      headingInCard: true,
     });
   });
 
@@ -296,6 +332,11 @@ describe("national available-data map source", () => {
     await waitFor(() => {
       expect(sourceFips()).toStrictEqual(["08001", "08005"]);
     });
+
+    act(() => {
+      engine.instances.at(-1)?.clickCounty("08001");
+    });
+    expect(onCountyChange).not.toHaveBeenCalled();
 
     act(() => {
       engine.instances.at(-1)?.clickCounty("08005");

@@ -32,6 +32,6 @@ describe("page introduction", () => {
     expect(
       screen.queryByRole("heading", { name: copy.stripHeading })
     ).toBeNull();
-    expect(screen.getByText(copy.stripBody)).toBeTruthy();
+    expect(screen.queryByText(copy.stripBody)).toBeNull();
   });
 });

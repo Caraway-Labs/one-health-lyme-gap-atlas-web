@@ -65,7 +65,6 @@ describe("national layer loading", () => {
           mapLayer="incidence_floor"
           period={null}
           releaseId={RELEASE_ID}
-          releaseStates={[{ code: "CO", name: "Colorado" }]}
           tierRelease={{ status: "unknown" }}
           onCountyChange={() => {}}
           onMapLayerChange={() => {}}

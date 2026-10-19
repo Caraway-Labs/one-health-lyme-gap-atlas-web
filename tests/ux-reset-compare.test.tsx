@@ -45,6 +45,7 @@ let catalogRetryAfter: string | null = null;
 let blankContextSourceNote = false;
 let extraCatalogMeasures: typeof compareMeasuresFixture = [];
 const countyRecordRequests: string[] = [];
+const countyLimitationOverrides = new Map<string, string>();
 const countyPriorityOverrides = new Map<string, string>();
 let countyRateLimitRemaining = 0;
 let countyRetryAfterSeconds: number | null = null;
@@ -82,6 +83,13 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         } as never;
       }
       const detail = compareCountyDetail(fips);
+      const limitationOverride = countyLimitationOverrides.get(fips);
+      if (limitationOverride !== undefined) {
+        detail.release = {
+          ...detail.release,
+          limitations: limitationOverride,
+        };
+      }
       const priorityOverride = countyPriorityOverrides.get(fips);
       if (priorityOverride) {
         detail.priority = priorityOverride;
@@ -292,6 +300,7 @@ describe("two-county aligned comparison", () => {
     extraCatalogMeasures = [];
     clearCompareCatalogRetryDeadlines();
     clearCompareProfileRetryDeadlines();
+    countyLimitationOverrides.clear();
     countyPriorityOverrides.clear();
     countyRateLimitRemaining = 0;
     countyRecordRequests.length = 0;
@@ -1118,6 +1127,49 @@ describe("two-county aligned comparison", () => {
     });
   });
 
+  it("describes differing limitations without a shared note, and places a shared note after the groups", async () => {
+    countyLimitationOverrides.set(COMPARE_LEFT_FIPS, "Denver coverage gap.");
+    countyLimitationOverrides.set("36001", "Albany coverage gap.");
+    renderCompare("?compare=08001,36001&scope=CO&dataset=alpha-2026");
+    const limitations = await screen.findByTestId("compare-group-limitations");
+    const differingGuidance =
+      limitations.querySelector(".ux-reset-compare-group-description")
+        ?.textContent ?? "";
+    const differingSharedNote = screen.queryByText(
+      "Shared release limitations"
+    );
+    cleanup();
+
+    countyLimitationOverrides.set(
+      COMPARE_LEFT_FIPS,
+      "Same release limitation."
+    );
+    countyLimitationOverrides.set("36001", "Same release limitation.");
+    renderCompare("?compare=08001,36001&scope=CO&dataset=alpha-2026");
+    const sharedText = await screen.findByText("Same release limitation.");
+    const sharedNote = sharedText.closest("details");
+    const review = screen.getByTestId("compare-group-review");
+    const heading = screen.getByRole("heading", { name: "County comparison" });
+    const sharedCopy = sharedNote?.textContent ?? "";
+    expect({
+      differingGuidance,
+      differingSharedNote,
+      sharedAfterHeading:
+        sharedNote === null
+          ? null
+          : heading.compareDocumentPosition(sharedNote),
+      sharedAfterReview:
+        sharedNote === null ? null : review.compareDocumentPosition(sharedNote),
+      sharedClaimsAbove: sharedCopy.includes("above the comparison"),
+    }).toStrictEqual({
+      differingGuidance: "These limitations differ by county.",
+      differingSharedNote: null,
+      sharedAfterHeading: Node.DOCUMENT_POSITION_FOLLOWING,
+      sharedAfterReview: Node.DOCUMENT_POSITION_FOLLOWING,
+      sharedClaimsAbove: false,
+    });
+  });
+
   it("does not show a county-record table until two counties are selected", async () => {
     renderCompare("?compare=08001&scope=CO&dataset=alpha-2026");
     await waitForPair("08001");
@@ -1149,12 +1201,12 @@ describe("two-county aligned comparison", () => {
       second: screen.getByTestId("compare-investigate-08013").textContent,
     }).toStrictEqual({
       ask: true,
-      first: "View first county evidence",
+      first: "View county evidence",
       floor: true,
       missing: "missing",
       missingDigits: false,
       period: true,
-      second: "View second county evidence",
+      second: "View county evidence",
     });
   });
 
