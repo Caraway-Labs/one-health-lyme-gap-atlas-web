@@ -1,4 +1,13 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { accessSync, constants, copyFileSync } from "node:fs";
+import { join } from "node:path";
+
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 
 import {
   DATA_PROVENANCE_NAV_DESCRIPTION,
@@ -68,6 +77,24 @@ async function dismissTooltip(page: Page) {
   await expect(page.locator("[data-slot='tooltip-content']")).toHaveCount(0);
 }
 
+const OPTIONAL_ARTIFACT_DIRECTORY = "/opt/cursor/artifacts";
+
+/** Required images go to the Playwright output dir. Artifact copies are optional. */
+async function saveNavTooltipScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  filename: string
+) {
+  const outputPath = testInfo.outputPath(filename);
+  await page.screenshot({ path: outputPath });
+  try {
+    accessSync(OPTIONAL_ARTIFACT_DIRECTORY, constants.W_OK);
+    copyFileSync(outputPath, join(OPTIONAL_ARTIFACT_DIRECTORY, filename));
+  } catch {
+    // CI checkouts have no writable /opt/cursor/artifacts directory.
+  }
+}
+
 test("shows approved two-line tooltips on hover and keyboard focus", async ({
   page,
 }, testInfo) => {
@@ -120,9 +147,11 @@ test("shows approved two-line tooltips on hover and keyboard focus", async ({
     "Data Provenance",
     DATA_PROVENANCE_NAV_DESCRIPTION
   );
-  await page.screenshot({
-    path: "/opt/cursor/artifacts/nav-tooltip-data-provenance-expanded.png",
-  });
+  await saveNavTooltipScreenshot(
+    page,
+    testInfo,
+    "nav-tooltip-data-provenance-expanded.png"
+  );
   await dismissTooltip(page);
 
   const explorer = nav.getByRole("link", {
@@ -135,9 +164,11 @@ test("shows approved two-line tooltips on hover and keyboard focus", async ({
     "Atlas Explorer",
     "Explore county-level Lyme surveillance, environmental context, and public health evidence."
   );
-  await page.screenshot({
-    path: "/opt/cursor/artifacts/nav-tooltip-atlas-explorer-expanded.png",
-  });
+  await saveNavTooltipScreenshot(
+    page,
+    testInfo,
+    "nav-tooltip-atlas-explorer-expanded.png"
+  );
   await dismissTooltip(page);
 
   const feed = nav.getByRole("link", { exact: true, name: "Feed" });
@@ -147,9 +178,11 @@ test("shows approved two-line tooltips on hover and keyboard focus", async ({
     "Intelligence Feed",
     "Track new findings and updates that may inform Lyme surveillance and research."
   );
-  await page.screenshot({
-    path: "/opt/cursor/artifacts/nav-tooltip-intelligence-feed-expanded.png",
-  });
+  await saveNavTooltipScreenshot(
+    page,
+    testInfo,
+    "nav-tooltip-intelligence-feed-expanded.png"
+  );
   await page.mouse.move(1100, 240);
   await focusByTab(page, feed);
   await expect(feed).toBeFocused();
@@ -186,9 +219,11 @@ test("shows approved two-line tooltips on hover and keyboard focus", async ({
     "Data Provenance",
     DATA_PROVENANCE_NAV_DESCRIPTION
   );
-  await page.screenshot({
-    path: "/opt/cursor/artifacts/nav-tooltip-data-provenance-collapsed.png",
-  });
+  await saveNavTooltipScreenshot(
+    page,
+    testInfo,
+    "nav-tooltip-data-provenance-collapsed.png"
+  );
   await dismissTooltip(page);
 
   const compare = nav.getByRole("link", { exact: true, name: "Compare" });
@@ -198,9 +233,11 @@ test("shows approved two-line tooltips on hover and keyboard focus", async ({
     "Compare",
     "Compare counties side by side to support evidence-informed public health decisions."
   );
-  await page.screenshot({
-    path: "/opt/cursor/artifacts/nav-tooltip-compare-collapsed.png",
-  });
+  await saveNavTooltipScreenshot(
+    page,
+    testInfo,
+    "nav-tooltip-compare-collapsed.png"
+  );
   await dismissTooltip(page);
 
   await feedback.hover();
@@ -209,9 +246,11 @@ test("shows approved two-line tooltips on hover and keyboard focus", async ({
     "Give Feedback",
     RESET_FEEDBACK_ACTION.tooltipDetail
   );
-  await page.screenshot({
-    path: "/opt/cursor/artifacts/nav-tooltip-give-feedback-collapsed.png",
-  });
+  await saveNavTooltipScreenshot(
+    page,
+    testInfo,
+    "nav-tooltip-give-feedback-collapsed.png"
+  );
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await feedback.click();
   await expect(
