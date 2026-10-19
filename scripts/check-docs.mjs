@@ -41,11 +41,29 @@ function routeExists(routePath) {
   ].some((candidate) => fs.existsSync(candidate));
 }
 
+function docsSlugFromPath(pathPart) {
+  if (
+    pathPart === "/docs" ||
+    pathPart === "/docs.md" ||
+    pathPart === "/docs.mdx"
+  ) {
+    return "";
+  }
+  if (!pathPart.startsWith("/docs/")) return null;
+  let slug = pathPart.slice("/docs/".length);
+  if (slug.endsWith(".mdx")) slug = slug.slice(0, -".mdx".length);
+  else if (slug.endsWith(".md")) slug = slug.slice(0, -".md".length);
+  if (slug === "index" || slug.endsWith("/index")) {
+    slug = slug === "index" ? "" : slug.slice(0, -"/index".length);
+  }
+  return slug;
+}
+
 function checkInternalLink(sourceFile, href) {
   if (!href.startsWith("/")) return;
   const [pathPart] = href.split(/[?#]/, 1);
-  if (pathPart === "/docs" || pathPart.startsWith("/docs/")) {
-    const docsSlug = pathPart.slice("/docs".length).replace(/^\//, "");
+  const docsSlug = docsSlugFromPath(pathPart);
+  if (docsSlug !== null) {
     if (!contentExists(docsRoot, docsSlug)) {
       errors.push(`${sourceFile}: broken docs link ${href}`);
     }

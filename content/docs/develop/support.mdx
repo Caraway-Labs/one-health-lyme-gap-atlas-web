@@ -31,6 +31,19 @@ The generated section uses these paths:
 
 Use those pages for parameters, schemas, and the contract's own examples. Use [the developer overview](/docs/develop) when you need the task and the meaning of a field.
 
+## Machine-readable docs
+
+These files are generated from the current documentation source for this deployment. They are not a second copy of the OpenAPI contract. The API reference pages cite the pinned public spec and link the raw schema.
+
+| File | Contents |
+| --- | --- |
+| [llms.txt](/llms.txt) | Index of the current documentation pages |
+| [llms-full.txt](/llms-full.txt) | Every current page in one Markdown file |
+| [This page as Markdown](/docs/develop/support.md) | Processed Markdown for this page |
+| [This page as MDX](/docs/develop/support.mdx) | Current MDX source for this page |
+
+Add md to the end of a documentation page URL for processed Markdown. Add mdx for the MDX source. The docs index is [docs.md](/docs.md) and [docs.mdx](/docs.mdx).
+
 `/v1` is the HTTP contract. OpenAPI `info.version` is the application version. They are different identifiers.
 
 ## GitHub
