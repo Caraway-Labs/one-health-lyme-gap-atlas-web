@@ -6,6 +6,7 @@ import barbour from "../fixtures/review-al-01005.json" with { type: "json" };
 import identities from "../fixtures/review-al-published-identities.json" with { type: "json" };
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 
 const release = baldwin.release.release_id;
 const rowLabels = [
@@ -18,11 +19,7 @@ const rowLabels = [
 ];
 
 async function installPublishedReview(page: Page) {
-  await page.route("**/v1/me/profile", (route) =>
-    route.fulfill({
-      json: { profile: { starting_view_version: 1, state_code: null } },
-    })
-  );
+  await fulfillCompletedStartingView(page);
   await page.route("**/v1/atlas/metadata**", (route) =>
     route.fulfill({ json: { ...baldwin.release, release_id: release } })
   );

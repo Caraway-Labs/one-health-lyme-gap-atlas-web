@@ -13,6 +13,7 @@ import {
 } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const RELEASE = "alpha-2026";
@@ -149,12 +150,7 @@ async function installAvailabilityMocks(
       status: 503,
     });
   });
-  await page.route("**/v1/me/profile", async (route) => {
-    await route.fulfill({
-      json: { profile: { starting_view_version: 1, state_code: null } },
-      status: 200,
-    });
-  });
+  await fulfillCompletedStartingView(page);
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await route.fulfill({ json: metadata(), status: 200 });
   });
