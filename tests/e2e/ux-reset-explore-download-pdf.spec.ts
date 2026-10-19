@@ -142,29 +142,23 @@ async function shootButton(page: Page, name: string) {
   mkdirSync(shotDirectory, { recursive: true });
   const button = page.getByTestId("explore-download-pdf");
   await button.scrollIntoViewIfNeeded();
-  const card = button.locator(
-    "xpath=ancestor::*[@data-testid='review-county-preview' or @data-testid='review-published-county-preview']"
-  );
-  if ((await card.count()) > 0) {
-    await card.first().screenshot({
-      path: `${shotDirectory}/download-pdf-${name}.png`,
-    });
-    return;
+  const control = await button.boundingBox();
+  if (!control) {
+    throw new Error("The Download PDF action is not visible.");
   }
   const empty = page.getByTestId("explorer-preview-empty");
-  const paragraph = await empty.boundingBox();
-  const control = await button.boundingBox();
-  if (!(paragraph && control)) {
-    throw new Error("The empty Download PDF state is not visible.");
-  }
-  const x = Math.max(0, Math.min(paragraph.x, control.x) - 12);
-  const y = Math.max(0, paragraph.y - 12);
+  const paragraph =
+    (await empty.count()) > 0 ? await empty.boundingBox() : null;
+  const top = paragraph
+    ? Math.max(0, paragraph.y - 12)
+    : Math.max(0, control.y - 210);
+  const left = Math.max(0, Math.min(paragraph?.x ?? control.x, control.x) - 12);
   await page.screenshot({
     clip: {
-      height: control.y + control.height - y + 56,
-      width: Math.max(paragraph.width, control.width) + 24,
-      x,
-      y,
+      height: control.y + control.height - top + 48,
+      width: Math.max(paragraph?.width ?? 0, control.width) + 24,
+      x: left,
+      y: top,
     },
     path: `${shotDirectory}/download-pdf-${name}.png`,
   });
@@ -263,11 +257,12 @@ test.describe("Explorer Download PDF", () => {
     await page.route("**/v1/counties/*", (route) =>
       route.fulfill({
         json: {
-          ...autauga,
+          ...baldwin,
           county: "Denver",
           fips: "08001",
           state: "CO",
           state_name: "Colorado",
+          release: { ...baldwin.release, release_id: reviewedRelease },
         },
         status: 200,
       })
