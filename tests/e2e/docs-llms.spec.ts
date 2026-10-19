@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 import {
   constraintRow,
   constraintTables,
+  pinnedParameterPattern,
   provenanceUnionRows,
 } from "../docs-llms-gfm";
 
@@ -189,6 +190,42 @@ test("keeps schema constraints inside parsed table cells", async ({
     expect(
       tables.every((table) => table.every((row) => row.length === 2))
     ).toBeTruthy();
+  }
+});
+
+test("matches pinned FIPS and template patterns exactly", async ({
+  request,
+}) => {
+  const fipsPattern = pinnedParameterPattern("/v1/counties/{fips}", "fips");
+  const templatePattern = pinnedParameterPattern(
+    "/v1/counties/{fips}/report.pdf",
+    "template"
+  );
+  const county = await (
+    await request.get(
+      "/docs/api-reference/counties/county_v1_counties__fips__get.md"
+    )
+  ).text();
+  const pdf = await (
+    await request.get(
+      "/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get.md"
+    )
+  ).text();
+  const tier1 = await (
+    await request.get(
+      "/docs/api-reference/counties/county_tier1_surveillance_priority_get.md"
+    )
+  ).text();
+  const full = await (await request.get("/llms-full.txt")).text();
+  for (const markdown of [county, pdf, tier1, full]) {
+    expect(
+      constraintRow(constraintTables(markdown), "Pattern", fipsPattern)
+    ).toEqual(["Pattern", fipsPattern]);
+  }
+  for (const markdown of [pdf, full]) {
+    expect(
+      constraintRow(constraintTables(markdown), "Pattern", templatePattern)
+    ).toEqual(["Pattern", templatePattern]);
   }
 });
 

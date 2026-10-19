@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import type {
   InlineCode,
   Node,
@@ -115,6 +117,28 @@ export function constraintTables(markdown: string): string[][][] {
       table[0][0] === "Constraint" &&
       table[0][1] === "Value"
   );
+}
+
+export function pinnedParameterPattern(route: string, name: string): string {
+  const document = JSON.parse(
+    readFileSync("contracts/public-openapi.json", "utf-8")
+  ) as {
+    paths: Record<
+      string,
+      {
+        get?: {
+          parameters?: { name: string; schema?: { pattern?: string } }[];
+        };
+      }
+    >;
+  };
+  const pattern = document.paths[route]?.get?.parameters?.find(
+    (parameter) => parameter.name === name
+  )?.schema?.pattern;
+  if (!pattern) {
+    throw new Error(`Pinned contract has no pattern for ${route} ${name}`);
+  }
+  return pattern;
 }
 
 export function constraintRow(

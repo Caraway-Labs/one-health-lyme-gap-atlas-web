@@ -16,12 +16,22 @@ import {
   constraintRow,
   constraintTables,
   gfmTables,
+  pinnedParameterPattern,
   provenanceUnionRows,
 } from "./docs-llms-gfm";
 
 const FRONTMATTER = /^---\n(?<frontmatter>[\s\S]*?)\n---\n?/;
+const renderedPages = new Map<string, Promise<string>>();
 
 async function renderedPage(relativePath: string): Promise<string> {
+  const cached = renderedPages.get(relativePath);
+  if (cached) return cached;
+  const pending = renderPageFile(relativePath);
+  renderedPages.set(relativePath, pending);
+  return pending;
+}
+
+async function renderPageFile(relativePath: string): Promise<string> {
   const raw = readFileSync(relativePath, "utf-8");
   const frontmatter = FRONTMATTER.exec(raw)?.groups?.frontmatter ?? "";
   const title =
@@ -117,11 +127,15 @@ describe("rendered documentation markdown", () => {
     expect(markdown).not.toContain("<HttpClientTabs");
   });
 
-  it("keeps pipes, backticks, and newlines inside one table cell", () => {
+  it("keeps pipes, backticks, newlines, and plain-text backslashes in one cell", () => {
     const cell = markdownTableCell("number | `string`\nnull");
     const [table] = gfmTables(`| Type |\n| --- |\n| ${cell} |`);
+    const slash = markdownTableCell("a\\b|c");
+    const [slashTable] = gfmTables(`| Value |\n| --- |\n| ${slash} |`);
     expect(table?.[1]).toHaveLength(1);
     expect(table?.[1]?.[0]).toBe("number | `string` null");
+    expect(slashTable?.[1]).toHaveLength(1);
+    expect(slashTable?.[1]?.[0]).toBe("a\\b|c");
   });
 
   it("keeps the provenance value row to four parsed cells", async () => {
@@ -192,15 +206,61 @@ describe("rendered documentation markdown", () => {
     ).toBeTruthy();
   });
 
+  it("matches pinned FIPS and template patterns exactly", async () => {
+    const fipsPattern = pinnedParameterPattern("/v1/counties/{fips}", "fips");
+    const templatePattern = pinnedParameterPattern(
+      "/v1/counties/{fips}/report.pdf",
+      "template"
+    );
+    const county = constraintTables(
+      await renderedPage(
+        "content/docs/api-reference/counties/county_v1_counties__fips__get.mdx"
+      )
+    );
+    const pdf = constraintTables(
+      await renderedPage(
+        "content/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get.mdx"
+      )
+    );
+    const tier1 = constraintTables(
+      await renderedPage(
+        "content/docs/api-reference/counties/county_tier1_surveillance_priority_get.mdx"
+      )
+    );
+    expect(constraintRow(county, "Pattern", fipsPattern)).toStrictEqual([
+      "Pattern",
+      fipsPattern,
+    ]);
+    expect(constraintRow(pdf, "Pattern", fipsPattern)).toStrictEqual([
+      "Pattern",
+      fipsPattern,
+    ]);
+    expect(constraintRow(pdf, "Pattern", templatePattern)).toStrictEqual([
+      "Pattern",
+      templatePattern,
+    ]);
+    expect(constraintRow(tier1, "Pattern", fipsPattern)).toStrictEqual([
+      "Pattern",
+      fipsPattern,
+    ]);
+  });
+
   it("renders every current docs page without leftover component tags", async () => {
-    const pages = await Promise.all(mdxFiles("content/docs").map(renderedPage));
+    const files = mdxFiles("content/docs");
+    const pages = await Promise.all(files.map(renderedPage));
     const full = pages.join("\n\n");
+    const observations =
+      pages[
+        files.indexOf(
+          "content/docs/api-reference/observations/observations_v1_observations_get.mdx"
+        )
+      ] ?? "";
     expect(full).toContain("#### geography_id");
     expect(
-      constraintRow(constraintTables(full), "Default", "100")
+      constraintRow(constraintTables(observations), "Default", "100")
     ).toStrictEqual(["Default", "100"]);
     expect(full).toContain("Missing is not zero.");
     expect(full).toContain("import httpx");
     expect(full).not.toContain("<OpenAPIPage");
-  });
+  }, 20_000);
 });

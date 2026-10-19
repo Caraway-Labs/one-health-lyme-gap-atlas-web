@@ -13,9 +13,14 @@ export function markdownTableCell(
       singleLine.startsWith("`") || singleLine.endsWith("`")
         ? ` ${singleLine} `
         : singleLine;
-    return `${fence}${escapeTablePipes(padded)}${fence}`;
+    return `${fence}${escapeCodeCellPipes(padded)}${fence}`;
   }
   return escapeTablePipes(singleLine).replaceAll("`", "\\`");
+}
+
+/** GFM tables unescape `\|` only. A code span keeps every other backslash. */
+function escapeCodeCellPipes(value: string): string {
+  return value.replaceAll("|", "\\|");
 }
 
 function escapeTablePipes(value: string): string {
