@@ -3,10 +3,17 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
+import {
+  TICK_STATUS_ESTABLISHED_COLOR,
+  TICK_STATUS_EXTRA_COLORS,
+  TICK_STATUS_NO_RECORDS_COLOR,
+  TICK_STATUS_REPORTED_COLOR,
+} from "@/features/ux-reset/review/tick-status-contract";
 import { ValueState } from "@/generated/models";
 import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 import { populationRuralityObservation } from "../fixtures/population-rurality-context";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
@@ -135,6 +142,20 @@ const counties = [
     state_name: "District of Columbia",
     tick_status: "Established",
   },
+  {
+    burgdorferi_status: "Present",
+    color: "#a9d2db",
+    county: "Denver",
+    evidence_completeness: 40,
+    fips: "08031",
+    human_status: "published_count_floor",
+    in_contiguous_tick_scope: true,
+    priority: "Lower Atlas priority — Not a safety finding",
+    score: score(12),
+    state: "CO",
+    state_name: "Colorado",
+    tick_status: "Endemic",
+  },
 ];
 
 const scoresBody = {
@@ -235,6 +256,7 @@ const geometry = {
     box("08014", -105.15, 39.9, -104.95, 40.02),
     box("36001", -74.2, 42.4, -73.7, 42.8),
     box("11001", -77.12, 38.79, -76.91, 38.995),
+    box("08031", -105.1, 39.6, -104.8, 39.8),
   ],
   type: "FeatureCollection" as const,
 };
@@ -310,6 +332,7 @@ async function installLegendApi(page: Page) {
     }
     await route.fulfill({ json: {}, status: 404 });
   });
+  await fulfillCompletedStartingView(page);
 }
 
 function observationRows(url: string) {
@@ -428,6 +451,60 @@ async function legendSwatchesFit(
   });
 }
 
+async function tickLegendGeometry(
+  legend: ReturnType<Page["getByTestId"]>
+): Promise<{
+  clipped: boolean;
+  overflow: boolean;
+  overlap: boolean;
+  visible: boolean;
+}> {
+  return legend.evaluate((element) => {
+    const labels = [
+      ...element.querySelectorAll<HTMLElement>("[data-legend-visible-line]"),
+    ];
+    const overflow =
+      document.documentElement.scrollWidth >
+      document.documentElement.clientWidth + 1;
+    const boxes = labels.map((label) => label.getBoundingClientRect());
+    let overlap = false;
+    for (let index = 0; index < boxes.length; index += 1) {
+      const current = boxes[index];
+      if (!current) {
+        continue;
+      }
+      for (const other of boxes.slice(index + 1)) {
+        const separated =
+          current.right <= other.left + 0.5 ||
+          other.right <= current.left + 0.5 ||
+          current.bottom <= other.top + 0.5 ||
+          other.bottom <= current.top + 0.5;
+        if (!separated) {
+          overlap = true;
+        }
+      }
+    }
+    const clipped = labels.some(
+      (label) =>
+        label.scrollWidth > label.clientWidth + 1 ||
+        label.scrollHeight > label.clientHeight + 1
+    );
+    const visible =
+      labels.length >= 4 &&
+      labels.every((label) => {
+        const box = label.getBoundingClientRect();
+        const style = getComputedStyle(label);
+        return (
+          box.width > 1 &&
+          box.height > 1 &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity) > 0
+        );
+      });
+    return { clipped, overflow, overlap, visible };
+  });
+}
+
 async function chooseLayer(page: Page, name: string) {
   await page.getByTestId("explorer-map-layer").click();
   await page.getByRole("option", { name, exact: true }).click();
@@ -533,7 +610,11 @@ test.describe("Atlas Explorer layer legends", () => {
       legend.getByRole("button", { name: /No records \(not zero/ })
     ).toBeVisible();
     await expect(
-      legend.getByRole("button", { name: /Unknown \(not zero/ })
+      legend.getByRole("button", { name: "Unknown", exact: true })
+    ).toBeVisible();
+    await expect(legend.getByText("No records", { exact: true })).toBeVisible();
+    await expect(
+      legend.getByText("(not zero, not confirmed absence)", { exact: true })
     ).toBeVisible();
     await expect(legend.getByRole("button", { name: /0 to <20/ })).toHaveCount(
       0
@@ -550,8 +631,13 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(tickAbout).not.toContainText("not personal disease risk");
     await page.keyboard.press("Escape");
     await expect
-      .poll(() => legendSwatchesFit(legend))
-      .toEqual({ clipped: false, tall: false, visible: true });
+      .poll(() => tickLegendGeometry(legend))
+      .toEqual({
+        clipped: false,
+        overflow: false,
+        overlap: false,
+        visible: true,
+      });
 
     await chooseLayer(page, "B. burgdorferi status");
     await expect(legend).toContainText("B. burgdorferi status");
@@ -825,6 +911,181 @@ test.describe("Atlas Explorer layer legends", () => {
       .include("[data-slot='popover-content']")
       .analyze();
     expect(tipResults.violations).toEqual([]);
+  });
+});
+
+test.describe("Blacklegged tick status legend", () => {
+  test.beforeEach(async ({ page }) => {
+    await installLegendApi(page);
+  });
+
+  for (const width of [320, 390, 768, 1440]) {
+    test(`shows persistent tick labels at ${width}px without hover`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        !releaseViewportRuns(testInfo.project.name, width),
+        "Phone legend widths run in the mobile project."
+      );
+      await page.setViewportSize({ height: width < 700 ? 844 : 1000, width });
+      await page.goto("/explore?scope=ALL&layer=tick_status");
+      const legend = page.getByTestId("explorer-map-legend");
+      await expect(legend).toBeVisible();
+      await expect(
+        legend.getByText("No records", { exact: true })
+      ).toBeVisible();
+      await expect(
+        legend.getByText("(not zero, not confirmed absence)", { exact: true })
+      ).toBeVisible();
+      await expect(legend.getByText("Reported", { exact: true })).toBeVisible();
+      await expect(
+        legend.getByText("Established", { exact: true })
+      ).toBeVisible();
+      await expect(legend.getByText("Unknown", { exact: true })).toBeVisible();
+      await expect(legend.getByText("Endemic", { exact: true })).toBeVisible();
+      const names = await legend
+        .locator("[data-legend-segment]")
+        .evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute("aria-label"))
+        );
+      expect(names).toEqual([
+        "No records (not zero, not confirmed absence)",
+        "Reported",
+        "Established",
+        "Endemic",
+        "Unknown",
+      ]);
+      await expect
+        .poll(() => tickLegendGeometry(legend))
+        .toEqual({
+          clipped: false,
+          overflow: false,
+          overlap: false,
+          visible: true,
+        });
+      await legend.screenshot({
+        path: testInfo.outputPath(`tick-legend-${width}.png`),
+      });
+    });
+  }
+
+  test("matches map paint, keeps order across scope and layer changes, and stays operable", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL&layer=tick_status");
+    const legend = page.getByTestId("explorer-map-legend");
+    const region = page.getByTestId("review-national-map-region");
+    await expect(region).toHaveAttribute("data-map-stage", "national");
+    const paintAgreement = await page.evaluate(
+      ({ endemicLabel, established, noRecords, reported, unknown }) => {
+        const normalize = (value: string) => {
+          const probe = document.createElement("span");
+          probe.style.background = value;
+          return probe.style.background;
+        };
+        const regionColors = new Map<string, string>();
+        const raw =
+          document
+            .querySelector("[data-testid='review-national-map-region']")
+            ?.getAttribute("data-map-colors") ?? "";
+        for (const pair of raw.split(" ").filter(Boolean)) {
+          const separator = pair.indexOf(":");
+          regionColors.set(pair.slice(0, separator), pair.slice(separator + 1));
+        }
+        const swatch = (name: string) => {
+          const button = [
+            ...document.querySelectorAll<HTMLElement>("[data-legend-segment]"),
+          ].find((element) => element.getAttribute("aria-label") === name);
+          const painted = button?.querySelector("span");
+          return painted ? getComputedStyle(painted).backgroundColor : "";
+        };
+        const noRecordsSwatch = swatch(
+          "No records (not zero, not confirmed absence)"
+        );
+        const endemicSwatch = swatch(endemicLabel);
+        return {
+          endemicDistinct: endemicSwatch !== normalize(noRecords),
+          endemicMatches:
+            endemicSwatch === normalize(regionColors.get("08031") ?? ""),
+          established:
+            swatch("Established") === normalize(established) &&
+            normalize(regionColors.get("08001") ?? "") ===
+              normalize(established),
+          noRecords:
+            noRecordsSwatch === normalize(noRecords) &&
+            normalize(regionColors.get("08013") ?? "") === normalize(noRecords),
+          reported:
+            swatch("Reported") === normalize(reported) &&
+            normalize(regionColors.get("08005") ?? "") === normalize(reported),
+          unknown:
+            swatch("Unknown") === normalize(unknown) &&
+            normalize(regionColors.get("08014") ?? "") === normalize(unknown),
+        };
+      },
+      {
+        endemicLabel: "Endemic",
+        established: TICK_STATUS_ESTABLISHED_COLOR,
+        noRecords: TICK_STATUS_NO_RECORDS_COLOR,
+        reported: TICK_STATUS_REPORTED_COLOR,
+        unknown: TICK_STATUS_EXTRA_COLORS.Unknown,
+      }
+    );
+    expect(paintAgreement).toEqual({
+      endemicDistinct: true,
+      endemicMatches: true,
+      established: true,
+      noRecords: true,
+      reported: true,
+      unknown: true,
+    });
+
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(legend.locator("[data-legend-segment]")).toHaveCount(5);
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "United States" }).click();
+    await expect(page).toHaveURL(/scope=ALL/);
+
+    const reported = legend.getByRole("button", {
+      name: "Reported",
+      exact: true,
+    });
+    await reported.focus();
+    await page.keyboard.press("Enter");
+    const tip = page.getByRole("dialog", { name: /Reported/ });
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText("Reported");
+    await page.keyboard.press("Escape");
+    await expect(tip).toBeHidden();
+    await reported.click();
+    await expect(tip).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(tip).toBeHidden();
+
+    await chooseLayer(page, "B. burgdorferi status");
+    await expect(legend).toHaveAttribute(
+      "data-legend-layer",
+      "pathogen_status"
+    );
+    await expect(legend.locator("[data-legend-visible-line]")).toHaveCount(0);
+    await expect(
+      legend.getByRole("button", { name: /No records \(not zero/ })
+    ).toBeVisible();
+    await expect(legend.getByRole("button", { name: "Present" })).toBeVisible();
+    await chooseLayer(page, "Blacklegged tick status");
+    await expect(legend).toHaveAttribute("data-legend-layer", "tick_status");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(legend.getByText("No records", { exact: true })).toBeVisible();
+    await expect(
+      legend.getByText("(not zero, not confirmed absence)", { exact: true })
+    ).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .include("[data-testid='explorer-map-legend']")
+      .analyze();
+    expect(results.violations).toEqual([]);
   });
 });
 

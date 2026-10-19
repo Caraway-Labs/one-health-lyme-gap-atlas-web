@@ -165,13 +165,6 @@ function colorExpressionError(color: string): string | null {
   return created.value.map((error) => error.message).join(" ");
 }
 
-function legendLabel(status: string): string {
-  if (status === "Unknown" || status === "Unavailable") {
-    return `${status} (not zero, not confirmed absence)`;
-  }
-  return status;
-}
-
 function audit(region: HTMLElement, legend: HTMLElement): string[] {
   const problems: string[] = [];
   const features = featureColors(region);
@@ -188,7 +181,7 @@ function audit(region: HTMLElement, legend: HTMLElement): string[] {
     if (feature.includes("color-mix(") || feature.startsWith("var(")) {
       problems.push(`${fips} still uses a CSS expression: ${feature}`);
     }
-    const swatch = legendColor(legend, legendLabel(status));
+    const swatch = legendColor(legend, status);
     if (!sameColor(feature, swatch)) {
       problems.push(
         `${fips} legend ${swatch} does not match feature ${feature}`
