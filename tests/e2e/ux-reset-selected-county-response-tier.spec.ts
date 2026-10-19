@@ -15,27 +15,31 @@ const release = baldwin.release.release_id;
 const tierShots = [
   {
     color: "#a9d2db",
+    detail: "Continue routine surveillance",
     followUp: "Continue routine review",
     name: "lower",
-    pill: "Lower · Continue routine review",
+    title: "Lower review priority",
   },
   {
     color: "#efc64a",
+    detail: "Conduct targeted follow-up",
     followUp: "Conduct targeted follow-up",
     name: "moderate",
-    pill: "Moderate · Conduct targeted follow-up",
+    title: "Moderate review priority",
   },
   {
     color: "#e9602b",
+    detail: "Prioritize local investigation",
     followUp: "Prioritize targeted follow-up",
     name: "highest",
-    pill: "Highest · Prioritize targeted follow-up",
+    title: "Highest review priority",
   },
   {
     color: " ",
+    detail: null,
     followUp: "Gap score unavailable",
     name: "unavailable",
-    pill: "Gap score unavailable",
+    title: "Gap score unavailable",
   },
 ] as const;
 
@@ -138,35 +142,21 @@ async function captureTierShots(
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
     const preview = page.getByTestId("review-published-county-preview");
     const pill = preview.getByTestId("selected-county-response-tier");
-    await expect(pill).toHaveText(shot.pill);
+    await expect(pill).toContainText(shot.title);
+    if (shot.detail) {
+      await expect(pill.locator(".response-tier-pill-detail")).toHaveText(
+        shot.detail
+      );
+    }
     await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
       shot.followUp
     );
     await preview.evaluate((card) => {
       card.scrollIntoView({ block: "start", inline: "nearest" });
     });
-    const clip = await preview.evaluate((card) => {
-      const help = card.querySelector(
-        "[data-testid='selected-county-response-tier-help']"
-      );
-      if (!(help instanceof HTMLElement)) {
-        return null;
-      }
-      const cardBox = card.getBoundingClientRect();
-      const helpBox = help.getBoundingClientRect();
-      return {
-        height: Math.min(640, Math.ceil(helpBox.bottom - cardBox.top + 12)),
-        width: Math.ceil(cardBox.width),
-        x: Math.max(0, Math.floor(cardBox.left)),
-        y: Math.max(0, Math.floor(cardBox.top)),
-      };
+    await preview.screenshot({
+      path: testInfo.outputPath(`response-tier-${viewport}-${shot.name}.png`),
     });
-    if (clip) {
-      await page.screenshot({
-        clip,
-        path: testInfo.outputPath(`response-tier-${viewport}-${shot.name}.png`),
-      });
-    }
   }
 }
 
@@ -183,8 +173,14 @@ test.describe("selected county response tier", () => {
     const followUp = page.getByTestId("explorer-follow-up-response");
     await expect(pill).toBeVisible();
     await expect(followUp).toHaveText("Verify with local information");
-    await expect(pill).toHaveText("Monitor · Verify with local information");
+    await expect(pill.locator(".response-tier-pill-title")).toHaveText(
+      "Elevated review priority"
+    );
+    await expect(pill.locator(".response-tier-pill-detail")).toHaveText(
+      "Verify with local information"
+    );
     await expect(pill).toHaveAttribute("data-ramp", "map-ramp-3");
+    await expect(preview.locator(".priority-pill")).toHaveCount(0);
     await expect(
       preview.getByTestId("selected-county-gap-score")
     ).toContainText("41.6");
@@ -193,9 +189,7 @@ test.describe("selected county response tier", () => {
     ).toContainText("/100");
     await expect(
       preview.getByTestId("selected-county-response-tier-help")
-    ).toHaveText(
-      "This tier suggests a level of public-health follow-up. It is not a confirmed Lyme disease risk category."
-    );
+    ).toHaveCount(0);
     await expect(preview).not.toContainText("Priority 1");
     await expect(preview.getByTestId("review-investigate")).toHaveCount(0);
     await expect(
@@ -292,28 +286,44 @@ test.describe("selected county response tier", () => {
             (box) => box.right > column.start + 1 && box.left < column.end - 1
           )
       );
+      const rationale = card.querySelector("[data-testid='review-rationale']");
+      const pill = card.querySelector(
+        "[data-testid='selected-county-response-tier']"
+      );
+      if (
+        !(rationale instanceof HTMLElement) ||
+        !(pill instanceof HTMLElement)
+      ) {
+        return null;
+      }
       const headingBox = heading.getBoundingClientRect();
       const lockupBox = lockup.getBoundingClientRect();
+      const rationaleBox = rationale.getBoundingClientRect();
+      const pillBox = pill.getBoundingClientRect();
       return {
         contentWidth,
         display: style.display,
         emptyTracks: emptyTracks.length,
-        firstChild: card.firstElementChild?.getAttribute("data-testid"),
-        headingWidth: headingBox.width,
-        lockupWidth: lockupBox.width,
+        headingClipped: heading.scrollWidth > heading.clientWidth + 1,
+        lockupBesideEvidence: lockupBox.bottom > rationaleBox.top + 1,
+        overflow: card.scrollWidth > card.clientWidth + 1,
+        pillWidth: pillBox.width,
+        rationaleWidth: rationaleBox.width,
         tracks: tracks.length,
       };
     });
     expect(layout?.display).toBe("grid");
-    expect(layout?.firstChild).toBe("selected-county-score-lockup");
-    expect(layout?.tracks ?? 0).toBeGreaterThan(0);
+    expect(layout?.tracks).toBe(1);
     expect(layout?.emptyTracks).toBe(0);
     expect(layout?.contentWidth ?? 0).toBeGreaterThan(200);
-    expect(layout?.headingWidth ?? 0).toBeGreaterThan(
+    expect(layout?.overflow).toBe(false);
+    expect(layout?.headingClipped).toBe(false);
+    expect(layout?.lockupBesideEvidence).toBe(false);
+    expect(layout?.rationaleWidth ?? 0).toBeGreaterThan(
       (layout?.contentWidth ?? 0) * 0.9
     );
-    expect(layout?.lockupWidth ?? 0).toBeGreaterThan(
-      (layout?.contentWidth ?? 0) * 0.9
+    expect(layout?.pillWidth ?? 0).toBeLessThan(
+      (layout?.contentWidth ?? 0) * 0.95
     );
   });
 
@@ -331,11 +341,12 @@ test.describe("selected county response tier", () => {
     );
     await expect(pill).toHaveText("Gap score unavailable");
     await expect(pill).toHaveAttribute("data-status", "unavailable");
-    await expect(pill).not.toContainText("Monitor");
+    await expect(pill).not.toContainText("Elevated review priority");
     await expect(pill).not.toContainText("Priority 1");
     await expect(
       preview.getByTestId("selected-county-response-tier-help")
-    ).toContainText("not a confirmed Lyme disease risk category");
+    ).toHaveCount(0);
+    await expect(preview.locator(".priority-pill")).toHaveCount(0);
     const placed = await page.evaluate(() => {
       const tier = document.querySelector(
         "[data-testid='selected-county-response-tier']"
