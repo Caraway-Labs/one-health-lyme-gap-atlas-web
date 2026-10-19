@@ -16,6 +16,8 @@ import {
   formatGapScore,
   publishedGapScore,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
+import { RankingInfluencePanel } from "@/features/ux-reset/review/ranking-influence-panel";
+import { REVIEW_RATIONALE_SCORE_NOTE } from "@/features/ux-reset/review/review-rationale";
 import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
 import {
   EXPLORER_MAP_FOLLOW_UP_ID,
@@ -191,6 +193,7 @@ export function ReviewPublishedCountyPreview({
         </AtlasStatusMessage>
       ) : null}
       {detail ? <ReviewRationalePanel detail={detail} /> : null}
+      {detail ? <RankingInfluencePanel detail={detail} /> : null}
       {detail ? (
         <details
           className="ux-reset-explorer-score"
@@ -239,6 +242,7 @@ export function ReviewPublishedCountyPreview({
               No source list was returned with this release.
             </p>
           )}
+          <p className="type-small">{REVIEW_RATIONALE_SCORE_NOTE}</p>
         </details>
       ) : null}
       <div className="ux-reset-review-preview-actions">

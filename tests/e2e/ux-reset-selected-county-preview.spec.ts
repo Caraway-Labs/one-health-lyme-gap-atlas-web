@@ -201,6 +201,11 @@ test.describe("Selected county preview", () => {
     await expect(
       preview.getByRole("heading", { name: "Community context" })
     ).toBeVisible();
+    const influence = preview.getByTestId("ranking-influence");
+    await expect(influence).not.toHaveAttribute("open");
+    await expect(influence.locator("summary")).toHaveText(
+      "What influenced this ranking?"
+    );
     expect(hits).toEqual([]);
 
     await page.locator('button.ux-reset-ranked-row[data-fips="01001"]').click();
