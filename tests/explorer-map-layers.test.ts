@@ -6,6 +6,7 @@ import {
   parseExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
 import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
+import { TICK_STATUS_EXTRA_COLORS } from "@/features/ux-reset/review/tick-status-contract";
 import type { CountyScoreSummary } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 
@@ -312,8 +313,8 @@ describe("Explorer map layers", () => {
       ramp: paint.colorsByFips.get("08001")?.includes("map-ramp") ?? false,
       unit: paint.unit,
     }).toStrictEqual({
-      established: "var(--teal)",
-      noRecords: "var(--atlas-muted-text)",
+      established: "#174B78",
+      noRecords: "#DDE4E7",
       ramp: false,
       unit: "published status category",
     });
@@ -473,13 +474,13 @@ describe("Explorer map layers", () => {
         (color) => color.startsWith("hsl(") && !color.includes("color-mix")
       ),
       reserved: extraColors.some((color) => reserved.has(color)),
-      unknown: byLabel.get("Unknown (not zero, not confirmed absence)"),
+      unknown: byLabel.get("Unknown"),
     }).toStrictEqual({
       detected: true,
       distinct: extras.length,
       paintable: true,
       reserved: false,
-      unknown: "var(--navy-2)",
+      unknown: TICK_STATUS_EXTRA_COLORS.Unknown,
     });
   });
 

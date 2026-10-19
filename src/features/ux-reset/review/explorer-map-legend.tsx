@@ -102,6 +102,15 @@ function LegendSegmentButton({
         }}
       >
         <span aria-hidden="true" style={{ background }} />
+        {segment?.visibleLines?.map((line) => (
+          <small
+            className="ux-reset-explorer-legend-segment-label"
+            data-legend-visible-line=""
+            key={line}
+          >
+            {line}
+          </small>
+        ))}
       </PopoverTrigger>
       <PopoverContent
         align="center"
