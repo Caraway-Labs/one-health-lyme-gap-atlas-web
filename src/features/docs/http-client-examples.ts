@@ -359,24 +359,29 @@ function pythonParams(params: readonly QueryPair[], indent: number): string {
 }
 
 function rQuery(params: readonly QueryPair[]): string {
-  const multi = repeated(params) ? '\n    .multi = "explode"' : "";
+  const entries = rEntries(params, 4);
+  if (repeated(params)) {
+    entries.push('    .multi = "explode"');
+  }
   return `req_url_query(
-${rList(params, 4)}${multi}
+${entries.join(",\n")}
   )`;
 }
 
 function rList(params: readonly QueryPair[], indent: number): string {
+  return rEntries(params, indent).join(",\n");
+}
+
+function rEntries(params: readonly QueryPair[], indent: number): string[] {
   const pad = " ".repeat(indent);
-  return groupParams(params)
-    .map(([name, values]) => {
-      assertRName(name);
-      const rendered =
-        values.length === 1
-          ? quote(values[0] ?? "")
-          : `c(${values.map((value) => quote(value)).join(", ")})`;
-      return `${pad}${name} = ${rendered},`;
-    })
-    .join("\n");
+  return groupParams(params).map(([name, values]) => {
+    assertRName(name);
+    const rendered =
+      values.length === 1
+        ? quote(values[0] ?? "")
+        : `c(${values.map((value) => quote(value)).join(", ")})`;
+    return `${pad}${name} = ${rendered}`;
+  });
 }
 
 function groupParams(params: readonly QueryPair[]): [string, string[]][] {

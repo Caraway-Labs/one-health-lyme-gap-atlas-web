@@ -45,6 +45,101 @@ function queryPairs(query: string): [string, string][] {
   return [...new URLSearchParams(query).entries()];
 }
 
+function callInteriors(source: string, callee: string): string[] {
+  const opener = `${callee}(`;
+  const interiors: string[] = [];
+  let searchFrom = 0;
+  while (searchFrom < source.length) {
+    const start = source.indexOf(opener, searchFrom);
+    if (start === -1) {
+      break;
+    }
+    const open = start + opener.length - 1;
+    let depth = 0;
+    let end = -1;
+    for (let index = open; index < source.length; index += 1) {
+      const character = source[index];
+      if (character === "(") {
+        depth += 1;
+      }
+      if (character === ")") {
+        depth -= 1;
+        if (depth === 0) {
+          end = index;
+          break;
+        }
+      }
+    }
+    if (end === -1) {
+      break;
+    }
+    interiors.push(source.slice(open + 1, end));
+    searchFrom = end + 1;
+  }
+  return interiors;
+}
+
+function splitTopLevel(interior: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let depth = 0;
+  let quote: string | undefined;
+  for (const character of interior) {
+    if (quote) {
+      current += character;
+      if (character === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      current += character;
+      continue;
+    }
+    if (character === "(") {
+      depth += 1;
+    }
+    if (character === ")" && depth > 0) {
+      depth -= 1;
+    }
+    if (character === "," && depth === 0) {
+      parts.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += character;
+  }
+  parts.push(current.trim());
+  return parts;
+}
+
+function argumentsOf(
+  source: string,
+  callee: string,
+  includes: string
+): string[] {
+  const interior = callInteriors(source, callee).find((value) =>
+    value.includes(includes)
+  );
+  return splitTopLevel(interior ?? "");
+}
+
+function emptyRArguments(source: string): string[] {
+  const problems: string[] = [];
+  for (const callee of ["list", "req_url_query"]) {
+    for (const interior of callInteriors(source, callee)) {
+      const empty = splitTopLevel(interior).filter(
+        (argument) => argument.length === 0
+      );
+      if (empty.length > 0) {
+        problems.push(callee);
+      }
+    }
+  }
+  return problems;
+}
+
 function missingFilters(
   examples: HttpClientExamples,
   request: HttpClientRequest
@@ -198,6 +293,61 @@ describe("persisted HTTP client examples", () => {
       methodology: true,
       names: [true, true, true, true, true],
       source: true,
+    });
+  });
+
+  it("renders base-R filter lists without a trailing comma", () => {
+    const paged = httpClientPaginationExamples(pagination);
+    const repeated = httpClientPaginationExamples({
+      path: "/v1/observations",
+      query:
+        "measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=36061&year=2023&page_size=2",
+    });
+    const samples = [
+      paged.R,
+      repeated.R,
+      httpClientExamples([quickstart]).R,
+      httpClientExamples([comparison]).R,
+      httpClientExamples([
+        { path: "/v1/sources/human" },
+        { path: "/v1/methodologies/human_confirmed_probable_case_floor_v1" },
+      ]).R,
+      httpClientExamples([
+        {
+          body: "bytes",
+          path: "/v1/counties/36061/report.pdf",
+          query: "template=county-v1",
+        },
+      ]).R,
+    ];
+    expect({
+      emptyArguments: samples.flatMap((sample) => emptyRArguments(sample)),
+      followUp: argumentsOf(paged.R, "req_url_query", "page_token"),
+      list: argumentsOf(paged.R, "list", "measure_id"),
+      repeatedFollowUp: argumentsOf(repeated.R, "req_url_query", "page_token"),
+      repeatedList: argumentsOf(repeated.R, "list", "measure_id"),
+    }).toStrictEqual({
+      emptyArguments: [],
+      followUp: ["!!!filters", "page_token = token"],
+      list: [
+        'measure_id = "nclimgrid_tavg_county_day"',
+        'geography_type = "county"',
+        'geography_id = "36061"',
+        'year = "2025"',
+        'page_size = "2"',
+      ],
+      repeatedFollowUp: [
+        "!!!filters",
+        "page_token = token",
+        '.multi = "explode"',
+      ],
+      repeatedList: [
+        'measure_id = "case_count_floor_2023"',
+        'geography_type = "county"',
+        'geography_id = c("08001", "36061")',
+        'year = "2023"',
+        'page_size = "2"',
+      ],
     });
   });
 
