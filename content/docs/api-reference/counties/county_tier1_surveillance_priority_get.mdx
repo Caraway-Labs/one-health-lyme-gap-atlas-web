@@ -1,0 +1,56 @@
+---
+title: Get persisted Tier 1 model-assisted surveillance review priority
+description: Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.
+      - content: GET /v1/counties/{fips}/tier1-surveillance-priority
+      - content: county_tier1_surveillance_priority_get
+      - content: Get persisted Tier 1 model-assisted surveillance review priority
+      - content: Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.
+      - content: 'fips path required '
+      - content: Fips
+      - content: 200 Successful Response
+      - content: application/json
+      - content: '#/components/schemas/Tier1CountyPriority'
+      - content: 404 County or dataset release not found.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"County or dataset release not found.","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"example-request-id"}'
+      - content: 422 One or more request values are invalid.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-422","title":"Request failed","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"example-request-id"}'
+      - content: 429 Rate limit exceeded.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limit exceeded.","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"example-request-id"}'
+      - content: 503 Atlas data service is unavailable.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Atlas data service is unavailable.","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/tier1-surveillance-priority","method":"get"}]} />
+    </>
+  );
+}

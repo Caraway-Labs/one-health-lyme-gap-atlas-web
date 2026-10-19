@@ -1,0 +1,204 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const { replace, writeSavedProfile } = vi.hoisted(() => ({
+  replace: vi.fn<(path: string) => void>(),
+  writeSavedProfile: vi.fn<() => Promise<unknown>>(),
+}));
+
+vi.mock(
+  import("next/font/local"),
+  () =>
+    ({
+      default: () => ({ variable: "--font-front-porch-hero" }),
+    }) as never
+);
+
+vi.mock(
+  import("next/navigation"),
+  () =>
+    ({
+      useRouter: () => ({ replace }),
+    }) as never
+);
+
+vi.mock(
+  import("@/features/ux-reset/profile/saved-profile-client"),
+  () =>
+    ({
+      writeSavedProfile,
+    }) as never
+);
+
+vi.mock(
+  import("@/features/ux-reset/settings/use-settings-state-options"),
+  () =>
+    ({
+      useSettingsStateOptions: () => ({
+        stateList: {
+          options: [
+            { code: "AK", name: "Alaska" },
+            { code: "CO", name: "Colorado" },
+            { code: "DC", name: "District of Columbia" },
+            { code: "HI", name: "Hawaii" },
+            { code: "NY", name: "New York" },
+          ],
+          status: "ready",
+        },
+        refetch: () => Promise.resolve(),
+        stateOptions: [
+          { code: "AK", name: "Alaska" },
+          { code: "CO", name: "Colorado" },
+          { code: "DC", name: "District of Columbia" },
+          { code: "HI", name: "Hawaii" },
+          { code: "NY", name: "New York" },
+        ],
+      }),
+    }) as never
+);
+
+import { StartingViewScreen } from "@/features/ux-reset/onboarding/starting-view-screen";
+import { savedProfileFromUserProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";
+import type { ProfileSessionIdentity } from "@/features/ux-reset/profile/profile-session";
+
+const incomplete = savedProfileFromUserProfile({
+  job_title: "Analyst",
+  organization: "State lab",
+  role: "state_level_epidemiologist",
+  state_code: null,
+});
+
+const unconfiguredIdentity: ProfileSessionIdentity = { kind: "unconfigured" };
+
+function renderScreen(
+  profile: typeof incomplete,
+  identity: ProfileSessionIdentity = unconfiguredIdentity
+) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <StartingViewScreen identity={identity} profile={profile} />
+    </QueryClientProvider>
+  );
+}
+
+describe("Choose your starting view", () => {
+  afterEach(() => {
+    cleanup();
+    replace.mockReset();
+    writeSavedProfile.mockReset();
+  });
+
+  it("starts with neither choice selected and hides the state list", () => {
+    renderScreen(incomplete);
+
+    expect(
+      screen.getByRole("heading", { name: "Choose your starting view" })
+    ).toBeTruthy();
+    expect(
+      (screen.getByRole("radio", { name: "United States" }) as HTMLInputElement)
+        .checked
+    ).toBeFalsy();
+    expect(
+      (screen.getByRole("radio", { name: "One state" }) as HTMLInputElement)
+        .checked
+    ).toBeFalsy();
+    expect(screen.queryByLabelText("State")).toBeNull();
+  });
+
+  it("asks for a choice and then a state without saving", () => {
+    renderScreen(incomplete);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Choose United States or one state to continue."
+    );
+    expect(writeSavedProfile).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("radio", { name: "One state" }));
+    expect(screen.getByLabelText("State")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Select a state to continue."
+    );
+    expect(writeSavedProfile).not.toHaveBeenCalled();
+  });
+
+  it("lists the lower 48 and the District of Columbia", () => {
+    renderScreen(incomplete);
+
+    fireEvent.click(screen.getByRole("radio", { name: "One state" }));
+    const stateList = screen.getByLabelText("State");
+    expect(stateList.textContent).toContain("Colorado");
+    expect(stateList.textContent).toContain("District of Columbia");
+    expect(stateList.textContent).not.toContain("Alaska");
+    expect(stateList.textContent).not.toContain("Hawaii");
+  });
+
+  it("continues only after version 1 matches the selected state", async () => {
+    writeSavedProfile.mockResolvedValue({
+      profile: savedProfileFromUserProfile({
+        job_title: "Analyst",
+        organization: "State lab",
+        role: "state_level_epidemiologist",
+        state_code: "NY",
+        starting_view_version: 1,
+      }),
+      status: "confirmed",
+    });
+    renderScreen(incomplete);
+
+    fireEvent.click(screen.getByRole("radio", { name: "One state" }));
+    fireEvent.change(screen.getByLabelText("State"), {
+      target: { value: "NY" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
+
+    await expect(
+      screen.findByText("Saving your starting view…")
+    ).resolves.toBeTruthy();
+    expect(writeSavedProfile).toHaveBeenCalledWith(
+      {
+        complete_starting_view: true,
+        job_title: "Analyst",
+        organization: "State lab",
+        role: "state_level_epidemiologist",
+        state_code: "NY",
+      },
+      { kind: "unconfigured" },
+      incomplete
+    );
+    expect(replace).toHaveBeenCalledWith("/explore");
+  });
+
+  it("keeps the selection when the save is not confirmed", async () => {
+    writeSavedProfile.mockResolvedValue({
+      message: "unconfirmed",
+      status: "uncertain",
+    });
+    renderScreen(incomplete);
+
+    fireEvent.click(screen.getByRole("radio", { name: "United States" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to Atlas Explorer" })
+    );
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "We couldn’t save your starting view. Your selection is still here. Try again."
+    );
+    expect(
+      (screen.getByRole("radio", { name: "United States" }) as HTMLInputElement)
+        .checked
+    ).toBeTruthy();
+    expect(replace).not.toHaveBeenCalled();
+  });
+});

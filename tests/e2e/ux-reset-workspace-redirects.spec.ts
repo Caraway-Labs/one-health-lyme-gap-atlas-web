@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const DESTINATION_LABELS = [
   "Atlas Explorer",
   "Compare",
@@ -12,6 +14,10 @@ const DESTINATION_LABELS = [
 ] as const;
 
 test.describe("six-destination redirects", () => {
+  test.beforeEach(async ({ page }) => {
+    await fulfillCompletedStartingView(page);
+  });
+
   test("sidebar lists the workspace destinations and old routes redirect once", async ({
     page,
   }) => {

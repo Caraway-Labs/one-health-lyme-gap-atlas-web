@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const bookmarks = [
   {
     landed: /\/explore$/,
@@ -33,6 +35,10 @@ const bookmarks = [
 ] as const;
 
 test.describe("retired Geographic Explorer bookmarks", () => {
+  test.beforeEach(async ({ page }) => {
+    await fulfillCompletedStartingView(page);
+  });
+
   for (const bookmark of bookmarks) {
     test(`redirects ${bookmark.start} to Atlas Explorer`, async ({ page }) => {
       await page.goto(bookmark.start);

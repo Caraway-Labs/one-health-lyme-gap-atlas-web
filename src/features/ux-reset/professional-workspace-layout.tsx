@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 
+import { StartingViewGate } from "@/features/ux-reset/onboarding/starting-view-gate";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
 export const professionalWorkspaceMetadata: Metadata = {
@@ -23,7 +24,9 @@ export function ProfessionalWorkspaceLayout({
         </main>
       }
     >
-      <ResetProfessionalShell>{children}</ResetProfessionalShell>
+      <StartingViewGate>
+        <ResetProfessionalShell>{children}</ResetProfessionalShell>
+      </StartingViewGate>
     </Suspense>
   );
 }

@@ -8,6 +8,11 @@ import {
 } from "node:fs";
 import path from "node:path";
 
+import { generateFilesOnly, type Document } from "fumadocs-openapi";
+import { createOpenAPI } from "fumadocs-openapi/server";
+import { parse, stringify } from "yaml";
+
+import { showsPendingDeliveryBadge } from "./endpoint-delivery";
 import {
   getDocsUrl,
   getPublishedApiOrigin,
@@ -32,6 +37,16 @@ export const PUBLIC_OPENAPI_RELATIVE_PATH = "contracts/public-openapi.json";
 export const PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH =
   "contracts/public-openapi.manifest.json";
 export const API_REFERENCE_RELATIVE_DIR = "content/docs/api-reference";
+/** Schema id passed to fumadocs-openapi. The docs server preloads this id. */
+export const PUBLIC_OPENAPI_SCHEMA_ID = "atlas-public";
+
+const CANONICAL_EVIDENCE_TAGS = [
+  "discovery",
+  "observations",
+  "provenance",
+  "geographies",
+] as const;
+const ATLAS_ANALYTICS_TAGS = ["atlas", "counties", "states"] as const;
 
 const SOURCE_REPOSITORY = "Caraway-Labs/one-health-lyme-gap-atlas-api";
 const SOURCE_PATH = "openapi.json";
@@ -315,25 +330,29 @@ export function loadPublicOpenApiContract(
   };
 }
 
-export function renderPublicApiReference(
+export async function renderPublicApiReference(
   contract: LoadedPublicOpenApiContract
-): Map<string, string> {
-  const schemaAnchors = schemaAnchorMap(contract.schemas);
-  const files = new Map<string, string>();
-  const pages = ["index"];
-
-  files.set("index.mdx", renderIndex(contract, schemaAnchors));
-  for (const tag of contract.tags) {
-    pages.push(tag.slug);
-    files.set(`${tag.slug}.mdx`, renderTagPage(tag, schemaAnchors));
-  }
-  pages.push("schemas");
-  files.set("schemas.mdx", renderSchemaPage(contract.schemas, schemaAnchors));
-  files.set(
-    "meta.json",
-    `${JSON.stringify({ title: "API reference", pages }, null, 2)}\n`
-  );
-  return files;
+): Promise<Map<string, string>> {
+  const server = createOpenAPI({
+    input: {
+      [PUBLIC_OPENAPI_SCHEMA_ID]: documentForOpenApiPages(
+        contract.document
+      ) as Document,
+    },
+  });
+  const generated = await generateFilesOnly({
+    addGeneratedComment: false,
+    frontmatter: (_title, description) => ({
+      description: flattenContractText(description ?? ""),
+    }),
+    groupBy: "tag",
+    // DocsDescription already renders frontmatter description. Leave the
+    // native OpenAPI description off so each operation page shows it once.
+    includeDescription: false,
+    input: server,
+    per: "operation",
+  });
+  return assemblePublicApiReference(contract, generated);
 }
 
 export function readAndLoadPublicOpenApiContract(
@@ -359,12 +378,12 @@ export function readAndLoadPublicOpenApiContract(
   return loadPublicOpenApiContract(specBytes, manifestText);
 }
 
-export function syncPublicApiReference(options: {
+export async function syncPublicApiReference(options: {
   check: boolean;
   root: string;
-}): void {
+}): Promise<void> {
   const contract = readAndLoadPublicOpenApiContract(options.root);
-  const expected = renderPublicApiReference(contract);
+  const expected = await renderPublicApiReference(contract);
   const directory = path.join(options.root, API_REFERENCE_RELATIVE_DIR);
   const actual = readGeneratedFiles(directory);
 
@@ -1089,79 +1108,6 @@ function externalDocsLink(docs: ExternalDocsView): string {
   return `[${escapeInline(label)}](${docs.url})`;
 }
 
-function renderIndex(
-  contract: LoadedPublicOpenApiContract,
-  schemaAnchors: Map<string, string>
-): string {
-  const provenance = contract.provenance;
-  const lines = [
-    frontmatter(
-      "API reference",
-      "Generated from the pinned public Atlas OpenAPI contract, with spec version, source, and the raw schema."
-    ),
-    "This page is generated from the public OpenAPI contract. It is not a second hand-maintained endpoint catalog. Tags, operation IDs, parameters, schemas, examples, and errors below come from that contract.",
-    "",
-    "## Spec version and source",
-    "",
-    "| Label | Value |",
-    "| --- | --- |",
-    `| OpenAPI version | \`${escapeCell(provenance.openapiVersion)}\` |`,
-    `| Application version | \`${escapeCell(provenance.applicationVersion)}\` |`,
-    `| HTTP contract | \`${escapeCell(provenance.httpContract)}\` |`,
-    `| Source repository | \`${escapeCell(provenance.sourceRepository)}\` |`,
-    `| Source commit | \`${escapeCell(provenance.sourceCommit)}\` |`,
-    `| Source file | \`${escapeCell(provenance.sourcePath)}\` |`,
-    `| Checksum | \`${escapeCell(provenance.sha256)}\` |`,
-    "",
-    `Application version \`${escapeInline(provenance.applicationVersion)}\` identifies the OpenAPI \`info.version\` field. The HTTP contract is \`${escapeInline(provenance.httpContract)}\`. Those identifiers are different. This reference build is identified by the source commit and checksum.`,
-    "",
-    `Raw spec: [OpenAPI schema](${provenance.sourceUrl}).`,
-    "",
-    `Pinned source: [${provenance.sourceRepository}@${provenance.sourceCommit}](https://github.com/${provenance.sourceRepository}/blob/${provenance.sourceCommit}/${provenance.sourcePath}).`,
-  ];
-
-  if (contract.servers.length > 0) {
-    lines.push("", "## Servers", "");
-    for (const server of contract.servers) {
-      const description = server.description
-        ? ` (${escapeInline(server.description)})`
-        : "";
-      lines.push(`- \`${escapeInline(server.url)}\`${description}`);
-    }
-  }
-  if (contract.externalDocs) {
-    lines.push(
-      "",
-      "## External documentation",
-      "",
-      externalDocsLink(contract.externalDocs)
-    );
-  }
-
-  if (contract.summary) {
-    lines.push("", `**${escapeInline(contract.summary)}**`);
-  }
-  if (contract.description) {
-    lines.push("", escapeMdx(contract.description));
-  }
-
-  lines.push("", "## Operations", "");
-  for (const tag of contract.tags) {
-    lines.push(`### ${escapeInline(tag.name)}`, "");
-    if (tag.description) lines.push(escapeMdx(tag.description), "");
-    for (const operation of tag.operations) {
-      lines.push(
-        `- [\`${operation.method} ${operation.path}\`](/docs/api-reference/${tag.slug}#${operation.operationId}) — ${escapeInline(operation.summary)} — \`${operation.operationId}\``
-      );
-    }
-    lines.push("");
-  }
-  lines.push(
-    `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaAnchors.size}).`
-  );
-  return `${lines.join("\n").trim()}\n`;
-}
-
 const COUNTY_REPORT_OPERATION_ID =
   "county_report_pdf_v1_counties__fips__report_pdf_get";
 const COUNTY_REPORT_TEMPLATE_TABS = ["county-v1 scoring", "county-v2 evidence"];
@@ -1393,274 +1339,323 @@ function countyReportProblem(
   };
 }
 
-function renderTagPage(
-  tag: TagView,
-  schemaAnchors: Map<string, string>
-): string {
-  const lines = [
-    frontmatter(
-      tagTitle(tag.name),
-      tag.description ||
-        `Generated ${tag.name} operations from the public Atlas OpenAPI contract.`
-    ),
-  ];
-  if (
-    tag.operations.some(
-      (operation) => operation.operationId === COUNTY_REPORT_OPERATION_ID
-    )
-  ) {
-    lines.push('import { Tab, Tabs } from "fumadocs-ui/components/tabs";', "");
+function documentForOpenApiPages(document: JsonRecord): JsonRecord {
+  const copy = structuredClone(document);
+  const paths = copy.paths;
+  if (!isRecord(paths)) return copy;
+  for (const [route, pathItem] of Object.entries(paths)) {
+    if (!isRecord(pathItem)) continue;
+    const resolved = resolvePathItem(copy, pathItem, route);
+    const inlined: JsonRecord = {};
+    for (const [key, value] of Object.entries(resolved)) {
+      if (key !== "$ref") inlined[key] = value;
+    }
+    paths[route] = inlined;
   }
-  lines.push("Generated from the public OpenAPI contract.", "");
-  if (tag.description) lines.push(escapeMdx(tag.description), "");
-  if (tag.externalDocs) lines.push(externalDocsLink(tag.externalDocs), "");
-  for (const operation of tag.operations) {
-    lines.push(renderOperation(operation, schemaAnchors), "");
-  }
-  return `${lines.join("\n").trim()}\n`;
+  return copy;
 }
 
-function renderOperation(
-  operation: OperationView,
-  schemaAnchors: Map<string, string>
-): string {
-  const lines = [
-    `## ${escapeInline(operation.summary).replaceAll("[#", "[ #")} [#${operation.operationId}]`,
-    "",
-    `\`${operation.method} ${operation.path}\``,
-    "",
-    `Operation ID: \`${operation.operationId}\``,
-    "",
-    `Tag: ${operation.tags.map((tag) => `\`${escapeInline(tag)}\``).join(", ") || "`untagged`"}`,
-  ];
-  if (operation.deprecated) lines.push("", "Deprecated.");
-  if (operation.externalDocs) {
-    lines.push(
-      "",
-      `Documentation: ${externalDocsLink(operation.externalDocs)}`
+type GeneratedOpenApiFile = {
+  content: string;
+  path: string;
+};
+
+type LocatedOperation = {
+  operation: OperationView;
+  tag: TagView;
+};
+
+function assemblePublicApiReference(
+  contract: LoadedPublicOpenApiContract,
+  generated: GeneratedOpenApiFile[]
+): Map<string, string> {
+  const files = new Map<string, string>();
+  const located = operationsById(contract);
+  const folderOperations = new Map<string, LocatedOperation[]>();
+
+  for (const file of generated) {
+    const relativePath = file.path.split(path.sep).join("/");
+    const operationId = relativePath.slice(
+      relativePath.lastIndexOf("/") + 1,
+      -".mdx".length
+    );
+    const entry = located.get(operationId);
+    if (!entry) {
+      throw new PublicOpenApiContractError(
+        "malformed",
+        `Generated page ${relativePath} is not an operation in the loaded contract.`
+      );
+    }
+    const folder = relativePath.slice(0, relativePath.lastIndexOf("/"));
+    const entries = folderOperations.get(folder) ?? [];
+    entries.push(entry);
+    folderOperations.set(folder, entries);
+    files.set(relativePath, enrichOperationPage(file.content, entry.operation));
+  }
+
+  for (const operationId of located.keys()) {
+    const generatedPath = [...files.keys()].find((filePath) =>
+      filePath.endsWith(`/${operationId}.mdx`)
+    );
+    if (!generatedPath) {
+      throw new PublicOpenApiContractError(
+        "malformed",
+        `Operation ${operationId} was not generated by fumadocs-openapi.`
+      );
+    }
+  }
+
+  const folders = folderOrder(contract, folderOperations);
+  for (const folder of folders) {
+    const entries = contractOrder(contract, folderOperations.get(folder) ?? []);
+    files.set(`${folder}/index.mdx`, renderTagIndex(folder, entries));
+    files.set(
+      `${folder}/meta.json`,
+      `${JSON.stringify(
+        {
+          pages: [
+            "index",
+            ...entries.map((entry) => entry.operation.operationId),
+          ],
+          title: tagTitle(entries[0]?.tag.name ?? folder),
+        },
+        null,
+        2
+      )}\n`
     );
   }
-  if (operation.pathSummary) lines.push("", escapeMdx(operation.pathSummary));
-  if (operation.pathDescription) {
-    lines.push("", escapeMdx(operation.pathDescription));
+
+  const schemaAnchors = schemaAnchorMap(contract.schemas);
+  files.set(
+    "index.mdx",
+    renderReferenceIndex(contract, folderOperations, schemaAnchors)
+  );
+  files.set(
+    "schemas.mdx",
+    renderSchemaCatalog(contract.schemas, schemaAnchors)
+  );
+  files.set("meta.json", renderReferenceNavigation(folders));
+  return files;
+}
+
+function operationsById(
+  contract: LoadedPublicOpenApiContract
+): Map<string, LocatedOperation> {
+  const located = new Map<string, LocatedOperation>();
+  for (const tag of contract.tags) {
+    for (const operation of tag.operations) {
+      located.set(operation.operationId, { operation, tag });
+    }
   }
-  if (operation.description) lines.push("", escapeMdx(operation.description));
-  const templateGuide = renderCountyReportTemplateGuide(operation);
-  if (templateGuide) lines.push("", templateGuide);
-  if (operation.servers && operation.servers.length > 0) {
-    lines.push("", "### Servers", "");
-    for (const server of operation.servers) {
+  return located;
+}
+
+function folderOrder(
+  contract: LoadedPublicOpenApiContract,
+  folderOperations: Map<string, LocatedOperation[]>
+): string[] {
+  const order: string[] = [];
+  for (const tag of contract.tags) {
+    for (const [folder, entries] of folderOperations) {
+      if (
+        entries.some((entry) => entry.tag.name === tag.name) &&
+        !order.includes(folder)
+      ) {
+        order.push(folder);
+      }
+    }
+  }
+  return order;
+}
+
+function contractOrder(
+  contract: LoadedPublicOpenApiContract,
+  entries: LocatedOperation[]
+): LocatedOperation[] {
+  const rank = new Map(
+    contract.tags.flatMap((tag) =>
+      tag.operations.map((operation, index) => [operation.operationId, index])
+    )
+  );
+  return [...entries].sort(
+    (left, right) =>
+      (rank.get(left.operation.operationId) ?? 0) -
+      (rank.get(right.operation.operationId) ?? 0)
+  );
+}
+
+function renderReferenceNavigation(folders: string[]): string {
+  const canonical = CANONICAL_EVIDENCE_TAGS.filter((tag) =>
+    folders.includes(tag)
+  );
+  const analytics = ATLAS_ANALYTICS_TAGS.filter((tag) => folders.includes(tag));
+  const grouped = new Set<string>([...canonical, ...analytics]);
+  const remainder = folders.filter((folder) => !grouped.has(folder));
+  const pages = [
+    "index",
+    ...(canonical.length > 0 ? ["---Canonical Evidence---", ...canonical] : []),
+    ...(analytics.length > 0
+      ? ["---Atlas Analytics/Reports---", ...analytics]
+      : []),
+    ...remainder,
+    "schemas",
+  ];
+  return `${JSON.stringify({ pages, title: "API reference" }, null, 2)}\n`;
+}
+
+function renderReferenceIndex(
+  contract: LoadedPublicOpenApiContract,
+  folderOperations: Map<string, LocatedOperation[]>,
+  schemaAnchors: Map<string, string>
+): string {
+  const provenance = contract.provenance;
+  const lines = [
+    frontmatter(
+      "API reference",
+      "Generated from the pinned public Atlas OpenAPI contract, with spec version, source, and the raw schema."
+    ),
+    "This page is generated from the public OpenAPI contract. It is not a second hand-maintained endpoint catalog. Tags, operation IDs, parameters, schemas, examples, and errors are rendered from that contract by the native OpenAPI reference.",
+    "",
+    "## Spec version and source",
+    "",
+    "| Label | Value |",
+    "| --- | --- |",
+    `| OpenAPI version | \`${escapeCell(provenance.openapiVersion)}\` |`,
+    `| Application version | \`${escapeCell(provenance.applicationVersion)}\` |`,
+    `| HTTP contract | \`${escapeCell(provenance.httpContract)}\` |`,
+    `| Source repository | \`${escapeCell(provenance.sourceRepository)}\` |`,
+    `| Source commit | \`${escapeCell(provenance.sourceCommit)}\` |`,
+    `| Source file | \`${escapeCell(provenance.sourcePath)}\` |`,
+    `| Checksum | \`${escapeCell(provenance.sha256)}\` |`,
+    "",
+    `Application version \`${escapeInline(provenance.applicationVersion)}\` identifies the OpenAPI \`info.version\` field. The HTTP contract is \`${escapeInline(provenance.httpContract)}\`. Those identifiers are different. This reference build is identified by the source commit and checksum.`,
+    "",
+    `Raw spec: [OpenAPI schema](${provenance.sourceUrl}).`,
+    "",
+    `Pinned source: [${provenance.sourceRepository}@${provenance.sourceCommit}](https://github.com/${provenance.sourceRepository}/blob/${provenance.sourceCommit}/${provenance.sourcePath}).`,
+  ];
+  if (contract.servers.length > 0) {
+    lines.push("", "## Servers", "");
+    for (const server of contract.servers) {
       const description = server.description
         ? ` (${escapeInline(server.description)})`
         : "";
       lines.push(`- \`${escapeInline(server.url)}\`${description}`);
     }
   }
-
-  lines.push("", "### Parameters", "");
-  if (operation.parameters.length === 0) {
-    lines.push("This operation does not declare parameters.");
-  } else {
-    for (const parameter of operation.parameters) {
-      lines.push(
-        `#### ${escapeInline(parameter.name)}`,
-        "",
-        `- Location: \`${escapeInline(parameter.location)}\``,
-        `- Required: ${parameter.required ? "yes" : "no"}`
-      );
-      if (parameter.deprecated) lines.push("- Deprecated.");
-      if (parameter.description) {
-        lines.push(`- ${escapeInline(parameter.description)}`);
-      }
-      if (parameter.allowEmptyValue) lines.push("- Empty values are allowed.");
-      if (parameter.style) {
-        lines.push(`- Style: \`${escapeInline(parameter.style)}\``);
-      }
-      if (parameter.explode !== undefined) {
-        lines.push(`- Explode: ${parameter.explode ? "yes" : "no"}`);
-      }
-      if (parameter.allowReserved) {
-        lines.push("- Reserved characters are allowed.");
-      }
-      if (parameter.content) {
-        for (const media of parameter.content) {
-          lines.push("", renderMedia(media, schemaAnchors));
-        }
-      } else if (parameter.schema !== undefined) {
-        lines.push("", "Schema:", "", jsonFence(parameter.schema));
-        appendExamples(lines, parameter.examples);
-      }
-      lines.push("");
-    }
-  }
-
-  if (operation.requestBody) {
-    lines.push("", "### Request body", "");
+  if (contract.externalDocs) {
     lines.push(
-      operation.requestBodyRequired
-        ? "Required: yes"
-        : "Required: not marked required"
+      "",
+      "## External documentation",
+      "",
+      externalDocsLink(contract.externalDocs)
     );
-    if (operation.requestBodyDescription) {
-      lines.push("", escapeMdx(operation.requestBodyDescription));
-    }
-    if (operation.requestBody.length === 0) {
-      lines.push("", "This request body does not declare a media type.");
-    }
-    for (const media of operation.requestBody) {
-      lines.push("", renderMedia(media, schemaAnchors));
-    }
   }
+  if (contract.summary) lines.push("", `**${escapeInline(contract.summary)}**`);
+  if (contract.description) lines.push("", escapeMdx(contract.description));
 
-  if (operation.security !== undefined) {
-    lines.push("", "### Security", "", jsonFence(operation.security));
-    for (const scheme of operation.securitySchemes) {
-      lines.push(
-        "",
-        `#### ${escapeInline(scheme.name)}`,
-        "",
-        jsonFence(scheme.scheme)
-      );
+  lines.push("", "## Operations", "");
+  const canonical = new Set<string>(CANONICAL_EVIDENCE_TAGS);
+  const analytics = new Set<string>(ATLAS_ANALYTICS_TAGS);
+  const sections = [
+    ["Canonical Evidence", canonical],
+    ["Atlas Analytics/Reports", analytics],
+  ] as const;
+  const folderByTag = new Map<string, string>();
+  for (const [folder, entries] of folderOperations) {
+    for (const entry of entries) folderByTag.set(entry.tag.name, folder);
+  }
+  const emitted = new Set<string>();
+  for (const [heading, group] of sections) {
+    const tags = contract.tags.filter((tag) => {
+      const folder = folderByTag.get(tag.name);
+      return folder !== undefined && group.has(folder);
+    });
+    if (tags.length === 0) continue;
+    lines.push(`### ${heading}`, "");
+    for (const tag of tags) {
+      const folder = folderByTag.get(tag.name);
+      if (!folder) continue;
+      emitted.add(tag.name);
+      lines.push(...renderIndexOperations(tag, folder));
     }
   }
-
-  lines.push("", "### Responses", "");
-  for (const response of operation.responses) {
-    lines.push(`#### ${escapeInline(response.status)}`, "");
-    if (response.description) lines.push(escapeMdx(response.description), "");
-    if (response.headers.length > 0) {
-      lines.push("##### Headers", "");
-      for (const header of response.headers) {
-        lines.push(renderHeader(header, schemaAnchors), "");
-      }
-    }
-    if (response.media.length === 0) {
-      lines.push("This response does not declare a body.", "");
-    } else {
-      for (const media of response.media) {
-        lines.push(renderMedia(media, schemaAnchors), "");
-      }
-    }
-    if (response.links.length > 0) {
-      lines.push("##### Links", "");
-      for (const link of response.links) {
-        lines.push(renderLink(link), "");
-      }
-    }
+  for (const tag of contract.tags) {
+    const folder = folderByTag.get(tag.name);
+    if (!folder || emitted.has(tag.name)) continue;
+    lines.push(...renderIndexOperations(tag, folder));
   }
-  return lines.join("\n").trim();
+  lines.push(
+    `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaAnchors.size}).`
+  );
+  if (
+    [...folderOperations.values()].some((entries) =>
+      entries.some((entry) => pendingDeliveryBadgeMarkup(entry.operation))
+    )
+  ) {
+    lines.splice(1, 0, PENDING_DELIVERY_BADGE_IMPORT, "");
+  }
+  return `${lines.join("\n").trim()}\n`;
 }
 
-function renderHeader(
-  header: HeaderView,
-  schemaAnchors: Map<string, string>
-): string {
+function renderIndexOperations(tag: TagView, folder: string): string[] {
+  const lines = [`#### ${escapeInline(tag.name)}`, ""];
+  if (tag.description) lines.push(escapeMdx(tag.description), "");
+  for (const operation of tag.operations) {
+    const badge = pendingDeliveryBadgeMarkup(operation);
+    lines.push(
+      `- [\`${operation.method} ${operation.path}\`](/docs/api-reference/${folder}/${operation.operationId}) — ${escapeInline(operation.summary)} — \`${operation.operationId}\`${badge ? ` ${badge}` : ""}`
+    );
+  }
+  lines.push("");
+  return lines;
+}
+
+function renderTagIndex(folder: string, entries: LocatedOperation[]): string {
+  const tag = entries[0]?.tag;
+  const description =
+    tag?.description ||
+    `Generated ${folder} operations from the public Atlas OpenAPI contract.`;
   const lines = [
-    `###### ${escapeInline(header.name)}`,
+    frontmatter(tagTitle(tag?.name ?? folder), description),
+    "Generated from the public OpenAPI contract.",
     "",
-    `- Required: ${header.required ? "yes" : "no"}`,
   ];
-  if (header.deprecated) lines.push("- Deprecated.");
-  if (header.description) lines.push(`- ${escapeInline(header.description)}`);
-  if (header.style) lines.push(`- Style: \`${escapeInline(header.style)}\``);
-  if (header.explode !== undefined) {
-    lines.push(`- Explode: ${header.explode ? "yes" : "no"}`);
+  const imports: string[] = [];
+  if (
+    entries.some((entry) => renderCountyReportTemplateGuide(entry.operation))
+  ) {
+    imports.push('import { Tab, Tabs } from "fumadocs-ui/components/tabs";');
   }
-  if (header.content) {
-    for (const media of header.content) {
-      lines.push("", renderMedia(media, schemaAnchors, true));
-    }
-  } else {
-    const schemaType = headerSchemaType(header.schema);
-    if (schemaType) lines.push(`- Type: \`${escapeInline(schemaType)}\``);
-    if (header.schema !== undefined) {
-      lines.push("", "Schema:", "", jsonFence(header.schema));
-    }
-    appendExamples(lines, header.examples);
+  if (entries.some((entry) => pendingDeliveryBadgeMarkup(entry.operation))) {
+    imports.push(PENDING_DELIVERY_BADGE_IMPORT);
   }
-  return lines.join("\n");
+  if (imports.length > 0) {
+    lines.splice(1, 0, imports.join("\n"), "");
+  }
+  if (tag?.description) lines.push(escapeMdx(tag.description), "");
+  if (tag?.externalDocs) lines.push(externalDocsLink(tag.externalDocs), "");
+  for (const entry of entries) {
+    const operation = entry.operation;
+    const badge = pendingDeliveryBadgeMarkup(operation);
+    lines.push(
+      `## ${escapeInline(operation.summary)} [#${operation.operationId}]`,
+      "",
+      `\`${operation.method} ${operation.path}\``,
+      "",
+      ...(badge ? [badge, ""] : []),
+      `Operation ID: \`${operation.operationId}\``,
+      "",
+      `[Parameters, responses, and schema](/docs/api-reference/${folder}/${operation.operationId}).`,
+      ""
+    );
+    const templateGuide = renderCountyReportTemplateGuide(operation);
+    if (templateGuide) lines.push(templateGuide, "");
+  }
+  return `${lines.join("\n").trim()}\n`;
 }
 
-function renderLink(link: LinkView): string {
-  const lines = [`###### ${escapeInline(link.name)}`, ""];
-  if (link.operationId) {
-    lines.push(`- Operation ID: \`${escapeInline(link.operationId)}\``);
-  }
-  if (link.operationRef) {
-    lines.push(`- Operation ref: \`${escapeInline(link.operationRef)}\``);
-  }
-  if (link.description) lines.push("", escapeMdx(link.description));
-  if (link.parameters !== undefined) {
-    lines.push("", "Parameters:", "", jsonFence(link.parameters));
-  }
-  if (link.requestBody !== undefined) {
-    lines.push("", "Request body:", "", jsonFence(link.requestBody));
-  }
-  if (link.server) {
-    const description = link.server.description
-      ? ` (${escapeInline(link.server.description)})`
-      : "";
-    lines.push(`- Server: \`${escapeInline(link.server.url)}\`${description}`);
-  }
-  return lines.join("\n");
-}
-
-function headerSchemaType(schema: unknown): string {
-  if (!isRecord(schema) || typeof schema.type !== "string") return "";
-  return schema.type;
-}
-
-function renderMedia(
-  media: MediaView,
-  schemaAnchors: Map<string, string>,
-  nested = false
-): string {
-  const lines = nested
-    ? [`Content type: \`${escapeInline(media.mediaType)}\``, ""]
-    : [`##### ${escapeInline(media.mediaType)}`, ""];
-  if (media.schema !== undefined) {
-    const refs = findRefs(media.schema);
-    if (refs.length > 0) {
-      lines.push(
-        refs
-          .map((ref) => {
-            const anchor = schemaAnchors.get(ref);
-            const name = ref.split("/").at(-1) ?? ref;
-            if (!anchor) return `Schema: \`${ref}\``;
-            return `Schema: [${escapeInline(name)}](/docs/api-reference/schemas#${anchor}) (\`${ref}\`)`;
-          })
-          .join("\n")
-      );
-      lines.push("");
-    }
-    lines.push("Schema:", "", jsonFence(media.schema));
-  }
-  appendExamples(lines, media.examples);
-  if (media.encoding.length > 0) {
-    lines.push("", "Encoding:");
-    for (const encoding of media.encoding) {
-      lines.push("", `**${escapeInline(encoding.name)}**`);
-      if (encoding.contentType) {
-        lines.push(`- Content type: \`${escapeInline(encoding.contentType)}\``);
-      }
-      if (encoding.style) {
-        lines.push(`- Style: \`${escapeInline(encoding.style)}\``);
-      }
-      if (encoding.explode !== undefined) {
-        lines.push(`- Explode: ${encoding.explode ? "yes" : "no"}`);
-      }
-      if (encoding.allowReserved) {
-        lines.push("- Reserved characters are allowed.");
-      }
-      for (const header of encoding.headers) {
-        lines.push("", renderHeader(header, schemaAnchors));
-      }
-    }
-  }
-  return lines.join("\n").trim();
-}
-
-function renderSchemaPage(
+function renderSchemaCatalog(
   schemas: JsonRecord,
   schemaAnchors: Map<string, string>
 ): string {
@@ -1668,9 +1663,9 @@ function renderSchemaPage(
   const lines = [
     frontmatter(
       "Schemas",
-      "Component schemas copied from the pinned public Atlas OpenAPI contract."
+      "Component schema names and descriptions from the pinned public Atlas OpenAPI contract."
     ),
-    "These component schemas are copied from the public OpenAPI contract. Operations link here instead of repeating each schema.",
+    "These component schema descriptions are indexed from the public OpenAPI contract. Operation pages render the schema with the native OpenAPI reference.",
     "",
   ];
   if (names.length === 0) {
@@ -1684,28 +1679,281 @@ function renderSchemaPage(
         `Component schema ${name} is missing a stable heading.`
       );
     }
-    lines.push(
-      `## ${escapeInline(name)} [#${anchor}]`,
-      "",
-      jsonFence(schemas[name]),
-      ""
-    );
+    lines.push(`## ${escapeInline(name)} [#${anchor}]`, "");
+    lines.push(...schemaCatalogLines(schemas[name]), "");
   }
   return `${lines.join("\n").trim()}\n`;
 }
 
-function appendExamples(lines: string[], examples: ExampleView[]): void {
-  if (examples.length === 0) return;
-  lines.push("", "Examples:");
-  for (const example of examples) {
-    const label = example.name ?? example.summary ?? "example";
-    lines.push("", `###### ${escapeInline(label)}`);
-    if (example.summary && example.name) {
-      lines.push("", escapeMdx(example.summary));
-    }
-    if (example.description) lines.push("", escapeMdx(example.description));
-    lines.push("", jsonFence(example.value));
+function schemaCatalogLines(schema: unknown): string[] {
+  const lines: string[] = [];
+  const seen = new Set<unknown>();
+  const descriptions: string[] = [];
+  const properties: string[] = [];
+  collectSchemaCatalog(schema, descriptions, properties, seen);
+  for (const description of descriptions) {
+    lines.push(escapeMdx(description), "");
   }
+  for (const property of properties) {
+    lines.push(`- \`${escapeInline(property)}\``);
+  }
+  if (lines.length === 0)
+    lines.push("This schema does not declare a description.");
+  return lines;
+}
+
+function collectSchemaCatalog(
+  schema: unknown,
+  descriptions: string[],
+  properties: string[],
+  seen: Set<unknown>
+): void {
+  if (!isRecord(schema) || seen.has(schema)) return;
+  seen.add(schema);
+  if (typeof schema.description === "string" && schema.description.trim()) {
+    descriptions.push(schema.description.trim());
+  }
+  if (isRecord(schema.properties)) {
+    for (const [name, property] of Object.entries(schema.properties)) {
+      properties.push(name);
+      collectSchemaCatalog(property, descriptions, properties, seen);
+    }
+  }
+  collectSchemaCatalog(schema.items, descriptions, properties, seen);
+  collectSchemaCatalog(
+    schema.additionalProperties,
+    descriptions,
+    properties,
+    seen
+  );
+  for (const combiner of ["allOf", "anyOf", "oneOf"] as const) {
+    const branches = schema[combiner];
+    if (!Array.isArray(branches)) continue;
+    for (const branch of branches) {
+      collectSchemaCatalog(branch, descriptions, properties, seen);
+    }
+  }
+}
+
+function enrichOperationPage(
+  content: string,
+  operation: OperationView
+): string {
+  const document = splitGeneratedDocument(content);
+  const openapi = isRecord(document.data._openapi)
+    ? { ...document.data._openapi }
+    : {};
+  const structured = isRecord(openapi.structuredData)
+    ? openapi.structuredData
+    : { headings: [] };
+  const existing = Array.isArray(structured.contents)
+    ? structured.contents.filter(isRecord)
+    : [];
+  const contents = [
+    ...existing.flatMap((entry) =>
+      typeof entry.content === "string" ? [{ content: entry.content }] : []
+    ),
+    ...operationIndexContents(operation).map((text) => ({ content: text })),
+  ];
+  openapi.structuredData = { ...structured, contents };
+  document.data._openapi = openapi;
+  if (
+    typeof document.data.description !== "string" ||
+    document.data.description.trim() === ""
+  ) {
+    document.data.description = operation.summary || operation.operationId;
+  }
+  const badge = pendingDeliveryBadgeMarkup(operation);
+  const body = badge
+    ? `${PENDING_DELIVERY_BADGE_IMPORT}\n\n${badge}\n\n${document.body.trim()}`
+    : document.body;
+  return joinGeneratedDocument(document.data, body);
+}
+
+const PENDING_DELIVERY_BADGE_IMPORT =
+  'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";';
+
+function pendingDeliveryBadgeMarkup(operation: OperationView): string {
+  return showsPendingDeliveryBadge(operation.method, operation.path)
+    ? "<EndpointDeliveryBadge />"
+    : "";
+}
+
+function operationIndexContents(operation: OperationView): string[] {
+  const contents = [
+    `${operation.method} ${operation.path}`,
+    operation.operationId,
+    operation.summary,
+    operation.description,
+    operation.pathSummary,
+    operation.pathDescription,
+  ];
+  for (const parameter of operation.parameters) {
+    contents.push(
+      `${parameter.name} ${parameter.location} ${parameter.required ? "required" : "optional"} ${parameter.description}`
+    );
+    if (parameter.deprecated) contents.push(`${parameter.name} deprecated`);
+    if (parameter.allowEmptyValue) {
+      contents.push(`${parameter.name} empty values are allowed`);
+    }
+    if (parameter.style)
+      contents.push(`${parameter.name} style ${parameter.style}`);
+    if (parameter.explode !== undefined) {
+      contents.push(
+        `${parameter.name} explode ${parameter.explode ? "yes" : "no"}`
+      );
+    }
+    if (parameter.allowReserved) {
+      contents.push(`${parameter.name} reserved characters are allowed`);
+    }
+    collectIndexSchemaText(parameter.schema, contents, new Set());
+    indexExamples(parameter.examples, contents);
+    for (const media of parameter.content ?? []) indexMedia(media, contents);
+  }
+  if (operation.externalDocs) {
+    contents.push(
+      operation.externalDocs.description,
+      operation.externalDocs.url
+    );
+  }
+  for (const server of operation.servers ?? []) {
+    contents.push(server.url, server.description);
+  }
+  if (operation.security !== undefined) {
+    contents.push(JSON.stringify(operation.security));
+  }
+  for (const scheme of operation.securitySchemes) {
+    contents.push(scheme.name, JSON.stringify(scheme.scheme));
+  }
+  if (operation.requestBody) {
+    contents.push(operation.requestBodyDescription);
+    for (const media of operation.requestBody) indexMedia(media, contents);
+  }
+  for (const response of operation.responses) {
+    contents.push(`${response.status} ${response.description}`);
+    for (const header of response.headers) indexHeader(header, contents);
+    for (const link of response.links) {
+      contents.push(link.name, link.description);
+      if (link.server) {
+        contents.push(link.server.url, link.server.description);
+      }
+    }
+    for (const media of response.media) indexMedia(media, contents);
+  }
+  return contents.filter((text) => text.trim().length > 0);
+}
+
+function indexMedia(media: MediaView, contents: string[]): void {
+  contents.push(media.mediaType);
+  collectIndexSchemaText(media.schema, contents, new Set());
+  indexExamples(media.examples, contents);
+  for (const encoding of media.encoding) {
+    contents.push(encoding.name);
+    if (encoding.contentType) contents.push(encoding.contentType);
+    if (encoding.style)
+      contents.push(`${encoding.name} style ${encoding.style}`);
+    if (encoding.explode !== undefined) {
+      contents.push(
+        `${encoding.name} explode ${encoding.explode ? "yes" : "no"}`
+      );
+    }
+    if (encoding.allowReserved) {
+      contents.push(`${encoding.name} reserved characters are allowed`);
+    }
+    for (const header of encoding.headers) indexHeader(header, contents);
+  }
+}
+
+function indexHeader(header: HeaderView, contents: string[]): void {
+  contents.push(`${header.name} ${header.description}`);
+  if (header.deprecated) contents.push(`${header.name} deprecated`);
+  if (header.required) contents.push(`${header.name} required`);
+  if (header.style) contents.push(`${header.name} style ${header.style}`);
+  if (header.explode !== undefined) {
+    contents.push(`${header.name} explode ${header.explode ? "yes" : "no"}`);
+  }
+  collectIndexSchemaText(header.schema, contents, new Set());
+  indexExamples(header.examples, contents);
+  for (const media of header.content ?? []) indexMedia(media, contents);
+}
+
+function indexExamples(examples: ExampleView[], contents: string[]): void {
+  for (const example of examples) {
+    contents.push(example.summary ?? "", example.description ?? "");
+    contents.push(JSON.stringify(example.value));
+  }
+}
+
+function collectIndexSchemaText(
+  schema: unknown,
+  contents: string[],
+  seen: Set<unknown>
+): void {
+  if (!isRecord(schema) || seen.has(schema)) return;
+  seen.add(schema);
+  if (typeof schema.$ref === "string") contents.push(schema.$ref);
+  if (schema.example !== undefined)
+    contents.push(JSON.stringify(schema.example));
+  if (typeof schema.description === "string") contents.push(schema.description);
+  if (typeof schema.title === "string") contents.push(schema.title);
+  if (Array.isArray(schema.enum)) {
+    for (const value of schema.enum) {
+      if (typeof value === "string" || typeof value === "number") {
+        contents.push(String(value));
+      }
+    }
+  }
+  if (isRecord(schema.properties)) {
+    for (const [name, property] of Object.entries(schema.properties)) {
+      contents.push(name);
+      collectIndexSchemaText(property, contents, seen);
+    }
+  }
+  collectIndexSchemaText(schema.items, contents, seen);
+  collectIndexSchemaText(schema.additionalProperties, contents, seen);
+  for (const combiner of ["allOf", "anyOf", "oneOf"] as const) {
+    const branches = schema[combiner];
+    if (!Array.isArray(branches)) continue;
+    for (const branch of branches) {
+      collectIndexSchemaText(branch, contents, seen);
+    }
+  }
+}
+
+function splitGeneratedDocument(content: string): {
+  body: string;
+  data: JsonRecord;
+} {
+  const match = /^---\n(?<frontmatter>[\s\S]*?)\n---\n?(?<body>[\s\S]*)$/.exec(
+    content
+  );
+  if (!match?.groups?.frontmatter || match.groups.body === undefined) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      "Generated OpenAPI page is missing frontmatter."
+    );
+  }
+  const parsed: unknown = parse(match.groups.frontmatter);
+  if (!isRecord(parsed)) {
+    throw new PublicOpenApiContractError(
+      "malformed",
+      "Generated OpenAPI frontmatter must be an object."
+    );
+  }
+  return { body: match.groups.body, data: parsed };
+}
+
+function joinGeneratedDocument(data: JsonRecord, body: string): string {
+  const banner = stringify(data, {
+    compat: "yaml-1.1",
+    lineWidth: 0,
+    singleQuote: true,
+  }).trimEnd();
+  return `---\n${banner}\n---\n\n${body.trim()}\n`;
+}
+
+function flattenContractText(value: string): string {
+  return value.replaceAll(/\s+/g, " ").trim();
 }
 
 function schemaAnchorMap(schemas: JsonRecord): Map<string, string> {
@@ -1927,17 +2175,6 @@ function resolveJsonPointer(document: unknown, ref: string): unknown {
     current = current[key];
   }
   return current;
-}
-
-function findRefs(value: unknown, refs: string[] = []): string[] {
-  if (Array.isArray(value)) {
-    for (const child of value) findRefs(child, refs);
-    return refs;
-  }
-  if (!isRecord(value)) return refs;
-  if (typeof value.$ref === "string") refs.push(value.$ref);
-  for (const child of Object.values(value)) findRefs(child, refs);
-  return refs;
 }
 
 function documentServers(document: JsonRecord): ServerView[] {
@@ -2235,7 +2472,7 @@ async function runPublicOpenApiCli(): Promise<void> {
       );
       return;
     }
-    syncPublicApiReference({ check, root: process.cwd() });
+    await syncPublicApiReference({ check, root: process.cwd() });
     console.log(
       check
         ? "Public OpenAPI reference matches the pinned contract."

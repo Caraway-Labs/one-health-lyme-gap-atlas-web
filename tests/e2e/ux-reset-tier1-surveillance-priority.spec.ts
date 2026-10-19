@@ -91,7 +91,10 @@ async function installTier1Review(
   options: { metadataStatus?: number } = {}
 ) {
   await page.route("**/v1/me/profile", async (route) => {
-    await route.fulfill({ json: { profile: null }, status: 200 });
+    await route.fulfill({
+      json: { profile: { starting_view_version: 1, state_code: null } },
+      status: 200,
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     if (options.metadataStatus && options.metadataStatus !== 200) {

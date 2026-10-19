@@ -34,7 +34,10 @@ async function installPopulationRuralityMocks(page: Page) {
     });
   });
   await page.route("**/v1/me/profile", async (route) => {
-    await route.fulfill({ json: { profile: null }, status: 200 });
+    await route.fulfill({
+      json: { profile: { starting_view_version: 1, state_code: null } },
+      status: 200,
+    });
   });
   await page.route("**/v1/atlas/metadata**", async (route) => {
     await route.fulfill({ json: reviewScopeMetadataFixture, status: 200 });

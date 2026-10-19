@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 test("retired Geographic Explorer view bookmarks open Atlas Explorer browse", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   for (const start of [
     "/geographic_explorer?county=08001",
     "/geographic_explorer?county=08001&view=maps",

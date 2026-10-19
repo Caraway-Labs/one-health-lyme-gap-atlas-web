@@ -9,7 +9,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { frontPorchHeroFont } from "@/features/front-porch/front-porch-font";
-import { safeReturnPath } from "@/lib/auth/return-path";
+import { explicitInternalDestination } from "@/features/ux-reset/onboarding/starting-view-completion";
 import {
   SIGN_IN_COPY,
   emailConfirmRedirect,
@@ -47,7 +47,7 @@ export function SignInIdentity() {
 
 export function SignInEntrance() {
   const searchParams = useSearchParams();
-  const next = safeReturnPath(searchParams.get("next"));
+  const next = explicitInternalDestination(searchParams.get("next"));
   const callbackError = signInCallbackErrorMessage(searchParams.get("error"));
   const emailFieldId = useId();
   const explanationId = useId();

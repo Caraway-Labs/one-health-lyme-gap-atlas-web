@@ -1,0 +1,67 @@
+---
+title: Get an indicator
+description: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
+      - content: GET /v1/indicators/{indicator_id}
+      - content: indicator_v1_indicators__indicator_id__get
+      - content: Get an indicator
+      - content: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
+      - content: 'indicator_id path required '
+      - content: Indicator Id
+      - content: 200 Successful current-release resource.
+      - content: application/json
+      - content: '#/components/schemas/ResourceEnvelope_Indicator_'
+      - content: 304 Not modified. ETag matches If-None-Match; empty response body.
+      - content: 400 INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-400","title":"Request failed","status":400,"detail":"INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json","instance":"/v1/indicators/{indicator_id}","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 404 RESOURCE_NOT_FOUND; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"RESOURCE_NOT_FOUND; application/problem+json","instance":"/v1/indicators/{indicator_id}","request_id":"example-request-id","code":"RESOURCE_NOT_FOUND"}'
+      - content: 413 GET request body rejected; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-413","title":"Request failed","status":413,"detail":"GET request body rejected; application/problem+json","instance":"/v1/indicators/{indicator_id}","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 414 Query string too long; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-414","title":"Request failed","status":414,"detail":"Query string too long; application/problem+json","instance":"/v1/indicators/{indicator_id}","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 429 Rate limited; Retry-After; application/problem+json
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limited; Retry-After; application/problem+json","instance":"/v1/indicators/{indicator_id}","request_id":"example-request-id","code":"RATE_LIMITED"}'
+      - content: 503 Service unavailable; application/problem+json
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Service unavailable; application/problem+json","instance":"/v1/indicators/{indicator_id}","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/indicators/{indicator_id}","method":"get"}]} />
+    </>
+  );
+}

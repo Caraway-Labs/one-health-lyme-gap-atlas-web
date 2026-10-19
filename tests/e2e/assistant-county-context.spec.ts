@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const metadata = {
   bundle_sha256: "a".repeat(64),
   generated_at: "2026-08-06T05:37:16Z",
@@ -84,6 +86,7 @@ test.beforeEach(async ({ page }) => {
 test("retired Geographic Explorer selection opens Atlas Explorer without the drawer", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/geographic_explorer?county=08001");
   await expect(page).toHaveURL(/\/explore\?.*county=08001/);
   await expect(

@@ -6,6 +6,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const PREFERENCE_KEY = "atlas.analytics-preference.v1";
@@ -45,7 +46,7 @@ async function installWorkspaceReads(page: Page): Promise<void> {
       await route.fulfill({ json: {}, status: 404 });
       return;
     }
-    const payload = { profile: null };
+    const payload = { profile: { starting_view_version: 1, state_code: null } };
     UserProfileResponseSchema.parse(payload);
     await route.fulfill({ json: payload, status: 200 });
   });
@@ -90,6 +91,7 @@ async function openSettingsFromFooter(page: Page): Promise<Locator> {
 test("opens the live About page from the workspace footer", async ({
   page,
 }, testInfo) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/explore");
   const brand = page.getByRole("contentinfo").getByRole("link", {
     name: "One Health Atlas by Caraway Labs (opens in a new tab)",

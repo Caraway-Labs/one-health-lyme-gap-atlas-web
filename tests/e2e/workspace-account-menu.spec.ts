@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const DESKTOP = { height: 900, width: 1280 };
 const MOBILE = { height: 844, width: 390 };
 const SHORT = { height: 420, width: 1280 };
@@ -27,6 +29,10 @@ async function footerBox(page: Page, footer: Locator) {
     };
   });
 }
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
 
 test.describe("workspace account footer desktop", () => {
   test.beforeEach(({}, testInfo) => {
