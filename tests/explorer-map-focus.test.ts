@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  explorerFocusCountyMismatch,
   explorerMapDrillAction,
   explorerStateFromCountyFips,
   explorerStateGeometryBounds,
@@ -39,6 +40,20 @@ describe("explorer map focus", () => {
     expect(parseExplorerMapFocus("AK")).toBeNull();
     expect(parseExplorerMapFocus("HI")).toBeNull();
     expect(parseExplorerMapFocus("USA")).toBeNull();
+  });
+
+  it("rejects a county that is outside the focused state", () => {
+    expect({
+      match: explorerFocusCountyMismatch("ID", "16001"),
+      missingCounty: explorerFocusCountyMismatch("ID", null),
+      missingFocus: explorerFocusCountyMismatch(null, "56039"),
+      outside: explorerFocusCountyMismatch("ID", "56039"),
+    }).toStrictEqual({
+      match: false,
+      missingCounty: false,
+      missingFocus: false,
+      outside: true,
+    });
   });
 
   it("reads the containing state from the county FIPS prefix", () => {

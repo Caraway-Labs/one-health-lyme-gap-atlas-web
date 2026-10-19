@@ -22,6 +22,20 @@ export function parseExplorerMapFocus(value: string): string | null {
   return isLower48ReviewScope(normalized) ? normalized : null;
 }
 
+/**
+ * The county is outside the focused state.
+ * A missing focus or county is not a conflict.
+ */
+export function explorerFocusCountyMismatch(
+  focus: string | null,
+  countyFips: string | null
+): boolean {
+  if (!(focus && countyFips)) {
+    return false;
+  }
+  return explorerStateFromCountyFips(countyFips) !== focus;
+}
+
 /** Containing state from the county FIPS prefix. Color is not an input. */
 export function explorerStateFromCountyFips(fips: string): string | null {
   if (!isLower48CountyFips(fips)) {

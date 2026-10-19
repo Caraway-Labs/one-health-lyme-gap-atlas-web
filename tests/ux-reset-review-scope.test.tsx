@@ -1694,6 +1694,56 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("keeps a focus-only URL on the national map when the saved view is a state", async () => {
+    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    const updates: string[] = [];
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
+      status: 200,
+    } as never);
+    window.history.replaceState(null, "", "/explore?focus=ID");
+    renderReview("?focus=ID", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      if (screen.queryByText("Loading review scope…")) {
+        throw new Error("startup still pending");
+      }
+    });
+    expect({
+      focusKept: updates.every((query) => query.includes("focus=ID")),
+      rendered: renderedReviewScope(),
+      stateWrite: updates.some((query) => query.includes("scope=CO")),
+    }).toStrictEqual({
+      focusKept: true,
+      rendered: "ALL",
+      stateWrite: false,
+    });
+  });
+
+  it("clears a county that is outside the focused state", async () => {
+    const updates: string[] = [];
+    window.history.replaceState(
+      null,
+      "",
+      "/explore?scope=ALL&focus=ID&county=56039"
+    );
+    renderReview("?scope=ALL&focus=ID&county=56039", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      const latest = updates.at(-1) ?? "";
+      if (!(latest.includes("focus=ID") && !latest.includes("county="))) {
+        throw new Error(latest || "mismatched county is still in the URL");
+      }
+    });
+    expect(renderedReviewScope()).toBe("ALL");
+  });
+
   it("keeps explicit national scope when profile default is a state", async () => {
     const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
     vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
