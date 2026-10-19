@@ -21,6 +21,7 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import type { CountyDetail } from "@/generated/models";
@@ -170,6 +171,12 @@ export function ReviewPublishedCountyPreview({
               View county evidence
             </Button>
           ) : null}
+          <DownloadCountyPdfButton
+            countyName={county.county}
+            fips={county.fips}
+            releaseId={releaseId}
+            stateCode={county.state}
+          />
           <Link
             ref={openRef}
             className={cn(
