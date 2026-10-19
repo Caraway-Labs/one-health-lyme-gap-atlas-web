@@ -2,6 +2,8 @@ import { parseUxResetSharedContext } from "@/features/ux-reset/context-params";
 import { reviewStartForSelection } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 
+import { parseExplorerMapFocus } from "./explorer-map-focus";
+
 export type ReviewScope = "ALL" | string;
 
 type ScopeSearchParams = Pick<URLSearchParams, "get" | "getAll" | "has">;
@@ -12,11 +14,21 @@ export function hasExplicitReviewScopeParam(
   return searchParams.has("scope");
 }
 
-/** A state scope or county in the URL is an explicit location. Profile defaults do not replace it. */
+/**
+ * A state scope, county, or valid national map focus in the URL is an explicit
+ * location. Profile defaults do not replace it. Alaska, Hawaii, repeats, and
+ * other focus tokens are not a location.
+ */
 export function hasExplicitReviewLocation(
   searchParams: ScopeSearchParams
 ): boolean {
-  return searchParams.has("scope") || searchParams.has("county");
+  if (searchParams.has("scope") || searchParams.has("county")) {
+    return true;
+  }
+  const focusValues = searchParams.getAll("focus");
+  return (
+    focusValues.length === 1 && parseExplorerMapFocus(focusValues[0]) !== null
+  );
 }
 
 export function parsedReviewScopeFromUrl(
@@ -26,10 +38,11 @@ export function parsedReviewScopeFromUrl(
 }
 
 /**
- * The saved starting view applies only when the URL has neither `scope` nor
- * `county`. A present `scope` param, including an invalid value canonicalized
- * to ALL, wins. A `county` param is an explicit location even when `scope` is
- * omitted, so the profile default does not replace it.
+ * The saved starting view applies only when the URL has neither `scope`,
+ * `county`, nor a valid national `focus`. A present `scope` param, including
+ * an invalid value canonicalized to ALL, wins. A `county` or valid `focus`
+ * param is an explicit location even when `scope` is omitted, so the profile
+ * default does not replace the national map.
  */
 export function resolveStartingReviewScope(
   hasExplicitScopeParam: boolean,

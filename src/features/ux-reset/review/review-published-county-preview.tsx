@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import type { Ref } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { ResponseTierPill } from "@/components/response-tier-pill";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
@@ -21,9 +22,15 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
+import {
+  formatGapScore,
+  publishedGapScore,
+} from "@/features/ux-reset/review/explorer-ranked-counties";
 import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import type { CountyDetail } from "@/generated/models";
+import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
 import { cn } from "@/lib/utils";
 
 export function reviewHumanFloorEvidence(
@@ -87,6 +94,51 @@ export function reviewHumanFloorEvidence(
   };
 }
 
+function publishedPreviewScore(detail: CountyDetail): number | null {
+  if (!detail.in_contiguous_tick_scope) {
+    return null;
+  }
+  return publishedGapScore(detail.score.score);
+}
+
+function SelectedCountyScoreLockup({
+  detail,
+  reviewResultState,
+}: {
+  detail: CountyDetail;
+  reviewResultState: GovernedReviewResultState | null;
+}) {
+  const score = publishedPreviewScore(detail);
+  return (
+    <div
+      className="ux-reset-selected-county-score"
+      data-testid="selected-county-score-lockup"
+    >
+      <ResponseTierPill
+        context={reviewResultState ? { reviewResultState } : undefined}
+        detail={detail}
+      />
+      {score === null ? (
+        <p
+          className="ux-reset-selected-county-gap-score"
+          data-testid="selected-county-gap-score"
+        >
+          Atlas gap score unavailable
+        </p>
+      ) : (
+        <p
+          className="ux-reset-selected-county-gap-score"
+          data-testid="selected-county-gap-score"
+        >
+          <span className="sr-only">Atlas gap score </span>
+          <strong>{formatGapScore(score)}</strong>
+          <span>/100</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ReviewPublishedCountyPreview({
   county,
   compareHref,
@@ -95,6 +147,7 @@ export function ReviewPublishedCountyPreview({
   onViewCountyEvidence,
   openRef,
   releaseId,
+  reviewResultState = null,
 }: {
   county: ExploreCountyIdentity;
   compareHref: string;
@@ -103,6 +156,7 @@ export function ReviewPublishedCountyPreview({
   onViewCountyEvidence?: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   releaseId: string;
+  reviewResultState?: GovernedReviewResultState | null;
 }) {
   const pathname = usePathname() ?? ATLAS_EXPLORER_PATH;
   const searchParams = useSearchParams() ?? new URLSearchParams();
@@ -142,6 +196,12 @@ export function ReviewPublishedCountyPreview({
       data-testid="review-published-county-preview"
       data-fips={county.fips}
     >
+      {detail ? (
+        <SelectedCountyScoreLockup
+          detail={detail}
+          reviewResultState={reviewResultState}
+        />
+      ) : null}
       <p className="eyebrow">Selected county</p>
       <h2 className="type-card">
         {county.county}, {county.stateName}
@@ -170,6 +230,12 @@ export function ReviewPublishedCountyPreview({
               View county evidence
             </Button>
           ) : null}
+          <DownloadCountyPdfButton
+            countyName={county.county}
+            fips={county.fips}
+            releaseId={releaseId}
+            stateCode={county.state}
+          />
           <Link
             ref={openRef}
             className={cn(

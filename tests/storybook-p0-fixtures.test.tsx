@@ -501,6 +501,9 @@ describe("Storybook P0 evidence fixtures", () => {
           onOpen={onOpen}
           preview={model.preview}
           release={model.release}
+          releaseId={
+            model.release.status === "ready" ? model.release.releaseId : ""
+          }
         />
       </QueryClientProvider>
     );
@@ -527,6 +530,9 @@ describe("Storybook P0 evidence fixtures", () => {
           onOpen={onOpen}
           preview={model.preview}
           release={model.release}
+          releaseId={
+            model.release.status === "ready" ? model.release.releaseId : ""
+          }
         />
       </QueryClientProvider>
     );

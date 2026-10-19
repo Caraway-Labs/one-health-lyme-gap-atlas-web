@@ -1,6 +1,7 @@
 import { createParser } from "nuqs";
 
 import { uxResetSharedContextParsers } from "@/features/ux-reset/context-params";
+import { parseExplorerMapFocus } from "@/features/ux-reset/review/explorer-map-focus";
 import { parseExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import {
   parseExplorerCountyMode,
@@ -89,6 +90,10 @@ export function scenarioSearchParamPatch(
 }
 
 const reviewLocalParsers = {
+  focus: createParser({
+    parse: (value) => parseExplorerMapFocus(value),
+    serialize: (value) => value,
+  }),
   layer: createParser({
     parse: (value) => parseExplorerMapLayerId(value),
     serialize: (value) => value,

@@ -80,6 +80,7 @@ export const UX_RESET_PAGE_LOCAL_PARAM_KEYS = {
     "eco",
     "breakpoint",
     "missing",
+    "focus",
   ] as const,
   settings: [] as const,
 } as const;

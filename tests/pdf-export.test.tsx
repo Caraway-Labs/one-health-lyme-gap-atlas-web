@@ -27,7 +27,10 @@ describe("PDF export", () => {
     const NativeURL = globalThis.URL;
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Blob(["%PDF-"], { type: "application/pdf" }), {
-        headers: { "Content-Disposition": 'attachment; filename="adams.pdf"' },
+        headers: {
+          "Content-Disposition": 'attachment; filename="adams.pdf"',
+          "Content-Type": "application/pdf",
+        },
       })
     );
     const objectUrl = vi.fn<() => string>(() => "blob:report");
@@ -86,6 +89,7 @@ describe("PDF export", () => {
   it("does not save a file when the caller drops the response or the file is empty", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Blob(["%PDF-"], { type: "application/pdf" }), {
+        headers: { "Content-Type": "application/pdf" },
         status: 200,
       })
     );
