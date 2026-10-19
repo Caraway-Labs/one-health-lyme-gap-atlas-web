@@ -3,15 +3,18 @@ title: Quickstart
 description: Make one anonymous current-release observation request and read every response state that request can return.
 ---
 
+import { HttpClientTabs } from "@/features/docs/http-client-tabs";
+
 This page completes one representative production read: the 2023 published case-count floor for New York County. The measure id `case_count_floor_2023` is the example in the public observations operation and a measure in the current catalog. County FIPS `36061` is in the lower 48.
 
-You need an HTTPS client. You do not create an account, API key, or SDK project.
+You need an HTTPS client. You do not create an account, API key, or SDK project. The client tabs on this page, the workflow guides, and the REST pagination example share one choice in this browser. That choice is curl, Python httpx, R httr2, or TypeScript fetch, and it remains selected after a reload.
 
 ## Request
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023'
-```
+<HttpClientTabs
+  path="/v1/observations"
+  query="measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023"
+/>
 
 `curl -f` hides error bodies. Drop `-f` when you need to read a problem response.
 
@@ -58,10 +61,12 @@ The same measure for Adams County, FIPS `08001`, and `year=2023` returned HTTP 2
 
 Take `source_id` and `methodology_id` from the observation you received. For this measure on the checked release those ids were `human` and `human_confirmed_probable_case_floor_v1`.
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
-curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
-```
+<HttpClientTabs
+  requests={[
+    { path: "/v1/sources/human" },
+    { path: "/v1/methodologies/human_confirmed_probable_case_floor_v1" },
+  ]}
+/>
 
 Detail routes return `data`. Unknown ids return HTTP 404 `RESOURCE_NOT_FOUND`. A matching `If-None-Match` returns HTTP 304 with an empty body. `GET /v1/sources/human` did that when the previous `ETag` was sent back.
 

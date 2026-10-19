@@ -5,22 +5,27 @@ description: Query one county, compare counties, read environmental context, cho
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Each workflow is an anonymous GET. Use county FIPS in the lower 48 or the District of Columbia. Replace example ids if discovery returns different ones.
+import { HttpClientTabs } from "@/features/docs/http-client-tabs";
+
+Each workflow is an anonymous GET. Use county FIPS in the lower 48 or the District of Columbia. Replace example ids if discovery returns different ones. The client tabs share the quickstart choice: curl, Python httpx, R httr2, or TypeScript fetch.
 
 ## Query a county
 
 Goal: retrieve the current-release case-count floor for one county and year.
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023'
-```
+<HttpClientTabs
+  path="/v1/observations"
+  query="measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023"
+/>
 
 Then open `source_id` and `methodology_id` from that body. The checked release used:
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
-curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
-```
+<HttpClientTabs
+  requests={[
+    { path: "/v1/sources/human" },
+    { path: "/v1/methodologies/human_confirmed_probable_case_floor_v1" },
+  ]}
+/>
 
 County analytics and display scores are a different route, `GET /v1/counties/{fips}`. That route returns the legacy county document, including release metadata. `GET /v1/counties/00000` returned HTTP 404 with detail `County or dataset release not found` and no `code`. Use the observations route when you need `value_state`.
 
@@ -41,9 +46,10 @@ County analytics and display scores are a different route, `GET /v1/counties/{fi
 
 Goal: retrieve the same measure and period for two counties in one request. Repeat `geography_id`.
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=36061&year=2023'
-```
+<HttpClientTabs
+  path="/v1/observations"
+  query="measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=36061&year=2023"
+/>
 
 The service orders by measure id, county FIPS, period start, and observation id. On 12 October 2026 this comparison returned two rows in one HTTP 200 page: FIPS `08001` with `value_state` `MISSING` and `value` null, then FIPS `36061` with `value_state` `OBSERVED` and a numeric `value`. Both rows shared `measure_id`, `unit` `cases`, period year 2023, and `release_id`. A missing row and an observed row are not two numbers on one scale. Compare `value_state` before comparing `value`.
 
@@ -74,15 +80,17 @@ On 12 October 2026, `GET /v1/measures` returned 21 measures and a null `next_pag
 
 The catalog does publish annual land-cover context under indicator `land_cover_context`. Those measures name selected geographies `09110` and `51013` only. Their missingness text says a true zero stays zero, and unselected counties have no observation. Their limitations describe land-cover context only, with no Lyme causal or risk estimate.
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=nlcd_forest_area_share_county_year&geography_type=county&geography_id=09110&year=2025'
-```
+<HttpClientTabs
+  path="/v1/observations"
+  query="measure_id=nlcd_forest_area_share_county_year&geography_type=county&geography_id=09110&year=2025"
+/>
 
 That request returned HTTP 200, `value_state` `OBSERVED`, `unit` `fraction`, temporal grain `YEAR`, and `environmental_context` null. The land-cover row is not a weather `environmental_context` object.
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=nlcd_forest_area_share_county_year&geography_type=county&geography_id=08001&year=2025'
-```
+<HttpClientTabs
+  path="/v1/observations"
+  query="measure_id=nlcd_forest_area_share_county_year&geography_type=county&geography_id=08001&year=2025"
+/>
 
 FIPS `08001` is outside the selected land-cover geographies. That request returned HTTP 200 and `data: []`. The empty page is not a zero share.
 
@@ -157,9 +165,11 @@ An unknown template that still matches the operation's template pattern returns 
 
 A successful county-v1 response is `application/pdf` and uses `Cache-Control: public, max-age=300, must-revalidate`. `ETag` with `If-None-Match` can return `304`.
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/counties/36061/report.pdf?template=county-v1'
-```
+<HttpClientTabs
+  body="bytes"
+  path="/v1/counties/36061/report.pdf"
+  query="template=county-v1"
+/>
 
   </Tab>
   <Tab value="county-v2 evidence">
@@ -188,9 +198,11 @@ A successful county-v2 response uses `Cache-Control: no-store`. The service reva
 
 Replace the release id in this checked URL with the observation `release_id` you are citing:
 
-```sh
-curl -fsS 'https://api.onehealthatlas.org/v1/counties/36061/report.pdf?template=county-v2&dataset_version=governed-2026-10-15-january-climate-prod&period_start=2023-01-01&period_end=2023-12-31&measure_id=case_count_floor_2023'
-```
+<HttpClientTabs
+  body="bytes"
+  path="/v1/counties/36061/report.pdf"
+  query="template=county-v2&dataset_version=governed-2026-10-15-january-climate-prod&period_start=2023-01-01&period_end=2023-12-31&measure_id=case_count_floor_2023"
+/>
 
   </Tab>
 </Tabs>
