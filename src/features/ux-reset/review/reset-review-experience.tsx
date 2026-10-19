@@ -824,7 +824,6 @@ function ResetReviewExperienceInner() {
                 mapLayer={mapLayer}
                 period={urlState.period}
                 releaseId={presentationQuery.metadata.release_id}
-                releaseStates={stateOptions}
                 scenarioSettings={scenarioSettings}
                 sources={presentationQuery.metadata.sources}
                 tierRelease={tierRelease}

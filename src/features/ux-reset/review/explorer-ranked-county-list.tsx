@@ -10,6 +10,7 @@ import { ExplorerAdjustedScenarioLine } from "@/features/ux-reset/review/explore
 export function ExplorerRankedCountyList({
   candidateFips,
   emptyLabel,
+  note,
   onSelect,
   rows,
   scenarios,
@@ -20,6 +21,7 @@ export function ExplorerRankedCountyList({
 }: {
   candidateFips?: ReadonlySet<string>;
   emptyLabel: string;
+  note?: string;
   onSelect: (fips: string) => void;
   rows: readonly ExplorerRankedCounty[];
   scenarios?: ReadonlyMap<string, AdjustedCountyScenario> | null;
@@ -33,12 +35,26 @@ export function ExplorerRankedCountyList({
 
   return (
     <div className="ux-reset-ranked-counties">
-      <header className="ux-reset-ranked-counties-header">
+      <header
+        className={
+          showEyebrow
+            ? "ux-reset-ranked-counties-header"
+            : "ux-reset-ranked-counties-header is-compact"
+        }
+      >
         {showEyebrow ? (
           <p className="ux-reset-ranked-counties-eyebrow">Counties</p>
         ) : null}
         <h2>Choose a county</h2>
       </header>
+      {note ? (
+        <p
+          className="type-small"
+          data-testid="explorer-national-shortlist-note"
+        >
+          {note}
+        </p>
+      ) : null}
       {rows.length === 0 ? (
         <p className="type-small" data-testid="explorer-ranked-empty">
           {emptyLabel}
