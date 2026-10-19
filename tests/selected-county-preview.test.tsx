@@ -326,7 +326,7 @@ describe("selected county preview", () => {
     expect(availability).not.toHaveBeenCalled();
   });
 
-  it("badges only recognized review priorities", async () => {
+  it("keeps one response-tier pill and drops the legacy priority badge", async () => {
     const cases = [
       "Priority 1 — Urgent follow-up",
       "Priority 2 — Review",
@@ -338,54 +338,33 @@ describe("selected county preview", () => {
       "Not assessed",
       "Priority 10",
     ] as const;
-    const readings: Record<string, { badge: string | null; text: string }> = {};
+    const readings: { legacyBadge: boolean; pills: number; title: string }[] =
+      [];
     for (const priority of cases) {
       cleanup();
       renderPublished({ ...baldwin, priority });
-      const region = await screen.findByTestId("review-preview-priority");
-      readings[priority || "blank"] = {
-        badge: region.querySelector(".priority-pill")?.textContent ?? null,
-        text: region.textContent ?? "",
-      };
+      await screen.findByTestId("selected-county-response-tier");
+      const card = screen.getByTestId("review-published-county-preview");
+      readings.push({
+        legacyBadge: card.querySelector(".priority-pill") !== null,
+        pills: card.querySelectorAll(
+          "[data-testid='selected-county-response-tier']"
+        ).length,
+        title:
+          card.querySelector(".response-tier-pill-title")?.textContent ?? "",
+      });
     }
-    expect(readings).toStrictEqual({
-      blank: {
-        badge: null,
-        text: "Review priority is unavailable for this county. Unavailable is not a finding of no risk.",
-      },
-      "Lower — routine": {
-        badge: "Lower review priority",
-        text: "Lower review priorityPublished review priority for follow-up. This is not a disease-risk estimate.",
-      },
-      "Not assessed": {
-        badge: null,
-        text: "Not assessedThis published priority is not a recognized review category. It is not a disease-risk estimate.",
-      },
-      "Priority 1 — Urgent follow-up": {
-        badge: "Highest review priority",
-        text: "Highest review priorityPublished review priority for follow-up. This is not a disease-risk estimate.",
-      },
-      "Priority 10": {
-        badge: null,
-        text: "Priority 10This published priority is not a recognized review category. It is not a disease-risk estimate.",
-      },
-      "Priority 2 — Review": {
-        badge: "Moderate review priority",
-        text: "Moderate review priorityPublished review priority for follow-up. This is not a disease-risk estimate.",
-      },
-      unavailable: {
-        badge: null,
-        text: "Review priority is unavailable for this county. Unavailable is not a finding of no risk.",
-      },
-      Unknown: {
-        badge: null,
-        text: "UnknownThis published priority is not a recognized review category. It is not a disease-risk estimate.",
-      },
-      "Watch — Monitor signals": {
-        badge: "Monitor for changes",
-        text: "Monitor for changesPublished review priority for follow-up. This is not a disease-risk estimate.",
-      },
-    });
+    expect(readings).toStrictEqual(
+      cases.map(() => ({
+        legacyBadge: false,
+        pills: 1,
+        title: "Elevated review priority",
+      }))
+    );
+    expect(
+      screen.queryByText("This is not a disease-risk estimate.")
+    ).toBeNull();
+    expect(screen.queryByText("Monitor for changes")).toBeNull();
   });
 
   it("renders status-specific published Lyme case rows", () => {

@@ -2,11 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
-import {
-  approvedFollowUpTitleForColor,
-  SCORE_COLOR_BANDS,
-} from "@/features/ux-reset/review/suggested-follow-up-content";
+import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { ValueState } from "@/generated/models";
+import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 import { populationRuralityObservation } from "../fixtures/population-rurality-context";
 import { releaseViewportRuns } from "./release-phone-viewport";
@@ -19,9 +17,13 @@ function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
 }
 
 function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
+  const presentation = responseTierPresentationForColor(band.color);
+  if (!presentation) {
+    throw new Error(`Missing response tier for ${band.color}`);
+  }
   return {
-    action: approvedFollowUpTitleForColor(band.color),
-    category: band.approvedReviewCategory,
+    action: presentation.detail,
+    category: presentation.title,
     title: gapScoreRangeTitle(band),
   };
 }

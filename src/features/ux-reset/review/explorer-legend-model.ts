@@ -5,18 +5,15 @@ import type {
   ExplorerMapLegendEntry,
   ExplorerMapPaint,
 } from "@/features/ux-reset/review/explorer-map-layers";
-import {
-  approvedFollowUpTitleForColor,
-  SCORE_COLOR_BANDS,
-} from "@/features/ux-reset/review/suggested-follow-up-content";
+import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
+import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 const NO_PUBLISHED_VALUE = "No published value";
 const GAP_SCORE_UNAVAILABLE_LABEL = "Gap score unavailable";
 
 /**
- * Gray has no score band. Colored bands take their category and action from
- * `SCORE_COLOR_BANDS` and `approvedFollowUpTitleForColor`, the same phrases
- * the Selected County card and response engine use.
+ * Gray has no score band. Colored bands use the same two-line response-tier
+ * wording and published color as the Selected County pill.
  */
 const GAP_SCORE_UNAVAILABLE_DISCLOSURE = {
   action: "Insufficient data to calculate a score",
@@ -147,12 +144,15 @@ function gapScoreDisclosure(
   const band = SCORE_COLOR_BANDS.find(
     (entry) => scoreBandThreshold(entry) === label
   );
-  if (!band) {
+  const presentation = band
+    ? responseTierPresentationForColor(band.color)
+    : null;
+  if (!(band && presentation)) {
     return null;
   }
   return {
-    action: approvedFollowUpTitleForColor(band.color),
-    category: band.approvedReviewCategory,
+    action: presentation.detail,
+    category: presentation.title,
     title: gapScoreRangeTitle(band),
   };
 }

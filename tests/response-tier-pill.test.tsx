@@ -9,19 +9,13 @@ import {
 } from "@/lib/atlas-ui";
 import { buildCountyFollowUp } from "@/lib/follow-up-workflows";
 import {
-  RESPONSE_TIER_HELP,
-  RESPONSE_TIER_UNAVAILABLE_HELP,
+  RESPONSE_TIER_PRESENTATION,
   responseTierForCounty,
 } from "@/lib/response-tier";
 
-const APPROVED_LABELS = [
-  "Lower · Continue routine review",
-  "Monitor · Monitor the pattern",
-  "Monitor · Verify with local information",
-  "Moderate · Conduct targeted follow-up",
-  "Moderate · Coordinate a local assessment",
-  "Highest · Prioritize targeted follow-up",
-] as const;
+const APPROVED_LABELS = RESPONSE_TIER_PRESENTATION.map(
+  (line) => `${line.title} ${line.detail}`
+);
 
 function county(overrides: Partial<CountyDetail> = {}): CountyDetail {
   return {
@@ -89,12 +83,13 @@ describe("response tier pill", () => {
       const view = {
         actionStatus: action.status,
         actionTitle: action.title,
-        help: screen.getByTestId("selected-county-response-tier-help")
-          .textContent,
+        detail: pill.querySelector(".response-tier-pill-detail")?.textContent,
+        help: screen.queryByTestId("selected-county-response-tier-help"),
         label: pill.textContent,
         priorityWording: pill.textContent?.includes("Priority 1") ?? false,
         ramp: pill.dataset.ramp,
         tier,
+        title: pill.querySelector(".response-tier-pill-title")?.textContent,
         usesPillClass: pill.className.includes("response-tier-pill"),
       };
       cleanup();
@@ -107,17 +102,20 @@ describe("response tier pill", () => {
         view: {
           actionStatus: "assigned",
           actionTitle: SUGGESTED_FOLLOW_UP_BY_COLOR[color],
-          help: RESPONSE_TIER_HELP,
-          label: APPROVED_LABELS[index],
+          detail: RESPONSE_TIER_PRESENTATION[index]?.detail,
+          help: null,
+          label: `${RESPONSE_TIER_PRESENTATION[index]?.title ?? ""}${RESPONSE_TIER_PRESENTATION[index]?.detail ?? ""}`,
           priorityWording: false,
           ramp: `map-ramp-${index + 1}`,
           tier: {
             action: SUGGESTED_FOLLOW_UP_BY_COLOR[color],
+            detail: RESPONSE_TIER_PRESENTATION[index]?.detail,
             label: APPROVED_LABELS[index],
             ramp: `map-ramp-${index + 1}`,
             status: "assigned",
-            tier: APPROVED_LABELS[index]?.split(" · ")[0],
+            title: RESPONSE_TIER_PRESENTATION[index]?.title,
           },
+          title: RESPONSE_TIER_PRESENTATION[index]?.title,
           usesPillClass: true,
         },
       }))
@@ -160,11 +158,12 @@ describe("response tier pill", () => {
       render(<ResponseTierPill context={context} detail={detail} />);
       const pill = screen.getByTestId("selected-county-response-tier");
       const view = {
-        help: screen.getByTestId("selected-county-response-tier-help")
-          .textContent,
-        inventedTier: /Lower|Monitor|Moderate|Highest/.test(
-          pill.textContent ?? ""
-        ),
+        detail: pill.querySelector(".response-tier-pill-detail"),
+        help: screen.queryByTestId("selected-county-response-tier-help"),
+        inventedTier:
+          /Lower review priority|Elevated review priority|Moderate review priority|Highest review priority/.test(
+            pill.textContent ?? ""
+          ),
         label: pill.textContent,
         levelStatus: level.status,
         levelTitle: level.title,
@@ -172,7 +171,8 @@ describe("response tier pill", () => {
         ramp: pill.dataset.ramp,
         status: pill.dataset.status,
         tierStatus: tier.status,
-        titlesMatch: tier.label === level.title,
+        titlesMatch:
+          tier.status === "unavailable" && tier.label === level.title,
       };
       cleanup();
       return view;
@@ -185,7 +185,8 @@ describe("response tier pill", () => {
           view.titlesMatch &&
           view.ramp === "unavailable" &&
           view.status === "unavailable" &&
-          view.help === RESPONSE_TIER_UNAVAILABLE_HELP &&
+          view.help === null &&
+          view.detail === null &&
           view.priorityWording === false &&
           view.label === view.levelTitle &&
           view.inventedTier === false

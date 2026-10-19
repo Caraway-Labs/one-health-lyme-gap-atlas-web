@@ -8,13 +8,10 @@ import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-l
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
-import {
-  approvedFollowUpTitleForColor,
-  RETIRED_FOLLOW_UP_PHRASES,
-  SCORE_COLOR_BANDS,
-} from "@/features/ux-reset/review/suggested-follow-up-content";
+import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyScoreSummary } from "@/generated/models";
 import { ValueState } from "@/generated/models";
+import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 function county(
   fips: string,
@@ -138,9 +135,13 @@ function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
 }
 
 function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
+  const presentation = responseTierPresentationForColor(band.color);
+  if (!presentation) {
+    throw new Error(`Missing response tier for ${band.color}`);
+  }
   return {
-    action: approvedFollowUpTitleForColor(band.color),
-    category: band.approvedReviewCategory,
+    action: presentation.detail,
+    category: presentation.title,
     title: gapScoreRangeTitle(band),
   };
 }
@@ -257,9 +258,9 @@ describe("Explorer map legend", () => {
         category: operationalBandCopy(band).category,
       }))
     );
-    expect(
-      RETIRED_FOLLOW_UP_PHRASES.some((phrase) => tooltipText.includes(phrase))
-    ).toBeFalsy();
+    expect(tooltipText).toContain("Conduct targeted follow-up");
+    expect(tooltipText).toContain("Coordinate a local assessment");
+    expect(tooltipText).toContain("Prioritize local investigation");
   });
 
   it("shows the seven gap-score disclosures without priority phrases", async () => {
