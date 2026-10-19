@@ -6,6 +6,10 @@ const examples = [
   { id: "primitives-card--information", text: "Evidence overview" },
   { id: "primitives-input--editable", text: "Geography" },
   { id: "atlas-priority-badge--highest", text: "Highest review priority" },
+  {
+    id: "atlas-response-tier-pill--six-tiers",
+    text: "Continue routine surveillance",
+  },
   { id: "atlas-status-message--empty", text: "No evidence in this example" },
   { id: "atlas-data-stamp--snapshot", text: "Illustrative snapshot" },
 ];
