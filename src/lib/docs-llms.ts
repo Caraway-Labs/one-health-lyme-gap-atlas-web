@@ -1,5 +1,6 @@
 import { llms } from "fumadocs-core/source";
 
+import { expandDocsComponents } from "@/lib/docs-llms-components";
 import {
   absoluteSiteUrl,
   joinDocsExport,
@@ -10,13 +11,18 @@ import { docsSource } from "@/lib/docs-source";
 type DocsPage = NonNullable<ReturnType<typeof docsSource.getPage>>;
 
 export const docsLlms = llms(docsSource, {
-  renderPage: async (page: DocsPage) =>
-    renderPublicDocsPage({
+  renderPage: async (page: DocsPage) => {
+    const [processed, raw] = await Promise.all([
+      page.data.getText("processed"),
+      page.data.getText("raw"),
+    ]);
+    return renderPublicDocsPage({
       description: page.data.description,
-      processed: await page.data.getText("processed"),
+      processed: expandDocsComponents(processed, raw),
       title: page.data.title,
       url: absoluteSiteUrl(page.url),
-    }),
+    });
+  },
 });
 
 export async function renderCurrentDocsExport(): Promise<string> {

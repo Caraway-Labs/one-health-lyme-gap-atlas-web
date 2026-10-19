@@ -79,3 +79,60 @@ test("serves processed Markdown and current MDX for one page", async ({
   const missing = await request.get("/docs/not-a-published-page.md");
   expect(missing.status()).toBe(404);
 });
+
+const observationsMarkdownPath =
+  "/docs/api-reference/observations/observations_v1_observations_get.md";
+
+test("renders operation pages, guardrails, and client examples into Markdown", async ({
+  request,
+}) => {
+  const observations = await request.get(observationsMarkdownPath);
+  expect(observations.status()).toBe(200);
+  const observationsText = await observations.text();
+  expect(observationsText).toContain("#### geography_id");
+  expect(observationsText).toContain("query, required.");
+  expect(observationsText).toContain('"08001"');
+  expect(observationsText).toContain("#### page_size");
+  expect(observationsText).toContain("- Default: 100");
+  expect(observationsText).toContain("- Minimum: 1");
+  expect(observationsText).toContain("- Maximum: 500");
+  expect(observationsText).toContain("- Media type: `application/json`");
+  expect(observationsText).toContain(
+    "- Media type: `application/problem+json`"
+  );
+  expect(observationsText).toContain(
+    "- Header `Retry-After`: Seconds before retry when supplied by the service."
+  );
+  expect(observationsText).not.toContain("<OpenAPIPage");
+
+  const mcp = await (await request.get("/docs/develop/mcp-clients.md")).text();
+  expect(mcp).toContain("Missing is not zero.");
+  expect(mcp).not.toContain("<InterpretationGuardrailCopy");
+
+  const quickstart = await (
+    await request.get("/docs/develop/quickstart.md")
+  ).text();
+  expect(quickstart).toContain("curl -fsS");
+  expect(quickstart).toContain("import httpx");
+  expect(quickstart).toContain("library(httr2)");
+  expect(quickstart).toContain("await fetch");
+  expect(quickstart).not.toContain("<HttpClientTabs");
+
+  const full = await (await request.get("/llms-full.txt")).text();
+  expect(full).toContain("#### geography_id");
+  expect(full).toContain("- Default: 100");
+  expect(full).toContain("- Minimum: 1");
+  expect(full).toContain("- Maximum: 500");
+  expect(full).toContain("- Media type: `application/json`");
+  expect(full).toContain("- Media type: `application/problem+json`");
+  expect(full).toContain(
+    "- Header `Retry-After`: Seconds before retry when supplied by the service."
+  );
+  expect(full).toContain("Missing is not zero.");
+  expect(full).toContain("import httpx");
+  expect(full).toContain("library(httr2)");
+  expect(full).toContain("await fetch");
+  expect(full).not.toContain("<InterpretationGuardrailCopy");
+  expect(full).not.toContain("<HttpClientTabs");
+  expect(full).not.toContain("<OpenAPIPage");
+});
