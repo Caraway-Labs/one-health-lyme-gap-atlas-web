@@ -73,5 +73,10 @@ export default function StartingViewPage() {
     return <EntranceStatus message="Checking your starting view…" />;
   }
 
-  return <StartingViewScreen profile={profile.data ?? null} />;
+  return (
+    <StartingViewScreen
+      identity={profile.identity}
+      profile={profile.data ?? null}
+    />
+  );
 }

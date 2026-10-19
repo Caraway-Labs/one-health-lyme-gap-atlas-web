@@ -17,7 +17,6 @@ import {
   profileIdentityKey,
   profileSessionGeneration,
   sameProfileIdentity,
-  useProfileSessionIdentity,
   type ProfileSessionIdentity,
 } from "../profile/profile-session";
 import { writeSavedProfile } from "../profile/saved-profile-client";
@@ -57,23 +56,28 @@ const COPY = {
 
 type Choice = "national" | "state" | null;
 
+function StartingViewChecking() {
+  return (
+    <div className={`${frontPorchHeroFont.variable} auth-entrance`}>
+      <SignInIdentity />
+      <main className="auth-entrance-main">
+        <p aria-live="polite" role="status">
+          {COPY.checking}
+        </p>
+      </main>
+    </div>
+  );
+}
+
 export function StartingViewScreen({
+  identity,
   profile,
 }: {
+  identity: ProfileSessionIdentity | null;
   profile: SavedProfile | null;
 }) {
-  const identity = useProfileSessionIdentity();
   if (!identity || identity.kind === "signed-out") {
-    return (
-      <div className={`${frontPorchHeroFont.variable} auth-entrance`}>
-        <SignInIdentity />
-        <main className="auth-entrance-main">
-          <p aria-live="polite" role="status">
-            {COPY.checking}
-          </p>
-        </main>
-      </div>
-    );
+    return <StartingViewChecking />;
   }
   return (
     <StartingViewForm

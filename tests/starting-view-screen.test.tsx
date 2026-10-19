@@ -60,6 +60,7 @@ vi.mock(
 
 import { StartingViewScreen } from "@/features/ux-reset/onboarding/starting-view-screen";
 import { savedProfileFromUserProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";
+import type { ProfileSessionIdentity } from "@/features/ux-reset/profile/profile-session";
 
 const incomplete = savedProfileFromUserProfile({
   job_title: "Analyst",
@@ -68,13 +69,18 @@ const incomplete = savedProfileFromUserProfile({
   state_code: null,
 });
 
-function renderScreen(profile: typeof incomplete) {
+const unconfiguredIdentity: ProfileSessionIdentity = { kind: "unconfigured" };
+
+function renderScreen(
+  profile: typeof incomplete,
+  identity: ProfileSessionIdentity = unconfiguredIdentity
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <StartingViewScreen profile={profile} />
+      <StartingViewScreen identity={identity} profile={profile} />
     </QueryClientProvider>
   );
 }
