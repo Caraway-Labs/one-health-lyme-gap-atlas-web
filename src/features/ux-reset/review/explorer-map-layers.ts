@@ -9,6 +9,10 @@ import type {
 } from "@/features/ux-reset/review/explorer-map-observation";
 import { EXPLORER_OBSERVATION_LAYER_IDS } from "@/features/ux-reset/review/explorer-map-observation";
 import { priorityLabel } from "@/features/ux-reset/review/explorer-scenario-score";
+import {
+  buildPathogenStatusLegend,
+  pathogenStatusClassId,
+} from "@/features/ux-reset/review/pathogen-status-contract";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
   buildTickStatusLegend,
@@ -100,33 +104,9 @@ export type ExplorerMapLegendSource = {
 const BOUNDARY_COLOR = "var(--explorer-boundary)";
 
 /**
- * Category hues stay off the review-priority ramp. A heat ramp would read as
- * severity for a status that is only a published category.
- */
-const POSITIVE_STATUS_COLOR: Readonly<Record<string, string>> = {
-  established: "var(--teal)",
-  present: "var(--teal)",
-  reported: "var(--navy)",
-};
-const OBSERVED_ZERO_COLOR = "var(--teal-dark)";
-const NEUTRAL_STATUS_COLOR = "var(--atlas-muted-text)";
-/**
- * Colors already assigned to a known status or to the absent-data swatch.
- * An unrecognized category must not reuse one of these.
- */
-const RESERVED_STATUS_COLORS = new Set<string>([
-  BOUNDARY_COLOR,
-  NEUTRAL_STATUS_COLOR,
-  OBSERVED_ZERO_COLOR,
-  "var(--mint)",
-  "var(--navy)",
-  "var(--navy-2)",
-  "var(--teal)",
-]);
-/**
- * Concrete colors for published categories the legend does not already name.
- * MapLibre can paint hsl/rgb/hex, and it cannot resolve var() or color-mix.
- * None of these are a neutral status color or a known category color.
+ * Concrete colors for published categories a status contract does not already
+ * name. MapLibre can paint hsl/rgb/hex, and it cannot resolve var() or
+ * color-mix. None of these are a known pathogen or tick category color.
  */
 const EXTRA_CATEGORY_COLORS = [
   "hsl(262,46%,42%)",
@@ -136,27 +116,6 @@ const EXTRA_CATEGORY_COLORS = [
 
 /** Static extra-category colors. Further categories use the generated hues. */
 export const EXPLORER_STATIC_EXTRA_COLOR_COUNT = EXTRA_CATEGORY_COLORS.length;
-
-function neutralStatusColor(normalized: string): string {
-  switch (normalized) {
-    case "no records": {
-      return "var(--atlas-muted-text)";
-    }
-    case "unknown": {
-      return "var(--navy-2)";
-    }
-    case "missing":
-    case "not ranked":
-    case "not supplied":
-    case "suppressed":
-    case "unavailable": {
-      return "var(--mint)";
-    }
-    default: {
-      return NEUTRAL_STATUS_COLOR;
-    }
-  }
-}
 
 const CATEGORY_SOURCE_KEYS: Partial<
   Record<ExplorerMapLayerId, readonly string[]>
@@ -661,117 +620,6 @@ function gapScorePaint(input: PaintInput): ExplorerMapPaint {
   };
 }
 
-type StatusKind = "category" | "neutral" | "observed-zero";
-
-function statusKind(value: string): StatusKind {
-  const normalized = value.trim().toLowerCase();
-  if (
-    /^(?:0|zero|none|not detected|negative|absent|no detection)$/.test(
-      normalized
-    )
-  ) {
-    return "observed-zero";
-  }
-  if (
-    /no records|missing|unknown|unavailable|not supplied|suppressed|not ranked/.test(
-      normalized
-    )
-  ) {
-    return "neutral";
-  }
-  return "category";
-}
-
-function statusLabel(status: string, kind: StatusKind): string {
-  switch (kind) {
-    case "category": {
-      return status;
-    }
-    case "neutral": {
-      return `${status} (not zero, not confirmed absence)`;
-    }
-    case "observed-zero": {
-      return `${status} (observed zero or negative finding)`;
-    }
-    default: {
-      const exhaustive: never = kind;
-      return exhaustive;
-    }
-  }
-}
-
-function statusSortKey(status: string, kind: StatusKind): string {
-  const normalized = status.trim().toLowerCase();
-  switch (kind) {
-    case "category": {
-      const preferred = ["established", "reported", "present"].indexOf(
-        normalized
-      );
-      return preferred === -1
-        ? `1-${normalized}`
-        : `0-${String(preferred).padStart(2, "0")}`;
-    }
-    case "observed-zero": {
-      return `2-${normalized}`;
-    }
-    case "neutral": {
-      const preferred = [
-        "no records",
-        "unknown",
-        "missing",
-        "unavailable",
-        "suppressed",
-        "not ranked",
-        "not supplied",
-      ].indexOf(normalized);
-      return preferred === -1
-        ? `4-${normalized}`
-        : `3-${String(preferred).padStart(2, "0")}`;
-    }
-    default: {
-      const exhaustive: never = kind;
-      return exhaustive;
-    }
-  }
-}
-
-function statusLegend(
-  counties: readonly CountyScoreSummary[],
-  read: (county: CountyScoreSummary) => string
-): { colors: Map<string, string>; entries: ExplorerMapLegendEntry[] } {
-  const statuses = [
-    ...new Set(counties.map((county) => read(county).trim() || "Unavailable")),
-  ].toSorted((left, right) =>
-    statusSortKey(left, statusKind(left)).localeCompare(
-      statusSortKey(right, statusKind(right))
-    )
-  );
-  const colors = new Map<string, string>();
-  const used = new Set<string>(RESERVED_STATUS_COLORS);
-  for (const status of statuses) {
-    const kind = statusKind(status);
-    const normalized = status.trim().toLowerCase();
-    let color: string;
-    if (kind === "neutral") {
-      color = neutralStatusColor(normalized);
-    } else if (kind === "observed-zero") {
-      color = OBSERVED_ZERO_COLOR;
-    } else {
-      color = POSITIVE_STATUS_COLOR[normalized] ?? nextExtraColor(used);
-    }
-    colors.set(status, color);
-    used.add(color);
-  }
-  return {
-    colors,
-    entries: statuses.map((status) => ({
-      color: colors.get(status) ?? NEUTRAL_STATUS_COLOR,
-      detail: null,
-      label: statusLabel(status, statusKind(status)),
-    })),
-  };
-}
-
 function tickStatusPaint(input: PaintInput): ExplorerMapPaint {
   const layer = explorerMapLayerById(input.layerId);
   const legend = buildTickStatusLegend(
@@ -805,25 +653,30 @@ function tickStatusPaint(input: PaintInput): ExplorerMapPaint {
   };
 }
 
-function categoricalPaint(
-  input: PaintInput,
-  read: (county: CountyScoreSummary) => string
-): ExplorerMapPaint {
+function pathogenStatusPaint(input: PaintInput): ExplorerMapPaint {
   const layer = explorerMapLayerById(input.layerId);
-  const legend = statusLegend(input.counties, read);
+  const legend = buildPathogenStatusLegend(
+    input.counties.map((county) => county.burgdorferi_status),
+    nextExtraColor
+  );
+  const byClass = new Map(legend.map((entry) => [entry.classId, entry]));
   const colorsByFips = new Map<string, string>();
   for (const county of input.counties) {
-    const status = read(county).trim() || "Unavailable";
-    colorsByFips.set(
-      county.fips,
-      legend.colors.get(status) ?? NEUTRAL_STATUS_COLOR
-    );
+    const color = byClass.get(
+      pathogenStatusClassId(county.burgdorferi_status)
+    )?.color;
+    if (color) {
+      colorsByFips.set(county.fips, color);
+    }
   }
   return {
     colorsByFips,
-    entries: legend.entries.map((entry) => ({
-      ...entry,
+    entries: legend.map((entry) => ({
+      color: entry.color,
+      detail: null,
+      label: entry.label,
       role: "class" as const,
+      visibleLines: entry.visibleLines,
     })),
     kind: "categorical",
     layerId: layer.id,
@@ -948,7 +801,7 @@ export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
       if (layerId === "tick_status") {
         return tickStatusPaint(input);
       }
-      return categoricalPaint(input, (county) => county.burgdorferi_status);
+      return pathogenStatusPaint(input);
     }
     default: {
       const exhaustive: never = layerId;
