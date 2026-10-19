@@ -1,7 +1,5 @@
-import { mkdirSync } from "node:fs";
-
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import autauga from "../fixtures/review-al-01001.json" with { type: "json" };
 import baldwin from "../fixtures/review-al-01003.json" with { type: "json" };
@@ -9,10 +7,10 @@ import barbour from "../fixtures/review-al-01005.json" with { type: "json" };
 import identities from "../fixtures/review-al-published-identities.json" with { type: "json" };
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const release = baldwin.release.release_id;
-const shotDirectory = "/opt/cursor/artifacts";
 
 const tierShots = [
   {
@@ -44,11 +42,7 @@ const tierShots = [
 let publishedColor: string | null = null;
 
 async function installPublishedReview(page: Page) {
-  await page.route("**/v1/me/profile", (route) =>
-    route.fulfill({
-      json: { profile: { starting_view_version: 1, state_code: null } },
-    })
-  );
+  await fulfillCompletedStartingView(page);
   await page.route("**/v1/atlas/metadata**", (route) => {
     const dataset =
       new URL(route.request().url()).searchParams.get("dataset_version") ??
@@ -134,8 +128,11 @@ async function installPublishedReview(page: Page) {
   );
 }
 
-async function captureTierShots(page: Page, viewport: "desktop" | "mobile") {
-  mkdirSync(shotDirectory, { recursive: true });
+async function captureTierShots(
+  page: Page,
+  testInfo: TestInfo,
+  viewport: "desktop" | "mobile"
+) {
   for (const shot of tierShots) {
     publishedColor = shot.color;
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
@@ -167,7 +164,7 @@ async function captureTierShots(page: Page, viewport: "desktop" | "mobile") {
     if (clip) {
       await page.screenshot({
         clip,
-        path: `${shotDirectory}/response-tier-${viewport}-${shot.name}.png`,
+        path: testInfo.outputPath(`response-tier-${viewport}-${shot.name}.png`),
       });
     }
   }
@@ -176,7 +173,7 @@ async function captureTierShots(page: Page, viewport: "desktop" | "mobile") {
 test.describe("selected county response tier", () => {
   test("shows the Action Center tier beside the gap score", async ({
     page,
-  }) => {
+  }, testInfo) => {
     publishedColor = null;
     await installPublishedReview(page);
     await page.setViewportSize({ height: 900, width: 1280 });
@@ -233,7 +230,87 @@ test.describe("selected county response tier", () => {
       .include(".ux-reset-explorer-preview")
       .analyze();
     expect(result.violations).toEqual([]);
-    await captureTierShots(page, "desktop");
+    await captureTierShots(page, testInfo, "desktop");
+  });
+
+  test("uses the full card width when the preview is 300px", async ({
+    page,
+  }) => {
+    publishedColor = null;
+    await installPublishedReview(page);
+    await page.setViewportSize({ height: 900, width: 1280 });
+    await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
+    const preview = page.getByTestId("review-published-county-preview");
+    await expect(
+      preview.getByTestId("selected-county-response-tier")
+    ).toBeVisible();
+    const layout = await preview.evaluate((card) => {
+      if (!(card instanceof HTMLElement)) {
+        return null;
+      }
+      card.style.boxSizing = "border-box";
+      card.style.width = "300px";
+      card.style.maxWidth = "300px";
+      const heading = card.querySelector("h2");
+      const lockup = card.querySelector(
+        "[data-testid='selected-county-score-lockup']"
+      );
+      if (
+        !(heading instanceof HTMLElement) ||
+        !(lockup instanceof HTMLElement)
+      ) {
+        return null;
+      }
+      const style = getComputedStyle(card);
+      const paddingLeft = Number.parseFloat(style.paddingLeft);
+      const paddingRight = Number.parseFloat(style.paddingRight);
+      const columnGap = Number.parseFloat(style.columnGap) || 0;
+      const contentWidth = card.clientWidth - paddingLeft - paddingRight;
+      const cardBox = card.getBoundingClientRect();
+      const contentStart = cardBox.left + card.clientLeft + paddingLeft;
+      const tracks = style.gridTemplateColumns
+        .split(/\s+/)
+        .map((part) => Number.parseFloat(part))
+        .filter((width) => Number.isFinite(width));
+      let cursor = contentStart;
+      const columns = tracks.map((width) => {
+        const start = cursor;
+        const end = cursor + width;
+        cursor = end + columnGap;
+        return { end, start };
+      });
+      const boxes = [...card.children]
+        .filter((child) => child instanceof HTMLElement)
+        .map((child) => child.getBoundingClientRect());
+      const emptyTracks = columns.filter(
+        (column) =>
+          !boxes.some(
+            (box) => box.right > column.start + 1 && box.left < column.end - 1
+          )
+      );
+      const headingBox = heading.getBoundingClientRect();
+      const lockupBox = lockup.getBoundingClientRect();
+      return {
+        contentWidth,
+        display: style.display,
+        emptyTracks: emptyTracks.length,
+        firstChild: card.firstElementChild?.getAttribute("data-testid"),
+        headingWidth: headingBox.width,
+        lockupWidth: lockupBox.width,
+        tracks: tracks.length,
+      };
+    });
+    expect(layout?.display).toBe("grid");
+    expect(layout?.firstChild).toBe("selected-county-score-lockup");
+    expect(layout?.tracks ?? 0).toBeGreaterThan(0);
+    expect(layout?.emptyTracks).toBe(0);
+    expect(layout?.contentWidth ?? 0).toBeGreaterThan(200);
+    expect(layout?.headingWidth ?? 0).toBeGreaterThan(
+      (layout?.contentWidth ?? 0) * 0.9
+    );
+    expect(layout?.lockupWidth ?? 0).toBeGreaterThan(
+      (layout?.contentWidth ?? 0) * 0.9
+    );
   });
 
   test("leaves a missing tier unavailable on the selected county card", async ({
@@ -277,7 +354,7 @@ test.describe("selected county response tier", () => {
     await page.setViewportSize({ height: 844, width: 390 });
     publishedColor = null;
     await installPublishedReview(page);
-    await captureTierShots(page, "mobile");
+    await captureTierShots(page, testInfo, "mobile");
     const tier = page
       .getByTestId("review-published-county-preview")
       .getByTestId("selected-county-response-tier");

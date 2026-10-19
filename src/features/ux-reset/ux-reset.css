@@ -498,12 +498,15 @@
 }
 
 @container (max-width: 22rem) {
-  .ux-reset-review-preview:has(> .ux-reset-selected-county-score) {
-    grid-template-columns: minmax(0, 1fr);
+  /* The card is the query container, so a size query cannot restyle that
+     same card. Span both tracks instead of leaving the 8.5rem column empty. */
+  .ux-reset-review-preview:has(> .ux-reset-selected-county-score)
+    > :not(.ux-reset-selected-county-score) {
+    grid-column: 1 / -1;
   }
 
   .ux-reset-selected-county-score {
-    grid-column: 1;
+    grid-column: 1 / -1;
     grid-row: 3;
     justify-self: stretch;
     justify-items: end;
