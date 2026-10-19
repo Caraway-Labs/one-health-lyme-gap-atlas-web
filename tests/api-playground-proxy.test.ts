@@ -385,6 +385,38 @@ describe("api playground proxy", () => {
     expect(limiter.take("10.0.0.2", 1000).allowed).toBeTruthy();
   });
 
+  it("rates DigitalOcean clients by do-connecting-ip", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(200, "{}", { "content-type": "application/json" })
+    );
+    const limiter = createRateLimiter({ limit: 1, windowMs: 60_000 });
+    const sharedIngress = "10.0.0.8";
+    const client = (address: string) =>
+      request("/api/proxy/v1/atlas/metadata", {
+        headers: {
+          "do-connecting-ip": address,
+          "x-forwarded-for": sharedIngress,
+        },
+      });
+    const first = await proxyPlaygroundRequest(
+      client("203.0.113.1"),
+      options(fetchImpl, { limiter })
+    );
+    const repeated = await proxyPlaygroundRequest(
+      client("203.0.113.1"),
+      options(fetchImpl, { limiter })
+    );
+    const other = await proxyPlaygroundRequest(
+      client("203.0.113.2"),
+      options(fetchImpl, { limiter })
+    );
+    expect({
+      first: first.status,
+      other: other.status,
+      repeated: repeated.status,
+    }).toStrictEqual({ first: 200, other: 200, repeated: 429 });
+  });
+
   it("rejects a response larger than the playground cap", async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       jsonResponse(200, "abcdef", { "content-type": "application/json" })
@@ -395,6 +427,41 @@ describe("api playground proxy", () => {
     );
     expect(response.status).toBe(502);
     await expect(response.text()).resolves.not.toContain("abcdef");
+  });
+
+  it("cancels an oversized body before later chunks are read", async () => {
+    let reads = 0;
+    let cancelled = false;
+    const stream = new ReadableStream<Uint8Array>(
+      {
+        cancel() {
+          cancelled = true;
+        },
+        pull(controller) {
+          reads += 1;
+          controller.enqueue(
+            new Uint8Array([reads, reads, reads, reads, reads])
+          );
+        },
+      },
+      new CountQueuingStrategy({ highWaterMark: 0 })
+    );
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(stream, {
+          headers: { "content-type": "application/json" },
+          status: 200,
+        })
+    );
+    const response = await proxyPlaygroundRequest(
+      request("/api/proxy/v1/atlas/metadata"),
+      options(fetchImpl, { maxResponseBytes: 4 })
+    );
+    expect({
+      cancelled,
+      reads,
+      status: response.status,
+    }).toStrictEqual({ cancelled: true, reads: 1, status: 502 });
   });
 
   it("keeps playground examples on the published allowlist and the lower 48", async () => {

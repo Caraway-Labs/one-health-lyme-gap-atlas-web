@@ -79,12 +79,28 @@ export function createRateLimiter(options?: {
   };
 }
 
+const ANONYMOUS_CLIENT_KEY = "anonymous";
+
+/**
+ * DigitalOcean App Platform stores the ingress address in `x-forwarded-for`
+ * and the visitor address in `do-connecting-ip`. Key on the visitor address
+ * first. Fall back to the first `x-forwarded-for` entry, then to
+ * `anonymous`, so requests with neither header share one bucket.
+ */
 export function playgroundClientKey(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (!forwarded) return "anonymous";
-  const first = forwarded.split(",")[0]?.trim();
-  if (!first) return "anonymous";
-  return first.slice(0, 200);
+  const connecting = clientAddress(request.headers.get("do-connecting-ip"));
+  if (connecting) return connecting;
+  const forwarded = clientAddress(
+    request.headers.get("x-forwarded-for")?.split(",")[0]
+  );
+  if (forwarded) return forwarded;
+  return ANONYMOUS_CLIENT_KEY;
+}
+
+function clientAddress(value: string | null | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, 200);
 }
 
 export async function proxyPlaygroundRequest(
@@ -284,15 +300,45 @@ async function clientResponse(
     await upstream.body?.cancel().catch(() => null);
     return new Response(null, { headers, status: upstream.status });
   }
-  const body = await upstream.arrayBuffer();
-  if (body.byteLength > maxResponseBytes) {
-    return problem(
-      502,
-      "Response too large",
-      "The API response is larger than the playground can return."
-    );
-  }
+  const body = await readCappedBody(upstream, maxResponseBytes);
+  if (body instanceof Response) return body;
   return new Response(body, { headers, status: upstream.status });
+}
+
+async function readCappedBody(
+  upstream: Response,
+  maxResponseBytes: number
+): Promise<Response | Uint8Array<ArrayBuffer>> {
+  const reader = upstream.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > maxResponseBytes) {
+        await reader.cancel().catch(() => null);
+        return problem(
+          502,
+          "Response too large",
+          "The API response is larger than the playground can return."
+        );
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const body = new Uint8Array(new ArrayBuffer(total));
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
 }
 
 function copyHeader(
