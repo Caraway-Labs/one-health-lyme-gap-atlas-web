@@ -123,26 +123,35 @@ vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
 
 vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
+    onCountyPointer,
     onSelect,
     scores,
   }: {
-    onSelect: (fips: string) => void;
+    onCountyPointer?: (click: { clickDetail: number; fips: string }) => void;
+    onSelect: (fips: string, surface: "map") => void;
     scores: { fips: string }[];
   }) => {
     lastMapScoreFips = scores.map((entry) => entry.fips).join(",");
+    const choose = (fips: string) => {
+      if (onCountyPointer) {
+        onCountyPointer({ clickDetail: 1, fips });
+        return;
+      }
+      onSelect(fips, "map");
+    };
     return (
       <div data-map-score-fips={lastMapScoreFips} data-testid="mock-atlas-map">
         <button
           data-testid="mock-map-select-ny"
           type="button"
-          onClick={() => onSelect("36001", "map")}
+          onClick={() => choose("36001")}
         >
           Select NY county on map
         </button>
         <button
           data-testid="mock-map-select-boulder"
           type="button"
-          onClick={() => onSelect("08013", "map")}
+          onClick={() => choose("08013")}
         >
           Select Boulder on map
         </button>
@@ -3985,6 +3994,15 @@ describe("Reset Review scope UI", () => {
       ).toContain("published score colors");
       expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
       expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
+      fireEvent.click(screen.getByTestId("mock-map-select-ny"));
+      await waitFor(() => {
+        expect(
+          updates.some((query) => query.includes("focus=NY"))
+        ).toBeTruthy();
+      });
+      expect(
+        updates.some((query) => query.includes("county=36001"))
+      ).toBeFalsy();
       fireEvent.click(screen.getByTestId("mock-map-select-ny"));
       await waitFor(() => {
         expect(

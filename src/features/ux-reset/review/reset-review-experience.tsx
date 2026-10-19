@@ -36,6 +36,7 @@ import {
   explorerFollowUpState,
   explorerReviewLoad,
 } from "@/features/ux-reset/review/explorer-follow-up";
+import { parseExplorerMapFocus } from "@/features/ux-reset/review/explorer-map-focus";
 import {
   explorerMapLayerById,
   type ExplorerMapLayerId,
@@ -86,7 +87,10 @@ import {
   reviewSearchParams,
   scenarioSearchParamPatch,
 } from "@/features/ux-reset/review/review-search-params";
-import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
+import {
+  isLower48ReviewScope,
+  postalCodeForStateFips,
+} from "@/features/ux-reset/review/review-state-fips";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useExplorerCountyReference } from "@/features/ux-reset/review/use-explorer-county-reference";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
@@ -188,6 +192,18 @@ function ResetReviewExperienceInner() {
       return;
     }
     void setUrlState(patch, { history: "replace" });
+  }, [searchParams, setUrlState]);
+  useEffect(() => {
+    const values = searchParams.getAll("focus");
+    if (values.length === 0) {
+      return;
+    }
+    const canonical =
+      values.length === 1 ? parseExplorerMapFocus(values[0]) : null;
+    if (values.length === 1 && values[0] === canonical) {
+      return;
+    }
+    void setUrlState({ focus: canonical }, { history: "replace" });
   }, [searchParams, setUrlState]);
   const [countyQuery, setCountyQuery] = useState("");
   const [availableData, setAvailableData] = useState<EvidenceView>("all");
@@ -307,7 +323,7 @@ function ResetReviewExperienceInner() {
       }
       userChoseScopeRef.current = true;
       setUserChoseScope(true);
-      void setUrlState({ scope: nextScope });
+      void setUrlState({ focus: null, scope: nextScope });
     },
     [arrivalExplicitScope, scope, setUrlState]
   );
@@ -381,6 +397,29 @@ function ResetReviewExperienceInner() {
     },
     [scope, setUrlState, urlState.selection]
   );
+  const setMapFocus = useCallback(
+    (next: string | null) => {
+      if (next !== null && !isLower48ReviewScope(next)) {
+        return;
+      }
+      if ((urlState.focus ?? null) === next) {
+        return;
+      }
+      const countyState = reviewCounty
+        ? postalCodeForStateFips(reviewCounty.slice(0, 2))
+        : null;
+      const clearCounty = Boolean(next && reviewCounty && countyState !== next);
+      if (clearCounty) {
+        nationalChoiceGenerationRef.current += 1;
+        setChosenNationalFips(null);
+      }
+      void setUrlState({
+        ...(clearCounty ? { county: null } : {}),
+        focus: next,
+      });
+    },
+    [reviewCounty, setUrlState, urlState.focus]
+  );
   const availableDataGate = useMemo(
     () =>
       explorerAvailableDataGate({
@@ -410,6 +449,7 @@ function ResetReviewExperienceInner() {
       setUserChoseScope(true);
       void setUrlState({
         county: county.fips,
+        focus: null,
         scope: county.state,
         ...(urlState.selection === EXPLORER_SELECTION_REQUIRED
           ? { selection: null }
@@ -777,7 +817,9 @@ function ResetReviewExperienceInner() {
                 scenarioSettings={scenarioSettings}
                 sources={presentationQuery.metadata.sources}
                 tierRelease={tierRelease}
+                mapFocus={urlState.focus}
                 onCountyChange={setCounty}
+                onMapFocusChange={setMapFocus}
                 onMapLayerChange={setMapLayer}
                 onViewCountyEvidence={openCountyEvidence}
               />

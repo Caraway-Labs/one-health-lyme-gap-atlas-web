@@ -52,7 +52,9 @@ const engine = vi.hoisted(() => {
     );
     setFilter = vi.fn<(...args: unknown[]) => void>();
     setPaintProperty = vi.fn<(...args: unknown[]) => void>();
-    constructor() {
+    options: Record<string, unknown>;
+    constructor(options?: Record<string, unknown>) {
+      this.options = options ?? {};
       instances.push(this);
     }
     on(
@@ -714,6 +716,91 @@ describe("AtlasMap county camera", () => {
     const map = loadMap();
     expect(map?.fitBounds).not.toHaveBeenCalled();
     view.unmount();
+  });
+
+  it("refits the focused state when the selected county is cleared", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    expect(map?.fitBounds).toHaveBeenCalledOnce();
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="CO"
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenCalledTimes(2);
+    expect(map?.fitBounds).toHaveBeenLastCalledWith([-105, 39, -104, 40], {
+      duration: 450,
+      maxZoom: 8,
+      padding: 48,
+    });
+    expect(map?.jumpTo).not.toHaveBeenCalled();
+  });
+
+  it("paints a black state outline and reports staged clicks without double-click zoom", () => {
+    stubPrefersReducedMotion(false);
+    const onCountyPointer =
+      vi.fn<(click: { clickDetail: number; fips: string }) => void>();
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    render(
+      <AtlasMap
+        doubleClickZoom={false}
+        geographicStateOutline
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips=""
+        selectedState="CO"
+        onCountyPointer={onCountyPointer}
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    act(() => {
+      map?.emit("click:counties-fill", {
+        features: [{ properties: { fips: "08001" } }],
+        originalEvent: { detail: 1 },
+      });
+      map?.emit("click:counties-fill", {
+        features: [{ properties: { fips: "08001" } }],
+        originalEvent: { detail: 2 },
+      });
+    });
+    expect({
+      doubleClickZoom: map?.options.doubleClickZoom,
+      outline: map?.setPaintProperty.mock.calls.some(
+        (call) =>
+          call[0] === "selected-state-outline" &&
+          call[1] === "line-color" &&
+          call[2] === "#000000"
+      ),
+      pointer: onCountyPointer.mock.calls,
+      select: onSelect.mock.calls,
+    }).toStrictEqual({
+      doubleClickZoom: false,
+      outline: true,
+      pointer: [
+        [{ clickDetail: 1, fips: "08001" }],
+        [{ clickDetail: 2, fips: "08001" }],
+      ],
+      select: [],
+    });
   });
 
   it("does not treat camera movement as a county selection", () => {

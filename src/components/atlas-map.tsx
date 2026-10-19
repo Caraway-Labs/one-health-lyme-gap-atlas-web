@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  ExpressionSpecification,
   FillLayerSpecification,
   GeoJSONSource,
   Map as MapLibreMap,
@@ -9,6 +10,7 @@ import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Ref } from "react";
 
+import { explorerStateGeometryBounds } from "@/features/ux-reset/review/explorer-map-focus";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
@@ -20,7 +22,6 @@ import {
   countyIsSubstantiallyVisible,
   fitCountyBounds,
   mapCameraDuration,
-  stateScopeBoundsFromGeometry,
   type CountyBounds,
 } from "@/lib/atlas-map-camera";
 import { countyBelongsToDistrict } from "@/lib/health-districts";
@@ -99,6 +100,27 @@ function mapWithExternalJumpTo(
 const DEFAULT_ARIA_LABEL =
   "County map colored by County Review Priority. Use the county list or results table for keyboard selection.";
 
+const ACCENT_STATE_OUTLINE = "#0b7285";
+const GEOGRAPHIC_STATE_OUTLINE = "#000000";
+
+export type AtlasMapCountyPointer = {
+  clickDetail: number;
+  fips: string;
+};
+
+function stateOutlinePaint(geographic: boolean): {
+  "line-color": string;
+  "line-width": number | ExpressionSpecification;
+} {
+  if (!geographic) {
+    return { "line-color": ACCENT_STATE_OUTLINE, "line-width": 2.5 };
+  }
+  return {
+    "line-color": GEOGRAPHIC_STATE_OUTLINE,
+    "line-width": ["interpolate", ["linear"], ["zoom"], 2, 1, 5, 1.35, 8, 2],
+  };
+}
+
 const DEFAULT_FILL_COLOR: AtlasMapFillColor = [
   "coalesce",
   ["get", "color"],
@@ -138,7 +160,10 @@ export function AtlasMap({
   cameraFrameState,
   fitSignal = 0,
   resetNationalView = false,
+  geographicStateOutline = false,
+  doubleClickZoom = true,
   selectedDistrict = "ALL",
+  onCountyPointer,
   onSelect,
   className,
   ariaLabel = DEFAULT_ARIA_LABEL,
@@ -165,7 +190,19 @@ export function AtlasMap({
    * camera when `cameraFrameState` is cleared.
    */
   resetNationalView?: boolean;
+  /**
+   * National Explorer state focus. County lines for the focused state are
+   * black. Other maps keep the accent state outline.
+   */
+  geographicStateOutline?: boolean;
+  /** National Explorer drill disables double-click zoom so one gesture cannot take both steps. */
+  doubleClickZoom?: boolean;
   selectedDistrict?: string;
+  /**
+   * When set, a county click is reported here instead of `onSelect`.
+   * The caller decides state focus versus county selection.
+   */
+  onCountyPointer?: (click: AtlasMapCountyPointer) => void;
   onSelect: (fips: string, surface: GeographySelectionSurface) => void;
   className?: string;
   ariaLabel?: string;
@@ -187,6 +224,8 @@ export function AtlasMap({
   const cameraFitGeneration = useRef(0);
   const resetNationalViewRef = useRef(resetNationalView);
   const cameraFrameStateRef = useRef(cameraFrameState);
+  const doubleClickZoomRef = useRef(doubleClickZoom);
+  const geographicStateOutlineRef = useRef(geographicStateOutline);
   const userAdjustedNationalRef = useRef(false);
   const initialNationalFitRef = useRef(false);
   const fitNationalViewRef = useRef<(instance: MapLibreMap) => boolean>(
@@ -194,16 +233,20 @@ export function AtlasMap({
   );
   const [mapReady, setMapReady] = useState(false);
   const selectRef = useRef(onSelect);
+  const countyPointerRef = useRef(onCountyPointer);
   const onMoveRef = useRef(onMove);
   const onIdleRef = useRef(onIdle);
   const onErrorRef = useRef(onError);
   useEffect(() => {
     selectRef.current = onSelect;
+    countyPointerRef.current = onCountyPointer;
     onMoveRef.current = onMove;
     onIdleRef.current = onIdle;
     onErrorRef.current = onError;
     resetNationalViewRef.current = resetNationalView;
     cameraFrameStateRef.current = cameraFrameState;
+    doubleClickZoomRef.current = doubleClickZoom;
+    geographicStateOutlineRef.current = geographicStateOutline;
   });
   fitNationalViewRef.current = (instance) => {
     const element = container.current;
@@ -286,9 +329,10 @@ export function AtlasMap({
         container: container.current,
         style: { layers: [], sources: {}, version: 8 },
         ...CONTIGUOUS_US_INITIAL_VIEW,
-        minZoom: resetNationalView ? 0 : 2,
-        maxZoom: 8,
         attributionControl: false,
+        doubleClickZoom: doubleClickZoomRef.current,
+        maxZoom: 8,
+        minZoom: resetNationalView ? 0 : 2,
       });
     } catch {
       onErrorRef.current?.();
@@ -368,7 +412,7 @@ export function AtlasMap({
         instance.addLayer({
           filter: ["==", ["get", "selectedState"], true],
           id: "selected-state-outline",
-          paint: { "line-color": "#0b7285", "line-width": 2.5 },
+          paint: stateOutlinePaint(geographicStateOutlineRef.current),
           source: "counties",
           type: "line",
         });
@@ -382,9 +426,18 @@ export function AtlasMap({
       });
       instance.on("click", "counties-fill", (event) => {
         const fips = event.features?.[0]?.properties?.fips;
-        if (typeof fips === "string") {
-          selectRef.current(fips, "map");
+        if (typeof fips !== "string") {
+          return;
         }
+        const pointer = countyPointerRef.current;
+        if (pointer) {
+          const detail = event.originalEvent?.detail;
+          const clickDetail =
+            typeof detail === "number" && detail > 0 ? detail : 1;
+          pointer({ clickDetail, fips });
+          return;
+        }
+        selectRef.current(fips, "map");
       });
       instance.on("mouseenter", "counties-fill", () => {
         instance.getCanvas().style.cursor = "pointer";
@@ -432,11 +485,22 @@ export function AtlasMap({
     source.setData(enriched());
     map.current.setPaintProperty("counties-fill", "fill-color", fillColor);
     if (map.current.getLayer("selected-state-outline")) {
+      const outline = stateOutlinePaint(geographicStateOutline);
       map.current.setFilter("selected-state-outline", [
         "==",
         ["get", "selectedState"],
         true,
       ]);
+      map.current.setPaintProperty(
+        "selected-state-outline",
+        "line-color",
+        outline["line-color"]
+      );
+      map.current.setPaintProperty(
+        "selected-state-outline",
+        "line-width",
+        outline["line-width"]
+      );
     }
     if (map.current.getLayer("selected-district-outline")) {
       map.current.setFilter("selected-district-outline", [
@@ -495,11 +559,7 @@ export function AtlasMap({
       }
     } else if (previousFramedState.current !== frameState) {
       previousFramedState.current = frameState;
-      const stateBounds = stateScopeBoundsFromGeometry(
-        geometry,
-        scores,
-        frameState
-      );
+      const stateBounds = explorerStateGeometryBounds(geometry, frameState);
       if (stateBounds) {
         applyingExternalMove.current = true;
         const generation = cameraFitGeneration.current + 1;
@@ -525,7 +585,28 @@ export function AtlasMap({
     if (previousSelectedFips.current === selectedFips) {
       return;
     }
+    const countyCleared =
+      previousSelectedFips.current !== "" && selectedFips === "" && frameState;
     previousSelectedFips.current = selectedFips;
+    if (countyCleared && frameState) {
+      const stateBounds = explorerStateGeometryBounds(geometry, frameState);
+      if (stateBounds) {
+        applyingExternalMove.current = true;
+        const generation = cameraFitGeneration.current + 1;
+        cameraFitGeneration.current = generation;
+        instance.stop();
+        instance.once("moveend", () => {
+          if (cameraFitGeneration.current === generation) {
+            applyingExternalMove.current = false;
+          }
+        });
+        fitCountyBounds(instance, stateBounds, {
+          duration: mapCameraDuration(),
+          stop: false,
+        });
+        return;
+      }
+    }
 
     const feature = geometry.features.find(
       (item) => item.properties.fips === selectedFips
@@ -563,7 +644,6 @@ export function AtlasMap({
     geometry,
     mapReady,
     resetNationalView,
-    scores,
     selectedFips,
   ]);
 
@@ -575,6 +655,13 @@ export function AtlasMap({
       aria-label={
         atlasMapContainerRole(containerRole) === "img" ? ariaLabel : undefined
       }
+      data-camera-frame={
+        cameraFrameState && cameraFrameState !== "ALL"
+          ? cameraFrameState
+          : undefined
+      }
+      data-double-click-zoom={doubleClickZoom ? "true" : "false"}
+      data-state-outline={geographicStateOutline ? "black" : "accent"}
     />
   );
 }
