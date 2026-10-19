@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "@testing-library/jest-dom/vitest";
 import {
   cleanup,
   fireEvent,
@@ -275,7 +276,8 @@ describe("Review operating picture state", () => {
     const map = screen.getByTestId("review-state-map-region");
     const availability = screen.getByTestId("explorer-layer-availability");
     const provenance = screen.getByTestId("explorer-map-provenance");
-    const fit = screen.getByRole("button", { name: "Fit Arizona" });
+    const visibleLabel = "Fit AZ";
+    const fit = screen.getByRole("button", { name: "Fit AZ (Arizona)" });
     const order = [heading, layer, map, availability, provenance].map((node) =>
       node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
     );
@@ -284,7 +286,7 @@ describe("Review operating picture state", () => {
       availabilityNote: availability.textContent?.includes(
         "Changing the layer does not rank counties by this measure."
       ),
-      fitLabel: fit.textContent?.includes("Fit AZ"),
+      fitLabel: fit.textContent?.includes(visibleLabel),
       headingOmitsRelease:
         heading.parentElement?.textContent?.includes("Release"),
       headingOmitsSource:
@@ -301,6 +303,8 @@ describe("Review operating picture state", () => {
       order: [...order].toSorted((left, right) => left - right),
       provenance: "Source periods vary by evidence · Release alpha-2026",
     });
+    expect(fit).toHaveAccessibleName("Fit AZ (Arizona)");
+    expect(fit).toHaveAccessibleName(expect.stringContaining(visibleLabel));
     view.unmount();
   });
 

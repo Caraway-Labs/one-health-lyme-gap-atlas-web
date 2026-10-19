@@ -6,15 +6,22 @@ import { Button } from "@/components/ui/button";
 import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 
 type ExplorerMapSectionHeaderProps = {
-  fitAccessibleName: string;
   fitLabel: string;
+  fitPlaceName: string;
   fitTestId?: string;
   onFit: () => void;
 };
 
+export function explorerFitAccessibleName(
+  fitLabel: string,
+  fitPlaceName: string
+): string {
+  return `${fitLabel} (${fitPlaceName})`;
+}
+
 export function ExplorerMapSectionHeader({
-  fitAccessibleName,
   fitLabel,
+  fitPlaceName,
   fitTestId,
   onFit,
 }: ExplorerMapSectionHeaderProps) {
@@ -22,7 +29,7 @@ export function ExplorerMapSectionHeader({
     <div className="ux-reset-explorer-map-heading">
       <h2>{EXPLORER_MAP_SECTION_HEADING}</h2>
       <Button
-        aria-label={fitAccessibleName}
+        aria-label={explorerFitAccessibleName(fitLabel, fitPlaceName)}
         data-testid={fitTestId}
         size="sm"
         type="button"

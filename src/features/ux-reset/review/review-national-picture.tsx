@@ -463,8 +463,8 @@ export function ReviewNationalPicture({
     >
       <Card className="ux-reset-explorer-map ux-reset-review-operating-map map-card gap-0 py-0">
         <ExplorerMapSectionHeader
-          fitAccessibleName="Fit United States"
           fitLabel="Fit geography"
+          fitPlaceName="United States"
           fitTestId="explorer-fit-national"
           onFit={returnToNationalExtent}
         />

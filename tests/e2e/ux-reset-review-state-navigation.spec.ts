@@ -428,7 +428,7 @@ test.describe("Review national geographic navigation", () => {
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect(page.getByLabel("Zoom in")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Fit Colorado" })
+      page.getByRole("button", { name: "Fit CO (Colorado)" })
     ).toBeVisible();
     await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/scope=ALL/);

@@ -879,8 +879,8 @@ export function ReviewOperatingPicture({
       <div className="ux-reset-explorer-browse" data-testid="explorer-browse">
         <Card className="ux-reset-explorer-map ux-reset-review-operating-map map-card gap-0 py-0">
           <ExplorerMapSectionHeader
-            fitAccessibleName={`Fit ${stateName}`}
             fitLabel={`Fit ${scopeCode}`}
+            fitPlaceName={stateName}
             fitTestId="explorer-fit-scope"
             onFit={() => {
               setFitSignal((value) => value + 1);

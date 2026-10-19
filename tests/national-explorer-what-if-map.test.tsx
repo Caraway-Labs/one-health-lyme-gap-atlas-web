@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "@testing-library/jest-dom/vitest";
 import {
   cleanup,
   fireEvent,
@@ -293,7 +294,10 @@ describe("national Explorer what-if map", () => {
     const map = screen.getByTestId("review-national-map-region");
     const availability = screen.getByTestId("explorer-layer-availability");
     const provenance = screen.getByTestId("explorer-map-provenance");
-    const fit = screen.getByTestId("explorer-fit-national");
+    const visibleLabel = "Fit geography";
+    const fit = screen.getByRole("button", {
+      name: "Fit geography (United States)",
+    });
     const order = [heading, layer, map, availability, provenance].map((node) =>
       node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
     );
@@ -303,8 +307,7 @@ describe("national Explorer what-if map", () => {
     });
     expect({
       availabilityNote: availability.textContent?.includes("Atlas gap score"),
-      fitLabel: fit.textContent?.includes("Fit geography"),
-      fitName: fit.getAttribute("aria-label"),
+      fitLabel: fit.textContent?.includes(visibleLabel),
       headingOmitsRelease:
         heading.parentElement?.textContent?.includes("Release"),
       labelFor: screen.getByText("Map layer").getAttribute("for"),
@@ -313,11 +316,12 @@ describe("national Explorer what-if map", () => {
     }).toStrictEqual({
       availabilityNote: true,
       fitLabel: true,
-      fitName: "Fit United States",
       headingOmitsRelease: false,
       labelFor: "explorer-map-layer",
       order: [...order].toSorted((left, right) => left - right),
       provenance: "Source periods vary by evidence · Release alpha-2026",
     });
+    expect(fit).toHaveAccessibleName("Fit geography (United States)");
+    expect(fit).toHaveAccessibleName(expect.stringContaining(visibleLabel));
   });
 });
