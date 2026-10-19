@@ -212,7 +212,7 @@ describe("tick status color and order contract", () => {
     ]);
   });
 
-  it("leaves pathogen and gap-score legends on the shared scales", () => {
+  it("leaves the gap-score ramp unchanged when pathogen uses its own scale", () => {
     const counties = [
       county("08001", "Established", { burgdorferi_status: "Present" }),
       county("08005", "Reported", {
@@ -267,18 +267,18 @@ describe("tick status color and order contract", () => {
       gapHasEstablished: false,
       gapHasHigh: true,
       pathogenColors: {
-        absent: "var(--teal-dark)",
-        noRecords: "var(--atlas-muted-text)",
-        present: "var(--teal)",
-        unknown: "var(--navy-2)",
+        absent: "hsl(16,72%,42%)",
+        noRecords: "#DDE4E7",
+        present: "#36B65E",
+        unknown: "hsl(270,46%,40%)",
       },
       pathogenLabels: [
+        "No records (not zero, not confirmed absence)",
         "Present",
         "Absent (observed zero or negative finding)",
-        "No records (not zero, not confirmed absence)",
-        "Unknown (not zero, not confirmed absence)",
+        "Unknown",
       ],
-      pathogenVisibleLines: null,
+      pathogenVisibleLines: expect.any(Element),
     });
   });
 
