@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "index",
+    "indicators_v1_indicators_get",
+    "indicator_v1_indicators__indicator_id__get",
+    "measures_v1_measures_get",
+    "measure_v1_measures__measure_id__get"
+  ],
+  "title": "Discovery"
+}

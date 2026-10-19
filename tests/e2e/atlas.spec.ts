@@ -139,6 +139,8 @@ test.beforeEach(async ({ page }) => {
         uninsured_percentile: 0.5,
         svi_percentile: 0.5,
       };
+    } else if (url.pathname === "/v1/me/profile") {
+      body = { profile: { starting_view_version: 1, state_code: null } };
     } else if (url.pathname.endsWith("/knowledge-graph/chat")) {
       body = {
         request_id: "request-1",

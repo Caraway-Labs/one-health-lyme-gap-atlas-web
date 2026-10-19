@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const feedbackId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const DESKTOP = { height: 900, width: 1440 };
 const MOBILE = { height: 844, width: 390 };
@@ -21,6 +23,9 @@ async function mockAtlasApi(
     }
     await route.fulfill({ json: {} });
   });
+  // Register after the catch-all. Playwright matches the newest route first,
+  // so this completed read stays ahead of the empty API fallback.
+  await fulfillCompletedStartingView(page);
 }
 
 async function openFeedback(page: Page) {
@@ -31,6 +36,10 @@ async function openFeedback(page: Page) {
     page.getByRole("dialog", { name: "Help shape One Health Atlas" })
   ).toBeVisible();
 }
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
 
 test.describe("UX Reset feedback modal", () => {
   test("desktop sidebar, keyboard dismiss, dataset receipt, and problem retry", async ({

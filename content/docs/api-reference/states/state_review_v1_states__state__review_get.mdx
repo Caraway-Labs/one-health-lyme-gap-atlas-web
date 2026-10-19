@@ -1,0 +1,60 @@
+---
+title: Review a state's county evidence
+description: Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
+      - content: GET /v1/states/{state}/review
+      - content: state_review_v1_states__state__review_get
+      - content: Review a state's county evidence
+      - content: Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
+      - content: 'state path required '
+      - content: State
+      - content: 'observation_context query optional '
+      - content: Observation Context
+      - content: 'dataset_version query optional '
+      - content: Dataset Version
+      - content: 200 Successful Response
+      - content: application/json
+      - content: '#/components/schemas/StateReview'
+      - content: 404 County or dataset release not found.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"County or dataset release not found.","instance":"/v1/states/{state}/review","request_id":"example-request-id"}'
+      - content: 422 One or more request values are invalid.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-422","title":"Request failed","status":422,"detail":"One or more request values are invalid.","instance":"/v1/states/{state}/review","request_id":"example-request-id"}'
+      - content: 429 Rate limit exceeded.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limit exceeded.","instance":"/v1/states/{state}/review","request_id":"example-request-id"}'
+      - content: 503 Atlas data service is unavailable.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Atlas data service is unavailable.","instance":"/v1/states/{state}/review","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/states/{state}/review","method":"get"}]} />
+    </>
+  );
+}

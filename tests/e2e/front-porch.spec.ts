@@ -13,6 +13,8 @@ import {
   FRONT_PORCH_HERO_SUPPORT,
 } from "@/features/front-porch/front-porch-copy";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 async function expectNoCountyPreselection(page: Page) {
   const url = page.url().toLowerCase();
   expect(url).not.toContain("buncombe");
@@ -154,6 +156,7 @@ test("sign-in stays on the approved screen and an overview bookmark opens Atlas 
   await expect(
     page.getByRole("link", { name: "Continue without an account" })
   ).toHaveCount(0);
+  await fulfillCompletedStartingView(page);
   await page.goto("/overview");
   await expect(page).toHaveURL(/\/explore\/?$/);
   await expect(page).not.toHaveURL(/sign-in/);
@@ -200,6 +203,7 @@ test("public privacy shell uses the shared unauthenticated chrome", async ({
 });
 
 test("signed-in review entry does not preselect a county", async ({ page }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/explore");
   await expect(page).toHaveURL(/\/explore\/?$/);
   await expectNoCountyPreselection(page);

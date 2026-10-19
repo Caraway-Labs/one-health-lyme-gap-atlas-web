@@ -1,0 +1,116 @@
+---
+title: "Counties"
+description: "Existing county details and versioned PDF reports."
+---
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Generated from the public OpenAPI contract.
+
+Existing county details and versioned PDF reports.
+
+## Get county analytics and provenance [#county_v1_counties__fips__get]
+
+`GET /v1/counties/{fips}`
+
+Operation ID: `county_v1_counties__fips__get`
+
+[Parameters, responses, and schema](/docs/api-reference/counties/county_v1_counties__fips__get).
+
+## Download a county report [#county_report_pdf_v1_counties__fips__report_pdf_get]
+
+`GET /v1/counties/{fips}/report.pdf`
+
+Operation ID: `county_report_pdf_v1_counties__fips__report_pdf_get`
+
+[Parameters, responses, and schema](/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get).
+
+### Template selection
+
+Choose `template` on `GET /v1/counties/{fips}/report.pdf`. The default is `county-v1`. Use a county FIPS in the lower 48 states or the District of Columbia. A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim.
+
+The same selector rules, with the requests checked against the published API, are in the [workflow guides](/docs/develop/workflows#download-a-county-report).
+
+<Tabs items={["county-v1 scoring","county-v2 evidence"]}>
+  <Tab value="county-v1 scoring">
+
+`county-v1` is the scoring selector. `dataset_version` is optional. These score settings are optional and bind the scoring inputs:
+
+| Parameter | Default | Bounds |
+| --- | --- | --- |
+| `ecological_share` | 65 | 40–85, multiple of 5 |
+| `low_incidence_breakpoint` | 10 | 5–25 |
+| `missing_human_weakness` | 75 | 40–90, multiple of 5 |
+
+`period_start`, `period_end`, and `measure_id` are forbidden on `county-v1`. Sending one of them returns HTTP `422`. Checked on 18 October 2026 for FIPS `36061`:
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-422",
+  "title": "Request failed",
+  "status": 422,
+  "detail": "Observation context requires county-v2.",
+  "instance": "/v1/counties/36061/report.pdf",
+  "request_id": "example-request-id",
+  "errors": null
+}
+```
+
+An unknown registered-pattern template returns HTTP `422` with detail `The requested county report template is not available.` A template outside `^[a-z]+-v\d+$` returns HTTP `422` with detail `One or more request values are invalid.`
+
+A successful county-v1 response uses `Cache-Control: public, max-age=300, must-revalidate`. `ETag` with `If-None-Match` can return `304`.
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/counties/36061/report.pdf?template=county-v1'
+```
+
+  </Tab>
+  <Tab value="county-v2 evidence">
+
+`county-v2` is the evidence selector. It requires `dataset_version`, `period_start`, `period_end`, and `measure_id`. Pass the observation `release_id` as `dataset_version`. `period_start` and `period_end` are the exact inclusive dates. `measure_id` accepts 1–20 distinct ids, repeated or comma-separated.
+
+A missing release, period, or measure list, a duplicate measure id, more than 20 ids, or a reversed period returns HTTP `422`. Checked on 18 October 2026:
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-422",
+  "title": "Request failed",
+  "status": 422,
+  "detail": "county-v2 requires release, exact period and distinct measures.",
+  "instance": "/v1/counties/36061/report.pdf",
+  "request_id": "example-request-id",
+  "errors": null
+}
+```
+
+An unknown measure returns HTTP `404` `RESOURCE_NOT_FOUND`. The contract also returns HTTP `503` when provenance is missing or mismatched, and HTTP `413` when the report exceeds resource limits.
+
+Score settings are the county-v1 inputs above. A checked county-v2 request that also sent `ecological_share=65` still returned HTTP `200` and `Cache-Control: no-store`.
+
+A successful county-v2 response uses `Cache-Control: no-store`. The service revalidates authoritative context before a cache response or `304`. `ETag` is still present.
+
+Replace `RELEASE_ID` with the observation `release_id`:
+
+```sh
+curl -fsS 'https://api.onehealthatlas.org/v1/counties/36061/report.pdf?template=county-v2&dataset_version=RELEASE_ID&period_start=2023-01-01&period_end=2023-12-31&measure_id=case_count_floor_2023'
+```
+
+The same checked requests are in the [workflow guides](https://onehealthatlas.org/docs/develop/workflows#download-a-county-report).
+
+  </Tab>
+</Tabs>
+
+## Get persisted Tier 1 model-assisted surveillance review priority [#county_tier1_surveillance_priority_get]
+
+`GET /v1/counties/{fips}/tier1-surveillance-priority`
+
+Operation ID: `county_tier1_surveillance_priority_get`
+
+[Parameters, responses, and schema](/docs/api-reference/counties/county_tier1_surveillance_priority_get).
+
+## Get Tier 1 result availability and persisted data [#county_tier1_surveillance_priority_availability_get]
+
+`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`
+
+Operation ID: `county_tier1_surveillance_priority_availability_get`
+
+[Parameters, responses, and schema](/docs/api-reference/counties/county_tier1_surveillance_priority_availability_get).

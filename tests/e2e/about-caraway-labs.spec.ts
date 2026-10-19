@@ -5,6 +5,8 @@ import { FRONT_PORCH_HERO_HEADLINE } from "@/features/front-porch/front-porch-co
 import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
 import { pageMetadataForRoute } from "@/lib/navigation";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const ABOUT_METADATA = pageMetadataForRoute(ABOUT_CARAWAY_LABS_PATH);
 
 async function keyboardFocus(page: Page, control: Locator) {
@@ -129,6 +131,7 @@ test("publishes an anonymous About Caraway Labs page", async ({
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page).not.toHaveURL(/sign-in/);
 
+  await fulfillCompletedStartingView(page);
   await page.goto("/explore");
   const brand = page.getByRole("contentinfo").getByRole("link", {
     name: "One Health Atlas by Caraway Labs (opens in a new tab)",

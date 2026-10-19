@@ -34,7 +34,10 @@ async function installReviewApiMocks(
     options.profileMethods?.push(route.request().method());
     await route.fulfill({
       json: {
-        profile: profileState ? { state_code: profileState } : null,
+        profile: {
+          starting_view_version: 1,
+          state_code: profileState,
+        },
       },
       status: 200,
     });
@@ -282,7 +285,7 @@ test.describe("Review national and state scope controls", () => {
     );
   });
 
-  test("keeps United States when it is chosen while the profile is loading", async ({
+  test("keeps Atlas Explorer closed until a held profile read classifies the account", async ({
     page,
   }) => {
     const profileMethods: string[] = [];
@@ -291,7 +294,7 @@ test.describe("Review national and state scope controls", () => {
       profileMethods.push(route.request().method());
       await profileHeld.promise;
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });
@@ -309,54 +312,29 @@ test.describe("Review national and state scope controls", () => {
     });
 
     await page.goto("/explore");
-    await expect(page.getByText("Loading review scope…")).toBeVisible();
-    await page.getByTestId("review-scope-select").click();
-    await page.getByRole("option", { name: "United States" }).click();
-    await expect(page).toHaveURL(/scope=ALL/);
-    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect(page.getByText("Checking your starting view…")).toBeVisible();
+    await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
+    await expect(page).toHaveURL(/\/explore\/?$/);
 
-    // Finish the held read before navigating Back. ALL is already rendered,
-    // so asserting it alone does not prove the profile response has arrived.
-    const profileResponse = page.waitForResponse("**/v1/me/profile");
     profileHeld.resolve();
-    await (await profileResponse).finished();
-    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
-      "data-rendered-scope",
-      "ALL"
-    );
-    await expect(page).toHaveURL(/scope=ALL/);
-    await expect(page.getByTestId("review-state-panel")).toHaveCount(0);
-    expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
-      []
-    );
-
-    await page.goBack({ waitUntil: "commit" });
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
       "CO"
     );
     await expect(page).toHaveURL(/scope=CO/);
-    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
-      0
+    expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
+      []
     );
-
-    await page.goForward({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/scope=ALL/);
-    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
-      "data-rendered-scope",
-      "ALL"
-    );
-    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
   });
 
-  test("applies the saved state after Back from a scope chosen during profile load", async ({
+  test("keeps an explicit national URL when a completed profile arrives late", async ({
     page,
   }) => {
     const profileHeld = Promise.withResolvers<void>();
     await page.route("**/v1/me/profile", async (route) => {
       await profileHeld.promise;
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });
@@ -373,33 +351,18 @@ test.describe("Review national and state scope controls", () => {
       });
     });
 
-    await page.goto("/explore");
-    await page.getByTestId("review-scope-select").click();
-    await page.getByRole("option", { name: "New York (NY)" }).click();
-    await expect(page).toHaveURL(/scope=NY/);
-    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
-      "data-rendered-scope",
-      "NY"
-    );
+    await page.goto("/explore?scope=ALL");
+    await expect(page.getByText("Checking your starting view…")).toBeVisible();
+    await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
+    await expect(page).toHaveURL(/scope=ALL/);
 
-    await page.goBack({ waitUntil: "commit" });
-    await expect(page).not.toHaveURL(/[?&]scope=/);
     profileHeld.resolve();
     await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
       "data-rendered-scope",
-      "CO"
+      "ALL"
     );
-    await expect(page).toHaveURL(/scope=CO/);
-    await expect(page.getByTestId("review-national-orientation")).toHaveCount(
-      0
-    );
-
-    await page.goForward({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/scope=NY/);
-    await expect(page.getByTestId("review-scope-results")).toHaveAttribute(
-      "data-rendered-scope",
-      "NY"
-    );
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page.getByTestId("review-state-panel")).toHaveCount(0);
   });
 
   test("replaces a saved state scope so Back does not open national Review", async ({
@@ -454,7 +417,7 @@ test.describe("Review national and state scope controls", () => {
     let releaseScores = 0;
     await page.route("**/v1/me/profile", async (route) => {
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });
@@ -499,7 +462,7 @@ test.describe("Review national and state scope controls", () => {
   }) => {
     await page.route("**/v1/me/profile", async (route) => {
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
     });

@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 test.describe("Explore bookmarks open Atlas Explorer browse", () => {
   test("keeps jurisdiction, county, and period and drops the measure browser", async ({
     page,
   }) => {
+    await fulfillCompletedStartingView(page);
     await page.goto(
       "/app/explore?scope=CO&county=08001&period=2025-01-01&metric=reported-cases"
     );

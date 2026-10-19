@@ -12,7 +12,9 @@ const unavailableDetail = { ...barbour, color: "#111111" };
 
 async function installPublishedReview(page: Page) {
   await page.route("**/v1/me/profile", (route) =>
-    route.fulfill({ json: { profile: null } })
+    route.fulfill({
+      json: { profile: { starting_view_version: 1, state_code: null } },
+    })
   );
   await page.route("**/v1/atlas/metadata**", (route) => {
     const dataset =

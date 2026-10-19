@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 test("retired public analytical bookmarks do not open the assistant drawer", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   for (const start of [
     "/geographic_explorer?state=CA&county=06085&view=maps",
     "/geographic_explorer?state=CA&county=06085",

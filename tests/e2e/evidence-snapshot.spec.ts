@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 test("retired overview and geographic explorer bookmarks leave the public evidence snapshot", async ({
   page,
 }) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/overview");
   await expect(page).toHaveURL(/\/explore$/);
   await expect(
