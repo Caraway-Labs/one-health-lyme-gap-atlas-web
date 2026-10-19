@@ -3,6 +3,7 @@ title: Quickstart
 description: Make one anonymous current-release observation request and read every response state that request can return.
 ---
 
+import { ApiPlayground } from "@/features/docs/api-playground";
 import { HttpClientTabs } from "@/features/docs/http-client-tabs";
 
 This page completes one representative production read: the 2023 published case-count floor for New York County. The measure id `case_count_floor_2023` is the example in the public observations operation and a measure in the current catalog. County FIPS `36061` is in the lower 48.
@@ -17,6 +18,12 @@ You need an HTTPS client. You do not create an account, API key, or SDK project.
 />
 
 `curl -f` hides error bodies. Drop `-f` when you need to read a problem response.
+
+### Try this request
+
+This playground sends that anonymous GET through the docs site. It adds no API key and does not change the response. The filled example uses New York County, FIPS `36061`, in the lower 48.
+
+<ApiPlayground />
 
 A successful body is a collection:
 
