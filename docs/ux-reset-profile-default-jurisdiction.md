@@ -6,7 +6,7 @@
 
 ## What this contract is
 
-Settings and later onboarding share one adapter. There is no second preference store, no browser-storage default, and no completion flag in the generated profile.
+Settings and onboarding share one adapter. There is no second preference store and no browser-storage default. Onboarding completion is the server field `starting_view_version`. A null version is incomplete, including a profile whose `state_code` is null. Version 1 with a null `state_code` is United States. Version 1 with a supported state is that state. Settings saves omit `complete_starting_view` so they keep the stored marker. The setup screen sends `complete_starting_view: true` with the existing optional profile fields.
 
 | Module | Role |
 | --- | --- |
@@ -20,18 +20,18 @@ Route authority stays in `src/features/ux-reset/routes.ts` (`RESET_SETTINGS_PATH
 
 `UserProfile.state_code` is optional `string | null` with max length 2. The schema has no national sentinel. Postal abbreviations are state selections. `null` is not a second copy of "no profile".
 
-| Persisted `UserProfileResponse` | Selection | Completion | Fresh Review start when `scope` is omitted |
+| Persisted `UserProfileResponse` | Selection | Settings mapping | Fresh Review start when `scope` is omitted |
 | --- | --- | --- | --- |
-| `profile: null` | Unselected. No saved default. | Incomplete | United States as a fallback, not a saved national default |
-| Profile object, `state_code` null or omitted | Explicit national default | Complete | United States, confirmed |
-| Profile object, `state_code` is a two-letter code in the current metadata state list | That state | Complete | That state |
+| `profile: null` | Unselected. No saved default. | No saved selection | United States as a fallback, not a saved national default |
+| Profile object, `state_code` null or omitted | Explicit national default | Saved national selection | United States, confirmed |
+| Profile object, `state_code` is a two-letter code in the current metadata state list | That state | Saved state selection | That state |
 | Profile object, `state_code` present but the state list is still loading | Unverified | Unavailable | Not applied yet |
 | Profile object, `state_code` present but the state list failed to load | Unverified | Unavailable | United States fallback |
 | Profile object, `state_code` present but not in the loaded state list, including an empty list | Unrecognized | Incomplete | United States fallback |
 
-`assessSavedProfile` is the only mapping for Settings display, completion, and fresh Review start. A postal code is not complete until the loaded state list contains it. Loading and an unavailable list are not the same as a code confirmed to be outside coverage.
+`assessSavedProfile` is the only mapping for Settings display and fresh Review start. A postal code is not complete until the loaded state list contains it. Loading and an unavailable list are not the same as a code confirmed to be outside coverage.
 
-Completion follows only that jurisdiction mapping. Role, organization, and job title are optional and never mark completion, block the workspace, or stand in for a default. A legacy account save that stores a profile with `state_code: null` ("No state selected") is the same persisted shape as an explicit national default.
+The jurisdiction mapping above is how Settings displays a stored `state_code`. It is not onboarding completion. Role, organization, and job title stay optional. A profile saved before the marker existed stays incomplete until an explicit completion write stores version 1. Completed accounts skip setup. A safe explicit internal destination wins for them; otherwise Atlas Explorer (`/explore`) opens at the saved view. Incomplete accounts finish setup before Atlas Explorer, and a failed profile read stays on a retry instead of opening setup.
 
 The profile cache key includes the authenticated user id. Sign-out, expiry, and account changes drop the previous cache and the open draft. A read or write checks the session again before its result is kept. A read and a write each send the access token from the same session snapshot as the account identity, so a later session lookup cannot attach a different account's bearer. A response that crosses an authentication generation — a different account or a refreshed token for the same account — is discarded. A save that is still in flight when that generation moves does not apply its outcome and does not overwrite the open draft. The editor leaves the saving state so that same draft can be submitted again. A 401 clears the editor only when it still belongs to the current authentication snapshot. A stale account's 401 does not, and a 401 for an older token does not block the refreshed session.
 
@@ -45,7 +45,7 @@ A lost response, non-200, or unreadable body stays unresolved. A follow-up read 
 
 ## Boundaries
 
-- Changing the saved default affects the next Review open that omits both `scope` and `county`. It does not rewrite an existing explicit Review URL.
+- Changing the saved default affects the next Atlas Explorer open that omits both `scope` and `county`. It does not rewrite an existing explicit Explorer URL.
 - Scope changes on Review do not call `PUT /v1/me/profile`.
 - Onboarding (#436 / #437) must import this adapter instead of inventing completion storage.
 - API credential management stays out of this surface until a backend token contract exists.

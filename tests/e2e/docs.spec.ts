@@ -4,6 +4,8 @@ import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 const publicOpenApiManifest = JSON.parse(
   readFileSync("contracts/public-openapi.manifest.json", "utf8")
 ) as { sourceCommit: string };
@@ -450,6 +452,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   page,
 }, testInfo) => {
   const reviewPath = "/explore?scope=NY&county=36061&sort=score";
+  await fulfillCompletedStartingView(page);
   await page.goto(reviewPath);
   await expect(
     page.getByRole("heading", {
@@ -578,6 +581,7 @@ test("renders the capability-boundaries table with one column count", async ({
 test("opens the configured docs destination from the workspace sidebar", async ({
   page,
 }, testInfo) => {
+  await fulfillCompletedStartingView(page);
   await page.goto("/explore");
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Open navigation" }).click();
