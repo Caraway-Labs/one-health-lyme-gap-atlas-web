@@ -115,6 +115,8 @@ describe("County profile presentation", () => {
     expect(
       screen.getByRole("region", { name: "Conduct targeted follow-up" })
         .textContent
-    ).toContain("review recommendation");
+    ).toContain(
+      "not individual risk measurement, proof of underreporting, or a mandate for investigation."
+    );
   });
 });
