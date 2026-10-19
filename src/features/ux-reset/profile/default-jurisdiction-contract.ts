@@ -14,8 +14,8 @@ import {
  * Approved mapping for GET/PUT `/v1/me/profile`.
  * See docs/ux-reset-profile-default-jurisdiction.md.
  * `null` profile is unselected. A profile object with null or omitted
- * `state_code` is an explicit national default. There is no national sentinel
- * and no separate completion field in the generated schema.
+ * `state_code` is an explicit national jurisdiction. Onboarding completion is
+ * `starting_view_version` 1, not the presence of a profile or a null state.
  */
 export type DefaultJurisdiction =
   | { kind: "unselected" }
@@ -39,6 +39,8 @@ export type SavedProfile = {
   organization: string | null;
   role: UserProfileRole | null;
   selection: DefaultJurisdiction;
+  /** Server onboarding marker. Null is incomplete, including a stored profile. */
+  startingViewVersion: 1 | null;
 };
 
 export type ProfileDraftInput = {
@@ -245,6 +247,7 @@ export function savedProfileFromUserProfile(
     organization: normalizeOptionalText(profile?.organization),
     role: profile?.role ?? null,
     selection,
+    startingViewVersion: profile?.starting_view_version === 1 ? 1 : null,
   };
 }
 
@@ -377,8 +380,11 @@ export function profileEchoMatchesWrite(
     (requested.kind === "state" &&
       saved.selection.kind === "state" &&
       saved.selection.stateCode === requested.stateCode);
+  const completionMatches =
+    body.complete_starting_view !== true || saved.startingViewVersion === 1;
   return (
     selectionMatches &&
+    completionMatches &&
     (saved.role ?? null) === (body.role ?? null) &&
     saved.organization === normalizeOptionalText(body.organization) &&
     saved.jobTitle === normalizeOptionalText(body.job_title)
