@@ -13,6 +13,7 @@ import { createOpenAPI } from "fumadocs-openapi/server";
 import { parse, stringify } from "yaml";
 
 import { showsPendingDeliveryBadge } from "./endpoint-delivery";
+import { markdownTableCell } from "./markdown-table";
 import {
   getDocsUrl,
   getPublishedApiOrigin,
@@ -2449,6 +2450,230 @@ export async function checkAuthoritativeOpenApiDrift(
     "unavailable",
     `Authoritative OpenAPI at ${sourceUrl} could not be retrieved (${detail}). The pinned contract was not changed.`
   );
+}
+
+export function renderPinnedOperationMarkdown(
+  contract: LoadedPublicOpenApiContract,
+  method: string,
+  route: string
+): string {
+  const normalizedMethod = method.toUpperCase();
+  const operation = contract.tags
+    .flatMap((tag) => tag.operations)
+    .find(
+      (candidate) =>
+        candidate.method === normalizedMethod && candidate.path === route
+    );
+  if (!operation) {
+    throw new Error(
+      `Pinned public OpenAPI contract has no ${normalizedMethod} ${route}.`
+    );
+  }
+  return formatPinnedOperation(operation);
+}
+
+function formatPinnedOperation(operation: OperationView): string {
+  const lines = [
+    `## ${operation.method} ${operation.path}`,
+    "",
+    `Operation ID: \`${operation.operationId}\`.`,
+  ];
+  if (operation.summary) lines.push("", operation.summary);
+  if (operation.description) lines.push("", operation.description);
+  if (operation.parameters.length > 0) {
+    lines.push(
+      "",
+      "### Parameters",
+      "",
+      operation.parameters.map(formatPinnedParameter).join("\n\n")
+    );
+  }
+  if (operation.responses.length > 0) {
+    lines.push(
+      "",
+      "### Responses",
+      "",
+      operation.responses.map(formatPinnedResponse).join("\n\n")
+    );
+  }
+  return lines.join("\n");
+}
+
+function formatPinnedParameter(parameter: ParameterView): string {
+  const requirement = parameter.required ? "required" : "optional";
+  const lines = [
+    `#### ${parameter.name}`,
+    "",
+    `${parameter.location}, ${requirement}.`,
+  ];
+  if (parameter.description) lines.push("", parameter.description);
+  lines.push(...schemaConstraintLines(parameter.schema, parameter.description));
+  for (const example of parameter.examples) {
+    lines.push(
+      "",
+      "Example:",
+      "",
+      "```json",
+      JSON.stringify(example.value, null, 2),
+      "```"
+    );
+  }
+  return lines.join("\n");
+}
+
+function formatPinnedResponse(response: ResponseView): string {
+  const lines = [`#### ${response.status}`, ""];
+  if (response.description) lines.push(response.description, "");
+  for (const media of response.media) {
+    lines.push(`- Media type: \`${media.mediaType}\``);
+    const schema = schemaSummary(media.schema);
+    if (schema) lines.push(`- Response schema: \`${schema}\``);
+    for (const example of media.examples) {
+      const label = example.summary ?? example.name ?? "Example";
+      lines.push(
+        "",
+        `##### ${label}`,
+        "",
+        "```json",
+        JSON.stringify(example.value, null, 2),
+        "```"
+      );
+    }
+  }
+  for (const header of response.headers) {
+    const description = header.description ? `: ${header.description}` : "";
+    lines.push(`- Header \`${header.name}\`${description}`);
+  }
+  return lines.join("\n");
+}
+
+function schemaConstraintLines(schema: unknown, description: string): string[] {
+  const rows = constraintRows(schema, description);
+  if (rows.length === 0) return [];
+  return ["", constraintTable(rows)];
+}
+
+function constraintTable(rows: readonly (readonly [string, string])[]): string {
+  const lines = [
+    `| ${markdownTableCell("Constraint")} | ${markdownTableCell("Value")} |`,
+    "| --- | --- |",
+  ];
+  for (const [name, value] of rows) {
+    lines.push(
+      `| ${markdownTableCell(name)} | ${markdownTableCell(value, { code: true })} |`
+    );
+  }
+  return lines.join("\n");
+}
+
+function constraintRows(
+  schema: unknown,
+  description: string
+): (readonly [string, string])[] {
+  if (!isRecord(schema)) return [];
+  const rows: (readonly [string, string])[] = [];
+  const summary = schemaSummary(schema);
+  if (summary) rows.push(["Schema", summary]);
+  const statedDefault = /defaults to (?<count>\d+)/i.exec(description);
+  if (schema.default !== undefined) {
+    rows.push(["Default", constraintScalar(schema.default)]);
+  } else if (statedDefault?.groups?.count) {
+    rows.push(["Default", statedDefault.groups.count]);
+  }
+  pushConstraint(rows, "Minimum", schema.minimum);
+  pushConstraint(rows, "Maximum", schema.maximum);
+  pushConstraint(rows, "Exclusive minimum", schema.exclusiveMinimum);
+  pushConstraint(rows, "Exclusive maximum", schema.exclusiveMaximum);
+  pushConstraint(rows, "Multiple of", schema.multipleOf);
+  pushConstraint(rows, "Minimum length", schema.minLength);
+  pushConstraint(rows, "Maximum length", schema.maxLength);
+  pushConstraint(rows, "Minimum items", schema.minItems);
+  pushConstraint(rows, "Maximum items", schema.maxItems);
+  if (schema.uniqueItems === true) rows.push(["Unique items", "true"]);
+  if (typeof schema.pattern === "string")
+    rows.push(["Pattern", schema.pattern]);
+  if (typeof schema.format === "string") rows.push(["Format", schema.format]);
+  if (Array.isArray(schema.enum)) {
+    rows.push(["Enum", schema.enum.map(constraintScalar).join(", ")]);
+  }
+  if ("const" in schema)
+    rows.push(["Constant", constraintScalar(schema.const)]);
+  rows.push(...nestedConstraintRows(schema));
+  return rows;
+}
+
+function nestedConstraintRows(
+  schema: JsonRecord
+): (readonly [string, string])[] {
+  const rows: (readonly [string, string])[] = [];
+  if (isRecord(schema.items)) {
+    rows.push(...prefixedConstraintRows("Items", schema.items));
+  }
+  for (const keyword of ["allOf", "anyOf", "oneOf"] as const) {
+    const branches = schema[keyword];
+    if (!Array.isArray(branches)) continue;
+    for (const [index, branch] of branches.entries()) {
+      rows.push(
+        ...prefixedConstraintRows(`${keyword} ${String(index + 1)}`, branch)
+      );
+    }
+  }
+  return rows;
+}
+
+function prefixedConstraintRows(
+  prefix: string,
+  schema: unknown
+): (readonly [string, string])[] {
+  return constraintRows(schema, "")
+    .filter(([label]) => label !== "Schema")
+    .map(([label, value]) => [`${prefix} ${label}`, value] as const);
+}
+
+function pushConstraint(
+  rows: (readonly [string, string])[],
+  label: string,
+  value: unknown
+): void {
+  if (typeof value === "number" || typeof value === "boolean") {
+    rows.push([label, String(value)]);
+  }
+}
+
+function constraintScalar(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+function schemaSummary(schema: unknown): string {
+  if (!isRecord(schema)) return "";
+  if (typeof schema.$ref === "string") {
+    return schema.$ref.split("/").at(-1) ?? schema.$ref;
+  }
+  if (Array.isArray(schema.oneOf)) {
+    return schema.oneOf.map(schemaSummary).filter(Boolean).join(" | ");
+  }
+  if (Array.isArray(schema.anyOf)) {
+    return schema.anyOf.map(schemaSummary).filter(Boolean).join(" | ");
+  }
+  const typeValue = schema.type;
+  const types = Array.isArray(typeValue)
+    ? typeValue.filter((item): item is string => typeof item === "string")
+    : typeof typeValue === "string"
+      ? [typeValue]
+      : [];
+  if (types.includes("array")) {
+    const items = schemaSummary(schema.items);
+    return items ? `array of ${items}` : "array";
+  }
+  return types.join(" | ");
 }
 
 const invokedDirectly = process.argv[1]?.endsWith(

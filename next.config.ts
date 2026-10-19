@@ -7,6 +7,26 @@ const nextConfig: NextConfig = {
   // Next.js indicator uses nextjs-portal and intercepts those pointer events
   // even when no runtime error exists (see #126). Hide it only for E2E.
   devIndicators: process.env.ATLAS_E2E === "1" ? false : undefined,
+  async rewrites() {
+    return [
+      {
+        destination: "/llms.mdx/docs/content.md",
+        source: "/docs.md",
+      },
+      {
+        destination: "/llms.mdx/docs/content.mdx",
+        source: "/docs.mdx",
+      },
+      {
+        destination: "/llms.mdx/docs/:slug*/content.md",
+        source: "/docs/:slug*.md",
+      },
+      {
+        destination: "/llms.mdx/docs/:slug*/content.mdx",
+        source: "/docs/:slug*.mdx",
+      },
+    ];
+  },
   async redirects() {
     return [
       ...[
