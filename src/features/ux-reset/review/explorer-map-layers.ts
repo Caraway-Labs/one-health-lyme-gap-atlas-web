@@ -10,6 +10,10 @@ import type {
 import { EXPLORER_OBSERVATION_LAYER_IDS } from "@/features/ux-reset/review/explorer-map-observation";
 import { priorityLabel } from "@/features/ux-reset/review/explorer-scenario-score";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
+import {
+  buildTickStatusLegend,
+  tickStatusClassId,
+} from "@/features/ux-reset/review/tick-status-contract";
 import type { CountyScoreSummary } from "@/generated/models";
 
 /**
@@ -190,6 +194,8 @@ export type ExplorerMapLegendEntry = {
   detail: string | null;
   label: string;
   role?: ExplorerMapLegendRole;
+  /** Persistent legend lines. Omitted swatches stay unlabeled. */
+  visibleLines?: readonly string[];
 };
 
 export type ExplorerLegendScale = "gradient" | "segments";
@@ -766,6 +772,39 @@ function statusLegend(
   };
 }
 
+function tickStatusPaint(input: PaintInput): ExplorerMapPaint {
+  const layer = explorerMapLayerById(input.layerId);
+  const legend = buildTickStatusLegend(
+    input.counties.map((county) => county.tick_status),
+    nextExtraColor
+  );
+  const byClass = new Map(legend.map((entry) => [entry.classId, entry]));
+  const colorsByFips = new Map<string, string>();
+  for (const county of input.counties) {
+    const color = byClass.get(tickStatusClassId(county.tick_status))?.color;
+    if (color) {
+      colorsByFips.set(county.fips, color);
+    }
+  }
+  return {
+    colorsByFips,
+    entries: legend.map((entry) => ({
+      color: entry.color,
+      detail: null,
+      label: entry.label,
+      role: "class" as const,
+      visibleLines: entry.visibleLines,
+    })),
+    kind: "categorical",
+    layerId: layer.id,
+    note: "Colors are separate published status categories, not a continuous risk gradient or a severity ranking. An observed zero stays distinct from a missing status.",
+    period: legendPeriod(input, layer.id),
+    scale: "segments",
+    title: layer.label,
+    unit: "published status category",
+  };
+}
+
 function categoricalPaint(
   input: PaintInput,
   read: (county: CountyScoreSummary) => string
@@ -907,7 +946,7 @@ export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
         return gapScorePaint(input);
       }
       if (layerId === "tick_status") {
-        return categoricalPaint(input, (county) => county.tick_status);
+        return tickStatusPaint(input);
       }
       return categoricalPaint(input, (county) => county.burgdorferi_status);
     }
