@@ -8,6 +8,10 @@ const examples = [
   { id: "atlas-priority-badge--highest", text: "Highest review priority" },
   { id: "atlas-status-message--empty", text: "No evidence in this example" },
   { id: "atlas-data-stamp--snapshot", text: "Illustrative snapshot" },
+  {
+    id: "atlas-explorer-tick-legend--blacklegged",
+    text: "(not zero, not confirmed absence)",
+  },
 ];
 
 for (const example of examples) {

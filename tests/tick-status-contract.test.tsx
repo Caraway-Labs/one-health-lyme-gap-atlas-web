@@ -154,8 +154,8 @@ describe("tick status color and order contract", () => {
         "Reported",
         "Established",
         "Not a published status",
-        "Unknown",
         "unknown",
+        "Unknown",
       ],
     });
   });

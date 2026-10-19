@@ -38,6 +38,7 @@ export type ExplorerLegendSegment = {
   label: string;
   role: ExplorerMapLegendEntry["role"];
   tooltip: string;
+  visibleLines?: readonly string[];
 };
 
 export type ExplorerLegendGradientStop = {
@@ -175,6 +176,7 @@ function toSegment(
     label: entry.label,
     role: entry.role,
     tooltip: accessibleName,
+    visibleLines: entry.visibleLines,
   };
 }
 
