@@ -2599,7 +2599,7 @@
 
 .ux-reset-explorer-legend-disclosure-action {
   margin: 0;
-  /* Keeps "Conduct targeted follow-up" on one line and wraps longer actions. */
+  /* Wraps the longer operational action lines inside the compact tooltip. */
   max-width: 22ch;
   color: var(--muted-foreground);
   font-size: 0.75rem;

@@ -5,58 +5,24 @@ import type {
   ExplorerMapLegendEntry,
   ExplorerMapPaint,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import {
+  approvedFollowUpTitleForColor,
+  SCORE_COLOR_BANDS,
+} from "@/features/ux-reset/review/suggested-follow-up-content";
 
 const NO_PUBLISHED_VALUE = "No published value";
 const GAP_SCORE_UNAVAILABLE_LABEL = "Gap score unavailable";
 
 /**
- * Compact hover/focus copy for the Atlas gap score strip (issue 706).
- * This is legend presentation only. It does not change score cut points,
- * map colors, `priorityLabel`, or the four follow-up response IDs in
- * `SCORE_COLOR_BANDS`. Two action lines ("Conduct targeted follow-up" and
- * "Coordinate a local assessment") are retired operational phrases; they
- * appear here only as the approved legend guidance.
+ * Gray has no score band. Colored bands take their category and action from
+ * `SCORE_COLOR_BANDS` and `approvedFollowUpTitleForColor`, the same phrases
+ * the Selected County card and response engine use.
  */
-const GAP_SCORE_LEGEND_DISCLOSURES = {
-  [GAP_SCORE_UNAVAILABLE_LABEL]: {
-    action: "Insufficient data to calculate a score",
-    category: null,
-    title: GAP_SCORE_UNAVAILABLE_LABEL,
-  },
-  "0 to less than 20": {
-    action: "Continue routine review",
-    category: "Lower review priority",
-    title: "Atlas gap score: 0 to <20",
-  },
-  "20 to less than 35": {
-    action: "Monitor the pattern",
-    category: "Monitor",
-    title: "Atlas gap score: 20 to <35",
-  },
-  "35 to less than 50": {
-    action: "Verify with local information",
-    category: "Monitor",
-    title: "Atlas gap score: 35 to <50",
-  },
-  "50 to less than 65": {
-    action: "Conduct targeted follow-up",
-    category: "Moderate",
-    title: "Atlas gap score: 50 to <65",
-  },
-  "65 to less than 75": {
-    action: "Coordinate a local assessment",
-    category: "Moderate",
-    title: "Atlas gap score: 65 to <75",
-  },
-  "75 or higher": {
-    action: "Prioritize targeted follow-up",
-    category: "Highest",
-    title: "Atlas gap score: 75 or higher",
-  },
-} as const satisfies Record<
-  string,
-  { action: string; category: string | null; title: string }
->;
+const GAP_SCORE_UNAVAILABLE_DISCLOSURE = {
+  action: "Insufficient data to calculate a score",
+  category: null,
+  title: GAP_SCORE_UNAVAILABLE_LABEL,
+} as const;
 
 export type ExplorerLegendDisclosure = {
   action: string;
@@ -154,20 +120,41 @@ function disclosureAccessibleName(
   return `${disclosure.title}. ${disclosure.action}`;
 }
 
-function isGapScoreDisclosureLabel(
-  label: string
-): label is keyof typeof GAP_SCORE_LEGEND_DISCLOSURES {
-  return Object.hasOwn(GAP_SCORE_LEGEND_DISCLOSURES, label);
+function scoreBandThreshold(band: (typeof SCORE_COLOR_BANDS)[number]): string {
+  if (band.maxExclusive === null) {
+    return `${band.minInclusive} or higher`;
+  }
+  return `${band.minInclusive} to less than ${band.maxExclusive}`;
+}
+
+function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
+  if (band.maxExclusive === null) {
+    return `Atlas gap score: ${band.minInclusive} or higher`;
+  }
+  return `Atlas gap score: ${band.minInclusive} to <${band.maxExclusive}`;
 }
 
 function gapScoreDisclosure(
   layerId: ExplorerMapLayerId | undefined,
   label: string
 ): ExplorerLegendDisclosure | null {
-  if (layerId !== "gap_score" || !isGapScoreDisclosureLabel(label)) {
+  if (layerId !== "gap_score") {
     return null;
   }
-  return GAP_SCORE_LEGEND_DISCLOSURES[label];
+  if (label === GAP_SCORE_UNAVAILABLE_LABEL) {
+    return GAP_SCORE_UNAVAILABLE_DISCLOSURE;
+  }
+  const band = SCORE_COLOR_BANDS.find(
+    (entry) => scoreBandThreshold(entry) === label
+  );
+  if (!band) {
+    return null;
+  }
+  return {
+    action: approvedFollowUpTitleForColor(band.color),
+    category: band.approvedReviewCategory,
+    title: gapScoreRangeTitle(band),
+  };
 }
 
 function toSegment(

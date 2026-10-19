@@ -2,10 +2,39 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
+import {
+  approvedFollowUpTitleForColor,
+  SCORE_COLOR_BANDS,
+} from "@/features/ux-reset/review/suggested-follow-up-content";
 import { ValueState } from "@/generated/models";
 
 import { populationRuralityObservation } from "../fixtures/population-rurality-context";
 import { releaseViewportRuns } from "./release-phone-viewport";
+
+function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
+  if (band.maxExclusive === null) {
+    return `Atlas gap score: ${band.minInclusive} or higher`;
+  }
+  return `Atlas gap score: ${band.minInclusive} to <${band.maxExclusive}`;
+}
+
+function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
+  return {
+    action: approvedFollowUpTitleForColor(band.color),
+    category: band.approvedReviewCategory,
+    title: gapScoreRangeTitle(band),
+  };
+}
+
+function bandByMinimum(minimum: number) {
+  const band = SCORE_COLOR_BANDS.find(
+    (entry) => entry.minInclusive === minimum
+  );
+  if (!band) {
+    throw new Error(`Missing score band starting at ${minimum}`);
+  }
+  return band;
+}
 
 const score = (value: number) => ({
   access_signal: 0.5,
@@ -429,19 +458,19 @@ test.describe("Atlas Explorer layer legends", () => {
       legend.getByRole("button", { name: /0 to <20/ })
     ).toHaveAttribute(
       "aria-label",
-      "Atlas gap score: 0 to <20. Lower review priority. Continue routine review"
+      `${operationalBandCopy(bandByMinimum(0)).title}. ${operationalBandCopy(bandByMinimum(0)).category}. ${operationalBandCopy(bandByMinimum(0)).action}`
     );
     await expect(
       legend.getByRole("button", { name: /20 to <35/ })
     ).toHaveAttribute(
       "aria-label",
-      "Atlas gap score: 20 to <35. Monitor. Monitor the pattern"
+      `${operationalBandCopy(bandByMinimum(20)).title}. ${operationalBandCopy(bandByMinimum(20)).category}. ${operationalBandCopy(bandByMinimum(20)).action}`
     );
     await expect(
       legend.getByRole("button", { name: /75 or higher/ })
     ).toHaveAttribute(
       "aria-label",
-      "Atlas gap score: 75 or higher. Highest. Prioritize targeted follow-up"
+      `${operationalBandCopy(bandByMinimum(75)).title}. ${operationalBandCopy(bandByMinimum(75)).category}. ${operationalBandCopy(bandByMinimum(75)).action}`
     );
     await legend.getByRole("button", { name: "About Atlas gap score" }).click();
     const about = page.getByRole("dialog", { name: "About Atlas gap score" });
@@ -467,7 +496,10 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend).not.toContainText("Monitor signals");
     await expect(
       legend.getByRole("button", { name: /20 to <35/ })
-    ).toHaveAttribute("aria-label", /Monitor the pattern/);
+    ).toHaveAttribute(
+      "aria-label",
+      new RegExp(operationalBandCopy(bandByMinimum(20)).action)
+    );
     await expect(
       legend.getByRole("button", { name: /Gap score unavailable/ })
     ).toBeVisible();
@@ -481,7 +513,10 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(
       legend.getByRole("button", { name: /35 to <50/ })
-    ).toHaveAttribute("aria-label", /Verify with local information/);
+    ).toHaveAttribute(
+      "aria-label",
+      new RegExp(operationalBandCopy(bandByMinimum(35)).action)
+    );
     await expect(legend).toContainText("Atlas gap score");
 
     await chooseLayer(page, "Blacklegged tick status");
@@ -678,54 +713,33 @@ test.describe("Atlas Explorer layer legends", () => {
     const disclosures = [
       {
         action: "Insufficient data to calculate a score",
-        category: null,
+        category: null as string | null,
         name: /Gap score unavailable/,
-        shot: null,
+        shot: null as string | null,
         title: "Gap score unavailable",
       },
-      {
-        action: "Continue routine review",
-        category: "Lower review priority",
-        name: /0 to <20/,
-        shot: null,
-        title: "Atlas gap score: 0 to <20",
-      },
-      {
-        action: "Monitor the pattern",
-        category: "Monitor",
-        name: /20 to <35/,
-        shot: null,
-        title: "Atlas gap score: 20 to <35",
-      },
-      {
-        action: "Verify with local information",
-        category: "Monitor",
-        name: /35 to <50/,
-        shot: null,
-        title: "Atlas gap score: 35 to <50",
-      },
-      {
-        action: "Conduct targeted follow-up",
-        category: "Moderate",
-        name: /50 to <65/,
-        shot: "legend-tooltip-50-to-65.png",
-        title: "Atlas gap score: 50 to <65",
-      },
-      {
-        action: "Coordinate a local assessment",
-        category: "Moderate",
-        name: /65 to <75/,
-        shot: "legend-tooltip-65-to-75.png",
-        title: "Atlas gap score: 65 to <75",
-      },
-      {
-        action: "Prioritize targeted follow-up",
-        category: "Highest",
-        name: /75 or higher/,
-        shot: null,
-        title: "Atlas gap score: 75 or higher",
-      },
-    ] as const;
+      ...SCORE_COLOR_BANDS.map((band) => {
+        const copy = operationalBandCopy(band);
+        const fragment =
+          band.maxExclusive === null
+            ? `${band.minInclusive} or higher`
+            : `${band.minInclusive} to <${band.maxExclusive}`;
+        let shot: string | null = null;
+        if (band.minInclusive === 50) {
+          shot = "legend-tooltip-50-to-65.png";
+        }
+        if (band.minInclusive === 65) {
+          shot = "legend-tooltip-65-to-75.png";
+        }
+        return {
+          action: copy.action,
+          category: copy.category,
+          name: new RegExp(fragment.replaceAll("<", "\\<")),
+          shot,
+          title: copy.title,
+        };
+      }),
+    ];
 
     for (const disclosure of disclosures) {
       const segment = legend.getByRole("button", { name: disclosure.name });
@@ -759,17 +773,10 @@ test.describe("Atlas Explorer layer legends", () => {
           path: testInfo.outputPath(disclosure.shot),
         });
       }
-      if (disclosure.action === "Coordinate a local assessment") {
-        const lines = await dialog
-          .locator(".ux-reset-explorer-legend-disclosure-action")
-          .evaluate((element) => {
-            const lineHeight = Number.parseFloat(
-              getComputedStyle(element).lineHeight
-            );
-            return element.getBoundingClientRect().height / lineHeight;
-          });
-        expect(lines).toBeGreaterThan(1.4);
-      }
+      const actionOverflows = await dialog
+        .locator(".ux-reset-explorer-legend-disclosure-action")
+        .evaluate((element) => element.scrollWidth > element.clientWidth + 1);
+      expect(actionOverflows).toBeFalsy();
       await page.mouse.move(0, 0);
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
@@ -799,7 +806,9 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.getByRole("button", { name: /50 to <65/ }).click();
     const clicked = page.getByRole("dialog", { name: /50 to <65/ });
     await expect(clicked).toBeVisible();
-    await expect(clicked).toContainText("Conduct targeted follow-up");
+    await expect(clicked).toContainText(
+      operationalBandCopy(bandByMinimum(50)).action
+    );
     await page.keyboard.press("Escape");
 
     const openResults = await new AxeBuilder({ page })

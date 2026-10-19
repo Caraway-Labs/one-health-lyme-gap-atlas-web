@@ -3,10 +3,16 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
+import {
+  approvedFollowUpTitleForColor,
+  RETIRED_FOLLOW_UP_PHRASES,
+  SCORE_COLOR_BANDS,
+} from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyScoreSummary } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 
@@ -124,6 +130,21 @@ function paintedBackground(name: RegExp | string): string {
   return (end === -1 ? value : value.slice(0, end)).trim();
 }
 
+function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
+  if (band.maxExclusive === null) {
+    return `Atlas gap score: ${band.minInclusive} or higher`;
+  }
+  return `Atlas gap score: ${band.minInclusive} to <${band.maxExclusive}`;
+}
+
+function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
+  return {
+    action: approvedFollowUpTitleForColor(band.color),
+    category: band.approvedReviewCategory,
+    title: gapScoreRangeTitle(band),
+  };
+}
+
 function sameColor(left: string, right: string): boolean {
   const parsedLeft = Color.parse(left);
   const parsedRight = Color.parse(right);
@@ -204,14 +225,41 @@ describe("Explorer map legend", () => {
     ].map((segment) => segment.getAttribute("aria-label") ?? "");
     expect(segments).toStrictEqual([
       "Gap score unavailable. Insufficient data to calculate a score",
-      "Atlas gap score: 0 to <20. Lower review priority. Continue routine review",
-      "Atlas gap score: 20 to <35. Monitor. Monitor the pattern",
-      "Atlas gap score: 35 to <50. Monitor. Verify with local information",
-      "Atlas gap score: 50 to <65. Moderate. Conduct targeted follow-up",
-      "Atlas gap score: 65 to <75. Moderate. Coordinate a local assessment",
-      "Atlas gap score: 75 or higher. Highest. Prioritize targeted follow-up",
+      ...SCORE_COLOR_BANDS.map((band) => {
+        const copy = operationalBandCopy(band);
+        return `${copy.title}. ${copy.category}. ${copy.action}`;
+      }),
     ]);
     expect(segments).toHaveLength(paint.entries.length);
+  });
+
+  it("matches each colored band tooltip to the operational response", () => {
+    const paint = paintExplorerMapLayer({
+      counties: [county("08001")],
+      layerId: "gap_score",
+      scoresStatus: "ready",
+    });
+    const model = buildExplorerLegendModel(paint);
+    const colored = model.segments.filter(
+      (segment) => segment.disclosure?.category
+    );
+    const tooltipText = model.segments
+      .map((segment) => segment.accessibleName)
+      .join("\n");
+    expect(
+      colored.map((segment) => ({
+        action: segment.disclosure?.action,
+        category: segment.disclosure?.category,
+      }))
+    ).toStrictEqual(
+      SCORE_COLOR_BANDS.map((band) => ({
+        action: operationalBandCopy(band).action,
+        category: operationalBandCopy(band).category,
+      }))
+    );
+    expect(
+      RETIRED_FOLLOW_UP_PHRASES.some((phrase) => tooltipText.includes(phrase))
+    ).toBeFalsy();
   });
 
   it("shows the seven gap-score disclosures without priority phrases", async () => {
@@ -240,43 +288,20 @@ describe("Explorer map legend", () => {
         name: /Gap score unavailable/,
         title: "Gap score unavailable",
       },
-      {
-        action: "Continue routine review",
-        category: "Lower review priority",
-        name: /0 to <20/,
-        title: "Atlas gap score: 0 to <20",
-      },
-      {
-        action: "Monitor the pattern",
-        category: "Monitor",
-        name: /20 to <35/,
-        title: "Atlas gap score: 20 to <35",
-      },
-      {
-        action: "Verify with local information",
-        category: "Monitor",
-        name: /35 to <50/,
-        title: "Atlas gap score: 35 to <50",
-      },
-      {
-        action: "Conduct targeted follow-up",
-        category: "Moderate",
-        name: /50 to <65/,
-        title: "Atlas gap score: 50 to <65",
-      },
-      {
-        action: "Coordinate a local assessment",
-        category: "Moderate",
-        name: /65 to <75/,
-        title: "Atlas gap score: 65 to <75",
-      },
-      {
-        action: "Prioritize targeted follow-up",
-        category: "Highest",
-        name: /75 or higher/,
-        title: "Atlas gap score: 75 or higher",
-      },
-    ] as const;
+      ...SCORE_COLOR_BANDS.map((band) => {
+        const copy = operationalBandCopy(band);
+        const fragment =
+          band.maxExclusive === null
+            ? `${band.minInclusive} or higher`
+            : `${band.minInclusive} to <${band.maxExclusive}`;
+        return {
+          action: copy.action,
+          category: copy.category,
+          name: new RegExp(fragment.replaceAll("<", "\\<")),
+          title: copy.title,
+        };
+      }),
+    ];
     const seen: {
       action: string | null | undefined;
       category: string | null;
