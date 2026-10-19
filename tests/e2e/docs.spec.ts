@@ -1,7 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const publicOpenApiManifest = JSON.parse(
   readFileSync("contracts/public-openapi.manifest.json", "utf8")
@@ -57,6 +58,20 @@ const docsPages = [
     heading: "Observations",
   },
   {
+    path: "/docs/api-reference/observations/observations_v1_observations_get",
+    heading: "Query county observations",
+    operation: true,
+  },
+  {
+    path: "/docs/api-reference/geographies/canonicalGeographyAvailability",
+    heading: "Check canonical county geography publication availability",
+    operation: true,
+  },
+  {
+    path: "/docs/api-reference/counties",
+    heading: "Counties",
+  },
+  {
     path: "/docs/api-reference/schemas",
     heading: "Schemas",
   },
@@ -64,7 +79,39 @@ const docsPages = [
     path: "/docs/faq-and-troubleshooting",
     heading: "FAQ and troubleshooting",
   },
-] as const;
+  ...generatedApiReferencePages(),
+];
+
+function generatedApiReferencePages(): {
+  heading: string;
+  operation: true;
+  path: string;
+}[] {
+  const root = path.join("content", "docs", "api-reference");
+  const pages: { heading: string; operation: true; path: string }[] = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const directory = path.join(root, entry.name);
+    for (const file of readdirSync(directory)) {
+      if (!file.endsWith(".mdx") || file === "index.mdx") continue;
+      const source = readFileSync(path.join(directory, file), "utf8");
+      const title = /^title:\s*(?<title>.+)$/m.exec(source)?.groups?.title;
+      if (!title) continue;
+      const parsed: unknown =
+        title.startsWith('"') && title.endsWith('"')
+          ? JSON.parse(title)
+          : title.trim();
+      if (typeof parsed !== "string") continue;
+      pages.push({
+        heading: parsed,
+        operation: true,
+        path: `/docs/api-reference/${entry.name}/${file.slice(0, -".mdx".length)}`,
+      });
+    }
+  }
+  pages.sort((left, right) => left.path.localeCompare(right.path));
+  return pages;
+}
 
 test("renders the public documentation page without the Atlas shell", async ({
   page,
@@ -94,9 +141,12 @@ test("renders the public documentation page without the Atlas shell", async ({
 test("keeps every HelpDocs route reachable and accessible", async ({
   page,
 }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
+  const seen = new Set<string>();
 
   for (const docsPage of docsPages) {
+    if (seen.has(docsPage.path)) continue;
+    seen.add(docsPage.path);
     await page.goto(docsPage.path);
     await expect(
       page.getByRole("heading", { name: docsPage.heading, exact: true })
@@ -107,6 +157,19 @@ test("keeps every HelpDocs route reachable and accessible", async ({
       )
     );
 
+    await page.waitForFunction(async () => {
+      await document.fonts.ready;
+      return [...document.querySelectorAll(".overflow-x-auto")].every(
+        (element) => {
+          if (!(element instanceof HTMLElement)) return true;
+          if (element.scrollWidth <= element.clientWidth + 1) return true;
+          return element.tabIndex >= 0;
+        }
+      );
+    });
+    if ("operation" in docsPage) {
+      await expectOperationControlNames(page, docsPage.path);
+    }
     const results = await new AxeBuilder({ page }).include("main").analyze();
     const blockingViolations = results.violations.filter((violation) =>
       ["critical", "serious"].includes(violation.impact ?? "")
@@ -131,14 +194,78 @@ test("keeps every HelpDocs route reachable and accessible", async ({
     name: "API reference",
   });
   await expect(apiReferenceFolder).toBeVisible();
-  await apiReferenceFolder.click();
-  await expect(
-    sidebar.getByRole("link", { exact: true, name: "Observations" })
-  ).toBeVisible();
+  const observations = sidebar
+    .getByRole("link", { exact: true, name: "Observations" })
+    .or(sidebar.getByRole("button", { exact: true, name: "Observations" }));
+  if (!(await observations.isVisible())) await apiReferenceFolder.click();
+  await expect(observations).toBeVisible();
   await expect(
     sidebar.getByRole("link", { name: "API, MCP, and access" })
   ).toBeVisible();
 });
+
+async function expectOperationControlNames(page: Page, route: string) {
+  const schemaSwitch = page.getByRole("switch", {
+    name: "Show response schema",
+  });
+  const responseStatus = page.getByRole("combobox", {
+    name: "Response status",
+  });
+  const codeSampleLanguage = page.getByRole("combobox", {
+    name: "Code sample language",
+  });
+  await expect(schemaSwitch).toBeVisible();
+  await expect(schemaSwitch).toHaveAttribute(
+    "aria-label",
+    "Show response schema"
+  );
+  await expect(responseStatus).toBeVisible();
+  await expect(responseStatus).toHaveAttribute("aria-label", "Response status");
+  await expect(codeSampleLanguage).toBeVisible();
+  await expect(codeSampleLanguage).toHaveAttribute(
+    "aria-label",
+    "Code sample language"
+  );
+  if (!route.endsWith("/observations_v1_observations_get")) return;
+
+  const schemaVariant = page.getByRole("combobox", { name: "Schema variant" });
+  const responseExample = page.getByRole("combobox", {
+    name: "Response example",
+  });
+  await expect(schemaVariant).toBeVisible();
+  await expect(responseExample).toBeVisible();
+  await schemaSwitch.click();
+  await expect(schemaSwitch).toHaveAttribute("aria-checked", "true");
+  await expect(schemaSwitch).toHaveAttribute(
+    "aria-label",
+    "Show response schema"
+  );
+  await codeSampleLanguage.click();
+  await page.getByRole("option", { exact: true, name: "JavaScript" }).click();
+  await expect(codeSampleLanguage).toHaveAttribute(
+    "aria-label",
+    "Code sample language"
+  );
+  await responseStatus.click();
+  await page.getByRole("option", { exact: true, name: "429" }).click();
+  await expect(responseStatus).toHaveAttribute("aria-label", "Response status");
+  await expect(schemaSwitch).toHaveAttribute(
+    "aria-label",
+    "Show response schema"
+  );
+  await expect(schemaVariant).toHaveAttribute("aria-label", "Schema variant");
+}
+
+async function expectVisibleRetryAfterHeader(page: Page) {
+  const headers = page.getByRole("region", { name: "Response Headers" });
+  await expect(
+    headers.getByRole("heading", { name: "Retry-After", exact: true })
+  ).toBeVisible();
+  await expect(headers.getByText("string", { exact: true })).toBeVisible();
+  await expect(
+    headers.getByText("Seconds before retry when supplied by the service.")
+  ).toBeVisible();
+}
 
 test("renders the generated observations reference with version, source, and raw spec", async ({
   page,
@@ -172,34 +299,48 @@ test("renders the generated observations reference with version, source, and raw
   await expect(
     page.getByText("observations_v1_observations_get", { exact: true })
   ).toBeVisible();
-  await expect(page.getByText("case_count_floor_2023").first()).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "400", exact: true })
-  ).toBeVisible();
-  await expect(
-    page.getByText("application/problem+json").first()
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "429", exact: true })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "503", exact: true })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Retry-After", exact: true }).first()
-  ).toBeVisible();
-  await expect(
-    page.getByText("Seconds before retry when supplied by the service.").first()
-  ).toBeVisible();
-  const schemaLink = page.getByRole("link", { name: "ProblemDetails" }).first();
-  await expect(schemaLink).toHaveAttribute(
-    "href",
-    "/docs/api-reference/schemas#schema-problemdetails"
-  );
-  await schemaLink.click();
+  await page
+    .getByRole("link", { name: "Parameters, responses, and schema" })
+    .click();
   await expect(page).toHaveURL(
-    /\/docs\/api-reference\/schemas#schema-problemdetails$/
+    /\/docs\/api-reference\/observations\/observations_v1_observations_get$/
   );
+  await expect(
+    page.getByRole("heading", { name: "Query Parameters" })
+  ).toBeVisible();
+  await expect(page.getByText("case_count_floor_2023").first()).toBeVisible();
+  const parameterSearch = await page.request.get(
+    "/api/search?query=case_count_floor_2023"
+  );
+  expect(parameterSearch.ok()).toBeTruthy();
+  const parameterHits = await parameterSearch.text();
+  expect(parameterHits).toContain(
+    "/docs/api-reference/observations/observations_v1_observations_get"
+  );
+  await expect(
+    page.getByRole("heading", { name: "Response Body" })
+  ).toBeVisible();
+  await page.goto("/docs/api-reference/atlas/geometry_v1_atlas_geometry_get");
+  const geometryDescription =
+    "Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.";
+  await expect(
+    page.getByText(geometryDescription, { exact: true })
+  ).toHaveCount(1);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    geometryDescription
+  );
+  await expect(
+    page.getByRole("heading", { name: "Response Body" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Response Headers" })
+  ).toHaveCount(0);
+  await page.getByRole("tab", { name: "429", exact: true }).click();
+  await expectVisibleRetryAfterHeader(page);
+  await page.getByRole("tab", { name: "503", exact: true }).click();
+  await expectVisibleRetryAfterHeader(page);
+  await page.goto("/docs/api-reference/schemas#schema-problemdetails");
   await expect(
     page.getByRole("heading", { name: "ProblemDetails", exact: true })
   ).toBeVisible();

@@ -1,0 +1,85 @@
+---
+title: Download a county report
+description: PDF attachment using the immutable county-v1 registered template by default. Optional dataset_version and score settings bind report inputs. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. V1 rejects observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; V1 public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: PDF attachment using the immutable county-v1 registered template by default. Optional dataset_version and score settings bind report inputs. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. V1 rejects observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; V1 public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+      - content: GET /v1/counties/{fips}/report.pdf
+      - content: county_report_pdf_v1_counties__fips__report_pdf_get
+      - content: Download a county report
+      - content: PDF attachment using the immutable county-v1 registered template by default. Optional dataset_version and score settings bind report inputs. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. V1 rejects observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; V1 public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+      - content: 'fips path required '
+      - content: Fips
+      - content: 'dataset_version query optional '
+      - content: Dataset Version
+      - content: period_start query optional Exact inclusive observation start for county-v2.
+      - content: Exact inclusive observation start for county-v2.
+      - content: Period Start
+      - content: period_end query optional Exact inclusive observation end for county-v2.
+      - content: Exact inclusive observation end for county-v2.
+      - content: Period End
+      - content: measure_id query optional 1–20 measure IDs; repeated or comma-separated for county-v2.
+      - content: 1–20 measure IDs; repeated or comma-separated for county-v2.
+      - content: Measure Id
+      - content: 'template query optional '
+      - content: Template
+      - content: 'ecological_share query optional '
+      - content: Ecological Share
+      - content: 'low_incidence_breakpoint query optional '
+      - content: Low Incidence Breakpoint
+      - content: 'missing_human_weakness query optional '
+      - content: Missing Human Weakness
+      - content: 200 PDF attachment.
+      - content: application/pdf
+      - content: 304 Matching If-None-Match; empty body.
+      - content: 400 Narrow the observation period.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-400","title":"Request failed","status":400,"detail":"Narrow the observation period.","instance":"/v1/counties/{fips}/report.pdf","request_id":"example-request-id","code":"QUERY_TOO_BROAD"}'
+      - content: 404 County or dataset release not found.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"County or dataset release not found.","instance":"/v1/counties/{fips}/report.pdf","request_id":"example-request-id"}'
+      - content: 413 The report exceeds configured resource limits.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-413","title":"Request failed","status":413,"detail":"The report exceeds configured resource limits.","instance":"/v1/counties/{fips}/report.pdf","request_id":"example-request-id"}'
+      - content: 422 One or more request values are invalid.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-422","title":"Request failed","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}/report.pdf","request_id":"example-request-id"}'
+      - content: 429 Rate limit exceeded.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limit exceeded.","instance":"/v1/counties/{fips}/report.pdf","request_id":"example-request-id"}'
+      - content: 503 Atlas data service is unavailable.
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Atlas data service is unavailable.","instance":"/v1/counties/{fips}/report.pdf","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/report.pdf","method":"get"}]} />
+    </>
+  );
+}

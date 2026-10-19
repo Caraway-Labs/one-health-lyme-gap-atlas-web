@@ -1,0 +1,71 @@
+---
+title: Discover sources
+description: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+      - content: GET /v1/sources
+      - content: sources_v1_sources_get
+      - content: Discover sources
+      - content: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+      - content: page_size query optional Items per page; defaults to 100, configured maximum at most 500.
+      - content: Items per page; defaults to 100, configured maximum at most 500.
+      - content: Page Size
+      - content: '100'
+      - content: page_token query optional Opaque next_page_token; retain query filters and release.
+      - content: Opaque next_page_token; retain query filters and release.
+      - content: Page Token
+      - content: 200 Successful current-release resource.
+      - content: application/json
+      - content: '#/components/schemas/CollectionEnvelope_Source_'
+      - content: 400 INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-400","title":"Request failed","status":400,"detail":"INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json","instance":"/v1/sources","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 404 RESOURCE_NOT_FOUND; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"RESOURCE_NOT_FOUND; application/problem+json","instance":"/v1/sources","request_id":"example-request-id","code":"RESOURCE_NOT_FOUND"}'
+      - content: 413 GET request body rejected; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-413","title":"Request failed","status":413,"detail":"GET request body rejected; application/problem+json","instance":"/v1/sources","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 414 Query string too long; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-414","title":"Request failed","status":414,"detail":"Query string too long; application/problem+json","instance":"/v1/sources","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 429 Rate limited; Retry-After; application/problem+json
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limited; Retry-After; application/problem+json","instance":"/v1/sources","request_id":"example-request-id","code":"RATE_LIMITED"}'
+      - content: 503 Service unavailable; application/problem+json
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Service unavailable; application/problem+json","instance":"/v1/sources","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/sources","method":"get"}]} />
+    </>
+  );
+}
