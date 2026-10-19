@@ -1101,9 +1101,7 @@ export function ReviewOperatingPicture({
             <ReviewPublishedCountyPreview
               compareHref={handoff.compareHref}
               county={selectedPublished}
-              href={handoff.href}
               onOpen={markReviewReturnFocus}
-              onViewCountyEvidence={onViewCountyEvidence}
               openRef={openRef}
               releaseId={releaseId}
               reviewResultState={authoritativeResultState}

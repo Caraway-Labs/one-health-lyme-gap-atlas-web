@@ -197,7 +197,11 @@ test.describe("selected county response tier", () => {
       "This tier suggests a level of public-health follow-up. It is not a confirmed Lyme disease risk category."
     );
     await expect(preview).not.toContainText("Priority 1");
-    await expect(page.getByTestId("review-investigate")).toBeVisible();
+    await expect(preview.getByTestId("review-investigate")).toHaveCount(0);
+    await expect(
+      preview.getByTestId("review-view-county-follow-up")
+    ).toBeVisible();
+    await expect(preview.getByTestId("review-compare")).toBeVisible();
     const placed = await page.evaluate(() => {
       const card = document.querySelector(
         "[data-testid='review-published-county-preview']"

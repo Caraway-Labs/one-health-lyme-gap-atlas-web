@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/sidebar";
 import { uxResetShellHandoffHref } from "@/features/ux-reset";
 import { AskAtlasChromeProvider } from "@/features/ux-reset/ask-atlas/ask-atlas-chrome";
+import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
+import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
 import {
   ExploreCommittedNavigationProvider,
   searchParamsWithCommittedExploreContext,
@@ -234,6 +236,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     searchParams,
     committedExploreNavigation
   );
+  const askContext = useAskAtlasInheritedContext();
 
   const shellHref = useCallback(
     (route: ResetRoute) => {
@@ -241,13 +244,20 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
       if (route.id === "explorer" && explorerReturn) {
         return explorerReturn;
       }
+      if (route.id === "assistant") {
+        return askAtlasEntryHref({
+          context: askContext,
+          pathname,
+          searchParams: shellSearchParams,
+        });
+      }
       return uxResetShellHandoffHref(
         route.externalHref ?? route.href,
         pathname,
         shellSearchParams
       );
     },
-    [committedExploreNavigation, pathname, shellSearchParams]
+    [askContext, committedExploreNavigation, pathname, shellSearchParams]
   );
 
   useEffect(() => {

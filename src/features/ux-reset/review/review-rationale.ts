@@ -94,18 +94,60 @@ function pathogenSentence(detail: CountyDetail): string {
   return `The published B. burgdorferi status is ${detail.burgdorferi_status}. This is not a finding of pathogen absence.`;
 }
 
-function humanSentence(detail: CountyDetail): string {
+function publishedFloorCount(detail: CountyDetail): number | null {
   if (
-    detail.human_status === "published_count_floor" &&
-    finite(detail.incidence_floor_2023)
+    detail.human_status !== "published_count_floor" ||
+    !finite(detail.case_count_floor_2023) ||
+    detail.case_count_floor_2023 < 0
   ) {
-    const rate = detail.incidence_floor_2023.toLocaleString("en-US", {
-      maximumFractionDigits: 1,
-      minimumFractionDigits: 1,
-    });
-    return `The minimum rate supported by the published 2023 county data was ${rate} cases per 100,000. That floor is not a complete incidence estimate.`;
+    return null;
   }
-  return "No county-level 2023 Lyme case count was published. A missing record is not treated as zero cases.";
+  return detail.case_count_floor_2023;
+}
+
+function publishedFloorRate(detail: CountyDetail): string | null {
+  if (
+    detail.human_status !== "published_count_floor" ||
+    !finite(detail.incidence_floor_2023)
+  ) {
+    return null;
+  }
+  return detail.incidence_floor_2023.toLocaleString("en-US", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  });
+}
+
+function humanSentence(detail: CountyDetail): string {
+  const status = detail.human_status.trim().toLowerCase();
+  if (status === "suppressed") {
+    return "The 2023 county Lyme case count is suppressed. Suppression is not zero cases.";
+  }
+  if (status === "missing") {
+    return "The 2023 county Lyme case count is missing. A missing count is not zero cases.";
+  }
+  if (status === "no_county_linked_record") {
+    return "No county-linked 2023 Lyme case record is available. That is not zero cases.";
+  }
+  const count = publishedFloorCount(detail);
+  const rate = publishedFloorRate(detail);
+  if (count === null && rate === null) {
+    if (status === "published_count_floor") {
+      return "A 2023 case-count floor was published, but the count and rate are unavailable. Unavailable numbers are not zero cases.";
+    }
+    return "No county-level 2023 Lyme case count is available. That is not zero cases.";
+  }
+  const parts: string[] = [];
+  if (count !== null) {
+    parts.push(
+      `The published 2023 case-count floor is ${count.toLocaleString("en-US")}.`
+    );
+  }
+  if (rate !== null) {
+    parts.push(`The published 2023 minimum rate is ${rate} cases per 100,000.`);
+  }
+  parts.push("A published floor is a minimum, not an exact count or rate.");
+  return parts.join(" ");
 }
 
 function sviSentence(detail: CountyDetail): string {

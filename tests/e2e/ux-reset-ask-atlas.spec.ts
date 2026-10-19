@@ -270,6 +270,40 @@ function referenceField(page: Page, field: string) {
   );
 }
 
+function releaseOnlyBookmark(href: string | null) {
+  const url = new URL(href ?? "", "http://127.0.0.1");
+  const state = readAskAtlasPageReference(url.pathname, url.searchParams);
+  if (state.kind !== "validated") {
+    return {
+      county: url.searchParams.get("county"),
+      geography: null,
+      kind: state.kind,
+      release: null,
+      returnCounty: null,
+    };
+  }
+  const geography = state.reference.context.fields.geography;
+  const release = state.reference.context.fields.release;
+  return {
+    county: url.searchParams.get("county"),
+    geography: geography.state === "validated" ? geography.id : null,
+    kind: "validated" as const,
+    release: release.state === "validated" ? release.id : null,
+    returnCounty: new URL(
+      state.returnHref,
+      "http://127.0.0.1"
+    ).searchParams.get("county"),
+  };
+}
+
+const RELEASE_ONLY_BOOKMARK = {
+  county: null,
+  geography: null,
+  kind: "validated" as const,
+  release: "alpha-2026",
+  returnCounty: null,
+};
+
 test.describe("Ask Atlas dedicated page", () => {
   test("opens Ask Atlas from the sidebar and asks without sending Explore context", async ({
     page,
@@ -303,15 +337,30 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
 
+    await expect
+      .poll(async () =>
+        releaseOnlyBookmark(await sidebarAskAtlas(page).getAttribute("href"))
+      )
+      .toEqual(RELEASE_ONLY_BOOKMARK);
     await openAskAtlasFromSidebar(page);
     await expect(page).toHaveURL(/\/askatlas/);
-    await expect(page).toHaveURL(/county=08001/);
-    await expect(page).not.toHaveURL(/page_ref=/);
+    await expect
+      .poll(() => releaseOnlyBookmark(page.url()))
+      .toEqual(RELEASE_ONLY_BOOKMARK);
     await expect(
       page.getByRole("heading", { level: 1, name: "Ask Atlas" })
     ).toBeVisible();
     await expect(page.getByText("Reviewed literature").first()).toBeVisible();
-    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    const reference = page.getByTestId("ask-atlas-page-reference");
+    await expect(reference).toHaveAttribute(
+      "data-reference-state",
+      "validated"
+    );
+    await expect(referenceField(page, "release")).toHaveAttribute(
+      "data-field-id",
+      "alpha-2026"
+    );
+    await expect(referenceField(page, "geography")).toHaveCount(0);
     await expectHeaderWithoutAskAtlas(page);
     await expect(
       page.getByRole("heading", { name: "What would you like to explore?" })

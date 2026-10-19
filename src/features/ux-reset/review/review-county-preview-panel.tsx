@@ -11,7 +11,6 @@ import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference"
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
-import { CanonicalGeographyAvailabilityNotice } from "@/features/ux-reset/geography/canonical-geography-availability-notice";
 import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
@@ -78,7 +77,6 @@ export function ReviewCountyPreviewPanel({
       <p className="type-body" data-testid="review-preview-identity">
         FIPS {fipsLabel} · {stateCode}
       </p>
-      <CanonicalGeographyAvailabilityNotice fips={preview.fips} />
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}
       </p>

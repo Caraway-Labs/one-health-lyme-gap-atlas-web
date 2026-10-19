@@ -104,15 +104,15 @@ const stories: { id: string; text: string }[] = [
   },
   {
     id: `${preview}--geography-unpublished`,
-    text: "Canonical geography is not yet published for this county.",
+    text: "Adams County, Colorado",
   },
   {
     id: `${preview}--geography-loading`,
-    text: "Checking canonical geography publication",
+    text: "Adams County, Colorado",
   },
   {
     id: `${preview}--geography-error`,
-    text: "Canonical geography publication could not be checked",
+    text: "Adams County, Colorado",
   },
 ];
 
@@ -348,21 +348,22 @@ test.describe("P0 evidence catalog", () => {
   test("county preview availability fixtures stay local", async ({ page }) => {
     const traffic = track(page);
     await openStory(page, `${preview}--rationale`);
-    const unpublished = page.getByTestId("canonical-geography-availability");
-    await expect(unpublished).toHaveAttribute("data-status", "unpublished");
-    await expect(unpublished).toHaveAttribute("data-release", "alpha-2026");
-    await expect(unpublished).toContainText(
-      "Canonical geography is not yet published for this county."
+    await expect(
+      page.getByTestId("canonical-geography-availability")
+    ).toHaveCount(0);
+    await expect(page.getByTestId("review-county-preview")).not.toContainText(
+      "Canonical geography is not yet published"
     );
     await openStory(page, `${preview}--geography-loading`);
     await expect(
       page.getByTestId("canonical-geography-availability")
-    ).toHaveAttribute("data-status", "loading");
+    ).toHaveCount(0);
     await openStory(page, `${preview}--geography-error`);
-    const failed = page.getByTestId("canonical-geography-availability");
-    await expect(failed).toHaveAttribute("data-status", "error");
-    await expect(failed.getByRole("alert")).toContainText(
-      "Canonical geography publication could not be checked. Published county facts and map display stay available."
+    await expect(
+      page.getByTestId("canonical-geography-availability")
+    ).toHaveCount(0);
+    await expect(page.getByTestId("review-county-preview")).not.toContainText(
+      "Canonical geography publication could not be checked"
     );
     expect(traffic.blocked).toEqual([]);
     expect(traffic.errors).toEqual([]);
