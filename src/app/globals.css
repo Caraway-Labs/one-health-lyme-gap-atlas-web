@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
+@import "fumadocs-openapi/css/preset.css";
 
 /* Lyme Atlas design tokens.
    Semantic chrome tokens (--background, --primary, …) are for application UI.
@@ -600,6 +601,12 @@ body {
   --color-fd-primary-foreground: var(--white);
   --color-fd-secondary: var(--pale);
   --color-fd-secondary-foreground: var(--navy);
+  /* fumadocs-openapi method labels use Tailwind 600 shades that miss WCAG AA on the docs surface. */
+  --color-blue-600: #1e40af;
+  --color-green-600: #166534;
+  --color-orange-600: #9a3412;
+  --color-red-600: #991b1b;
+  --color-yellow-600: #854d0e;
 }
 .atlas-docs-root #nd-docs-layout {
   min-height: 100dvh;

@@ -102,14 +102,24 @@ for (const navigationFile of navigationFiles) {
     }
     if (Array.isArray(navigation.pages)) {
       for (const page of navigation.pages) {
-        if (
-          typeof page !== "string" ||
-          page.startsWith("...") ||
-          !contentExists(navigationBase, page)
-        ) {
+        if (typeof page !== "string") {
           errors.push(
             `${relativeNavigation}: page does not exist: ${String(page)}`
           );
+          continue;
+        }
+        if (/^---(?:\[[^\]]+])?.+---$/.test(page) || page === "---") {
+          continue;
+        }
+        if (page.startsWith("...")) {
+          const folder = page.slice("...".length);
+          if (!fs.existsSync(path.join(navigationBase, folder))) {
+            errors.push(`${relativeNavigation}: page does not exist: ${page}`);
+          }
+          continue;
+        }
+        if (!contentExists(navigationBase, page)) {
+          errors.push(`${relativeNavigation}: page does not exist: ${page}`);
         }
       }
     } else {
