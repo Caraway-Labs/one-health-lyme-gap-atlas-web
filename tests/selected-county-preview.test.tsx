@@ -209,9 +209,9 @@ describe("selected county preview", () => {
     );
     expect({
       pathogenHref: sourceHref(pathogenClaim),
-      pathogenLimitations: pathogenClaim
-        .getByTestId("evidence-provenance-limitations")
-        .querySelector("li")?.textContent,
+      pathogenLimitations: pathogenClaim.queryByTestId(
+        "evidence-provenance-limitations"
+      ),
       pathogenPeriod: fieldValue(pathogenClaim, "evidence-provenance-period"),
       pathogenReason: fieldValue(pathogenClaim, "evidence-provenance-state"),
       pathogenReleaseHref: releaseHref("pathogen"),
@@ -219,24 +219,22 @@ describe("selected county preview", () => {
         .length,
       tickFreshness: fieldValue(tickClaim, "evidence-provenance-freshness"),
       tickHref: sourceHref(tickClaim),
-      tickLimitations: tickClaim
-        .getByTestId("evidence-provenance-limitations")
-        .querySelector("li")?.textContent,
+      tickLimitations: tickClaim.queryByTestId(
+        "evidence-provenance-limitations"
+      ),
       tickPeriod: fieldValue(tickClaim, "evidence-provenance-period"),
       tickReason: fieldValue(tickClaim, "evidence-provenance-state"),
       tickReleaseHref: releaseHref("tick"),
     }).toStrictEqual({
       pathogenHref: pathogenUrl,
-      pathogenLimitations:
-        "This is a distinct restricted pathogen source. No records is not absence; 33 absent canonical counties are classified as unknown source coverage.",
+      pathogenLimitations: null,
       pathogenPeriod: "Unavailable",
       pathogenReason: "Unavailable. No county-linked record.",
       pathogenReleaseHref: pathogenUrl,
       tickClaims: 2,
       tickFreshness: "Dataset vintage through 2025-12-31.",
       tickHref: tickUrl,
-      tickLimitations:
-        "Tick status is cumulative surveillance evidence; no records is not absence and status is not abundance, pathogen prevalence, diagnosis, or individual risk.",
+      tickLimitations: null,
       tickPeriod: "Unavailable",
       tickReason: "Limited. Coverage or methodology limits apply.",
       tickReleaseHref: tickUrl,
@@ -286,9 +284,7 @@ describe("selected county preview", () => {
   it("keeps a missing case count distinct from zero", async () => {
     renderPublished(autauga);
     await expect(
-      screen.findByText(
-        "No county-linked 2023 Lyme case record is available. That is not zero cases."
-      )
+      screen.findByText("No county-linked 2023 Lyme case record is available.")
     ).resolves.toBeInTheDocument();
     expect(screen.queryByText(/case-count floor is 0/)).toBeNull();
   });
@@ -399,19 +395,14 @@ describe("selected county preview", () => {
       suppressed: row("suppressed", null, null),
     }).toStrictEqual({
       absent:
-        "A 2023 case-count floor was published, but the count and rate are unavailable. Unavailable numbers are not zero cases.",
-      countOnly:
-        "The published 2023 case-count floor is 4. A published floor is a minimum, not an exact count or rate.",
-      missing:
-        "The 2023 county Lyme case count is missing. A missing count is not zero cases.",
-      noCountyRecord:
-        "No county-linked 2023 Lyme case record is available. That is not zero cases.",
+        "A 2023 case-count floor was published, but the count and rate are unavailable.",
+      countOnly: "The published 2023 case-count floor is 4.",
+      missing: "The 2023 county Lyme case count is missing.",
+      noCountyRecord: "No county-linked 2023 Lyme case record is available.",
       publishedZero:
-        "The published 2023 case-count floor is 0. The published 2023 minimum rate is 0.0 cases per 100,000. A published floor is a minimum, not an exact count or rate.",
-      rateOnly:
-        "The published 2023 minimum rate is 2.1 cases per 100,000. A published floor is a minimum, not an exact count or rate.",
-      suppressed:
-        "The 2023 county Lyme case count is suppressed. Suppression is not zero cases.",
+        "The published 2023 case-count floor is 0. The published 2023 minimum rate is 0.0 cases per 100,000.",
+      rateOnly: "The published 2023 minimum rate is 2.1 cases per 100,000.",
+      suppressed: "The 2023 county Lyme case count is suppressed.",
     });
   });
 });

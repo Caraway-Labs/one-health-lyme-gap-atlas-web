@@ -127,8 +127,11 @@ test.describe("five-category suggested follow-up", () => {
     ]) {
       await expect(followUp.getByText(label, { exact: true })).toBeVisible();
     }
-    await expect(followUp.getByTestId("follow-up-interpretation")).toHaveText(
-      "Atlas supports professional review, not individual risk measurement, proof of underreporting, or a mandate for investigation."
+    await expect(followUp.getByTestId("follow-up-interpretation")).toHaveCount(
+      0
+    );
+    await expect(followUp).not.toContainText(
+      "Atlas supports professional review, not individual risk measurement"
     );
     await expect(followUp).toContainText(
       "compare the published county case-count floor"
@@ -235,7 +238,7 @@ test.describe("five-category suggested follow-up", () => {
     await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
       "Review level unavailable"
     );
-    await expect(followUp).toContainText(
+    await expect(followUp).not.toContainText(
       "not a scored recommendation or an instruction to escalate"
     );
     await expect(

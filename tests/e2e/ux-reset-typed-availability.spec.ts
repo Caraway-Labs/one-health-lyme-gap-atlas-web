@@ -354,7 +354,9 @@ test.describe("typed geography and observation availability", () => {
     await expect(notice).toContainText(
       "No published results for this selection."
     );
-    await expect(notice).toContainText("does not establish biological absence");
+    await expect(notice).not.toContainText(
+      "does not establish biological absence"
+    );
     await expect(notice).toHaveAttribute(
       "data-selection-reason",
       "NO_PUBLISHED_RESULTS"

@@ -46,15 +46,19 @@ export function ExplorerMapSectionHeader({
 export function explorerMapSourceCaption(
   period: string | null | undefined,
   releaseId: string | null | undefined
-): string {
-  const periodText = period?.trim()
-    ? `Period ${period.trim()}`
-    : "Source periods vary by evidence";
+): string | null {
+  const periodText = period?.trim() ? `Period ${period.trim()}` : "";
   const release = releaseId?.trim() ?? "";
-  if (!release) {
+  if (periodText && release) {
+    return `${periodText} · Release ${release}`;
+  }
+  if (periodText) {
     return periodText;
   }
-  return `${periodText} · Release ${release}`;
+  if (release) {
+    return `Release ${release}`;
+  }
+  return null;
 }
 
 export function ExplorerMapSourceCaption({
@@ -64,12 +68,16 @@ export function ExplorerMapSourceCaption({
   period?: string | null;
   releaseId?: string | null;
 }) {
+  const caption = explorerMapSourceCaption(period, releaseId);
+  if (!caption) {
+    return null;
+  }
   return (
     <p
       className="ux-reset-explorer-map-provenance"
       data-testid="explorer-map-provenance"
     >
-      {explorerMapSourceCaption(period, releaseId)}
+      {caption}
     </p>
   );
 }

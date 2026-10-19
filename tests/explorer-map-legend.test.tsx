@@ -366,7 +366,7 @@ describe("Explorer map legend", () => {
     );
     const about = screen.getByRole("dialog", { name: "About Atlas gap score" });
     expect(about.textContent).toContain("CDC Lyme surveillance 2023");
-    expect(about.textContent).toContain("not personal disease risk");
+    expect(about.textContent).not.toContain("not personal disease risk");
     expect(about.textContent).toContain("Not zero");
     expect(about.textContent).toContain(
       "Lower Atlas priority — Not a safety finding"

@@ -97,7 +97,10 @@ const stories: { id: string; text: string }[] = [
   { id: `${preview}--rationale`, text: "Adams County, Colorado" },
   { id: `${preview}--limited-qualification`, text: "Limited" },
   { id: `${preview}--missing-metadata`, text: "Unavailable" },
-  { id: `${preview}--long-references`, text: "Synthetic candidate limitation" },
+  {
+    id: `${preview}--long-references`,
+    text: "Synthetic review candidate for Adams County",
+  },
   {
     id: `${preview}--dropped-context`,
     text: "Sort stays on Atlas Explorer browse",

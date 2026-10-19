@@ -477,6 +477,7 @@ export function ReviewNationalPicture({
         </div>
         {knownEmptySelection ? (
           <KnownEmptySelectionNotice
+            omitCaveats
             selections={[knownEmptySelection]}
             testId="national-map-known-empty"
           />
