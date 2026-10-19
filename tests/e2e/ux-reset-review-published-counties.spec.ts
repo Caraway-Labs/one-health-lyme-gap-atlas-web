@@ -117,9 +117,9 @@ test.describe("Published Review county exploration", () => {
     const rows = page.locator("button.ux-reset-ranked-row");
     await expect(rows).toHaveCount(67);
     await choose(page, "01003");
-    await expect(page.getByText("5 (published count floor)")).toBeVisible();
+    await expect(page.getByText(/case-count floor is 5/)).toBeVisible();
     await expect(
-      page.getByText("A floor, not an exact case total.")
+      page.getByText(/A published floor is a minimum/)
     ).toBeVisible();
     await rankedRow(page, "01003").focus();
     await page.keyboard.press("Tab");
@@ -136,19 +136,17 @@ test.describe("Published Review county exploration", () => {
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toHaveAttribute("data-fips", "01005");
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
+    await expect(page.getByTestId("review-compare")).toHaveAttribute(
       "href",
       /county=01005/
     );
-    await page.getByTestId("review-investigate").click();
-    await expect(page).toHaveURL(
-      /\/explore\?.*county=01005.*mode=evidence|\/explore\?.*mode=evidence.*county=01005/,
-      {
-        timeout: 30000,
-      }
-    );
+    await expect(page.getByTestId("review-investigate")).toHaveCount(0);
+    const evidence = new URL(page.url());
+    evidence.searchParams.set("mode", "evidence");
+    await page.goto(evidence.toString());
+    await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(new RegExp(`dataset=${release}`));
-    await page.goBack();
+    await page.getByTestId("explorer-back-to-map").click();
     await expect(rankedRow(page, "01005")).toBeFocused();
     await expect(page.getByTestId("review-candidate")).toHaveCount(0);
     await expect(page.getByTestId("review-backend-result")).toContainText(

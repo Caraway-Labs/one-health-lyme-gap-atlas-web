@@ -1,14 +1,47 @@
+"use client";
+
+import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
+import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
+import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import {
-  REVIEW_RATIONALE_INTRO,
-  REVIEW_RATIONALE_SCORE_NOTE,
   reviewRationaleFor,
   type ReviewRationaleItem,
 } from "@/features/ux-reset/review/review-rationale";
+import { reviewRationaleEvidence } from "@/features/ux-reset/review/review-rationale-provenance";
 import type { CountyDetail } from "@/generated/models";
 
-function RationaleItem({ item }: { item: ReviewRationaleItem }) {
+function ClaimProvenance({ model }: { model: EvidenceObjectModel }) {
+  const summaryLabel = `Inspect provenance for ${model.claimLabel}`;
+  if (model.reasonCode) {
+    return (
+      <EvidenceProvenanceInspect
+        availability={model.availability}
+        contentSurface="source_card"
+        provenance={model.provenance}
+        reasonCode={model.reasonCode}
+        summaryLabel={summaryLabel}
+      />
+    );
+  }
   return (
-    <li>
+    <EvidenceProvenanceInspect
+      contentSurface="source_card"
+      provenance={model.provenance}
+      stateLabel={evidenceAvailabilityLabel(model.availability)}
+      summaryLabel={summaryLabel}
+    />
+  );
+}
+
+function RationaleItem({
+  item,
+  models,
+}: {
+  item: ReviewRationaleItem;
+  models: readonly EvidenceObjectModel[];
+}) {
+  return (
+    <li data-testid={`review-rationale-${item.number}`}>
       <span>{item.number}</span>
       <div>
         <h4>
@@ -21,6 +54,9 @@ function RationaleItem({ item }: { item: ReviewRationaleItem }) {
           )}
         </h4>
         <p>{item.text}</p>
+        {models.map((model) => (
+          <ClaimProvenance key={model.claimLabel} model={model} />
+        ))}
       </div>
     </li>
   );
@@ -28,32 +64,33 @@ function RationaleItem({ item }: { item: ReviewRationaleItem }) {
 
 export function ReviewRationalePanel({ detail }: { detail: CountyDetail }) {
   const items = reviewRationaleFor(detail);
+  const evidence = reviewRationaleEvidence(detail);
   const surveillance = items.filter((item) => item.group === "surveillance");
   const community = items.filter((item) => item.group === "community");
   return (
     <section
-      aria-label="Review rationale"
+      aria-label="County evidence"
       className="ux-reset-review-rationale"
       data-testid="review-rationale"
     >
-      <p className="eyebrow">Review rationale</p>
-      <h3>Why it surfaced</h3>
-      <p className="ux-reset-review-rationale-intro">
-        {REVIEW_RATIONALE_INTRO}
-      </p>
-      <p className="ux-reset-review-rationale-note">
-        {REVIEW_RATIONALE_SCORE_NOTE}
-      </p>
-      <h4>Surveillance evidence</h4>
+      <h3>Surveillance evidence</h3>
       <ol>
         {surveillance.map((item) => (
-          <RationaleItem item={item} key={item.number} />
+          <RationaleItem
+            item={item}
+            key={item.number}
+            models={evidence.get(item.number) ?? []}
+          />
         ))}
       </ol>
-      <h4>Community context</h4>
+      <h3>Community context</h3>
       <ol start={4}>
         {community.map((item) => (
-          <RationaleItem item={item} key={item.number} />
+          <RationaleItem
+            item={item}
+            key={item.number}
+            models={evidence.get(item.number) ?? []}
+          />
         ))}
       </ol>
     </section>

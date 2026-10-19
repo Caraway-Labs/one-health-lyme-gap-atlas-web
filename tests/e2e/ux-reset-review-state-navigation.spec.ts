@@ -126,6 +126,12 @@ function publishedAskHandoff(href: string | null) {
   };
 }
 
+function dedicatedAskAtlasLink(page: Page) {
+  return page
+    .getByRole("navigation", { name: "Professional workspace" })
+    .getByRole("link", { name: "Ask Atlas" });
+}
+
 async function expectPublishedNationalCounty(page: Page, fips: string) {
   const expected = {
     county: fips,
@@ -139,7 +145,7 @@ async function expectPublishedNationalCounty(page: Page, fips: string) {
   await expect
     .poll(async () =>
       publishedAskHandoff(
-        await page.getByTestId("review-ask-atlas").getAttribute("href")
+        await dedicatedAskAtlasLink(page).getAttribute("href")
       )
     )
     .toEqual(expected);
@@ -495,7 +501,7 @@ test.describe("Review national geographic navigation", () => {
     await expect
       .poll(async () => {
         const handoff = publishedAskHandoff(
-          await page.getByTestId("review-ask-atlas").getAttribute("href")
+          await dedicatedAskAtlasLink(page).getAttribute("href")
         );
         return {
           county: handoff.county,

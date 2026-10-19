@@ -1134,7 +1134,7 @@ describe("Explore workspace", () => {
         conversation: null,
         county: "08001",
         dataset: "alpha-2026",
-        keys: ["county", "dataset"],
+        keys: ["county", "dataset", "page_ref"],
       },
     });
     expect(chatRequest).not.toHaveBeenCalled();
@@ -1171,7 +1171,7 @@ describe("Explore workspace", () => {
       conversation: null,
       county: "08001",
       dataset: "alpha-2026",
-      keys: ["county", "dataset"],
+      keys: ["county", "dataset", "page_ref"],
     });
     expect(chatRequest).not.toHaveBeenCalled();
   });
@@ -1238,7 +1238,7 @@ describe("Explore workspace", () => {
       conversation: null,
       county: "08001",
       dataset: "alpha-2026",
-      keys: ["county", "dataset"],
+      keys: ["county", "dataset", "page_ref"],
     });
   });
 });

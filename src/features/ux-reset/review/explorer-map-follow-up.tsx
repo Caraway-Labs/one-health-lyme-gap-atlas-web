@@ -6,6 +6,7 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { CountyActionPlan } from "@/components/county-action-plan";
 import { Card } from "@/components/ui/card";
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
+import { EXPLORER_MAP_FOLLOW_UP_ID } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
 import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
 
 const ABSENT_NEXT_CHECK = "The review result did not include a next check.";
@@ -42,10 +43,15 @@ export function ExplorerMapFollowUp({
 
   return (
     <Card
+      aria-labelledby={`${EXPLORER_MAP_FOLLOW_UP_ID}-heading`}
       className="ux-reset-explorer-map-follow-up gap-0 p-4"
       data-testid="explorer-map-follow-up"
+      id={EXPLORER_MAP_FOLLOW_UP_ID}
+      tabIndex={-1}
     >
-      <p className="eyebrow">Suggested follow-up</p>
+      <h2 className="eyebrow" id={`${EXPLORER_MAP_FOLLOW_UP_ID}-heading`}>
+        Suggested follow-up
+      </h2>
       {countyFips.length === 0 ? (
         <p className="type-body">
           Choose a county on the map or in the list before reading suggested

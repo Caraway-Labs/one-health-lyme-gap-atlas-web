@@ -241,7 +241,8 @@ test.describe("Explorer Download PDF", () => {
       `/explore?scope=AL&dataset=${publishedRelease}&county=01003`
     );
     const preview = page.getByTestId("review-published-county-preview");
-    await expect(preview).toContainText("Review category unavailable");
+    await expect(preview).toContainText("Baldwin County");
+    await expect(preview).toContainText("FIPS 01003");
     const button = preview.getByTestId("explore-download-pdf");
     await expect(button).toBeEnabled();
     const downloadPromise = page.waitForEvent("download");
