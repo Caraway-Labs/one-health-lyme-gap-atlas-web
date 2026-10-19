@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   countyReferenceFromScoreSummaries,
@@ -238,9 +238,25 @@ function nationalPicture(
 }
 
 describe("national available-data map source", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", () => ({
+      addEventListener() {},
+      addListener() {},
+      dispatchEvent() {
+        return false;
+      },
+      matches: false,
+      media: "",
+      onchange: null,
+      removeEventListener() {},
+      removeListener() {},
+    }));
+  });
+
   afterEach(async () => {
     cleanup();
     engine.instances.length = 0;
+    vi.unstubAllGlobals();
     const { fetchCountyDisplayGeometry } =
       await import("@/lib/county-geography");
     vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
@@ -296,6 +312,11 @@ describe("national available-data map source", () => {
     await waitFor(() => {
       expect(sourceFips()).toStrictEqual(["08001", "08005"]);
     });
+
+    act(() => {
+      engine.instances.at(-1)?.clickCounty("08001");
+    });
+    expect(onCountyChange).not.toHaveBeenCalled();
 
     act(() => {
       engine.instances.at(-1)?.clickCounty("08005");

@@ -107,7 +107,7 @@ describe("UX Reset cross-page context contract", () => {
 
   it("preserves review scope, county, release, and period across Review to Investigate", () => {
     const source = new URLSearchParams(
-      "scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01&sort=score"
+      "scope=CO&county=08001&dataset=alpha-2026-08-06&period=2023-01-01&sort=score&focus=ID"
     );
     const { dropped, params } = uxResetContextHandoffSearchParams(
       UX_RESET_ROUTE_PATHS.review,
@@ -121,6 +121,7 @@ describe("UX Reset cross-page context contract", () => {
       scope: "CO",
     });
     expect(dropped).toContain("sort");
+    expect(dropped).toContain("focus");
     expect(dropped).not.toContain("county");
   });
 
