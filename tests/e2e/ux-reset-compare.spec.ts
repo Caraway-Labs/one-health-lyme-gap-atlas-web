@@ -318,10 +318,18 @@ test.describe("two-county Compare", () => {
       /compare=08001(?:%2C|,)08013/
     );
     await expect(page.getByTestId("compare-investigate-08001")).toHaveText(
-      "View first county evidence"
+      "View county evidence"
     );
     await expect(page.getByTestId("compare-investigate-08013")).toHaveText(
-      "View second county evidence"
+      "View county evidence"
+    );
+    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
+      "aria-label",
+      "View county evidence for the first county"
+    );
+    await expect(page.getByTestId("compare-investigate-08013")).toHaveAttribute(
+      "aria-label",
+      "View county evidence for the second county"
     );
     const floor = page.getByTestId(
       "compare-profile-cell-human_case_floor-08001"

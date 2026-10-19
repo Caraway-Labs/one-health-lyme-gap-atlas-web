@@ -22,9 +22,7 @@ export function PageIntroduction({ page }: { page: PageIntroductionId }) {
         <p className="ux-reset-page-introduction-guidance">
           <strong>{copy.guidanceLead}</strong> {copy.guidance}
         </p>
-      ) : (
-        <p className="ux-reset-page-introduction-note">{copy.stripBody}</p>
-      )}
+      ) : null}
     </header>
   );
 }

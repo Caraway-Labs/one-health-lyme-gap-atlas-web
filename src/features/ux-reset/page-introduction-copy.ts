@@ -1,7 +1,8 @@
 /**
  * Product-owner copy for Atlas Explorer and Compare.
  * Explorer welcome copy was approved October 17, 2026.
- * Compare copy remains the October 12 introduction.
+ * Compare keeps the heading and one supporting sentence visible.
+ * The reporting-context sentence stays in the release disclosure.
  * Ask Atlas, Feed, Settings, and Docs do not use a page introduction.
  */
 export const PAGE_INTRODUCTION_COPY = {
