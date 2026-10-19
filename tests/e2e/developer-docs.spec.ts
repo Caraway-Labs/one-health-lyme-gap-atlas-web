@@ -174,11 +174,11 @@ async function expectTemplatePanel(
   visibleText: string,
   hiddenText: string
 ) {
-  await expect(
-    page.getByRole("tab", { exact: true, name: label })
-  ).toHaveAttribute("aria-selected", "true");
-  const panel = page.getByRole("tabpanel");
-  await expect(panel).toHaveCount(1);
+  const tab = page.getByRole("tab", { exact: true, name: label });
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+  const panelId = await tab.getAttribute("aria-controls");
+  expect(panelId).toBeTruthy();
+  const panel = page.locator(`[id=${JSON.stringify(panelId)}]`);
   await expect(panel).toBeVisible();
   await expect(panel).toContainText(visibleText);
   await expect(page.getByText(hiddenText)).toBeHidden();
@@ -682,6 +682,124 @@ test("keeps observation query tabs usable at 375px", async ({
   await page.screenshot({
     path: testInfo.outputPath("observation-queries-phone.png"),
   });
+});
+
+const clientLanguages = ["curl", "Python", "R", "TypeScript"] as const;
+
+async function expectClientLanguage(
+  page: Page,
+  language: string,
+  marker: string
+) {
+  const tab = page.getByRole("tab", { exact: true, name: language }).first();
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText(marker).first()).toBeVisible();
+  for (const other of clientLanguages) {
+    if (other === language) {
+      continue;
+    }
+    await expect(
+      page.getByRole("tab", { exact: true, name: other }).first()
+    ).toHaveAttribute("aria-selected", "false");
+  }
+}
+
+test("persists the curl, Python, R, and TypeScript client across guides", async ({
+  page,
+}, testInfo) => {
+  const observationUrl =
+    "https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023";
+
+  await page.goto("/docs/develop/quickstart");
+  await expect(
+    page.getByRole("heading", { name: "Quickstart", exact: true })
+  ).toBeVisible();
+  await expectClientLanguage(page, "curl", observationUrl);
+  await page.getByRole("tab", { exact: true, name: "Python" }).first().click();
+  await expectClientLanguage(page, "Python", "import httpx");
+  await expect(page.getByText("curl -fsS")).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("atlas-http-client")))
+    .toBe("python");
+  await page.evaluate(() => {
+    sessionStorage.clear();
+  });
+  await page.reload();
+  await expectClientLanguage(page, "Python", "raise_for_status()");
+  await page
+    .getByRole("tab", { exact: true, name: "Python" })
+    .first()
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("client-tabs-quickstart-python.png"),
+  });
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/client-tabs-quickstart-python.png",
+  });
+
+  await page.goto("/docs/develop/workflows");
+  await expect(
+    page.getByRole("heading", { name: "Compare geographies", exact: true })
+  ).toBeVisible();
+  await expectClientLanguage(page, "Python", '["08001", "36061"]');
+  await page
+    .getByRole("tab", { exact: true, name: "Python" })
+    .first()
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("client-tabs-workflows-python.png"),
+  });
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/client-tabs-workflows-python.png",
+  });
+
+  await page.getByRole("tab", { exact: true, name: "R" }).first().click();
+  await expectClientLanguage(page, "R", "library(httr2)");
+  await expect(page.getByText('.multi = "explode"').first()).toBeVisible();
+
+  await page.goto("/docs/develop/rest");
+  await expect(
+    page.getByRole("heading", { name: "Pagination", exact: true })
+  ).toBeVisible();
+  await expectClientLanguage(page, "R", "page_token = token");
+  await expect(
+    page.getByText("nclimgrid_tavg_county_day").first()
+  ).toBeVisible();
+  await page
+    .getByRole("tab", { exact: true, name: "TypeScript" })
+    .first()
+    .click();
+  await expectClientLanguage(
+    page,
+    "TypeScript",
+    'append("page_token", pageToken)'
+  );
+  await expect(
+    page.getByText("nclimgrid_tavg_county_day").first()
+  ).toBeVisible();
+  await expect(page.getByText("page_size").first()).toBeVisible();
+  await page
+    .getByRole("tab", { exact: true, name: "TypeScript" })
+    .first()
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("client-tabs-rest-typescript.png"),
+  });
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/client-tabs-rest-typescript.png",
+  });
+
+  await page.goto("/docs/develop/quickstart");
+  await expectClientLanguage(page, "TypeScript", "await fetch(url)");
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/client-tabs-quickstart-typescript.png",
+  });
+
+  const results = await new AxeBuilder({ page }).include("main").analyze();
+  const blockingViolations = results.violations.filter((violation) =>
+    ["critical", "serious"].includes(violation.impact ?? "")
+  );
+  expect(blockingViolations).toEqual([]);
 });
 
 test("renders contract value states and separate 413 and 414 rows", async ({
