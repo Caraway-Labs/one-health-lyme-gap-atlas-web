@@ -9,6 +9,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { revealProfessionalNavigationLink } from "./professional-shell-ready";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 type StoredProfile = {
@@ -214,10 +215,7 @@ test.describe("Settings profile and default jurisdiction", () => {
       "Prefer not to say"
     );
     const reviewLink = page.getByRole("link", { name: "Atlas Explorer" });
-    if (!(await reviewLink.isVisible())) {
-      await page.getByRole("button", { name: "Open navigation" }).click();
-    }
-    await expect(reviewLink).toBeVisible();
+    await revealProfessionalNavigationLink(page, reviewLink);
   });
 
   test("saves a state default, starts a new Review there, and still opens other states", async ({
