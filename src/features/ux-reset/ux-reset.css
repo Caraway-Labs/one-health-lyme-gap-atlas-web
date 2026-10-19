@@ -400,6 +400,123 @@
   display: block;
 }
 
+.ux-reset-review-preview:has(> .ux-reset-selected-county-score) {
+  container-type: inline-size;
+  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, max-content);
+}
+
+.ux-reset-review-preview:has(> .ux-reset-selected-county-score)
+  > :not(.ux-reset-selected-county-score) {
+  grid-column: 1;
+}
+
+.ux-reset-selected-county-score {
+  display: grid;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  justify-self: end;
+  justify-items: end;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 12rem;
+  text-align: right;
+}
+
+.ux-reset-selected-county-gap-score {
+  display: flex;
+  order: 2;
+  align-items: baseline;
+  margin: 0;
+  gap: 0.15rem;
+}
+
+.ux-reset-selected-county-gap-score strong {
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.ux-reset-selected-county-gap-score span {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.ux-reset-response-tier-help {
+  order: 3;
+  margin: 0;
+}
+
+.response-tier-pill {
+  order: 1;
+  height: auto;
+  max-width: 100%;
+  overflow: visible;
+  white-space: normal;
+  border-radius: 1rem;
+  line-height: 1.35;
+  text-wrap: wrap;
+}
+
+.response-tier-pill[data-ramp="map-ramp-1"] {
+  background: var(--map-ramp-1);
+  color: var(--navy);
+}
+
+.response-tier-pill[data-ramp="map-ramp-2"] {
+  background: var(--map-ramp-2);
+  color: var(--navy);
+}
+
+.response-tier-pill[data-ramp="map-ramp-3"] {
+  background: var(--map-ramp-3);
+  color: var(--navy);
+}
+
+.response-tier-pill[data-ramp="map-ramp-4"] {
+  background: var(--map-ramp-4);
+  color: var(--navy);
+}
+
+.response-tier-pill[data-ramp="map-ramp-5"] {
+  background: var(--map-ramp-5);
+  color: var(--navy);
+}
+
+.response-tier-pill[data-ramp="map-ramp-6"] {
+  background: var(--map-ramp-6);
+  /* Navy alone is under 4.5:1 on this ramp. Mix toward black for the label. */
+  color: color-mix(in srgb, black 75%, var(--navy));
+}
+
+.response-tier-pill[data-ramp="unavailable"] {
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+@container (max-width: 22rem) {
+  .ux-reset-review-preview:has(> .ux-reset-selected-county-score) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ux-reset-selected-county-score {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: stretch;
+    justify-items: end;
+    max-width: none;
+    text-align: right;
+  }
+
+  .ux-reset-response-tier-help {
+    justify-self: stretch;
+    text-align: left;
+  }
+}
+
 .ux-reset-pro-main a.ux-reset-review-open {
   width: fit-content;
   font-weight: 500;

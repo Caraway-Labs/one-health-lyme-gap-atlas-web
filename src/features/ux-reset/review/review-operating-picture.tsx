@@ -1104,6 +1104,7 @@ export function ReviewOperatingPicture({
               onViewCountyEvidence={onViewCountyEvidence}
               openRef={openRef}
               releaseId={releaseId}
+              reviewResultState={authoritativeResultState}
             />
           ) : null}
           {preview && handoff ? (
