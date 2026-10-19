@@ -41,14 +41,23 @@ export function signInEmailValidationMessage(address: string): string | null {
   return SIGN_IN_COPY.invalidEmail;
 }
 
-export function emailConfirmRedirect(origin: string, nextPath: string): string {
+export function emailConfirmRedirect(
+  origin: string,
+  nextPath: string | null
+): string {
+  if (!nextPath) {
+    return `${origin}/auth/confirm`;
+  }
   return `${origin}/auth/confirm?next=${encodeURIComponent(nextPath)}`;
 }
 
 export function googleCallbackRedirect(
   origin: string,
-  nextPath: string
+  nextPath: string | null
 ): string {
+  if (!nextPath) {
+    return `${origin}/auth/callback`;
+  }
   return `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 }
 

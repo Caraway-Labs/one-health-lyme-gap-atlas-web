@@ -244,7 +244,7 @@ async function installLegendApi(page: Page) {
     const url = route.request().url();
     if (url.includes("/v1/me/profile")) {
       await route.fulfill({
-        json: { profile: { state_code: "CO" } },
+        json: { profile: { starting_view_version: 1, state_code: "CO" } },
         status: 200,
       });
       return;

@@ -40,7 +40,7 @@ describe("authentication callback routes", () => {
     expect(exchangeCodeForSession).toHaveBeenCalledWith("pkce-code");
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBe(
-      "https://carawaylabs.com/account"
+      "https://carawaylabs.com/auth/continue?next=%2Faccount"
     );
   });
 
@@ -58,7 +58,7 @@ describe("authentication callback routes", () => {
       type: "email",
     });
     expect(response.headers.get("location")).toBe(
-      "https://atlas.example.test/"
+      "https://atlas.example.test/auth/continue?next=%2F"
     );
   });
 });

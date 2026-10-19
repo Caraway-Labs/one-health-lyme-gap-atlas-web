@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
+
 test.describe("Investigate bookmarks open Atlas Explorer", () => {
+  test.beforeEach(async ({ page }) => {
+    await fulfillCompletedStartingView(page);
+  });
+
   test("a valid county opens county evidence", async ({ page }) => {
     await page.goto("/app/investigate?county=08001&scope=CO");
     await expect(page).toHaveURL(/\/explore/);

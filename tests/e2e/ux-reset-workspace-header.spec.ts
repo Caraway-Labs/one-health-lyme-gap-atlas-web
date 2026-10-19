@@ -1,6 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { fulfillCompletedStartingView } from "./completed-starting-view";
 import { releaseViewportRuns } from "./release-phone-viewport";
+
+test.beforeEach(async ({ page }) => {
+  await fulfillCompletedStartingView(page);
+});
 
 const HEADER = ".ux-reset-pro-app .app-header";
 const HEADER_LABEL = ".app-header-label";
