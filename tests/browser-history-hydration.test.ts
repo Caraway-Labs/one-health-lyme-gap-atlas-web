@@ -59,4 +59,53 @@ describe("browser history hydration guard", () => {
     expect(reloads).toStrictEqual([]);
     expect(window.location.search).toContain("period=2023-01-01");
   });
+
+  it("reloads a same-route query traversal that happens before the router listener", () => {
+    const boulder =
+      "http://localhost:3000/explore?county=08013&dataset=alpha-2026&period=2023-01-01&scope=CO";
+    const denver =
+      "http://localhost:3000/explore?county=08001&dataset=alpha-2026&period=2023-01-01&scope=CO";
+    window.history.replaceState(null, "", boulder);
+    const reloads: string[] = [];
+    installBrowserHistoryHydrationGuard(boulder, (href) => {
+      reloads.push(href);
+    });
+    window.history.pushState(null, "", denver);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    window.history.replaceState({ __NA: true }, "", boulder);
+
+    expect(reloads).toStrictEqual([denver]);
+    expect(window.location.search).toContain("county=08001");
+  });
+
+  it("recovers a query traversal that finished before the guard was installed", () => {
+    const boulder =
+      "http://localhost:3000/explore?county=08013&dataset=alpha-2026&period=2023-01-01&scope=CO";
+    const denver =
+      "http://localhost:3000/explore?county=08001&dataset=alpha-2026&period=2023-01-01&scope=CO";
+    window.history.replaceState(null, "", denver);
+    const reloads: string[] = [];
+    installBrowserHistoryHydrationGuard(boulder, (href) => {
+      reloads.push(href);
+    });
+
+    window.history.replaceState({ __NA: true }, "", boulder);
+
+    expect(reloads).toStrictEqual([denver]);
+    expect(window.location.href).toBe(denver);
+  });
+
+  it("does not reload a popstate that stays on the loaded document", () => {
+    window.history.replaceState(null, "", ACTION_HREF);
+    const reloads: string[] = [];
+    installBrowserHistoryHydrationGuard(ACTION_HREF, (href) => {
+      reloads.push(href);
+    });
+
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(reloads).toStrictEqual([]);
+    expect(window.location.href).toBe(ACTION_HREF);
+  });
 });
