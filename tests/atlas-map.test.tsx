@@ -2,17 +2,20 @@ import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AtlasDashboard } from "@/components/atlas-dashboard";
-import { AtlasMap } from "@/components/atlas-map";
+import { AtlasMap, type AtlasMapFillColor } from "@/components/atlas-map";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { CountyScoreSummary } from "@/generated/models";
 import { estimatedFitZoom } from "@/lib/atlas-map-camera";
 
 const engine = vi.hoisted(() => {
   const instances: FakeMap[] = [];
+  const webgl = { fail: false };
   class FakeMap {
     handlers = new Map<string, ((event?: unknown) => void)[]>();
     sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
     layers = new Set<string>();
+    paint = new Map<string, Record<string, unknown>>();
+    filters = new Map<string, unknown>();
     center = { lat: 38.5, lng: -96.5 };
     zoom = 3.05;
     bearing = 0;
@@ -50,8 +53,17 @@ const engine = vi.hoisted(() => {
         this.emit("moveend");
       }
     );
-    setFilter = vi.fn<(...args: unknown[]) => void>();
-    setPaintProperty = vi.fn<(...args: unknown[]) => void>();
+    setFilter = vi.fn<(layer: string, filter: unknown) => void>(
+      (layer, filter) => {
+        this.filters.set(layer, filter);
+      }
+    );
+    setPaintProperty = vi.fn<
+      (layer: string, name: string, value: unknown) => void
+    >((layer, name, value) => {
+      const current = this.paint.get(layer) ?? {};
+      this.paint.set(layer, { ...current, [name]: value });
+    });
     options: Record<string, unknown>;
     constructor(options?: Record<string, unknown>) {
       this.options = options ?? {};
@@ -77,11 +89,31 @@ const engine = vi.hoisted(() => {
     addControl() {
       this.layers.add("navigation-control");
     }
-    addSource(id: string) {
-      this.sources.set(id, { setData: vi.fn<(...args: unknown[]) => void>() });
+    addSource(id: string, spec?: { data?: unknown }) {
+      const record: {
+        data?: unknown;
+        setData: ReturnType<typeof vi.fn>;
+      } = {
+        data: spec?.data,
+        setData: vi.fn<(data: unknown) => void>(),
+      };
+      record.setData.mockImplementation((data: unknown) => {
+        record.data = data;
+      });
+      this.sources.set(id, record);
     }
-    addLayer(layer: { id: string }) {
+    addLayer(layer: {
+      filter?: unknown;
+      id: string;
+      paint?: Record<string, unknown>;
+    }) {
       this.layers.add(layer.id);
+      if (layer.paint) {
+        this.paint.set(layer.id, { ...layer.paint });
+      }
+      if (layer.filter !== undefined) {
+        this.filters.set(layer.id, layer.filter);
+      }
     }
     getSource(id: string) {
       return this.sources.get(id);
@@ -110,13 +142,21 @@ const engine = vi.hoisted(() => {
       };
     }
     getCanvas() {
-      return { style: { cursor: this.removed ? "" : "" } };
+      return {
+        getContext: (kind: string) => {
+          if (webgl.fail && kind === "webgl2") {
+            return null;
+          }
+          return this.removed ? null : {};
+        },
+        style: { cursor: this.removed ? "" : "" },
+      };
     }
     remove() {
       this.removed = true;
     }
   }
-  return { FakeMap, instances };
+  return { FakeMap, instances, webgl };
 });
 
 vi.mock(
@@ -278,6 +318,7 @@ function recordedResizeObserver(instances: RecordedResizeObserver[]) {
 describe("AtlasMap county camera", () => {
   afterEach(() => {
     cleanup();
+    engine.webgl.fail = false;
     engine.instances.length = 0;
     vi.unstubAllGlobals();
   });
@@ -1106,5 +1147,231 @@ describe("AtlasMap county camera", () => {
       });
     });
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("paints the nationally framed selected state and its counties black without changing other outlines", () => {
+    stubPrefersReducedMotion(false);
+    const idaho = { ...adams, county: "Ada", fips: "16001", state: "ID" };
+    const valley = { ...adams, county: "Valley", fips: "16085", state: "ID" };
+    const nationalGeometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        geometry.features[0],
+        geometry.features[1],
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117, 42.6],
+                [-114.4, 42.6],
+                [-114.4, 44],
+                [-117, 44],
+                [-117, 42.6],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117.2, 44],
+                [-111, 44],
+                [-111, 48.9],
+                [-117.2, 48.9],
+                [-117.2, 44],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16085" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    };
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const fillColor: AtlasMapFillColor = [
+      "coalesce",
+      ["get", "color"],
+      "#e4e9ea",
+    ];
+    const view = render(
+      <AtlasMap
+        cameraFrameState={null}
+        fillColor={fillColor}
+        geometry={nationalGeometry}
+        resetNationalView
+        scores={[adams, losAngeles, idaho, valley]}
+        selectedFips="16001"
+        selectedState="ID"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    const source = map?.sources.get("counties") as
+      | { data?: GeoJSON.FeatureCollection }
+      | undefined;
+    const selectedFips = (source?.data?.features ?? [])
+      .filter((feature) => feature.properties?.selectedState === true)
+      .map((feature) => feature.properties?.fips)
+      .toSorted();
+    expect({
+      attribute:
+        document.querySelector<HTMLElement>(".maplibre-atlas")?.dataset
+          .stateOutline,
+      countyOutline: map?.paint.get("selected-outline"),
+      fill: map?.paint.get("counties-fill")?.["fill-color"],
+      filter: map?.filters.get("selected-state-outline"),
+      outline: map?.paint.get("selected-state-outline"),
+      selectedFips,
+    }).toStrictEqual({
+      attribute: "accent",
+      countyOutline: { "line-color": "#061f3d", "line-width": 3 },
+      fill: fillColor,
+      filter: ["==", ["get", "selectedState"], true],
+      outline: { "line-color": "#000000", "line-width": 2.5 },
+      selectedFips: ["16001", "16085"],
+    });
+
+    const nextFill: AtlasMapFillColor = [
+      "coalesce",
+      ["get", "color"],
+      "#f4f1ea",
+    ];
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        fillColor={nextFill}
+        geometry={nationalGeometry}
+        resetNationalView
+        scores={[adams, losAngeles, idaho, valley]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const colorado = (source?.data?.features ?? [])
+      .filter((feature) => feature.properties?.selectedState === true)
+      .map((feature) => feature.properties?.fips)
+      .toSorted();
+    expect({
+      colorado,
+      fill: map?.paint.get("counties-fill")?.["fill-color"],
+      lineColor: map?.paint.get("selected-state-outline")?.["line-color"],
+    }).toStrictEqual({
+      colorado: ["08001"],
+      fill: nextFill,
+      lineColor: "#000000",
+    });
+
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        fillColor={nextFill}
+        geometry={nationalGeometry}
+        resetNationalView
+        scores={[adams, losAngeles, idaho, valley]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    const cleared = (source?.data?.features ?? [])
+      .filter((feature) => feature.properties?.selectedState === true)
+      .map((feature) => feature.properties?.fips);
+    expect({
+      cleared,
+      outline: map?.paint.get("selected-state-outline"),
+    }).toStrictEqual({
+      cleared: [],
+      outline: { "line-color": "#0b7285", "line-width": 2.5 },
+    });
+    view.unmount();
+  });
+
+  it("keeps accent outlines for a selected state that is not nationally framed", () => {
+    stubPrefersReducedMotion(false);
+    render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const map = loadMap();
+    expect(map?.paint.get("selected-state-outline")).toMatchObject({
+      "line-color": "#0b7285",
+      "line-width": 2.5,
+    });
+  });
+
+  it("keeps the focused-state outline black and lighter than the national selection stroke", () => {
+    stubPrefersReducedMotion(false);
+    render(
+      <AtlasMap
+        cameraFrameState="ID"
+        geographicStateOutline
+        geometry={geometry}
+        resetNationalView
+        scores={[adams]}
+        selectedFips=""
+        selectedState="ID"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const map = loadMap();
+    expect(map?.paint.get("selected-state-outline")).toStrictEqual({
+      "line-color": "#000000",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 2, 1, 5, 1.35, 8, 2],
+    });
+    expect(
+      document.querySelector<HTMLElement>(".maplibre-atlas")?.dataset
+        .stateOutline
+    ).toBe("black");
+  });
+
+  it("reports WebGL failure and empty geometry without throwing", () => {
+    stubPrefersReducedMotion(false);
+    engine.webgl.fail = true;
+    const onError = vi.fn<() => void>();
+    expect(() => {
+      render(
+        <AtlasMap
+          geometry={{ features: [], type: "FeatureCollection" }}
+          resetNationalView
+          scores={[]}
+          selectedFips=""
+          selectedState="ID"
+          onError={onError}
+          onSelect={vi.fn<(fips: string, surface: string) => void>()}
+        />
+      );
+    }).not.toThrow();
+    expect(onError).toHaveBeenCalledOnce();
+    cleanup();
+    engine.webgl.fail = false;
+    engine.instances.length = 0;
+    expect(() => {
+      render(
+        <AtlasMap
+          geometry={{ features: [], type: "FeatureCollection" }}
+          resetNationalView
+          scores={[]}
+          selectedFips=""
+          selectedState="ID"
+          onSelect={vi.fn<(fips: string, surface: string) => void>()}
+        />
+      );
+      loadMap();
+    }).not.toThrow();
   });
 });

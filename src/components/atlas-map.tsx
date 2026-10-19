@@ -102,23 +102,79 @@ const DEFAULT_ARIA_LABEL =
 
 const ACCENT_STATE_OUTLINE = "#0b7285";
 const GEOGRAPHIC_STATE_OUTLINE = "#000000";
+/**
+ * Shared weight for a selected state's perimeter and its interior county
+ * borders. County polygons are the only boundary geometry, so those edges are
+ * one line. This matches the previous accent stroke: visible at U.S. zoom,
+ * and still lighter than the selected-county line.
+ */
+const NATIONAL_SELECTED_STATE_LINE_WIDTH = 2.5;
+const ATLAS_COUNTY_MAP_KEY = "atlasCountyMap";
 
 export type AtlasMapCountyPointer = {
   clickDetail: number;
   fips: string;
 };
 
-function stateOutlinePaint(geographic: boolean): {
+type StateOutlineTreatment = "accent" | "geographic" | "national-selection";
+
+function stateOutlineTreatment(input: {
+  cameraFrameState: string | null | undefined;
+  geographicStateOutline: boolean;
+  resetNationalView: boolean;
+  selectedState: string;
+}): StateOutlineTreatment {
+  if (input.geographicStateOutline) {
+    return "geographic";
+  }
+  const frame = input.cameraFrameState;
+  const nationallyFramed =
+    input.resetNationalView &&
+    (frame === undefined || frame === null || frame === "ALL");
+  if (nationallyFramed && input.selectedState !== "ALL") {
+    return "national-selection";
+  }
+  return "accent";
+}
+
+function stateOutlinePaint(treatment: StateOutlineTreatment): {
   "line-color": string;
   "line-width": number | ExpressionSpecification;
 } {
-  if (!geographic) {
-    return { "line-color": ACCENT_STATE_OUTLINE, "line-width": 2.5 };
+  switch (treatment) {
+    case "accent": {
+      return {
+        "line-color": ACCENT_STATE_OUTLINE,
+        "line-width": NATIONAL_SELECTED_STATE_LINE_WIDTH,
+      };
+    }
+    case "national-selection": {
+      return {
+        "line-color": GEOGRAPHIC_STATE_OUTLINE,
+        "line-width": NATIONAL_SELECTED_STATE_LINE_WIDTH,
+      };
+    }
+    case "geographic": {
+      return {
+        "line-color": GEOGRAPHIC_STATE_OUTLINE,
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          2,
+          1,
+          5,
+          1.35,
+          8,
+          2,
+        ],
+      };
+    }
+    default: {
+      const exhaustive: never = treatment;
+      return exhaustive;
+    }
   }
-  return {
-    "line-color": GEOGRAPHIC_STATE_OUTLINE,
-    "line-width": ["interpolate", ["linear"], ["zoom"], 2, 1, 5, 1.35, 8, 2],
-  };
 }
 
 const DEFAULT_FILL_COLOR: AtlasMapFillColor = [
@@ -198,8 +254,10 @@ export function AtlasMap({
    */
   fitSelectedCounty?: boolean;
   /**
-   * National Explorer state focus. County lines for the focused state are
-   * black. Other maps keep the accent state outline.
+   * Focused-state camera stage. County lines for that stage stay black and
+   * use the zoom-based width. A selected state at national framing is also
+   * black, at the shared national stroke width. Other maps keep the accent
+   * outline.
    */
   geographicStateOutline?: boolean;
   /** National Explorer drill disables double-click zoom so one gesture cannot take both steps. */
@@ -233,6 +291,7 @@ export function AtlasMap({
   const cameraFrameStateRef = useRef(cameraFrameState);
   const doubleClickZoomRef = useRef(doubleClickZoom);
   const geographicStateOutlineRef = useRef(geographicStateOutline);
+  const selectedStateRef = useRef(selectedState);
   const userAdjustedNationalRef = useRef(false);
   const initialNationalFitRef = useRef(false);
   const fitNationalViewRef = useRef<(instance: MapLibreMap) => boolean>(
@@ -254,6 +313,7 @@ export function AtlasMap({
     cameraFrameStateRef.current = cameraFrameState;
     doubleClickZoomRef.current = doubleClickZoom;
     geographicStateOutlineRef.current = geographicStateOutline;
+    selectedStateRef.current = selectedState;
   });
   fitNationalViewRef.current = (instance) => {
     const element = container.current;
@@ -419,7 +479,14 @@ export function AtlasMap({
         instance.addLayer({
           filter: ["==", ["get", "selectedState"], true],
           id: "selected-state-outline",
-          paint: stateOutlinePaint(geographicStateOutlineRef.current),
+          paint: stateOutlinePaint(
+            stateOutlineTreatment({
+              cameraFrameState: cameraFrameStateRef.current,
+              geographicStateOutline: geographicStateOutlineRef.current,
+              resetNationalView: resetNationalViewRef.current,
+              selectedState: selectedStateRef.current,
+            })
+          ),
           source: "counties",
           type: "line",
         });
@@ -459,6 +526,9 @@ export function AtlasMap({
     });
     map.current = instance;
     const observed = container.current;
+    if (observed) {
+      Reflect.set(observed, ATLAS_COUNTY_MAP_KEY, instance);
+    }
     const resizeObserver =
       observed && typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(() => {
@@ -475,6 +545,9 @@ export function AtlasMap({
     resizeObserver?.observe(observed as HTMLElement);
     return () => {
       resizeObserver?.disconnect();
+      if (observed) {
+        Reflect.deleteProperty(observed, ATLAS_COUNTY_MAP_KEY);
+      }
       instance.remove();
       map.current = null;
     };
@@ -492,7 +565,14 @@ export function AtlasMap({
     source.setData(enriched());
     map.current.setPaintProperty("counties-fill", "fill-color", fillColor);
     if (map.current.getLayer("selected-state-outline")) {
-      const outline = stateOutlinePaint(geographicStateOutline);
+      const outline = stateOutlinePaint(
+        stateOutlineTreatment({
+          cameraFrameState,
+          geographicStateOutline,
+          resetNationalView,
+          selectedState,
+        })
+      );
       map.current.setFilter("selected-state-outline", [
         "==",
         ["get", "selectedState"],
