@@ -12,6 +12,10 @@
   /* Atlas domain palette: geography, evidence, and branded exceptions. */
   --navy: #082a4d;
   --navy-2: #0d3b60;
+  /* Compact Explorer introduction. Distinct from brand navy text. */
+  --explorer-intro-surface: #0b2948;
+  --explorer-intro-inset: #214968;
+  --explorer-intro-copy: #d7e4ee;
   --ink: #152c3b;
   --atlas-muted-text: #506772;
   --teal: #0f7782;

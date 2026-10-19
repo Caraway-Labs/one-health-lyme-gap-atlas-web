@@ -1,6 +1,7 @@
 /**
  * Product-owner copy for Atlas Explorer and Compare.
- * Explorer welcome copy was approved October 17, 2026.
+ * Explorer introduction copy was approved October 19, 2026.
+ * The optional secondary eyebrow is omitted so the banner stays compact.
  * Compare keeps the heading and one supporting sentence visible.
  * The reporting-context sentence stays in the release disclosure.
  * Ask Atlas, Feed, Settings, and Docs do not use a page introduction.
@@ -15,12 +16,13 @@ export const PAGE_INTRODUCTION_COPY = {
       "Compare surveillance evidence across counties to uncover meaningful differences, shared patterns, and gaps in what we know.",
   },
   explorer: {
-    guidance:
-      "Choose a state, search for a county, or select one on the map to explore the evidence, identify gaps, and see suggested follow-up.",
-    guidanceLead: "Get started:",
-    headline: "Explore the One Health Atlas",
+    eyebrow: "ONE HEALTH LYME GAP ATLAS",
+    headline: "Explore potential Lyme surveillance gaps",
+    scoreBody:
+      "The Gap Score (0–100) helps prioritize counties for review. Higher scores indicate a stronger combination of data signals suggesting a possible surveillance gap—not necessarily more Lyme disease or greater personal risk.",
+    scoreHeading: "What does the Gap Score mean?",
     supporting:
-      "Discover patterns in reported Lyme disease, tick and pathogen surveillance, and community context across U.S. counties.",
+      "The Atlas highlights counties where reported Lyme disease cases may not align with tick, pathogen, and community data. Explore these patterns to help identify where additional public health review may be useful.",
   },
 } as const;
 

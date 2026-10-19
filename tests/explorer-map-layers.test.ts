@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { mapFeatureCompleteness } from "@/components/atlas-map";
 import {
+  EXPLORER_MAP_LAYERS,
+  explorerMapLayerMenuLabel,
   paintExplorerMapLayer,
   parseExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
@@ -149,6 +151,28 @@ const legendSources = [
 ];
 
 describe("Explorer map layers", () => {
+  it("renames only the gap-score menu label", () => {
+    const gapScore = EXPLORER_MAP_LAYERS.find(
+      (layer) => layer.id === "gap_score"
+    );
+    const otherLayers = EXPLORER_MAP_LAYERS.filter(
+      (layer) => layer.id !== "gap_score"
+    );
+    expect({
+      id: gapScore?.id,
+      label: gapScore?.label,
+      menu: gapScore ? explorerMapLayerMenuLabel(gapScore) : null,
+      otherMenus: otherLayers.map((layer) => explorerMapLayerMenuLabel(layer)),
+      otherLabels: otherLayers.map((layer) => layer.label),
+    }).toStrictEqual({
+      id: "gap_score",
+      label: "Atlas gap score",
+      menu: "Surveillance gap score",
+      otherMenus: otherLayers.map((layer) => layer.label),
+      otherLabels: otherLayers.map((layer) => layer.label),
+    });
+  });
+
   it("keeps governed layer ids in the URL and does not paint them before they validate", () => {
     expect({
       completeness: parseExplorerMapLayerId("completeness"),

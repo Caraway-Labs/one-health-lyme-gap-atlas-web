@@ -17,7 +17,7 @@ test.describe("Investigate bookmarks open Atlas Explorer", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore the One Health Atlas",
+        name: "Explore potential Lyme surveillance gaps",
       })
     ).toBeVisible();
     expect(new URL(page.url()).searchParams.get("county")).not.toBe("06037");

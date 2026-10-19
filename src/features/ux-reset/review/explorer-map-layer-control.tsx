@@ -10,6 +10,7 @@ import {
 import {
   EXPLORER_MAP_LAYERS,
   explorerMapLayerById,
+  explorerMapLayerMenuLabel,
   type ExplorerLayerGate,
   type ExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
@@ -49,7 +50,7 @@ export function ExplorerMapLayerControl({
           data-testid="explorer-map-layer"
           id="explorer-map-layer"
         >
-          <SelectValue>{selected.label}</SelectValue>
+          <SelectValue>{explorerMapLayerMenuLabel(selected)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {EXPLORER_MAP_LAYERS.map((layer) => {
@@ -61,7 +62,9 @@ export function ExplorerMapLayerControl({
                 key={layer.id}
                 value={layer.id}
               >
-                {selectable ? layer.label : `${layer.label} (unavailable)`}
+                {selectable
+                  ? explorerMapLayerMenuLabel(layer)
+                  : `${explorerMapLayerMenuLabel(layer)} (unavailable)`}
               </SelectItem>
             );
           })}

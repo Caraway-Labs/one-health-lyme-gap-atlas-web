@@ -5,7 +5,28 @@ import {
 } from "@/features/ux-reset/page-introduction-copy";
 
 export function PageIntroduction({ page }: { page: PageIntroductionId }) {
-  const copy = PAGE_INTRODUCTION_COPY[page];
+  if (page === "explorer") {
+    const copy = PAGE_INTRODUCTION_COPY.explorer;
+    return (
+      <header
+        className="ux-reset-page-introduction ux-reset-explorer-introduction"
+        data-page={page}
+        data-testid="page-introduction-explorer"
+      >
+        <div className="ux-reset-explorer-introduction-copy">
+          <p className="eyebrow light">{copy.eyebrow}</p>
+          <h1>{copy.headline}</h1>
+          <p>{copy.supporting}</p>
+        </div>
+        <div className="ux-reset-explorer-introduction-score">
+          <h2>{copy.scoreHeading}</h2>
+          <p>{copy.scoreBody}</p>
+        </div>
+      </header>
+    );
+  }
+
+  const copy = PAGE_INTRODUCTION_COPY.compare;
   return (
     <header
       className="ux-reset-page-introduction"
@@ -18,11 +39,6 @@ export function PageIntroduction({ page }: { page: PageIntroductionId }) {
         headingLevel="h1"
         title={copy.headline}
       />
-      {"guidance" in copy ? (
-        <p className="ux-reset-page-introduction-guidance">
-          <strong>{copy.guidanceLead}</strong> {copy.guidance}
-        </p>
-      ) : null}
     </header>
   );
 }
