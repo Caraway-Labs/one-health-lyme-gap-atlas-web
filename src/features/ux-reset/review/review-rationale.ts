@@ -119,10 +119,23 @@ function publishedFloorRate(detail: CountyDetail): string | null {
 }
 
 function humanSentence(detail: CountyDetail): string {
+  const status = detail.human_status.trim().toLowerCase();
+  if (status === "suppressed") {
+    return "The 2023 county Lyme case count is suppressed. Suppression is not zero cases.";
+  }
+  if (status === "missing") {
+    return "The 2023 county Lyme case count is missing. A missing count is not zero cases.";
+  }
+  if (status === "no_county_linked_record") {
+    return "No county-linked 2023 Lyme case record is available. That is not zero cases.";
+  }
   const count = publishedFloorCount(detail);
   const rate = publishedFloorRate(detail);
   if (count === null && rate === null) {
-    return "No county-level 2023 Lyme case count was published. A missing record is not treated as zero cases.";
+    if (status === "published_count_floor") {
+      return "A 2023 case-count floor was published, but the count and rate are unavailable. Unavailable numbers are not zero cases.";
+    }
+    return "No county-level 2023 Lyme case count is available. That is not zero cases.";
   }
   const parts: string[] = [];
   if (count !== null) {

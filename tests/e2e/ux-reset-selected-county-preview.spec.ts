@@ -19,7 +19,9 @@ const rowLabels = [
 
 async function installPublishedReview(page: Page) {
   await page.route("**/v1/me/profile", (route) =>
-    route.fulfill({ json: { profile: null } })
+    route.fulfill({
+      json: { profile: { starting_view_version: 1, state_code: null } },
+    })
   );
   await page.route("**/v1/atlas/metadata**", (route) =>
     route.fulfill({ json: { ...baldwin.release, release_id: release } })
@@ -89,6 +91,61 @@ async function installPublishedReview(page: Page) {
   );
 }
 
+async function expectFollowUpInView(page: Page) {
+  await expect
+    .poll(async () =>
+      page.locator("#explorer-map-follow-up").evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const visibleHeight =
+          Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+        return (
+          visibleHeight > 0 && rect.top < window.innerHeight && rect.top <= 80
+        );
+      })
+    )
+    .toBe(true);
+}
+
+async function expectActionLayout(
+  page: Page,
+  preview: ReturnType<Page["getByTestId"]>
+) {
+  const layout = await preview
+    .locator(".ux-reset-review-preview-actions")
+    .evaluate((actions) => {
+      const followUp = actions.querySelector(
+        "[data-testid='review-view-county-follow-up']"
+      );
+      const compare = actions.querySelector("[data-testid='review-compare']");
+      if (
+        !(followUp instanceof HTMLElement && compare instanceof HTMLElement)
+      ) {
+        return null;
+      }
+      const followBox = followUp.getBoundingClientRect();
+      const compareBox = compare.getBoundingClientRect();
+      const width = actions.getBoundingClientRect().width;
+      const sideBySide = width >= 11.5 * 16 * 2 + 8;
+      return {
+        compareX: compareBox.x,
+        compareY: compareBox.y,
+        followX: followBox.x,
+        followY: followBox.y,
+        sideBySide,
+      };
+    });
+  expect(layout).not.toBeNull();
+  if (!layout) {
+    return;
+  }
+  if (layout.sideBySide) {
+    expect(Math.abs(layout.followY - layout.compareY)).toBeLessThan(4);
+    expect(layout.compareX).toBeGreaterThan(layout.followX);
+    return;
+  }
+  expect(layout.compareY).toBeGreaterThan(layout.followY);
+}
+
 function availabilityHits(page: Page): string[] {
   const hits: string[] = [];
   page.on("request", (request) => {
@@ -149,7 +206,7 @@ test.describe("Selected county preview", () => {
     await page.locator('button.ux-reset-ranked-row[data-fips="01001"]').click();
     await expect(preview).toHaveAttribute("data-fips", "01001");
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
-      "A missing record is not treated as zero cases."
+      "No county-linked 2023 Lyme case record is available. That is not zero cases."
     );
     expect(hits).toEqual([]);
 
@@ -162,9 +219,16 @@ test.describe("Selected county preview", () => {
     page,
   }) => {
     await installPublishedReview(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
+    const preview = page.getByTestId("review-published-county-preview");
+    await expect(preview).toBeVisible();
+    await expectActionLayout(page, preview);
+    await page.setViewportSize({ height: 1000, width: 1920 });
+    await expectActionLayout(page, preview);
     await page.getByTestId("review-view-county-follow-up").click();
     await expect(page.locator("#explorer-map-follow-up")).toBeFocused();
+    await expectFollowUpInView(page);
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.evaluate(() => {

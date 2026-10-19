@@ -3208,8 +3208,11 @@ describe("Reset Review scope UI", () => {
         navigation
           .querySelector(`a[aria-label="${label}"]`)
           ?.getAttribute("href") ?? "";
+      const ask = new URL(href("Ask Atlas"), "http://localhost");
+      ask.searchParams.delete("page_ref");
+      const askQuery = ask.searchParams.toString();
       return {
-        ask: href("Ask Atlas"),
+        ask: askQuery ? `${ask.pathname}?${askQuery}` : ask.pathname,
         compare: href("Compare"),
         feed: href("Feed"),
         settings: href("Settings"),
@@ -3850,8 +3853,37 @@ describe("Reset Review scope UI", () => {
         .getByTestId("review-published-county-preview")
         .querySelector("[data-testid='review-ask-atlas']")
     ).toBeNull();
-    const navigation = screen.getByRole("navigation", {
-      name: "Professional workspace",
+    const dedicatedAsk = () => {
+      const navigation = screen.getByRole("navigation", {
+        name: "Professional workspace",
+      });
+      const href = new URL(
+        navigation
+          .querySelector('a[aria-label="Ask Atlas"]')
+          ?.getAttribute("href") ?? "",
+        "http://localhost"
+      );
+      return {
+        county: href.searchParams.get("county"),
+        state: readAskAtlasPageReference(href.pathname, href.searchParams),
+      };
+    };
+    await waitFor(() => {
+      if (dedicatedAsk().county !== null) {
+        throw new Error(dedicatedAsk().county ?? "county still present");
+      }
+    });
+    const bookmarked = dedicatedAsk();
+    const bookmarkedGeography =
+      bookmarked.state.kind === "validated"
+        ? bookmarked.state.reference.context.fields.geography
+        : null;
+    expect({
+      bookmarkGeography: bookmarkedGeography,
+      bookmarkPreviewCounty: bookmarked.county,
+    }).toStrictEqual({
+      bookmarkGeography: { state: "absent" },
+      bookmarkPreviewCounty: null,
     });
 
     const boulder = screen
@@ -3862,12 +3894,9 @@ describe("Reset Review scope UI", () => {
     }
     fireEvent.click(boulder);
     await waitFor(() => {
-      const href =
-        navigation
-          .querySelector('a[aria-label="Ask Atlas"]')
-          ?.getAttribute("href") ?? "";
-      if (!href.includes("county=08013")) {
-        throw new Error(href);
+      const chosen = dedicatedAsk();
+      if (chosen.county !== "08013") {
+        throw new Error(chosen.county ?? "missing county");
       }
     });
     expect(
@@ -3875,17 +3904,22 @@ describe("Reset Review scope UI", () => {
         .getByTestId("review-published-county-preview")
         .querySelector("[data-testid='review-ask-atlas']")
     ).toBeNull();
-    const previewAsk =
-      navigation
-        .querySelector('a[aria-label="Ask Atlas"]')
-        ?.getAttribute("href") ?? "";
+    const chosen = dedicatedAsk();
+    const geography =
+      chosen.state.kind === "validated"
+        ? chosen.state.reference.context.fields.geography
+        : null;
     expect({
-      launcherCounty: new URL(previewAsk, "http://localhost").searchParams.get(
-        "county"
-      ),
+      geography,
+      launcherCounty: chosen.county,
       previewFips: screen.getByTestId("review-published-county-preview").dataset
         .fips,
     }).toStrictEqual({
+      geography: {
+        id: "08013",
+        label: "Boulder, Colorado (08013)",
+        state: "validated",
+      },
       launcherCounty: "08013",
       previewFips: "08013",
     });

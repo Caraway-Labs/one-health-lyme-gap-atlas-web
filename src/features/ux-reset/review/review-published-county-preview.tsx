@@ -20,6 +20,7 @@ import {
   scrollToSuggestedFollowUp,
 } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
 import type { CountyDetail } from "@/generated/models";
+import { recognizedPlainPriority } from "@/lib/atlas-ui";
 import { cn } from "@/lib/utils";
 
 export function reviewHumanFloorEvidence(
@@ -83,12 +84,65 @@ export function reviewHumanFloorEvidence(
   };
 }
 
-function publishedReviewPriority(priority: string): string | null {
+type PublishedReviewPriority =
+  | { kind: "neutral"; value: string }
+  | { kind: "recognized"; value: string }
+  | { kind: "unavailable" };
+
+function publishedReviewPriority(priority: string): PublishedReviewPriority {
   const trimmed = priority.trim();
   if (trimmed.length === 0 || trimmed.toLowerCase() === "unavailable") {
-    return null;
+    return { kind: "unavailable" };
   }
-  return trimmed;
+  if (recognizedPlainPriority(trimmed)) {
+    return { kind: "recognized", value: trimmed };
+  }
+  return { kind: "neutral", value: trimmed };
+}
+
+function PublishedReviewPriorityReadout({
+  priority,
+}: {
+  priority: PublishedReviewPriority;
+}) {
+  switch (priority.kind) {
+    case "recognized": {
+      return (
+        <>
+          <AtlasPriorityBadge priority={priority.value} />
+          <p className="type-small">
+            Published review priority for follow-up. This is not a disease-risk
+            estimate.
+          </p>
+        </>
+      );
+    }
+    case "neutral": {
+      return (
+        <>
+          <p className="type-body" data-testid="review-preview-priority-text">
+            {priority.value}
+          </p>
+          <p className="type-small">
+            This published priority is not a recognized review category. It is
+            not a disease-risk estimate.
+          </p>
+        </>
+      );
+    }
+    case "unavailable": {
+      return (
+        <p className="type-body">
+          Review priority is unavailable for this county. Unavailable is not a
+          finding of no risk.
+        </p>
+      );
+    }
+    default: {
+      const exhaustive: never = priority;
+      return exhaustive;
+    }
+  }
 }
 
 export function ReviewPublishedCountyPreview({
@@ -111,7 +165,6 @@ export function ReviewPublishedCountyPreview({
   });
   // Never present cached facts after a failed refresh as current evidence.
   const detail = query.isError ? null : query.data;
-  const priority = detail ? publishedReviewPriority(detail.priority) : null;
   return (
     <Card
       aria-label={`Published county preview for ${county.county}, ${county.stateName}`}
@@ -129,20 +182,9 @@ export function ReviewPublishedCountyPreview({
       </p>
       {detail ? (
         <div data-testid="review-preview-priority">
-          {priority ? (
-            <>
-              <AtlasPriorityBadge priority={priority} />
-              <p className="type-small">
-                Published review priority for follow-up. This is not a
-                disease-risk estimate.
-              </p>
-            </>
-          ) : (
-            <p className="type-body">
-              Review priority is unavailable for this county. Unavailable is not
-              a finding of no risk.
-            </p>
-          )}
+          <PublishedReviewPriorityReadout
+            priority={publishedReviewPriority(detail.priority)}
+          />
         </div>
       ) : null}
       {query.isPending ? (
