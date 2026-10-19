@@ -28,7 +28,7 @@ The production readiness checklist is:
 2. Confirm source, freshness, methodology/version, and limitations where the page makes data claims.
 3. Run docs generation/checks, link checks, typecheck, lint, unit tests, and Playwright/Axe coverage.
 4. Run the production build/container checks and review the generated route list.
-5. Smoke-test `/docs`, search, a heading deep link, `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/llms-full.txt`, and one page's `.md` and `.mdx` exports after deployment. The exports are generated from the current docs source and must cite the pinned public OpenAPI commit rather than a copied contract.
+5. Smoke-test `/docs`, search, a heading deep link, the Copy Markdown and View source actions, `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/llms-full.txt`, and one page's `.md` and `.mdx` exports after deployment. The exports are generated from the current docs source and must cite the pinned public OpenAPI commit rather than a copied contract.
 6. Record the deployed commit and retain the last successful deployment for rollback.
 
 Screenshots are intentionally avoided in the launch page so UI changes cannot silently leave stale visual guidance. Future screenshots require a named owner, stable behavior, and an update check in the same change.

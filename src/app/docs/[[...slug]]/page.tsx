@@ -11,6 +11,7 @@ import {
   OpenAPIPage,
   OpenAPIPageProvider,
 } from "@/components/docs-openapi-page";
+import { DocsPageActions } from "@/components/docs-page-actions";
 import { docsCanonicalUrl } from "@/lib/docs-config";
 import { docsSource } from "@/lib/docs-source";
 import { openapi } from "@/lib/public-openapi-server";
@@ -31,6 +32,7 @@ export default async function Page({ params }: DocsPageProps) {
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
+      <DocsPageActions pageUrl={page.url} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
