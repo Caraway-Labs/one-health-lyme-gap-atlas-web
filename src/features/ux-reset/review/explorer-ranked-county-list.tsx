@@ -33,7 +33,13 @@ export function ExplorerRankedCountyList({
 
   return (
     <div className="ux-reset-ranked-counties">
-      <header className="ux-reset-ranked-counties-header">
+      <header
+        className={
+          showEyebrow
+            ? "ux-reset-ranked-counties-header"
+            : "ux-reset-ranked-counties-header is-compact"
+        }
+      >
         {showEyebrow ? (
           <p className="ux-reset-ranked-counties-eyebrow">Counties</p>
         ) : null}

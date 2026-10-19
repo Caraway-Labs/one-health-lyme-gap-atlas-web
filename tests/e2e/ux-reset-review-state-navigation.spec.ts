@@ -286,14 +286,37 @@ test.describe("Review national geographic navigation", () => {
     );
   });
 
-  test("browses a state and selects a county without leaving the United States", async ({
+  test("selects a county from the national list without a local state filter", async ({
     page,
   }) => {
     await installReviewApi(page);
-    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.setViewportSize({ height: 1100, width: 1637 });
     await page.goto("/explore?scope=ALL");
-    await page.getByTestId("national-browse-state").click();
-    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    const list = page.locator(".ux-reset-explorer-list");
+    await expect(list.getByRole("heading").first()).toHaveText(
+      "Choose a county"
+    );
+    await expect(page.getByTestId("national-browse-state")).toHaveCount(0);
+    await expect(page.getByText("Browse a state")).toHaveCount(0);
+    await expect(list.locator(".ux-reset-ranked-counties-eyebrow")).toHaveCount(
+      0
+    );
+    await expect(page.getByTestId("review-scope-select")).toHaveCount(1);
+    // Measured before WEB #709 at this width: the first row sat 163px below
+    // the county card. The page-level State filter is the only state control.
+    const firstRowOffset = await list.evaluate((card) => {
+      const row = card.querySelector(
+        "[data-testid='national-published-county']"
+      );
+      if (!row) {
+        return null;
+      }
+      return row.getBoundingClientRect().y - card.getBoundingClientRect().y;
+    });
+    expect(firstRowOffset).not.toBeNull();
+    expect(firstRowOffset ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+      163 - 70
+    );
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page).toHaveURL(/county=08001/);
@@ -312,8 +335,6 @@ test.describe("Review national geographic navigation", () => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
-    await page.getByTestId("national-browse-state").click();
-    await page.getByRole("option", { name: "Colorado (CO)" }).click();
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
@@ -335,8 +356,6 @@ test.describe("Review national geographic navigation", () => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
-    await page.getByTestId("national-browse-state").click();
-    await page.getByRole("option", { name: "Colorado (CO)" }).click();
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
@@ -360,8 +379,6 @@ test.describe("Review national geographic navigation", () => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
-    await page.getByTestId("national-browse-state").click();
-    await page.getByRole("option", { name: "Colorado (CO)" }).click();
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
@@ -431,8 +448,6 @@ test.describe("Review national geographic navigation", () => {
     await expect(page.getByTestId("review-national-map-region")).toContainText(
       "temporarily unavailable"
     );
-    await page.getByTestId("national-browse-state").click();
-    await page.getByRole("option", { name: "New York (NY)" }).click();
     await page.getByRole("button", { name: /Albany, NY/ }).click();
     await expect(page).toHaveURL(/county=36001/);
     await expect(page).toHaveURL(/scope=ALL/);
@@ -462,11 +477,10 @@ test.describe("Review national geographic navigation", () => {
     await expect(page.getByTestId("review-national-map-region")).toContainText(
       "temporarily unavailable"
     );
-    await page.getByTestId("national-browse-state").click();
-    await page.getByRole("option", { name: "Colorado (CO)" }).click();
     await expect(
       page.getByRole("button", { name: /Denver, CO/ })
     ).toBeVisible();
+    await expect(page.getByTestId("national-browse-state")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
   });
 

@@ -1073,6 +1073,7 @@ export function ReviewOperatingPicture({
             ) : null}
             <ExplorerRankedCountyList
               candidateFips={candidateFips}
+              showEyebrow={false}
               emptyLabel={
                 countyQueryText
                   ? "No counties match that name or FIPS."

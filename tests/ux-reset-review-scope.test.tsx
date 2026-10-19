@@ -541,7 +541,7 @@ describe("Reset Review scope UI", () => {
     const read = async (search: string) => {
       const view = renderReview(search);
       if (search.includes("scope=ALL")) {
-        fireEvent.click(await screen.findByTestId("national-browse-state"));
+        fireEvent.click(await screen.findByTestId("review-scope-select"));
         await screen.findByRole("option", { name: "Colorado (CO)" });
       } else {
         await waitFor(() => {
