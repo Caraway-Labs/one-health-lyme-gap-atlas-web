@@ -16,6 +16,10 @@ const examples = [
     id: "atlas-explorer-tick-legend--blacklegged",
     text: "(not zero, not confirmed absence)",
   },
+  {
+    id: "atlas-explorer-pathogen-legend--burgdorferi",
+    text: "(not zero, not confirmed absence)",
+  },
 ];
 
 for (const example of examples) {
