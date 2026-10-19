@@ -13,7 +13,6 @@ import {
 } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
@@ -23,7 +22,6 @@ import {
 } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
-import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import {
   countyPassesAvailableData,
@@ -34,7 +32,14 @@ import {
   type ExplorerAvailableDataGate,
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerLowerWorkspace } from "@/features/ux-reset/review/explorer-lower-workspace";
-import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
+import {
+  ExplorerMapSectionHeader,
+  ExplorerMapSourceCaption,
+} from "@/features/ux-reset/review/explorer-map-chrome";
+import {
+  ExplorerMapLayerAvailability,
+  ExplorerMapLayerControl,
+} from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
   completenessLayerGate,
   explorerMapLayerById,
@@ -873,28 +878,14 @@ export function ReviewOperatingPicture({
 
       <div className="ux-reset-explorer-browse" data-testid="explorer-browse">
         <Card className="ux-reset-explorer-map ux-reset-review-operating-map map-card gap-0 py-0">
-          <div className="ux-reset-explorer-map-heading">
-            <div>
-              <h2>{EXPLORER_MAP_SECTION_HEADING}</h2>
-              <p>
-                {period
-                  ? `Period ${period}`
-                  : "Source periods vary by evidence"}
-                {review.data_release_version.trim()
-                  ? ` Â· Release ${review.data_release_version.trim()}`
-                  : ""}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setFitSignal((value) => value + 1);
-              }}
-            >
-              Fit {stateName}
-            </Button>
-          </div>
+          <ExplorerMapSectionHeader
+            fitLabel={`Fit ${scopeCode}`}
+            fitPlaceName={stateName}
+            fitTestId="explorer-fit-scope"
+            onFit={() => {
+              setFitSignal((value) => value + 1);
+            }}
+          />
           {onMapLayerChange ? (
             <div className="ux-reset-explorer-map-layer">
               <ExplorerMapLayerControl
@@ -1004,6 +995,15 @@ export function ReviewOperatingPicture({
           <ExplorerMapLegend
             key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
             paint={mapPaint}
+          />
+          {onMapLayerChange ? (
+            <div className="ux-reset-explorer-map-availability">
+              <ExplorerMapLayerAvailability gates={layerGates} />
+            </div>
+          ) : null}
+          <ExplorerMapSourceCaption
+            period={period}
+            releaseId={review.data_release_version}
           />
         </Card>
         <ExplorerLowerWorkspace

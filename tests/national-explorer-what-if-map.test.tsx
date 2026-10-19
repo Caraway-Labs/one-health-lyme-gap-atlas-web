@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "@testing-library/jest-dom/vitest";
 import {
   cleanup,
   fireEvent,
@@ -281,5 +282,46 @@ describe("national Explorer what-if map", () => {
     expect(screen.getByTestId("explorer-map-legend").textContent).not.toContain(
       "Adjusted scenario"
     );
+  });
+
+  it("places the compact geography header above the map and provenance below it", async () => {
+    installRamps();
+    render(picture(client(), SCENARIO_SCORE_DEFAULTS, "gap_score"));
+    const heading = screen.getByRole("heading", {
+      name: "Explore county patterns",
+    });
+    const layer = screen.getByTestId("explorer-map-layer");
+    const map = screen.getByTestId("review-national-map-region");
+    const availability = screen.getByTestId("explorer-layer-availability");
+    const provenance = screen.getByTestId("explorer-map-provenance");
+    const visibleLabel = "Fit geography";
+    const fit = screen.getByRole("button", {
+      name: "Fit geography (United States)",
+    });
+    const order = [heading, layer, map, availability, provenance].map((node) =>
+      node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
+    );
+    fireEvent.click(screen.getByText("Layer availability"));
+    await waitFor(() => {
+      expect(screen.getByTestId("mock-atlas-map")).toBeTruthy();
+    });
+    expect({
+      availabilityNote: availability.textContent?.includes("Atlas gap score"),
+      fitLabel: fit.textContent?.includes(visibleLabel),
+      headingOmitsRelease:
+        heading.parentElement?.textContent?.includes("Release"),
+      labelFor: screen.getByText("Map layer").getAttribute("for"),
+      order,
+      provenance: provenance.textContent,
+    }).toStrictEqual({
+      availabilityNote: true,
+      fitLabel: true,
+      headingOmitsRelease: false,
+      labelFor: "explorer-map-layer",
+      order: [...order].toSorted((left, right) => left - right),
+      provenance: "Source periods vary by evidence · Release alpha-2026",
+    });
+    expect(fit).toHaveAccessibleName("Fit geography (United States)");
+    expect(fit).toHaveAccessibleName(expect.stringContaining(visibleLabel));
   });
 });
