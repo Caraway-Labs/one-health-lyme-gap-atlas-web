@@ -578,6 +578,9 @@ export function ReviewNationalPicture({
       />
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">
+          <header className="ux-reset-ranked-counties-header">
+            <p className="ux-reset-ranked-counties-eyebrow">Counties</p>
+          </header>
           <div className="ux-reset-review-scope-field">
             <span className="type-small">Browse a state</span>
             <Select
@@ -654,6 +657,7 @@ export function ReviewNationalPicture({
             scenarios={scenarioByFips}
             scopeKey={listState ?? "ALL"}
             selectedFips={selectedFips}
+            showEyebrow={false}
             testId="national-published-county"
             onSelect={chooseCounty}
           />

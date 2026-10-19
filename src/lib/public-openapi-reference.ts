@@ -12,6 +12,7 @@ import { generateFilesOnly, type Document } from "fumadocs-openapi";
 import { createOpenAPI } from "fumadocs-openapi/server";
 import { parse, stringify } from "yaml";
 
+import { showsPendingDeliveryBadge } from "./endpoint-delivery";
 import {
   getDocsUrl,
   getPublishedApiOrigin,
@@ -1587,6 +1588,13 @@ function renderReferenceIndex(
   lines.push(
     `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaAnchors.size}).`
   );
+  if (
+    [...folderOperations.values()].some((entries) =>
+      entries.some((entry) => pendingDeliveryBadgeMarkup(entry.operation))
+    )
+  ) {
+    lines.splice(1, 0, PENDING_DELIVERY_BADGE_IMPORT, "");
+  }
   return `${lines.join("\n").trim()}\n`;
 }
 
@@ -1594,8 +1602,9 @@ function renderIndexOperations(tag: TagView, folder: string): string[] {
   const lines = [`#### ${escapeInline(tag.name)}`, ""];
   if (tag.description) lines.push(escapeMdx(tag.description), "");
   for (const operation of tag.operations) {
+    const badge = pendingDeliveryBadgeMarkup(operation);
     lines.push(
-      `- [\`${operation.method} ${operation.path}\`](/docs/api-reference/${folder}/${operation.operationId}) — ${escapeInline(operation.summary)} — \`${operation.operationId}\``
+      `- [\`${operation.method} ${operation.path}\`](/docs/api-reference/${folder}/${operation.operationId}) — ${escapeInline(operation.summary)} — \`${operation.operationId}\`${badge ? ` ${badge}` : ""}`
     );
   }
   lines.push("");
@@ -1612,25 +1621,29 @@ function renderTagIndex(folder: string, entries: LocatedOperation[]): string {
     "Generated from the public OpenAPI contract.",
     "",
   ];
+  const imports: string[] = [];
   if (
     entries.some((entry) => renderCountyReportTemplateGuide(entry.operation))
   ) {
-    lines.splice(
-      1,
-      0,
-      'import { Tab, Tabs } from "fumadocs-ui/components/tabs";',
-      ""
-    );
+    imports.push('import { Tab, Tabs } from "fumadocs-ui/components/tabs";');
+  }
+  if (entries.some((entry) => pendingDeliveryBadgeMarkup(entry.operation))) {
+    imports.push(PENDING_DELIVERY_BADGE_IMPORT);
+  }
+  if (imports.length > 0) {
+    lines.splice(1, 0, imports.join("\n"), "");
   }
   if (tag?.description) lines.push(escapeMdx(tag.description), "");
   if (tag?.externalDocs) lines.push(externalDocsLink(tag.externalDocs), "");
   for (const entry of entries) {
     const operation = entry.operation;
+    const badge = pendingDeliveryBadgeMarkup(operation);
     lines.push(
       `## ${escapeInline(operation.summary)} [#${operation.operationId}]`,
       "",
       `\`${operation.method} ${operation.path}\``,
       "",
+      ...(badge ? [badge, ""] : []),
       `Operation ID: \`${operation.operationId}\``,
       "",
       `[Parameters, responses, and schema](/docs/api-reference/${folder}/${operation.operationId}).`,
@@ -1750,7 +1763,20 @@ function enrichOperationPage(
   ) {
     document.data.description = operation.summary || operation.operationId;
   }
-  return joinGeneratedDocument(document.data, document.body);
+  const badge = pendingDeliveryBadgeMarkup(operation);
+  const body = badge
+    ? `${PENDING_DELIVERY_BADGE_IMPORT}\n\n${badge}\n\n${document.body.trim()}`
+    : document.body;
+  return joinGeneratedDocument(document.data, body);
+}
+
+const PENDING_DELIVERY_BADGE_IMPORT =
+  'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";';
+
+function pendingDeliveryBadgeMarkup(operation: OperationView): string {
+  return showsPendingDeliveryBadge(operation.method, operation.path)
+    ? "<EndpointDeliveryBadge />"
+    : "";
 }
 
 function operationIndexContents(operation: OperationView): string[] {
