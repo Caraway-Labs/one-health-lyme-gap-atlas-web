@@ -55,6 +55,7 @@ function PopulationRuralityMeasureBody({
       if (view.selection) {
         return (
           <KnownEmptySelectionNotice
+            omitCaveats
             selections={[view.selection]}
             testId={`population-known-empty-${view.measureId}`}
           />
@@ -62,7 +63,7 @@ function PopulationRuralityMeasureBody({
       }
       return (
         <AtlasStatusMessage tone="empty">
-          {`No governed observation was returned for ${measureClaim(view.measureId)}. That absence is not zero.`}
+          {`No governed observation was returned for ${measureClaim(view.measureId)}.`}
         </AtlasStatusMessage>
       );
     }
@@ -74,7 +75,13 @@ function PopulationRuralityMeasureBody({
       );
     }
     case "ready": {
-      return <EvidenceObject model={view.presentation.evidence} showReason />;
+      return (
+        <EvidenceObject
+          model={view.presentation.evidence}
+          showGovernedLimitations={false}
+          showReason
+        />
+      );
     }
     default: {
       const exhaustive: never = view;
@@ -145,13 +152,13 @@ export function PopulationRuralityContextSection({
   if (!status && loadingCount > 0) {
     liveText = `Loading population and rurality context for county ${fips}.`;
   } else if (!status && failedCount > 0 && readyCount > 0) {
-    liveText = `Population and rurality context is partial for county ${fips}. A failed measure is not zero.`;
+    liveText = `Population and rurality context is partial for county ${fips}.`;
   } else if (
     !status &&
     context.measures.length > 0 &&
     absentCount === context.measures.length
   ) {
-    liveText = `Population and rurality context finished for county ${fips}. No governed observations were returned. That absence is not zero.`;
+    liveText = `Population and rurality context finished for county ${fips}. No governed observations were returned.`;
   } else if (!status && readyCount === context.measures.length) {
     liveText = `Population and rurality context loaded for county ${fips}.`;
   }
@@ -165,7 +172,7 @@ export function PopulationRuralityContextSection({
       id={EXPLORER_SECTION_IDS.populationRurality}
     >
       <AtlasSectionHeader
-        description="Descriptive rurality, population, and socioeconomic context for this county. Human, vector, and pathogen surveillance stay the primary evidence. Rural-urban codes stay categories. Population is a count of people. Social vulnerability and the uninsured percentile stay on a 0 to 1 scale. The uninsured percentage is a percent of people. These values do not change the gap score and are not a disease predictor."
+        description="Rural-urban codes stay categories. Population is a count of people. Social vulnerability and the uninsured percentile stay on a 0 to 1 scale. The uninsured percentage is a percent of people."
         eyebrow="Context"
         headingLevel="h2"
         title="Population & Rurality Context"
@@ -189,7 +196,7 @@ export function PopulationRuralityContextSection({
           {failedCount > 0 && readyCount > 0 ? (
             <AtlasStatusMessage tone="error">
               Some population and rurality measures did not load. Loaded
-              measures stay visible. A failed measure is not zero.
+              measures stay visible.
             </AtlasStatusMessage>
           ) : null}
           <div className="ux-reset-population-rurality-measures">

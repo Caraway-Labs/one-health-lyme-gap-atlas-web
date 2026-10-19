@@ -2792,7 +2792,10 @@ describe("Reset Review scope UI", () => {
     });
     expect(
       screen.getByTestId("review-preview-qualification").textContent
-    ).toContain("Collection dates are unavailable");
+    ).toContain("Limited");
+    expect(
+      screen.getByTestId("review-preview-qualification").textContent
+    ).not.toContain("Collection dates are unavailable");
     expect(screen.getByTestId("review-observed-basis").textContent).toContain(
       "Borrelia burgdorferi sensu stricto"
     );
@@ -2904,7 +2907,7 @@ describe("Reset Review scope UI", () => {
       </QueryClientProvider>
     );
     const view = render(panel(limited));
-    const limitedNote = screen.getByRole("note").textContent;
+    const limitedNote = screen.queryByRole("note");
     const limitedText =
       screen.getByTestId("review-preview-qualification").textContent ?? "";
     const limitedWhy = screen.getByTestId("review-preview-why").textContent;
@@ -2912,9 +2915,7 @@ describe("Reset Review scope UI", () => {
     const suppressedLabel = screen.getByTestId(
       "review-preview-qualification"
     ).textContent;
-    const suppressedReason = screen.getByText(
-      "Suppressed or privacy-protected"
-    ).textContent;
+    const suppressedReason = screen.queryByRole("note");
     const evidenceBadge = () =>
       screen
         .getByTestId("review-preview-qualification")
@@ -2933,12 +2934,14 @@ describe("Reset Review scope UI", () => {
       suppressedReason,
     }).toStrictEqual({
       emptyBadge: "Unavailable",
-      limitedNote: "Some scored inputs are unavailable in this release.",
+      limitedNote: null,
       limitedText: expect.stringContaining("Limited"),
       limitedWhy: "Lower review priority",
       partialBadge: "Limited",
-      suppressedLabel: expect.stringContaining("Limited"),
-      suppressedReason: "Suppressed or privacy-protected",
+      suppressedLabel: expect.stringContaining(
+        "Suppressed or privacy-protected"
+      ),
+      suppressedReason: null,
     });
   });
 

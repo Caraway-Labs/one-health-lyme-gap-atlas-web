@@ -321,8 +321,7 @@ describe("Explorer map observations", () => {
       availability: screen.getByTestId("ux-reset-evidence-object").dataset
         .evidenceAvailability,
       inspect: screen.getByTestId("evidence-provenance-inspect").textContent,
-      limitations: screen.getByTestId("evidence-provenance-limitations")
-        .textContent,
+      limitations: screen.queryByTestId("evidence-provenance-limitations"),
       suppressedAvailability: suppressedPaint.selectionEvidence?.availability,
       suppressedReason: suppressedPaint.selectionEvidence?.reasonCode,
       suppressedRef:
@@ -330,9 +329,7 @@ describe("Explorer map observations", () => {
     }).toStrictEqual({
       availability: "limited",
       inspect: expect.stringContaining("Inspect provenance"),
-      limitations: expect.stringContaining(
-        "Counts below 10 are suppressed in the source table."
-      ),
+      limitations: null,
       suppressedAvailability: "limited",
       suppressedReason: ValueState.SUPPRESSED,
       suppressedRef: "prov",

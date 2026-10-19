@@ -296,7 +296,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await expect(review).toContainText("Model-assisted");
     await expect(review).toContainText("Sufficient");
     await expect(review).toContainText("Publisher reports pathogen Present.");
-    await expect(review).toContainText(
+    await expect(review).not.toContainText(
       "not disease risk or predicted incidence"
     );
     await expect(page.getByTestId("review-preview-why")).toContainText(
@@ -322,7 +322,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await expect(investigate).toContainText(
       "Publisher reports pathogen Present."
     );
-    await expect(investigate).toContainText(
+    await expect(investigate).not.toContainText(
       "does not replace governed evidence"
     );
     await expect(page.getByTestId("investigate-evidence")).toBeVisible();

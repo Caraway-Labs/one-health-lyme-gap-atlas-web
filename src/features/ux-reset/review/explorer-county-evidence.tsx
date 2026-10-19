@@ -306,9 +306,6 @@ export function ExplorerCountyEvidence({
     workspace.identity?.fips === workspace.requestedFips
       ? workspace.identity.label
       : (workspace.requestedFips ?? "Choose a county");
-  const candidateLimitations =
-    followUp.status === "candidate" ? followUp.limitations : [];
-  const leadLimitation = candidateLimitations[0] ?? null;
   const followUpStatus = followUpPanelStatus({
     countyRecordAbsent: workspace.countyRecordAbsent,
     countyRecordError: workspace.countyRecordError,
@@ -401,28 +398,11 @@ export function ExplorerCountyEvidence({
             {followUp.rationale}
           </p>
         ) : null}
-        {leadLimitation ? (
-          <p className="type-body" data-testid="explorer-summary-limitation">
-            {leadLimitation}
-          </p>
-        ) : null}
-        {candidateLimitations.length > 0 ? (
-          <details
-            className="ux-reset-explorer-disclosure"
-            data-testid="explorer-review-limitations"
-          >
-            <summary>Review limitations</summary>
-            <ul>
-              {candidateLimitations.map((limitation) => (
-                <li key={limitation}>{limitation}</li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
         {workspace.requestedFips ? (
           <Tier1SurveillancePriority
             fips={workspace.requestedFips}
             headingLevel="h3"
+            showInterpretiveNotes={false}
             release={tier1ReleaseFromMetadata({
               isError:
                 Boolean(workspace.metadataError) ||
@@ -578,6 +558,7 @@ export function ExplorerCountyEvidence({
             countyRecordLoading={hierarchy.countyRecordLoading}
             countyRecordRefreshError={hierarchy.countyRecordRefreshError}
             measures={workspace.measures}
+            omitDisclaimers
             retrying={workspace.evidenceFetching}
             onRetryFailures={
               workspace.bundle && workspace.bundle.measureFailures.length > 0
@@ -616,8 +597,7 @@ export function ExplorerCountyEvidence({
           />
           <p className="type-body">
             Context and gaps stay with this county&apos;s evidence request. They
-            are not shown until that request settles, and a failed request is
-            not a gap in the county. Missing or suppressed values are not zero.
+            are not shown until that request settles.
           </p>
         </section>
       )}

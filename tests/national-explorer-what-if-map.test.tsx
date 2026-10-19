@@ -319,7 +319,7 @@ describe("national Explorer what-if map", () => {
       headingOmitsRelease: false,
       labelFor: "explorer-map-layer",
       order: [...order].toSorted((left, right) => left - right),
-      provenance: "Source periods vary by evidence · Release alpha-2026",
+      provenance: "Release alpha-2026",
     });
     expect(fit).toHaveAccessibleName("Fit geography (United States)");
     expect(fit).toHaveAccessibleName(expect.stringContaining(visibleLabel));

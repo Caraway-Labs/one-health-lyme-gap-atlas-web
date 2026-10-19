@@ -21,12 +21,15 @@ type EvidenceStateStripProps = {
     EvidenceObjectModel,
     "availability" | "reasonCode" | "provenance"
   >;
+  /** Atlas Explorer hides the material-caveat sentence. */
+  showCaveat?: boolean;
   showReason?: boolean;
 };
 
 export function EvidenceStateStrip({
   className,
   model,
+  showCaveat = true,
   showReason = false,
 }: EvidenceStateStripProps) {
   const { availability, provenance, reasonCode } = model;
@@ -64,7 +67,7 @@ export function EvidenceStateStrip({
           <dd>{provenance.evidenceType}</dd>
         </div>
       </dl>
-      {provenance.materialCaveat ? (
+      {showCaveat && provenance.materialCaveat ? (
         <p className="ux-reset-evidence-caveat type-small" role="note">
           {provenance.materialCaveat}
         </p>
@@ -78,6 +81,8 @@ type ReleaseEvidenceStateStripProps = {
   context?: ReleaseEvidenceContextModel | null;
   errorMessage?: string | null;
   loadState: ReleaseEvidenceLoadState;
+  /** Atlas Explorer hides the release limitation sentence. */
+  showLimitation?: boolean;
 };
 
 /** Release-level strip for Reset pages that share one governed snapshot. */
@@ -86,6 +91,7 @@ export function ReleaseEvidenceStateStrip({
   context = null,
   errorMessage = null,
   loadState,
+  showLimitation = true,
 }: ReleaseEvidenceStateStripProps) {
   if (loadState === releaseEvidenceLoadStateValues.loading) {
     return (
@@ -147,7 +153,7 @@ export function ReleaseEvidenceStateStrip({
           <dd>{context.methodologyLabel}</dd>
         </div>
       </dl>
-      {context.limitation ? (
+      {showLimitation && context.limitation ? (
         <p className="ux-reset-evidence-caveat type-small" role="note">
           {context.limitation}
         </p>

@@ -19,6 +19,7 @@ function ClaimProvenance({ model }: { model: EvidenceObjectModel }) {
         contentSurface="source_card"
         provenance={model.provenance}
         reasonCode={model.reasonCode}
+        showLimitations={false}
         summaryLabel={summaryLabel}
       />
     );
@@ -27,6 +28,7 @@ function ClaimProvenance({ model }: { model: EvidenceObjectModel }) {
     <EvidenceProvenanceInspect
       contentSurface="source_card"
       provenance={model.provenance}
+      showLimitations={false}
       stateLabel={evidenceAvailabilityLabel(model.availability)}
       summaryLabel={summaryLabel}
     />

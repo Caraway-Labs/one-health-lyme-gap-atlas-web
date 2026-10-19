@@ -178,7 +178,7 @@ test.describe("Ranking influence", () => {
       preview.getByTestId("selected-county-gap-score")
     ).toContainText("7.6");
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
-      "not zero cases"
+      "No county-linked 2023 Lyme case record is available."
     );
     await expect(preview.getByTestId("review-rationale-6")).toBeVisible();
     const influence = preview.getByTestId("ranking-influence");
