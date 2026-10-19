@@ -258,6 +258,7 @@ type RouteOptions = {
   errorFips?: string;
   observations?: (fips: string, measureId: string) => Observation[];
   onLateArrival?: () => void;
+  onLateSettled?: () => void;
   releaseLate?: Promise<void>;
   states?: { code: string; name: string }[];
 };
@@ -379,7 +380,8 @@ async function installExplorer(page: Page, options: RouteOptions) {
       });
       return;
     }
-    if (fips === options.delayFips) {
+    const delayThisResponse = fips === options.delayFips;
+    if (delayThisResponse) {
       options.onLateArrival?.();
       if (options.releaseLate) {
         await options.releaseLate;
@@ -390,6 +392,9 @@ async function installExplorer(page: Page, options: RouteOptions) {
       json: { data, links: { self: "/v1/observations" }, meta: {} },
       status: 200,
     });
+    if (delayThisResponse) {
+      options.onLateSettled?.();
+    }
   });
 }
 
@@ -611,14 +616,27 @@ test.describe("Explorer same-route history during hydration", () => {
     await page.evaluate((flag) => {
       window.sessionStorage.setItem(flag, "hold");
     }, HYDRATION_FLAG);
+    const recoveryDocuments: string[] = [];
+    page.on("request", (request) => {
+      if (
+        request.resourceType() === "document" &&
+        request.url().includes(`county=${DENVER}`)
+      ) {
+        recoveryDocuments.push(request.url());
+      }
+    });
     await page.reload();
     await expectHydrationSettled(page, { county: "Denver", fips: DENVER });
     await expect(page.getByTestId("review-county-preview")).not.toContainText(
       "Boulder"
     );
-    // Back from the reloaded document commits after HistoryUpdater's
-    // replaceState. The recorded traversal must win over the loaded county.
+    // Back is invoked while the reloaded county is still current. Recovery
+    // then loads the browser-selected county as its own document.
+    expect(recoveryDocuments.length).toBeGreaterThan(0);
     const trace = await readHydrationTrace(page);
+    expect(trace[0]?.before).toContain(`county=${BOULDER}`);
+    expect(trace[0]?.afterBack).toContain(`county=${BOULDER}`);
+    expect(trace[0]?.write).toContain(`county=${BOULDER}`);
     await testInfo.attach("hydration-back-trace", {
       body: JSON.stringify(trace, null, 2),
       contentType: "application/json",
@@ -1111,6 +1129,8 @@ test.describe("Explorer evidence-state accessibility", () => {
       releaseLate = resolve;
     });
     let lateArrived = false;
+    let latePending = 0;
+    let lateSettled = 0;
     await installExplorer(page, {
       counties: evidenceCounties,
       delayFips: LATE_A,
@@ -1118,6 +1138,10 @@ test.describe("Explorer evidence-state accessibility", () => {
       observations: evidenceObservations,
       onLateArrival: () => {
         lateArrived = true;
+        latePending += 1;
+      },
+      onLateSettled: () => {
+        lateSettled += 1;
       },
       releaseLate: late,
     });
@@ -1326,15 +1350,19 @@ test.describe("Explorer evidence-state accessibility", () => {
       "Late Bravo surveillance extract"
     );
     releaseLate();
+    await expect
+      .poll(() => latePending > 0 && lateSettled === latePending)
+      .toBe(true);
+    await expect(page).toHaveURL(new RegExp(`county=${LATE_B}`));
+    await expect(page.getByTestId("explorer-county-heading")).toHaveText(
+      "Late Bravo"
+    );
     await expect(page.getByTestId("explorer-county-evidence")).toContainText(
       "Late Bravo surveillance extract"
     );
     await expect(
       page.getByTestId("explorer-county-evidence")
     ).not.toContainText("Late Alpha surveillance extract");
-    await expect(page.getByTestId("explorer-county-heading")).toHaveText(
-      "Late Bravo"
-    );
   });
 
   test("keeps mobile county selection and evidence focus usable", async ({

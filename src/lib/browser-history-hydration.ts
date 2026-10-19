@@ -3,9 +3,11 @@
  * the App Router popstate listener exists. A Back/Forward in that gap updates
  * the address bar and then leaves the loaded document in place, including when
  * the traversal only changes the query on the same pathname. Reload the history
- * entry the browser already selected. A later replaceState may also try to
- * write the loaded document URL back; skip that write. Other same-page
- * replaceState calls still apply.
+ * entry the browser already selected. A traversal that already committed
+ * before this module loads is still displaced when the address bar differs
+ * from the loaded document by pathname, search, or hash. A later replaceState
+ * may also try to write the loaded document URL back; skip that write. Other
+ * same-page replaceState calls still apply.
  */
 
 let installed = false;
@@ -21,14 +23,6 @@ function navigationDocumentHref(): string {
     return entry.name;
   }
   return window.location.href;
-}
-
-function pathnameOf(href: string): string | null {
-  try {
-    return new URL(href, window.location.href).pathname;
-  } catch {
-    return null;
-  }
 }
 
 function sameHistoryTarget(left: string, right: string): boolean {
@@ -79,11 +73,7 @@ export function installBrowserHistoryHydrationGuard(
     reload(href);
   };
   nativeReplaceState = history.replaceState.bind(history);
-  const documentPath = pathnameOf(resolvedDocumentHref);
-  if (
-    documentPath !== null &&
-    documentPath !== pathnameOf(window.location.href)
-  ) {
+  if (!sameHistoryTarget(window.location.href, resolvedDocumentHref)) {
     displacedHref = window.location.href;
   }
 
