@@ -2695,6 +2695,50 @@
   margin-top: 0.45rem;
 }
 
+.ux-reset-ranking-influence {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.ux-reset-ranking-influence > summary {
+  cursor: pointer;
+  color: var(--navy);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.ux-reset-ranking-influence > summary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 2px;
+}
+
+.ux-reset-ranking-influence-body {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+}
+
+.ux-reset-ranking-influence-body p,
+.ux-reset-ranking-influence-body li {
+  margin: 0;
+  color: var(--atlas-muted-text);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.ux-reset-ranking-influence-body ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.ux-reset-ranking-influence-body a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
 .ux-reset-explorer-release,
 .ux-reset-review-result {
   padding: 0.75rem 0;
