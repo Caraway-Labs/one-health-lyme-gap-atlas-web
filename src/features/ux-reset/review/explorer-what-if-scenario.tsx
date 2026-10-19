@@ -1,9 +1,16 @@
 "use client";
 
+import { Info } from "lucide-react";
+
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { ScoringCalculationPreview } from "@/components/scoring-calculation-preview";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   adjustCountyScenarios,
   SCENARIO_CONTROL_RANGES,
@@ -20,10 +27,44 @@ import type { CountyScoreSummary } from "@/generated/models";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 
 const LIMITED_SCENARIO_REASON =
-  "Published incidence is not on this collection, so this change is limited.";
+  "This county has no published rate on this collection, so the score with your changes is unavailable. The published Atlas score stays in place.";
 
-export const EXPLORER_SCENARIO_IMPACT_MICROCOPY =
-  "Published scores are fixed official values. Adjusted values are browser-only exploratory calculations: a surveillance-review / Atlas gap-score scenario, not a personal Lyme disease-risk estimate or a new ML prediction. These categories are separate from Tier 1 ML surveillance-priority labels.";
+const SAFETY_FINDING_SUFFIX = " — Not a safety finding";
+
+export const EXPLORER_SCENARIO_HEADING = "Explore different scenarios";
+
+export const EXPLORER_SCENARIO_INTRO =
+  "See how different assumptions change which counties may warrant additional surveillance review.";
+
+export const EXPLORER_SCENARIO_EXAMPLE =
+  "Try exploring: What if tick and pathogen data carried more weight?";
+
+export const EXPLORER_SCENARIO_CAVEAT =
+  "These scores help identify counties for surveillance review. They do not measure individual Lyme disease risk or predict future cases.";
+
+export const EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT =
+  "A lower score does not mean Lyme disease is absent or that exposure cannot occur.";
+
+export const EXPLORER_SCENARIO_RECALCULATION =
+  "Changes to these settings recalculate county scores for exploration. They appear in the county list and Atlas score map but do not change published results.";
+
+export const EXPLORER_SCENARIO_WEIGHT_NOTE =
+  "This share of the context blend is tick and pathogen data. Community context is social vulnerability, insurance access, and rurality.";
+
+export const EXPLORER_SCENARIO_WEIGHT_TOOLTIP =
+  "Reported Lyme disease data is a separate multiplier. It is not part of these two percentages. Tick status is 60% of the tick-and-pathogen signal and pathogen presence is 40%. Those shares stay fixed. Community context is 50% social vulnerability, 30% uninsured share, and 20% rurality. The published default is 65% tick and pathogen data and 35% community context.";
+
+export const EXPLORER_SCENARIO_RATE_NOTE =
+  "This is a scoring reference point, not a validated strong or weak cutoff for Lyme disease.";
+
+export const EXPLORER_SCENARIO_RATE_TOOLTIP =
+  "A published rate at this reference point sets the case-data term to 0. A published rate of 0 sets that term to 100. Rates in between are scaled. The unit is cases per 100,000 people. The published default is 10 per 100,000, with a range of 5 to 25.";
+
+export const EXPLORER_SCENARIO_MISSING_NOTE =
+  "Used when a county has no published case count. A missing record is not zero cases.";
+
+export const EXPLORER_SCENARIO_MISSING_TOOLTIP =
+  "On the 0–100 case-data term, 100 matches a published rate of 0 and 0 matches a rate at or above the reference point. This number is that term when no county count was published. It is not a case count or an amount subtracted from the score. The published default is 75.";
 
 export type ExplorerWhatIfImpactState =
   | { status: "none" }
@@ -70,6 +111,7 @@ type ExplorerScenarioImpactView =
       governedLabel: string;
       governedPriority: string;
       kind: "definite";
+      lowerScore: boolean;
       priorityText: string;
       resultKind: "adjusted" | "unchanged";
     }
@@ -104,11 +146,21 @@ export function formatExplorerScenarioDelta(deltaPoints: number): string {
   return rounded > 0 ? `+${absolute} points` : `\u2212${absolute} points`;
 }
 
-function priorityChangeText(published: string, adjusted: string): string {
-  if (published === adjusted) {
-    return "Priority unchanged";
+/** Panel display name for an Atlas score band. Classification strings stay unchanged. */
+export function followUpCategoryLabel(priority: string): string {
+  if (priority.endsWith(SAFETY_FINDING_SUFFIX)) {
+    return priority.slice(0, -SAFETY_FINDING_SUFFIX.length);
   }
-  return `Priority changed: ${published} → ${adjusted}`;
+  return priority;
+}
+
+function priorityChangeText(published: string, adjusted: string): string {
+  const before = followUpCategoryLabel(published);
+  const after = followUpCategoryLabel(adjusted);
+  if (before === after) {
+    return "Follow-up category unchanged";
+  }
+  return `Follow-up category changed: ${before} → ${after}`;
 }
 
 function collectionSettingsRecord(
@@ -280,11 +332,10 @@ function definiteScenarioImpact(input: {
   governedPriority: string;
   resultKind: "adjusted" | "unchanged";
 }): ExplorerScenarioImpactView {
-  const deltaLabel = formatExplorerScenarioDelta(
-    Number(input.adjustedLabel) - Number(input.governedLabel)
-  );
+  const deltaPoints = Number(input.adjustedLabel) - Number(input.governedLabel);
+  const deltaLabel = formatExplorerScenarioDelta(deltaPoints);
   return {
-    accessibleLead: "Published to adjusted.",
+    accessibleLead: "Published Atlas score to the score with your changes.",
     adjustedLabel: input.adjustedLabel,
     adjustedPriority: input.adjustedPriority,
     collapsed: `${input.governedLabel} → ${input.adjustedLabel} · ${deltaLabel}`,
@@ -293,6 +344,7 @@ function definiteScenarioImpact(input: {
     governedLabel: input.governedLabel,
     governedPriority: input.governedPriority,
     kind: "definite",
+    lowerScore: deltaPoints < 0,
     priorityText: priorityChangeText(
       input.governedPriority,
       input.adjustedPriority
@@ -308,7 +360,7 @@ function presentReadyImpact(
   if (impact.scenario === null) {
     if (!impact.assumptionsChanged) {
       return {
-        collapsed: `Published score ${governedLabel} · No adjustments`,
+        collapsed: `Published Atlas score ${governedLabel} · No adjustments`,
         countyName: impact.countyName,
         governedLabel,
         governedPriority: impact.governedPriority,
@@ -327,7 +379,7 @@ function presentReadyImpact(
   switch (impact.scenario.kind) {
     case "limited": {
       return {
-        collapsed: `Published score ${governedLabel} · Adjusted scenario unavailable`,
+        collapsed: `Published Atlas score ${governedLabel} · Score with your changes unavailable`,
         countyName: impact.countyName,
         governedLabel,
         governedPriority: impact.governedPriority,
@@ -360,8 +412,9 @@ export function presentExplorerScenarioImpact(
     case "none": {
       return {
         collapsed:
-          "Select a county to compare its published and adjusted score",
-        expanded: "Select a county to compare its published and adjusted score",
+          "Select a county to compare its published Atlas score with the score using your changes.",
+        expanded:
+          "Select a county to compare its published Atlas score with the score using your changes.",
         kind: "placeholder",
         placeholder: "none",
       };
@@ -397,9 +450,25 @@ type ScenarioControlProps = {
   note: string;
   onChange: (value: number) => void;
   step: number;
+  technical: string;
   valueLabel: string;
   value: number;
+  weightShare?: number;
 };
+
+function weightValueLabel(share: number): string {
+  return `${share}% tick and pathogen data, ${100 - share}% community context`;
+}
+
+function WeightValue({ share }: { share: number }) {
+  return (
+    <strong>
+      {share}% tick and pathogen data
+      <br />
+      {100 - share}% community context
+    </strong>
+  );
+}
 
 function ImpactScoreCell({
   detail,
@@ -469,15 +538,18 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
           data-testid="explorer-scenario-impact"
         >
           <h2 id="explorer-scenario-impact-heading">
-            Scenario impact — {view.countyName}
+            How the changes affect {view.countyName}
           </h2>
           <dl className="ux-reset-explorer-scenario-impact-scores">
             <ImpactScoreCell
-              detail={view.governedPriority}
-              label="Published score"
+              detail={followUpCategoryLabel(view.governedPriority)}
+              label="Published Atlas score"
               value={view.governedLabel}
             />
-            <ImpactScoreCell label="Adjusted scenario" value="No adjustments" />
+            <ImpactScoreCell
+              label="Score with your changes"
+              value="No adjustments"
+            />
           </dl>
         </section>
       );
@@ -491,24 +563,33 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
           data-testid="explorer-scenario-impact"
         >
           <h2 id="explorer-scenario-impact-heading">
-            Scenario impact — {view.countyName}
+            How the changes affect {view.countyName}
           </h2>
           <dl className="ux-reset-explorer-scenario-impact-scores">
             <ImpactScoreCell
-              detail={view.governedPriority}
-              label="Published score"
+              label="Published Atlas score"
               value={view.governedLabel}
             />
             <ImpactScoreCell
-              detail={view.adjustedPriority}
-              label="Adjusted scenario"
+              label="Score with your changes"
               value={view.adjustedLabel}
             />
-            <ImpactScoreCell label="Change" value={view.deltaLabel} />
+            <ImpactScoreCell label="Change in points" value={view.deltaLabel} />
           </dl>
-          <p className="ux-reset-explorer-scenario-impact-priority">
+          <p
+            className="ux-reset-explorer-scenario-impact-priority"
+            data-testid="explorer-scenario-category"
+          >
             {view.priorityText}
           </p>
+          {view.lowerScore ? (
+            <p
+              className="ux-reset-explorer-scenario-impact-note"
+              data-testid="explorer-scenario-lower-score"
+            >
+              {EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT}
+            </p>
+          ) : null}
         </section>
       );
     }
@@ -521,18 +602,18 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
           data-testid="explorer-scenario-impact"
         >
           <h2 id="explorer-scenario-impact-heading">
-            Scenario impact — {view.countyName}
+            How the changes affect {view.countyName}
           </h2>
           <dl className="ux-reset-explorer-scenario-impact-scores">
             <ImpactScoreCell
-              detail={view.governedPriority}
-              label="Published score"
+              detail={followUpCategoryLabel(view.governedPriority)}
+              label="Published Atlas score"
               value={view.governedLabel}
             />
             <ImpactScoreCell
               detail={view.reason}
-              label="Adjusted scenario"
-              value="Adjusted scenario unavailable"
+              label="Score with your changes"
+              value="Unavailable"
             />
           </dl>
         </section>
@@ -552,18 +633,49 @@ function ScenarioControl({
   note,
   onChange,
   step,
+  technical,
   value,
   valueLabel,
+  weightShare,
 }: ScenarioControlProps) {
   const noteId = `explorer-scenario-${label.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
+  const controlId = `${noteId}-control`;
   return (
-    <label className="ux-reset-explorer-scenario-control">
-      <span>{label}</span>
-      <strong>{valueLabel}</strong>
+    <div className="ux-reset-explorer-scenario-control">
+      <div className="ux-reset-explorer-scenario-control-label">
+        <label htmlFor={controlId}>{label}</label>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={`Technical note for ${label}`}
+                className="ux-reset-explorer-scenario-info"
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              />
+            }
+          >
+            <Info />
+          </TooltipTrigger>
+          <TooltipContent
+            className="max-w-sm text-left whitespace-normal"
+            side="top"
+          >
+            {technical}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      {weightShare === undefined ? (
+        <strong>{valueLabel}</strong>
+      ) : (
+        <WeightValue share={weightShare} />
+      )}
       <Slider
         aria-describedby={noteId}
         aria-label={label}
         aria-valuetext={valueLabel}
+        id={controlId}
         max={max}
         min={min}
         step={step}
@@ -573,7 +685,56 @@ function ScenarioControl({
         }}
       />
       <small id={noteId}>{note}</small>
-    </label>
+    </div>
+  );
+}
+
+function ScenarioMethods() {
+  return (
+    <details
+      className="ux-reset-explorer-scenario-methods"
+      data-testid="explorer-scenario-methods"
+    >
+      <summary>How these scenarios work</summary>
+      <div className="ux-reset-explorer-scenario-methods-body">
+        <p>
+          The score multiplies a case-data term by a blend of tick and pathogen
+          data and community context. The weight slider sets that blend.
+          Reported Lyme disease data supplies the case-data term.
+        </p>
+        <p>
+          The rate reference point scales a published county rate onto the
+          case-data term. It is a scoring reference. Counties at or above the
+          reference point do not get a higher score from low case data.
+        </p>
+        <p>
+          Counties without a published case count use the missing-data
+          assumption. A missing record is not zero cases. If you raise the
+          reference point and this view has no published rate for a county whose
+          case-data term is already 0, the score with your changes is
+          unavailable and the published Atlas score stays.
+        </p>
+        <p>
+          On a state view, the county list updates for counties in that state.
+          On the United States view, it updates for counties in the lower 48
+          states and the District of Columbia. The Atlas score map updates
+          colors for those same counties while the Atlas gap score layer is
+          selected. Other map layers keep published colors. Counties the change
+          does not affect keep the published Atlas score.
+        </p>
+        <p>
+          These settings stay in the page address so you can share the scenario.
+          They are not saved as published Atlas results.
+        </p>
+        <p>
+          Follow-up categories are the Atlas score bands: Priority 1 —
+          Investigate at 70 and above, Priority 2 — Review from 50 to less than
+          70, Watch — Monitor signals from 30 to less than 50, and Lower Atlas
+          priority below 30. These bands are separate from Tier 1 ML
+          surveillance-priority labels.
+        </p>
+      </div>
+    </details>
   );
 }
 
@@ -600,7 +761,7 @@ export function ExplorerWhatIfScenario({
         >
           <p>
             The published scores could not be loaded. This is a request failure,
-            not missing evidence.
+            not missing data.
           </p>
           {onRetryScores ? (
             <Button
@@ -623,14 +784,12 @@ export function ExplorerWhatIfScenario({
       >
         <summary data-testid="explorer-what-if-summary">
           <span className="ux-reset-explorer-scenario-heading">
-            <span>What-if scenario</span>
-            <small>Scoring calculation · exploratory assumptions</small>
+            <span>{EXPLORER_SCENARIO_HEADING}</span>
           </span>
-          <ScoringCalculationPreview settings={settings} />
           <ScenarioImpactSummary view={impactView} />
           <span className="ux-reset-explorer-scenario-affordance">
             <span className="ux-reset-explorer-scenario-affordance-closed">
-              View &amp; adjust assumptions
+              Adjust assumptions
             </span>
             <span className="ux-reset-explorer-scenario-affordance-open">
               Hide assumptions
@@ -642,75 +801,70 @@ export function ExplorerWhatIfScenario({
           </span>
         </summary>
         <div className="ux-reset-explorer-scenario-body">
-          <p>
-            The score combines the published human surveillance signal with{" "}
-            <strong>
-              {settings.ecological_share}% tick and pathogen evidence
-            </strong>{" "}
-            and{" "}
-            <strong>{`${100 - settings.ecological_share}% community context.`}</strong>{" "}
-            Missing county records are never treated as zero cases. Moving a
-            slider recalculates an adjusted scenario in this browser for the
-            counties in view. The governed score stays the published value.
+          <p>{EXPLORER_SCENARIO_INTRO}</p>
+          <p
+            className="ux-reset-explorer-scenario-example"
+            data-testid="explorer-scenario-example"
+          >
+            {EXPLORER_SCENARIO_EXAMPLE}
           </p>
-          <p>
-            This is a follow-up priority calculation for surveillance review. It
-            is not a diagnosis, an individual exposure estimate, or a prediction
-            of future cases. Adjusted values are not written to the release.
-          </p>
-          <p>
-            County list scores update with these assumptions. Map colors update
-            on the Atlas gap score layer. This scores collection does not
-            include published incidence. Raising the threshold leaves counties
-            whose governed human signal is already 0 with an unavailable
-            adjusted result, and the governed score stays in place. A missing
-            incidence is not treated as zero.
-          </p>
+          <TooltipProvider delay={300}>
+            <div className="ux-reset-explorer-scenario-controls">
+              <ScenarioControl
+                label="Weight given to tick and pathogen data"
+                max={SCENARIO_CONTROL_RANGES.ecological_share.max}
+                min={SCENARIO_CONTROL_RANGES.ecological_share.min}
+                note={EXPLORER_SCENARIO_WEIGHT_NOTE}
+                step={SCENARIO_CONTROL_RANGES.ecological_share.step}
+                technical={EXPLORER_SCENARIO_WEIGHT_TOOLTIP}
+                value={settings.ecological_share}
+                valueLabel={weightValueLabel(settings.ecological_share)}
+                weightShare={settings.ecological_share}
+                onChange={(value) => {
+                  onChange({ ...settings, ecological_share: value });
+                }}
+              />
+              <ScenarioControl
+                label="Reported Lyme disease rate reference point"
+                max={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.max}
+                min={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.min}
+                note={EXPLORER_SCENARIO_RATE_NOTE}
+                step={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.step}
+                technical={EXPLORER_SCENARIO_RATE_TOOLTIP}
+                value={settings.low_incidence_breakpoint}
+                valueLabel={`${settings.low_incidence_breakpoint} per 100,000`}
+                onChange={(value) => {
+                  onChange({ ...settings, low_incidence_breakpoint: value });
+                }}
+              />
+              <ScenarioControl
+                label="Assumption for missing county case data"
+                max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
+                min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
+                note={EXPLORER_SCENARIO_MISSING_NOTE}
+                step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
+                technical={EXPLORER_SCENARIO_MISSING_TOOLTIP}
+                value={settings.missing_human_weakness}
+                valueLabel={String(settings.missing_human_weakness)}
+                onChange={(value) => {
+                  onChange({ ...settings, missing_human_weakness: value });
+                }}
+              />
+            </div>
+          </TooltipProvider>
           <ScenarioImpactDetails view={impactView} />
           <p
             className="type-small ux-reset-explorer-scenario-impact-note"
-            data-testid="explorer-scenario-impact-microcopy"
+            data-testid="explorer-scenario-caveat"
           >
-            {EXPLORER_SCENARIO_IMPACT_MICROCOPY}
+            {EXPLORER_SCENARIO_CAVEAT}
           </p>
-          <div className="ux-reset-explorer-scenario-controls">
-            <ScenarioControl
-              label="Tick and pathogen share"
-              max={SCENARIO_CONTROL_RANGES.ecological_share.max}
-              min={SCENARIO_CONTROL_RANGES.ecological_share.min}
-              note="Balances tick and pathogen evidence with community context."
-              step={SCENARIO_CONTROL_RANGES.ecological_share.step}
-              value={settings.ecological_share}
-              valueLabel={`${settings.ecological_share}%`}
-              onChange={(value) => {
-                onChange({ ...settings, ecological_share: value });
-              }}
-            />
-            <ScenarioControl
-              label="Published-record threshold"
-              max={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.max}
-              min={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.min}
-              note="At this published incidence value, the human-signal weakness is zero."
-              step={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.step}
-              value={settings.low_incidence_breakpoint}
-              valueLabel={`${settings.low_incidence_breakpoint} per 100,000`}
-              onChange={(value) => {
-                onChange({ ...settings, low_incidence_breakpoint: value });
-              }}
-            />
-            <ScenarioControl
-              label="Missing county-record value"
-              max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
-              min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
-              note="Represents uncertainty where no county-level record is publishable."
-              step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
-              value={settings.missing_human_weakness}
-              valueLabel={String(settings.missing_human_weakness)}
-              onChange={(value) => {
-                onChange({ ...settings, missing_human_weakness: value });
-              }}
-            />
-          </div>
+          <p
+            className="type-small ux-reset-explorer-scenario-impact-note"
+            data-testid="explorer-scenario-recalculation"
+          >
+            {EXPLORER_SCENARIO_RECALCULATION}
+          </p>
           <Button
             data-testid="explorer-scenario-reset"
             disabled={atDefaults}
@@ -720,8 +874,9 @@ export function ExplorerWhatIfScenario({
               onChange(SCENARIO_SCORE_DEFAULTS);
             }}
           >
-            Reset to defaults
+            Reset
           </Button>
+          <ScenarioMethods />
         </div>
       </details>
     </>
