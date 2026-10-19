@@ -1,6 +1,4 @@
 import {
-  REVIEW_RATIONALE_INTRO,
-  REVIEW_RATIONALE_SCORE_NOTE,
   reviewRationaleFor,
   type ReviewRationaleItem,
 } from "@/features/ux-reset/review/review-rationale";
@@ -8,7 +6,7 @@ import type { CountyDetail } from "@/generated/models";
 
 function RationaleItem({ item }: { item: ReviewRationaleItem }) {
   return (
-    <li>
+    <li data-testid={`review-rationale-${item.number}`}>
       <span>{item.number}</span>
       <div>
         <h4>
@@ -32,25 +30,17 @@ export function ReviewRationalePanel({ detail }: { detail: CountyDetail }) {
   const community = items.filter((item) => item.group === "community");
   return (
     <section
-      aria-label="Review rationale"
+      aria-label="County evidence"
       className="ux-reset-review-rationale"
       data-testid="review-rationale"
     >
-      <p className="eyebrow">Review rationale</p>
-      <h3>Why it surfaced</h3>
-      <p className="ux-reset-review-rationale-intro">
-        {REVIEW_RATIONALE_INTRO}
-      </p>
-      <p className="ux-reset-review-rationale-note">
-        {REVIEW_RATIONALE_SCORE_NOTE}
-      </p>
-      <h4>Surveillance evidence</h4>
+      <h3>Surveillance evidence</h3>
       <ol>
         {surveillance.map((item) => (
           <RationaleItem item={item} key={item.number} />
         ))}
       </ol>
-      <h4>Community context</h4>
+      <h3>Community context</h3>
       <ol start={4}>
         {community.map((item) => (
           <RationaleItem item={item} key={item.number} />

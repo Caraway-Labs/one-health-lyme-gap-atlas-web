@@ -779,7 +779,6 @@ function ResetReviewExperienceInner() {
                 tierRelease={tierRelease}
                 onCountyChange={setCounty}
                 onMapLayerChange={setMapLayer}
-                onViewCountyEvidence={openCountyEvidence}
               />
             ) : null}
             {reviewReady && stateReview.review ? (

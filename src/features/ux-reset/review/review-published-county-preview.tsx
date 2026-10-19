@@ -2,27 +2,23 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import type { Ref } from "react";
 
+import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
-import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
-import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { formatGovernedEvidenceValue } from "@/features/ux-reset/evidence/value-state-contract";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
-import { CanonicalGeographyAvailabilityNotice } from "@/features/ux-reset/geography/canonical-geography-availability-notice";
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
-import {
-  mapPublishedRow,
-  publishedCountyHierarchy,
-  publishedCountyRecordFromDetail,
-} from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { mapPublishedRow } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { REVIEW_RATIONALE_SCORE_NOTE } from "@/features/ux-reset/review/review-rationale";
 import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
-import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
+import {
+  EXPLORER_MAP_FOLLOW_UP_ID,
+  scrollToSuggestedFollowUp,
+} from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
 import type { CountyDetail } from "@/generated/models";
 import { cn } from "@/lib/utils";
 
@@ -87,31 +83,27 @@ export function reviewHumanFloorEvidence(
   };
 }
 
+function publishedReviewPriority(priority: string): string | null {
+  const trimmed = priority.trim();
+  if (trimmed.length === 0 || trimmed.toLowerCase() === "unavailable") {
+    return null;
+  }
+  return trimmed;
+}
+
 export function ReviewPublishedCountyPreview({
   county,
   compareHref,
-  href,
   onOpen,
-  onViewCountyEvidence,
   openRef,
   releaseId,
 }: {
   county: ExploreCountyIdentity;
   compareHref: string;
-  href: string;
   onOpen: (fips: string) => void;
-  onViewCountyEvidence?: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   releaseId: string;
 }) {
-  const pathname = usePathname() ?? ATLAS_EXPLORER_PATH;
-  const searchParams = useSearchParams() ?? new URLSearchParams();
-  const askContext = useAskAtlasInheritedContext();
-  const askHref = askAtlasEntryHref({
-    context: askContext,
-    pathname,
-    searchParams,
-  });
   const query = useQuery({
     queryKey: ["ux-reset-review-published-county", releaseId, county.fips],
     queryFn: ({ signal }) =>
@@ -119,21 +111,7 @@ export function ReviewPublishedCountyPreview({
   });
   // Never present cached facts after a failed refresh as current evidence.
   const detail = query.isError ? null : query.data;
-  const floor = detail ? reviewHumanFloorEvidence(detail) : null;
-  const rows = detail
-    ? publishedCountyHierarchy({
-        measures: [],
-        observedMeasureIds: [],
-        record: publishedCountyRecordFromDetail(detail),
-      }).rows.filter((row) =>
-        [
-          "tick_status",
-          "scapularis_status",
-          "burgdorferi_status",
-          "population_2022",
-        ].includes(row.measureId)
-      )
-    : [];
+  const priority = detail ? publishedReviewPriority(detail.priority) : null;
   return (
     <Card
       aria-label={`Published county preview for ${county.county}, ${county.stateName}`}
@@ -146,66 +124,27 @@ export function ReviewPublishedCountyPreview({
       <h2 className="type-card">
         {county.county}, {county.stateName}
       </h2>
-      {detail ? <ReviewRationalePanel detail={detail} /> : null}
-      <div className="ux-reset-review-preview-support">
-        <p className="type-body">Review category unavailable</p>
-        <p className="type-small">
-          FIPS {county.fips} · Release {releaseId}
-        </p>
-        <CanonicalGeographyAvailabilityNotice fips={county.fips} />
-        <p className="type-body">
-          Published county evidence is available. Selecting a county is not
-          itself a review recommendation, and it is not a disease-risk estimate.
-        </p>
-        <div className="ux-reset-review-preview-actions">
-          {onViewCountyEvidence ? (
-            <Button
-              data-county={county.fips}
-              data-testid="review-view-county-evidence"
-              type="button"
-              onClick={() => {
-                onViewCountyEvidence(county.fips);
-              }}
-            >
-              View county evidence
-            </Button>
-          ) : null}
-          <Link
-            ref={openRef}
-            className={cn(
-              buttonVariants({ variant: "secondary" }),
-              "ux-reset-review-open"
-            )}
-            data-testid="review-investigate"
-            data-variant="secondary"
-            href={href}
-            onClick={() => onOpen(county.fips)}
-          >
-            County evidence
-          </Link>
-          <Link
-            className={cn(
-              buttonVariants({ variant: "secondary" }),
-              "ux-reset-review-open"
-            )}
-            data-testid="review-compare"
-            href={compareHref}
-            onClick={() => onOpen(county.fips)}
-          >
-            Compare this county
-          </Link>
-          <Link
-            className={cn(
-              buttonVariants({ variant: "secondary" }),
-              "ux-reset-review-open"
-            )}
-            data-testid="review-ask-atlas"
-            href={askHref}
-          >
-            Ask Atlas
-          </Link>
+      <p className="type-small" data-testid="review-preview-fips">
+        FIPS {county.fips}
+      </p>
+      {detail ? (
+        <div data-testid="review-preview-priority">
+          {priority ? (
+            <>
+              <AtlasPriorityBadge priority={priority} />
+              <p className="type-small">
+                Published review priority for follow-up. This is not a
+                disease-risk estimate.
+              </p>
+            </>
+          ) : (
+            <p className="type-body">
+              Review priority is unavailable for this county. Unavailable is not
+              a finding of no risk.
+            </p>
+          )}
         </div>
-      </div>
+      ) : null}
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">
           Loading published county evidence…
@@ -217,39 +156,83 @@ export function ReviewPublishedCountyPreview({
           is a request failure, not evidence absence.
         </AtlasStatusMessage>
       ) : null}
-      {detail === null && !query.isError ? (
+      {detail === null && !query.isPending && !query.isError ? (
         <AtlasStatusMessage tone="empty">
           No published county record was returned for this release.
         </AtlasStatusMessage>
       ) : null}
-      {detail && floor ? (
-        <>
-          <p className="type-body">{floor.displayValue}</p>
-          <p className="type-small">{floor.valueNote}</p>
+      {detail ? <ReviewRationalePanel detail={detail} /> : null}
+      {detail ? (
+        <details
+          className="ux-reset-explorer-score"
+          data-testid="review-sources-methods"
+        >
+          <summary>Sources & methods</summary>
           <p className="type-small">
-            Pathogen “No records” is not evidence of pathogen absence. Tick
-            establishment does not measure abundance.
+            Release {detail.release.release_id}. Methodology{" "}
+            {detail.release.methodology_version}.
           </p>
-          <details className="ux-reset-explorer-score">
-            <summary>Score and methodology</summary>
-            {rows.map((row) => (
-              <EvidenceObject
-                key={row.measureId}
-                model={row.evidence}
-                showReason
-              />
-            ))}
-            {detail.population === null ? (
-              <p>Population was not returned; it is not zero.</p>
-            ) : null}
-            <p className="type-small">{detail.release.limitations}</p>
+          <p className="type-small">
+            Release loaded {detail.release.loaded_at}. That timestamp is not an
+            observation period.
+          </p>
+          {detail.release.sources.length > 0 ? (
+            <ul>
+              {detail.release.sources.map((source) => (
+                <li key={source.key}>
+                  <p>
+                    {source.label}{" "}
+                    <span className="type-small">
+                      Source id {source.key}
+                      {source.vintage ? ` · ${source.vintage}` : ""}
+                    </span>
+                  </p>
+                  {source.note ? (
+                    <p className="type-small">{source.note}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
             <p className="type-small">
-              Release loaded {detail.release.loaded_at}. This is not an
-              observation period.
+              No source list was returned with this release.
             </p>
-          </details>
-        </>
+          )}
+          <p className="type-small">{REVIEW_RATIONALE_SCORE_NOTE}</p>
+          <p className="type-small">{detail.release.limitations}</p>
+          {detail.population === null ? (
+            <p>Population was not returned; it is not zero.</p>
+          ) : null}
+        </details>
       ) : null}
+      <div className="ux-reset-review-preview-actions">
+        <Button
+          aria-controls={EXPLORER_MAP_FOLLOW_UP_ID}
+          data-county={county.fips}
+          data-testid="review-view-county-follow-up"
+          type="button"
+          onClick={() => {
+            scrollToSuggestedFollowUp(
+              document.querySelector(`#${EXPLORER_MAP_FOLLOW_UP_ID}`)
+            );
+          }}
+        >
+          View County Follow-Up
+        </Button>
+        <Link
+          ref={openRef}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "ux-reset-review-open"
+          )}
+          data-testid="review-compare"
+          data-variant="outline"
+          href={compareHref}
+          onClick={() => onOpen(county.fips)}
+        >
+          Compare This County
+        </Link>
+      </div>
     </Card>
   );
 }

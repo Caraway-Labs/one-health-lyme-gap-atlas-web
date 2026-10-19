@@ -94,18 +94,47 @@ function pathogenSentence(detail: CountyDetail): string {
   return `The published B. burgdorferi status is ${detail.burgdorferi_status}. This is not a finding of pathogen absence.`;
 }
 
-function humanSentence(detail: CountyDetail): string {
+function publishedFloorCount(detail: CountyDetail): number | null {
   if (
-    detail.human_status === "published_count_floor" &&
-    finite(detail.incidence_floor_2023)
+    detail.human_status !== "published_count_floor" ||
+    !finite(detail.case_count_floor_2023) ||
+    detail.case_count_floor_2023 < 0
   ) {
-    const rate = detail.incidence_floor_2023.toLocaleString("en-US", {
-      maximumFractionDigits: 1,
-      minimumFractionDigits: 1,
-    });
-    return `The minimum rate supported by the published 2023 county data was ${rate} cases per 100,000. That floor is not a complete incidence estimate.`;
+    return null;
   }
-  return "No county-level 2023 Lyme case count was published. A missing record is not treated as zero cases.";
+  return detail.case_count_floor_2023;
+}
+
+function publishedFloorRate(detail: CountyDetail): string | null {
+  if (
+    detail.human_status !== "published_count_floor" ||
+    !finite(detail.incidence_floor_2023)
+  ) {
+    return null;
+  }
+  return detail.incidence_floor_2023.toLocaleString("en-US", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  });
+}
+
+function humanSentence(detail: CountyDetail): string {
+  const count = publishedFloorCount(detail);
+  const rate = publishedFloorRate(detail);
+  if (count === null && rate === null) {
+    return "No county-level 2023 Lyme case count was published. A missing record is not treated as zero cases.";
+  }
+  const parts: string[] = [];
+  if (count !== null) {
+    parts.push(
+      `The published 2023 case-count floor is ${count.toLocaleString("en-US")}.`
+    );
+  }
+  if (rate !== null) {
+    parts.push(`The published 2023 minimum rate is ${rate} cases per 100,000.`);
+  }
+  parts.push("A published floor is a minimum, not an exact count or rate.");
+  return parts.join(" ");
 }
 
 function sviSentence(detail: CountyDetail): string {
