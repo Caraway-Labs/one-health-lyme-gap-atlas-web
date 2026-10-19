@@ -323,7 +323,9 @@ describe("Explorer county evidence", () => {
     );
     const followUpText =
       screen.getByTestId("explorer-follow-up").textContent ?? "";
-    expect(screen.queryByTestId("explorer-summary-reason")).toBeNull();
+    expect(screen.getByTestId("explorer-summary-reason")).toHaveTextContent(
+      "Denver is included because the review method returned it."
+    );
     expect(followUpText).not.toMatch(
       /Denver is included because the review method returned it\.|2 weeks|within 60|Conduct targeted follow-up|Coordinate a local assessment/i
     );
@@ -525,8 +527,13 @@ describe("Explorer county evidence", () => {
     expect(
       screen.getByText("County evidence is temporarily unavailable.")
     ).toBeVisible();
-    expect(screen.queryByTestId("explorer-review-category")).toBeNull();
-    expect(screen.queryByText("Why review this county?")).toBeNull();
+    expect(screen.getByTestId("explorer-review-category")).toHaveTextContent(
+      "Review category is not shown because the review result did not load."
+    );
+    expect(
+      screen.getByRole("heading", { name: "Why review this county?" })
+    ).toBeVisible();
+    expect(screen.queryByTestId("explorer-summary-reason")).toBeNull();
     expect(screen.queryByTestId("investigate-evidence")).toBeNull();
   });
 
@@ -546,7 +553,9 @@ describe("Explorer county evidence", () => {
       />
     );
     expect(screen.getByText("Loading county evidence…")).toBeVisible();
-    expect(screen.queryByTestId("explorer-review-category")).toBeNull();
+    expect(screen.getByTestId("explorer-review-category")).toHaveTextContent(
+      "Review category is loading with the review result."
+    );
     expect(screen.queryByTestId("investigate-evidence")).toBeNull();
   });
 
@@ -577,13 +586,17 @@ describe("Explorer county evidence", () => {
       />
     );
     expect({
+      category: screen.getByTestId("explorer-review-category").textContent,
       firstLimitation: screen.queryByText(denverLimitations[0] ?? ""),
       heading: screen.queryByText("Review limitations"),
       list: screen.queryByTestId("explorer-review-limitations"),
+      reason: screen.getByTestId("explorer-summary-reason").textContent,
     }).toStrictEqual({
+      category: "Review category PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW.",
       firstLimitation: null,
       heading: null,
       list: null,
+      reason: "Denver is included because the review method returned it.",
     });
     view.rerender(
       <ExplorerCountyEvidence
@@ -617,10 +630,11 @@ describe("Explorer county evidence", () => {
       boulderLimitation: screen
         .getByTestId("explorer-follow-up")
         .textContent?.includes("Boulder limitation stays on Boulder."),
-      summaryReason: screen.queryByTestId("explorer-summary-reason"),
+      summaryReason: screen.getByTestId("explorer-summary-reason").textContent,
     }).toStrictEqual({
       boulderLimitation: false,
-      summaryReason: null,
+      summaryReason:
+        "Denver is included because the review method returned it.",
     });
   });
 

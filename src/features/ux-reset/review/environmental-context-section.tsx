@@ -87,7 +87,7 @@ function EnvironmentalMeasureBody({
         <>
           <EvidenceObject
             model={view.presentation.evidence}
-            showGovernedLimitations={false}
+            showCaveat={false}
             showReason
           />
           <dl className="ux-reset-environmental-meta">

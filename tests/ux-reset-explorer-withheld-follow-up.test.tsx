@@ -178,8 +178,10 @@ describe("withheld Explorer follow-up", () => {
       stubDesktopMatchMedia();
       reviewResult.resultState = resultState;
       const seen = `${await openedFollowUp("evidence")}\n${await openedFollowUp("follow-up")}`;
-      expect(seen).not.toContain("Review category is withheld");
-      expect(seen).not.toContain("Why review this county?");
+      expect(seen).toContain(
+        "Review category is withheld because this result does not publish candidates."
+      );
+      expect(seen).toContain("Why review this county?");
       expect(seen).not.toContain("Suggested follow-up is withheld");
       expect(seen).not.toMatch(withheldRecommendation);
     }
@@ -223,7 +225,7 @@ describe("withheld Explorer follow-up", () => {
     const followUp = await openedFollowUp("follow-up");
     const combined = `${evidence}\n${followUp}`;
     expect(combined).toContain("Denver");
-    expect(combined).not.toContain(REASON);
+    expect(combined).toContain(REASON);
     expect(combined).not.toContain(NEXT_CHECK);
   });
 });

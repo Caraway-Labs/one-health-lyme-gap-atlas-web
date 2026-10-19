@@ -16,6 +16,8 @@ type EvidenceObjectProps = {
   claimHeadingLevel?: ClaimHeadingLevel;
   contentSurface?: ContentSurface;
   model: EvidenceObjectModel;
+  /** Short strip sentence. Defaults to the limitations disclosure. */
+  showCaveat?: boolean;
   showGovernedLimitations?: boolean;
   showReason?: boolean;
 };
@@ -29,9 +31,11 @@ export function EvidenceObject({
   claimHeadingLevel = "h3",
   contentSurface = "source_card",
   model,
+  showCaveat,
   showGovernedLimitations = true,
   showReason = false,
 }: EvidenceObjectProps) {
+  const revealCaveat = showCaveat ?? showGovernedLimitations;
   const ClaimHeading = claimHeadingLevel;
   return (
     <Card
@@ -53,7 +57,7 @@ export function EvidenceObject({
       </div>
       <EvidenceStateStrip
         model={model}
-        showCaveat={showGovernedLimitations}
+        showCaveat={revealCaveat}
         showReason={showReason}
       />
       {model.reasonCode ? (

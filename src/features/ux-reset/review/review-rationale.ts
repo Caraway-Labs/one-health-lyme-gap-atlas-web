@@ -1,8 +1,5 @@
 import type { CountyDetail } from "@/generated/models";
 
-export const REVIEW_RATIONALE_SCORE_NOTE =
-  "These values describe the published record. They do not show how much each field changed this county’s gap score. The percentage uninsured is context; the score uses the uninsured percentile.";
-
 export type ReviewRationaleGroup = "surveillance" | "community";
 
 export interface ReviewRationaleItem {

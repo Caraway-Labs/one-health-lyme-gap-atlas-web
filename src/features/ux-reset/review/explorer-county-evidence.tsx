@@ -59,6 +59,35 @@ const SECTIONS = [
   ["Sources", EXPLORER_SECTION_IDS.sources],
 ] as const;
 
+function reviewCategoryCopy(followUp: ExplorerFollowUpState): string {
+  switch (followUp.status) {
+    case "loading": {
+      return "Review category is loading with the review result.";
+    }
+    case "request-failed": {
+      return "Review category is not shown because the review result did not load.";
+    }
+    case "not-in-scope": {
+      return "This scope did not load a state review category.";
+    }
+    case "candidate": {
+      return followUp.category
+        ? `Review category ${followUp.category}.`
+        : "No review category was returned for this county.";
+    }
+    case "factual": {
+      return "No review category was returned for this county.";
+    }
+    case "withheld": {
+      return "Review category is withheld because this result does not publish candidates.";
+    }
+    default: {
+      const exhaustive: never = followUp;
+      return exhaustive;
+    }
+  }
+}
+
 function publishedCountyObservationHold(
   workspace: InvestigateWorkspace,
   label: "environmental observations" | "population and rurality observations"
@@ -359,6 +388,15 @@ export function ExplorerCountyEvidence({
         <CanonicalGeographyAvailabilityNotice fips={workspace.requestedFips} />
         {followUpSelection ? (
           <ExplorerReviewPriority selection={followUpSelection} />
+        ) : null}
+        <h3>Why review this county?</h3>
+        <p className="type-body" data-testid="explorer-review-category">
+          {reviewCategoryCopy(followUp)}
+        </p>
+        {followUp.status === "candidate" && followUp.rationale ? (
+          <p className="type-body" data-testid="explorer-summary-reason">
+            {followUp.rationale}
+          </p>
         ) : null}
         {workspace.requestedFips ? (
           <Tier1SurveillancePriority

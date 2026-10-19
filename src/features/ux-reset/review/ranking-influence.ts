@@ -104,7 +104,7 @@ function humanNote(
 
 function tickNote(detail: RankingInfluenceCounty): string {
   if (documentedTick(detail.tick_status)) {
-    return "Published tick surveillance is an ecological input. A published status is not a measure of tick abundance, and no share of the score is shown.";
+    return "Published tick surveillance is an ecological input. No share of the score is shown.";
   }
   const status = normalized(detail.tick_status);
   if (status === "no records") {
@@ -118,7 +118,7 @@ function tickNote(detail: RankingInfluenceCounty): string {
 
 function pathogenNote(detail: RankingInfluenceCounty): string {
   if (pathogenPresent(detail.burgdorferi_status)) {
-    return "A published Borrelia burgdorferi detection is an ecological input. Detection is not a human infection estimate, and no share of the score is shown.";
+    return "A published Borrelia burgdorferi detection is an ecological input. No share of the score is shown.";
   }
   const status = normalized(detail.burgdorferi_status);
   if (status === "no records") {
