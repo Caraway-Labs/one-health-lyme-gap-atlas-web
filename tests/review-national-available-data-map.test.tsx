@@ -225,10 +225,6 @@ function nationalPicture(
         mapLayer="gap_score"
         period={null}
         releaseId="alpha-2026"
-        releaseStates={[
-          { code: "CO", name: "Colorado" },
-          { code: "NY", name: "New York" },
-        ]}
         tierRelease={{ status: "unknown" }}
         onCountyChange={options.onCountyChange ?? (() => {})}
         onMapLayerChange={() => {}}
@@ -262,6 +258,30 @@ describe("national available-data map source", () => {
     vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
       features: [box("08001", -105), box("36001", -74)],
       type: "FeatureCollection",
+    });
+  });
+
+  it("starts the county card at Choose a county without a local state filter", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(nationalPicture("all", client));
+    const card = document.querySelector(".ux-reset-explorer-list");
+    const heading = screen.getByRole("heading", { name: "Choose a county" });
+    expect({
+      browseLabel: screen.queryByText("Browse a state"),
+      browseState: screen.queryByTestId("national-browse-state"),
+      chooseState: screen.queryByText("Choose a state"),
+      eyebrow: card?.querySelector(".ux-reset-ranked-counties-eyebrow") ?? null,
+      firstHeading: card?.querySelector("h1, h2, h3") ?? null,
+      headingInCard: card?.contains(heading) ?? false,
+    }).toStrictEqual({
+      browseLabel: null,
+      browseState: null,
+      chooseState: null,
+      eyebrow: null,
+      firstHeading: heading,
+      headingInCard: true,
     });
   });
 

@@ -1406,8 +1406,11 @@ describe("Review operating picture state", () => {
     );
     const rows = await screen.findAllByTestId("review-candidate");
     const heading = screen.getByRole("heading", { name: "Choose a county" });
+    const list = document.querySelector(".ux-reset-explorer-list");
     expect({
       asksForChoice: heading.textContent === "Choose a county",
+      eyebrow: list?.querySelector(".ux-reset-ranked-counties-eyebrow") ?? null,
+      firstHeading: list?.querySelector("h1, h2, h3")?.textContent ?? "",
       current: rows.map((row) => row.getAttribute("aria-current")),
       fips: rows.map((row) => row.dataset.fips),
       highlight: screen.getByTestId("review-state-map-region").dataset
@@ -1416,6 +1419,8 @@ describe("Review operating picture state", () => {
       published: onCountyChange.mock.calls,
     }).toStrictEqual({
       asksForChoice: true,
+      eyebrow: null,
+      firstHeading: "Choose a county",
       current: [null, null],
       fips: ["08001", "08013"],
       highlight: "",
