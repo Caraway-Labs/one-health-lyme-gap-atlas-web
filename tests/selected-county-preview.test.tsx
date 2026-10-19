@@ -115,6 +115,12 @@ describe("selected county preview", () => {
       fips,
       followUp: screen.getByRole("button", { name: "View County Follow-Up" })
         .textContent,
+      influenceAfterEvidence:
+        screen.getByTestId("ranking-influence").previousElementSibling ===
+        screen.getByTestId("review-rationale"),
+      influenceClosed: screen
+        .getByTestId("ranking-influence")
+        .hasAttribute("open"),
       investigate: screen.queryByTestId("review-investigate"),
       labels,
       sourcesClosed: sources.hasAttribute("open"),
@@ -130,6 +136,8 @@ describe("selected county preview", () => {
       evidence: null,
       fips: "FIPS 01003",
       followUp: "View County Follow-Up",
+      influenceAfterEvidence: true,
+      influenceClosed: false,
       investigate: null,
       labels: [
         "Published Lyme case data",
