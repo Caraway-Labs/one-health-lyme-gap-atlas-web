@@ -374,8 +374,7 @@ function CompareExperienceInner() {
         ...(limitationTextsDiffer
           ? [
               {
-                description:
-                  "These limitations differ by county. A shared release limitation is stated once below the comparison.",
+                description: "These limitations differ by county.",
                 id: "limitations",
                 rowIds: [COMPARE_LIMITATION_ROW_ID],
                 title: "Evidence gaps and limitations",

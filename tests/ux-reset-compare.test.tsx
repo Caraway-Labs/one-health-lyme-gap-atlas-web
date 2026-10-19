@@ -1127,12 +1127,17 @@ describe("two-county aligned comparison", () => {
     });
   });
 
-  it("points to the shared release limitation below the evidence groups", async () => {
+  it("describes differing limitations without a shared note, and places a shared note after the groups", async () => {
     countyLimitationOverrides.set(COMPARE_LEFT_FIPS, "Denver coverage gap.");
     countyLimitationOverrides.set("36001", "Albany coverage gap.");
     renderCompare("?compare=08001,36001&scope=CO&dataset=alpha-2026");
     const limitations = await screen.findByTestId("compare-group-limitations");
-    const guidance = limitations.textContent ?? "";
+    const differingGuidance =
+      limitations.querySelector(".ux-reset-compare-group-description")
+        ?.textContent ?? "";
+    const differingSharedNote = screen.queryByText(
+      "Shared release limitations"
+    );
     cleanup();
 
     countyLimitationOverrides.set(
@@ -1145,22 +1150,23 @@ describe("two-county aligned comparison", () => {
     const sharedNote = sharedText.closest("details");
     const review = screen.getByTestId("compare-group-review");
     const heading = screen.getByRole("heading", { name: "County comparison" });
+    const sharedCopy = sharedNote?.textContent ?? "";
     expect({
-      afterHeading:
+      differingGuidance,
+      differingSharedNote,
+      sharedAfterHeading:
         sharedNote === null
           ? null
           : heading.compareDocumentPosition(sharedNote),
-      afterReview:
+      sharedAfterReview:
         sharedNote === null ? null : review.compareDocumentPosition(sharedNote),
-      guidanceAbove: guidance.includes("above the comparison"),
-      guidanceBelow: guidance.includes("stated once below the comparison"),
-      repeatedGroup: screen.queryByTestId("compare-group-limitations"),
+      sharedClaimsAbove: sharedCopy.includes("above the comparison"),
     }).toStrictEqual({
-      afterHeading: Node.DOCUMENT_POSITION_FOLLOWING,
-      afterReview: Node.DOCUMENT_POSITION_FOLLOWING,
-      guidanceAbove: false,
-      guidanceBelow: true,
-      repeatedGroup: null,
+      differingGuidance: "These limitations differ by county.",
+      differingSharedNote: null,
+      sharedAfterHeading: Node.DOCUMENT_POSITION_FOLLOWING,
+      sharedAfterReview: Node.DOCUMENT_POSITION_FOLLOWING,
+      sharedClaimsAbove: false,
     });
   });
 
