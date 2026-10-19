@@ -1,7 +1,11 @@
-import { mkdirSync } from "node:fs";
-
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Page,
+  type Route,
+  type TestInfo,
+} from "@playwright/test";
 
 import autauga from "../fixtures/review-al-01001.json" with { type: "json" };
 import baldwin from "../fixtures/review-al-01003.json" with { type: "json" };
@@ -16,7 +20,6 @@ import {
 } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
 
-const shotDirectory = "/opt/cursor/artifacts";
 const reviewedRelease = "alpha-2026";
 const publishedRelease = baldwin.release.release_id;
 
@@ -138,8 +141,7 @@ async function installPublishedCounties(page: Page) {
   });
 }
 
-async function shootButton(page: Page, name: string) {
-  mkdirSync(shotDirectory, { recursive: true });
+async function shootButton(page: Page, testInfo: TestInfo, name: string) {
   const button = page.getByTestId("explore-download-pdf");
   await button.scrollIntoViewIfNeeded();
   const control = await button.boundingBox();
@@ -160,7 +162,7 @@ async function shootButton(page: Page, name: string) {
       x: left,
       y: top,
     },
-    path: `${shotDirectory}/download-pdf-${name}.png`,
+    path: testInfo.outputPath(`download-pdf-${name}.png`),
   });
 }
 
@@ -171,7 +173,7 @@ test.describe("Explorer Download PDF", () => {
 
   test("downloads the published report for a reviewed county", async ({
     page,
-  }) => {
+  }, testInfo) => {
     const reportUrls: string[] = [];
     await installReviewedCounty(page);
     await page.route("**/v1/counties/*/report.pdf**", (route) => {
@@ -225,12 +227,12 @@ test.describe("Explorer Download PDF", () => {
       .include("[data-testid='review-county-preview']")
       .analyze();
     expect(result.violations).toEqual([]);
-    await shootButton(page, "reviewed-county");
+    await shootButton(page, testInfo, "reviewed-county");
   });
 
   test("downloads a published county that has no review category", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await installPublishedCounties(page);
     await page.route("**/v1/counties/*/report.pdf**", (route) =>
       fulfillPdf(route, "server-name-not-approved.pdf")
@@ -247,12 +249,12 @@ test.describe("Explorer Download PDF", () => {
     expect((await downloadPromise).suggestedFilename()).toBe(
       "Baldwin_AL_AtlasBrief.pdf"
     );
-    await shootButton(page, "unscored-county");
+    await shootButton(page, testInfo, "unscored-county");
   });
 
   test("downloads the selected county from national scope", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await installReviewedCounty(page);
     await page.route("**/v1/counties/*", (route) =>
       route.fulfill({
@@ -282,12 +284,12 @@ test.describe("Explorer Download PDF", () => {
     expect((await downloadPromise).suggestedFilename()).toBe(
       "Denver_CO_AtlasBrief.pdf"
     );
-    await shootButton(page, "national-scope");
+    await shootButton(page, testInfo, "national-scope");
   });
 
   test("keeps Download PDF disabled when no county is selected", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await installPublishedCounties(page);
     await page.goto(
       `/explore?scope=AL&dataset=${publishedRelease}&selection=required`
@@ -296,7 +298,7 @@ test.describe("Explorer Download PDF", () => {
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
     await expect(button).toBeDisabled();
     await expect(button).toHaveText("Download PDF");
-    await shootButton(page, "no-county");
+    await shootButton(page, testInfo, "no-county");
   });
 
   test("shows a recoverable error and does not keep a failed download", async ({
