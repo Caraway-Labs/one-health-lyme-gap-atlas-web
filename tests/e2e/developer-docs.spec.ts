@@ -779,7 +779,8 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
   ).toBeVisible();
   await expect(page.getByText("page_size").first()).toBeVisible();
   await page
-    .getByRole("heading", { name: "Pagination", exact: true })
+    .getByRole("tab", { exact: true, name: "TypeScript" })
+    .first()
     .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: testInfo.outputPath("client-tabs-rest-typescript.png"),
