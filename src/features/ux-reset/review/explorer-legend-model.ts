@@ -1,15 +1,73 @@
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import type {
   ExplorerLegendScale,
+  ExplorerMapLayerId,
   ExplorerMapLegendEntry,
   ExplorerMapPaint,
 } from "@/features/ux-reset/review/explorer-map-layers";
 
 const NO_PUBLISHED_VALUE = "No published value";
+const GAP_SCORE_UNAVAILABLE_LABEL = "Gap score unavailable";
+
+/**
+ * Compact hover/focus copy for the Atlas gap score strip (issue 706).
+ * This is legend presentation only. It does not change score cut points,
+ * map colors, `priorityLabel`, or the four follow-up response IDs in
+ * `SCORE_COLOR_BANDS`. Two action lines ("Conduct targeted follow-up" and
+ * "Coordinate a local assessment") are retired operational phrases; they
+ * appear here only as the approved legend guidance.
+ */
+const GAP_SCORE_LEGEND_DISCLOSURES = {
+  [GAP_SCORE_UNAVAILABLE_LABEL]: {
+    action: "Insufficient data to calculate a score",
+    category: null,
+    title: GAP_SCORE_UNAVAILABLE_LABEL,
+  },
+  "0 to less than 20": {
+    action: "Continue routine review",
+    category: "Lower review priority",
+    title: "Atlas gap score: 0 to <20",
+  },
+  "20 to less than 35": {
+    action: "Monitor the pattern",
+    category: "Monitor",
+    title: "Atlas gap score: 20 to <35",
+  },
+  "35 to less than 50": {
+    action: "Verify with local information",
+    category: "Monitor",
+    title: "Atlas gap score: 35 to <50",
+  },
+  "50 to less than 65": {
+    action: "Conduct targeted follow-up",
+    category: "Moderate",
+    title: "Atlas gap score: 50 to <65",
+  },
+  "65 to less than 75": {
+    action: "Coordinate a local assessment",
+    category: "Moderate",
+    title: "Atlas gap score: 65 to <75",
+  },
+  "75 or higher": {
+    action: "Prioritize targeted follow-up",
+    category: "Highest",
+    title: "Atlas gap score: 75 or higher",
+  },
+} as const satisfies Record<
+  string,
+  { action: string; category: string | null; title: string }
+>;
+
+export type ExplorerLegendDisclosure = {
+  action: string;
+  category: string | null;
+  title: string;
+};
 
 export type ExplorerLegendSegment = {
   accessibleName: string;
   color: string;
+  disclosure: ExplorerLegendDisclosure | null;
   id: string;
   label: string;
   role: ExplorerMapLegendEntry["role"];
@@ -70,41 +128,66 @@ function endpointCaption(label: string): string {
   return head || label;
 }
 
-function segmentCopy(entry: ExplorerMapLegendEntry): {
-  accessibleName: string;
-  tooltip: string;
-} {
+function methodologyCopy(entry: ExplorerMapLegendEntry): string {
   if (entry.label === NO_PUBLISHED_VALUE) {
-    const text = entry.detail
+    return entry.detail
       ? `${NO_PUBLISHED_VALUE}. ${entry.detail}`
       : NO_PUBLISHED_VALUE;
-    return { accessibleName: text, tooltip: text };
   }
   const range = compactRange(entry.label);
   const detail = entry.detail?.trim();
   if (range !== entry.label && detail) {
-    const text = `${range}. ${detail}`;
-    return { accessibleName: text, tooltip: text };
+    return `${range}. ${detail}`;
   }
   if (detail) {
-    const text = `${entry.label}. ${detail}`;
-    return { accessibleName: text, tooltip: text };
+    return `${entry.label}. ${detail}`;
   }
-  return { accessibleName: entry.label, tooltip: entry.label };
+  return entry.label;
+}
+
+function disclosureAccessibleName(
+  disclosure: ExplorerLegendDisclosure
+): string {
+  if (disclosure.category) {
+    return `${disclosure.title}. ${disclosure.category}. ${disclosure.action}`;
+  }
+  return `${disclosure.title}. ${disclosure.action}`;
+}
+
+function isGapScoreDisclosureLabel(
+  label: string
+): label is keyof typeof GAP_SCORE_LEGEND_DISCLOSURES {
+  return Object.hasOwn(GAP_SCORE_LEGEND_DISCLOSURES, label);
+}
+
+function gapScoreDisclosure(
+  layerId: ExplorerMapLayerId | undefined,
+  label: string
+): ExplorerLegendDisclosure | null {
+  if (layerId !== "gap_score" || !isGapScoreDisclosureLabel(label)) {
+    return null;
+  }
+  return GAP_SCORE_LEGEND_DISCLOSURES[label];
 }
 
 function toSegment(
   entry: ExplorerMapLegendEntry,
-  index: number
+  index: number,
+  layerId?: ExplorerMapLayerId
 ): ExplorerLegendSegment {
-  const copy = segmentCopy(entry);
+  const methodology = methodologyCopy(entry);
+  const disclosure = gapScoreDisclosure(layerId, entry.label);
+  const accessibleName = disclosure
+    ? disclosureAccessibleName(disclosure)
+    : methodology;
   return {
-    accessibleName: copy.accessibleName,
+    accessibleName,
     color: entry.color,
+    disclosure,
     id: `${index}-${entry.label}`,
     label: entry.label,
     role: entry.role,
-    tooltip: copy.tooltip,
+    tooltip: accessibleName,
   };
 }
 
@@ -181,7 +264,7 @@ function constantNumericSwatch(
   const unit = paint.unit ? ` ${paint.unit}` : "";
   const detail = low.detail?.trim();
   const text = detail ? `${value}${unit}. ${detail}` : `${value}${unit}.`;
-  const swatch = toSegment(low, missing.length);
+  const swatch = toSegment(low, missing.length, paint.layerId);
   return {
     gradient: null,
     leftCaption: value,
@@ -191,6 +274,7 @@ function constantNumericSwatch(
       {
         ...swatch,
         accessibleName: text,
+        disclosure: null,
         label: value,
         tooltip: text,
       },
@@ -208,7 +292,7 @@ function gradientModel(
   const high = paint.entries.find((entry) => entry.role === "endpoint-high");
   const note = paint.entries.find((entry) => entry.role === "note");
   const missing = missingEntries(paint.entries).map((entry, index) =>
-    toSegment(entry, index)
+    toSegment(entry, index, paint.layerId)
   );
   if (!low) {
     return {
@@ -254,7 +338,7 @@ function aboutSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
   }
   const classes = paint.entries
     .filter((entry) => entry.role !== "note")
-    .map((entry) => segmentCopy(entry).tooltip);
+    .map((entry) => methodologyCopy(entry));
   if (classes.length > 0) {
     sections.push({ heading: "Colors", paragraphs: classes });
   }
@@ -308,7 +392,9 @@ export function buildExplorerLegendModel(
     leftCaption: captions.left,
     mode: "segments",
     rightCaption: captions.right,
-    segments: ordered.map((entry, index) => toSegment(entry, index)),
+    segments: ordered.map((entry, index) =>
+      toSegment(entry, index, paint.layerId)
+    ),
     status: ordered.length === 0 ? paint.note : null,
   };
 }

@@ -421,21 +421,34 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend).not.toContainText("not personal disease risk");
     await expect(
       legend.getByRole("button", { name: /Gap score unavailable/ })
-    ).toHaveAttribute("aria-label", /Not zero/);
+    ).toHaveAttribute(
+      "aria-label",
+      "Gap score unavailable. Insufficient data to calculate a score"
+    );
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })
-    ).toHaveAttribute("aria-label", /Not a safety finding/);
+    ).toHaveAttribute(
+      "aria-label",
+      "Atlas gap score: 0 to <20. Lower review priority. Continue routine review"
+    );
     await expect(
       legend.getByRole("button", { name: /20 to <35/ })
-    ).toHaveAttribute("aria-label", /Monitor signals/);
-    await expect(legend.getByRole("button", { name: />=75/ })).toHaveAttribute(
+    ).toHaveAttribute(
       "aria-label",
-      /Investigate/
+      "Atlas gap score: 20 to <35. Monitor. Monitor the pattern"
+    );
+    await expect(
+      legend.getByRole("button", { name: /75 or higher/ })
+    ).toHaveAttribute(
+      "aria-label",
+      "Atlas gap score: 75 or higher. Highest. Prioritize targeted follow-up"
     );
     await legend.getByRole("button", { name: "About Atlas gap score" }).click();
     const about = page.getByRole("dialog", { name: "About Atlas gap score" });
     await expect(about).toContainText("CDC Lyme surveillance 2023");
     await expect(about).toContainText("not personal disease risk");
+    await expect(about).toContainText("Not zero");
+    await expect(about).toContainText("Priority 1 — Investigate");
     await page.keyboard.press("Escape");
     await expect(about).toBeHidden();
     await expect
@@ -448,11 +461,13 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })
     ).toBeVisible();
-    await expect(legend.getByRole("button", { name: />=75/ })).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: /75 or higher/ })
+    ).toBeVisible();
     await expect(legend).not.toContainText("Monitor signals");
     await expect(
       legend.getByRole("button", { name: /20 to <35/ })
-    ).toHaveAttribute("aria-label", /Monitor signals/);
+    ).toHaveAttribute("aria-label", /Monitor the pattern/);
     await expect(
       legend.getByRole("button", { name: /Gap score unavailable/ })
     ).toBeVisible();
@@ -466,7 +481,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(
       legend.getByRole("button", { name: /35 to <50/ })
-    ).toHaveAttribute("aria-label", /Monitor signals/);
+    ).toHaveAttribute("aria-label", /Verify with local information/);
     await expect(legend).toContainText("Atlas gap score");
 
     await chooseLayer(page, "Blacklegged tick status");
@@ -531,7 +546,9 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend.getByRole("button", { name: "Present" })).toHaveCount(
       0
     );
-    await expect(legend.getByRole("button", { name: />=75/ })).toHaveCount(0);
+    await expect(
+      legend.getByRole("button", { name: /75 or higher/ })
+    ).toHaveCount(0);
     await page.keyboard.press("Escape");
 
     await chooseLayer(page, "Atlas gap score");
@@ -545,7 +562,7 @@ test.describe("Atlas Explorer layer legends", () => {
 
   test("keeps the latest layer after rapid switches and leaves unsupported layers unpainted", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.goto("/explore?scope=ALL");
     const legend = page.getByTestId("explorer-map-legend");
     await expect(
@@ -620,31 +637,183 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.scrollIntoViewIfNeeded();
     await page.screenshot({
       fullPage: false,
-      path: "/opt/cursor/artifacts/legend-after-gap-national.png",
+      path: testInfo.outputPath("legend-after-gap-national.png"),
     });
     await legend.screenshot({
-      path: "/opt/cursor/artifacts/legend-after-gap-strip.png",
+      path: testInfo.outputPath("legend-after-gap-strip.png"),
     });
     await legend.getByRole("button", { name: "About Atlas gap score" }).click();
     await page.screenshot({
-      path: "/opt/cursor/artifacts/legend-after-gap-about.png",
+      path: testInfo.outputPath("legend-after-gap-about.png"),
     });
     await page.keyboard.press("Escape");
     await chooseLayer(page, "Rurality");
     await expect(legend.locator("[data-legend-segment]")).toHaveCount(9);
     await legend.screenshot({
-      path: "/opt/cursor/artifacts/legend-after-rucc.png",
+      path: testInfo.outputPath("legend-after-rucc.png"),
     });
     await chooseLayer(page, "Lyme incidence floor");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await legend.screenshot({
-      path: "/opt/cursor/artifacts/legend-after-incidence.png",
+      path: testInfo.outputPath("legend-after-incidence.png"),
     });
 
     const results = await new AxeBuilder({ page })
       .include("[data-testid='explorer-map-legend']")
       .analyze();
     expect(results.violations).toEqual([]);
+  });
+
+  test("opens the seven gap-score disclosures by hover, keyboard, and click", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/explore?scope=ALL");
+    const legend = page.getByTestId("explorer-map-legend");
+    await expect(legend.locator("[data-legend-segment]")).toHaveCount(7);
+    await legend.scrollIntoViewIfNeeded();
+    await legend.screenshot({
+      path: testInfo.outputPath("legend-strip-at-rest.png"),
+    });
+
+    const disclosures = [
+      {
+        action: "Insufficient data to calculate a score",
+        category: null,
+        name: /Gap score unavailable/,
+        shot: null,
+        title: "Gap score unavailable",
+      },
+      {
+        action: "Continue routine review",
+        category: "Lower review priority",
+        name: /0 to <20/,
+        shot: null,
+        title: "Atlas gap score: 0 to <20",
+      },
+      {
+        action: "Monitor the pattern",
+        category: "Monitor",
+        name: /20 to <35/,
+        shot: null,
+        title: "Atlas gap score: 20 to <35",
+      },
+      {
+        action: "Verify with local information",
+        category: "Monitor",
+        name: /35 to <50/,
+        shot: null,
+        title: "Atlas gap score: 35 to <50",
+      },
+      {
+        action: "Conduct targeted follow-up",
+        category: "Moderate",
+        name: /50 to <65/,
+        shot: "legend-tooltip-50-to-65.png",
+        title: "Atlas gap score: 50 to <65",
+      },
+      {
+        action: "Coordinate a local assessment",
+        category: "Moderate",
+        name: /65 to <75/,
+        shot: "legend-tooltip-65-to-75.png",
+        title: "Atlas gap score: 65 to <75",
+      },
+      {
+        action: "Prioritize targeted follow-up",
+        category: "Highest",
+        name: /75 or higher/,
+        shot: null,
+        title: "Atlas gap score: 75 or higher",
+      },
+    ] as const;
+
+    for (const disclosure of disclosures) {
+      const segment = legend.getByRole("button", { name: disclosure.name });
+      await segment.hover();
+      const dialog = page.getByRole("dialog", { name: disclosure.name });
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText(disclosure.title);
+      await expect(dialog).toContainText(disclosure.action);
+      await expect(dialog).not.toContainText("Priority 1");
+      await expect(dialog).not.toContainText("Priority 2");
+      if (disclosure.category) {
+        await expect(
+          dialog.locator(".ux-reset-explorer-legend-disclosure-category")
+        ).toHaveText(disclosure.category);
+      } else {
+        await expect(
+          dialog.locator(".ux-reset-explorer-legend-disclosure-category")
+        ).toHaveCount(0);
+      }
+      const swatch = dialog.locator("[data-legend-disclosure-swatch]");
+      await expect(swatch).toBeVisible();
+      const segmentColor = await segment
+        .locator("span")
+        .evaluate((element) => getComputedStyle(element).backgroundColor);
+      const swatchColor = await swatch.evaluate(
+        (element) => getComputedStyle(element).backgroundColor
+      );
+      expect(swatchColor).toBe(segmentColor);
+      if (disclosure.shot) {
+        await dialog.screenshot({
+          path: testInfo.outputPath(disclosure.shot),
+        });
+      }
+      if (disclosure.action === "Coordinate a local assessment") {
+        const lines = await dialog
+          .locator(".ux-reset-explorer-legend-disclosure-action")
+          .evaluate((element) => {
+            const lineHeight = Number.parseFloat(
+              getComputedStyle(element).lineHeight
+            );
+            return element.getBoundingClientRect().height / lineHeight;
+          });
+        expect(lines).toBeGreaterThan(1.4);
+      }
+      await page.mouse.move(0, 0);
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeHidden();
+    }
+
+    const unavailable = legend.getByRole("button", {
+      name: /Gap score unavailable/,
+    });
+    await unavailable.hover();
+    const unavailableDialog = page.getByRole("dialog", {
+      name: /Gap score unavailable/,
+    });
+    await expect(unavailableDialog).toBeVisible();
+    await unavailableDialog.screenshot({
+      path: testInfo.outputPath("legend-tooltip-unavailable.png"),
+    });
+    await page.mouse.move(0, 0);
+    await page.keyboard.press("Escape");
+
+    await legend.getByRole("button", { name: "About Atlas gap score" }).focus();
+    await page.keyboard.press("Tab");
+    const focused = page.getByRole("dialog", { name: /Gap score unavailable/ });
+    await expect(focused).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(focused).toBeHidden();
+
+    await legend.getByRole("button", { name: /50 to <65/ }).click();
+    const clicked = page.getByRole("dialog", { name: /50 to <65/ });
+    await expect(clicked).toBeVisible();
+    await expect(clicked).toContainText("Conduct targeted follow-up");
+    await page.keyboard.press("Escape");
+
+    const openResults = await new AxeBuilder({ page })
+      .include("[data-testid='explorer-map-legend']")
+      .analyze();
+    expect(openResults.violations).toEqual([]);
+
+    await legend.getByRole("button", { name: /50 to <65/ }).click();
+    const openTip = page.getByRole("dialog", { name: /50 to <65/ });
+    await expect(openTip).toBeVisible();
+    const tipResults = await new AxeBuilder({ page })
+      .include("[data-slot='popover-content']")
+      .analyze();
+    expect(tipResults.violations).toEqual([]);
   });
 });
 
