@@ -10,7 +10,9 @@ test("runs the docs API playground for a success and an error", async ({
     page.getByRole("heading", { name: "Try this request", exact: true })
   ).toBeVisible();
 
-  const playground = page.getByRole("form", { name: "API playground" });
+  const playground = page.locator("[data-slot=card]").filter({
+    has: page.getByRole("form", { name: "API playground" }),
+  });
   await expect(playground).toBeVisible();
   await expect(playground.getByLabel("Measure id")).toHaveValue(
     "case_count_floor_2023"
@@ -19,7 +21,9 @@ test("runs the docs API playground for a success and an error", async ({
     playground.getByRole("combobox", { name: "Endpoint" })
   ).toContainText("GET /v1/observations");
   await expect(playground.getByLabel("Geography id")).toHaveValue("36061");
-  await expect(page.getByRole("status")).toHaveText("No request sent yet.");
+  await expect(playground.getByRole("status")).toHaveText(
+    "No request sent yet."
+  );
 
   const idleResults = await new AxeBuilder({ page }).include("main").analyze();
   expect(
@@ -29,7 +33,7 @@ test("runs the docs API playground for a success and an error", async ({
   ).toEqual([]);
 
   await playground.getByRole("button", { name: "Send request" }).click();
-  await expect(page.getByRole("status")).toContainText("HTTP 200", {
+  await expect(playground.getByRole("status")).toContainText("HTTP 200", {
     timeout: 30_000,
   });
   const success = page.getByRole("region", { name: "API response" });
@@ -46,7 +50,7 @@ test("runs the docs API playground for a success and an error", async ({
   await expect(playground.getByLabel("Geography type")).toHaveValue("tract");
   await playground.getByRole("button", { name: "Send request" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toContainText("HTTP 400", {
+  await expect(playground.getByRole("status")).toContainText("HTTP 400", {
     timeout: 30_000,
   });
   const failure = page.getByRole("region", { name: "API response" });
