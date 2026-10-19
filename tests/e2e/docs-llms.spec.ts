@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs";
 
 import { expect, test } from "@playwright/test";
 
-import { provenanceUnionRows } from "../docs-llms-gfm";
+import {
+  constraintRow,
+  constraintTables,
+  provenanceUnionRows,
+} from "../docs-llms-gfm";
 
 const publicOpenApiManifest = JSON.parse(
   readFileSync("contracts/public-openapi.manifest.json", "utf-8")
@@ -94,10 +98,20 @@ test("renders operation pages, guardrails, and client examples into Markdown", a
   expect(observationsText).toContain("#### geography_id");
   expect(observationsText).toContain("query, required.");
   expect(observationsText).toContain('"08001"');
+  const observationTables = constraintTables(observationsText);
   expect(observationsText).toContain("#### page_size");
-  expect(observationsText).toContain("- Default: 100");
-  expect(observationsText).toContain("- Minimum: 1");
-  expect(observationsText).toContain("- Maximum: 500");
+  expect(constraintRow(observationTables, "Default", "100")).toEqual([
+    "Default",
+    "100",
+  ]);
+  expect(constraintRow(observationTables, "Minimum", "1")).toEqual([
+    "Minimum",
+    "1",
+  ]);
+  expect(constraintRow(observationTables, "Maximum", "500")).toEqual([
+    "Maximum",
+    "500",
+  ]);
   expect(observationsText).toContain("- Media type: `application/json`");
   expect(observationsText).toContain(
     "- Media type: `application/problem+json`"
@@ -121,10 +135,17 @@ test("renders operation pages, guardrails, and client examples into Markdown", a
   expect(quickstart).not.toContain("<HttpClientTabs");
 
   const full = await (await request.get("/llms-full.txt")).text();
+  const fullTables = constraintTables(full);
   expect(full).toContain("#### geography_id");
-  expect(full).toContain("- Default: 100");
-  expect(full).toContain("- Minimum: 1");
-  expect(full).toContain("- Maximum: 500");
+  expect(constraintRow(fullTables, "Default", "100")).toEqual([
+    "Default",
+    "100",
+  ]);
+  expect(constraintRow(fullTables, "Minimum", "1")).toEqual(["Minimum", "1"]);
+  expect(constraintRow(fullTables, "Maximum", "500")).toEqual([
+    "Maximum",
+    "500",
+  ]);
   expect(full).toContain("- Media type: `application/json`");
   expect(full).toContain("- Media type: `application/problem+json`");
   expect(full).toContain(
@@ -137,6 +158,38 @@ test("renders operation pages, guardrails, and client examples into Markdown", a
   expect(full).not.toContain("<InterpretationGuardrailCopy");
   expect(full).not.toContain("<HttpClientTabs");
   expect(full).not.toContain("<OpenAPIPage");
+});
+
+test("keeps schema constraints inside parsed table cells", async ({
+  request,
+}) => {
+  const ranking = await (
+    await request.get(
+      "/docs/api-reference/atlas/ranking_csv_v1_atlas_ranking_csv_get.md"
+    )
+  ).text();
+  const full = await (await request.get("/llms-full.txt")).text();
+  for (const markdown of [ranking, full]) {
+    const tables = constraintTables(markdown);
+    expect(constraintRow(tables, "Pattern", "^(ALL|[A-Z]{2})$")).toEqual([
+      "Pattern",
+      "^(ALL|[A-Z]{2})$",
+    ]);
+    expect(
+      constraintRow(tables, "Enum", "all, ecological, human, complete")
+    ).toEqual(["Enum", "all, ecological, human, complete"]);
+    expect(constraintRow(tables, "Maximum length", "100")).toEqual([
+      "Maximum length",
+      "100",
+    ]);
+    expect(constraintRow(tables, "Multiple of", "5")).toEqual([
+      "Multiple of",
+      "5",
+    ]);
+    expect(
+      tables.every((table) => table.every((row) => row.length === 2))
+    ).toBeTruthy();
+  }
 });
 
 test("keeps provenance union types inside parsed table cells", async ({

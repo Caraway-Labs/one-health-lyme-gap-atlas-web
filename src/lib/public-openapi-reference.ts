@@ -13,6 +13,7 @@ import { createOpenAPI } from "fumadocs-openapi/server";
 import { parse, stringify } from "yaml";
 
 import { showsPendingDeliveryBadge } from "./endpoint-delivery";
+import { markdownTableCell } from "./markdown-table";
 import {
   getDocsUrl,
   getPublishedApiOrigin,
@@ -2547,29 +2548,108 @@ function formatPinnedResponse(response: ResponseView): string {
 }
 
 function schemaConstraintLines(schema: unknown, description: string): string[] {
+  const rows = constraintRows(schema, description);
+  if (rows.length === 0) return [];
+  return ["", constraintTable(rows)];
+}
+
+function constraintTable(rows: readonly (readonly [string, string])[]): string {
+  const lines = [
+    `| ${markdownTableCell("Constraint")} | ${markdownTableCell("Value")} |`,
+    "| --- | --- |",
+  ];
+  for (const [name, value] of rows) {
+    lines.push(
+      `| ${markdownTableCell(name)} | ${markdownTableCell(value, { code: true })} |`
+    );
+  }
+  return lines.join("\n");
+}
+
+function constraintRows(
+  schema: unknown,
+  description: string
+): (readonly [string, string])[] {
   if (!isRecord(schema)) return [];
-  const lines: string[] = [];
+  const rows: (readonly [string, string])[] = [];
   const summary = schemaSummary(schema);
-  if (summary) lines.push(`- Schema: ${summary}`);
+  if (summary) rows.push(["Schema", summary]);
   const statedDefault = /defaults to (?<count>\d+)/i.exec(description);
   if (schema.default !== undefined) {
-    lines.push(`- Default: ${JSON.stringify(schema.default)}`);
+    rows.push(["Default", constraintScalar(schema.default)]);
   } else if (statedDefault?.groups?.count) {
-    lines.push(`- Default: ${statedDefault.groups.count}`);
+    rows.push(["Default", statedDefault.groups.count]);
   }
-  if (typeof schema.minimum === "number") {
-    lines.push(`- Minimum: ${schema.minimum}`);
+  pushConstraint(rows, "Minimum", schema.minimum);
+  pushConstraint(rows, "Maximum", schema.maximum);
+  pushConstraint(rows, "Exclusive minimum", schema.exclusiveMinimum);
+  pushConstraint(rows, "Exclusive maximum", schema.exclusiveMaximum);
+  pushConstraint(rows, "Multiple of", schema.multipleOf);
+  pushConstraint(rows, "Minimum length", schema.minLength);
+  pushConstraint(rows, "Maximum length", schema.maxLength);
+  pushConstraint(rows, "Minimum items", schema.minItems);
+  pushConstraint(rows, "Maximum items", schema.maxItems);
+  if (schema.uniqueItems === true) rows.push(["Unique items", "true"]);
+  if (typeof schema.pattern === "string")
+    rows.push(["Pattern", schema.pattern]);
+  if (typeof schema.format === "string") rows.push(["Format", schema.format]);
+  if (Array.isArray(schema.enum)) {
+    rows.push(["Enum", schema.enum.map(constraintScalar).join(", ")]);
   }
-  if (typeof schema.maximum === "number") {
-    lines.push(`- Maximum: ${schema.maximum}`);
+  if ("const" in schema)
+    rows.push(["Constant", constraintScalar(schema.const)]);
+  rows.push(...nestedConstraintRows(schema));
+  return rows;
+}
+
+function nestedConstraintRows(
+  schema: JsonRecord
+): (readonly [string, string])[] {
+  const rows: (readonly [string, string])[] = [];
+  if (isRecord(schema.items)) {
+    rows.push(...prefixedConstraintRows("Items", schema.items));
   }
-  if (typeof schema.minItems === "number") {
-    lines.push(`- Minimum items: ${schema.minItems}`);
+  for (const keyword of ["allOf", "anyOf", "oneOf"] as const) {
+    const branches = schema[keyword];
+    if (!Array.isArray(branches)) continue;
+    for (const [index, branch] of branches.entries()) {
+      rows.push(
+        ...prefixedConstraintRows(`${keyword} ${String(index + 1)}`, branch)
+      );
+    }
   }
-  if (typeof schema.maxItems === "number") {
-    lines.push(`- Maximum items: ${schema.maxItems}`);
+  return rows;
+}
+
+function prefixedConstraintRows(
+  prefix: string,
+  schema: unknown
+): (readonly [string, string])[] {
+  return constraintRows(schema, "")
+    .filter(([label]) => label !== "Schema")
+    .map(([label, value]) => [`${prefix} ${label}`, value] as const);
+}
+
+function pushConstraint(
+  rows: (readonly [string, string])[],
+  label: string,
+  value: unknown
+): void {
+  if (typeof value === "number" || typeof value === "boolean") {
+    rows.push([label, String(value)]);
   }
-  return lines;
+}
+
+function constraintScalar(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return String(value);
+  }
+  return JSON.stringify(value);
 }
 
 function schemaSummary(schema: unknown): string {

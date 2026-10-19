@@ -12,7 +12,12 @@ import {
   markdownTableCell,
 } from "../src/lib/docs-llms-components";
 import { renderPublicDocsPage } from "../src/lib/docs-llms-export";
-import { gfmTables, provenanceUnionRows } from "./docs-llms-gfm";
+import {
+  constraintRow,
+  constraintTables,
+  gfmTables,
+  provenanceUnionRows,
+} from "./docs-llms-gfm";
 
 const FRONTMATTER = /^---\n(?<frontmatter>[\s\S]*?)\n---\n?/;
 
@@ -66,10 +71,20 @@ describe("rendered documentation markdown", () => {
     const markdown = await renderedPage(
       "content/docs/api-reference/observations/observations_v1_observations_get.mdx"
     );
+    const tables = constraintTables(markdown);
     expect(markdown).toContain("#### page_size");
-    expect(markdown).toContain("- Default: 100");
-    expect(markdown).toContain("- Minimum: 1");
-    expect(markdown).toContain("- Maximum: 500");
+    expect(constraintRow(tables, "Default", "100")).toStrictEqual([
+      "Default",
+      "100",
+    ]);
+    expect(constraintRow(tables, "Minimum", "1")).toStrictEqual([
+      "Minimum",
+      "1",
+    ]);
+    expect(constraintRow(tables, "Maximum", "500")).toStrictEqual([
+      "Maximum",
+      "500",
+    ]);
   });
 
   it("renders observations response media types and Retry-After", async () => {
@@ -152,11 +167,38 @@ describe("rendered documentation markdown", () => {
     );
   });
 
+  it("keeps pinned schema constraints in two-cell rows", async () => {
+    const markdown = await renderedPage(
+      "content/docs/api-reference/atlas/ranking_csv_v1_atlas_ranking_csv_get.mdx"
+    );
+    const tables = constraintTables(markdown);
+    expect(constraintRow(tables, "Pattern", "^(ALL|[A-Z]{2})$")).toStrictEqual([
+      "Pattern",
+      "^(ALL|[A-Z]{2})$",
+    ]);
+    expect(
+      constraintRow(tables, "Enum", "all, ecological, human, complete")
+    ).toStrictEqual(["Enum", "all, ecological, human, complete"]);
+    expect(constraintRow(tables, "Maximum length", "100")).toStrictEqual([
+      "Maximum length",
+      "100",
+    ]);
+    expect(constraintRow(tables, "Multiple of", "5")).toStrictEqual([
+      "Multiple of",
+      "5",
+    ]);
+    expect(
+      tables.every((table) => table.every((row) => row.length === 2))
+    ).toBeTruthy();
+  });
+
   it("renders every current docs page without leftover component tags", async () => {
     const pages = await Promise.all(mdxFiles("content/docs").map(renderedPage));
     const full = pages.join("\n\n");
     expect(full).toContain("#### geography_id");
-    expect(full).toContain("- Default: 100");
+    expect(
+      constraintRow(constraintTables(full), "Default", "100")
+    ).toStrictEqual(["Default", "100"]);
     expect(full).toContain("Missing is not zero.");
     expect(full).toContain("import httpx");
     expect(full).not.toContain("<OpenAPIPage");

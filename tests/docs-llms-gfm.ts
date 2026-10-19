@@ -107,3 +107,26 @@ export function provenanceUnionRows(markdown: string): {
     value,
   };
 }
+
+export function constraintTables(markdown: string): string[][][] {
+  return gfmTables(markdown).filter(
+    (table) =>
+      table[0]?.length === 2 &&
+      table[0][0] === "Constraint" &&
+      table[0][1] === "Value"
+  );
+}
+
+export function constraintRow(
+  tables: readonly string[][][],
+  label: string,
+  value: string
+): string[] | undefined {
+  for (const table of tables) {
+    const row = table.find(
+      (candidate) => candidate[0] === label && candidate[1] === value
+    );
+    if (row) return row;
+  }
+  return undefined;
+}
