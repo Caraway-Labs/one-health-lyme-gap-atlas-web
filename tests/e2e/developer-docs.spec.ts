@@ -1,5 +1,8 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import { releaseViewportRuns } from "./release-phone-viewport";
 
@@ -493,6 +496,166 @@ test("opens a hidden observation slice from its heading hash", async ({
   await expect(
     page.getByRole("tab", { name: "Cumulative vector and pathogen" })
   ).toHaveAttribute("aria-selected", "true");
+});
+
+async function expectNoBlockingViolations(page: Page, label: string) {
+  const results = await new AxeBuilder({ page }).include("main").analyze();
+  expect(
+    results.violations.filter((violation) =>
+      ["critical", "serious"].includes(violation.impact ?? "")
+    ),
+    label
+  ).toEqual([]);
+}
+
+function copyDocsArtifact(output: string, filename: string) {
+  const artifactRoot = "/opt/cursor/artifacts";
+  if (!fs.existsSync("/opt/cursor")) return;
+  fs.mkdirSync(artifactRoot, { recursive: true });
+  fs.copyFileSync(output, path.join(artifactRoot, filename));
+}
+
+async function saveDocsScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  filename: string
+) {
+  const output = testInfo.outputPath(filename);
+  await page.screenshot({ fullPage: true, path: output });
+  copyDocsArtifact(output, filename);
+}
+
+async function saveBadgeScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  filename: string
+) {
+  const output = testInfo.outputPath(filename);
+  await page
+    .getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+    .first()
+    .screenshot({ path: output });
+  copyDocsArtifact(output, filename);
+}
+
+test("shows the pending geography badge, display geometry, and deprecated source timestamps", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/docs/develop/geography");
+  await expect(
+    page.getByRole("heading", { name: "Geography", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("not a live health indicator").first()
+  ).toBeVisible();
+  await expect(page.getByText("GET /v1/atlas/geometry").first()).toBeVisible();
+  await expect(page.locator("main")).toContainText("application/geo+json");
+  await expectNoBlockingViolations(page, "geography guide");
+  const geometryLink = page.getByRole("link", {
+    name: "Get county display geometry",
+  });
+  await geometryLink.scrollIntoViewIfNeeded();
+  await saveDocsScreenshot(page, testInfo, "docs-geography-pending.png");
+  await saveBadgeScreenshot(page, testInfo, "docs-geography-badge.png");
+  await geometryLink.click();
+  await expect(page).toHaveURL(/\/docs\/api-reference\/atlas/);
+  await expect(page.getByText("GET /v1/atlas/geometry").first()).toBeVisible();
+
+  await page.goto("/docs/api-reference/geographies");
+  await expect(
+    page.getByRole("heading", { name: "Geographies", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("Production API, 18 October 2026").first()
+  ).toBeVisible();
+  await expect(
+    page.getByText("not a live health indicator").first()
+  ).toBeVisible();
+  await expectNoBlockingViolations(page, "geographies reference");
+  await page
+    .getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+    .scrollIntoViewIfNeeded();
+  await saveDocsScreenshot(page, testInfo, "docs-geographies-reference.png");
+  await saveBadgeScreenshot(page, testInfo, "docs-geographies-badge.png");
+
+  await page.goto("/docs/api-reference");
+  await expect(
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("Production API, 18 October 2026").first()
+  ).toBeVisible();
+
+  await page.goto("/docs/develop/provenance");
+  const checkedObservationTimestamp = "2026-09-07T17:21:14.768948-07:00";
+  const deprecatedSection = page.getByRole("region", {
+    name: "Deprecated source timestamps",
+  });
+  await expect(
+    deprecatedSection.getByRole("heading", {
+      name: "Deprecated source timestamps",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    deprecatedSection.getByText(checkedObservationTimestamp)
+  ).toBeVisible();
+  await deprecatedSection.scrollIntoViewIfNeeded();
+  await expectNoBlockingViolations(page, "provenance timestamps");
+  await saveDocsScreenshot(page, testInfo, "docs-provenance-timestamps.png");
+});
+
+test("keeps the pending geography badge usable at 375px", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 375),
+    "Phone-width geography docs run on the mobile project."
+  );
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/docs/develop/geography");
+  await expect(
+    page.getByText(
+      "Delivery pending at the last production check, 18 October 2026.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("not a live health indicator").first()
+  ).toBeVisible();
+  await page.goto("/docs/develop/provenance");
+  await expect(
+    page.getByRole("heading", {
+      name: "Deprecated source timestamps",
+      exact: true,
+    })
+  ).toBeVisible();
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.scrollWidth - root.clientWidth;
+  });
+  expect(overflow).toBeLessThanOrEqual(1);
 });
 
 test("keeps observation query tabs usable at 375px", async ({
