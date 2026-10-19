@@ -74,7 +74,7 @@ describe("five-category follow-up workflows", () => {
         "not evidence of transmission or underreporting"
       ),
       human: rowText(workflow, "human-disease-surveillance").includes(
-        "Compare the published county case-count floor"
+        "compare the published county case-count floor"
       ),
       labels: workflow.rows.map((entry) => entry.label),
       title: workflow.level.title,
@@ -207,6 +207,54 @@ describe("five-category follow-up workflows", () => {
       insufficient: INSUFFICIENT_REVIEW_LEVEL_EXPLANATION,
       outsideReason: "unsupported-jurisdiction",
       outsideUsesInsufficiency: false,
+    });
+  });
+
+  it("keeps Worth County facts in one action and does not repeat the tier essay", () => {
+    const workflow = buildCountyFollowUp(
+      county({
+        burgdorferi_status: "No records",
+        case_count_floor_2023: null,
+        color: "#a9d2db",
+        county: "Worth County",
+        fips: "19195",
+        human_status: "no_county_linked_record",
+        incidence_floor_2023: null,
+        pacificus_status: "No records",
+        scapularis_status: "No records",
+        state: "IA",
+        state_name: "Iowa",
+        state_unallocated_records_2023: 77,
+        tick_status: "No records",
+      })
+    );
+    const human = rowText(workflow, "human-disease-surveillance");
+    const vector = rowText(workflow, "vector-pathogen-surveillance");
+    const joined = workflow.rows.map((entry) => entry.recommendation).join(" ");
+    expect({
+      gap: vector.includes("Do not treat the gap as absence"),
+      humanStart: human.startsWith("During routine review, check whether"),
+      missing: human.includes("not a finding of zero cases"),
+      noEssay: joined.includes(
+        "without assuming additional case investigation"
+      ),
+      noRiskEssay: joined.includes("individual risk"),
+      outside: vector.includes("outside the current source"),
+      sampling: vector.includes("do not start field collection"),
+      title: workflow.level.title,
+      unallocated: human.includes("77 published 2023"),
+      underreportingEssay: joined.includes("proof of underreporting"),
+    }).toStrictEqual({
+      gap: true,
+      humanStart: true,
+      missing: true,
+      noEssay: false,
+      noRiskEssay: false,
+      outside: true,
+      sampling: true,
+      title: "Continue routine review",
+      unallocated: true,
+      underreportingEssay: false,
     });
   });
 

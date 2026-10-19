@@ -7,7 +7,6 @@ import {
 import {
   buildCountyFollowUp,
   FOLLOW_UP_INTERPRETATION,
-  FOLLOW_UP_UNAVAILABLE_INTERPRETATION,
   type FollowUpReviewContext,
   type FollowUpWorkflowRow,
 } from "@/lib/follow-up-workflows";
@@ -35,7 +34,10 @@ function FollowUpRow({ row }: { row: FollowUpWorkflowRow }) {
   return (
     <li data-category={row.id} data-testid={`follow-up-${row.id}`}>
       <strong>{row.label}</strong>
-      <span>{row.recommendation}</span>
+      <span>
+        <span className="action-lead">{row.action}</span>
+        {row.detail ? <span className="action-fact">{row.detail}</span> : null}
+      </span>
     </li>
   );
 }
@@ -98,6 +100,9 @@ export function CountyActionPlan({
           )}
         </div>
       </div>
+      <p className="action-caution" data-testid="follow-up-interpretation">
+        {FOLLOW_UP_INTERPRETATION}
+      </p>
       <p className="action-summary">{workflow.level.explanation}</p>
       {workflow.level.colorResponseNote ? (
         <p className="action-summary" data-testid="follow-up-color-note">
@@ -119,28 +124,23 @@ export function CountyActionPlan({
           <strong>{FOLLOW_UP_WHAT_IF_TITLE}</strong> {FOLLOW_UP_WHAT_IF_NOTE}
         </p>
       ) : null}
-      <p className="action-caution" data-testid="follow-up-interpretation">
-        {workflow.level.status === "unavailable"
-          ? FOLLOW_UP_UNAVAILABLE_INTERPRETATION
-          : FOLLOW_UP_INTERPRETATION}
-      </p>
       <ol className="action-list">
         {workflow.rows.map((row) => (
           <FollowUpRow key={row.id} row={row} />
         ))}
       </ol>
-      <section
-        className="ux-reset-follow-up-questions"
+      <details
+        className="action-disclosure ux-reset-follow-up-questions"
         data-testid="follow-up-questions"
       >
-        <h4>Questions before acting</h4>
+        <summary>Questions before acting</summary>
         <p>{FOLLOW_UP_QUESTIONS_INTRO}</p>
         <ol>
           {workflow.questions.map((question) => (
             <li key={question}>{question}</li>
           ))}
         </ol>
-      </section>
+      </details>
       <details className="action-resources">
         <summary>Questions, partner roles, and official resources</summary>
         <p>

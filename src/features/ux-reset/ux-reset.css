@@ -1999,11 +1999,11 @@
 
 .ux-reset-follow-up-questions {
   margin-top: 0.85rem;
-  padding-top: 0.75rem;
+  padding-top: 0;
   border-top: 1px solid var(--line);
 }
 
-.ux-reset-follow-up-questions h4,
+.ux-reset-follow-up-questions summary,
 .ux-reset-follow-up-questions p {
   margin: 0;
 }
