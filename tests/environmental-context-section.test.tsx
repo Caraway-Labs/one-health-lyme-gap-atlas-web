@@ -276,7 +276,8 @@ describe("environmental context section", () => {
     });
     await waitFor(() => {
       expect({
-        absent: screen.getAllByText(/absence is not zero/i).length,
+        absent: screen.getAllByText(/No governed observation was returned/i)
+          .length,
         zero: screen.queryByText("0.0 mm"),
       }).toStrictEqual({ absent: 4, zero: null });
     });
@@ -316,7 +317,7 @@ describe("environmental context section", () => {
         .textContent,
       temperature: screen.queryByText("-1.992294192037333 °C"),
     }).toStrictEqual({
-      partial: expect.stringContaining("not zero"),
+      partial: expect.not.stringContaining("not zero"),
       temperature: null,
     });
   });
@@ -398,6 +399,49 @@ describe("environmental context section", () => {
       reason: true,
       unavailable: true,
       zero: null,
+    });
+  });
+
+  it("keeps governed limitations in provenance and hides the short caveat", async () => {
+    observationsGet.mockImplementation(
+      async (params: ObservationsV1ObservationsGetParams) => {
+        const measureId = params.measure_id;
+        if (!isSampleMeasure(measureId)) {
+          return {
+            data: parsedEnvelope([]),
+            headers: new Headers(),
+            status: 200,
+          };
+        }
+        return {
+          data: parsedEnvelope([
+            environmentalObservation({
+              fips: params.geography_id[0],
+              measureId,
+            }),
+          ]),
+          headers: new Headers(),
+          status: 200,
+        };
+      }
+    );
+    renderSection();
+    await screen.findByText("0.0 mm");
+    const precipitation = screen.getByTestId(
+      "environmental-measure-nclimgrid_prcp_county_day"
+    );
+    const limitation =
+      "January 2025 descriptive weather context only; no Lyme causal, risk or ML claim.";
+    expect({
+      badge: precipitation.textContent?.includes("Limited"),
+      caveat: precipitation.querySelector(".ux-reset-evidence-caveat"),
+      limitations: precipitation
+        .querySelector("[data-testid='evidence-provenance-limitations']")
+        ?.textContent?.includes(limitation),
+    }).toStrictEqual({
+      badge: true,
+      caveat: null,
+      limitations: true,
     });
   });
 });

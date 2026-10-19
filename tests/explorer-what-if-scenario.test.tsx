@@ -6,11 +6,9 @@ import {
   adjustCountyScenarios,
 } from "../src/features/ux-reset/review/explorer-scenario-score";
 import {
-  EXPLORER_SCENARIO_CAVEAT,
   EXPLORER_SCENARIO_EXAMPLE,
   EXPLORER_SCENARIO_HEADING,
   EXPLORER_SCENARIO_INTRO,
-  EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT,
   EXPLORER_SCENARIO_MISSING_TOOLTIP,
   EXPLORER_SCENARIO_RATE_TOOLTIP,
   EXPLORER_SCENARIO_RECALCULATION,
@@ -126,12 +124,12 @@ describe(ExplorerWhatIfScenario, () => {
     const text =
       screen.getByTestId("explorer-what-if-scenario").textContent ?? "";
     expect({
-      caveat: text.includes(EXPLORER_SCENARIO_CAVEAT),
+      caveat: text.includes("do not measure individual Lyme disease risk"),
       reset: onChange.mock.lastCall?.[0],
       risk: /personal disease risk/i.test(text),
       safety: /not a safety finding/i.test(text),
     }).toStrictEqual({
-      caveat: true,
+      caveat: false,
       reset: SCENARIO_SCORE_DEFAULTS,
       risk: false,
       safety: false,
@@ -163,7 +161,7 @@ describe(ExplorerWhatIfScenario, () => {
     const text =
       screen.getByTestId("explorer-what-if-scenario").textContent ?? "";
     expect({
-      caveat: screen.getByTestId("explorer-scenario-caveat").textContent,
+      caveat: screen.queryByTestId("explorer-scenario-caveat"),
       example: text.includes(EXPLORER_SCENARIO_EXAMPLE),
       intro: text.includes(EXPLORER_SCENARIO_INTRO),
       live: screen
@@ -171,7 +169,7 @@ describe(ExplorerWhatIfScenario, () => {
         .querySelector("[aria-live]"),
       sliders: screen.getAllByRole("slider").length,
     }).toStrictEqual({
-      caveat: EXPLORER_SCENARIO_CAVEAT,
+      caveat: null,
       example: true,
       intro: true,
       live: null,
@@ -619,13 +617,14 @@ describe(ExplorerWhatIfScenario, () => {
       screen.getByTestId("explorer-scenario-impact").textContent ?? "";
     expect({
       category: screen.getByTestId("explorer-scenario-category").textContent,
-      lower: screen.getByTestId("explorer-scenario-lower-score").textContent,
+      lower: screen.queryByTestId("explorer-scenario-lower-score"),
       points: fallen.includes("−10.7 points"),
     }).toStrictEqual({
       category: "Follow-up category unchanged",
-      lower: EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT,
+      lower: null,
       points: true,
     });
+    expect(fallen).not.toContain("does not mean Lyme disease is absent");
 
     view.rerender(
       <ExplorerWhatIfScenario

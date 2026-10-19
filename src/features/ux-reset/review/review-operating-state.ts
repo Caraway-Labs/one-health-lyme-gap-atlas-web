@@ -112,7 +112,7 @@ export function reviewPictureSummary(state: ReviewPictureState): string {
       return "There is not enough eligible evidence to evaluate this scope.";
     }
     case reviewPictureStateValues.noneStandOut: {
-      return "Nothing stands out under the approved method. That is not a finding of no Lyme activity.";
+      return "Nothing stands out under the approved method.";
     }
     case reviewPictureStateValues.unsupported: {
       return "No review rule is enabled for this result.";

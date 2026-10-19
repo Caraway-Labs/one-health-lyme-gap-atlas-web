@@ -182,10 +182,19 @@ test.describe("Atlas Explorer environmental context", () => {
         .filter({ visible: true })
         .first()
     ).toBeVisible();
+    await expect(section.locator(".ux-reset-evidence-caveat")).toHaveCount(0);
+    await expect(
+      section.getByTestId("evidence-provenance-limitations").first()
+    ).toContainText(
+      "January 2025 descriptive weather context only; no Lyme causal, risk or ML claim."
+    );
 
     await page.getByLabel("Observation date").fill("2025-01-18");
     await expect(page.getByText("0.0 mm")).toHaveCount(0);
-    await expect(page.getByText(/absence is not zero/i).first()).toBeVisible();
+    await expect(page.getByText(/absence is not zero/i)).toHaveCount(0);
+    await expect(
+      page.getByText(/No governed observation was returned/i).first()
+    ).toBeVisible();
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("environmental-context-other-day.png"),

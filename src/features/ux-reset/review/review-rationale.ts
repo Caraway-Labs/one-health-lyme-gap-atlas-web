@@ -1,18 +1,5 @@
 import type { CountyDetail } from "@/generated/models";
 
-export const REVIEW_RATIONALE_INTRO =
-  "These are signals to investigate, not conclusions about disease risk or a complete count of Lyme disease.";
-
-/**
- * The published gap score uses the human incidence floor, tick and pathogen
- * signals, and the community term (SVI percentile, uninsured percentile, and
- * RUCC). Uninsured percent is shown for interpretation and is not that
- * percentile input. These sentences describe published values; they do not
- * attribute how much any field changed this county's score.
- */
-export const REVIEW_RATIONALE_SCORE_NOTE =
-  "These values describe the published record. They do not show how much each field changed this county’s gap score. The percentage uninsured is context; the score uses the uninsured percentile.";
-
 export type ReviewRationaleGroup = "surveillance" | "community";
 
 export interface ReviewRationaleItem {
@@ -69,7 +56,7 @@ function tickSentence(detail: CountyDetail): string {
   );
   if (documented) {
     const speciesNote = species.length > 0 ? ` ${species.join("; ")}.` : "";
-    return `Published tick surveillance classifies this county as ${detail.tick_status.toLowerCase()}.${speciesNote} A published status is not a measure of tick abundance.`;
+    return `Published tick surveillance classifies this county as ${detail.tick_status.toLowerCase()}.${speciesNote}`;
   }
   const missing = statuses.every(
     (value) =>
@@ -78,20 +65,20 @@ function tickSentence(detail: CountyDetail): string {
       value.trim().toLowerCase() === "no records"
   );
   if (missing) {
-    return "The published tick table has no county record; this does not establish tick absence.";
+    return "The published tick table has no county record.";
   }
-  return `The published tick status is ${detail.tick_status}. This is not a finding of tick absence.`;
+  return `The published tick status is ${detail.tick_status}.`;
 }
 
 function pathogenSentence(detail: CountyDetail): string {
   const status = detail.burgdorferi_status.trim().toLowerCase();
   if (status === "present") {
-    return "Borrelia burgdorferi was detected in tested ticks in the published surveillance data. Detection is not a human infection or transmission estimate.";
+    return "Borrelia burgdorferi was detected in tested ticks in the published surveillance data.";
   }
   if (status === "no records" || status === "" || status === "unknown") {
-    return "No county-level B. burgdorferi detection record is available; this does not establish pathogen absence.";
+    return "No county-level B. burgdorferi detection record is available.";
   }
-  return `The published B. burgdorferi status is ${detail.burgdorferi_status}. This is not a finding of pathogen absence.`;
+  return `The published B. burgdorferi status is ${detail.burgdorferi_status}.`;
 }
 
 function publishedFloorCount(detail: CountyDetail): number | null {
@@ -121,21 +108,21 @@ function publishedFloorRate(detail: CountyDetail): string | null {
 function humanSentence(detail: CountyDetail): string {
   const status = detail.human_status.trim().toLowerCase();
   if (status === "suppressed") {
-    return "The 2023 county Lyme case count is suppressed. Suppression is not zero cases.";
+    return "The 2023 county Lyme case count is suppressed.";
   }
   if (status === "missing") {
-    return "The 2023 county Lyme case count is missing. A missing count is not zero cases.";
+    return "The 2023 county Lyme case count is missing.";
   }
   if (status === "no_county_linked_record") {
-    return "No county-linked 2023 Lyme case record is available. That is not zero cases.";
+    return "No county-linked 2023 Lyme case record is available.";
   }
   const count = publishedFloorCount(detail);
   const rate = publishedFloorRate(detail);
   if (count === null && rate === null) {
     if (status === "published_count_floor") {
-      return "A 2023 case-count floor was published, but the count and rate are unavailable. Unavailable numbers are not zero cases.";
+      return "A 2023 case-count floor was published, but the count and rate are unavailable.";
     }
-    return "No county-level 2023 Lyme case count is available. That is not zero cases.";
+    return "No county-level 2023 Lyme case count is available.";
   }
   const parts: string[] = [];
   if (count !== null) {
@@ -146,15 +133,14 @@ function humanSentence(detail: CountyDetail): string {
   if (rate !== null) {
     parts.push(`The published 2023 minimum rate is ${rate} cases per 100,000.`);
   }
-  parts.push("A published floor is a minimum, not an exact count or rate.");
   return parts.join(" ");
 }
 
 function sviSentence(detail: CountyDetail): string {
   if (!finite(detail.svi_percentile)) {
-    return "No county-level 2022 social vulnerability percentile was published. No estimated value is shown.";
+    return "No county-level 2022 social vulnerability percentile was published.";
   }
-  return `The 2022 social vulnerability percentile is ${percentLabel(detail.svi_percentile)}. Higher values indicate greater vulnerability on the source index. This is context for access and outreach, not proof of underreporting.`;
+  return `The 2022 social vulnerability percentile is ${percentLabel(detail.svi_percentile)}.`;
 }
 
 function insuranceSentence(detail: CountyDetail): string {
@@ -163,24 +149,24 @@ function insuranceSentence(detail: CountyDetail): string {
       maximumFractionDigits: 1,
       minimumFractionDigits: 1,
     });
-    return `The published percentage uninsured is ${percent}%. This is context for healthcare access, not proof that cases are being missed.`;
+    return `The published percentage uninsured is ${percent}%.`;
   }
   if (finite(detail.uninsured_percentile)) {
     return `The published uninsured percentile is ${percentLabel(detail.uninsured_percentile)}. The percentage uninsured was not returned, so no percent is shown.`;
   }
-  return "No county-level health insurance coverage value was published. No estimated value is shown.";
+  return "No county-level health insurance coverage value was published.";
 }
 
 function ruralSentence(detail: CountyDetail): string {
   if (!finite(detail.rucc_2023)) {
-    return "No 2023 rural-urban classification was published for this county. No estimated category is shown.";
+    return "No 2023 rural-urban classification was published for this county.";
   }
   const code = detail.rucc_2023;
   const label = RUCC_2023_LABELS[code];
   const named = label
     ? `USDA Rural-Urban Continuum Code ${code} (2023): ${label}.`
     : `USDA Rural-Urban Continuum Code ${code} (2023) has no approved plain-language label in Atlas.`;
-  return `${named} Code 1 is the most metropolitan and 9 is the most rural. This is context for follow-up planning, not a tick-habitat or underreporting measure.`;
+  return `${named} Code 1 is the most metropolitan and 9 is the most rural.`;
 }
 
 export function reviewRationaleFor(

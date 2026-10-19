@@ -47,8 +47,10 @@ function observationAnchor(observationId: string): string {
 
 function FamilyObservations({
   observations,
+  showGovernedLimitations,
 }: {
   observations: readonly CountyEvidenceObservation[];
+  showGovernedLimitations: boolean;
 }) {
   if (observations.length === 0) {
     return (
@@ -70,7 +72,11 @@ function FamilyObservations({
           id={observationAnchor(record.observation.observation_id)}
           key={record.observation.observation_id}
         >
-          <EvidenceObject claimHeadingLevel="h4" model={record.evidence} />
+          <EvidenceObject
+            claimHeadingLevel="h4"
+            model={record.evidence}
+            showGovernedLimitations={showGovernedLimitations}
+          />
         </div>
       ))}
     </div>
@@ -149,6 +155,7 @@ function FamilySection({
   domainsRequestFailed,
   failedMeasureIds,
   hasUnclassifiedMeasures,
+  omitDisclaimers,
   section,
   supplementalRows,
   unsupportedMeasureIds,
@@ -159,6 +166,7 @@ function FamilySection({
   domainsRequestFailed: boolean;
   failedMeasureIds: ReadonlySet<string>;
   hasUnclassifiedMeasures: boolean;
+  omitDisclaimers: boolean;
   section: CountyEvidenceFamilySection;
   supplementalRows: readonly PublishedHierarchyRow[];
   unsupportedMeasureIds: ReadonlySet<string>;
@@ -198,7 +206,9 @@ function FamilySection({
         headingLevel="h3"
         title={section.label}
       />
-      <p className="type-body">{section.contextNote}</p>
+      {omitDisclaimers ? null : (
+        <p className="type-body">{section.contextNote}</p>
+      )}
       {holdAbsence ? (
         <p className="type-body" data-testid="investigate-family-pending">
           {catalogFailed
@@ -213,7 +223,10 @@ function FamilySection({
         </p>
       ) : null}
       {publication === "assigned" ? (
-        <FamilyObservations observations={section.observations} />
+        <FamilyObservations
+          observations={section.observations}
+          showGovernedLimitations={!omitDisclaimers}
+        />
       ) : null}
       {supplementalRows.length > 0 ? (
         <div className="ux-reset-investigate-observations">
@@ -230,7 +243,11 @@ function FamilySection({
               id={publishedRowAnchor(row.measureId)}
               key={row.measureId}
             >
-              <EvidenceObject claimHeadingLevel="h4" model={row.evidence} />
+              <EvidenceObject
+                claimHeadingLevel="h4"
+                model={row.evidence}
+                showGovernedLimitations={!omitDisclaimers}
+              />
             </div>
           ))}
         </div>
@@ -369,6 +386,7 @@ export function InvestigateEvidenceHierarchy({
   countyRecordRefreshError = null,
   measures = EMPTY_MEASURES,
   modelAssisted = null,
+  omitDisclaimers = false,
   onRetryFailures,
   retrying = false,
 }: {
@@ -381,6 +399,8 @@ export function InvestigateEvidenceHierarchy({
   countyRecordRefreshError?: string | null;
   measures?: readonly Measure[];
   modelAssisted?: ReactNode;
+  /** Atlas Explorer deletes disclaimer copy. Investigate keeps it. */
+  omitDisclaimers?: boolean;
   onRetryFailures?: () => void;
   retrying?: boolean;
 }) {
@@ -489,40 +509,43 @@ export function InvestigateEvidenceHierarchy({
         </Card>
       </section>
 
-      <section
-        className="ux-reset-investigate-summary"
-        data-county={bundle.county.fips}
-        data-testid="investigate-limitation"
-      >
-        <AtlasSectionHeader
-          eyebrow="What is uncertain"
-          headingLevel="h2"
-          title={limitationSummary.title}
-        />
-        <Card className="ux-reset-investigate-callout">
-          <p className="type-body" data-testid="investigate-limitation-text">
-            {limitationSummary.text}
-          </p>
-          {limitation ? (
-            <a
-              href={`#${observationAnchor(limitation.observation.observation.observation_id)}`}
-            >
-              Inspect this limitation
-            </a>
-          ) : null}
-          {publishedCaveat?.row.state.inspectTarget ? (
-            <a href={`#${publishedCaveat.row.state.inspectTarget}`}>
-              Inspect this limitation
-            </a>
-          ) : null}
-          {coverageCaveat?.state.inspectTarget ? (
-            <a href={`#${coverageCaveat.state.inspectTarget}`}>
-              Inspect this limitation
-            </a>
-          ) : null}
-        </Card>
-      </section>
+      {omitDisclaimers ? null : (
+        <section
+          className="ux-reset-investigate-summary"
+          data-county={bundle.county.fips}
+          data-testid="investigate-limitation"
+        >
+          <AtlasSectionHeader
+            eyebrow="What is uncertain"
+            headingLevel="h2"
+            title={limitationSummary.title}
+          />
+          <Card className="ux-reset-investigate-callout">
+            <p className="type-body" data-testid="investigate-limitation-text">
+              {limitationSummary.text}
+            </p>
+            {limitation ? (
+              <a
+                href={`#${observationAnchor(limitation.observation.observation.observation_id)}`}
+              >
+                Inspect this limitation
+              </a>
+            ) : null}
+            {publishedCaveat?.row.state.inspectTarget ? (
+              <a href={`#${publishedCaveat.row.state.inspectTarget}`}>
+                Inspect this limitation
+              </a>
+            ) : null}
+            {coverageCaveat?.state.inspectTarget ? (
+              <a href={`#${coverageCaveat.state.inspectTarget}`}>
+                Inspect this limitation
+              </a>
+            ) : null}
+          </Card>
+        </section>
+      )}
       <KnownEmptySelectionNotice
+        omitCaveats={omitDisclaimers}
         selections={bundle.knownEmptySelections}
         testId="investigate-known-empty"
       />
@@ -537,6 +560,7 @@ export function InvestigateEvidenceHierarchy({
               domainsRequestFailed={bundle.domainsRequestFailed}
               failedMeasureIds={failedMeasureIds}
               hasUnclassifiedMeasures={bundle.unclassifiedMeasureIds.length > 0}
+              omitDisclaimers={omitDisclaimers}
               section={section}
               supplementalRows={
                 published ? rowsForFamily(published.rows, section.id) : []
@@ -575,7 +599,9 @@ export function InvestigateEvidenceHierarchy({
                     className="type-body"
                     data-testid="investigate-coverage-value"
                   >
-                    {`Published input coverage is ${published.completeness}%. This is not a disease risk score. A lower number is not zero evidence.`}
+                    {omitDisclaimers
+                      ? `Published input coverage is ${published.completeness}%.`
+                      : `Published input coverage is ${published.completeness}%. This is not a disease risk score. A lower number is not zero evidence.`}
                   </p>
                 ) : null}
                 {!published && !countyRecordLoading && !countyRecordError ? (
@@ -583,8 +609,9 @@ export function InvestigateEvidenceHierarchy({
                     className="type-body"
                     data-testid="investigate-coverage-value"
                   >
-                    Published input coverage was not returned for this county.
-                    That is not zero coverage.
+                    {omitDisclaimers
+                      ? "Published input coverage was not returned for this county."
+                      : "Published input coverage was not returned for this county. That is not zero coverage."}
                   </p>
                 ) : null}
                 {coverage.length > 0 ? (
@@ -601,6 +628,7 @@ export function InvestigateEvidenceHierarchy({
                         <EvidenceObject
                           claimHeadingLevel="h4"
                           model={row.evidence}
+                          showGovernedLimitations={!omitDisclaimers}
                         />
                       </div>
                     ))}
@@ -727,21 +755,26 @@ export function InvestigateEvidenceHierarchy({
             </AtlasStatusMessage>
           </div>
         ) : null}
-        {limitations.length > 0 || publishedGaps.length > 0 ? (
+        {(!omitDisclaimers && limitations.length > 0) ||
+        publishedGaps.length > 0 ? (
           <ul data-testid="investigate-gap-list">
-            {limitations.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
+            {omitDisclaimers
+              ? null
+              : limitations.map((line) => <li key={line}>{line}</li>)}
             {publishedGaps.map((line) => (
-              <li key={line}>{line}</li>
+              <li key={line}>
+                {omitDisclaimers
+                  ? line.replace(/ That is not zero\.$/, ".")
+                  : line}
+              </li>
             ))}
           </ul>
         ) : null}
-        {published?.releaseLimitation ? (
+        {omitDisclaimers || !published?.releaseLimitation ? null : (
           <p className="type-body" data-testid="investigate-release-limitation">
             {published.releaseLimitation}
           </p>
-        ) : null}
+        )}
         {bundle.unassigned.length > 0 ? (
           <section
             aria-label="Evidence without a family"
@@ -759,7 +792,10 @@ export function InvestigateEvidenceHierarchy({
               family allowlist. That is unknown classification, not an
               unpublished family.
             </p>
-            <FamilyObservations observations={bundle.unassigned} />
+            <FamilyObservations
+              observations={bundle.unassigned}
+              showGovernedLimitations={!omitDisclaimers}
+            />
           </section>
         ) : null}
         {countyRecordLoading && !hasGapContent ? (

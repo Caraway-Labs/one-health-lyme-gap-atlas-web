@@ -202,8 +202,9 @@ describe("Explorer map layers", () => {
       title: "Atlas gap score",
       unit: "review-priority score",
     });
-    expect(paint.note).toMatch(/not zero/);
-    expect(paint.note).toMatch(/not personal disease risk/);
+    expect(paint.note).not.toMatch(/not zero/);
+    expect(paint.note).not.toMatch(/not personal disease risk/);
+    expect(paint.note).toMatch(/published score colors/);
     expect(paint.entries.map((entry) => entry.label)).toContain(
       "Gap score unavailable"
     );

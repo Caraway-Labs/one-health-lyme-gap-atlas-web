@@ -321,11 +321,13 @@ describe("Explorer county evidence", () => {
     expect(screen.getByTestId("explorer-review-priority")).toHaveTextContent(
       "Highest review priority"
     );
+    const followUpText =
+      screen.getByTestId("explorer-follow-up").textContent ?? "";
     expect(screen.getByTestId("explorer-summary-reason")).toHaveTextContent(
       "Denver is included because the review method returned it."
     );
-    expect(screen.getByTestId("explorer-follow-up").textContent).not.toMatch(
-      /2 weeks|within 60|Conduct targeted follow-up|Coordinate a local assessment/i
+    expect(followUpText).not.toMatch(
+      /Denver is included because the review method returned it\.|2 weeks|within 60|Conduct targeted follow-up|Coordinate a local assessment/i
     );
   });
 
@@ -394,15 +396,17 @@ describe("Explorer county evidence", () => {
         .categoryConflict,
       county: screen.getByTestId("explorer-follow-up").dataset.county,
       priority: screen.getByTestId("explorer-review-priority").textContent,
-      reason: screen.getByTestId("explorer-summary-limitation").textContent,
       response: screen.getByTestId("explorer-follow-up-response").textContent,
     }).toStrictEqual({
       conflict: "true",
       county: "08013",
       priority: "Review priority: Monitor for changes",
-      reason: "Boulder limitation stays on Boulder.",
       response: "Verify with local information",
     });
+    expect(screen.queryByTestId("explorer-summary-limitation")).toBeNull();
+    expect(
+      screen.queryByText("Boulder limitation stays on Boulder.")
+    ).toBeNull();
   });
 
   it("carries the county into Compare and Ask Atlas without copying mode to Ask Atlas", () => {
@@ -524,8 +528,12 @@ describe("Explorer county evidence", () => {
       screen.getByText("County evidence is temporarily unavailable.")
     ).toBeVisible();
     expect(screen.getByTestId("explorer-review-category")).toHaveTextContent(
-      "did not load"
+      "Review category is not shown because the review result did not load."
     );
+    expect(
+      screen.getByRole("heading", { name: "Why review this county?" })
+    ).toBeVisible();
+    expect(screen.queryByTestId("explorer-summary-reason")).toBeNull();
     expect(screen.queryByTestId("investigate-evidence")).toBeNull();
   });
 
@@ -546,7 +554,7 @@ describe("Explorer county evidence", () => {
     );
     expect(screen.getByText("Loading county evidence…")).toBeVisible();
     expect(screen.getByTestId("explorer-review-category")).toHaveTextContent(
-      "loading"
+      "Review category is loading with the review result."
     );
     expect(screen.queryByTestId("investigate-evidence")).toBeNull();
   });
@@ -577,14 +585,18 @@ describe("Explorer county evidence", () => {
         onBackToMap={vi.fn<() => void>()}
       />
     );
-    const limitationText = () =>
-      screen.getByTestId("explorer-review-limitations").textContent;
     expect({
-      disclosure: limitationText(),
-      summary: screen.getByTestId("explorer-summary-limitation").textContent,
+      category: screen.getByTestId("explorer-review-category").textContent,
+      firstLimitation: screen.queryByText(denverLimitations[0] ?? ""),
+      heading: screen.queryByText("Review limitations"),
+      list: screen.queryByTestId("explorer-review-limitations"),
+      reason: screen.getByTestId("explorer-summary-reason").textContent,
     }).toStrictEqual({
-      disclosure: `Review limitations${denverLimitations.join("")}`,
-      summary: denverLimitations[0],
+      category: "Review category PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW.",
+      firstLimitation: null,
+      heading: null,
+      list: null,
+      reason: "Denver is included because the review method returned it.",
     });
     view.rerender(
       <ExplorerCountyEvidence
@@ -594,9 +606,7 @@ describe("Explorer county evidence", () => {
         onBackToMap={vi.fn<() => void>()}
       />
     );
-    expect(limitationText()).toBe(
-      `Review limitations${denverLimitations.join("")}`
-    );
+    expect(screen.queryByTestId("explorer-review-limitations")).toBeNull();
     workspace.current = baseWorkspace({
       identity: { fips: "08013", label: "Boulder", stateCode: "CO" },
       recovery: null,
@@ -616,9 +626,16 @@ describe("Explorer county evidence", () => {
         onBackToMap={vi.fn<() => void>()}
       />
     );
-    expect(limitationText()).toBe(
-      "Review limitationsBoulder limitation stays on Boulder."
-    );
+    expect({
+      boulderLimitation: screen
+        .getByTestId("explorer-follow-up")
+        .textContent?.includes("Boulder limitation stays on Boulder."),
+      summaryReason: screen.getByTestId("explorer-summary-reason").textContent,
+    }).toStrictEqual({
+      boulderLimitation: false,
+      summaryReason:
+        "Denver is included because the review method returned it.",
+    });
   });
 
   it("keeps an unstarted county read distinct from a missing record", () => {

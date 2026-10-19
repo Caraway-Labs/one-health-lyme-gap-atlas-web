@@ -766,6 +766,7 @@ function ResetReviewExperienceInner() {
           fips={reviewCounty}
           headingLevel="h2"
           release={tierRelease}
+          showInterpretiveNotes={false}
         />
       ) : null}
 

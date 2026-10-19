@@ -552,7 +552,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.getByRole("button", { name: "About Atlas gap score" }).click();
     const about = page.getByRole("dialog", { name: "About Atlas gap score" });
     await expect(about).toContainText("CDC Lyme surveillance 2023");
-    await expect(about).toContainText("not personal disease risk");
+    await expect(about).not.toContainText("not personal disease risk");
     await expect(about).toContainText("Not zero");
     await expect(about).toContainText("Priority 1 — Investigate");
     await page.keyboard.press("Escape");

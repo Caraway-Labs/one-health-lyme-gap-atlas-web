@@ -2,9 +2,12 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 
 export function KnownEmptySelectionNotice({
+  omitCaveats = false,
   selections,
   testId,
 }: {
+  /** Atlas Explorer omits the absence caveat and limitation list. */
+  omitCaveats?: boolean;
   selections: readonly KnownEmptyObservationSelection[];
   testId: string;
 }) {
@@ -36,10 +39,12 @@ export function KnownEmptySelectionNotice({
     >
       <AtlasStatusMessage tone="empty">
         <p>No published results for this selection.</p>
-        <p>
-          This does not establish biological absence, source coverage, or
-          geography membership.
-        </p>
+        {omitCaveats ? null : (
+          <p>
+            This does not establish biological absence, source coverage, or
+            geography membership.
+          </p>
+        )}
         {releaseIds.length === 1 ? (
           <p className="type-small">Checked release {releaseIds[0]}.</p>
         ) : null}
@@ -50,13 +55,13 @@ export function KnownEmptySelectionNotice({
             ))}
           </ul>
         ) : null}
-        {limitations.length > 0 ? (
+        {omitCaveats || limitations.length === 0 ? null : (
           <ul data-testid={`${testId}-limitations`}>
             {limitations.map((limitation) => (
               <li key={limitation}>{limitation}</li>
             ))}
           </ul>
-        ) : null}
+        )}
       </AtlasStatusMessage>
     </section>
   );

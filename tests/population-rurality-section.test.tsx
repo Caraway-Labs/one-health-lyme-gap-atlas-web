@@ -277,7 +277,7 @@ describe("population and rurality section", () => {
     expect(
       screen.getByText(/Some population and rurality measures did not load/)
         .textContent
-    ).toContain("not zero");
+    ).not.toContain("not zero");
     expect(screen.queryByText("0.7264 percentile")).not.toBeInTheDocument();
   });
 
@@ -289,9 +289,12 @@ describe("population and rurality section", () => {
     });
     renderSection();
     await expect(screen.findByRole("status")).resolves.toHaveTextContent(
-      "No governed observations were returned. That absence is not zero."
+      "No governed observations were returned."
     );
-    expect(screen.getAllByText(/absence is not zero/i)).toHaveLength(6);
+    expect(screen.queryAllByText(/absence is not zero/i)).toHaveLength(0);
+    expect(
+      screen.getAllByText(/No governed observation was returned/i)
+    ).toHaveLength(5);
     expect(screen.queryByText("520,149 people")).not.toBeInTheDocument();
   });
 
