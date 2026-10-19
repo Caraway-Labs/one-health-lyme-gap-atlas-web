@@ -335,7 +335,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore potential Lyme surveillance gaps",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
     await expectHeaderWithoutAskAtlas(page);
@@ -409,7 +409,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore potential Lyme surveillance gaps",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
     expect(new URL(page.url()).searchParams.get("county")).toBe("08001");
@@ -656,7 +656,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore potential Lyme surveillance gaps",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
   });
@@ -695,7 +695,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore potential Lyme surveillance gaps",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
     await expectHeaderWithoutAskAtlas(page);

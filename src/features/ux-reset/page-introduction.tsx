@@ -17,6 +17,9 @@ export function PageIntroduction({ page }: { page: PageIntroductionId }) {
           <p className="eyebrow light">{copy.eyebrow}</p>
           <h1>{copy.headline}</h1>
           <p>{copy.supporting}</p>
+          <p>
+            <strong>{copy.instructionLead}</strong> {copy.instruction}
+          </p>
         </div>
         <div className="ux-reset-explorer-introduction-score">
           <h2>{copy.scoreHeading}</h2>

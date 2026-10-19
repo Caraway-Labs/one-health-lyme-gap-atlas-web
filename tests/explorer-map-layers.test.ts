@@ -167,7 +167,7 @@ describe("Explorer map layers", () => {
     }).toStrictEqual({
       id: "gap_score",
       label: "Atlas gap score",
-      menu: "Surveillance gap score",
+      menu: "Gap review score",
       otherMenus: otherLayers.map((layer) => layer.label),
       otherLabels: otherLayers.map((layer) => layer.label),
     });

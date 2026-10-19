@@ -92,7 +92,7 @@ test("retired Geographic Explorer selection opens Atlas Explorer without the dra
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Explore potential Lyme surveillance gaps",
+      name: "Explore county Lyme data",
     })
   ).toBeVisible();
   await expect(

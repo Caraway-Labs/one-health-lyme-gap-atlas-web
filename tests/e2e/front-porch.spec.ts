@@ -163,7 +163,7 @@ test("sign-in stays on the approved screen and an overview bookmark opens Atlas 
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Explore potential Lyme surveillance gaps",
+      name: "Explore county Lyme data",
     })
   ).toBeVisible();
   await expectNoCountyPreselection(page);
@@ -210,7 +210,7 @@ test("signed-in review entry does not preselect a county", async ({ page }) => {
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Explore potential Lyme surveillance gaps",
+      name: "Explore county Lyme data",
     })
   ).toBeVisible();
 });

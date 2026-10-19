@@ -368,7 +368,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     for (const layerName of [
       "B. burgdorferi status",
       "County boundaries",
-      "Surveillance gap score",
+      "Gap review score",
     ]) {
       await chooseLayer(page, layerName);
       await expect

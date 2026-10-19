@@ -46,7 +46,7 @@ test.describe("retired Geographic Explorer bookmarks", () => {
       await expect(
         page.getByRole("heading", {
           level: 1,
-          name: "Explore potential Lyme surveillance gaps",
+          name: "Explore county Lyme data",
         })
       ).toBeVisible();
       await expect(

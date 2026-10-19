@@ -105,7 +105,7 @@ async function expectHistoryNavigation(
 
 const WORKSPACE_DESTINATIONS = [
   {
-    heading: "Explore potential Lyme surveillance gaps",
+    heading: "Explore county Lyme data",
     path: "/explore",
     title: "Atlas Explorer | One Health Lyme Gap Atlas",
   },

@@ -457,7 +457,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Explore potential Lyme surveillance gaps",
+      name: "Explore county Lyme data",
     })
   ).toBeVisible();
 
@@ -550,7 +550,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Explore potential Lyme surveillance gaps",
+      name: "Explore county Lyme data",
     })
   ).toBeVisible();
 });

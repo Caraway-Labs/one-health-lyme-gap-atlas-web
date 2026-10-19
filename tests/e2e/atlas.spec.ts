@@ -202,7 +202,7 @@ test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages",
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Explore potential Lyme surveillance gaps",
+      name: "Explore county Lyme data",
     })
   ).toBeVisible();
   await expect(
@@ -434,7 +434,7 @@ test("retired public analytical bookmarks open Atlas Explorer", async ({
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore potential Lyme surveillance gaps",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
     const params = new URL(page.url()).searchParams;

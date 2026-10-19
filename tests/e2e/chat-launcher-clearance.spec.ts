@@ -16,7 +16,7 @@ test("retired public analytical bookmarks do not open the assistant drawer", asy
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore potential Lyme surveillance gaps",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
     await expect(

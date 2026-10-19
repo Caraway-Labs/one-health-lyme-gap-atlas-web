@@ -282,12 +282,10 @@ export function explorerMapLayerById(
 }
 
 /** Menu text only. Legends, cards, and the layer id keep the official name. */
-export const SURVEILLANCE_GAP_SCORE_MENU_LABEL = "Surveillance gap score";
+export const GAP_REVIEW_SCORE_MENU_LABEL = "Gap review score";
 
 export function explorerMapLayerMenuLabel(layer: ExplorerMapLayer): string {
-  return layer.id === "gap_score"
-    ? SURVEILLANCE_GAP_SCORE_MENU_LABEL
-    : layer.label;
+  return layer.id === "gap_score" ? GAP_REVIEW_SCORE_MENU_LABEL : layer.label;
 }
 
 export function parseExplorerMapLayerId(

@@ -430,7 +430,7 @@ test.describe("professional shell scroll containment", () => {
     await expect(page).toHaveURL(/\/explore/);
     await expect(
       page.getByRole("heading", {
-        name: "Explore potential Lyme surveillance gaps",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
     await expect.poll(() => mainScrollTop(page)).toBe(0);
