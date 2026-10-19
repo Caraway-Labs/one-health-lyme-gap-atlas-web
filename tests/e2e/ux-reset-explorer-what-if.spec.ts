@@ -172,7 +172,7 @@ test.describe("Explorer what-if scenario", () => {
     await page.getByRole("button", { name: "About Adjusted scenario" }).click();
     await expect(
       page.getByRole("dialog", { name: "About Adjusted scenario" })
-    ).toContainText("not personal disease risk");
+    ).not.toContainText("not personal disease risk");
     await page.keyboard.press("Escape");
     const impactSummary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(
@@ -187,12 +187,13 @@ test.describe("Explorer what-if scenario", () => {
     await expect(impact).toContainText("−10.7 points");
     await expect(impact).toContainText("Follow-up category unchanged");
     await expect(impact).not.toContainText("Not a safety finding");
-    await expect(page.getByTestId("explorer-scenario-caveat")).toContainText(
-      "They do not measure individual Lyme disease risk or predict future cases."
+    await expect(page.getByTestId("explorer-scenario-caveat")).toHaveCount(0);
+    await expect(page.getByTestId("explorer-scenario-lower-score")).toHaveCount(
+      0
     );
     await expect(
-      page.getByTestId("explorer-scenario-lower-score")
-    ).toContainText("A lower score does not mean Lyme disease is absent");
+      page.getByTestId("explorer-what-if-scenario")
+    ).not.toContainText("do not measure individual Lyme disease risk");
     await page.screenshot({
       path: "/opt/cursor/artifacts/what-if-expanded-changed.png",
       fullPage: true,
@@ -383,7 +384,7 @@ test.describe("Explorer what-if scenario", () => {
     const scenarioAbout = page.getByRole("dialog", {
       name: "About Adjusted scenario",
     });
-    await expect(scenarioAbout).toContainText("not personal disease risk");
+    await expect(scenarioAbout).not.toContainText("not personal disease risk");
     await expect(scenarioAbout).toContainText(
       "keep the governed score and color"
     );

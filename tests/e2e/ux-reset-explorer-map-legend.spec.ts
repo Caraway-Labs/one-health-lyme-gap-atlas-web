@@ -2,10 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
-import {
-  approvedFollowUpTitleForColor,
-  SCORE_COLOR_BANDS,
-} from "@/features/ux-reset/review/suggested-follow-up-content";
+import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
   TICK_STATUS_ESTABLISHED_COLOR,
   TICK_STATUS_EXTRA_COLORS,
@@ -13,6 +10,7 @@ import {
   TICK_STATUS_REPORTED_COLOR,
 } from "@/features/ux-reset/review/tick-status-contract";
 import { ValueState } from "@/generated/models";
+import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 import { populationRuralityObservation } from "../fixtures/population-rurality-context";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
@@ -26,9 +24,13 @@ function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
 }
 
 function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
+  const presentation = responseTierPresentationForColor(band.color);
+  if (!presentation) {
+    throw new Error(`Missing response tier for ${band.color}`);
+  }
   return {
-    action: approvedFollowUpTitleForColor(band.color),
-    category: band.approvedReviewCategory,
+    action: presentation.detail,
+    category: presentation.title,
     title: gapScoreRangeTitle(band),
   };
 }
@@ -552,7 +554,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.getByRole("button", { name: "About Atlas gap score" }).click();
     const about = page.getByRole("dialog", { name: "About Atlas gap score" });
     await expect(about).toContainText("CDC Lyme surveillance 2023");
-    await expect(about).toContainText("not personal disease risk");
+    await expect(about).not.toContainText("not personal disease risk");
     await expect(about).toContainText("Not zero");
     await expect(about).toContainText("Priority 1 — Investigate");
     await page.keyboard.press("Escape");

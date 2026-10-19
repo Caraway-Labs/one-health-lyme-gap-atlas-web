@@ -233,10 +233,15 @@ describe("Published Review county exploration", () => {
     picture("01003");
     await screen.findByText(/case-count floor is 5/);
     expect(
-      screen.getByText(/A published floor is a minimum/)
-    ).toBeInTheDocument();
+      screen.queryByText(/A published floor is a minimum/)
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText(/does not establish pathogen absence/)
+      screen.queryByText(/does not establish pathogen absence/)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /No county-level B. burgdorferi detection record is available/
+      )
     ).toBeInTheDocument();
     expect(screen.getByTestId("review-rationale")).toBeInTheDocument();
     for (const detail of [autauga, barbour]) {

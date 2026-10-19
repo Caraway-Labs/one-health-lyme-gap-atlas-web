@@ -66,10 +66,13 @@ export function Tier1SurveillancePriority({
   fips,
   headingLevel = "h2",
   release,
+  showInterpretiveNotes = true,
 }: {
   fips: string;
   headingLevel?: HeadingLevel;
   release: Tier1ActiveRelease;
+  /** Atlas Explorer omits review-priority disclaimers. */
+  showInterpretiveNotes?: boolean;
 }) {
   const query = useTier1SurveillancePriority(fips, release);
   const status = queryStatus(query);
@@ -82,15 +85,21 @@ export function Tier1SurveillancePriority({
     status,
   });
   return (
-    <Tier1SurveillancePriorityPanel headingLevel={headingLevel} view={view} />
+    <Tier1SurveillancePriorityPanel
+      headingLevel={headingLevel}
+      showInterpretiveNotes={showInterpretiveNotes}
+      view={view}
+    />
   );
 }
 
 export function Tier1SurveillancePriorityPanel({
   headingLevel,
+  showInterpretiveNotes = true,
   view,
 }: {
   headingLevel: HeadingLevel;
+  showInterpretiveNotes?: boolean;
   view: Tier1SurveillancePriorityView;
 }) {
   const titleId = useId();
@@ -115,14 +124,19 @@ export function Tier1SurveillancePriorityPanel({
           {TIER1_HEADING}
         </Heading>
       </div>
-      <Tier1SurveillancePriorityBody view={view} />
+      <Tier1SurveillancePriorityBody
+        showInterpretiveNotes={showInterpretiveNotes}
+        view={view}
+      />
     </section>
   );
 }
 
 function Tier1SurveillancePriorityBody({
+  showInterpretiveNotes,
   view,
 }: {
+  showInterpretiveNotes: boolean;
   view: Tier1SurveillancePriorityView;
 }) {
   switch (view.kind) {
@@ -166,6 +180,7 @@ function Tier1SurveillancePriorityBody({
         <Tier1ReturnedPriority
           details={view.details}
           reasons={view.reasons}
+          showInterpretiveNotes={showInterpretiveNotes}
           sufficiencyLabelText={sufficiencyLabel("NOT_ESTIMABLE")}
           tierLabel="Not returned"
         />
@@ -176,6 +191,7 @@ function Tier1SurveillancePriorityBody({
         <Tier1ReturnedPriority
           details={view.details}
           reasons={view.reasons}
+          showInterpretiveNotes={showInterpretiveNotes}
           sufficiencyLabelText={sufficiencyLabel(view.sufficiency)}
           tierLabel={view.tier}
         />
@@ -215,11 +231,13 @@ function viewSufficiency(
 function Tier1ReturnedPriority({
   details,
   reasons,
+  showInterpretiveNotes,
   sufficiencyLabelText,
   tierLabel,
 }: {
   details: Tier1ModelDetails;
   reasons: readonly Tier1ReasonDisplay[];
+  showInterpretiveNotes: boolean;
   sufficiencyLabelText: string;
   tierLabel: string;
 }) {
@@ -256,24 +274,33 @@ function Tier1ReturnedPriority({
       ) : (
         <p data-testid="tier1-reasons-absent">{TIER1_REASON_ABSENCE}</p>
       )}
-      <p className="type-small ux-reset-model-signal-support">
-        {TIER1_SUPPORT_NOTE}
-      </p>
-      <p
-        className="type-small ux-reset-model-signal-limitation"
-        data-testid="tier1-limitation"
-      >
-        {TIER1_LIMITATION}
-      </p>
-      <Tier1ModelDetailsDisclosure details={details} />
+      {showInterpretiveNotes ? (
+        <p className="type-small ux-reset-model-signal-support">
+          {TIER1_SUPPORT_NOTE}
+        </p>
+      ) : null}
+      {showInterpretiveNotes ? (
+        <p
+          className="type-small ux-reset-model-signal-limitation"
+          data-testid="tier1-limitation"
+        >
+          {TIER1_LIMITATION}
+        </p>
+      ) : null}
+      <Tier1ModelDetailsDisclosure
+        details={details}
+        showInterpretiveNotes={showInterpretiveNotes}
+      />
     </>
   );
 }
 
 function Tier1ModelDetailsDisclosure({
   details,
+  showInterpretiveNotes,
 }: {
   details: Tier1ModelDetails;
+  showInterpretiveNotes: boolean;
 }) {
   return (
     <details
@@ -319,11 +346,18 @@ function Tier1ModelDetailsDisclosure({
           <dd>{details.limitationRef}</dd>
         </div>
       </dl>
-      <p className="type-small ux-reset-model-signal-details-note">
-        Batch generated time is the model batch, not the request time.
-        Percentile is relative to this batch and population. The model-native
-        score is not predicted incidence.
-      </p>
+      {showInterpretiveNotes ? (
+        <p className="type-small ux-reset-model-signal-details-note">
+          Batch generated time is the model batch, not the request time.
+          Percentile is relative to this batch and population. The model-native
+          score is not predicted incidence.
+        </p>
+      ) : (
+        <p className="type-small ux-reset-model-signal-details-note">
+          Batch generated time is the model batch, not the request time.
+          Percentile is relative to this batch and population.
+        </p>
+      )}
     </details>
   );
 }

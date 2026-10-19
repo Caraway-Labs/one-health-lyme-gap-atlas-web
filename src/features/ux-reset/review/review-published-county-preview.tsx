@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import type { Ref } from "react";
 
-import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { ResponseTierPill } from "@/components/response-tier-pill";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -17,79 +16,16 @@ import {
   publishedGapScore,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
 import { RankingInfluencePanel } from "@/features/ux-reset/review/ranking-influence-panel";
-import { REVIEW_RATIONALE_SCORE_NOTE } from "@/features/ux-reset/review/review-rationale";
 import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
 import {
   EXPLORER_MAP_FOLLOW_UP_ID,
   scrollToSuggestedFollowUp,
 } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
 import type { CountyDetail } from "@/generated/models";
-import { recognizedPlainPriority } from "@/lib/atlas-ui";
 import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
 import { cn } from "@/lib/utils";
 
 export { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-human-floor-evidence";
-
-type PublishedReviewPriority =
-  | { kind: "neutral"; value: string }
-  | { kind: "recognized"; value: string }
-  | { kind: "unavailable" };
-
-function publishedReviewPriority(priority: string): PublishedReviewPriority {
-  const trimmed = priority.trim();
-  if (trimmed.length === 0 || trimmed.toLowerCase() === "unavailable") {
-    return { kind: "unavailable" };
-  }
-  if (recognizedPlainPriority(trimmed)) {
-    return { kind: "recognized", value: trimmed };
-  }
-  return { kind: "neutral", value: trimmed };
-}
-
-function PublishedReviewPriorityReadout({
-  priority,
-}: {
-  priority: PublishedReviewPriority;
-}) {
-  switch (priority.kind) {
-    case "recognized": {
-      return (
-        <>
-          <AtlasPriorityBadge priority={priority.value} />
-          <p className="type-small">
-            Published review priority for follow-up. This is not a disease-risk
-            estimate.
-          </p>
-        </>
-      );
-    }
-    case "neutral": {
-      return (
-        <>
-          <p className="type-body" data-testid="review-preview-priority-text">
-            {priority.value}
-          </p>
-          <p className="type-small">
-            This published priority is not a recognized review category. It is
-            not a disease-risk estimate.
-          </p>
-        </>
-      );
-    }
-    case "unavailable": {
-      return (
-        <p className="type-body">
-          Review priority is unavailable for this county. Unavailable is not a
-          finding of no risk.
-        </p>
-      );
-    }
-    default: {
-      const exhaustive: never = priority;
-      return exhaustive;
-    }
-  }
-}
 
 function publishedPreviewScore(detail: CountyDetail): number | null {
   if (!detail.in_contiguous_tick_scope) {
@@ -127,9 +63,13 @@ function SelectedCountyScoreLockup({
           className="ux-reset-selected-county-gap-score"
           data-testid="selected-county-gap-score"
         >
-          <span className="sr-only">Atlas gap score </span>
-          <strong>{formatGapScore(score)}</strong>
-          <span>/100</span>
+          <span className="ux-reset-selected-county-gap-score-value">
+            <strong>{formatGapScore(score)}</strong>
+            <span>/100</span>
+          </span>
+          <span className="ux-reset-selected-county-gap-score-label">
+            Atlas gap score
+          </span>
         </p>
       )}
     </div>
@@ -166,26 +106,23 @@ export function ReviewPublishedCountyPreview({
       data-testid="review-published-county-preview"
       data-fips={county.fips}
     >
-      {detail ? (
-        <SelectedCountyScoreLockup
-          detail={detail}
-          reviewResultState={reviewResultState}
-        />
-      ) : null}
-      <p className="eyebrow">Selected county</p>
-      <h2 className="type-card">
-        {county.county}, {county.stateName}
-      </h2>
-      <p className="type-small" data-testid="review-preview-fips">
-        FIPS {county.fips}
-      </p>
-      {detail ? (
-        <div data-testid="review-preview-priority">
-          <PublishedReviewPriorityReadout
-            priority={publishedReviewPriority(detail.priority)}
-          />
+      <header className="ux-reset-selected-county-header">
+        <div className="ux-reset-selected-county-identity">
+          <p className="eyebrow">Selected county</p>
+          <h2 className="type-card">
+            {county.county}, {county.stateName}
+          </h2>
+          <p className="type-small" data-testid="review-preview-fips">
+            FIPS {county.fips}
+          </p>
         </div>
-      ) : null}
+        {detail ? (
+          <SelectedCountyScoreLockup
+            detail={detail}
+            reviewResultState={reviewResultState}
+          />
+        ) : null}
+      </header>
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">
           Loading published county evidence…
@@ -215,8 +152,7 @@ export function ReviewPublishedCountyPreview({
             {detail.release.methodology_version}.
           </p>
           <p className="type-small">
-            Release loaded {detail.release.loaded_at}. That timestamp is not an
-            observation period.
+            Release loaded {detail.release.loaded_at}.
           </p>
           {detail.release.sources.length > 0 ? (
             <ul>
@@ -253,11 +189,6 @@ export function ReviewPublishedCountyPreview({
               No source list was returned with this release.
             </p>
           )}
-          <p className="type-small">{REVIEW_RATIONALE_SCORE_NOTE}</p>
-          <p className="type-small">{detail.release.limitations}</p>
-          {detail.population === null ? (
-            <p>Population was not returned; it is not zero.</p>
-          ) : null}
         </details>
       ) : null}
       <div className="ux-reset-review-preview-actions">

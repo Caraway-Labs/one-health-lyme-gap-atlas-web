@@ -87,6 +87,7 @@ export function ExplorerMapFollowUp({
           detail={query.data}
           headingLevel="h3"
           idPrefix="map-"
+          omitDisclaimers
           reviewContext={{
             governedNextCheck: nextCheck,
             reviewResultState,

@@ -35,6 +35,7 @@ export function ReviewReleaseEvidence({
       context={context}
       errorMessage={errorMessage}
       loadState={loadState}
+      showLimitation={false}
     />
   );
 }

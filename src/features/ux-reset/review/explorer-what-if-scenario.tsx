@@ -39,12 +39,6 @@ export const EXPLORER_SCENARIO_INTRO =
 export const EXPLORER_SCENARIO_EXAMPLE =
   "Try exploring: What if tick and pathogen data carried more weight?";
 
-export const EXPLORER_SCENARIO_CAVEAT =
-  "These scores help identify counties for surveillance review. They do not measure individual Lyme disease risk or predict future cases.";
-
-export const EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT =
-  "A lower score does not mean Lyme disease is absent or that exposure cannot occur.";
-
 export const EXPLORER_SCENARIO_RECALCULATION =
   "Changes to these settings recalculate county scores for exploration. They appear in the county list and Atlas score map but do not change published results.";
 
@@ -54,17 +48,16 @@ export const EXPLORER_SCENARIO_WEIGHT_NOTE =
 export const EXPLORER_SCENARIO_WEIGHT_TOOLTIP =
   "Reported Lyme disease data is a separate multiplier. It is not part of these two percentages. Tick status is 60% of the tick-and-pathogen signal and pathogen presence is 40%. Those shares stay fixed. Community context is 50% social vulnerability, 30% uninsured share, and 20% rurality. The published default is 65% tick and pathogen data and 35% community context.";
 
-export const EXPLORER_SCENARIO_RATE_NOTE =
-  "This is a scoring reference point, not a validated strong or weak cutoff for Lyme disease.";
+export const EXPLORER_SCENARIO_RATE_NOTE = "This is a scoring reference point.";
 
 export const EXPLORER_SCENARIO_RATE_TOOLTIP =
   "A published rate at this reference point sets the case-data term to 0. A published rate of 0 sets that term to 100. Rates in between are scaled. The unit is cases per 100,000 people. The published default is 10 per 100,000, with a range of 5 to 25.";
 
 export const EXPLORER_SCENARIO_MISSING_NOTE =
-  "Used when a county has no published case count. A missing record is not zero cases.";
+  "Used when a county has no published case count.";
 
 export const EXPLORER_SCENARIO_MISSING_TOOLTIP =
-  "On the 0–100 case-data term, 100 matches a published rate of 0 and 0 matches a rate at or above the reference point. This number is that term when no county count was published. It is not a case count or an amount subtracted from the score. The published default is 75.";
+  "On the 0–100 case-data term, 100 matches a published rate of 0 and 0 matches a rate at or above the reference point. This number is that term when no county count was published. The published default is 75.";
 
 export type ExplorerWhatIfImpactState =
   | { status: "none" }
@@ -111,7 +104,6 @@ type ExplorerScenarioImpactView =
       governedLabel: string;
       governedPriority: string;
       kind: "definite";
-      lowerScore: boolean;
       priorityText: string;
       resultKind: "adjusted" | "unchanged";
     }
@@ -318,7 +310,7 @@ export function scenarioGapScoreLegend(input: {
     ? " Counties without a published incidence on this collection keep the governed score and color."
     : "";
   return {
-    note: `Adjusted scenario colors for this what-if. The governed score is unchanged. These colors are a follow-up priority scenario, not personal disease risk.${limitedNote}`,
+    note: `Adjusted scenario colors for this what-if. The governed score is unchanged.${limitedNote}`,
     title: "Adjusted scenario",
     unit: "adjusted review-priority score",
   };
@@ -344,7 +336,6 @@ function definiteScenarioImpact(input: {
     governedLabel: input.governedLabel,
     governedPriority: input.governedPriority,
     kind: "definite",
-    lowerScore: deltaPoints < 0,
     priorityText: priorityChangeText(
       input.governedPriority,
       input.adjustedPriority
@@ -582,14 +573,6 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
           >
             {view.priorityText}
           </p>
-          {view.lowerScore ? (
-            <p
-              className="ux-reset-explorer-scenario-impact-note"
-              data-testid="explorer-scenario-lower-score"
-            >
-              {EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT}
-            </p>
-          ) : null}
         </section>
       );
     }
@@ -709,10 +692,10 @@ function ScenarioMethods() {
         </p>
         <p>
           Counties without a published case count use the missing-data
-          assumption. A missing record is not zero cases. If you raise the
-          reference point and this view has no published rate for a county whose
-          case-data term is already 0, the score with your changes is
-          unavailable and the published Atlas score stays.
+          assumption. If you raise the reference point and this view has no
+          published rate for a county whose case-data term is already 0, the
+          score with your changes is unavailable and the published Atlas score
+          stays.
         </p>
         <p>
           On a state view, the county list updates for counties in that state.
@@ -855,12 +838,6 @@ export function ExplorerWhatIfScenario({
           <ScenarioImpactDetails view={impactView} />
           <p
             className="type-small ux-reset-explorer-scenario-impact-note"
-            data-testid="explorer-scenario-caveat"
-          >
-            {EXPLORER_SCENARIO_CAVEAT}
-          </p>
-          <p
-            className="type-small ux-reset-explorer-scenario-impact-note"
             data-testid="explorer-scenario-recalculation"
           >
             {EXPLORER_SCENARIO_RECALCULATION}
@@ -889,10 +866,10 @@ export function explorerScenarioSelectionText(
   switch (scenario.kind) {
     case "adjusted":
     case "unchanged": {
-      return `Governed score ${scenario.governedScore}. Adjusted scenario ${scenario.score}. ${scenario.priority}. This follow-up priority scenario keeps the governed score and is not personal disease risk.`;
+      return `Governed score ${scenario.governedScore}. Adjusted scenario ${scenario.score}. ${scenario.priority}.`;
     }
     case "limited": {
-      return `Governed score ${scenario.governedScore}. Adjusted scenario unavailable. Published incidence is not on this collection, so this change is limited. The governed score stays in place. This follow-up priority scenario is not personal disease risk.`;
+      return `Governed score ${scenario.governedScore}. Adjusted scenario unavailable. Published incidence is not on this collection, so this change is limited. The governed score stays in place.`;
     }
     default: {
       const exhaustive: never = scenario;

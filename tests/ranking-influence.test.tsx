@@ -87,8 +87,14 @@ describe("ranking influence", () => {
       })
     );
     expect(copy.human).toContain("not a finding of no ecological hazard");
-    expect(copy.tick).toContain("not a measure of tick abundance");
-    expect(copy.pathogen).toContain("not a human infection estimate");
+    expect({
+      pathogen: copy.pathogen,
+      tick: copy.tick,
+    }).toStrictEqual({
+      pathogen:
+        "A published Borrelia burgdorferi detection is an ecological input. No share of the score is shown.",
+      tick: "Published tick surveillance is an ecological input. No share of the score is shown.",
+    });
   });
 
   it("names unpublished community context without estimating it", () => {

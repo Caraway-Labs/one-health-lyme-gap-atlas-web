@@ -340,7 +340,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     ).toHaveText("Limited");
     await expect(
       page.getByTestId("review-preview-qualification")
-    ).toContainText("not treated as zero");
+    ).not.toContainText("not treated as zero");
     const scoreSummary = page
       .getByTestId("review-county-preview")
       .locator("summary", { hasText: "Score and methodology" });
@@ -360,9 +360,8 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page.getByTestId("review-preview-dropped")).toContainText(
       "Sort stays on Atlas Explorer browse"
     );
-    await expect(page.getByTestId("review-preview-guardrail")).toContainText(
-      "not a diagnosis"
-    );
+    await expect(page.getByTestId("review-preview-guardrail")).toHaveCount(0);
+    await expect(page.getByText("not a diagnosis")).toHaveCount(0);
     expect(await rowVisibleInRankList(page, "36024")).toBe(true);
 
     await page.getByTestId("review-investigate").click();
