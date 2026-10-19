@@ -107,6 +107,7 @@ export function ExplorerSuggestedFollowUpPanel({
           detail={detail}
           headingLevel="h3"
           idPrefix="evidence-"
+          omitDisclaimers
           reviewContext={reviewContext}
           showEyebrow={false}
         />

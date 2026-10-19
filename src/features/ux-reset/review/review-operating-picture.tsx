@@ -794,7 +794,6 @@ export function ReviewOperatingPicture({
         )
       : null;
   const omittedGapCount = scopedGaps.omittedOutOfScopeCount;
-  const resultLimitations = visibleLines(review.limitations);
   const ruleCoverage = reviewRuleCoverage(review.coverage);
 
   return (
@@ -826,6 +825,7 @@ export function ReviewOperatingPicture({
         <div data-testid="review-result-provenance">
           <EvidenceProvenanceInspect
             provenance={reviewResultProvenance(review)}
+            showLimitations={false}
             stateHeading="Review result"
             stateLabel={
               authoritativeResultState
@@ -867,13 +867,6 @@ export function ReviewOperatingPicture({
             </ul>
           </section>
         ) : null}
-        {resultLimitations.length > 0 ? (
-          <ul data-testid="review-limitations">
-            {resultLimitations.map((limitation) => (
-              <li key={limitation}>{limitation}</li>
-            ))}
-          </ul>
-        ) : null}
       </details>
 
       <div className="ux-reset-explorer-browse" data-testid="explorer-browse">
@@ -897,6 +890,7 @@ export function ReviewOperatingPicture({
           ) : null}
           {knownEmptySelection ? (
             <KnownEmptySelectionNotice
+              omitCaveats
               selections={[knownEmptySelection]}
               testId="explorer-map-known-empty"
             />
@@ -1155,9 +1149,10 @@ export function ReviewOperatingPicture({
             <p className="type-body">
               These records are not review candidates.
             </p>
-            <EvidenceStateStrip model={gapModel} />
+            <EvidenceStateStrip model={gapModel} showCaveat={false} />
             <EvidenceProvenanceInspect
               provenance={gapModel.provenance}
+              showLimitations={false}
               stateLabel="Unavailable"
             />
             {omittedGapCount > 0 ? (

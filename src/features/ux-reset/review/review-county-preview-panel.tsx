@@ -80,10 +80,6 @@ export function ReviewCountyPreviewPanel({
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}
       </p>
-      <p className="type-small" data-testid="review-preview-guardrail">
-        Review priority is not a diagnosis, an individual risk estimate, or an
-        outbreak status.
-      </p>
       <details className="ux-reset-explorer-score">
         <summary>Score and methodology</summary>
         {preview.reasonCodes.length > 0 ? (
@@ -105,6 +101,7 @@ export function ReviewCountyPreviewPanel({
           <div data-testid="review-preview-qualification">
             <EvidenceStateStrip
               model={preview.qualification}
+              showCaveat={false}
               showReason={Boolean(preview.qualification.reasonCode)}
             />
             {preview.qualification.reasonCode ? (
@@ -112,10 +109,12 @@ export function ReviewCountyPreviewPanel({
                 availability={preview.qualification.availability}
                 provenance={preview.qualification.provenance}
                 reasonCode={preview.qualification.reasonCode}
+                showLimitations={false}
               />
             ) : (
               <EvidenceProvenanceInspect
                 provenance={preview.qualification.provenance}
+                showLimitations={false}
                 stateLabel={evidenceAvailabilityLabel(
                   preview.qualification.availability
                 )}
@@ -127,16 +126,13 @@ export function ReviewCountyPreviewPanel({
           fips={preview.fips}
           headingLevel="h3"
           release={release}
+          showInterpretiveNotes={false}
         />
         <p className="type-body" data-testid="review-preview-follow-up">
           <span className="eyebrow">
             {preview.followUpLabel ?? "Suggested follow-up"}
           </span>{" "}
           {preview.followUp}
-        </p>
-        <p className="type-small">
-          A priority score is not a disease-risk estimate. Unavailable is not
-          zero.
         </p>
       </details>
       {droppedNotes.length > 0 ? (

@@ -18,7 +18,7 @@ export const RANKING_INFLUENCE_EVIDENCE_DISTINCTION =
   "The numbered items above are the published surveillance and community record. They describe what was observed. They do not show how much each field changed this county’s gap score.";
 
 export const RANKING_INFLUENCE_PUBLISHED_SCORE =
-  "The score on this card is the published Atlas gap score for the active release. It is a follow-up priority, not a disease-risk estimate. The tier beside it suggests a follow-up level from that published score. It is separate from Tier 1 surveillance priority. Scenario controls can show an adjusted score for exploration. That adjusted score does not replace the published score, and it does not add a domain breakdown.";
+  "The score on this card is the published Atlas gap score for the active release. The tier beside it suggests a follow-up level from that published score. It is separate from Tier 1 surveillance priority. Scenario controls can show an adjusted score for exploration. That adjusted score does not replace the published score, and it does not add a domain breakdown.";
 
 export const RANKING_INFLUENCE_RANK_SCOPE =
   "The county list orders published scores inside the Explorer scope on this page. A selected state orders counties in that state. With no state selected, Explorer shows a shortlist of lower-48 and District of Columbia counties. That shortlist is not a complete national rank, and this card does not assign a rank number.";
@@ -104,7 +104,7 @@ function humanNote(
 
 function tickNote(detail: RankingInfluenceCounty): string {
   if (documentedTick(detail.tick_status)) {
-    return "Published tick surveillance is an ecological input. A published status is not a measure of tick abundance, and no share of the score is shown.";
+    return "Published tick surveillance is an ecological input. No share of the score is shown.";
   }
   const status = normalized(detail.tick_status);
   if (status === "no records") {
@@ -118,7 +118,7 @@ function tickNote(detail: RankingInfluenceCounty): string {
 
 function pathogenNote(detail: RankingInfluenceCounty): string {
   if (pathogenPresent(detail.burgdorferi_status)) {
-    return "A published Borrelia burgdorferi detection is an ecological input. Detection is not a human infection estimate, and no share of the score is shown.";
+    return "A published Borrelia burgdorferi detection is an ecological input. No share of the score is shown.";
   }
   const status = normalized(detail.burgdorferi_status);
   if (status === "no records") {

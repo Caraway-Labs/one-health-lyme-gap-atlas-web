@@ -118,9 +118,9 @@ test.describe("Published Review county exploration", () => {
     await expect(rows).toHaveCount(67);
     await choose(page, "01003");
     await expect(page.getByText(/case-count floor is 5/)).toBeVisible();
-    await expect(
-      page.getByText(/A published floor is a minimum/)
-    ).toBeVisible();
+    await expect(page.getByText(/A published floor is a minimum/)).toHaveCount(
+      0
+    );
     await rankedRow(page, "01003").focus();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");
