@@ -11,6 +11,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
+import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import {
   formatGapScore,
   publishedGapScore,
@@ -284,6 +285,12 @@ export function ReviewPublishedCountyPreview({
         >
           Compare This County
         </Link>
+        <DownloadCountyPdfButton
+          countyName={county.county}
+          fips={county.fips}
+          releaseId={releaseId}
+          stateCode={county.state}
+        />
       </div>
     </Card>
   );

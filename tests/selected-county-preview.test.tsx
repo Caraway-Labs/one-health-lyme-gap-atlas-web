@@ -304,6 +304,7 @@ describe("selected county preview", () => {
           droppedNotes={[]}
           href="/explore?county=08001&mode=evidence"
           preview={buildReviewCountyPreview(score)}
+          releaseId="alpha-2026"
           release={{
             releaseId: "alpha-2026",
             status: "ready",

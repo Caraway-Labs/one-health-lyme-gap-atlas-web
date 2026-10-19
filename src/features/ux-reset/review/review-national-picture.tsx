@@ -19,6 +19,7 @@ import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explor
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
+import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import {
   countyPassesAvailableData,
   EXPLORER_AVAILABLE_DATA_EMPTY,
@@ -719,9 +720,17 @@ export function ReviewNationalPicture({
             onOpen={markReviewReturnFocus}
           />
         ) : (
-          <p className="type-body" data-testid="explorer-preview-empty">
-            No county is selected. Choose one from the list or the map.
-          </p>
+          <>
+            <p className="type-body" data-testid="explorer-preview-empty">
+              No county is selected. Choose one from the list or the map.
+            </p>
+            <DownloadCountyPdfButton
+              countyName=""
+              fips=""
+              releaseId=""
+              stateCode=""
+            />
+          </>
         )}
       </div>
     </div>

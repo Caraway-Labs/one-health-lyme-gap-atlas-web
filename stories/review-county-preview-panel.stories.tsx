@@ -40,6 +40,9 @@ function PreviewFrame({ preset }: PreviewStoryProps) {
             href={model.href}
             preview={model.preview}
             release={model.release}
+            releaseId={
+              model.release.status === "ready" ? model.release.releaseId : ""
+            }
             onOpen={(fips) => {
               setOpened((current) => ({
                 count: (current?.count ?? 0) + 1,

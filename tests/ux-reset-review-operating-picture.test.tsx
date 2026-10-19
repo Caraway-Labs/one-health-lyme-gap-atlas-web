@@ -318,6 +318,61 @@ describe("Review operating picture state", () => {
     }
   });
 
+  it("keeps the reviewed PDF on the verified release when metadata refresh fails", () => {
+    cleanup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Adams",
+                fips: "08001",
+                reasonText: "Adams was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "CO",
+          })}
+          scopeCode="CO"
+          stateName="Colorado"
+          tierRelease={{ status: "unknown" }}
+        />
+      </QueryClientProvider>
+    );
+    const download = screen.getByTestId("explore-download-pdf");
+    const surveillance = screen.getByTestId("tier1-surveillance-priority");
+    const investigate =
+      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+    expect({
+      county: download.dataset.county,
+      disabled: download.hasAttribute("disabled"),
+      investigate: new URL(investigate, "http://localhost").searchParams.get(
+        "dataset"
+      ),
+      reason: surveillance.dataset.releaseReason,
+      release: download.dataset.release,
+      state: download.dataset.state,
+      surveillance: surveillance.dataset.state,
+      text: surveillance.textContent,
+    }).toStrictEqual({
+      county: "08001",
+      disabled: false,
+      investigate: "alpha-2026",
+      reason: "unknown",
+      release: "alpha-2026",
+      state: "idle",
+      surveillance: "release-unaligned",
+      text: expect.stringContaining(
+        "governed release for this page is not known"
+      ),
+    });
+  });
+
   it("limits the map to eligible counties and names an empty filter", async () => {
     cleanup();
     const { fetchCountyDisplayGeometry } =
