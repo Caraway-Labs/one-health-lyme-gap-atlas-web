@@ -13,12 +13,32 @@ import {
   type ReactNode,
 } from "react";
 
+import {
+  ExampleRequestPanel,
+  ExampleResponsePanel,
+  OpenApiExampleLayout,
+} from "@/components/docs-openapi-example";
 import { ResponseHeaders } from "@/components/docs-openapi-response-headers";
+import { labelUnnamedOpenApiControls } from "@/lib/openapi-control-names";
 
 const CreatedOpenAPIPage = createOpenAPIPage({
   content: {
+    renderAPIExampleLayout(slots) {
+      return (
+        <OpenApiExampleLayout
+          responseTabs={slots.responseTabs}
+          usageTabs={slots.usageTabs}
+        />
+      );
+    },
+    renderAPIExampleUsageTabs() {
+      return <ExampleRequestPanel />;
+    },
     renderOperationLayout(slots) {
       return <OperationLayout {...slots} />;
+    },
+    renderResponseTabs() {
+      return <ExampleResponsePanel />;
     },
   },
   playground: {
@@ -52,19 +72,34 @@ export function OpenAPIPage(props: OpenAPIPageProps) {
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const labelControls = () => {
-      labelUnnamedOpenApiControls(root);
-    };
-    const resize = new ResizeObserver(labelControls);
-    const watch = () => {
+    let labeling = false;
+    const resize = new ResizeObserver(() => {
       labelControls();
-      for (const element of root.querySelectorAll(".overflow-x-auto")) {
-        resize.observe(element);
+    });
+    const labelControls = () => {
+      if (labeling) return;
+      labeling = true;
+      try {
+        labelUnnamedOpenApiControls(root);
+        for (const element of root.querySelectorAll(".overflow-x-auto")) {
+          resize.observe(element);
+        }
+      } finally {
+        labeling = false;
       }
     };
-    watch();
-    const observer = new MutationObserver(watch);
+    labelControls();
+    const observer = new MutationObserver(labelControls);
     observer.observe(root, {
+      attributeFilter: [
+        "aria-label",
+        "aria-labelledby",
+        "name",
+        "role",
+        "title",
+      ],
+      attributes: true,
+      characterData: true,
       childList: true,
       subtree: true,
     });
@@ -119,25 +154,4 @@ function OperationLayout({
       </div>
     </div>
   );
-}
-
-function labelUnnamedOpenApiControls(root: ParentNode): void {
-  for (const element of root.querySelectorAll(
-    '[role="combobox"], [role="switch"]'
-  )) {
-    if (!(element instanceof HTMLElement)) continue;
-    if (element.getAttribute("aria-label")?.trim()) continue;
-    const label = element.closest("label");
-    const source = label ?? element;
-    const name = (source.textContent ?? "").replaceAll(/\s+/g, " ").trim();
-    if (name) element.setAttribute("aria-label", name);
-  }
-  for (const element of root.querySelectorAll(".overflow-x-auto")) {
-    if (!(element instanceof HTMLElement)) continue;
-    if (element.scrollWidth <= element.clientWidth + 1) continue;
-    if (element.tabIndex < 0) element.tabIndex = 0;
-    if (!element.getAttribute("aria-label")?.trim()) {
-      element.setAttribute("aria-label", "Scrollable schema path");
-    }
-  }
 }

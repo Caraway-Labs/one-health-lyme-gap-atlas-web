@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
@@ -59,10 +60,12 @@ const docsPages = [
   {
     path: "/docs/api-reference/observations/observations_v1_observations_get",
     heading: "Query county observations",
+    operation: true,
   },
   {
     path: "/docs/api-reference/geographies/canonicalGeographyAvailability",
     heading: "Check canonical county geography publication availability",
+    operation: true,
   },
   {
     path: "/docs/api-reference/counties",
@@ -76,7 +79,39 @@ const docsPages = [
     path: "/docs/faq-and-troubleshooting",
     heading: "FAQ and troubleshooting",
   },
-] as const;
+  ...generatedApiReferencePages(),
+];
+
+function generatedApiReferencePages(): {
+  heading: string;
+  operation: true;
+  path: string;
+}[] {
+  const root = path.join("content", "docs", "api-reference");
+  const pages: { heading: string; operation: true; path: string }[] = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const directory = path.join(root, entry.name);
+    for (const file of readdirSync(directory)) {
+      if (!file.endsWith(".mdx") || file === "index.mdx") continue;
+      const source = readFileSync(path.join(directory, file), "utf8");
+      const title = /^title:\s*(?<title>.+)$/m.exec(source)?.groups?.title;
+      if (!title) continue;
+      const parsed: unknown =
+        title.startsWith('"') && title.endsWith('"')
+          ? JSON.parse(title)
+          : title.trim();
+      if (typeof parsed !== "string") continue;
+      pages.push({
+        heading: parsed,
+        operation: true,
+        path: `/docs/api-reference/${entry.name}/${file.slice(0, -".mdx".length)}`,
+      });
+    }
+  }
+  pages.sort((left, right) => left.path.localeCompare(right.path));
+  return pages;
+}
 
 test("renders the public documentation page without the Atlas shell", async ({
   page,
@@ -106,9 +141,12 @@ test("renders the public documentation page without the Atlas shell", async ({
 test("keeps every HelpDocs route reachable and accessible", async ({
   page,
 }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
+  const seen = new Set<string>();
 
   for (const docsPage of docsPages) {
+    if (seen.has(docsPage.path)) continue;
+    seen.add(docsPage.path);
     await page.goto(docsPage.path);
     await expect(
       page.getByRole("heading", { name: docsPage.heading, exact: true })
@@ -121,18 +159,17 @@ test("keeps every HelpDocs route reachable and accessible", async ({
 
     await page.waitForFunction(async () => {
       await document.fonts.ready;
-      const named = [
-        ...document.querySelectorAll('[role="switch"], [role="combobox"]'),
-      ].every((element) => element.getAttribute("aria-label")?.trim());
-      const scrollable = [
-        ...document.querySelectorAll(".overflow-x-auto"),
-      ].every((element) => {
-        if (!(element instanceof HTMLElement)) return true;
-        if (element.scrollWidth <= element.clientWidth + 1) return true;
-        return element.tabIndex >= 0;
-      });
-      return named && scrollable;
+      return [...document.querySelectorAll(".overflow-x-auto")].every(
+        (element) => {
+          if (!(element instanceof HTMLElement)) return true;
+          if (element.scrollWidth <= element.clientWidth + 1) return true;
+          return element.tabIndex >= 0;
+        }
+      );
     });
+    if ("operation" in docsPage) {
+      await expectOperationControlNames(page, docsPage.path);
+    }
     const results = await new AxeBuilder({ page }).include("main").analyze();
     const blockingViolations = results.violations.filter((violation) =>
       ["critical", "serious"].includes(violation.impact ?? "")
@@ -157,16 +194,67 @@ test("keeps every HelpDocs route reachable and accessible", async ({
     name: "API reference",
   });
   await expect(apiReferenceFolder).toBeVisible();
-  await apiReferenceFolder.click();
-  await expect(
-    sidebar
-      .getByRole("link", { exact: true, name: "Observations" })
-      .or(sidebar.getByRole("button", { exact: true, name: "Observations" }))
-  ).toBeVisible();
+  const observations = sidebar
+    .getByRole("link", { exact: true, name: "Observations" })
+    .or(sidebar.getByRole("button", { exact: true, name: "Observations" }));
+  if (!(await observations.isVisible())) await apiReferenceFolder.click();
+  await expect(observations).toBeVisible();
   await expect(
     sidebar.getByRole("link", { name: "API, MCP, and access" })
   ).toBeVisible();
 });
+
+async function expectOperationControlNames(page: Page, route: string) {
+  const schemaSwitch = page.getByRole("switch", {
+    name: "Show response schema",
+  });
+  const responseStatus = page.getByRole("combobox", {
+    name: "Response status",
+  });
+  const codeSampleLanguage = page.getByRole("combobox", {
+    name: "Code sample language",
+  });
+  await expect(schemaSwitch).toBeVisible();
+  await expect(schemaSwitch).toHaveAttribute(
+    "aria-label",
+    "Show response schema"
+  );
+  await expect(responseStatus).toBeVisible();
+  await expect(responseStatus).toHaveAttribute("aria-label", "Response status");
+  await expect(codeSampleLanguage).toBeVisible();
+  await expect(codeSampleLanguage).toHaveAttribute(
+    "aria-label",
+    "Code sample language"
+  );
+  if (!route.endsWith("/observations_v1_observations_get")) return;
+
+  const schemaVariant = page.getByRole("combobox", { name: "Schema variant" });
+  const responseExample = page.getByRole("combobox", {
+    name: "Response example",
+  });
+  await expect(schemaVariant).toBeVisible();
+  await expect(responseExample).toBeVisible();
+  await schemaSwitch.click();
+  await expect(schemaSwitch).toHaveAttribute("aria-checked", "true");
+  await expect(schemaSwitch).toHaveAttribute(
+    "aria-label",
+    "Show response schema"
+  );
+  await codeSampleLanguage.click();
+  await page.getByRole("option", { exact: true, name: "JavaScript" }).click();
+  await expect(codeSampleLanguage).toHaveAttribute(
+    "aria-label",
+    "Code sample language"
+  );
+  await responseStatus.click();
+  await page.getByRole("option", { exact: true, name: "429" }).click();
+  await expect(responseStatus).toHaveAttribute("aria-label", "Response status");
+  await expect(schemaSwitch).toHaveAttribute(
+    "aria-label",
+    "Show response schema"
+  );
+  await expect(schemaVariant).toHaveAttribute("aria-label", "Schema variant");
+}
 
 async function expectVisibleRetryAfterHeader(page: Page) {
   const headers = page.getByRole("region", { name: "Response Headers" });
