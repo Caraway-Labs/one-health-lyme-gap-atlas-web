@@ -6,7 +6,14 @@ import {
   adjustCountyScenarios,
 } from "../src/features/ux-reset/review/explorer-scenario-score";
 import {
-  EXPLORER_SCENARIO_IMPACT_MICROCOPY,
+  EXPLORER_SCENARIO_CAVEAT,
+  EXPLORER_SCENARIO_EXAMPLE,
+  EXPLORER_SCENARIO_HEADING,
+  EXPLORER_SCENARIO_INTRO,
+  EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT,
+  EXPLORER_SCENARIO_MISSING_TOOLTIP,
+  EXPLORER_SCENARIO_RATE_TOOLTIP,
+  EXPLORER_SCENARIO_RECALCULATION,
   ExplorerWhatIfScenario,
   applyGapScoreScenarioColors,
   explorerScenarioScopeSupported,
@@ -46,21 +53,42 @@ describe(ExplorerWhatIfScenario, () => {
     renderScenario();
 
     const panel = screen.getByTestId("explorer-what-if-scenario");
-    const summary = screen.getByTestId("explorer-what-if-summary");
-    expect(panel.tagName).toBe("DETAILS");
-    expect((panel as HTMLDetailsElement).open).toBeFalsy();
-    expect(summary.textContent).toContain("What-if scenario");
-    expect(summary.textContent).toContain("65%");
-    expect(summary.textContent).toContain("View & adjust assumptions");
+    const summary =
+      screen.getByTestId("explorer-what-if-summary").textContent ?? "";
+    expect({
+      adjust: summary.includes("Adjust assumptions"),
+      heading: summary.includes(EXPLORER_SCENARIO_HEADING),
+      open: (panel as HTMLDetailsElement).open,
+      parameters: summary.includes("65%"),
+      scoring: summary.includes("Scoring calculation"),
+      tag: panel.tagName,
+    }).toStrictEqual({
+      adjust: true,
+      heading: true,
+      open: false,
+      parameters: false,
+      scoring: false,
+      tag: "DETAILS",
+    });
   });
 
-  it("shows the published-record threshold and missing-record value while collapsed", () => {
+  it("shows the rate reference point and missing-record value after expanding", () => {
     renderScenario();
-    const summary = screen.getByTestId("explorer-what-if-summary");
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const panel = screen.getByTestId("explorer-what-if-scenario");
 
-    expect(summary.textContent).toContain("10 per 100,000");
-    expect(summary.textContent).toContain("75");
-    expect(summary.textContent).toContain("Scoring calculation");
+    const text = panel.textContent ?? "";
+    expect({
+      missing: text.includes("75"),
+      rate: text.includes("10 per 100,000"),
+      scoring: text.includes("Scoring calculation"),
+      twenty: text.includes("20 per 100,000"),
+    }).toStrictEqual({
+      missing: true,
+      rate: true,
+      scoring: false,
+      twenty: false,
+    });
   });
 
   it("exposes three keyboard sliders and resets them to the governed defaults", () => {
@@ -77,9 +105,9 @@ describe(ExplorerWhatIfScenario, () => {
     expect(
       sliders.map((slider) => slider.getAttribute("aria-label"))
     ).toStrictEqual([
-      "Tick and pathogen share",
-      "Published-record threshold",
-      "Missing county-record value",
+      "Weight given to tick and pathogen data",
+      "Reported Lyme disease rate reference point",
+      "Assumption for missing county case data",
     ]);
     fireEvent.change(sliders[2], { target: { value: "40" } });
     expect(onChange).toHaveBeenCalledWith({
@@ -95,9 +123,19 @@ describe(ExplorerWhatIfScenario, () => {
       />
     );
     fireEvent.click(screen.getByTestId("explorer-scenario-reset"));
-    expect(onChange).toHaveBeenLastCalledWith(SCENARIO_SCORE_DEFAULTS);
-    expect(screen.getByText(/not a diagnosis/i)).toBeTruthy();
-    expect(screen.queryByText(/personal disease risk/i)).toBeNull();
+    const text =
+      screen.getByTestId("explorer-what-if-scenario").textContent ?? "";
+    expect({
+      caveat: text.includes(EXPLORER_SCENARIO_CAVEAT),
+      reset: onChange.mock.lastCall?.[0],
+      risk: /personal disease risk/i.test(text),
+      safety: /not a safety finding/i.test(text),
+    }).toStrictEqual({
+      caveat: true,
+      reset: SCENARIO_SCORE_DEFAULTS,
+      risk: false,
+      safety: false,
+    });
   });
 
   it("renders the shared slider primitive", () => {
@@ -114,19 +152,31 @@ describe(ExplorerWhatIfScenario, () => {
 
     expect(
       screen.getByTestId("explorer-scenario-impact-summary").textContent
-    ).toBe("Select a county to compare its published and adjusted score");
+    ).toBe(
+      "Select a county to compare its published Atlas score with the score using your changes."
+    );
     expect(
       screen.getByTestId("explorer-scenario-impact").textContent
-    ).toContain("Select a county to compare its published and adjusted score");
-    expect(screen.getAllByRole("slider")).toHaveLength(3);
-    expect(
-      screen.getByTestId("explorer-scenario-impact-microcopy").textContent
-    ).toBe(EXPLORER_SCENARIO_IMPACT_MICROCOPY);
-    expect(
-      screen
+    ).toContain(
+      "Select a county to compare its published Atlas score with the score using your changes."
+    );
+    const text =
+      screen.getByTestId("explorer-what-if-scenario").textContent ?? "";
+    expect({
+      caveat: screen.getByTestId("explorer-scenario-caveat").textContent,
+      example: text.includes(EXPLORER_SCENARIO_EXAMPLE),
+      intro: text.includes(EXPLORER_SCENARIO_INTRO),
+      live: screen
         .getByTestId("explorer-what-if-scenario")
-        .querySelector("[aria-live]")
-    ).toBeNull();
+        .querySelector("[aria-live]"),
+      sliders: screen.getAllByRole("slider").length,
+    }).toStrictEqual({
+      caveat: EXPLORER_SCENARIO_CAVEAT,
+      example: true,
+      intro: true,
+      live: null,
+      sliders: 3,
+    });
   });
 
   it("shows the published score at defaults without a scenario delta", () => {
@@ -140,15 +190,18 @@ describe(ExplorerWhatIfScenario, () => {
     });
 
     const summary = screen.getByTestId("explorer-scenario-impact-summary");
-    expect(summary.textContent).toBe("Published score 22.9 · No adjustments");
+    expect(summary.textContent).toBe(
+      "Published Atlas score 22.9 · No adjustments"
+    );
     fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact = screen.getByTestId("explorer-scenario-impact").textContent;
     expect({
-      county: impact?.includes("Scenario impact — Conejos County"),
+      county: impact?.includes("How the changes affect Conejos County"),
       delta: impact?.includes("points") || impact?.includes("→"),
-      priority: impact?.includes(LOWER),
-      published: impact?.includes("Published score") && impact.includes("22.9"),
-      unchangedClaim: impact?.includes("Priority unchanged"),
+      priority: impact?.includes("Lower Atlas priority") ?? false,
+      published:
+        impact?.includes("Published Atlas score") && impact.includes("22.9"),
+      unchangedClaim: impact?.includes("Follow-up category unchanged"),
     }).toStrictEqual({
       county: true,
       delta: false,
@@ -194,9 +247,9 @@ describe(ExplorerWhatIfScenario, () => {
       screen.getByTestId("explorer-scenario-impact").textContent ?? "";
     expect({
       baseline: impact.includes("No adjustments"),
-      priority: impact.includes("Priority unchanged"),
+      priority: impact.includes("Follow-up category unchanged"),
       share: screen
-        .getByRole("slider", { name: "Tick and pathogen share" })
+        .getByRole("slider", { name: "Weight given to tick and pathogen data" })
         .getAttribute("value"),
       summary: screen.getByTestId("explorer-scenario-impact-summary")
         .textContent,
@@ -204,7 +257,8 @@ describe(ExplorerWhatIfScenario, () => {
       baseline: false,
       priority: true,
       share: "85",
-      summary: "Published to adjusted.0.0 → 0.0 · 0.0 points",
+      summary:
+        "Published Atlas score to the score with your changes.0.0 → 0.0 · 0.0 points",
     });
 
     fireEvent.click(screen.getByTestId("explorer-scenario-reset"));
@@ -225,7 +279,7 @@ describe(ExplorerWhatIfScenario, () => {
     );
     expect(
       screen.getByTestId("explorer-scenario-impact-summary").textContent
-    ).toBe("Published score 0.0 · No adjustments");
+    ).toBe("Published Atlas score 0.0 · No adjustments");
   });
 
   it("shows a signed point change and a priority change for an adjusted county", () => {
@@ -248,17 +302,19 @@ describe(ExplorerWhatIfScenario, () => {
     });
 
     const summary = screen.getByTestId("explorer-scenario-impact-summary");
-    expect(summary.textContent).toContain("Published to adjusted.");
+    expect(summary.textContent).toContain(
+      "Published Atlas score to the score with your changes."
+    );
     expect(summary.textContent).toContain("62.4 → 74.1 · +11.7 points");
     fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact = screen.getByTestId("explorer-scenario-impact").textContent;
     expect({
       adjusted:
-        impact?.includes("Adjusted scenario") && impact.includes("74.1"),
+        impact?.includes("Score with your changes") && impact.includes("74.1"),
       priority: impact?.includes(
-        `Priority changed: ${REVIEW} → ${INVESTIGATE}`
+        `Follow-up category changed: ${REVIEW} → ${INVESTIGATE}`
       ),
-      published: impact?.includes("Published score"),
+      published: impact?.includes("Published Atlas score"),
       rank: impact?.includes("Scenario rank") || impact?.includes("rank 3"),
     }).toStrictEqual({
       adjusted: true,
@@ -293,7 +349,7 @@ describe(ExplorerWhatIfScenario, () => {
     fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     expect(
       screen.getByTestId("explorer-scenario-impact").textContent
-    ).toContain("Priority unchanged");
+    ).toContain("Follow-up category unchanged");
   });
 
   it("shows a zero point change when the scenario score stays the same", () => {
@@ -319,7 +375,7 @@ describe(ExplorerWhatIfScenario, () => {
     fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact = screen.getByTestId("explorer-scenario-impact");
     expect(impact.dataset.impact).toBe("unchanged");
-    expect(impact.textContent).toContain("Priority unchanged");
+    expect(impact.textContent).toContain("Follow-up category unchanged");
     expect(impact.textContent).not.toContain("Scenario rank");
   });
 
@@ -339,7 +395,7 @@ describe(ExplorerWhatIfScenario, () => {
 
     const summary = screen.getByTestId("explorer-scenario-impact-summary");
     expect(summary.textContent).toBe(
-      "Published score 0.0 · Adjusted scenario unavailable"
+      "Published Atlas score 0.0 · Score with your changes unavailable"
     );
     fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact =
@@ -347,11 +403,13 @@ describe(ExplorerWhatIfScenario, () => {
     expect({
       arrow: impact.includes("→"),
       points: impact.includes("points"),
-      priorityCount: impact.match(new RegExp(LOWER, "g"))?.length ?? 0,
-      published: impact.includes("Published score") && impact.includes("0.0"),
+      priorityCount: impact.match(/Lower Atlas priority/g)?.length ?? 0,
+      published:
+        impact.includes("Published Atlas score") && impact.includes("0.0"),
       rank: impact.includes("rank"),
-      reason: impact.includes("Published incidence is not on this collection"),
-      unavailable: impact.includes("Adjusted scenario unavailable"),
+      reason: impact.includes("no published rate on this collection"),
+      safety: impact.includes("Not a safety finding"),
+      unavailable: impact.includes("Unavailable"),
     }).toStrictEqual({
       arrow: false,
       points: false,
@@ -359,6 +417,7 @@ describe(ExplorerWhatIfScenario, () => {
       published: true,
       rank: false,
       reason: true,
+      safety: false,
       unavailable: true,
     });
   });
@@ -415,7 +474,7 @@ describe(ExplorerWhatIfScenario, () => {
     const impact =
       screen.getByTestId("explorer-scenario-impact").textContent ?? "";
     expect({
-      heading: impact.includes("Scenario impact — Autauga County"),
+      heading: impact.includes("How the changes affect Autauga County"),
       previous: impact.includes("Conejos") || impact.includes("22.9"),
     }).toStrictEqual({
       heading: true,
@@ -459,9 +518,7 @@ describe(ExplorerWhatIfScenario, () => {
     const message = alert.textContent ?? "";
     expect({
       comparison: screen.queryByTestId("explorer-scenario-impact-summary"),
-      requestFailure: message.includes(
-        "request failure, not missing evidence."
-      ),
+      requestFailure: message.includes("request failure, not missing data."),
       retry: screen.getByTestId("explorer-scenario-scores-retry").textContent,
       unavailable: message.includes("Score comparison unavailable"),
     }).toStrictEqual({
@@ -482,13 +539,203 @@ describe(ExplorerWhatIfScenario, () => {
         onRetryScores={onRetryScores}
       />
     );
-    expect(screen.getByTestId("explorer-scenario-scores-retry")).toHaveProperty(
-      "disabled",
-      true
+    const retry = screen.getByTestId("explorer-scenario-scores-retry");
+    const alertText = screen.getByRole("alert").textContent ?? "";
+    expect({
+      data: alertText.includes("not missing data"),
+      disabled: retry.hasAttribute("disabled") || retry.matches(":disabled"),
+      evidence: alertText.includes("evidence"),
+      label: retry.textContent,
+    }).toStrictEqual({
+      data: true,
+      disabled: true,
+      evidence: false,
+      label: "Retrying published scores…",
+    });
+  });
+
+  it("shows a default county without a changed category or safety-finding wording", () => {
+    renderScenario(SCENARIO_SCORE_DEFAULTS, {
+      assumptionsChanged: false,
+      countyName: "Conejos County",
+      governedPriority: LOWER,
+      governedScore: 22.9,
+      scenario: null,
+      status: "ready",
+    });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const text =
+      screen.getByTestId("explorer-what-if-scenario").textContent ?? "";
+    expect({
+      browser: text.includes("browser-only"),
+      category: text.includes("Lower Atlas priority"),
+      governed: text.includes("governed"),
+      official: text.includes("official"),
+      resetDisabled: screen
+        .getByTestId("explorer-scenario-reset")
+        .hasAttribute("disabled"),
+      safety: text.includes("Not a safety finding"),
+      unchanged: text.includes("No adjustments"),
+      weights:
+        text.includes("65% tick and pathogen data") &&
+        text.includes("35% community context"),
+    }).toStrictEqual({
+      browser: false,
+      category: true,
+      governed: false,
+      official: false,
+      resetDisabled: true,
+      safety: false,
+      unchanged: true,
+      weights: true,
+    });
+  });
+
+  it("shows an unchanged category when the score falls and a changed category when it rises", () => {
+    const onChange = vi.fn<(next: ScoreSettings) => void>();
+    const view = renderScenario(
+      { ...SCENARIO_SCORE_DEFAULTS, missing_human_weakness: 40 },
+      {
+        assumptionsChanged: true,
+        countyName: "Conejos County",
+        governedPriority: LOWER,
+        governedScore: 22.9,
+        scenario: {
+          colorToken: "var(--map-ramp-1)",
+          governedPriority: LOWER,
+          governedScore: 22.9,
+          humanWeakness: 40,
+          kind: "adjusted",
+          priority: LOWER,
+          rank: 2,
+          score: 12.2,
+        },
+        status: "ready",
+      },
+      onChange
     );
-    expect(
-      screen.getByTestId("explorer-scenario-scores-retry").textContent
-    ).toBe("Retrying published scores…");
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const fallen =
+      screen.getByTestId("explorer-scenario-impact").textContent ?? "";
+    expect({
+      category: screen.getByTestId("explorer-scenario-category").textContent,
+      lower: screen.getByTestId("explorer-scenario-lower-score").textContent,
+      points: fallen.includes("−10.7 points"),
+    }).toStrictEqual({
+      category: "Follow-up category unchanged",
+      lower: EXPLORER_SCENARIO_LOWER_SCORE_CAVEAT,
+      points: true,
+    });
+
+    view.rerender(
+      <ExplorerWhatIfScenario
+        impact={{
+          assumptionsChanged: true,
+          countyName: "Autauga County",
+          governedPriority: REVIEW,
+          governedScore: 62.4,
+          scenario: {
+            colorToken: "var(--map-ramp-5)",
+            governedPriority: REVIEW,
+            governedScore: 62.4,
+            humanWeakness: 80,
+            kind: "adjusted",
+            priority: INVESTIGATE,
+            rank: 3,
+            score: 74.1,
+          },
+          status: "ready",
+        }}
+        onChange={onChange}
+        settings={{ ...SCENARIO_SCORE_DEFAULTS, ecological_share: 85 }}
+      />
+    );
+    expect({
+      category: screen.getByTestId("explorer-scenario-category").textContent,
+      lower: screen.queryByTestId("explorer-scenario-lower-score"),
+      weights: Boolean(
+        screen
+          .getByTestId("explorer-what-if-scenario")
+          .textContent?.includes("85% tick and pathogen data") &&
+        screen
+          .getByTestId("explorer-what-if-scenario")
+          .textContent?.includes("15% community context")
+      ),
+    }).toStrictEqual({
+      category: `Follow-up category changed: ${REVIEW} → ${INVESTIGATE}`,
+      lower: null,
+      weights: true,
+    });
+  });
+
+  it("keeps a limited result free of an invented delta and resets to the published defaults", () => {
+    const onChange = vi.fn<(next: ScoreSettings) => void>();
+    renderScenario(
+      { ...SCENARIO_SCORE_DEFAULTS, low_incidence_breakpoint: 20 },
+      {
+        assumptionsChanged: true,
+        countyName: "Adams County",
+        governedPriority: LOWER,
+        governedScore: 0,
+        scenario: {
+          governedPriority: LOWER,
+          governedScore: 0,
+          kind: "limited",
+        },
+        status: "ready",
+      },
+      onChange
+    );
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const limited =
+      screen.getByTestId("explorer-scenario-impact").textContent ?? "";
+    fireEvent.click(screen.getByTestId("explorer-scenario-reset"));
+    expect({
+      category: limited.includes("Follow-up category changed"),
+      points: limited.includes("points"),
+      rate: screen
+        .getByTestId("explorer-what-if-scenario")
+        .textContent?.includes("20 per 100,000"),
+      reset: onChange.mock.lastCall?.[0],
+      unavailable: limited.includes("Unavailable"),
+    }).toStrictEqual({
+      category: false,
+      points: false,
+      rate: true,
+      reset: SCENARIO_SCORE_DEFAULTS,
+      unavailable: true,
+    });
+  });
+
+  it("exposes technical notes and the scenario disclosure without safety-finding copy", () => {
+    renderScenario();
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const methods = screen.getByTestId("explorer-scenario-methods");
+    fireEvent.click(methods.querySelector("summary") as HTMLElement);
+    const methodText = methods.textContent ?? "";
+    expect({
+      missingTooltip: /uncertainty|penalty|out of 100/i.test(
+        EXPLORER_SCENARIO_MISSING_TOOLTIP
+      ),
+      notes: screen.getAllByRole("button", { name: /Technical note for/ })
+        .length,
+      open: (methods as HTMLDetailsElement).open,
+      rateDefault: EXPLORER_SCENARIO_RATE_TOOLTIP.includes("10 per 100,000"),
+      rateTwenty: EXPLORER_SCENARIO_RATE_TOOLTIP.includes("20 per 100,000"),
+      recalculation: screen.getByTestId("explorer-scenario-recalculation")
+        .textContent,
+      safety: methodText.includes("Not a safety finding"),
+      tier: methodText.includes("Tier 1 ML"),
+    }).toStrictEqual({
+      missingTooltip: false,
+      notes: 3,
+      open: true,
+      rateDefault: true,
+      rateTwenty: false,
+      recalculation: EXPLORER_SCENARIO_RECALCULATION,
+      safety: false,
+      tier: true,
+    });
   });
 });
 
@@ -664,7 +911,7 @@ describe(resolveExplorerWhatIfImpact, () => {
         status: "ready",
       },
       view: {
-        collapsed: "Published score 65.0 · No adjustments",
+        collapsed: "Published Atlas score 65.0 · No adjustments",
         kind: "baseline",
       },
     });
@@ -690,7 +937,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       view: {
         collapsed: "65.0 → 85.0 · +20.0 points",
         kind: "definite",
-        priorityText: `Priority changed: ${REVIEW} → ${INVESTIGATE}`,
+        priorityText: `Follow-up category changed: ${REVIEW} → ${INVESTIGATE}`,
       },
     });
 
@@ -747,7 +994,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       view: {
         collapsed: "0.0 → 0.0 · 0.0 points",
         kind: "definite",
-        priorityText: "Priority unchanged",
+        priorityText: "Follow-up category unchanged",
         resultKind: "unchanged",
       },
     });
@@ -763,7 +1010,7 @@ describe(resolveExplorerWhatIfImpact, () => {
     expect(presentExplorerScenarioImpact(shifted)).toMatchObject({
       collapsed: "0.0 → 0.0 · 0.0 points",
       kind: "definite",
-      priorityText: "Priority unchanged",
+      priorityText: "Follow-up category unchanged",
       resultKind: "unchanged",
     });
 
@@ -781,7 +1028,8 @@ describe(resolveExplorerWhatIfImpact, () => {
       kind: limitedView.kind,
       rank: JSON.stringify(limitedView).includes("rank"),
     }).toStrictEqual({
-      collapsed: "Published score 0.0 · Adjusted scenario unavailable",
+      collapsed:
+        "Published Atlas score 0.0 · Score with your changes unavailable",
       kind: "limited",
       rank: false,
     });
@@ -863,11 +1111,11 @@ describe(resolveExplorerWhatIfImpact, () => {
         collapsed: "65.0 → 85.0 · +20.0 points",
         countyName: "Autauga County",
         kind: "definite",
-        priorityText: `Priority changed: ${REVIEW} → ${INVESTIGATE}`,
+        priorityText: `Follow-up category changed: ${REVIEW} → ${INVESTIGATE}`,
       },
       none: {
         collapsed:
-          "Select a county to compare its published and adjusted score",
+          "Select a county to compare its published Atlas score with the score using your changes.",
         kind: "placeholder",
         placeholder: "none",
       },
