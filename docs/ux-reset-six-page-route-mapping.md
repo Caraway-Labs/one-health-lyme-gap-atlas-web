@@ -55,7 +55,7 @@ Browse is the current Review surface: map, list, and compact preview when `count
 
 | Source | Recorded target | State |
 | --- | --- | --- |
-| `/app/review` | `/explore` | Same surface. Supported Review keys stay: `scope`, `county`, `compare`, `dataset`, `period`, `sort`, `page`, `mode`, `selection`, `layer`. Other keys are dropped. |
+| `/app/review` | `/explore` | Same surface. Supported Review keys stay: `scope`, `county`, `compare`, `dataset`, `period`, `sort`, `page`, `mode`, `selection`, `layer`, `focus`. Other keys are dropped. |
 | `/app/compare` | `/compare` | Same surface. Supported Compare keys stay, including `return` and `mode`. |
 | `/app/assistant` | `/askatlas` | Same surface. `county`, `dataset`, `conversation`, and `page_ref` stay. |
 | `/app`, `/app/explore` | `/explore` | Browse. Historical alias query rewrite, not the same-surface copy. |

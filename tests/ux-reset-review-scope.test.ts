@@ -83,6 +83,27 @@ describe("Review scope resolution", () => {
     expect(hasExplicitReviewScopeParam(new URLSearchParams())).toBeFalsy();
   });
 
+  it("treats a valid national focus as an explicit location", () => {
+    expect({
+      alaska: hasExplicitReviewLocation(new URLSearchParams("focus=AK")),
+      focus: hasExplicitReviewLocation(new URLSearchParams("focus=ID")),
+      repeat: hasExplicitReviewLocation(
+        new URLSearchParams("focus=ID&focus=WY")
+      ),
+      starting: resolveStartingReviewScope(
+        hasExplicitReviewLocation(new URLSearchParams("focus=ID")),
+        "ALL",
+        "CO",
+        stateOptions
+      ),
+    }).toStrictEqual({
+      alaska: false,
+      focus: true,
+      repeat: false,
+      starting: "ALL",
+    });
+  });
+
   it("treats a county in the URL as an explicit location", () => {
     expect({
       both: hasExplicitReviewLocation(
