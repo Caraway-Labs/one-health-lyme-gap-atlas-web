@@ -2620,6 +2620,10 @@
   line-height: 1.45;
 }
 
+.ux-reset-review-rationale .ux-reset-evidence-provenance {
+  margin-top: 0.45rem;
+}
+
 .ux-reset-explorer-release,
 .ux-reset-review-result {
   padding: 0.75rem 0;

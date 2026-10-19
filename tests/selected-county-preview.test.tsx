@@ -1,6 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -152,6 +158,123 @@ describe("selected county preview", () => {
     });
   });
 
+  it("inspects claim provenance and governed source urls", async () => {
+    const tickUrl =
+      "https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html";
+    const pathogenUrl = tickUrl;
+    const fieldValue = (view: ReturnType<typeof within>, field: string) =>
+      view.getByTestId(field).querySelector("dd")?.textContent ?? "";
+    const claim = (item: HTMLElement, summary: string) => {
+      fireEvent.click(within(item).getByText(summary));
+      const inspect = within(item)
+        .getAllByTestId("evidence-provenance-inspect")
+        .find(
+          (element) => element.querySelector("summary")?.textContent === summary
+        );
+      if (!inspect) {
+        throw new Error(`Missing provenance disclosure: ${summary}`);
+      }
+      return within(inspect);
+    };
+    const sourceHref = (view: ReturnType<typeof within>) =>
+      view
+        .getByTestId("evidence-provenance-source")
+        .querySelector("a")
+        ?.getAttribute("href") ?? null;
+    const releaseHref = (key: string) =>
+      screen
+        .getByTestId("review-sources-methods")
+        .querySelector(`[data-source-key="${key}"]`)
+        ?.getAttribute("href") ?? null;
+
+    renderPublished(baldwin);
+    await screen.findByText(/case-count floor is 5/);
+    const tick = screen.getByTestId("review-rationale-2");
+    const pathogen = screen.getByTestId("review-rationale-3");
+    const tickClaim = claim(
+      tick,
+      "Inspect provenance for Ixodes scapularis status"
+    );
+    const pathogenClaim = claim(
+      pathogen,
+      "Inspect provenance for Borrelia burgdorferi status"
+    );
+    expect({
+      pathogenHref: sourceHref(pathogenClaim),
+      pathogenLimitations: pathogenClaim
+        .getByTestId("evidence-provenance-limitations")
+        .querySelector("li")?.textContent,
+      pathogenPeriod: fieldValue(pathogenClaim, "evidence-provenance-period"),
+      pathogenReason: fieldValue(pathogenClaim, "evidence-provenance-state"),
+      pathogenReleaseHref: releaseHref("pathogen"),
+      tickClaims: within(tick).getAllByTestId("evidence-provenance-inspect")
+        .length,
+      tickFreshness: fieldValue(tickClaim, "evidence-provenance-freshness"),
+      tickHref: sourceHref(tickClaim),
+      tickLimitations: tickClaim
+        .getByTestId("evidence-provenance-limitations")
+        .querySelector("li")?.textContent,
+      tickPeriod: fieldValue(tickClaim, "evidence-provenance-period"),
+      tickReason: fieldValue(tickClaim, "evidence-provenance-state"),
+      tickReleaseHref: releaseHref("tick"),
+    }).toStrictEqual({
+      pathogenHref: pathogenUrl,
+      pathogenLimitations:
+        "This is a distinct restricted pathogen source. No records is not absence; 33 absent canonical counties are classified as unknown source coverage.",
+      pathogenPeriod: "Unavailable",
+      pathogenReason: "Unavailable. No county-linked record.",
+      pathogenReleaseHref: pathogenUrl,
+      tickClaims: 2,
+      tickFreshness: "Dataset vintage through 2025-12-31.",
+      tickHref: tickUrl,
+      tickLimitations:
+        "Tick status is cumulative surveillance evidence; no records is not absence and status is not abundance, pathogen prevalence, diagnosis, or individual risk.",
+      tickPeriod: "Unavailable",
+      tickReason: "Limited. Coverage or methodology limits apply.",
+      tickReleaseHref: tickUrl,
+    });
+
+    cleanup();
+    renderPublished({
+      ...baldwin,
+      release: {
+        ...baldwin.release,
+        sources: baldwin.release.sources.map((source) =>
+          source.key === "tick" || source.key === "pathogen"
+            ? { ...source, vintage: "" }
+            : source
+        ),
+      },
+    });
+    await screen.findByText(/case-count floor is 5/);
+    const unknownTick = claim(
+      screen.getByTestId("review-rationale-2"),
+      "Inspect provenance for Ixodes scapularis status"
+    );
+    const unknownPathogen = claim(
+      screen.getByTestId("review-rationale-3"),
+      "Inspect provenance for Borrelia burgdorferi status"
+    );
+    expect({
+      pathogenFreshness: fieldValue(
+        unknownPathogen,
+        "evidence-provenance-freshness"
+      ),
+      pathogenHref: sourceHref(unknownPathogen),
+      pathogenPeriod: fieldValue(unknownPathogen, "evidence-provenance-period"),
+      tickFreshness: fieldValue(unknownTick, "evidence-provenance-freshness"),
+      tickHref: sourceHref(unknownTick),
+      tickPeriod: fieldValue(unknownTick, "evidence-provenance-period"),
+    }).toStrictEqual({
+      pathogenFreshness: "Unavailable",
+      pathogenHref: pathogenUrl,
+      pathogenPeriod: "Unavailable",
+      tickFreshness: "Unavailable",
+      tickHref: tickUrl,
+      tickPeriod: "Unavailable",
+    });
+  });
+
   it("keeps a missing case count distinct from zero", async () => {
     renderPublished(autauga);
     await expect(
@@ -273,7 +396,10 @@ describe("selected county preview", () => {
           })}
         />
       );
-      return screen.getByTestId("review-rationale-1").textContent ?? "";
+      return (
+        screen.getByTestId("review-rationale-1").querySelector("p")
+          ?.textContent ?? ""
+      );
     };
     expect({
       absent: row("published_count_floor", null, null),
@@ -285,19 +411,19 @@ describe("selected county preview", () => {
       suppressed: row("suppressed", null, null),
     }).toStrictEqual({
       absent:
-        "1Published Lyme case dataA 2023 case-count floor was published, but the count and rate are unavailable. Unavailable numbers are not zero cases.",
+        "A 2023 case-count floor was published, but the count and rate are unavailable. Unavailable numbers are not zero cases.",
       countOnly:
-        "1Published Lyme case dataThe published 2023 case-count floor is 4. A published floor is a minimum, not an exact count or rate.",
+        "The published 2023 case-count floor is 4. A published floor is a minimum, not an exact count or rate.",
       missing:
-        "1Published Lyme case dataThe 2023 county Lyme case count is missing. A missing count is not zero cases.",
+        "The 2023 county Lyme case count is missing. A missing count is not zero cases.",
       noCountyRecord:
-        "1Published Lyme case dataNo county-linked 2023 Lyme case record is available. That is not zero cases.",
+        "No county-linked 2023 Lyme case record is available. That is not zero cases.",
       publishedZero:
-        "1Published Lyme case dataThe published 2023 case-count floor is 0. The published 2023 minimum rate is 0.0 cases per 100,000. A published floor is a minimum, not an exact count or rate.",
+        "The published 2023 case-count floor is 0. The published 2023 minimum rate is 0.0 cases per 100,000. A published floor is a minimum, not an exact count or rate.",
       rateOnly:
-        "1Published Lyme case dataThe published 2023 minimum rate is 2.1 cases per 100,000. A published floor is a minimum, not an exact count or rate.",
+        "The published 2023 minimum rate is 2.1 cases per 100,000. A published floor is a minimum, not an exact count or rate.",
       suppressed:
-        "1Published Lyme case dataThe 2023 county Lyme case count is suppressed. Suppression is not zero cases.",
+        "The 2023 county Lyme case count is suppressed. Suppression is not zero cases.",
     });
   });
 });
