@@ -7,8 +7,12 @@ import { remark } from "remark";
 import remarkMdx from "remark-mdx";
 import { describe, expect, it } from "vitest";
 
-import { expandDocsComponents } from "../src/lib/docs-llms-components";
+import {
+  expandDocsComponents,
+  markdownTableCell,
+} from "../src/lib/docs-llms-components";
 import { renderPublicDocsPage } from "../src/lib/docs-llms-export";
+import { gfmTables, provenanceUnionRows } from "./docs-llms-gfm";
 
 const FRONTMATTER = /^---\n(?<frontmatter>[\s\S]*?)\n---\n?/;
 
@@ -96,6 +100,56 @@ describe("rendered documentation markdown", () => {
     expect(markdown).toContain("library(httr2)");
     expect(markdown).toContain("await fetch");
     expect(markdown).not.toContain("<HttpClientTabs");
+  });
+
+  it("keeps pipes, backticks, and newlines inside one table cell", () => {
+    const cell = markdownTableCell("number | `string`\nnull");
+    const [table] = gfmTables(`| Type |\n| --- |\n| ${cell} |`);
+    expect(table?.[1]).toHaveLength(1);
+    expect(table?.[1]?.[0]).toBe("number | `string` null");
+  });
+
+  it("keeps the provenance value row to four parsed cells", async () => {
+    const { value } = provenanceUnionRows(
+      await renderedPage("content/docs/develop/provenance.mdx")
+    );
+    expect(value).toHaveLength(4);
+    expect(value[1]).toBe("number | string | null");
+    expect(value[2]).toBe("yes");
+    expect(value[3]).toBe(
+      "Read with value_state and unit; null never means zero."
+    );
+  });
+
+  it("keeps nullable timestamp rows in both provenance tables", async () => {
+    const { fiveTimestamps, fourTimestamps } = provenanceUnionRows(
+      await renderedPage("content/docs/develop/provenance.mdx")
+    );
+    expect(fourTimestamps.map((row) => row[0])).toStrictEqual([
+      "atlas_acquired_at",
+      "atlas_processed_at",
+      "source_published_at",
+    ]);
+    expect(
+      fourTimestamps.every(
+        (row) =>
+          row.length === 4 && row[1] === "date-time | null" && row[2] === "no"
+      )
+    ).toBeTruthy();
+    expect(fiveTimestamps.map((row) => row[0])).toStrictEqual([
+      "published_at",
+      "atlas_processed_at",
+      "upstream_updated_at",
+      "source_retrieved_at",
+    ]);
+    expect(
+      fiveTimestamps.every(
+        (row) => row.length === 5 && row[2] === "date-time | null"
+      )
+    ).toBeTruthy();
+    expect(fiveTimestamps[0]?.[4]).toBe(
+      "Source field. Deprecated. The observation publisher timestamp is source_published_at."
+    );
   });
 
   it("renders every current docs page without leftover component tags", async () => {

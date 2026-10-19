@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { expect, test } from "@playwright/test";
 
+import { provenanceUnionRows } from "../docs-llms-gfm";
+
 const publicOpenApiManifest = JSON.parse(
   readFileSync("contracts/public-openapi.manifest.json", "utf-8")
 ) as { sha256: string; sourceCommit: string };
@@ -135,4 +137,40 @@ test("renders operation pages, guardrails, and client examples into Markdown", a
   expect(full).not.toContain("<InterpretationGuardrailCopy");
   expect(full).not.toContain("<HttpClientTabs");
   expect(full).not.toContain("<OpenAPIPage");
+});
+
+test("keeps provenance union types inside parsed table cells", async ({
+  request,
+}) => {
+  const page = await (await request.get("/docs/develop/provenance.md")).text();
+  const full = await (await request.get("/llms-full.txt")).text();
+  for (const markdown of [page, full]) {
+    const { fiveTimestamps, fourTimestamps, value } =
+      provenanceUnionRows(markdown);
+    expect(value).toEqual([
+      "value",
+      "number | string | null",
+      "yes",
+      "Read with value_state and unit; null never means zero.",
+    ]);
+    expect(fourTimestamps.map((row) => [row[0], row[1], row[2]])).toEqual([
+      ["atlas_acquired_at", "date-time | null", "no"],
+      ["atlas_processed_at", "date-time | null", "no"],
+      ["source_published_at", "date-time | null", "no"],
+    ]);
+    expect(fourTimestamps.map((row) => row[3])).toEqual([
+      "Atlas acquisition time when governed; distinct from source publication and processing.",
+      "Atlas processing time when governed; distinct from response time.",
+      "Publisher timestamp when governed; null is not inferred freshness.",
+    ]);
+    expect(fiveTimestamps.map((row) => [row[0], row[2], row.length])).toEqual([
+      ["published_at", "date-time | null", 5],
+      ["atlas_processed_at", "date-time | null", 5],
+      ["upstream_updated_at", "date-time | null", 5],
+      ["source_retrieved_at", "date-time | null", 5],
+    ]);
+    expect(fiveTimestamps[0]?.[4]).toBe(
+      "Source field. Deprecated. The observation publisher timestamp is source_published_at."
+    );
+  }
 });

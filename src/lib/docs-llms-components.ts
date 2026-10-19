@@ -169,27 +169,78 @@ function citationStepsMarkdown(): string {
 }
 
 function nullSemanticsMarkdown(): string {
-  const rows = Object.entries(observationNullSemantics).map(
-    ([name, field]) =>
-      `| \`${name}\` | ${field.type} | ${field.required ? "yes" : "no"} | ${field.description} |`
+  const rows = Object.entries(observationNullSemantics).map(([name, field]) =>
+    markdownTableRow([
+      markdownTableCell(name, { code: true }),
+      markdownTableCell(field.type),
+      markdownTableCell(field.required ? "yes" : "no"),
+      markdownTableCell(field.description),
+    ])
   );
   return [
-    "| Field | Type | Required | Description |",
+    markdownTableRow(["Field", "Type", "Required", "Description"]),
     "| --- | --- | --- | --- |",
     ...rows,
   ].join("\n");
 }
 
 function provenanceFieldMarkdown(): string {
-  const rows = provenanceNameRows.map(
-    (row) =>
-      `| \`${row.name}\` | ${row.schema} | ${row.type} | ${row.required ? "yes" : "no"} | ${row.description} |`
+  const rows = provenanceNameRows.map((row) =>
+    markdownTableRow([
+      markdownTableCell(row.name, { code: true }),
+      markdownTableCell(row.schema),
+      markdownTableCell(row.type),
+      markdownTableCell(row.required ? "yes" : "no"),
+      markdownTableCell(row.description),
+    ])
   );
   return [
-    "| Field | Schema | Type | Required | Description |",
+    markdownTableRow(["Field", "Schema", "Type", "Required", "Description"]),
     "| --- | --- | --- | --- | --- |",
     ...rows,
   ].join("\n");
+}
+
+/**
+ * Escape one Markdown table cell. A literal pipe would start another column,
+ * a backtick would open inline code, and a newline would end the row.
+ */
+export function markdownTableCell(
+  value: string,
+  options?: { code?: boolean }
+): string {
+  const singleLine = value.replaceAll(/\r\n?|\n/g, " ");
+  if (options?.code) {
+    const fence = "`".repeat(longestBacktickRun(singleLine) + 1);
+    const padded =
+      singleLine.startsWith("`") || singleLine.endsWith("`")
+        ? ` ${singleLine} `
+        : singleLine;
+    return `${fence}${escapeTablePipes(padded)}${fence}`;
+  }
+  return escapeTablePipes(singleLine).replaceAll("`", "\\`");
+}
+
+function markdownTableRow(cells: readonly string[]): string {
+  return `| ${cells.join(" | ")} |`;
+}
+
+function escapeTablePipes(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll("|", "\\|");
+}
+
+function longestBacktickRun(value: string): number {
+  let longest = 0;
+  let current = 0;
+  for (const character of value) {
+    if (character === "`") {
+      current += 1;
+      longest = Math.max(longest, current);
+      continue;
+    }
+    current = 0;
+  }
+  return longest;
 }
 
 function unwrapStructuralTags(markdown: string): string {
