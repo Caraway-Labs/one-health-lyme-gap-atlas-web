@@ -16,7 +16,6 @@ import {
   formatGapScore,
   publishedGapScore,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
-import { REVIEW_RATIONALE_SCORE_NOTE } from "@/features/ux-reset/review/review-rationale";
 import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
 import {
   EXPLORER_MAP_FOLLOW_UP_ID,
@@ -52,15 +51,7 @@ function PublishedReviewPriorityReadout({
 }) {
   switch (priority.kind) {
     case "recognized": {
-      return (
-        <>
-          <AtlasPriorityBadge priority={priority.value} />
-          <p className="type-small">
-            Published review priority for follow-up. This is not a disease-risk
-            estimate.
-          </p>
-        </>
-      );
+      return <AtlasPriorityBadge priority={priority.value} />;
     }
     case "neutral": {
       return (
@@ -69,8 +60,7 @@ function PublishedReviewPriorityReadout({
             {priority.value}
           </p>
           <p className="type-small">
-            This published priority is not a recognized review category. It is
-            not a disease-risk estimate.
+            This published priority is not a recognized review category.
           </p>
         </>
       );
@@ -78,8 +68,7 @@ function PublishedReviewPriorityReadout({
     case "unavailable": {
       return (
         <p className="type-body">
-          Review priority is unavailable for this county. Unavailable is not a
-          finding of no risk.
+          Review priority is unavailable for this county.
         </p>
       );
     }
@@ -213,8 +202,7 @@ export function ReviewPublishedCountyPreview({
             {detail.release.methodology_version}.
           </p>
           <p className="type-small">
-            Release loaded {detail.release.loaded_at}. That timestamp is not an
-            observation period.
+            Release loaded {detail.release.loaded_at}.
           </p>
           {detail.release.sources.length > 0 ? (
             <ul>
@@ -251,11 +239,6 @@ export function ReviewPublishedCountyPreview({
               No source list was returned with this release.
             </p>
           )}
-          <p className="type-small">{REVIEW_RATIONALE_SCORE_NOTE}</p>
-          <p className="type-small">{detail.release.limitations}</p>
-          {detail.population === null ? (
-            <p>Population was not returned; it is not zero.</p>
-          ) : null}
         </details>
       ) : null}
       <div className="ux-reset-review-preview-actions">

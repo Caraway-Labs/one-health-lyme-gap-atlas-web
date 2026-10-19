@@ -109,9 +109,11 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(
       page.getByRole("link", { name: "Lyme surveillance case definition" })
     ).toBeVisible();
-    await expect(page.getByTestId("explorer-summary-limitation")).toContainText(
-      "Collection dates are unavailable"
+    await expect(page.getByTestId("explorer-summary-limitation")).toHaveCount(
+      0
     );
+    await expect(page.getByText("Why review this county?")).toHaveCount(0);
+    await expect(page.getByText("Review limitations")).toHaveCount(0);
     await page.getByRole("link", { name: "Suggested follow-up" }).click();
     await expect(page.locator("#explorer-follow-up")).toBeInViewport();
 

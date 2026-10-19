@@ -185,7 +185,10 @@ test.describe("Selected county preview", () => {
       preview.getByTestId("review-view-county-evidence")
     ).toHaveCount(0);
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
-      "A published floor is a minimum, not an exact count or rate."
+      "case-count floor"
+    );
+    await expect(preview.getByTestId("review-rationale-1")).not.toContainText(
+      "not an exact count"
     );
     for (const [index, label] of rowLabels.entries()) {
       await expect(
@@ -203,7 +206,7 @@ test.describe("Selected county preview", () => {
     await page.locator('button.ux-reset-ranked-row[data-fips="01001"]').click();
     await expect(preview).toHaveAttribute("data-fips", "01001");
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
-      "No county-linked 2023 Lyme case record is available. That is not zero cases."
+      "No county-linked 2023 Lyme case record is available."
     );
     expect(hits).toEqual([]);
 

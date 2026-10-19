@@ -276,7 +276,8 @@ describe("environmental context section", () => {
     });
     await waitFor(() => {
       expect({
-        absent: screen.getAllByText(/absence is not zero/i).length,
+        absent: screen.getAllByText(/No governed observation was returned/i)
+          .length,
         zero: screen.queryByText("0.0 mm"),
       }).toStrictEqual({ absent: 4, zero: null });
     });
@@ -316,7 +317,7 @@ describe("environmental context section", () => {
         .textContent,
       temperature: screen.queryByText("-1.992294192037333 °C"),
     }).toStrictEqual({
-      partial: expect.stringContaining("not zero"),
+      partial: expect.not.stringContaining("not zero"),
       temperature: null,
     });
   });

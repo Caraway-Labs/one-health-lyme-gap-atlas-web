@@ -63,6 +63,7 @@ function EnvironmentalMeasureBody({
       if (view.selection) {
         return (
           <KnownEmptySelectionNotice
+            omitCaveats
             selections={[view.selection]}
             testId={`environmental-known-empty-${view.measureId}`}
           />
@@ -70,7 +71,7 @@ function EnvironmentalMeasureBody({
       }
       return (
         <AtlasStatusMessage tone="empty">
-          {`No governed observation was returned for ${measureClaim(view.measureId)} on this county and day. That absence is not zero.`}
+          {`No governed observation was returned for ${measureClaim(view.measureId)} on this county and day.`}
         </AtlasStatusMessage>
       );
     }
@@ -84,7 +85,11 @@ function EnvironmentalMeasureBody({
     case "ready": {
       return (
         <>
-          <EvidenceObject model={view.presentation.evidence} showReason />
+          <EvidenceObject
+            model={view.presentation.evidence}
+            showGovernedLimitations={false}
+            showReason
+          />
           <dl className="ux-reset-environmental-meta">
             <div>
               <dt>Coverage</dt>
@@ -147,7 +152,7 @@ function sectionStatus(input: {
     return "Enter a calendar day. No observation is requested for an unreadable date.";
   }
   if (input.dateSupport === "outside_coverage") {
-    return `${input.date} is outside the supported January 2025 coverage. No observation is shown for that day, and this is not zero.`;
+    return `${input.date} is outside the supported January 2025 coverage. No observation is shown for that day.`;
   }
   if (!input.enabled) {
     return "Environmental observations were not requested for this county.";
@@ -194,7 +199,7 @@ export function EnvironmentalContextSection({
   if (!status && loadingCount > 0) {
     liveText = `Loading environmental context for county ${fips} on ${date}.`;
   } else if (!status && failedCount > 0 && readyCount > 0) {
-    liveText = `Environmental context is partial for county ${fips} on ${date}. A failed measure is not zero.`;
+    liveText = `Environmental context is partial for county ${fips} on ${date}.`;
   } else if (!status && readyCount === context.measures.length) {
     liveText = `Environmental context loaded for county ${fips} on ${date}.`;
   }
@@ -209,7 +214,7 @@ export function EnvironmentalContextSection({
       id={EXPLORER_SECTION_IDS.environmental}
     >
       <AtlasSectionHeader
-        description="Descriptive January 2025 NOAA weather for this county. Human, vector, and pathogen surveillance stay the primary evidence. These values do not change the gap score and are not a disease predictor."
+        description="January 2025 NOAA weather for this county."
         eyebrow="Context"
         headingLevel="h2"
         title="Environmental context"
@@ -251,7 +256,7 @@ export function EnvironmentalContextSection({
           {failedCount > 0 && readyCount > 0 ? (
             <AtlasStatusMessage tone="error">
               Some environmental measures did not load. Loaded measures stay
-              visible. A failed measure is not zero.
+              visible.
             </AtlasStatusMessage>
           ) : null}
           <div className="ux-reset-environmental-measures">

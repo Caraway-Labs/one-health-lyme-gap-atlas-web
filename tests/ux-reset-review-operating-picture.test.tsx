@@ -301,7 +301,7 @@ describe("Review operating picture state", () => {
       headingOmitsSource: false,
       labelFor: "explorer-map-layer",
       order: [...order].toSorted((left, right) => left - right),
-      provenance: "Source periods vary by evidence · Release alpha-2026",
+      provenance: "Release alpha-2026",
     });
     expect(fit).toHaveAccessibleName("Fit AZ (Arizona)");
     expect(fit).toHaveAccessibleName(expect.stringContaining(visibleLabel));
@@ -2072,8 +2072,8 @@ describe("Review operating picture state", () => {
         within(provenance).getByTestId("evidence-provenance-state")
           .textContent ?? "";
       const limitations =
-        within(provenance).getByTestId("evidence-provenance-limitations")
-          .textContent ?? "";
+        within(provenance).queryByTestId("evidence-provenance-limitations")
+          ?.textContent ?? "";
       view.unmount();
       return {
         heading: state.startsWith("Review result"),
@@ -2091,18 +2091,14 @@ describe("Review operating picture state", () => {
         heading: true,
         inventedLimited: false,
         inventedMaterial: false,
-        limitations: expect.stringContaining(
-          "No governed limitations were returned."
-        ),
+        limitations: "",
         state: expect.stringContaining("Nothing stands out"),
       },
       withLimitation: {
         heading: true,
         inventedLimited: false,
         inventedMaterial: false,
-        limitations: expect.stringContaining(
-          "Review is not disease risk. Candidates come only from the review result."
-        ),
+        limitations: "",
         state: expect.stringContaining("Candidates found"),
       },
     });
@@ -2150,8 +2146,8 @@ describe("Review operating picture state", () => {
       const qualification = screen.getByTestId("review-preview-qualification");
       fireEvent.click(within(qualification).getByText("Inspect provenance"));
       const limitations =
-        within(qualification).getByTestId("evidence-provenance-limitations")
-          .textContent ?? "";
+        within(qualification).queryByTestId("evidence-provenance-limitations")
+          ?.textContent ?? "";
       const state =
         within(qualification).getByTestId("evidence-provenance-state")
           .textContent ?? "";
@@ -2592,18 +2588,15 @@ describe("Review operating picture state", () => {
         .querySelector(".ux-reset-ranked-name")?.textContent ?? "";
     const gapRow = screen.getByTestId("review-data-gap").textContent ?? "";
     const omitted = screen.getByTestId("review-omitted-gaps").textContent ?? "";
-    const limitations = [
-      ...screen.getByTestId("review-limitations").querySelectorAll("li"),
-    ].map((item) => item.textContent ?? "");
+    expect(screen.queryByTestId("review-limitations")).toBeNull();
+    expect(screen.queryByText("Review is not disease risk.")).toBeNull();
     view.unmount();
     expect({
       gapRow,
-      limitations,
       omitted,
       rowName: rowName.replaceAll(/\s+/g, " ").trim(),
     }).toStrictEqual({
       gapRow: "FIPS 08031 Unavailable. Unavailable",
-      limitations: ["Review is not disease risk."],
       omitted:
         "1 data gap was omitted because its county FIPS is not in Colorado.",
       rowName: "Unavailable, CO",

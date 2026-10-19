@@ -59,35 +59,6 @@ const SECTIONS = [
   ["Sources", EXPLORER_SECTION_IDS.sources],
 ] as const;
 
-function reviewCategoryCopy(followUp: ExplorerFollowUpState): string {
-  switch (followUp.status) {
-    case "loading": {
-      return "Review category is loading with the review result.";
-    }
-    case "request-failed": {
-      return "Review category is not shown because the review result did not load.";
-    }
-    case "not-in-scope": {
-      return "This scope did not load a state review category.";
-    }
-    case "candidate": {
-      return followUp.category
-        ? `Review category ${followUp.category}.`
-        : "No review category was returned for this county.";
-    }
-    case "factual": {
-      return "No review category was returned for this county.";
-    }
-    case "withheld": {
-      return "Review category is withheld because this result does not publish candidates.";
-    }
-    default: {
-      const exhaustive: never = followUp;
-      return exhaustive;
-    }
-  }
-}
-
 function publishedCountyObservationHold(
   workspace: InvestigateWorkspace,
   label: "environmental observations" | "population and rurality observations"
@@ -306,9 +277,6 @@ export function ExplorerCountyEvidence({
     workspace.identity?.fips === workspace.requestedFips
       ? workspace.identity.label
       : (workspace.requestedFips ?? "Choose a county");
-  const candidateLimitations =
-    followUp.status === "candidate" ? followUp.limitations : [];
-  const leadLimitation = candidateLimitations[0] ?? null;
   const followUpStatus = followUpPanelStatus({
     countyRecordAbsent: workspace.countyRecordAbsent,
     countyRecordError: workspace.countyRecordError,
@@ -392,37 +360,11 @@ export function ExplorerCountyEvidence({
         {followUpSelection ? (
           <ExplorerReviewPriority selection={followUpSelection} />
         ) : null}
-        <h3>Why review this county?</h3>
-        <p className="type-body" data-testid="explorer-review-category">
-          {reviewCategoryCopy(followUp)}
-        </p>
-        {followUp.status === "candidate" && followUp.rationale ? (
-          <p className="type-body" data-testid="explorer-summary-reason">
-            {followUp.rationale}
-          </p>
-        ) : null}
-        {leadLimitation ? (
-          <p className="type-body" data-testid="explorer-summary-limitation">
-            {leadLimitation}
-          </p>
-        ) : null}
-        {candidateLimitations.length > 0 ? (
-          <details
-            className="ux-reset-explorer-disclosure"
-            data-testid="explorer-review-limitations"
-          >
-            <summary>Review limitations</summary>
-            <ul>
-              {candidateLimitations.map((limitation) => (
-                <li key={limitation}>{limitation}</li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
         {workspace.requestedFips ? (
           <Tier1SurveillancePriority
             fips={workspace.requestedFips}
             headingLevel="h3"
+            showInterpretiveNotes={false}
             release={tier1ReleaseFromMetadata({
               isError:
                 Boolean(workspace.metadataError) ||
@@ -578,6 +520,7 @@ export function ExplorerCountyEvidence({
             countyRecordLoading={hierarchy.countyRecordLoading}
             countyRecordRefreshError={hierarchy.countyRecordRefreshError}
             measures={workspace.measures}
+            omitDisclaimers
             retrying={workspace.evidenceFetching}
             onRetryFailures={
               workspace.bundle && workspace.bundle.measureFailures.length > 0
@@ -616,8 +559,7 @@ export function ExplorerCountyEvidence({
           />
           <p className="type-body">
             Context and gaps stay with this county&apos;s evidence request. They
-            are not shown until that request settles, and a failed request is
-            not a gap in the county. Missing or suppressed values are not zero.
+            are not shown until that request settles.
           </p>
         </section>
       )}

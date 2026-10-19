@@ -138,6 +138,7 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
                 <EvidenceObject
                   claimHeadingLevel="h4"
                   model={paint.selectionEvidence}
+                  showGovernedLimitations={false}
                   showReason
                 />
               ) : null}

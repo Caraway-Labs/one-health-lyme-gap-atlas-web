@@ -202,7 +202,7 @@ test.describe("Review operating picture", () => {
     await expect(page.getByTestId("review-observed-basis")).toContainText(
       "Borrelia burgdorferi sensu stricto"
     );
-    await expect(page.getByTestId("review-county-preview")).toContainText(
+    await expect(page.getByTestId("review-county-preview")).not.toContainText(
       "Collection dates are unavailable"
     );
     await expect(page.getByTestId("review-data-gap")).toHaveAttribute(

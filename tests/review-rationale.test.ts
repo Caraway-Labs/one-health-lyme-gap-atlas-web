@@ -72,7 +72,9 @@ describe("review rationale", () => {
       tick: items[1]?.text,
     }).toStrictEqual({
       human: expect.stringContaining("2.1 cases per 100,000"),
-      insurance: expect.stringContaining("No estimated value"),
+      insurance: expect.stringContaining(
+        "No county-level health insurance coverage value was published."
+      ),
       labels: [
         "Published Lyme case data",
         "Tick presence",
@@ -82,10 +84,18 @@ describe("review rationale", () => {
         "Rurality",
       ],
       numbers: [1, 2, 3, 4, 5, 6],
-      pathogen: expect.stringContaining("does not establish pathogen absence"),
-      rural: expect.stringContaining("No estimated category"),
-      svi: expect.stringContaining("No estimated value"),
-      tick: expect.stringContaining("does not establish tick absence"),
+      pathogen: expect.stringContaining(
+        "No county-level B. burgdorferi detection record is available."
+      ),
+      rural: expect.stringContaining(
+        "No 2023 rural-urban classification was published for this county."
+      ),
+      svi: expect.stringContaining(
+        "No county-level 2022 social vulnerability percentile was published."
+      ),
+      tick: expect.stringContaining(
+        "The published tick table has no county record."
+      ),
     });
   });
 
@@ -99,7 +109,7 @@ describe("review rationale", () => {
       tick: items[1]?.text,
     }).toStrictEqual({
       human: expect.stringContaining(
-        "case-count floor is 1. The published 2023 minimum rate is 2.1 cases per 100,000. A published floor is a minimum, not an exact count or rate."
+        "case-count floor is 1. The published 2023 minimum rate is 2.1 cases per 100,000."
       ),
       insurance: expect.stringContaining("8.2%"),
       rural: expect.stringContaining("Code 3"),

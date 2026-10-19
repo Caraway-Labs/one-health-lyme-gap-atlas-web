@@ -16,6 +16,7 @@ type EvidenceObjectProps = {
   claimHeadingLevel?: ClaimHeadingLevel;
   contentSurface?: ContentSurface;
   model: EvidenceObjectModel;
+  showGovernedLimitations?: boolean;
   showReason?: boolean;
 };
 
@@ -28,6 +29,7 @@ export function EvidenceObject({
   claimHeadingLevel = "h3",
   contentSurface = "source_card",
   model,
+  showGovernedLimitations = true,
   showReason = false,
 }: EvidenceObjectProps) {
   const ClaimHeading = claimHeadingLevel;
@@ -49,18 +51,24 @@ export function EvidenceObject({
           <p className="type-small">{model.valueNote}</p>
         ) : null}
       </div>
-      <EvidenceStateStrip model={model} showReason={showReason} />
+      <EvidenceStateStrip
+        model={model}
+        showCaveat={showGovernedLimitations}
+        showReason={showReason}
+      />
       {model.reasonCode ? (
         <EvidenceProvenanceInspect
           availability={model.availability}
           contentSurface={contentSurface}
           provenance={model.provenance}
           reasonCode={model.reasonCode}
+          showLimitations={showGovernedLimitations}
         />
       ) : (
         <EvidenceProvenanceInspect
           contentSurface={contentSurface}
           provenance={model.provenance}
+          showLimitations={showGovernedLimitations}
           stateLabel={evidenceAvailabilityLabel(model.availability)}
         />
       )}

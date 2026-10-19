@@ -47,12 +47,14 @@ export function CountyActionPlan({
   headingLevel = "h4",
   idPrefix = "",
   reviewContext,
+  omitDisclaimers = false,
   showEyebrow = true,
   whatIfActive = false,
 }: {
   detail: CountyDetail;
   headingLevel?: "h3" | "h4";
   idPrefix?: string;
+  omitDisclaimers?: boolean;
   reviewContext?: FollowUpReviewContext;
   showEyebrow?: boolean;
   whatIfActive?: boolean;
@@ -100,9 +102,11 @@ export function CountyActionPlan({
           )}
         </div>
       </div>
-      <p className="action-caution" data-testid="follow-up-interpretation">
-        {FOLLOW_UP_INTERPRETATION}
-      </p>
+      {omitDisclaimers ? null : (
+        <p className="action-caution" data-testid="follow-up-interpretation">
+          {FOLLOW_UP_INTERPRETATION}
+        </p>
+      )}
       <p className="action-summary">{workflow.level.explanation}</p>
       {workflow.level.colorResponseNote ? (
         <p className="action-summary" data-testid="follow-up-color-note">
@@ -114,7 +118,7 @@ export function CountyActionPlan({
           Returned next check: {workflow.level.governedNextCheck}
         </p>
       ) : null}
-      {workflow.verificationNote ? (
+      {workflow.verificationNote && !omitDisclaimers ? (
         <p className="action-summary" data-testid="follow-up-verification-note">
           {workflow.verificationNote}
         </p>
@@ -144,8 +148,8 @@ export function CountyActionPlan({
       <details className="action-resources">
         <summary>Questions, partner roles, and official resources</summary>
         <p>
-          Partner roles are suggestions for local judgment. Atlas does not
-          assign them.
+          Partner roles are suggestions for local judgment.
+          {omitDisclaimers ? null : " Atlas does not assign them."}
         </p>
         <p>Questions to verify locally</p>
         <ul>

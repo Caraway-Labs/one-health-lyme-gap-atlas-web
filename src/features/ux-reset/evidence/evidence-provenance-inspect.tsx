@@ -55,6 +55,11 @@ type EvidenceProvenanceInspectProps = {
   className?: string;
   contentSurface?: ContentSurface;
   provenance: EvidenceProvenanceModel;
+  /**
+   * Atlas Explorer omits governed-limitation copy. Compare and other pages
+   * keep the list.
+   */
+  showLimitations?: boolean;
   /** Overrides the evidence-state row label. Shared evidence keeps “Evidence state”. */
   stateHeading?: string;
   /** Compare uses “Sources and limitations”. Other surfaces keep provenance inspect. */
@@ -86,6 +91,7 @@ export function EvidenceProvenanceInspect(
     className,
     contentSurface = "source_card",
     provenance,
+    showLimitations = true,
     summaryLabel = "Inspect provenance",
   } = props;
   const technical = provenance.technical;
@@ -159,18 +165,20 @@ export function EvidenceProvenanceInspect(
             </ul>
           </div>
         ) : null}
-        <div data-testid="evidence-provenance-limitations">
-          <p className="type-small">Governed limitations</p>
-          {provenance.limitations.length > 0 ? (
-            <ul className="ux-reset-evidence-limitations">
-              {provenance.limitations.map((limitation) => (
-                <li key={limitation}>{limitation}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No governed limitations were returned.</p>
-          )}
-        </div>
+        {showLimitations ? (
+          <div data-testid="evidence-provenance-limitations">
+            <p className="type-small">Governed limitations</p>
+            {provenance.limitations.length > 0 ? (
+              <ul className="ux-reset-evidence-limitations">
+                {provenance.limitations.map((limitation) => (
+                  <li key={limitation}>{limitation}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No governed limitations were returned.</p>
+            )}
+          </div>
+        ) : null}
         {technical ? (
           <details className="ux-reset-evidence-provenance-technical">
             <summary>Technical reproducibility identifiers</summary>
