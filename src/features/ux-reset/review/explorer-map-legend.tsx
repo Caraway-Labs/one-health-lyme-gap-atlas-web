@@ -12,10 +12,44 @@ import {
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import {
   buildExplorerLegendModel,
+  type ExplorerLegendDisclosure,
   type ExplorerLegendGradient,
   type ExplorerLegendSegment,
 } from "@/features/ux-reset/review/explorer-legend-model";
 import type { ExplorerMapPaint } from "@/features/ux-reset/review/explorer-map-layers";
+
+function LegendDisclosure({
+  color,
+  disclosure,
+}: {
+  color: string;
+  disclosure: ExplorerLegendDisclosure;
+}) {
+  return (
+    <div
+      className="ux-reset-explorer-legend-disclosure"
+      data-legend-disclosure=""
+    >
+      <p className="ux-reset-explorer-legend-disclosure-title">
+        <span
+          aria-hidden="true"
+          className="ux-reset-explorer-legend-disclosure-swatch"
+          data-legend-disclosure-swatch=""
+          style={{ background: color }}
+        />
+        <strong>{disclosure.title}</strong>
+      </p>
+      {disclosure.category ? (
+        <p className="ux-reset-explorer-legend-disclosure-category">
+          {disclosure.category}
+        </p>
+      ) : null}
+      <p className="ux-reset-explorer-legend-disclosure-action">
+        {disclosure.action}
+      </p>
+    </div>
+  );
+}
 
 function LegendSegmentButton({
   gradient,
@@ -33,8 +67,11 @@ function LegendSegmentButton({
   const accessibleName =
     gradient?.accessibleName ?? segment?.accessibleName ?? "";
   const tooltip = gradient?.tooltip ?? segment?.tooltip ?? "";
+  const disclosure = gradient ? null : (segment?.disclosure ?? null);
   const label = segment?.label ?? "Continuous color scale";
-  const dialogName = `${layerTitle}: ${accessibleName}`;
+  const dialogName = accessibleName.startsWith(`${layerTitle}:`)
+    ? accessibleName
+    : `${layerTitle}: ${accessibleName}`;
   const background = gradient
     ? `linear-gradient(90deg, ${gradient.stops
         .map((stop) => `${stop.color} ${stop.percent}%`)
@@ -69,10 +106,21 @@ function LegendSegmentButton({
       <PopoverContent
         align="center"
         aria-label={dialogName}
-        className="ux-reset-explorer-legend-tip w-auto"
+        className={
+          disclosure
+            ? "ux-reset-explorer-legend-tip ux-reset-explorer-legend-tip-disclosure border-border w-auto border p-2.5 text-left text-xs shadow-none ring-0"
+            : "ux-reset-explorer-legend-tip w-auto"
+        }
         side="top"
       >
-        <p>{tooltip}</p>
+        {disclosure ? (
+          <LegendDisclosure
+            color={segment?.color ?? ""}
+            disclosure={disclosure}
+          />
+        ) : (
+          <p>{tooltip}</p>
+        )}
       </PopoverContent>
     </Popover>
   );
