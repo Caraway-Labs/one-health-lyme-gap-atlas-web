@@ -1,0 +1,109 @@
+---
+title: Query county observations
+description: 'Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.'
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 'Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.'
+      - content: GET /v1/observations
+      - content: observations_v1_observations_get
+      - content: Query county observations
+      - content: 'Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.'
+      - content: measure_id query required Exact discovery measure ID.
+      - content: Exact discovery measure ID.
+      - content: Measure Id
+      - content: '"case_count_floor_2023"'
+      - content: 'geography_type query required '
+      - content: '#/components/schemas/GeographyType'
+      - content: geography_id query required Repeat for 1-500 county FIPS strings; preserve leading zeros.
+      - content: Repeat for 1-500 county FIPS strings; preserve leading zeros.
+      - content: Geography Id
+      - content: '["08001"]'
+      - content: 'vintage_year query optional Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.'
+      - content: 'Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.'
+      - content: Vintage Year
+      - content: year query optional Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.
+      - content: Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.
+      - content: Year
+      - content: '2023'
+      - content: start_date query optional Inclusive period start; requires end_date and excludes year.
+      - content: Inclusive period start; requires end_date and excludes year.
+      - content: Start Date
+      - content: '"2023-01-01"'
+      - content: end_date query optional Inclusive period end; requires start_date and excludes year.
+      - content: Inclusive period end; requires start_date and excludes year.
+      - content: End Date
+      - content: '"2023-12-31"'
+      - content: stratification query optional Current release has no strata; unsupported selections fail explicitly.
+      - content: Current release has no strata; unsupported selections fail explicitly.
+      - content: Stratification
+      - content: page_size query optional Items per page; defaults to 100, configured maximum at most 500.
+      - content: Items per page; defaults to 100, configured maximum at most 500.
+      - content: Page Size
+      - content: '100'
+      - content: page_token query optional Opaque next_page_token; retain query filters and release.
+      - content: Opaque next_page_token; retain query filters and release.
+      - content: Page Token
+      - content: 200 Bounded current-release observations.
+      - content: application/json
+      - content: Response Observations V1 Observations Get
+      - content: '#/components/schemas/CollectionEnvelope_CountyContextObservation_'
+      - content: '#/components/schemas/CollectionEnvelope_Observation_'
+      - content: Empty continuation page; not an unavailable selection
+      - content: '{"data":[],"meta":{"next_page_token":null,"response_at":"2026-01-01T00:00:00Z","availability":"AVAILABLE","release_id":"example-release","limitations":[]},"links":{"self":null}}'
+      - content: Synthetic available published observation example
+      - content: '{"data":[{"observation_id":"example-observation","measure_id":"case_count_floor_2023","geography":{"geography_type":"county","geography_id":"08001"},"period_start":"2023-01-01","period_end":"2023-12-31","temporal_grain":"year","value":12,"value_state":"OBSERVED","unit":"cases","denominator":null,"source_id":"human","methodology_id":null,"methodology_version":"example-transform-v1","semantic_version":"example-semantic-v1","release_id":"example-release","provenance_ref":"example-observation","limitations":["Synthetic documentation example; no measured value is asserted."],"evidence":{"resource_type":"observation","resource_id":"example-observation"}}],"meta":{"next_page_token":null,"response_at":"2026-01-01T00:00:00Z","availability":"AVAILABLE","release_id":"example-release","limitations":[]},"links":{"self":null}}'
+      - content: Successful initial query with no published results; not negative evidence
+      - content: '{"data":[],"meta":{"next_page_token":null,"response_at":"2026-01-01T00:00:00Z","availability":"UNAVAILABLE","reason":"NO_PUBLISHED_RESULTS","release_id":"example-release","limitations":["No published observations match this selection in the checked release. This does not establish biological absence, source coverage, or geography membership."]},"links":{"self":null}}'
+      - content: Synthetic missing-value example; not a published county result
+      - content: '{"data":[{"observation_id":"example-observation","measure_id":"case_count_floor_2023","geography":{"geography_type":"county","geography_id":"08001"},"period_start":"2023-01-01","period_end":"2023-12-31","temporal_grain":"year","value":null,"value_state":"MISSING","unit":"cases","denominator":null,"source_id":"human","methodology_id":null,"methodology_version":"example-transform-v1","semantic_version":"example-semantic-v1","release_id":"example-release","provenance_ref":"example-observation","limitations":["Synthetic documentation example; no measured value is asserted."],"evidence":{"resource_type":"observation","resource_id":"example-observation"}}],"meta":{"next_page_token":null,"response_at":"2026-01-01T00:00:00Z"},"links":{"self":null}}'
+      - content: 400 INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-400","title":"Request failed","status":400,"detail":"INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json","instance":"/v1/observations","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 404 RESOURCE_NOT_FOUND; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Request failed","status":404,"detail":"RESOURCE_NOT_FOUND; application/problem+json","instance":"/v1/observations","request_id":"example-request-id","code":"RESOURCE_NOT_FOUND"}'
+      - content: 413 GET request body rejected; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-413","title":"Request failed","status":413,"detail":"GET request body rejected; application/problem+json","instance":"/v1/observations","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 414 Query string too long; application/problem+json
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-414","title":"Request failed","status":414,"detail":"Query string too long; application/problem+json","instance":"/v1/observations","request_id":"example-request-id","code":"INVALID_REQUEST"}'
+      - content: 429 Rate limited; Retry-After; application/problem+json
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limited; Retry-After; application/problem+json","instance":"/v1/observations","request_id":"example-request-id","code":"RATE_LIMITED"}'
+      - content: 503 Service unavailable; application/problem+json
+      - content: Retry-After Seconds before retry when supplied by the service.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Synthetic error example
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Service unavailable; application/problem+json","instance":"/v1/observations","request_id":"example-request-id","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/observations","method":"get"}]} />
+    </>
+  );
+}
