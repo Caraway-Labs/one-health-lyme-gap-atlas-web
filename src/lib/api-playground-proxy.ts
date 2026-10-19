@@ -26,8 +26,6 @@ const FORWARDED_RESPONSE_HEADERS = [
   "retry-after",
 ] as const;
 
-const ACCEPT_HEADER =
-  /^(?:\*\/\*|application\/json|application\/pdf|application\/problem\+json|text\/csv)$/;
 const IF_NONE_MATCH = /^(?:\*|(?:W\/)?"[\u0021\u0023-\u007E]{1,200}")$/;
 
 export type PlaygroundRateLimit =
@@ -142,9 +140,6 @@ export async function proxyPlaygroundRequest(
     );
   }
 
-  const headers = upstreamHeaders(request);
-  if (headers instanceof Response) return headers;
-
   const origin = safeOrigin(options.upstreamOrigin);
   if (!origin) {
     return problem(
@@ -169,6 +164,9 @@ export async function proxyPlaygroundRequest(
       target.rejection.detail
     );
   }
+
+  const headers = upstreamHeaders(request, target.target.mediaTypes);
+  if (headers instanceof Response) return headers;
 
   const timeoutMs = options.timeoutMs ?? UPSTREAM_TIMEOUT_MS;
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -351,11 +349,14 @@ function copyHeader(
   to.set(name, value);
 }
 
-function upstreamHeaders(request: Request): Headers | Response {
+function upstreamHeaders(
+  request: Request,
+  mediaTypes: ReadonlySet<string>
+): Headers | Response {
   const headers = new Headers();
   const accept = request.headers.get("accept");
   if (accept) {
-    if (!ACCEPT_HEADER.test(accept)) {
+    if (!isPublishedAccept(accept, mediaTypes)) {
       return problem(
         400,
         "Playground request was not sent",
@@ -376,6 +377,14 @@ function upstreamHeaders(request: Request): Headers | Response {
     headers.set("if-none-match", ifNoneMatch);
   }
   return headers;
+}
+
+function isPublishedAccept(
+  accept: string,
+  mediaTypes: ReadonlySet<string>
+): boolean {
+  if (accept === "*/*") return true;
+  return mediaTypes.has(accept);
 }
 
 function safeOrigin(value: string): string | undefined {

@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -53,11 +59,41 @@ export function ApiPlayground() {
   const [statusMessage, setStatusMessage] = useState("No request sent yet.");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<PlaygroundResult | undefined>();
+  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      requestIdRef.current += 1;
+      abortRef.current?.abort();
+      abortRef.current = null;
+    },
+    []
+  );
+
+  function retireInFlightRequest(): void {
+    if (!abortRef.current) return;
+    requestIdRef.current += 1;
+    abortRef.current.abort();
+    abortRef.current = null;
+    setSending(false);
+    setResult(undefined);
+    setStatusMessage("No request sent yet.");
+  }
+
+  function startRequest(): { id: number; signal: AbortSignal } {
+    requestIdRef.current += 1;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    return { id: requestIdRef.current, signal: controller.signal };
+  }
 
   function selectOperation(nextId: string | null) {
     if (!nextId) return;
     const next = operationById(nextId);
     const example = next.examples[0];
+    retireInFlightRequest();
     setOperationId(next.id);
     setExampleId(example.id);
     setValues({ ...example.values });
@@ -69,33 +105,49 @@ export function ApiPlayground() {
     if (!nextId) return;
     const example = operation.examples.find((item) => item.id === nextId);
     if (!example) return;
+    retireInFlightRequest();
     setExampleId(example.id);
     setValues({ ...example.values });
+  }
+
+  function changeValue(name: string, value: string) {
+    retireInFlightRequest();
+    updateValue(setValues, name, value);
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const requestPath = publicPath(operation, values);
+    const proxyPath = playgroundProxyPath(operation, values);
+    const entityTag = ifNoneMatch.trim();
+    const { id, signal } = startRequest();
     setSending(true);
     setResult(undefined);
     setStatusMessage(`Sending GET ${requestPath}.`);
     try {
       const headers = new Headers({ accept: "application/json" });
-      if (ifNoneMatch.trim().length > 0) {
-        headers.set("if-none-match", ifNoneMatch.trim());
+      if (entityTag.length > 0) {
+        headers.set("if-none-match", entityTag);
       }
-      const response = await fetch(playgroundProxyPath(operation, values), {
+      const response = await fetch(proxyPath, {
         cache: "no-store",
         credentials: "omit",
         headers,
         method: "GET",
+        signal,
       });
-      setResult(await readResult(response));
+      const next = await readResult(response);
+      if (requestIdRef.current !== id) return;
+      setResult(next);
       setStatusMessage(`HTTP ${response.status} from GET ${requestPath}.`);
     } catch {
+      if (requestIdRef.current !== id) return;
       setStatusMessage("The playground could not complete the request.");
     } finally {
-      setSending(false);
+      if (requestIdRef.current === id) {
+        abortRef.current = null;
+        setSending(false);
+      }
     }
   }
 
@@ -148,7 +200,7 @@ export function ApiPlayground() {
               <PlaygroundField
                 field={field}
                 key={field.name}
-                onChange={(value) => updateValue(setValues, field.name, value)}
+                onChange={(value) => changeValue(field.name, value)}
                 value={values[field.name] ?? ""}
               />
             ))}
@@ -156,7 +208,7 @@ export function ApiPlayground() {
               <PlaygroundField
                 field={field}
                 key={field.name}
-                onChange={(value) => updateValue(setValues, field.name, value)}
+                onChange={(value) => changeValue(field.name, value)}
                 value={values[field.name] ?? ""}
               />
             ))}
@@ -172,7 +224,10 @@ export function ApiPlayground() {
               autoComplete="off"
               id="api-playground-if-none-match"
               name="if-none-match"
-              onChange={(event) => setIfNoneMatch(event.target.value)}
+              onChange={(event) => {
+                retireInFlightRequest();
+                setIfNoneMatch(event.target.value);
+              }}
               spellCheck={false}
               value={ifNoneMatch}
             />

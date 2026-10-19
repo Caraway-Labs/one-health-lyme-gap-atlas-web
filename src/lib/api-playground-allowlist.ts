@@ -30,8 +30,13 @@ export type OpenApiParameter = {
   schema?: OpenApiSchema;
 };
 
+export type OpenApiResponse = {
+  content?: Readonly<Record<string, unknown>>;
+};
+
 export type OpenApiOperation = {
   parameters?: readonly OpenApiParameter[];
+  responses?: Readonly<Record<string, OpenApiResponse>>;
 };
 
 export type OpenApiPathItem = {
@@ -57,12 +62,14 @@ export type PublishedQueryParam = {
 };
 
 export type PublishedOperation = {
+  mediaTypes: ReadonlySet<string>;
   pathParams: ReadonlyMap<string, RegExp>;
   query: ReadonlyMap<string, PublishedQueryParam>;
   template: string;
 };
 
 export type PlaygroundTarget = {
+  mediaTypes: ReadonlySet<string>;
   pathname: string;
   upstreamUrl: string;
 };
@@ -75,6 +82,8 @@ export type PlaygroundTargetRejection = {
 const DEFAULT_STRING_MAX_LENGTH = 2000;
 const MAX_QUERY_PAIRS = 40;
 const MAX_REPEATED_ITEMS = 50;
+const MEDIA_TYPE =
+  /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,127}\/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,127}$/;
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,200}$/;
 const GEOGRAPHY_TYPE_PATTERN = /^[a-z]{1,32}$/;
 const SAFE_PATH = /^\/(?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+$/;
@@ -136,7 +145,11 @@ export function resolvePlaygroundTarget(input: {
   upstream.search = query.search;
   return {
     ok: true,
-    target: { pathname, upstreamUrl: upstream.href },
+    target: {
+      mediaTypes: operation.mediaTypes,
+      pathname,
+      upstreamUrl: upstream.href,
+    },
   };
 }
 
@@ -171,7 +184,24 @@ function compileOperation(
       query.set(resolved.name, queryParam(schema));
     }
   }
-  return { pathParams, query, template };
+  return {
+    mediaTypes: publishedMediaTypes(pathItem.get),
+    pathParams,
+    query,
+    template,
+  };
+}
+
+function publishedMediaTypes(
+  operation: OpenApiOperation | undefined
+): ReadonlySet<string> {
+  const mediaTypes = new Set<string>();
+  for (const response of Object.values(operation?.responses ?? {})) {
+    for (const mediaType of Object.keys(response.content ?? {})) {
+      if (MEDIA_TYPE.test(mediaType)) mediaTypes.add(mediaType);
+    }
+  }
+  return mediaTypes;
 }
 
 function resolveParameter(

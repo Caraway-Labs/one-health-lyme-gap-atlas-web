@@ -133,6 +133,60 @@ describe("api playground proxy", () => {
     });
   });
 
+  it("forwards geometry GeoJSON and rejects an unrelated Accept type", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(200, '{"type":"FeatureCollection"}', {
+        "content-type": "application/geo+json",
+      })
+    );
+    const forwarded = await proxyPlaygroundRequest(
+      request("/api/proxy/v1/atlas/geometry", {
+        headers: { accept: "application/geo+json" },
+      }),
+      options(fetchImpl)
+    );
+    const rejected = await proxyPlaygroundRequest(
+      request("/api/proxy/v1/atlas/geometry", {
+        headers: { accept: "text/html" },
+      }),
+      options(fetchImpl)
+    );
+    const [url, init] = fetchImpl.mock.calls[0] ?? [];
+
+    expect({
+      calls: fetchImpl.mock.calls.length,
+      forwarded: {
+        accept: new Headers(init?.headers).get("accept"),
+        body: await forwarded.text(),
+        contentType: forwarded.headers.get("content-type"),
+        status: forwarded.status,
+        url,
+      },
+      rejected: {
+        body: await rejected.json(),
+        status: rejected.status,
+      },
+    }).toStrictEqual({
+      calls: 1,
+      forwarded: {
+        accept: "application/geo+json",
+        body: '{"type":"FeatureCollection"}',
+        contentType: "application/geo+json",
+        status: 200,
+        url: "https://api.onehealthatlas.org/v1/atlas/geometry",
+      },
+      rejected: {
+        body: {
+          detail: "Accept is not a published media type for this playground.",
+          status: 400,
+          title: "Playground request was not sent",
+          type: "about:blank",
+        },
+        status: 400,
+      },
+    });
+  });
+
   it("passes through 4xx and 5xx status, body, and retry headers", async () => {
     const problem =
       '{"code":"RESOURCE_NOT_FOUND","detail":"Measure not found."}';
