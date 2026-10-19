@@ -1,6 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  PATHOGEN_STATUS_EXTRA_COLORS,
+  PATHOGEN_STATUS_NO_RECORDS_COLOR,
+  PATHOGEN_STATUS_PRESENT_COLOR,
+} from "@/features/ux-reset/review/pathogen-status-contract";
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
@@ -156,6 +161,20 @@ const counties = [
     state_name: "Colorado",
     tick_status: "Endemic",
   },
+  {
+    burgdorferi_status: "Emerging",
+    color: "#a9d2db",
+    county: "Allegany",
+    evidence_completeness: 40,
+    fips: "36003",
+    human_status: "published_count_floor",
+    in_contiguous_tick_scope: true,
+    priority: "Lower Atlas priority — Not a safety finding",
+    score: score(12),
+    state: "NY",
+    state_name: "New York",
+    tick_status: "Reported",
+  },
 ];
 
 const scoresBody = {
@@ -257,6 +276,7 @@ const geometry = {
     box("36001", -74.2, 42.4, -73.7, 42.8),
     box("11001", -77.12, 38.79, -76.91, 38.995),
     box("08031", -105.1, 39.6, -104.8, 39.8),
+    box("36003", -78.3, 42, -77.7, 42.5),
   ],
   type: "FeatureCollection" as const,
 };
@@ -1069,11 +1089,16 @@ test.describe("Blacklegged tick status legend", () => {
       "data-legend-layer",
       "pathogen_status"
     );
-    await expect(legend.locator("[data-legend-visible-line]")).toHaveCount(0);
+    await expect(legend.getByText("No records", { exact: true })).toBeVisible();
     await expect(
-      legend.getByRole("button", { name: /No records \(not zero/ })
+      legend.getByText("(not zero, not confirmed absence)", { exact: true })
     ).toBeVisible();
-    await expect(legend.getByRole("button", { name: "Present" })).toBeVisible();
+    await expect(legend.getByText("Present", { exact: true })).toBeVisible();
+    await expect(legend.getByText("Absent", { exact: true })).toBeVisible();
+    await expect(legend.getByText("Emerging", { exact: true })).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: "Established" })
+    ).toHaveCount(0);
     await chooseLayer(page, "Blacklegged tick status");
     await expect(legend).toHaveAttribute("data-legend-layer", "tick_status");
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -1081,6 +1106,232 @@ test.describe("Blacklegged tick status legend", () => {
     await expect(
       legend.getByText("(not zero, not confirmed absence)", { exact: true })
     ).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .include("[data-testid='explorer-map-legend']")
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+});
+
+test.describe("B. burgdorferi status legend", () => {
+  test.beforeEach(async ({ page }) => {
+    await installLegendApi(page);
+  });
+
+  for (const width of [320, 390, 768, 1440]) {
+    test(`shows persistent pathogen labels at ${width}px without hover`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        !releaseViewportRuns(testInfo.project.name, width),
+        "Phone legend widths run in the mobile project."
+      );
+      await page.setViewportSize({ height: width < 700 ? 844 : 1000, width });
+      await page.goto("/explore?scope=ALL&layer=pathogen_status");
+      const legend = page.getByTestId("explorer-map-legend");
+      await expect(legend).toBeVisible();
+      await expect(
+        legend.getByText("No records", { exact: true })
+      ).toBeVisible();
+      await expect(
+        legend.getByText("(not zero, not confirmed absence)", { exact: true })
+      ).toBeVisible();
+      await expect(legend.getByText("Present", { exact: true })).toBeVisible();
+      await expect(legend.getByText("Absent", { exact: true })).toBeVisible();
+      await expect(legend.getByText("Unknown", { exact: true })).toBeVisible();
+      await expect(legend.getByText("Emerging", { exact: true })).toBeVisible();
+      const names = await legend
+        .locator("[data-legend-segment]")
+        .evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute("aria-label"))
+        );
+      expect(names).toEqual([
+        "No records (not zero, not confirmed absence)",
+        "Present",
+        "Absent (observed zero or negative finding)",
+        "Emerging",
+        "Unknown",
+      ]);
+      await expect
+        .poll(() => tickLegendGeometry(legend))
+        .toEqual({
+          clipped: false,
+          overflow: false,
+          overlap: false,
+          visible: true,
+        });
+      const present = legend.getByRole("button", {
+        name: "Present",
+        exact: true,
+      });
+      await present.click();
+      await expect(page.getByRole("dialog", { name: /Present/ })).toBeVisible();
+      await page.keyboard.press("Escape");
+      await legend.screenshot({
+        path: testInfo.outputPath(`pathogen-legend-${width}.png`),
+      });
+    });
+  }
+
+  test("matches map paint, keeps order across scope and layer changes, and stays operable", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL&layer=pathogen_status");
+    const legend = page.getByTestId("explorer-map-legend");
+    const region = page.getByTestId("review-national-map-region");
+    await expect(region).toHaveAttribute("data-map-stage", "national");
+    const paintAgreement = await page.evaluate(
+      ({ absent, emerging, noRecords, present, unknown }) => {
+        const normalize = (value: string) => {
+          const probe = document.createElement("span");
+          probe.style.background = value;
+          return probe.style.background;
+        };
+        const regionColors = new Map<string, string>();
+        const raw =
+          document
+            .querySelector("[data-testid='review-national-map-region']")
+            ?.getAttribute("data-map-colors") ?? "";
+        for (const pair of raw.split(" ").filter(Boolean)) {
+          const separator = pair.indexOf(":");
+          regionColors.set(pair.slice(0, separator), pair.slice(separator + 1));
+        }
+        const swatch = (name: string) => {
+          const button = [
+            ...document.querySelectorAll<HTMLElement>("[data-legend-segment]"),
+          ].find((element) => element.getAttribute("aria-label") === name);
+          const painted = button?.querySelector("span");
+          return painted ? getComputedStyle(painted).backgroundColor : "";
+        };
+        const noRecordsSwatch = swatch(
+          "No records (not zero, not confirmed absence)"
+        );
+        return {
+          absent:
+            swatch("Absent (observed zero or negative finding)") ===
+              normalize(absent) &&
+            normalize(regionColors.get("11001") ?? "") === normalize(absent),
+          emerging:
+            swatch("Emerging") === normalize(emerging) &&
+            normalize(regionColors.get("36003") ?? "") ===
+              normalize(emerging) &&
+            normalize(emerging) !== noRecordsSwatch,
+          noRecords:
+            noRecordsSwatch === normalize(noRecords) &&
+            normalize(regionColors.get("08001") ?? "") === normalize(noRecords),
+          present:
+            swatch("Present") === normalize(present) &&
+            normalize(regionColors.get("08013") ?? "") === normalize(present),
+          unknown:
+            swatch("Unknown") === normalize(unknown) &&
+            normalize(regionColors.get("08014") ?? "") === normalize(unknown) &&
+            normalize(unknown) !== noRecordsSwatch,
+        };
+      },
+      {
+        absent: PATHOGEN_STATUS_EXTRA_COLORS.Absent,
+        emerging: "hsl(262,46%,42%)",
+        noRecords: PATHOGEN_STATUS_NO_RECORDS_COLOR,
+        present: PATHOGEN_STATUS_PRESENT_COLOR,
+        unknown: PATHOGEN_STATUS_EXTRA_COLORS.Unknown,
+      }
+    );
+    expect(paintAgreement).toEqual({
+      absent: true,
+      emerging: true,
+      noRecords: true,
+      present: true,
+      unknown: true,
+    });
+
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "Colorado (CO)" }).click();
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect(legend.locator("[data-legend-segment]")).toHaveCount(3);
+    const coloradoNames = await legend
+      .locator("[data-legend-segment]")
+      .evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute("aria-label"))
+      );
+    expect(coloradoNames).toEqual([
+      "No records (not zero, not confirmed absence)",
+      "Present",
+      "Unknown",
+    ]);
+
+    await page.goto("/explore?scope=CO&county=08013&layer=pathogen_status");
+    await expect(page).toHaveURL(/county=08013/);
+    await expect(legend.getByText("Present", { exact: true })).toBeVisible();
+    await expect(legend.getByText("Absent", { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByRole("region", {
+        name: "Published county preview for Boulder, Colorado",
+      })
+    ).toBeVisible();
+
+    await page.getByTestId("review-scope-select").click();
+    await page.getByRole("option", { name: "United States" }).click();
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(legend.getByText("Absent", { exact: true })).toBeVisible();
+    await expect(legend.getByText("Emerging", { exact: true })).toBeVisible();
+
+    const present = legend.getByRole("button", {
+      name: "Present",
+      exact: true,
+    });
+    await present.focus();
+    await page.keyboard.press("Enter");
+    const tip = page.getByRole("dialog", { name: /Present/ });
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText("Present");
+    await page.keyboard.press("Escape");
+    await expect(tip).toBeHidden();
+    await present.focus();
+    await page.keyboard.press(" ");
+    await expect(tip).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(tip).toBeHidden();
+    await present.hover();
+    await expect(tip).toBeVisible();
+    await page.mouse.move(0, 0);
+    await page.keyboard.press("Escape");
+    await expect(tip).toBeHidden();
+
+    await chooseLayer(page, "Blacklegged tick status");
+    await expect(legend).toHaveAttribute("data-legend-layer", "tick_status");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(legend.getByText("Reported", { exact: true })).toBeVisible();
+    await expect(
+      legend.getByText("Established", { exact: true })
+    ).toBeVisible();
+    await expect(legend.getByText("Present", { exact: true })).toHaveCount(0);
+    const tickSwatch = await legend
+      .getByRole("button", { name: "Established", exact: true })
+      .locator("span")
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+    const presentProbe = await page.evaluate((color) => {
+      const probe = document.createElement("span");
+      probe.style.background = color;
+      return probe.style.background;
+    }, PATHOGEN_STATUS_PRESENT_COLOR);
+    expect(tickSwatch).not.toBe(presentProbe);
+
+    await chooseLayer(page, "B. burgdorferi status");
+    await expect(legend).toHaveAttribute(
+      "data-legend-layer",
+      "pathogen_status"
+    );
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(legend.getByText("No records", { exact: true })).toBeVisible();
+    await expect(
+      legend.getByText("(not zero, not confirmed absence)", { exact: true })
+    ).toBeVisible();
+    await expect(legend.getByText("Established", { exact: true })).toHaveCount(
+      0
+    );
+    await expect(legend.getByText("Reported", { exact: true })).toHaveCount(0);
 
     const results = await new AxeBuilder({ page })
       .include("[data-testid='explorer-map-legend']")
