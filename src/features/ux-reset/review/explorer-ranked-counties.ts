@@ -40,6 +40,28 @@ export function formatGapScore(score: number): string {
   return score.toFixed(1);
 }
 
+/**
+ * National Explorer list when no state is focused.
+ * Matches the existing ranked-county shortlist length so the default view
+ * cannot render every scored lower-48 county.
+ */
+export const EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH = 40;
+
+export function boundExplorerNationalCounties(
+  rows: readonly ExplorerRankedCounty[],
+  selectedFips: string
+): { rows: ExplorerRankedCounty[]; truncated: boolean } {
+  if (rows.length <= EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH) {
+    return { rows: [...rows], truncated: false };
+  }
+  const shortlist = rows.slice(0, EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH);
+  const selected = rows.find((row) => row.fips === selectedFips);
+  if (selected && !shortlist.some((row) => row.fips === selected.fips)) {
+    return { rows: [...shortlist, selected], truncated: true };
+  }
+  return { rows: shortlist, truncated: true };
+}
+
 function byNameThenFips(
   left: ExplorerRankSource,
   right: ExplorerRankSource

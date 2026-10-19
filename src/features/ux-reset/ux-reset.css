@@ -1973,6 +1973,19 @@
 
 .ux-reset-explorer-list > .gap-0 {
   min-height: 0;
+  padding-top: 0.75rem;
+}
+
+.ux-reset-ranked-counties-header.is-compact {
+  padding: 0 0.15rem var(--space-2);
+}
+
+.ux-reset-ranked-counties-header.is-compact h2 {
+  margin-top: 0;
+}
+
+.ux-reset-explorer-list [data-testid="explorer-national-shortlist-note"] {
+  margin: 0 0.15rem 0.35rem;
 }
 
 .ux-reset-explorer-map {
