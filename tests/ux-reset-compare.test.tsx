@@ -1149,12 +1149,12 @@ describe("two-county aligned comparison", () => {
       second: screen.getByTestId("compare-investigate-08013").textContent,
     }).toStrictEqual({
       ask: true,
-      first: "View first county evidence",
+      first: "View county evidence",
       floor: true,
       missing: "missing",
       missingDigits: false,
       period: true,
-      second: "View second county evidence",
+      second: "View county evidence",
     });
   });
 

@@ -316,6 +316,21 @@ export function CompareProfileGroups({
   ));
 }
 
+export function ComparePeriodQualification({
+  period,
+}: {
+  period: string | null;
+}) {
+  return (
+    <details className="ux-reset-compare-qualification">
+      <summary>How dates and releases work</summary>
+      <p className="type-small" data-testid="compare-profile-comparability">
+        {compareProfilePeriodQualification(period)}
+      </p>
+    </details>
+  );
+}
+
 export function CompareCountyProfileSection({
   alignment,
   coolingDown = false,
@@ -327,6 +342,7 @@ export function CompareCountyProfileSection({
   period,
   retrying,
   rightLabel,
+  showPeriodNote = true,
 }: {
   alignment: CompareProfileAlignment | null;
   coolingDown?: boolean;
@@ -338,6 +354,7 @@ export function CompareCountyProfileSection({
   period: string | null;
   retrying: boolean;
   rightLabel: string;
+  showPeriodNote?: boolean;
 }) {
   if (!(loading || error || alignment)) {
     return null;
@@ -358,12 +375,7 @@ export function CompareCountyProfileSection({
           title="Published county evidence"
         />
       )}
-      <details className="ux-reset-compare-qualification">
-        <summary>How dates and releases work</summary>
-        <p className="type-small" data-testid="compare-profile-comparability">
-          {compareProfilePeriodQualification(period)}
-        </p>
-      </details>
+      {showPeriodNote ? <ComparePeriodQualification period={period} /> : null}
       {loading ? (
         <AtlasStatusMessage tone="loading">
           <p data-testid="compare-profile-loading">
