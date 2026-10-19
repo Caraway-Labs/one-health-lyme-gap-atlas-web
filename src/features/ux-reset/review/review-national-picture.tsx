@@ -29,6 +29,7 @@ import {
   type ExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerLowerWorkspace } from "@/features/ux-reset/review/explorer-lower-workspace";
+import { explorerMapDrillAction } from "@/features/ux-reset/review/explorer-map-focus";
 import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
   completenessLayerGate,
@@ -93,8 +94,10 @@ type ReviewNationalPictureProps = {
   countiesLoading: boolean;
   county: string | null;
   countyQuery: string;
+  mapFocus?: string | null;
   mapLayer: ExplorerMapLayerId;
   onCountyChange: (fips: string | null, history: "push" | "replace") => void;
+  onMapFocusChange?: (state: string | null) => void;
   onMapLayerChange: (layerId: ExplorerMapLayerId) => void;
   period: string | null;
   releaseId: string;
@@ -124,8 +127,10 @@ export function ReviewNationalPicture({
   countiesLoading,
   county,
   countyQuery,
+  mapFocus: controlledMapFocus = null,
   mapLayer,
   onCountyChange,
+  onMapFocusChange,
   onMapLayerChange,
   period,
   releaseId,
@@ -143,8 +148,9 @@ export function ReviewNationalPicture({
   if (selectedFips !== trackedCounty) {
     setTrackedCounty(selectedFips);
   }
-  const listState = pickedState;
-  const browseState = pickedState ?? countyPostal;
+  const mapFocus = onMapFocusChange ? controlledMapFocus : pickedState;
+  const listState = mapFocus;
+  const browseState = mapFocus ?? countyPostal;
   const [fitSignal, setFitSignal] = useState(0);
   const [mapFailed, setMapFailed] = useState(false);
   const geometryQuery = useQuery({
@@ -423,10 +429,22 @@ export function ReviewNationalPicture({
     if (!isLower48ReviewScope(next)) {
       return;
     }
+    if (onMapFocusChange) {
+      onMapFocusChange(next);
+      return;
+    }
     setPickedState(next);
     if (selectedFips && postalForFips(selectedFips) !== next) {
       onCountyChange(null, "push");
     }
+  };
+  const returnToNationalExtent = () => {
+    setFitSignal((value) => value + 1);
+    if (onMapFocusChange) {
+      onMapFocusChange(null);
+      return;
+    }
+    setPickedState(null);
   };
   const chooseCounty = (fips: string) => {
     const postal = postalForFips(fips);
@@ -473,9 +491,7 @@ export function ReviewNationalPicture({
             data-testid="explorer-fit-national"
             type="button"
             variant="secondary"
-            onClick={() => {
-              setFitSignal((value) => value + 1);
-            }}
+            onClick={returnToNationalExtent}
           >
             Fit United States
           </Button>
@@ -502,6 +518,10 @@ export function ReviewNationalPicture({
             .map((entry) => `${entry.fips}:${entry.color ?? ""}`)
             .join(" ")}
           data-map-fips={mapCounties.map((entry) => entry.fips).join(" ")}
+          data-map-focus={mapFocus ?? ""}
+          data-map-stage={
+            mapFocus ? (selectedFips ? "county" : "state") : "national"
+          }
           data-testid="review-national-map-region"
         >
           {availableDataGate.kind === "loading" ? (
@@ -514,9 +534,12 @@ export function ReviewNationalPicture({
             </AtlasStatusMessage>
           ) : showMap && geometryQuery.data ? (
             <AtlasMap
-              ariaLabel="Map of the contiguous United States. Select a county, or choose a state and county from the list."
-              cameraFrameState={null}
+              ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the state list and the county list."
+              cameraFrameState={mapFocus}
+              doubleClickZoom={false}
+              fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
               fitSignal={fitSignal}
+              geographicStateOutline={mapFocus !== null}
               geometry={{
                 ...geometryQuery.data,
                 features: geometryFeatures,
@@ -526,11 +549,35 @@ export function ReviewNationalPicture({
               scores={mapCounties}
               selectedFips={selectedFips}
               selectedState={browseState ?? "ALL"}
+              onCountyPointer={(click) => {
+                const action = explorerMapDrillAction({
+                  clickDetail: click.clickDetail,
+                  fips: click.fips,
+                  focusedState: mapFocus,
+                });
+                switch (action.type) {
+                  case "ignore": {
+                    return;
+                  }
+                  case "focus-state": {
+                    chooseState(action.state);
+                    return;
+                  }
+                  case "select-county": {
+                    chooseCounty(action.fips);
+                    return;
+                  }
+                  default: {
+                    const exhaustive: never = action;
+                    return exhaustive;
+                  }
+                }
+              }}
               onError={() => {
                 setMapFailed(true);
               }}
-              onSelect={(fips) => {
-                chooseCounty(fips);
+              onSelect={() => {
+                // County clicks are handled by the two-stage pointer above.
               }}
             />
           ) : mapFailed || geometryError ? (

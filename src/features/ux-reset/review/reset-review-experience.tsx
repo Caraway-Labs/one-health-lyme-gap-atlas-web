@@ -37,6 +37,10 @@ import {
   explorerReviewLoad,
 } from "@/features/ux-reset/review/explorer-follow-up";
 import {
+  explorerFocusCountyMismatch,
+  parseExplorerMapFocus,
+} from "@/features/ux-reset/review/explorer-map-focus";
+import {
   explorerMapLayerById,
   type ExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
@@ -189,6 +193,24 @@ function ResetReviewExperienceInner() {
     }
     void setUrlState(patch, { history: "replace" });
   }, [searchParams, setUrlState]);
+  useEffect(() => {
+    const values = searchParams.getAll("focus");
+    const canonical =
+      values.length === 1 ? parseExplorerMapFocus(values[0]) : null;
+    const focusRewrite =
+      values.length > 0 && !(values.length === 1 && values[0] === canonical);
+    const clearCounty = explorerFocusCountyMismatch(canonical, urlState.county);
+    if (!(focusRewrite || clearCounty)) {
+      return;
+    }
+    void setUrlState(
+      {
+        ...(clearCounty ? { county: null } : {}),
+        ...(focusRewrite ? { focus: canonical } : {}),
+      },
+      { history: "replace" }
+    );
+  }, [searchParams, setUrlState, urlState.county]);
   const [countyQuery, setCountyQuery] = useState("");
   const [availableData, setAvailableData] = useState<EvidenceView>("all");
   const [countyQueryScope, setCountyQueryScope] = useState(scope);
@@ -212,6 +234,12 @@ function ResetReviewExperienceInner() {
   const modeQuery = resolveExplorerModeQuery(rawModeValues);
   const explorerMode = modeQuery.mode;
   const reviewCounty = normalizeReviewCounty(scope, urlState.county);
+  const focusedNationalCounty = explorerFocusCountyMismatch(
+    urlState.focus,
+    reviewCounty
+  )
+    ? null
+    : reviewCounty;
   const [trackedCountyQueryCounty, setTrackedCountyQueryCounty] =
     useState(reviewCounty);
   if (trackedCountyQueryCounty !== reviewCounty) {
@@ -307,7 +335,7 @@ function ResetReviewExperienceInner() {
       }
       userChoseScopeRef.current = true;
       setUserChoseScope(true);
-      void setUrlState({ scope: nextScope });
+      void setUrlState({ focus: null, scope: nextScope });
     },
     [arrivalExplicitScope, scope, setUrlState]
   );
@@ -381,6 +409,28 @@ function ResetReviewExperienceInner() {
     },
     [scope, setUrlState, urlState.selection]
   );
+  const setMapFocus = useCallback(
+    (next: string | null) => {
+      if (next !== null && !isLower48ReviewScope(next)) {
+        return;
+      }
+      if ((urlState.focus ?? null) === next) {
+        return;
+      }
+      // A state-focus click is state-only, including when Fit United States
+      // left the same county selected. The next click can select it again.
+      const clearCounty = Boolean(next && reviewCounty);
+      if (clearCounty) {
+        nationalChoiceGenerationRef.current += 1;
+        setChosenNationalFips(null);
+      }
+      void setUrlState({
+        ...(clearCounty ? { county: null } : {}),
+        focus: next,
+      });
+    },
+    [reviewCounty, setUrlState, urlState.focus]
+  );
   const availableDataGate = useMemo(
     () =>
       explorerAvailableDataGate({
@@ -410,6 +460,7 @@ function ResetReviewExperienceInner() {
       setUserChoseScope(true);
       void setUrlState({
         county: county.fips,
+        focus: null,
         scope: county.state,
         ...(urlState.selection === EXPLORER_SELECTION_REQUIRED
           ? { selection: null }
@@ -768,7 +819,7 @@ function ResetReviewExperienceInner() {
                 counties={countyReference.counties}
                 countiesError={countyReference.isError}
                 countiesLoading={countyReference.isLoading}
-                county={reviewCounty}
+                county={focusedNationalCounty}
                 countyQuery={countyQuery}
                 mapLayer={mapLayer}
                 period={urlState.period}
@@ -777,7 +828,9 @@ function ResetReviewExperienceInner() {
                 scenarioSettings={scenarioSettings}
                 sources={presentationQuery.metadata.sources}
                 tierRelease={tierRelease}
+                mapFocus={urlState.focus}
                 onCountyChange={setCounty}
+                onMapFocusChange={setMapFocus}
                 onMapLayerChange={setMapLayer}
               />
             ) : null}

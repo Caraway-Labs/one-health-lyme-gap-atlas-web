@@ -123,26 +123,35 @@ vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
 
 vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
+    onCountyPointer,
     onSelect,
     scores,
   }: {
-    onSelect: (fips: string) => void;
+    onCountyPointer?: (click: { clickDetail: number; fips: string }) => void;
+    onSelect: (fips: string, surface: "map") => void;
     scores: { fips: string }[];
   }) => {
     lastMapScoreFips = scores.map((entry) => entry.fips).join(",");
+    const choose = (fips: string) => {
+      if (onCountyPointer) {
+        onCountyPointer({ clickDetail: 1, fips });
+        return;
+      }
+      onSelect(fips, "map");
+    };
     return (
       <div data-map-score-fips={lastMapScoreFips} data-testid="mock-atlas-map">
         <button
           data-testid="mock-map-select-ny"
           type="button"
-          onClick={() => onSelect("36001", "map")}
+          onClick={() => choose("36001")}
         >
           Select NY county on map
         </button>
         <button
           data-testid="mock-map-select-boulder"
           type="button"
-          onClick={() => onSelect("08013", "map")}
+          onClick={() => choose("08013")}
         >
           Select Boulder on map
         </button>
@@ -1683,6 +1692,56 @@ describe("Reset Review scope UI", () => {
       rendered: "ALL",
       stateWrite: false,
     });
+  });
+
+  it("keeps a focus-only URL on the national map when the saved view is a state", async () => {
+    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    const updates: string[] = [];
+    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+      data: { profile: { starting_view_version: 1, state_code: "CO" } },
+      status: 200,
+    } as never);
+    window.history.replaceState(null, "", "/explore?focus=ID");
+    renderReview("?focus=ID", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      if (screen.queryByText("Loading review scope…")) {
+        throw new Error("startup still pending");
+      }
+    });
+    expect({
+      focusKept: updates.every((query) => query.includes("focus=ID")),
+      rendered: renderedReviewScope(),
+      stateWrite: updates.some((query) => query.includes("scope=CO")),
+    }).toStrictEqual({
+      focusKept: true,
+      rendered: "ALL",
+      stateWrite: false,
+    });
+  });
+
+  it("clears a county that is outside the focused state", async () => {
+    const updates: string[] = [];
+    window.history.replaceState(
+      null,
+      "",
+      "/explore?scope=ALL&focus=ID&county=56039"
+    );
+    renderReview("?scope=ALL&focus=ID&county=56039", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      const latest = updates.at(-1) ?? "";
+      if (!(latest.includes("focus=ID") && !latest.includes("county="))) {
+        throw new Error(latest || "mismatched county is still in the URL");
+      }
+    });
+    expect(renderedReviewScope()).toBe("ALL");
   });
 
   it("keeps explicit national scope when profile default is a state", async () => {
@@ -4007,6 +4066,15 @@ describe("Reset Review scope UI", () => {
       ).toContain("published score colors");
       expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
       expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
+      fireEvent.click(screen.getByTestId("mock-map-select-ny"));
+      await waitFor(() => {
+        expect(
+          updates.some((query) => query.includes("focus=NY"))
+        ).toBeTruthy();
+      });
+      expect(
+        updates.some((query) => query.includes("county=36001"))
+      ).toBeFalsy();
       fireEvent.click(screen.getByTestId("mock-map-select-ny"));
       await waitFor(() => {
         expect(
