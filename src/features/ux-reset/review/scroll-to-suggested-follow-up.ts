@@ -4,7 +4,10 @@ export const EXPLORER_MAP_FOLLOW_UP_ID = "explorer-map-follow-up";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 export function prefersReducedMotion(): boolean {
-  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia(REDUCED_MOTION_QUERY).matches
+  );
 }
 
 /**
@@ -19,10 +22,12 @@ export function scrollToSuggestedFollowUp(
   if (!target) {
     return false;
   }
-  target.scrollIntoView({
-    behavior: reducedMotion ? "auto" : "smooth",
-    block: "start",
-  });
+  if (typeof target.scrollIntoView === "function") {
+    target.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }
   target.focus({ preventScroll: true });
   return true;
 }

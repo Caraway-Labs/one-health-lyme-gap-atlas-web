@@ -325,17 +325,13 @@ test.describe("typed geography and observation availability", () => {
       const preview = page.getByTestId("review-county-preview");
       await expect(preview).toContainText(county.county);
       await expect(preview).toContainText(county.fips);
-      const notice = preview.getByTestId("canonical-geography-availability");
-      await expect(notice).toHaveAttribute("data-status", "unpublished");
-      await expect(notice).toContainText(
-        "Canonical geography is not yet published for this county."
-      );
-      await expect(notice).toContainText(`Checked release ${RELEASE}.`);
       await expect(
-        notice.getByTestId("canonical-geography-limitations")
-      ).toContainText("No canonical, display, or analysis geometry");
+        preview.getByTestId("canonical-geography-availability")
+      ).toHaveCount(0);
+      await expect(preview).not.toContainText(
+        "Canonical geography is not yet published"
+      );
       await expect(page.getByTestId("review-state-map-region")).toBeVisible();
-      await expect(notice).not.toHaveAttribute("role", "alert");
       await saveDesktopShot(
         page,
         testInfo,
@@ -430,14 +426,14 @@ test.describe("typed geography and observation availability", () => {
   }) => {
     await installAvailabilityMocks(page, { availabilityStatus: 404 });
     await page.goto(`/explore?scope=AL&county=01001&dataset=${RELEASE}`);
-    const notice = page.getByTestId("canonical-geography-availability");
-    await expect(notice).toHaveAttribute("data-status", "not_found");
-    await expect(notice).toContainText("not in the current geography release");
-    await expect(notice).not.toContainText(
-      "Canonical geography is not yet published"
-    );
+    await expect(
+      page.getByTestId("canonical-geography-availability")
+    ).toHaveCount(0);
     await expect(page.getByTestId("review-county-preview")).toContainText(
       "Autauga County"
+    );
+    await expect(page.getByTestId("review-county-preview")).not.toContainText(
+      "not in the current geography release"
     );
   });
 
@@ -451,12 +447,12 @@ test.describe("typed geography and observation availability", () => {
     await installAvailabilityMocks(page);
     await page.setViewportSize({ height: 844, width: 390 });
     await page.goto(`/explore?scope=AL&county=01001&dataset=${RELEASE}`);
-    const notice = page.getByTestId("canonical-geography-availability");
-    await expect(notice).toBeVisible();
-    await expect(notice).toContainText(
-      "Canonical geography is not yet published for this county."
-    );
-    const box = await notice.boundingBox();
+    const preview = page.getByTestId("review-county-preview");
+    await expect(preview).toBeVisible();
+    await expect(
+      preview.getByTestId("canonical-geography-availability")
+    ).toHaveCount(0);
+    const box = await preview.boundingBox();
     expect(box?.width ?? 0).toBeLessThanOrEqual(390);
   });
 
@@ -469,9 +465,11 @@ test.describe("typed geography and observation availability", () => {
     );
     await installAvailabilityMocks(page);
     await page.goto(`/explore?scope=CT&county=09110&dataset=${RELEASE}`);
+    const preview = page.getByTestId("review-county-preview");
+    await expect(preview).toBeVisible();
     await expect(
-      page.getByTestId("canonical-geography-availability")
-    ).toHaveAttribute("data-status", "unpublished");
+      preview.getByTestId("canonical-geography-availability")
+    ).toHaveCount(0);
     const results = await new AxeBuilder({ page })
       .include("[data-testid='review-county-preview']")
       .analyze();

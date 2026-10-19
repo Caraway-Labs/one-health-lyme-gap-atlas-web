@@ -1055,7 +1055,7 @@ describe("Review operating picture state", () => {
       backendClaimsFinding: false,
       candidate: null,
       compare: expect.any(HTMLAnchorElement),
-      investigate: expect.stringContaining("county=08001"),
+      investigate: null,
       published: "missing",
       resultState: "unavailable",
       summary: "Unavailable",
