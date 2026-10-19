@@ -45,6 +45,7 @@ let catalogRetryAfter: string | null = null;
 let blankContextSourceNote = false;
 let extraCatalogMeasures: typeof compareMeasuresFixture = [];
 const countyRecordRequests: string[] = [];
+const countyLimitationOverrides = new Map<string, string>();
 const countyPriorityOverrides = new Map<string, string>();
 let countyRateLimitRemaining = 0;
 let countyRetryAfterSeconds: number | null = null;
@@ -82,6 +83,13 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         } as never;
       }
       const detail = compareCountyDetail(fips);
+      const limitationOverride = countyLimitationOverrides.get(fips);
+      if (limitationOverride !== undefined) {
+        detail.release = {
+          ...detail.release,
+          limitations: limitationOverride,
+        };
+      }
       const priorityOverride = countyPriorityOverrides.get(fips);
       if (priorityOverride) {
         detail.priority = priorityOverride;
@@ -292,6 +300,7 @@ describe("two-county aligned comparison", () => {
     extraCatalogMeasures = [];
     clearCompareCatalogRetryDeadlines();
     clearCompareProfileRetryDeadlines();
+    countyLimitationOverrides.clear();
     countyPriorityOverrides.clear();
     countyRateLimitRemaining = 0;
     countyRecordRequests.length = 0;
@@ -1115,6 +1124,43 @@ describe("two-county aligned comparison", () => {
       path: true,
       period: true,
       returnParam: false,
+    });
+  });
+
+  it("points to the shared release limitation below the evidence groups", async () => {
+    countyLimitationOverrides.set(COMPARE_LEFT_FIPS, "Denver coverage gap.");
+    countyLimitationOverrides.set("36001", "Albany coverage gap.");
+    renderCompare("?compare=08001,36001&scope=CO&dataset=alpha-2026");
+    const limitations = await screen.findByTestId("compare-group-limitations");
+    const guidance = limitations.textContent ?? "";
+    cleanup();
+
+    countyLimitationOverrides.set(
+      COMPARE_LEFT_FIPS,
+      "Same release limitation."
+    );
+    countyLimitationOverrides.set("36001", "Same release limitation.");
+    renderCompare("?compare=08001,36001&scope=CO&dataset=alpha-2026");
+    const sharedText = await screen.findByText("Same release limitation.");
+    const sharedNote = sharedText.closest("details");
+    const review = screen.getByTestId("compare-group-review");
+    const heading = screen.getByRole("heading", { name: "County comparison" });
+    expect({
+      afterHeading:
+        sharedNote === null
+          ? null
+          : heading.compareDocumentPosition(sharedNote),
+      afterReview:
+        sharedNote === null ? null : review.compareDocumentPosition(sharedNote),
+      guidanceAbove: guidance.includes("above the comparison"),
+      guidanceBelow: guidance.includes("stated once below the comparison"),
+      repeatedGroup: screen.queryByTestId("compare-group-limitations"),
+    }).toStrictEqual({
+      afterHeading: Node.DOCUMENT_POSITION_FOLLOWING,
+      afterReview: Node.DOCUMENT_POSITION_FOLLOWING,
+      guidanceAbove: false,
+      guidanceBelow: true,
+      repeatedGroup: null,
     });
   });
 
