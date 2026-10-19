@@ -1102,6 +1102,7 @@ export function ReviewOperatingPicture({
               onOpen={markReviewReturnFocus}
               openRef={openRef}
               releaseId={releaseId}
+              reviewResultState={authoritativeResultState}
             />
           ) : null}
           {preview && handoff ? (
