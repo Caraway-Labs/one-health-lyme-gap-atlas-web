@@ -282,4 +282,42 @@ describe("national Explorer what-if map", () => {
       "Adjusted scenario"
     );
   });
+
+  it("places the compact geography header above the map and provenance below it", async () => {
+    installRamps();
+    render(picture(client(), SCENARIO_SCORE_DEFAULTS, "gap_score"));
+    const heading = screen.getByRole("heading", {
+      name: "Explore county patterns",
+    });
+    const layer = screen.getByTestId("explorer-map-layer");
+    const map = screen.getByTestId("review-national-map-region");
+    const availability = screen.getByTestId("explorer-layer-availability");
+    const provenance = screen.getByTestId("explorer-map-provenance");
+    const fit = screen.getByTestId("explorer-fit-national");
+    const order = [heading, layer, map, availability, provenance].map((node) =>
+      node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
+    );
+    fireEvent.click(screen.getByText("Layer availability"));
+    await waitFor(() => {
+      expect(screen.getByTestId("mock-atlas-map")).toBeTruthy();
+    });
+    expect({
+      availabilityNote: availability.textContent?.includes("Atlas gap score"),
+      fitLabel: fit.textContent?.includes("Fit geography"),
+      fitName: fit.getAttribute("aria-label"),
+      headingOmitsRelease:
+        heading.parentElement?.textContent?.includes("Release"),
+      labelFor: screen.getByText("Map layer").getAttribute("for"),
+      order,
+      provenance: provenance.textContent,
+    }).toStrictEqual({
+      availabilityNote: true,
+      fitLabel: true,
+      fitName: "Fit United States",
+      headingOmitsRelease: false,
+      labelFor: "explorer-map-layer",
+      order: [...order].toSorted((left, right) => left - right),
+      provenance: "Source periods vary by evidence · Release alpha-2026",
+    });
+  });
 });

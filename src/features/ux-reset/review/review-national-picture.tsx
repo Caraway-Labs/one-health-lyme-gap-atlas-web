@@ -11,7 +11,6 @@ import { Card } from "@/components/ui/card";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
-import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import {
   countyPassesAvailableData,
@@ -23,8 +22,15 @@ import {
   type ExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerLowerWorkspace } from "@/features/ux-reset/review/explorer-lower-workspace";
+import {
+  ExplorerMapSectionHeader,
+  ExplorerMapSourceCaption,
+} from "@/features/ux-reset/review/explorer-map-chrome";
 import { explorerMapDrillAction } from "@/features/ux-reset/review/explorer-map-focus";
-import { ExplorerMapLayerControl } from "@/features/ux-reset/review/explorer-map-layer-control";
+import {
+  ExplorerMapLayerAvailability,
+  ExplorerMapLayerControl,
+} from "@/features/ux-reset/review/explorer-map-layer-control";
 import {
   completenessLayerGate,
   explorerMapLayerById,
@@ -456,23 +462,12 @@ export function ReviewNationalPicture({
       data-testid="review-national-orientation"
     >
       <Card className="ux-reset-explorer-map ux-reset-review-operating-map map-card gap-0 py-0">
-        <div className="ux-reset-explorer-map-heading">
-          <div>
-            <h2>{EXPLORER_MAP_SECTION_HEADING}</h2>
-            <p>
-              {period ? `Period ${period}` : "Source periods vary by evidence"}
-              {` · Release ${releaseId}`}
-            </p>
-          </div>
-          <Button
-            data-testid="explorer-fit-national"
-            type="button"
-            variant="secondary"
-            onClick={returnToNationalExtent}
-          >
-            Fit United States
-          </Button>
-        </div>
+        <ExplorerMapSectionHeader
+          fitAccessibleName="Fit United States"
+          fitLabel="Fit geography"
+          fitTestId="explorer-fit-national"
+          onFit={returnToNationalExtent}
+        />
         <div className="ux-reset-explorer-map-layer">
           <ExplorerMapLayerControl
             gates={layerGates}
@@ -594,6 +589,10 @@ export function ReviewNationalPicture({
           key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
           paint={mapPaint}
         />
+        <div className="ux-reset-explorer-map-availability">
+          <ExplorerMapLayerAvailability gates={layerGates} />
+        </div>
+        <ExplorerMapSourceCaption period={period} releaseId={releaseId} />
       </Card>
       <ExplorerLowerWorkspace
         fips={selectedFips || null}

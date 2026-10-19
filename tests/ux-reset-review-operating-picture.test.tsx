@@ -241,6 +241,69 @@ describe("Review operating picture state", () => {
     });
   });
 
+  it("keeps Arizona map chrome compact and moves provenance below the map", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ReviewOperatingPicture
+          mapLayer="gap_score"
+          period={null}
+          review={buildStateReview({
+            candidates: [
+              reviewCandidate({
+                caveat: "Collection dates are unavailable.",
+                countyName: "Maricopa",
+                fips: "04013",
+                reasonText: "Maricopa was returned by the method.",
+              }),
+            ],
+            resultState: "candidates_found",
+            state: "AZ",
+          })}
+          scopeCode="AZ"
+          stateName="Arizona"
+          onMapLayerChange={() => {}}
+        />
+      </QueryClientProvider>
+    );
+    const heading = screen.getByRole("heading", {
+      name: "Explore county patterns",
+    });
+    const layer = screen.getByTestId("explorer-map-layer");
+    const map = screen.getByTestId("review-state-map-region");
+    const availability = screen.getByTestId("explorer-layer-availability");
+    const provenance = screen.getByTestId("explorer-map-provenance");
+    const fit = screen.getByRole("button", { name: "Fit Arizona" });
+    const order = [heading, layer, map, availability, provenance].map((node) =>
+      node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
+    );
+    fireEvent.click(screen.getByText("Layer availability"));
+    expect({
+      availabilityNote: availability.textContent?.includes(
+        "Changing the layer does not rank counties by this measure."
+      ),
+      fitLabel: fit.textContent?.includes("Fit AZ"),
+      headingOmitsRelease:
+        heading.parentElement?.textContent?.includes("Release"),
+      headingOmitsSource:
+        heading.parentElement?.textContent?.includes("Source periods"),
+      labelFor: screen.getByText("Map layer").getAttribute("for"),
+      order,
+      provenance: provenance.textContent,
+    }).toStrictEqual({
+      availabilityNote: true,
+      fitLabel: true,
+      headingOmitsRelease: false,
+      headingOmitsSource: false,
+      labelFor: "explorer-map-layer",
+      order: [...order].toSorted((left, right) => left - right),
+      provenance: "Source periods vary by evidence · Release alpha-2026",
+    });
+    view.unmount();
+  });
+
   it("shows an empty map when geometry has no features in the requested state", async () => {
     const { fetchCountyDisplayGeometry } =
       await import("@/lib/county-geography");
