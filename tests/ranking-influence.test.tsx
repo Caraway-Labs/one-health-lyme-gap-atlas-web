@@ -106,6 +106,74 @@ describe("ranking influence", () => {
     expect(copy.community).not.toContain("%");
   });
 
+  it("keeps Unknown tick status distinct from no records", () => {
+    const unknown = rankingInfluenceFor(county({ tick_status: "Unknown" }));
+    const missing = rankingInfluenceFor(county({ tick_status: "No records" }));
+    expect(unknown.tick).toContain("Unknown");
+    expect(unknown.tick).not.toContain("has no county record");
+    expect(missing.tick).toContain("has no county record");
+    expect(missing.tick).not.toContain("Unknown");
+  });
+
+  it("keeps Unknown pathogen status distinct from no records", () => {
+    const unknown = rankingInfluenceFor(
+      county({ burgdorferi_status: "Unknown" })
+    );
+    const missing = rankingInfluenceFor(
+      county({ burgdorferi_status: "No records" })
+    );
+    expect({
+      missingRecord: missing.pathogen.includes("detection record is available"),
+      unknownAbsent: unknown.pathogen.includes(
+        "not a finding that the pathogen is absent"
+      ),
+      unknownNamesStatus: unknown.pathogen.includes("Unknown"),
+      unknownRecord: unknown.pathogen.includes("detection record is available"),
+    }).toStrictEqual({
+      missingRecord: true,
+      unknownAbsent: true,
+      unknownNamesStatus: true,
+      unknownRecord: false,
+    });
+  });
+
+  it("renders Unknown and No records as different explanations", () => {
+    const { rerender } = render(
+      <RankingInfluencePanel detail={county({ tick_status: "Unknown" })} />
+    );
+    const unknownTick = panelText();
+    rerender(
+      <RankingInfluencePanel detail={county({ tick_status: "No records" })} />
+    );
+    const missingTick = panelText();
+    rerender(
+      <RankingInfluencePanel
+        detail={county({ burgdorferi_status: "Unknown" })}
+      />
+    );
+    const unknownPathogen = panelText();
+    rerender(
+      <RankingInfluencePanel
+        detail={county({ burgdorferi_status: "No records" })}
+      />
+    );
+    expect({
+      missingPathogen: panelText().includes("detection record is available"),
+      missingTick: missingTick.includes("has no county record"),
+      unknownPathogen:
+        unknownPathogen.includes("Unknown") &&
+        !unknownPathogen.includes("detection record is available"),
+      unknownTick:
+        unknownTick.includes("Unknown") &&
+        !unknownTick.includes("has no county record"),
+    }).toStrictEqual({
+      missingPathogen: true,
+      missingTick: true,
+      unknownPathogen: true,
+      unknownTick: true,
+    });
+  });
+
   it("says an out-of-scope score is unavailable", () => {
     const copy = rankingInfluenceFor(
       county({ in_contiguous_tick_scope: false })

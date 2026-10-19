@@ -107,8 +107,11 @@ function tickNote(detail: RankingInfluenceCounty): string {
     return "Published tick surveillance is an ecological input. A published status is not a measure of tick abundance, and no share of the score is shown.";
   }
   const status = normalized(detail.tick_status);
-  if (status === "" || status === "no records" || status === "unknown") {
+  if (status === "no records") {
     return "The published tick table has no county record. That is not low ecological hazard, and it is not shown as a zero contribution.";
+  }
+  if (status === "unknown") {
+    return `The published tick status is ${detail.tick_status.trim()}. Unknown is not a missing county record, and it is not a finding of tick absence. No contribution is shown.`;
   }
   return "The published tick status is not a finding of tick absence, and no contribution is shown.";
 }
@@ -118,8 +121,11 @@ function pathogenNote(detail: RankingInfluenceCounty): string {
     return "A published Borrelia burgdorferi detection is an ecological input. Detection is not a human infection estimate, and no share of the score is shown.";
   }
   const status = normalized(detail.burgdorferi_status);
-  if (status === "" || status === "no records" || status === "unknown") {
+  if (status === "no records") {
     return "No county-level Borrelia burgdorferi detection record is available for the score. That is not a finding that the pathogen is absent, and it is not shown as a zero contribution.";
+  }
+  if (status === "unknown") {
+    return `The published Borrelia burgdorferi status is ${detail.burgdorferi_status.trim()}. Unknown is not a missing detection record, and it is not a finding that the pathogen is absent. No contribution is shown.`;
   }
   return "The published pathogen status is not a finding of pathogen absence, and no contribution is shown.";
 }
