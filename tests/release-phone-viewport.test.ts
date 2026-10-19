@@ -156,6 +156,7 @@ describe("default E2E and Storybook phone viewport sweep", () => {
       "tests/e2e/ux-reset-compare.spec.ts",
       "tests/e2e/ux-reset-data-provenance.spec.ts",
       "tests/e2e/ux-reset-environmental-context.spec.ts",
+      "tests/e2e/ux-reset-explorer-history-evidence.spec.ts",
       "tests/e2e/ux-reset-explorer-map-drill.spec.ts",
       "tests/e2e/ux-reset-explorer-map-legend.spec.ts",
       "tests/e2e/ux-reset-explorer-selected-state-outline.spec.ts",
