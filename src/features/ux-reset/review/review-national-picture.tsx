@@ -37,6 +37,8 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
+  boundExplorerNationalCounties,
+  EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH,
   rankExplorerCounties,
   type ExplorerRankSource,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
@@ -318,7 +320,7 @@ export function ReviewNationalPicture({
     }
     return identities;
   }, [counties, scoreCounties]);
-  const rankedRows = useMemo(() => {
+  const rankedList = useMemo(() => {
     const byFips = new Map<string, ExplorerRankSource>();
     for (const entry of counties) {
       if (!isLower48CountyFips(entry.fips)) {
@@ -363,11 +365,23 @@ export function ReviewNationalPicture({
               countyPassesAvailableData(availableDataGate, fips)
             )
           );
-    return rankExplorerCounties([...byFips.values()], {
+    const ranked = rankExplorerCounties([...byFips.values()], {
       query: countyQuery,
       visibleFips,
     });
-  }, [availableDataGate, counties, countyQuery, listState, scoreCounties]);
+    if (listState) {
+      return { rows: ranked, truncated: false };
+    }
+    return boundExplorerNationalCounties(ranked, selectedFips);
+  }, [
+    availableDataGate,
+    counties,
+    countyQuery,
+    listState,
+    scoreCounties,
+    selectedFips,
+  ]);
+  const rankedRows = rankedList.rows;
   const identityFor = (fips: string): ExploreCountyIdentity | null =>
     identityByFips.get(fips) ?? null;
   const selectedIdentity = selectedFips ? identityFor(selectedFips) : null;
@@ -629,6 +643,11 @@ export function ReviewNationalPicture({
                 : listState
                   ? "No counties in this state have a published Atlas gap score."
                   : "No counties have a published Atlas gap score."
+            }
+            note={
+              rankedList.truncated
+                ? `Showing the first ${EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH} counties. Use the State control, or select a state on the map, to narrow this list.`
+                : undefined
             }
             rows={rankedRows}
             scenarios={scenarioByFips}

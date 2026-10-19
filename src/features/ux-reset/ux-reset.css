@@ -1984,6 +1984,10 @@
   margin-top: 0;
 }
 
+.ux-reset-explorer-list [data-testid="explorer-national-shortlist-note"] {
+  margin: 0 0.15rem 0.35rem;
+}
+
 .ux-reset-explorer-map {
   width: 100%;
   min-height: 20rem;
