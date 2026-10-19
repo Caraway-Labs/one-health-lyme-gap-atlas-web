@@ -14,6 +14,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
+import { GEOGRAPHY_IDENTITY_PATH } from "@/lib/endpoint-delivery";
 import {
   API_REFERENCE_RELATIVE_DIR,
   type PublicOpenApiFailureCode,
@@ -152,6 +153,57 @@ describe("public OpenAPI reference", () => {
     ).toBeFalsy();
     const states = requiredFile(pages, "states/index.mdx");
     expect(states).not.toContain("fumadocs-ui/components/tabs");
+  });
+
+  it("badges the geography identity route as a dated production check", async () => {
+    const pages = await renderPublicApiReference(
+      readAndLoadPublicOpenApiContract(process.cwd())
+    );
+    const badge = "<EndpointDeliveryBadge />";
+    const badgeImport =
+      'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";';
+    const identity = operationPage(
+      pages,
+      "geography_v1_geographies__geography_type___geography_id__get"
+    );
+    const geographies = requiredFile(pages, "geographies/index.mdx");
+    const index = requiredFile(pages, "index.mdx");
+    expect({
+      atlas: requiredFile(
+        pages,
+        "atlas/geometry_v1_atlas_geometry_get.mdx"
+      ).includes("EndpointDeliveryBadge"),
+      availability: operationPage(
+        pages,
+        "canonicalGeographyAvailability"
+      ).includes(badge),
+      geographyBadge: geographies.includes(badge),
+      geographyImport: geographies.includes(badgeImport),
+      geographyRoute: geographies.includes(
+        `\`GET ${GEOGRAPHY_IDENTITY_PATH}\``
+      ),
+      identityBadge: identity.includes(badge),
+      identityImport: identity.includes(badgeImport),
+      indexBadge: index.includes(badge),
+      indexImport: index.includes(badgeImport),
+      indexTabs: index.includes("fumadocs-ui/components/tabs"),
+      provenance: requiredFile(
+        pages,
+        "provenance/source_v1_sources__source_id__get.mdx"
+      ).includes("EndpointDeliveryBadge"),
+    }).toStrictEqual({
+      atlas: false,
+      availability: false,
+      geographyBadge: true,
+      geographyImport: true,
+      geographyRoute: true,
+      identityBadge: true,
+      identityImport: true,
+      indexBadge: true,
+      indexImport: true,
+      indexTabs: false,
+      provenance: false,
+    });
   });
 
   it("renders Retry-After, descriptions, and examples for 429 and 503", async () => {

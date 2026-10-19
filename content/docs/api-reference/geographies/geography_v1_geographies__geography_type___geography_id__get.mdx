@@ -57,6 +57,10 @@ _openapi:
       - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Canonical data delivery is not yet available.","instance":"/v1/geographies/{geography_type}/{geography_id}","request_id":"example-request-id","code":"CANONICAL_DATA_UNAVAILABLE"}'
 ---
 
+import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";
+
+<EndpointDeliveryBadge />
+
 export default function Layout(props) {
   const { OpenAPIPage } = props.components ?? {};
   return (
