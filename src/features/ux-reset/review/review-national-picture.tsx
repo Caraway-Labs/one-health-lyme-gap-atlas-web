@@ -8,13 +8,6 @@ import { AtlasMap } from "@/components/atlas-map";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
@@ -44,6 +37,8 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
+  boundExplorerNationalCounties,
+  EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH,
   rankExplorerCounties,
   type ExplorerRankSource,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
@@ -66,7 +61,6 @@ import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-
 import {
   isLower48CountyFips,
   isLower48ReviewScope,
-  lower48ReviewStateName,
   postalCodeForStateFips,
 } from "@/features/ux-reset/review/review-state-fips";
 import {
@@ -78,7 +72,6 @@ import {
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { isContiguousUsCounty } from "@/lib/atlas-geometry";
-import type { AtlasStateOption } from "@/lib/atlas-state-geography";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 import {
   countyDisplayGeometryQueryKey,
@@ -104,7 +97,6 @@ type ReviewNationalPictureProps = {
   releaseId: string;
   /** Browser what-if. Defaults leave governed county colors in place. */
   scenarioSettings?: ScoreSettings;
-  releaseStates: readonly AtlasStateOption[];
   sources?: readonly ExplorerMapLegendSource[];
   tierRelease: Tier1ActiveRelease;
 };
@@ -135,7 +127,6 @@ export function ReviewNationalPicture({
   onMapLayerChange,
   period,
   releaseId,
-  releaseStates,
   scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   sources = NO_LEGEND_SOURCES,
   tierRelease: _tierRelease,
@@ -329,29 +320,7 @@ export function ReviewNationalPicture({
     }
     return identities;
   }, [counties, scoreCounties]);
-  const stateChoices = useMemo(() => {
-    const byCode = new Map<string, string>();
-    for (const state of releaseStates) {
-      if (!isLower48ReviewScope(state.code)) {
-        continue;
-      }
-      byCode.set(state.code, state.name);
-    }
-    if (browseState && !byCode.has(browseState)) {
-      const name = lower48ReviewStateName(browseState);
-      if (name) {
-        byCode.set(browseState, name);
-      }
-    }
-    return [...byCode.entries()]
-      .map(([code, name]) => ({ code, name }))
-      .toSorted(
-        (left, right) =>
-          left.name.localeCompare(right.name, "en") ||
-          left.code.localeCompare(right.code)
-      );
-  }, [browseState, releaseStates]);
-  const rankedRows = useMemo(() => {
+  const rankedList = useMemo(() => {
     const byFips = new Map<string, ExplorerRankSource>();
     for (const entry of counties) {
       if (!isLower48CountyFips(entry.fips)) {
@@ -396,11 +365,23 @@ export function ReviewNationalPicture({
               countyPassesAvailableData(availableDataGate, fips)
             )
           );
-    return rankExplorerCounties([...byFips.values()], {
+    const ranked = rankExplorerCounties([...byFips.values()], {
       query: countyQuery,
       visibleFips,
     });
-  }, [availableDataGate, counties, countyQuery, listState, scoreCounties]);
+    if (listState) {
+      return { rows: ranked, truncated: false };
+    }
+    return boundExplorerNationalCounties(ranked, selectedFips);
+  }, [
+    availableDataGate,
+    counties,
+    countyQuery,
+    listState,
+    scoreCounties,
+    selectedFips,
+  ]);
+  const rankedRows = rankedList.rows;
   const identityFor = (fips: string): ExploreCountyIdentity | null =>
     identityByFips.get(fips) ?? null;
   const selectedIdentity = selectedFips ? identityFor(selectedFips) : null;
@@ -469,11 +450,6 @@ export function ReviewNationalPicture({
     geometryQuery.data &&
     mapCounties.length > 0 &&
     (availableDataGate.kind === "open" || availableDataGate.kind === "ready");
-  const browseName = browseState
-    ? (stateChoices.find((state) => state.code === browseState)?.name ??
-      browseState)
-    : null;
-
   return (
     <div
       className="ux-reset-explorer-browse"
@@ -535,7 +511,7 @@ export function ReviewNationalPicture({
             </AtlasStatusMessage>
           ) : showMap && geometryQuery.data ? (
             <AtlasMap
-              ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the state list and the county list."
+              ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the State filter and the county list."
               cameraFrameState={mapFocus}
               doubleClickZoom={false}
               fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
@@ -626,39 +602,6 @@ export function ReviewNationalPicture({
       />
       <div className="ux-reset-explorer-list">
         <Card className="gap-0 p-3">
-          <header className="ux-reset-ranked-counties-header">
-            <p className="ux-reset-ranked-counties-eyebrow">Counties</p>
-          </header>
-          <div className="ux-reset-review-scope-field">
-            <span className="type-small">Browse a state</span>
-            <Select
-              value={listState}
-              onValueChange={(next) => {
-                if (next) {
-                  chooseState(next);
-                }
-              }}
-            >
-              <SelectTrigger
-                aria-label="Browse a state"
-                className="h-9 w-full"
-                data-testid="national-browse-state"
-              >
-                <SelectValue placeholder="Choose a state">
-                  {listState && browseName
-                    ? `${browseName} (${listState})`
-                    : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {stateChoices.map((state) => (
-                  <SelectItem key={state.code} value={state.code}>
-                    {state.name} ({state.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           {countiesLoading ? (
             <AtlasStatusMessage tone="loading">
               Loading published counties…
@@ -700,6 +643,11 @@ export function ReviewNationalPicture({
                 : listState
                   ? "No counties in this state have a published Atlas gap score."
                   : "No counties have a published Atlas gap score."
+            }
+            note={
+              rankedList.truncated
+                ? `Showing the first ${EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH} counties. Use the State control, or select a state on the map, to narrow this list.`
+                : undefined
             }
             rows={rankedRows}
             scenarios={scenarioByFips}

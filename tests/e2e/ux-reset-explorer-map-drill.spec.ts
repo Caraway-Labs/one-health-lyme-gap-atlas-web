@@ -327,13 +327,19 @@ test.describe("Explorer two-stage map drill", () => {
       "aria-current",
       "true"
     );
+    let ada = await readCamera(page);
     await expect
       .poll(async () => {
         const camera = await readCamera(page);
-        return camera.zoom > idaho.zoom + 0.4 && camera.stage === "county";
+        const stable =
+          camera.stage === "county" &&
+          camera.zoom > idaho.zoom + 0.4 &&
+          Math.abs(camera.lat - ada.lat) < 0.01 &&
+          Math.abs(camera.lng - ada.lng) < 0.01;
+        ada = camera;
+        return stable;
       })
       .toBe(true);
-    const ada = await readCamera(page);
 
     await page.getByTestId("explorer-fit-national").click();
     await expect(page).not.toHaveURL(/focus=/);

@@ -151,7 +151,6 @@ function picture(
         mapLayer={mapLayer}
         period={null}
         releaseId={RELEASE_ID}
-        releaseStates={[{ code: "CO", name: "Colorado" }]}
         scenarioSettings={settings}
         tierRelease={{ status: "unknown" }}
         onCountyChange={() => {}}

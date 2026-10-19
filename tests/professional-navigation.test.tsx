@@ -10,7 +10,14 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ATLAS_EXPLORER_PATH, RESET_APP_PATH } from "@/features/ux-reset/paths";
+import {
+  ATLAS_EXPLORER_PATH,
+  DATA_PROVENANCE_NAV_DESCRIPTION,
+  RESET_ACCESS_NAV,
+  RESET_APP_PATH,
+  RESET_FEEDBACK_ACTION,
+  RESET_WORKSPACE_NAV,
+} from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
 let pathname: string = RESET_APP_PATH;
@@ -228,5 +235,103 @@ describe("professional workspace navigation", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Hide navigation" }));
     expect(screen.getByRole("button", { name: "Give feedback" })).toBeTruthy();
+  });
+
+  it("exposes the approved tooltip sentences without changing navigation labels", () => {
+    pathname = ATLAS_EXPLORER_PATH;
+    render(
+      <ResetProfessionalShell>
+        <p>Review</p>
+      </ResetProfessionalShell>
+    );
+
+    const labels = [
+      ...navigation().querySelectorAll(".sidebar-item-label"),
+    ].map((label) => label.textContent);
+    expect(labels).toStrictEqual([
+      "Atlas Explorer",
+      "Compare",
+      "Ask Atlas",
+      "Feed",
+      "Data Provenance",
+      "Settings",
+      "Docs",
+      RESET_FEEDBACK_ACTION.label,
+    ]);
+
+    const described = [...RESET_WORKSPACE_NAV, ...RESET_ACCESS_NAV].map(
+      (route) => {
+        const accessibleName =
+          route.id === "docs" ? "Docs, opens in a new tab" : route.label;
+        const link = screen.getByRole("link", { name: accessibleName });
+        return {
+          description: link.getAttribute("aria-description"),
+          label: link.querySelector(".sidebar-item-label")?.textContent,
+          title: route.tooltipTitle ?? route.label,
+        };
+      }
+    );
+    expect(described).toStrictEqual([
+      {
+        description:
+          "Explore county-level Lyme surveillance, environmental context, and public health evidence.",
+        label: "Atlas Explorer",
+        title: "Atlas Explorer",
+      },
+      {
+        description:
+          "Compare counties side by side to support evidence-informed public health decisions.",
+        label: "Compare",
+        title: "Compare",
+      },
+      {
+        description:
+          "Turn scientific questions into evidence-backed insights with an AI research assistant.",
+        label: "Ask Atlas",
+        title: "Ask Atlas",
+      },
+      {
+        description:
+          "Track new findings and updates that may inform Lyme surveillance and research.",
+        label: "Feed",
+        title: "Intelligence Feed",
+      },
+      {
+        description:
+          "Explore data sources, lineage, methods, and limitations behind One Health Atlas.",
+        label: "Data Provenance",
+        title: "Data Provenance",
+      },
+      {
+        description:
+          "Manage your account, preferences, and One Health Atlas experience.",
+        label: "Settings",
+        title: "Settings",
+      },
+      {
+        description:
+          "Explore product guides, technical documentation, and scientific methodology.",
+        label: "Docs",
+        title: "Docs",
+      },
+    ]);
+
+    const feedback = screen.getByRole("button", { name: "Give feedback" });
+    expect({
+      description: feedback.getAttribute("aria-description"),
+      label: feedback.querySelector(".sidebar-item-label")?.textContent,
+    }).toStrictEqual({
+      description: RESET_FEEDBACK_ACTION.tooltipDetail,
+      label: RESET_FEEDBACK_ACTION.label,
+    });
+    expect(DATA_PROVENANCE_NAV_DESCRIPTION).toBe(
+      "Explore data sources, lineage, methods, and limitations behind One Health Atlas."
+    );
+    expect(RESET_FEEDBACK_ACTION).toStrictEqual({
+      label: "Give feedback",
+      tooltipDetail:
+        "Help shape One Health Atlas by sharing ideas, questions, and product feedback.",
+      tooltipTitle: "Give Feedback",
+    });
   });
 });

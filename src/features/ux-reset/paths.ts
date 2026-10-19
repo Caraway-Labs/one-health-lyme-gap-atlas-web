@@ -63,11 +63,27 @@ export type ResetRoute = {
   /** When set, navigation opens this href instead of an in-shell page. */
   externalHref?: string;
   /**
-   * Extra tooltip description. The tooltip title stays `label`.
+   * Tooltip title when the visible navigation label is abbreviated.
+   * Feed stays labeled Feed; its tooltip title is Intelligence Feed.
+   */
+  tooltipTitle?: string;
+  /**
+   * One-sentence tooltip description under the tooltip title.
    * SidebarMenuButton renders this with the shared tooltip primitive.
    */
   tooltipDetail?: string;
 };
+
+/**
+ * Give Feedback is a sidebar action, not a route. The visible label stays
+ * "Give feedback". The tooltip uses the approved title and sentence.
+ */
+export const RESET_FEEDBACK_ACTION = {
+  label: "Give feedback",
+  tooltipDetail:
+    "Help shape One Health Atlas by sharing ideas, questions, and product feedback.",
+  tooltipTitle: "Give Feedback",
+} as const;
 
 /** Exact hover and focus description for the Data Provenance destination. */
 export const DATA_PROVENANCE_NAV_DESCRIPTION =
@@ -86,6 +102,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageDescription:
       "Map-led review, expandable county evidence, and suggested follow-up. Not a separate Investigate or Action destination.",
     pageTitle: "Atlas Explorer | One Health Lyme Gap Atlas",
+    tooltipDetail:
+      "Explore county-level Lyme surveillance, environmental context, and public health evidence.",
   },
   {
     description: "Compare two counties on aligned governed measures.",
@@ -98,6 +116,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageDescription:
       "Two-county evidence comparison with each measure's unit, period, and availability. Not a score ranking.",
     pageTitle: "Compare | One Health Lyme Gap Atlas",
+    tooltipDetail:
+      "Compare counties side by side to support evidence-informed public health decisions.",
   },
   {
     description: "Ask questions grounded in reviewed literature.",
@@ -110,6 +130,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageDescription:
       "Dedicated answer-only workspace for reviewed-literature questions. Explorer and Compare can hand a validated page reference here and return to that page.",
     pageTitle: "Ask Atlas | One Health Lyme Gap Atlas",
+    tooltipDetail:
+      "Turn scientific questions into evidence-backed insights with an AI research assistant.",
   },
   {
     description:
@@ -172,6 +194,9 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     navGroup: "access",
     pageDescription: "Placeholder for the professional Feed destination.",
     pageTitle: "Feed | One Health Lyme Gap Atlas",
+    tooltipDetail:
+      "Track new findings and updates that may inform Lyme surveillance and research.",
+    tooltipTitle: "Intelligence Feed",
   },
   {
     description: DATA_PROVENANCE_NAV_DESCRIPTION,
@@ -197,6 +222,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageDescription:
       "Save a required national or state starting view for future Atlas Explorer sessions, plus optional profile details, optional analytics, and account controls.",
     pageTitle: "Settings | One Health Lyme Gap Atlas",
+    tooltipDetail:
+      "Manage your account, preferences, and One Health Atlas experience.",
   },
   {
     description: "Open the canonical Atlas documentation center.",
@@ -209,6 +236,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     navGroup: "access",
     pageDescription: "Documentation for the One Health Lyme Gap Atlas.",
     pageTitle: "Documentation | One Health Lyme Gap Atlas",
+    tooltipDetail:
+      "Explore product guides, technical documentation, and scientific methodology.",
   },
 ] as const;
 

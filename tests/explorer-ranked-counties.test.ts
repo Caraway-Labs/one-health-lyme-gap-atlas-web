@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  boundExplorerNationalCounties,
+  EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH,
   formatGapScore,
   rankExplorerCounties,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
@@ -58,6 +60,34 @@ describe("Explorer ranked counties", () => {
     expect(rows.map((row) => [row.rank, row.fips])).toStrictEqual([
       [3, "08013"],
     ]);
+  });
+
+  it("keeps a national shortlist bounded and retains a selected county outside it", () => {
+    const ranked = rankExplorerCounties(
+      Array.from({ length: 45 }, (_, index) => ({
+        county: `County ${index}`,
+        fips: `08${String(index + 1).padStart(3, "0")}`,
+        score: 100 - index,
+        state: "CO",
+      }))
+    );
+    const bounded = boundExplorerNationalCounties(ranked, "");
+    const withSelection = boundExplorerNationalCounties(ranked, "08045");
+    expect({
+      limit: EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH,
+      selectedIncluded: withSelection.rows.some((row) => row.fips === "08045"),
+      selectedLength: withSelection.rows.length,
+      shortlist: bounded.rows.map((row) => row.fips),
+      truncated: bounded.truncated,
+    }).toStrictEqual({
+      limit: 40,
+      selectedIncluded: true,
+      selectedLength: 41,
+      shortlist: ranked
+        .slice(0, EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH)
+        .map((row) => row.fips),
+      truncated: true,
+    });
   });
 
   it("does not rank a county whose score was filtered out of the scope", () => {
