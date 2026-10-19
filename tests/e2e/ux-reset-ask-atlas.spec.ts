@@ -25,6 +25,7 @@ import {
 } from "../fixtures/investigate-api-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
+import { revealProfessionalNavigationLink } from "./professional-shell-ready";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const EXPLORE_URL = "/app/explore?county=08001&metric=reported-cases&scope=ALL";
@@ -64,9 +65,14 @@ async function fulfillJson(route: Route, body: unknown, status = 200) {
 
 async function installExploreMocks(
   page: Page,
-  options: { failObservations?: boolean; holdObservations?: Promise<void> } = {}
+  options: {
+    failObservations?: boolean;
+    holdObservations?: Promise<void>;
+    holdProfile?: Promise<void>;
+  } = {}
 ) {
   await page.route("**/v1/me/profile", async (route) => {
+    await options.holdProfile;
     await fulfillJson(route, {
       profile: { starting_view_version: 1, state_code: null },
     });
@@ -236,11 +242,11 @@ function sidebarAskAtlas(page: Page) {
 }
 
 async function openAskAtlasFromSidebar(page: Page) {
+  const link = await revealProfessionalNavigationLink(
+    page,
+    sidebarAskAtlas(page)
+  );
   await expectHeaderWithoutAskAtlas(page);
-  const link = sidebarAskAtlas(page);
-  if (!(await link.isVisible())) {
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  }
   await link.click();
 }
 
@@ -337,12 +343,17 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
 
+    const sidebarAsk = await revealProfessionalNavigationLink(
+      page,
+      sidebarAskAtlas(page)
+    );
     await expect
       .poll(async () =>
-        releaseOnlyBookmark(await sidebarAskAtlas(page).getAttribute("href"))
+        releaseOnlyBookmark(await sidebarAsk.getAttribute("href"))
       )
       .toEqual(RELEASE_ONLY_BOOKMARK);
-    await openAskAtlasFromSidebar(page);
+    await expectHeaderWithoutAskAtlas(page);
+    await sidebarAsk.click();
     await expect(page).toHaveURL(/\/askatlas/);
     await expect
       .poll(() => releaseOnlyBookmark(page.url()))
@@ -514,8 +525,12 @@ test.describe("Ask Atlas dedicated page", () => {
     expect(landed.searchParams.get("metric")).toBeNull();
     expect(landed.searchParams.get("selection")).toBe("required");
     expect(landed.pathname).toBe("/explore");
+    const ask = await revealProfessionalNavigationLink(
+      page,
+      sidebarAskAtlas(page)
+    );
     await expectHeaderWithoutAskAtlas(page);
-    const askHref = await sidebarAskAtlas(page).getAttribute("href");
+    const askHref = await ask.getAttribute("href");
     expect(askHref ?? "").not.toContain("not-a-county");
   });
 
@@ -524,11 +539,11 @@ test.describe("Ask Atlas dedicated page", () => {
   }) => {
     await installExploreMocks(page);
     await page.goto(EXPLORE_URL);
+    const ask = await revealProfessionalNavigationLink(
+      page,
+      sidebarAskAtlas(page)
+    );
     await expectHeaderWithoutAskAtlas(page);
-    const ask = sidebarAskAtlas(page);
-    if (!(await ask.isVisible())) {
-      await page.getByRole("button", { name: "Open navigation" }).click();
-    }
     await ask.focus();
     await expect(ask).toBeFocused();
     await expect(page.locator("#ux-reset-ask-atlas")).toHaveCount(0);
@@ -543,6 +558,38 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.locator(".app-inset")).not.toHaveAttribute("inert", "");
     await expect(page.getByLabel("Your research question")).toBeVisible();
   });
+
+  for (const viewport of [
+    { height: 800, name: "desktop", width: 1280 },
+    { height: 844, name: "phone", width: 390 },
+  ] as const) {
+    test(`opens Ask Atlas after a delayed profile on ${viewport.name}`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        !releaseViewportRuns(testInfo.project.name, viewport.width),
+        "Delayed-profile checks run on the project for that viewport."
+      );
+      await page.setViewportSize({
+        height: viewport.height,
+        width: viewport.width,
+      });
+      const { promise: profileHeld, resolve: releaseProfile } =
+        Promise.withResolvers<void>();
+      await installExploreMocks(page, { holdProfile: profileHeld });
+      await page.goto(EXPLORE_URL);
+      await expect(
+        page.getByText("Checking your starting view…")
+      ).toBeVisible();
+      await expect(page.locator(".ux-reset-pro-app")).toHaveCount(0);
+      releaseProfile();
+      await openAskAtlasFromSidebar(page);
+      await expect(page).toHaveURL(/\/askatlas/);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Ask Atlas" })
+      ).toBeVisible();
+    });
+  }
 
   test("drops a late answer after New chat", async ({ page }) => {
     const { promise: firstHeld, resolve: resolveFirst } =

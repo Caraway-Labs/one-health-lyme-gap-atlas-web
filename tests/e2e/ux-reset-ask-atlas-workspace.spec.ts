@@ -17,6 +17,7 @@ import {
   exploreScoresFixture,
   EXPLORE_CASES_MEASURE_ID,
 } from "../fixtures/explore-api-fixtures";
+import { revealProfessionalNavigationLink } from "./professional-shell-ready";
 
 const EXPLORE_URL =
   "/app/explore?county=08001&dataset=alpha-2026&metric=reported-cases&scope=ALL";
@@ -162,15 +163,13 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
     );
   });
   await page.goto(EXPLORE_URL);
-  const header = page.locator(".ux-reset-pro-app .app-header");
-  await expect(header.getByRole("link", { name: "Ask Atlas" })).toHaveCount(0);
-  await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
   const ask = page
     .getByRole("navigation", { name: "Professional workspace" })
     .getByRole("link", { name: "Ask Atlas", exact: true });
-  if (!(await ask.isVisible())) {
-    await page.getByRole("button", { name: "Open navigation" }).click();
-  }
+  await revealProfessionalNavigationLink(page, ask);
+  const header = page.locator(".ux-reset-pro-app .app-header");
+  await expect(header.getByRole("link", { name: "Ask Atlas" })).toHaveCount(0);
+  await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
   await expectReleaseOnlySidebar(page);
   await ask.click();
   await expect(page).toHaveURL(/\/askatlas\?/);
