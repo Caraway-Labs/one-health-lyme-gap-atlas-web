@@ -117,7 +117,7 @@ const drillMetadata = {
 async function installDrillApi(page: Page) {
   await page.route("**/v1/me/profile", async (route) => {
     await route.fulfill({
-      json: { profile: { state_code: "CO" } },
+      json: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     });
   });
@@ -226,8 +226,48 @@ async function projectedCountyPoint(
   return point;
 }
 
+async function settledCamera(
+  page: Page,
+  stage: CameraReading["stage"],
+  movedFrom?: number
+) {
+  let previousZoom = Number.NaN;
+  let sawMovement = movedFrom === undefined;
+  let settled: CameraReading | null = null;
+  await expect
+    .poll(async () => {
+      const camera = await readCamera(page);
+      if (movedFrom !== undefined && Math.abs(camera.zoom - movedFrom) > 0.3) {
+        sawMovement = true;
+      }
+      const stable =
+        sawMovement &&
+        camera.stage === stage &&
+        Number.isFinite(camera.zoom) &&
+        Math.abs(camera.zoom - previousZoom) < 0.01;
+      previousZoom = camera.zoom;
+      settled = stable ? camera : null;
+      return stable;
+    })
+    .toBe(true);
+  return settled ?? (await readCamera(page));
+}
+
 async function clickCounty(page: Page, longitude: number, latitude: number) {
-  const point = await projectedCountyPoint(page, longitude, latitude);
+  let point = await projectedCountyPoint(page, longitude, latitude);
+  const viewport = page.viewportSize();
+  const outsideViewport =
+    viewport !== null &&
+    (point.x < 8 ||
+      point.y < 8 ||
+      point.x > viewport.width - 8 ||
+      point.y > viewport.height - 8);
+  if (outsideViewport) {
+    await page.locator(".maplibre-atlas").evaluate((element) => {
+      element.scrollIntoView({ block: "center", inline: "center" });
+    });
+    point = await projectedCountyPoint(page, longitude, latitude);
+  }
   await page.mouse.click(point.x, point.y);
 }
 
@@ -293,6 +333,7 @@ test.describe("Explorer two-stage map drill", () => {
         return camera.zoom > idaho.zoom + 0.4 && camera.stage === "county";
       })
       .toBe(true);
+    const ada = await readCamera(page);
 
     await page.getByTestId("explorer-fit-national").click();
     await expect(page).not.toHaveURL(/focus=/);
@@ -313,6 +354,22 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toContainText("Ada");
+    await expect
+      .poll(async () => {
+        const camera = await readCamera(page);
+        return {
+          closerThanState: camera.zoom > idaho.zoom + 0.4,
+          lat: Math.abs(camera.lat - ada.lat) < 0.35,
+          lng: Math.abs(camera.lng - ada.lng) < 0.35,
+          stage: camera.stage,
+        };
+      })
+      .toEqual({
+        closerThanState: true,
+        lat: true,
+        lng: true,
+        stage: "county",
+      });
     await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/focus=ID/);
     await expect(page).not.toHaveURL(/county=/);
@@ -371,6 +428,34 @@ test.describe("Explorer two-stage map drill", () => {
     ).toContainText("Ada");
     await expect(page).not.toHaveURL(/focus=/);
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+
+    await page.goto("/explore?scope=ALL&focus=ID");
+    await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
+    const reloadedState = await settledCamera(page, "state");
+    await page.goto("/explore?scope=ALL&focus=ID&county=16001");
+    await expect(
+      page.getByTestId("review-published-county-preview")
+    ).toContainText("Ada");
+    const reloadedCounty = await settledCamera(page, "county");
+    expect(reloadedCounty.zoom).toBeGreaterThan(reloadedState.zoom + 0.4);
+    expect(reloadedCounty.lat).toBeLessThan(reloadedState.lat - 0.4);
+
+    await page.getByTestId("explorer-fit-national").click();
+    await expect(page).not.toHaveURL(/focus=/);
+    await expect(page).toHaveURL(/county=16001/);
+    const nationalAgain = await settledCamera(page, "national");
+    await clickCounty(page, -115.7, 43.3);
+    await expect(page).toHaveURL(/focus=ID/);
+    await expect(page).not.toHaveURL(/county=/);
+    const idahoAgain = await settledCamera(page, "state", nationalAgain.zoom);
+    await clickCounty(page, -115.7, 43.3);
+    await expect(page).toHaveURL(/county=16001/);
+    await expect
+      .poll(async () => {
+        const camera = await readCamera(page);
+        return camera.stage === "county" && camera.zoom > idahoAgain.zoom + 0.4;
+      })
+      .toBe(true);
     await expectNoHorizontalOverflow(page);
   });
 

@@ -160,6 +160,7 @@ export function AtlasMap({
   cameraFrameState,
   fitSignal = 0,
   resetNationalView = false,
+  fitSelectedCounty = false,
   geographicStateOutline = false,
   doubleClickZoom = true,
   selectedDistrict = "ALL",
@@ -190,6 +191,12 @@ export function AtlasMap({
    * camera when `cameraFrameState` is cleared.
    */
   resetNationalView?: boolean;
+  /**
+   * National Explorer county stage. When a state frame and a selected county
+   * arrive together, fit that county. State-scoped maps omit this and keep
+   * fitting the whole state.
+   */
+  fitSelectedCounty?: boolean;
   /**
    * National Explorer state focus. County lines for the focused state are
    * black. Other maps keep the accent state outline.
@@ -559,8 +566,15 @@ export function AtlasMap({
       }
     } else if (previousFramedState.current !== frameState) {
       previousFramedState.current = frameState;
-      const stateBounds = explorerStateGeometryBounds(geometry, frameState);
-      if (stateBounds) {
+      const selectedFeature = geometry.features.find(
+        (item) => item.properties.fips === selectedFips
+      );
+      const countyBounds = fitSelectedCounty
+        ? countyFeatureBounds(selectedFeature ?? null)
+        : null;
+      const frameBounds =
+        countyBounds ?? explorerStateGeometryBounds(geometry, frameState);
+      if (frameBounds) {
         applyingExternalMove.current = true;
         const generation = cameraFitGeneration.current + 1;
         cameraFitGeneration.current = generation;
@@ -570,7 +584,7 @@ export function AtlasMap({
             applyingExternalMove.current = false;
           }
         });
-        fitCountyBounds(instance, stateBounds, {
+        fitCountyBounds(instance, frameBounds, {
           duration: mapCameraDuration(),
           stop: false,
         });
@@ -640,6 +654,7 @@ export function AtlasMap({
     });
   }, [
     cameraFrameState,
+    fitSelectedCounty,
     fitSignal,
     geometry,
     mapReady,

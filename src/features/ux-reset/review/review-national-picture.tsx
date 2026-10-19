@@ -539,6 +539,7 @@ export function ReviewNationalPicture({
               ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the state list and the county list."
               cameraFrameState={mapFocus}
               doubleClickZoom={false}
+              fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
               fitSignal={fitSignal}
               geographicStateOutline={mapFocus !== null}
               geometry={{

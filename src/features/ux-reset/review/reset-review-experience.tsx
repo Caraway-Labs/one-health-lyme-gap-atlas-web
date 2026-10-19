@@ -87,10 +87,7 @@ import {
   reviewSearchParams,
   scenarioSearchParamPatch,
 } from "@/features/ux-reset/review/review-search-params";
-import {
-  isLower48ReviewScope,
-  postalCodeForStateFips,
-} from "@/features/ux-reset/review/review-state-fips";
+import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
 import { useApplyProfileStartingScope } from "@/features/ux-reset/review/use-apply-profile-starting-scope";
 import { useExplorerCountyReference } from "@/features/ux-reset/review/use-explorer-county-reference";
 import { useExplorerMapScores } from "@/features/ux-reset/review/use-explorer-map-scores";
@@ -405,10 +402,9 @@ function ResetReviewExperienceInner() {
       if ((urlState.focus ?? null) === next) {
         return;
       }
-      const countyState = reviewCounty
-        ? postalCodeForStateFips(reviewCounty.slice(0, 2))
-        : null;
-      const clearCounty = Boolean(next && reviewCounty && countyState !== next);
+      // A state-focus click is state-only, including when Fit United States
+      // left the same county selected. The next click can select it again.
+      const clearCounty = Boolean(next && reviewCounty);
       if (clearCounty) {
         nationalChoiceGenerationRef.current += 1;
         setChosenNationalFips(null);

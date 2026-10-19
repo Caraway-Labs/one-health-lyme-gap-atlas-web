@@ -754,6 +754,295 @@ describe("AtlasMap county camera", () => {
     expect(map?.jumpTo).not.toHaveBeenCalled();
   });
 
+  it("fits the selected county when a county-stage frame returns", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const adaBounds: [number, number, number, number] = [
+      -117, 42.6, -114.4, 44,
+    ];
+    const stateBounds: [number, number, number, number] = [
+      -117.2, 42.6, -111, 48.9,
+    ];
+    const fitOptions = { duration: 450, maxZoom: 8, padding: 48 };
+    const idahoGeometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [adaBounds[0], adaBounds[1]],
+                [adaBounds[2], adaBounds[1]],
+                [adaBounds[2], adaBounds[3]],
+                [adaBounds[0], adaBounds[3]],
+                [adaBounds[0], adaBounds[1]],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117.2, 44.2],
+                [-111, 44.2],
+                [-111, 48.9],
+                [-117.2, 48.9],
+                [-117.2, 44.2],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16085" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    };
+    const view = render(
+      <AtlasMap
+        cameraFrameState={null}
+        fitSelectedCounty={false}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    setMapBox(480, 220);
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        fitSelectedCounty={false}
+        fitSignal={1}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds.mock.calls.map((call) => call[0])).toStrictEqual([
+      stateBounds,
+      adaBounds,
+      adaBounds,
+    ]);
+    expect(map?.fitBounds.mock.calls.at(-1)?.[1]).toStrictEqual(fitOptions);
+    view.unmount();
+  });
+
+  it("fits the county on a direct county-stage load and the state for scope", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const adaBounds: [number, number, number, number] = [
+      -117, 42.6, -114.4, 44,
+    ];
+    const stateBounds: [number, number, number, number] = [
+      -117.2, 42.6, -111, 48.9,
+    ];
+    const idahoGeometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [adaBounds[0], adaBounds[1]],
+                [adaBounds[2], adaBounds[1]],
+                [adaBounds[2], adaBounds[3]],
+                [adaBounds[0], adaBounds[3]],
+                [adaBounds[0], adaBounds[1]],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117.2, 44.2],
+                [-111, 44.2],
+                [-111, 48.9],
+                [-117.2, 48.9],
+                [-117.2, 44.2],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16085" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    };
+    const countyLoad = render(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    const countyMap = loadMap();
+    expect(
+      countyMap?.fitBounds.mock.calls.map((call) => call[0])
+    ).toStrictEqual([adaBounds]);
+    countyLoad.unmount();
+    engine.instances.length = 0;
+    const stateLoad = render(
+      <AtlasMap
+        cameraFrameState="ID"
+        geometry={idahoGeometry}
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    const stateMap = loadMap();
+    expect(stateMap?.fitBounds.mock.calls.map((call) => call[0])).toStrictEqual(
+      [stateBounds]
+    );
+    stateLoad.unmount();
+  });
+
+  it("fits Idaho and then Ada again after a national reset", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const adaBounds: [number, number, number, number] = [
+      -117, 42.6, -114.4, 44,
+    ];
+    const stateBounds: [number, number, number, number] = [
+      -117.2, 42.6, -111, 48.9,
+    ];
+    const idahoGeometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [adaBounds[0], adaBounds[1]],
+                [adaBounds[2], adaBounds[1]],
+                [adaBounds[2], adaBounds[3]],
+                [adaBounds[0], adaBounds[3]],
+                [adaBounds[0], adaBounds[1]],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117.2, 44.2],
+                [-111, 44.2],
+                [-111, 48.9],
+                [-117.2, 48.9],
+                [-117.2, 44.2],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16085" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    };
+    const view = render(
+      <AtlasMap
+        cameraFrameState={null}
+        fitSelectedCounty={false}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds.mock.calls.map((call) => call[0])).toStrictEqual([
+      stateBounds,
+      adaBounds,
+    ]);
+    view.unmount();
+  });
+
   it("paints a black state outline and reports staged clicks without double-click zoom", () => {
     stubPrefersReducedMotion(false);
     const onCountyPointer =
