@@ -3,10 +3,16 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
+import {
+  approvedFollowUpTitleForColor,
+  RETIRED_FOLLOW_UP_PHRASES,
+  SCORE_COLOR_BANDS,
+} from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyScoreSummary } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 
@@ -124,6 +130,21 @@ function paintedBackground(name: RegExp | string): string {
   return (end === -1 ? value : value.slice(0, end)).trim();
 }
 
+function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
+  if (band.maxExclusive === null) {
+    return `Atlas gap score: ${band.minInclusive} or higher`;
+  }
+  return `Atlas gap score: ${band.minInclusive} to <${band.maxExclusive}`;
+}
+
+function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
+  return {
+    action: approvedFollowUpTitleForColor(band.color),
+    category: band.approvedReviewCategory,
+    title: gapScoreRangeTitle(band),
+  };
+}
+
 function sameColor(left: string, right: string): boolean {
   const parsedLeft = Color.parse(left);
   const parsedRight = Color.parse(right);
@@ -202,13 +223,121 @@ describe("Explorer map legend", () => {
         .getByRole("region", { name: "Atlas gap score map legend" })
         .querySelectorAll("[data-legend-segment]"),
     ].map((segment) => segment.getAttribute("aria-label") ?? "");
+    expect(segments).toStrictEqual([
+      "Gap score unavailable. Insufficient data to calculate a score",
+      ...SCORE_COLOR_BANDS.map((band) => {
+        const copy = operationalBandCopy(band);
+        return `${copy.title}. ${copy.category}. ${copy.action}`;
+      }),
+    ]);
     expect(segments).toHaveLength(paint.entries.length);
-    expect(segments[0]).toMatch(/Gap score unavailable[\s\S]*Not zero/);
-    expect(segments[1]).toMatch(/0 to <20[\s\S]*Not a safety finding/);
-    expect(segments[2]).toMatch(
-      /20 to <35[\s\S]*Lower Atlas priority[\s\S]*Monitor signals/
+  });
+
+  it("matches each colored band tooltip to the operational response", () => {
+    const paint = paintExplorerMapLayer({
+      counties: [county("08001")],
+      layerId: "gap_score",
+      scoresStatus: "ready",
+    });
+    const model = buildExplorerLegendModel(paint);
+    const colored = model.segments.filter(
+      (segment) => segment.disclosure?.category
     );
-    expect(segments.at(-1)).toMatch(/>=75[\s\S]*Investigate/);
+    const tooltipText = model.segments
+      .map((segment) => segment.accessibleName)
+      .join("\n");
+    expect(
+      colored.map((segment) => ({
+        action: segment.disclosure?.action,
+        category: segment.disclosure?.category,
+      }))
+    ).toStrictEqual(
+      SCORE_COLOR_BANDS.map((band) => ({
+        action: operationalBandCopy(band).action,
+        category: operationalBandCopy(band).category,
+      }))
+    );
+    expect(
+      RETIRED_FOLLOW_UP_PHRASES.some((phrase) => tooltipText.includes(phrase))
+    ).toBeFalsy();
+  });
+
+  it("shows the seven gap-score disclosures without priority phrases", async () => {
+    const user = userEvent.setup();
+    const paint = paintExplorerMapLayer({
+      counties: [
+        county("08001"),
+        county("08013", { color: " ", fips: "08013" }),
+        county("11001", {
+          color: "#e9602b",
+          fips: "11001",
+          priority: "Priority 1 — Investigate",
+          score: { ...county("11001").score, score: 80 },
+          state: "DC",
+          state_name: "District of Columbia",
+        }),
+      ],
+      layerId: "gap_score",
+      scoresStatus: "ready",
+    });
+    render(<ExplorerMapLegend paint={paint} />);
+    const expected = [
+      {
+        action: "Insufficient data to calculate a score",
+        category: null,
+        name: /Gap score unavailable/,
+        title: "Gap score unavailable",
+      },
+      ...SCORE_COLOR_BANDS.map((band) => {
+        const copy = operationalBandCopy(band);
+        const fragment =
+          band.maxExclusive === null
+            ? `${band.minInclusive} or higher`
+            : `${band.minInclusive} to <${band.maxExclusive}`;
+        return {
+          action: copy.action,
+          category: copy.category,
+          name: new RegExp(fragment.replaceAll("<", "\\<")),
+          title: copy.title,
+        };
+      }),
+    ];
+    const seen: {
+      action: string | null | undefined;
+      category: string | null;
+      priorityPhrases: boolean;
+      swatch: boolean;
+      title: string | null | undefined;
+    }[] = [];
+    for (const disclosure of expected) {
+      await user.click(screen.getByRole("button", { name: disclosure.name }));
+      const dialog = screen.getByRole("dialog", { name: disclosure.name });
+      seen.push({
+        action: dialog.querySelector(
+          ".ux-reset-explorer-legend-disclosure-action"
+        )?.textContent,
+        category:
+          dialog.querySelector(".ux-reset-explorer-legend-disclosure-category")
+            ?.textContent ?? null,
+        priorityPhrases: /Priority [12]/.test(dialog.textContent ?? ""),
+        swatch: Boolean(
+          dialog.querySelector("[data-legend-disclosure-swatch]")
+        ),
+        title: dialog.querySelector(
+          ".ux-reset-explorer-legend-disclosure-title"
+        )?.textContent,
+      });
+      await user.keyboard("{Escape}");
+    }
+    expect(seen).toStrictEqual(
+      expected.map((disclosure) => ({
+        action: disclosure.action,
+        category: disclosure.category,
+        priorityPhrases: false,
+        swatch: true,
+        title: disclosure.title,
+      }))
+    );
   });
 
   it("keeps scientific caveats in the layer info popover", async () => {
@@ -237,6 +366,10 @@ describe("Explorer map legend", () => {
     const about = screen.getByRole("dialog", { name: "About Atlas gap score" });
     expect(about.textContent).toContain("CDC Lyme surveillance 2023");
     expect(about.textContent).toContain("not personal disease risk");
+    expect(about.textContent).toContain("Not zero");
+    expect(about.textContent).toContain(
+      "Lower Atlas priority — Not a safety finding"
+    );
   });
 
   it("uses separate status segments instead of the score strip", async () => {
