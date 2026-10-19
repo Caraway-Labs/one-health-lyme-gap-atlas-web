@@ -22,6 +22,7 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import {
   formatGapScore,
   publishedGapScore,
@@ -229,6 +230,12 @@ export function ReviewPublishedCountyPreview({
               View county evidence
             </Button>
           ) : null}
+          <DownloadCountyPdfButton
+            countyName={county.county}
+            fips={county.fips}
+            releaseId={releaseId}
+            stateCode={county.state}
+          />
           <Link
             ref={openRef}
             className={cn(

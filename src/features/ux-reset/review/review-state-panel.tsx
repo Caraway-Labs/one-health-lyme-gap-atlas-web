@@ -298,6 +298,7 @@ export function ReviewStatePanel({
           openRef={openRef}
           preview={preview}
           release={modelRelease}
+          releaseId={releaseId}
           onOpen={markReviewReturnFocus}
         />
       ) : null}
