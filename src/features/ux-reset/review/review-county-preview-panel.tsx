@@ -29,6 +29,7 @@ type ReviewCountyPreviewPanelProps = {
   openRef?: Ref<HTMLAnchorElement>;
   preview: ReviewCountyPreviewModel;
   release: Tier1ActiveRelease;
+  releaseId: string;
 };
 
 export function ReviewCountyPreviewPanel({
@@ -41,6 +42,7 @@ export function ReviewCountyPreviewPanel({
   openRef,
   preview,
   release,
+  releaseId,
 }: ReviewCountyPreviewPanelProps) {
   const countyName = preview.countyName.trim() || "Unavailable";
   const stateName = preview.stateName.trim() || "Unavailable";
@@ -162,7 +164,7 @@ export function ReviewCountyPreviewPanel({
         <DownloadCountyPdfButton
           countyName={preview.countyName}
           fips={preview.fips}
-          releaseId={release.status === "ready" ? release.releaseId : ""}
+          releaseId={releaseId}
           stateCode={preview.stateCode}
         />
         <Link

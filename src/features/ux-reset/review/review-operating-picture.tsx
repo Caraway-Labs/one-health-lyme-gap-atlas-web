@@ -1123,6 +1123,7 @@ export function ReviewOperatingPicture({
                     : "Review category unavailable"
               }
               release={tierRelease}
+              releaseId={releaseId ?? ""}
               onOpen={markReviewReturnFocus}
               onViewCountyEvidence={onViewCountyEvidence}
             />
