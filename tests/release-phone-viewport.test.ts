@@ -142,6 +142,7 @@ describe("default E2E and Storybook phone viewport sweep", () => {
     expect(phoneFiles).toStrictEqual([
       "tests/e2e/assistant-accessibility.spec.ts",
       "tests/e2e/developer-docs.spec.ts",
+      "tests/e2e/docs-page-actions.spec.ts",
       "tests/e2e/evidence-chat.spec.ts",
       "tests/e2e/feedback.spec.ts",
       "tests/e2e/front-porch-visual.spec.ts",
