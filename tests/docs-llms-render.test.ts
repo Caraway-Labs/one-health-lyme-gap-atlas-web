@@ -127,6 +127,15 @@ describe("rendered documentation markdown", () => {
     expect(markdown).not.toContain("<HttpClientTabs");
   });
 
+  it("renders the quickstart playground as an anonymous GET", async () => {
+    const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
+    expect(markdown).toContain("Anonymous read-only playground.");
+    expect(markdown).toContain(
+      "GET https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023"
+    );
+    expect(markdown).not.toContain("<ApiPlayground");
+  });
+
   it("keeps pipes, backticks, newlines, and plain-text backslashes in one cell", () => {
     const cell = markdownTableCell("number | `string`\nnull");
     const [table] = gfmTables(`| Type |\n| --- |\n| ${cell} |`);

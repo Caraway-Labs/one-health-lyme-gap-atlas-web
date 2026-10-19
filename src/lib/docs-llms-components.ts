@@ -1,3 +1,7 @@
+import {
+  API_PLAYGROUND_OPERATIONS,
+  playgroundProxyPath,
+} from "@/features/docs/api-playground-operations";
 import { displayGeometryCurl } from "@/features/docs/display-geometry-example";
 import {
   type HttpClientBody,
@@ -28,6 +32,7 @@ import {
   renderPinnedOperationMarkdown,
   type LoadedPublicOpenApiContract,
 } from "@/lib/public-openapi-reference";
+import { PRODUCTION_API_ORIGIN } from "@/lib/public-origins";
 
 const SELF_CLOSING_COMPONENT =
   /<(?<name>[A-Z][A-Za-z0-9]*)(?<attributes>\s[^>]*?)?\/>/g;
@@ -101,6 +106,18 @@ function renderKnownComponent(
   attributes: ComponentAttributes
 ): string {
   switch (name) {
+    case "ApiPlayground": {
+      const operation = API_PLAYGROUND_OPERATIONS[0];
+      const example = operation?.examples[0];
+      if (!operation || !example) {
+        throw new Error("API playground operations are missing.");
+      }
+      const requestPath = playgroundProxyPath(
+        operation,
+        example.values
+      ).replace(/^\/api\/proxy/, PRODUCTION_API_ORIGIN);
+      return `Anonymous read-only playground. One example request:\n\n${codeFence(`GET ${requestPath}`)}`;
+    }
     case "DisplayGeometryCurl": {
       return codeFence(displayGeometryCurl());
     }
