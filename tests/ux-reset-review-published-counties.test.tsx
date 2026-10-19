@@ -155,10 +155,12 @@ describe("Published Review county exploration", () => {
         "review-published-county-preview"
       );
       expect(preview).toHaveAttribute("data-fips", fips);
-      expect(screen.getByTestId("review-investigate")).toHaveAttribute(
+      expect(screen.getByTestId("review-compare")).toHaveAttribute(
         "href",
         expect.stringContaining(`county=${fips}`)
       );
+      expect(screen.queryByTestId("review-investigate")).toBeNull();
+      expect(screen.queryByTestId("review-ask-atlas")).toBeNull();
       await waitFor(() =>
         expect(loadInvestigateCountyRecord).toHaveBeenCalledWith(
           expect.objectContaining({ fips, releaseId })
@@ -176,9 +178,7 @@ describe("Published Review county exploration", () => {
         expect(onCountyChange).toHaveBeenCalledWith(null, "replace")
       );
       expect(loadInvestigateCountyRecord).not.toHaveBeenCalled();
-      expect(
-        screen.queryByTestId("review-investigate")
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId("review-compare")).not.toBeInTheDocument();
     }
   );
 
@@ -222,9 +222,7 @@ describe("Published Review county exploration", () => {
     );
     picture("01003");
     await screen.findByText(/Published county evidence could not be loaded/);
-    expect(
-      screen.queryByText("5 (published count floor)")
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/case-count floor is 5/)).not.toBeInTheDocument();
     cleanup();
     vi.mocked(loadInvestigateCountyRecord).mockResolvedValue(null);
     picture("01003");
@@ -233,9 +231,9 @@ describe("Published Review county exploration", () => {
 
   it("renders captured production floor, null and pathogen no-record semantics", async () => {
     picture("01003");
-    await screen.findByText("5 (published count floor)");
+    await screen.findByText(/case-count floor is 5/);
     expect(
-      screen.getByText("A floor, not an exact case total.")
+      screen.getByText(/A published floor is a minimum/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/does not establish pathogen absence/)
@@ -253,19 +251,19 @@ describe("Published Review county exploration", () => {
 
   it("withholds cached facts when a profile refresh fails", async () => {
     const view = picture("01003");
-    await screen.findByText("5 (published count floor)");
+    await screen.findByText(/case-count floor is 5/);
     vi.mocked(loadInvestigateCountyRecord).mockRejectedValue(new Error("503"));
     await view.client.invalidateQueries({
       queryKey: ["ux-reset-review-published-county"],
     });
     await screen.findByText(/Published county evidence could not be loaded/);
-    expect(screen.queryByText("5 (published count floor)")).toBeNull();
+    expect(screen.queryByText(/case-count floor is 5/)).toBeNull();
     expect(onCountyChange).not.toHaveBeenCalled();
   });
 
   it("withholds cached identities after directory refresh failure without clearing URL", async () => {
     const view = picture("01003");
-    await screen.findByText("5 (published count floor)");
+    await screen.findByText(/case-count floor is 5/);
     vi.mocked(fetchExploreCountyDirectory).mockRejectedValue(new Error("503"));
     await view.client.invalidateQueries({
       queryKey: ["ux-reset-review-county-directory"],

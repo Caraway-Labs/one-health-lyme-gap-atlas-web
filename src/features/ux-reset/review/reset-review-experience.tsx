@@ -832,7 +832,6 @@ function ResetReviewExperienceInner() {
                 onCountyChange={setCounty}
                 onMapFocusChange={setMapFocus}
                 onMapLayerChange={setMapLayer}
-                onViewCountyEvidence={openCountyEvidence}
               />
             ) : null}
             {reviewReady && stateReview.review ? (
