@@ -10,7 +10,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -181,44 +181,19 @@ export function SidebarMenuItem({ className, ...props }: ComponentProps<"li">) {
   );
 }
 
-export function SidebarMenuButton({
-  active,
-  children,
-  className,
-  href,
-  tooltip,
-  tooltipDetail,
-  ...props
-}: ComponentProps<"a"> & {
-  active?: boolean;
-  tooltip?: string;
-  /**
-   * Accessible description shown under the tooltip title.
-   * Issue 657 needs a title plus the exact Data Provenance description.
-   * The shared tooltip primitive stays the only tooltip. A string `tooltip`
-   * remains a single line for every other destination.
-   */
-  tooltipDetail?: string;
-}) {
-  const shared = {
-    "data-active": active || undefined,
-    "data-slot": "sidebar-menu-button",
-    className: cn(className),
-    ...props,
-    "aria-description": props["aria-description"] ?? tooltipDetail,
-  };
-  const link =
-    typeof href === "string" ? (
-      <Link href={href} {...shared}>
-        {children}
-      </Link>
-    ) : (
-      <a {...shared}>{children}</a>
-    );
-  if (!tooltip) return link;
+/**
+ * Title plus one sentence, matching the Data Provenance sidebar tooltip.
+ * A string `tooltip` without `tooltipDetail` stays a single line.
+ */
+function withSidebarTooltip(
+  trigger: ReactElement,
+  tooltip?: string,
+  tooltipDetail?: string
+) {
+  if (!tooltip) return trigger;
   return (
     <Tooltip>
-      <TooltipTrigger render={link} />
+      <TooltipTrigger render={trigger} />
       <TooltipContent
         className={
           tooltipDetail ? "max-w-64 flex-col items-start text-left" : undefined
@@ -238,21 +213,60 @@ export function SidebarMenuButton({
   );
 }
 
+export function SidebarMenuButton({
+  active,
+  children,
+  className,
+  href,
+  tooltip,
+  tooltipDetail,
+  ...props
+}: ComponentProps<"a"> & {
+  active?: boolean;
+  tooltip?: string;
+  /**
+   * Accessible description shown under the tooltip title.
+   * The shared tooltip primitive stays the only tooltip.
+   */
+  tooltipDetail?: string;
+}) {
+  const shared = {
+    "data-active": active || undefined,
+    "data-slot": "sidebar-menu-button",
+    className: cn(className),
+    ...props,
+    "aria-description": props["aria-description"] ?? tooltipDetail,
+  };
+  const link =
+    typeof href === "string" ? (
+      <Link href={href} {...shared}>
+        {children}
+      </Link>
+    ) : (
+      <a {...shared}>{children}</a>
+    );
+  return withSidebarTooltip(link, tooltip, tooltipDetail);
+}
+
 /** Sidebar row that runs an action instead of navigating. */
 export function SidebarMenuAction({
   active,
   children,
   className,
   tooltip,
+  tooltipDetail,
   type = "button",
   ...props
 }: ComponentProps<typeof Button> & {
   active?: boolean;
   tooltip?: string;
+  /** Accessible description shown under the tooltip title. */
+  tooltipDetail?: string;
 }) {
   const button = (
     <Button
       {...props}
+      aria-description={props["aria-description"] ?? tooltipDetail}
       className={cn(
         "h-auto w-full cursor-pointer justify-start px-2 py-2 text-left font-[inherit] text-[0.8rem] whitespace-normal focus-visible:ring-0 active:translate-y-0",
         className
@@ -265,13 +279,7 @@ export function SidebarMenuAction({
       {children}
     </Button>
   );
-  if (!tooltip) return button;
-  return (
-    <Tooltip>
-      <TooltipTrigger render={button} />
-      <TooltipContent side="right">{tooltip}</TooltipContent>
-    </Tooltip>
-  );
+  return withSidebarTooltip(button, tooltip, tooltipDetail);
 }
 
 export function SidebarTrigger({

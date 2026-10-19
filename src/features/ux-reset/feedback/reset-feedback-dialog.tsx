@@ -47,6 +47,7 @@ import {
   type ResetFeedbackCategoryId,
   type ResetFeedbackDrafts,
 } from "@/features/ux-reset/feedback/reset-feedback-model";
+import { RESET_FEEDBACK_ACTION } from "@/features/ux-reset/paths";
 import { submitFeedbackV1FeedbackPost } from "@/generated/atlas";
 import type { FeedbackSubmissionRequest } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
@@ -582,17 +583,20 @@ export function ResetFeedbackTrigger({
   return (
     <SidebarMenuItem>
       <SidebarMenuAction
-        aria-label="Give feedback"
+        aria-label={RESET_FEEDBACK_ACTION.label}
         data-reset-feedback-trigger=""
         onClick={() => {
           onActivate?.();
           controller.openFeedback();
         }}
-        tooltip="Give feedback"
+        tooltip={RESET_FEEDBACK_ACTION.tooltipTitle}
+        tooltipDetail={RESET_FEEDBACK_ACTION.tooltipDetail}
         {...analyticsControlAttributes("feedback_open")}
       >
         <MessageSquarePlus aria-hidden="true" />
-        <span className="sidebar-item-label">Give feedback</span>
+        <span className="sidebar-item-label">
+          {RESET_FEEDBACK_ACTION.label}
+        </span>
       </SidebarMenuAction>
     </SidebarMenuItem>
   );
