@@ -91,10 +91,21 @@ describe("review rationale", () => {
 
   it("uses published values without calling them a score explanation", () => {
     const items = reviewRationaleFor(detail());
-    expect(items[1]?.text).toContain("Ixodes scapularis is established");
-    expect(items[3]?.text).toContain("28.7");
-    expect(items[4]?.text).toContain("8.2%");
-    expect(items[5]?.text).toContain("Code 3");
+    expect({
+      human: items[0]?.text,
+      insurance: items[4]?.text,
+      rural: items[5]?.text,
+      svi: items[3]?.text,
+      tick: items[1]?.text,
+    }).toStrictEqual({
+      human: expect.stringContaining(
+        "case-count floor is 1. The published 2023 minimum rate is 2.1 cases per 100,000. A published floor is a minimum, not an exact count or rate."
+      ),
+      insurance: expect.stringContaining("8.2%"),
+      rural: expect.stringContaining("Code 3"),
+      svi: expect.stringContaining("28.7"),
+      tick: expect.stringContaining("Ixodes scapularis is established"),
+    });
     expect(items[5]?.text).toContain("fewer than 250,000");
   });
 });

@@ -1992,8 +1992,18 @@
 .ux-reset-explorer-map-follow-up {
   width: 100%;
   min-width: 0;
+  scroll-margin-top: 1rem;
   border-color: var(--action-plan-border);
   background: var(--action-plan-surface);
+}
+
+.ux-reset-explorer-map-follow-up:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.ux-reset-explorer-map-follow-up > h2.eyebrow {
+  margin: 0;
 }
 
 .ux-reset-follow-up-questions {
@@ -2528,14 +2538,21 @@
 }
 
 .ux-reset-review-preview-actions {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.ux-reset-review-preview-actions .ux-reset-review-open,
+.ux-reset-review-preview-actions a.ux-reset-review-open,
 .ux-reset-review-preview-actions button {
-  width: 100%;
+  flex: 1 1 11.5rem;
+  width: auto;
+  min-width: min(100%, 11.5rem);
   justify-content: center;
+}
+
+.ux-reset-pro-main a.ux-reset-review-open[data-variant="outline"] {
+  color: var(--foreground);
 }
 
 .ux-reset-review-rationale {
@@ -2549,27 +2566,6 @@
 }
 
 .ux-reset-review-rationale h3 {
-  margin: 0.2rem 0 0.45rem;
-  color: var(--navy);
-  font-family: var(--font-serif);
-  font-size: 1.35rem;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.ux-reset-review-rationale-intro,
-.ux-reset-review-rationale-note {
-  margin: 0 0 0.7rem;
-  color: var(--atlas-muted-text);
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
-
-.ux-reset-review-rationale-note {
-  color: var(--muted-foreground);
-}
-
-.ux-reset-review-rationale h4 {
   margin: 0.85rem 0 0.45rem;
   color: var(--teal-dark);
   font-size: 0.68rem;
@@ -2613,7 +2609,7 @@
   font-weight: 800;
 }
 
-.ux-reset-review-rationale h4 + ol {
+.ux-reset-review-rationale h3 + ol {
   margin-bottom: 0.35rem;
 }
 
@@ -2631,6 +2627,10 @@
   color: var(--atlas-muted-text);
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.ux-reset-review-rationale .ux-reset-evidence-provenance {
+  margin-top: 0.45rem;
 }
 
 .ux-reset-explorer-release,
