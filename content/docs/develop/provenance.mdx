@@ -142,6 +142,8 @@ Names that look paired are still different properties. Open a row for the schema
 
 Resolve `source_id` and `methodology_id` from the observation with the detail routes in [Cite from discovery](#cite-from-discovery). Replace those ids with the ids on your observation. A source resource adds `publisher`, `release_version`, `source_version`, `published_at`, `upstream_updated_at`, and `source_retrieved_at`. On the checked `human` source, `publisher` was present and `published_at`, `atlas_acquired_at`, `upstream_updated_at`, and `source_retrieved_at` were null. Those nulls stay null. The observation field `atlas_acquired_at` is separate. On the checked case-floor rows it was present while the source field was null.
 
+<section aria-labelledby="deprecated-source-timestamps">
+
 ## Deprecated source timestamps
 
 The [Source](/docs/api-reference/schemas#schema-source) schema marks `published_at` and `atlas_acquired_at` deprecated. Those two fields belong to the source resource. An [Observation](/docs/api-reference/schemas#schema-observation) keeps a separate set of timestamps, and the contract does not mark that set deprecated.
@@ -163,6 +165,8 @@ On 18 October 2026, all six sources from `GET /v1/sources` had `published_at`, `
 A methodology resource has `methodology_id`, `measure_id`, `version`, `description`, `limitations`, `semantic_version`, and `release_version`. Its `version` is the methodology resource version. The observation's `methodology_version` is the transformation version. Keep both when both are present.
 
 Unknown ids return HTTP 404 `RESOURCE_NOT_FOUND`. Supported detail responses include `ETag`. A matching `If-None-Match` returns HTTP 304 and an empty body.
+
+</section>
 
 ## Freshness
 

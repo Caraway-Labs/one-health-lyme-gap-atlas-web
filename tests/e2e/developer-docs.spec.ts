@@ -608,18 +608,20 @@ test("shows the pending geography badge, display geometry, and deprecated source
   ).toBeVisible();
 
   await page.goto("/docs/develop/provenance");
+  const checkedObservationTimestamp = "2026-09-07T17:21:14.768948-07:00";
+  const deprecatedSection = page.getByRole("region", {
+    name: "Deprecated source timestamps",
+  });
   await expect(
-    page.getByRole("heading", {
+    deprecatedSection.getByRole("heading", {
       name: "Deprecated source timestamps",
       exact: true,
     })
   ).toBeVisible();
   await expect(
-    page.getByText("2026-09-07T17:21:14.768948-07:00")
+    deprecatedSection.getByText(checkedObservationTimestamp)
   ).toBeVisible();
-  await page
-    .getByRole("heading", { name: "Deprecated source timestamps", exact: true })
-    .scrollIntoViewIfNeeded();
+  await deprecatedSection.scrollIntoViewIfNeeded();
   await expectNoBlockingViolations(page, "provenance timestamps");
   await saveDocsScreenshot(page, testInfo, "docs-provenance-timestamps.png");
 });
