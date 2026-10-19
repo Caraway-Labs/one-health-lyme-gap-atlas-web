@@ -3,6 +3,8 @@ title: REST API
 description: Call the anonymous Atlas HTTP contract, page collections, and handle the declared errors, cache headers, and version fields.
 ---
 
+import { HttpClientPagination } from "@/features/docs/http-client-tabs";
+
 Public Atlas reads are GET requests to `https://api.onehealthatlas.org`. The contract path prefix is `/v1`. No API key is used. The machine-readable parameters and schemas are in the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and the generated [API reference](/docs/api-reference).
 
 ## Collections and resources
@@ -28,6 +30,15 @@ Collection `page_size` defaults to 100. The minimum is 1 and the maximum is 500.
 `meta.next_page_token` is an opaque string bound to the query and the release. Send it back as `page_token` and keep the other query parameters unchanged. `null` means the collection is exhausted. Tokens can expire on restart. A page token is not a citation and not a release id.
 
 Checked on 12 October 2026, `GET /v1/indicators?page_size=2` returned two indicators and a token. Repeating `page_size=2` with that `page_token` returned the next two indicators. Stop when `next_page_token` is null.
+
+Checked on 18 October 2026, `GET /v1/observations` with `measure_id` `nclimgrid_tavg_county_day`, `geography_type` `county`, `geography_id` `36061`, `year` 2025, and `page_size` 2 returned two rows, for 2025-01-01 and 2025-01-02, and a `next_page_token`. Repeating those parameters with that token as `page_token` returned 2025-01-03 and 2025-01-04 for the same measure, county, and year. Sending `page_token` alone returned HTTP 400 `INVALID_REQUEST` and detail `One or more request values are invalid.` because `measure_id`, `geography_type`, and `geography_id` were missing. The same token with those three filters and no year returned HTTP 400 `INVALID_REQUEST` and detail `Supply a year or both start_date and end_date.`
+
+The client tabs below use the same persisted choice as the quickstart. Copy `meta.next_page_token` into `page_token` and send the original filters again. The token is opaque. Do not invent one.
+
+<HttpClientPagination
+  path="/v1/observations"
+  query="measure_id=nclimgrid_tavg_county_day&geography_type=county&geography_id=36061&year=2025&page_size=2"
+/>
 
 ## Rate limits
 
