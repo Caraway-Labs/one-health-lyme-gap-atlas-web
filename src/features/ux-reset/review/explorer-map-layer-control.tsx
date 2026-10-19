@@ -45,7 +45,7 @@ export function ExplorerMapLayerControl({
         <SelectTrigger
           aria-describedby={noteId}
           aria-label="Map layer"
-          className="h-11 w-full"
+          className="max-w-full min-w-0"
           data-testid="explorer-map-layer"
           id="explorer-map-layer"
         >
@@ -71,24 +71,36 @@ export function ExplorerMapLayerControl({
         {gates[selected.id]?.reason ??
           "The county list stays a review ranking when one exists. Changing the layer does not rank counties by this measure."}
       </p>
-      <details className="ux-reset-layer-availability">
-        <summary>Layer availability</summary>
-        <p>
-          The county list stays a review ranking when one exists. Changing the
-          layer does not rank counties by this measure.
-        </p>
-        <ul>
-          {EXPLORER_MAP_LAYERS.map((layer) => (
-            <li key={layer.id}>
-              <strong>{layer.label}.</strong>{" "}
-              {gates[layer.id]?.selectable
-                ? "Available from the published collection for this release. Changing the layer does not rank counties by this measure."
-                : (gates[layer.id]?.reason ??
-                  "This layer is not available for the current release.")}
-            </li>
-          ))}
-        </ul>
-      </details>
     </div>
+  );
+}
+
+export function ExplorerMapLayerAvailability({
+  gates,
+}: {
+  gates: Record<ExplorerMapLayerId, ExplorerLayerGate>;
+}) {
+  return (
+    <details
+      className="ux-reset-layer-availability"
+      data-testid="explorer-layer-availability"
+    >
+      <summary>Layer availability</summary>
+      <p>
+        The county list stays a review ranking when one exists. Changing the
+        layer does not rank counties by this measure.
+      </p>
+      <ul>
+        {EXPLORER_MAP_LAYERS.map((layer) => (
+          <li key={layer.id}>
+            <strong>{layer.label}.</strong>{" "}
+            {gates[layer.id]?.selectable
+              ? "Available from the published collection for this release. Changing the layer does not rank counties by this measure."
+              : (gates[layer.id]?.reason ??
+                "This layer is not available for the current release.")}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
