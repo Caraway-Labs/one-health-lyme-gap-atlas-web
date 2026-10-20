@@ -58,7 +58,7 @@ describe("PDF export", () => {
     expect(Object.fromEntries(request.searchParams)).toMatchObject({
       dataset_version: "alpha-2026-08-06",
       ecological_share: "65",
-      smooth_k: "10",
+      smooth_k: "50",
       missing_human_weakness: "75",
     });
     expect(click).toHaveBeenCalledOnce();

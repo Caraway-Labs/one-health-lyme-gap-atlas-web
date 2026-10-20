@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import autauga from "../fixtures/review-al-01001.json" with { type: "json" };
-import baldwin from "../fixtures/review-al-01003.json" with { type: "json" };
-import barbour from "../fixtures/review-al-01005.json" with { type: "json" };
+import autauga from "../fixtures/review-al-v11-01001.json" with { type: "json" };
+import baldwin from "../fixtures/review-al-v11-01003.json" with { type: "json" };
+import barbour from "../fixtures/review-al-v11-01005.json" with { type: "json" };
 import identities from "../fixtures/review-al-published-identities.json" with { type: "json" };
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";

@@ -145,8 +145,8 @@ describe("Collapsible scoring accordion disclosure", () => {
     const summary = within(container.querySelector("summary") as HTMLElement);
     expect(summary.getByText("Tick/pathogen share")).toBeTruthy();
     expect(summary.getByText("65%", { exact: true })).toBeTruthy();
-    expect(summary.getByText("Published-record threshold")).toBeTruthy();
-    expect(summary.getByText("10 per 100,000")).toBeTruthy();
+    expect(summary.getByText("Smooth incidence attenuation (k)")).toBeTruthy();
+    expect(summary.getByText("50 per 100,000")).toBeTruthy();
     expect(summary.getByText("Missing county-record value")).toBeTruthy();
   });
 

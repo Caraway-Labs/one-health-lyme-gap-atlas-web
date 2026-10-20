@@ -267,7 +267,7 @@ describe("rendered documentation markdown", () => {
     expect(full).toContain("#### geography_id");
     expect(
       constraintRow(constraintTables(observations), "Default", "100")
-    ).toStrictEqual(["Default", "100"]);
+    ).toBeUndefined();
     expect(full).toContain("Missing is not zero.");
     expect(full).toContain("import httpx");
     expect(full).not.toContain("<OpenAPIPage");

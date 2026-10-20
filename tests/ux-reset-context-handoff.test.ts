@@ -137,7 +137,7 @@ describe("UX Reset cross-page context contract", () => {
     expect(params.get("scope")).toBe("CO");
     expect(params.get("county")).toBe("08021");
     expect(params.has("eco")).toBeFalsy();
-    expect(dropped).toContain("breakpoint");
+    expect(dropped).toContain("smooth");
     expect(dropped).toContain("missing");
   });
 

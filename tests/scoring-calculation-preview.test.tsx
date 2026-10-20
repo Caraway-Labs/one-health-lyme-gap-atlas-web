@@ -18,8 +18,8 @@ describe("Collapsed scoring assumptions preview", () => {
 
     expect(screen.getByText("Tick/pathogen share")).toBeTruthy();
     expect(screen.getByText("65%")).toBeTruthy();
-    expect(screen.getByText("Published-record threshold")).toBeTruthy();
-    expect(screen.getByText("10 per 100,000")).toBeTruthy();
+    expect(screen.getByText("Smooth incidence attenuation (k)")).toBeTruthy();
+    expect(screen.getByText("50 per 100,000")).toBeTruthy();
   });
 
   it("renders the current missing county-record value", () => {

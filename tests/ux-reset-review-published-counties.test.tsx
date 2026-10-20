@@ -16,9 +16,9 @@ import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operat
 import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-published-county-preview";
 import { CountyV1CountiesFipsGetResponse } from "@/generated/zod/atlas";
 
-import autauga from "./fixtures/review-al-01001.json";
-import baldwin from "./fixtures/review-al-01003.json";
-import barbour from "./fixtures/review-al-01005.json";
+import autauga from "./fixtures/review-al-v11-01001.json";
+import baldwin from "./fixtures/review-al-v11-01003.json";
+import barbour from "./fixtures/review-al-v11-01005.json";
 import identities from "./fixtures/review-al-published-identities.json";
 import {
   buildStateReview,
