@@ -11,30 +11,30 @@ export const Measure = zod.object({
   "measure_id": zod.string(),
   "indicator_id": zod.string(),
   "label": zod.string(),
-  "definition": zod.union([zod.string(),zod.null()]),
+  "definition": zod.string().nullable(),
   "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed current-release relationship version.'),
-  "measure_type": zod.union([zod.string(),zod.null()]).optional(),
-  "unit": zod.union([zod.string(),zod.null()]).optional(),
-  "denominator": zod.union([zod.string(),zod.null()]).optional().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.union([zod.array(zod.enum(['county', 'state'])),zod.null()]).optional(),
-  "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
-  "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "methodology_id": zod.union([zod.string(),zod.null()]).optional().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.union([zod.string(),zod.null()]).optional(),
-  "source_ids": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
+  "measure_type": zod.string().nullish(),
+  "unit": zod.string().nullish(),
+  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
+  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
+  "temporal_grains": zod.array(zod.string()).nullish(),
+  "geography_semantics": zod.string().nullish(),
+  "temporal_semantics": zod.string().nullish(),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
+  "allowed_strata": zod.array(zod.string()).nullish(),
+  "missingness_semantics": zod.string().nullish(),
+  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
+  "methodology": zod.string().nullish(),
+  "source_ids": zod.array(zod.string()).nullish(),
   "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "standards_mappings": zod.union([zod.array(zod.object({
+  "standards_mappings": zod.array(zod.object({
   "standard": zod.string(),
   "version": zod.string(),
   "target": zod.string(),
   "relationship": zod.string(),
-  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
-})),zod.null()]).optional()
+  "mapping_reference": zod.string().nullish()
+})).nullish()
 })
 
 export type Measure = zod.input<typeof Measure>;

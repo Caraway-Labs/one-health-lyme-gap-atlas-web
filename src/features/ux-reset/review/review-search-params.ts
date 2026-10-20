@@ -14,7 +14,7 @@ import {
 
 type ScenarioRange = { max: number; min: number; step: number };
 
-const SCENARIO_URL_KEYS = ["eco", "breakpoint", "missing"] as const;
+const SCENARIO_URL_KEYS = ["eco", "smooth", "missing"] as const;
 
 type ScenarioUrlKey = (typeof SCENARIO_URL_KEYS)[number];
 
@@ -46,9 +46,9 @@ function scenarioInteger(defaultValue: number, range: ScenarioRange) {
 }
 
 const scenarioParsers = {
-  breakpoint: scenarioInteger(
-    SCENARIO_SCORE_DEFAULTS.low_incidence_breakpoint,
-    SCENARIO_CONTROL_RANGES.low_incidence_breakpoint
+  smooth: scenarioInteger(
+    SCENARIO_SCORE_DEFAULTS.smooth_k,
+    SCENARIO_CONTROL_RANGES.smooth_k
   ),
   eco: scenarioInteger(
     SCENARIO_SCORE_DEFAULTS.ecological_share,
@@ -66,7 +66,10 @@ const scenarioParsers = {
  */
 export function scenarioSearchParamPatch(
   searchParams: Pick<URLSearchParams, "get">
-): Partial<Record<ScenarioUrlKey, number>> | null {
+): (Partial<Record<ScenarioUrlKey, number>> & { breakpoint?: null }) | null {
+  if (searchParams.get("breakpoint") !== null) {
+    return { breakpoint: null, eco: 65, smooth: 50, missing: 75 };
+  }
   const patch: Partial<Record<ScenarioUrlKey, number>> = {};
   let changed = false;
   for (const key of SCENARIO_URL_KEYS) {
@@ -90,6 +93,10 @@ export function scenarioSearchParamPatch(
 }
 
 const reviewLocalParsers = {
+  breakpoint: createParser({
+    parse: (value) => value,
+    serialize: (value) => value,
+  }),
   focus: createParser({
     parse: (value) => parseExplorerMapFocus(value),
     serialize: (value) => value,

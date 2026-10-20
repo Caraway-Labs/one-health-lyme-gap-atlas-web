@@ -78,7 +78,7 @@ describe(ExplorerWhatIfScenario, () => {
     const text = panel.textContent ?? "";
     expect({
       missing: text.includes("75"),
-      rate: text.includes("10 per 100,000"),
+      rate: text.includes("50 per 100,000"),
       scoring: text.includes("Scoring calculation"),
       twenty: text.includes("20 per 100,000"),
     }).toStrictEqual({
@@ -104,7 +104,7 @@ describe(ExplorerWhatIfScenario, () => {
       sliders.map((slider) => slider.getAttribute("aria-label"))
     ).toStrictEqual([
       "Weight given to tick and pathogen data",
-      "Reported Lyme disease rate reference point",
+      "Smooth incidence attenuation (k)",
       "Assumption for missing county case data",
     ]);
     fireEvent.change(sliders[2], { target: { value: "40" } });
@@ -209,11 +209,13 @@ describe(ExplorerWhatIfScenario, () => {
     });
   });
 
-  it("shows 0.0 points when every county is unchanged and clears that on reset", () => {
+  it("keeps an unsupported legacy H zero limited and clears that on reset", () => {
     const zeroHuman = county({
       county: "Baldwin County",
       fips: "01003",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,
@@ -253,10 +255,10 @@ describe(ExplorerWhatIfScenario, () => {
         .textContent,
     }).toStrictEqual({
       baseline: false,
-      priority: true,
+      priority: false,
       share: "85",
       summary:
-        "Published Atlas score to the score with your changes.0.0 → 0.0 · 0.0 points",
+        "Published Atlas score 0.0 · Score with your changes unavailable",
     });
 
     fireEvent.click(screen.getByTestId("explorer-scenario-reset"));
@@ -670,7 +672,7 @@ describe(ExplorerWhatIfScenario, () => {
   it("keeps a limited result free of an invented delta and resets to the published defaults", () => {
     const onChange = vi.fn<(next: ScoreSettings) => void>();
     renderScenario(
-      { ...SCENARIO_SCORE_DEFAULTS, low_incidence_breakpoint: 20 },
+      { ...SCENARIO_SCORE_DEFAULTS, smooth_k: 20 },
       {
         assumptionsChanged: true,
         countyName: "Adams County",
@@ -719,7 +721,7 @@ describe(ExplorerWhatIfScenario, () => {
       notes: screen.getAllByRole("button", { name: /Technical note for/ })
         .length,
       open: (methods as HTMLDetailsElement).open,
-      rateDefault: EXPLORER_SCENARIO_RATE_TOOLTIP.includes("10 per 100,000"),
+      rateDefault: EXPLORER_SCENARIO_RATE_TOOLTIP.includes("k=50"),
       rateTwenty: EXPLORER_SCENARIO_RATE_TOOLTIP.includes("20 per 100,000"),
       recalculation: screen.getByTestId("explorer-scenario-recalculation")
         .textContent,
@@ -747,7 +749,12 @@ function county(
     color: "#55a8a3",
     county: "Sample County",
     evidence_completeness: 50,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "no_county_linked_record",
+    svi_percentile: 0.838,
+    uninsured_percentile: 0.848,
+    rucc_2023: 9,
+    incidence_floor_2023: null,
     in_contiguous_tick_scope: true,
     priority: LOWER,
     state: "AL",
@@ -778,7 +785,12 @@ describe(resolveExplorerWhatIfImpact, () => {
   const published = county({
     county: "Autauga County",
     fips: "01001",
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
+    incidence_floor_2023: 0,
+    svi_percentile: 0,
+    uninsured_percentile: 0,
+    rucc_2023: 1,
     priority: REVIEW,
     score: {
       access_signal: 0,
@@ -961,7 +973,9 @@ describe(resolveExplorerWhatIfImpact, () => {
     const zeroHuman = county({
       county: "Baldwin County",
       fips: "01003",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,
@@ -989,12 +1003,11 @@ describe(resolveExplorerWhatIfImpact, () => {
       view: presentExplorerScenarioImpact(unchanged),
     }).toMatchObject({
       assumptionsChanged: true,
-      scenario: null,
+      scenario: { kind: "limited" },
       view: {
-        collapsed: "0.0 → 0.0 · 0.0 points",
-        kind: "definite",
-        priorityText: "Follow-up category unchanged",
-        resultKind: "unchanged",
+        collapsed:
+          "Published Atlas score 0.0 · Score with your changes unavailable",
+        kind: "limited",
       },
     });
 
@@ -1007,10 +1020,9 @@ describe(resolveExplorerWhatIfImpact, () => {
       settings: { ...SCENARIO_SCORE_DEFAULTS, ecological_share: 85 },
     });
     expect(presentExplorerScenarioImpact(shifted)).toMatchObject({
-      collapsed: "0.0 → 0.0 · 0.0 points",
-      kind: "definite",
-      priorityText: "Follow-up category unchanged",
-      resultKind: "unchanged",
+      collapsed:
+        "Published Atlas score 0.0 · Score with your changes unavailable",
+      kind: "limited",
     });
 
     const limited = resolveExplorerWhatIfImpact({
@@ -1019,7 +1031,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       countyFips: "01003",
       scopeCode: "AL",
       scoresStatus: "ready",
-      settings: { ...SCENARIO_SCORE_DEFAULTS, low_incidence_breakpoint: 20 },
+      settings: { ...SCENARIO_SCORE_DEFAULTS, smooth_k: 20 },
     });
     const limitedView = presentExplorerScenarioImpact(limited);
     expect({
@@ -1133,7 +1145,9 @@ describe(resolveExplorerWhatIfImpact, () => {
     const district = county({
       county: "District of Columbia",
       fips: "11001",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       priority: REVIEW,
       score: published.score,
       state: "DC",
@@ -1150,7 +1164,9 @@ describe(resolveExplorerWhatIfImpact, () => {
     const zeroHuman = county({
       county: "Baldwin County",
       fips: "01003",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,
@@ -1169,7 +1185,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       countyFips: "01003",
       scopeCode: "ALL",
       scoresStatus: "ready",
-      settings: { ...SCENARIO_SCORE_DEFAULTS, low_incidence_breakpoint: 20 },
+      settings: { ...SCENARIO_SCORE_DEFAULTS, smooth_k: 20 },
     });
     const limitedView = presentExplorerScenarioImpact(limited);
     const limitedText = JSON.stringify(limitedView);
@@ -1180,7 +1196,8 @@ describe(resolveExplorerWhatIfImpact, () => {
       rank: limitedText.includes("rank"),
     }).toMatchObject({
       dc: {
-        collapsed: "65.0 → 40.0 · \u221225.0 points",
+        collapsed:
+          "Published Atlas score 65.0 · Score with your changes unavailable",
         countyName: "District of Columbia",
       },
       kind: "limited",
@@ -1195,7 +1212,12 @@ describe(applyGapScoreScenarioColors, () => {
     const governed = county({
       color: "#55a8a3",
       fips: "08021",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "no_county_linked_record",
+      svi_percentile: 0.838,
+      uninsured_percentile: 0.848,
+      rucc_2023: 9,
+      incidence_floor_2023: null,
       score: {
         access_signal: 84.8,
         community: 87.3,
@@ -1213,7 +1235,9 @@ describe(applyGapScoreScenarioColors, () => {
       color: "#a9d2db",
       county: "Adams County",
       fips: "08001",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,

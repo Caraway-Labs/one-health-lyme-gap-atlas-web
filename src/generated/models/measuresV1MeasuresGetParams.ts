@@ -7,15 +7,28 @@
  */
 
 export type MeasuresV1MeasuresGetParams = {
+/**
+ * @nullable
+ */
 measure_id?: string | null;
+/**
+ * @nullable
+ */
 indicator_id?: string | null;
+/**
+ * @nullable
+ */
 geography_type?: string | null;
 /**
  * Items per page; defaults to 100, configured maximum at most 500.
+ * @minimum 1
+ * @maximum 500
+ * @nullable
  */
 page_size?: number | null;
 /**
  * Opaque next_page_token; retain query filters and release.
+ * @nullable
  */
 page_token?: string | null;
 };

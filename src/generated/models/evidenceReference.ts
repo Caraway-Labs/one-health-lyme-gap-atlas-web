@@ -9,15 +9,31 @@
 export interface EvidenceReference {
   resource_type: string;
   resource_id: string;
-  /** Public source resource key; distinct from lineage_source_id and dataset_id. */
+  /**
+     * Public source resource key; distinct from lineage_source_id and dataset_id.
+     * @nullable
+     */
   source_id?: string | null;
-  /** Structured observation provenance identity; not a literature citation. */
+  /**
+     * Structured observation provenance identity; not a literature citation.
+     * @nullable
+     */
   provenance_ref?: string | null;
-  /** Governed semantic contract version, separate from HTTP V1 and application version. */
+  /**
+     * Governed semantic contract version, separate from HTTP V1 and application version.
+     * @nullable
+     */
   semantic_version?: string | null;
-  /** Transformation version, distinct from methodology resource version. */
+  /**
+     * Transformation version, distinct from methodology resource version.
+     * @nullable
+     */
   methodology_version?: string | null;
-  /** Governed release identity for reproducibility. */
+  /**
+     * Governed release identity for reproducibility.
+     * @nullable
+     */
   release_id?: string | null;
+  /** @nullable */
   uri?: string | null;
 }

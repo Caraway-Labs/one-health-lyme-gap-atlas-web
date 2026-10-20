@@ -14,9 +14,9 @@ export const stateReportPdfV1StatesStateReportPdfGetParamsEcologicalShareMin = 4
 export const stateReportPdfV1StatesStateReportPdfGetParamsEcologicalShareMax = 85;
 export const stateReportPdfV1StatesStateReportPdfGetParamsEcologicalShareMultipleOf = 5;
 
-export const stateReportPdfV1StatesStateReportPdfGetParamsLowIncidenceBreakpointDefault = 10;
-export const stateReportPdfV1StatesStateReportPdfGetParamsLowIncidenceBreakpointMin = 5;
-export const stateReportPdfV1StatesStateReportPdfGetParamsLowIncidenceBreakpointMax = 25;
+export const stateReportPdfV1StatesStateReportPdfGetParamsSmoothKDefault = 50;
+export const stateReportPdfV1StatesStateReportPdfGetParamsSmoothKMin = 5;
+export const stateReportPdfV1StatesStateReportPdfGetParamsSmoothKMax = 200;
 
 export const stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessDefault = 75;
 export const stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMin = 40;
@@ -25,11 +25,12 @@ export const stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMu
 
 
 export const StateReportPdfV1StatesStateReportPdfGetParams = zod.object({
-  "dataset_version": zod.union([zod.string(),zod.null()]).optional(),
+  "dataset_version": zod.string().nullish(),
   "template": zod.string().regex(stateReportPdfV1StatesStateReportPdfGetParamsTemplateRegExp).default(stateReportPdfV1StatesStateReportPdfGetParamsTemplateDefault),
   "ecological_share": zod.int().min(stateReportPdfV1StatesStateReportPdfGetParamsEcologicalShareMin).max(stateReportPdfV1StatesStateReportPdfGetParamsEcologicalShareMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetParamsEcologicalShareMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetParamsEcologicalShareDefault),
-  "low_incidence_breakpoint": zod.int().min(stateReportPdfV1StatesStateReportPdfGetParamsLowIncidenceBreakpointMin).max(stateReportPdfV1StatesStateReportPdfGetParamsLowIncidenceBreakpointMax).default(stateReportPdfV1StatesStateReportPdfGetParamsLowIncidenceBreakpointDefault),
-  "missing_human_weakness": zod.int().min(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMin).max(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessDefault)
+  "smooth_k": zod.int().min(stateReportPdfV1StatesStateReportPdfGetParamsSmoothKMin).max(stateReportPdfV1StatesStateReportPdfGetParamsSmoothKMax).default(stateReportPdfV1StatesStateReportPdfGetParamsSmoothKDefault),
+  "missing_human_weakness": zod.int().min(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMin).max(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetParamsMissingHumanWeaknessDefault),
+  "low_incidence_breakpoint": zod.int().nullish()
 })
 
 export type StateReportPdfV1StatesStateReportPdfGetParams = zod.input<typeof StateReportPdfV1StatesStateReportPdfGetParams>;

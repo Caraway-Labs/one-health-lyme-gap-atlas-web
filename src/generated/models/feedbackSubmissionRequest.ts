@@ -17,6 +17,10 @@ export interface FeedbackSubmissionRequest {
      * @maxLength 2000
      */
   message: string;
+  /**
+     * @maxLength 254
+     * @nullable
+     */
   contact_email?: string | null;
   route_id: FeedbackSubmissionRequestRouteId;
   context?: FeedbackContext | null;

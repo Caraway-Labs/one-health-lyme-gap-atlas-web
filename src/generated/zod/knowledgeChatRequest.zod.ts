@@ -9,9 +9,9 @@ import * as zod from 'zod';
 
 export const knowledgeChatRequestMessageMax = 1000;
 
-export const knowledgeChatRequestConversationIdOneMax = 100;
+export const knowledgeChatRequestConversationIdMax = 100;
 
-export const knowledgeChatRequestConversationTokenOneMax = 200;
+export const knowledgeChatRequestConversationTokenMax = 200;
 
 export const knowledgeChatRequestHistoryItemContentMax = 5000;
 
@@ -20,8 +20,8 @@ export const knowledgeChatRequestHistoryMax = 12;
 
 export const KnowledgeChatRequest = zod.object({
   "message": zod.string().min(1).max(knowledgeChatRequestMessageMax),
-  "conversation_id": zod.union([zod.string().max(knowledgeChatRequestConversationIdOneMax),zod.null()]).optional(),
-  "conversation_token": zod.union([zod.string().max(knowledgeChatRequestConversationTokenOneMax),zod.null()]).optional(),
+  "conversation_id": zod.string().max(knowledgeChatRequestConversationIdMax).nullish(),
+  "conversation_token": zod.string().max(knowledgeChatRequestConversationTokenMax).nullish(),
   "history": zod.array(zod.object({
   "role": zod.enum(['user', 'assistant']),
   "content": zod.string().min(1).max(knowledgeChatRequestHistoryItemContentMax)

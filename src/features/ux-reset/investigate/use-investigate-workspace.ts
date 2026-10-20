@@ -38,7 +38,6 @@ import { publishedCountyRecordFromDetail } from "@/features/ux-reset/investigate
 import type { PublishedCountyRecord } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import { evidenceFromCounty } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { SuggestedFollowUpEvidence } from "@/features/ux-reset/review/suggested-follow-up-content";
-import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
 import type { AtlasMetadata, CountyDetail, Measure } from "@/generated/models";
 import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
@@ -303,10 +302,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       }
       return {
         detail,
-        followUpEvidence: evidenceFromCounty(
-          detail,
-          EXPLORER_SCORE_SETTINGS.low_incidence_breakpoint
-        ),
+        followUpEvidence: evidenceFromCounty(detail, 10),
         record: publishedCountyRecordFromDetail(detail),
       };
     },

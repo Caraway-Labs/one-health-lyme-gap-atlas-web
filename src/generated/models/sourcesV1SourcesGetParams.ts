@@ -9,10 +9,14 @@
 export type SourcesV1SourcesGetParams = {
 /**
  * Items per page; defaults to 100, configured maximum at most 500.
+ * @minimum 1
+ * @maximum 500
+ * @nullable
  */
 page_size?: number | null;
 /**
  * Opaque next_page_token; retain query filters and release.
+ * @nullable
  */
 page_token?: string | null;
 };

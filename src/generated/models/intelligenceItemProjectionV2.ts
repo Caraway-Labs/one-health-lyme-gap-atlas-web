@@ -25,11 +25,39 @@ export interface IntelligenceItemProjectionV2 {
   source_id: string;
   /** @minimum 1 */
   registry_version: number;
+  /**
+     * @maxLength 4096
+     * @nullable
+     */
   canonical_url: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     * @nullable
+     * @pattern ^[^<>\x00-\x1f]*$
+     */
   title: string | null;
+  /**
+     * @nullable
+     * @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$
+     */
   published_at: string | null;
+  /**
+     * @nullable
+     * @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$
+     */
   updated_at: string | null;
+  /**
+     * @nullable
+     * @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$
+     */
   event_at: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     * @nullable
+     * @pattern ^[^<>\x00-\x08\x0b\x0c\x0e-\x1f]*$
+     */
   excerpt: string | null;
   /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$ */
   fetched_at: string;

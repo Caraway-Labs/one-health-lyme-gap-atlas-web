@@ -8,9 +8,22 @@
 import type { UserProfileWriteRole } from './userProfileWriteRole';
 
 export interface UserProfileWrite {
+  /** @nullable */
   role?: UserProfileWriteRole;
+  /**
+     * @maxLength 2
+     * @nullable
+     */
   state_code?: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
   organization?: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
   job_title?: string | null;
   /** Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version. */
   complete_starting_view?: true;

@@ -7,19 +7,19 @@
  */
 import * as zod from 'zod';
 
-export const userProfileStateCodeOneMax = 2;
+export const userProfileStateCodeMax = 2;
 
-export const userProfileOrganizationOneMax = 120;
+export const userProfileOrganizationMax = 120;
 
-export const userProfileJobTitleOneMax = 120;
+export const userProfileJobTitleMax = 120;
 
 
 export const UserProfile = zod.object({
-  "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
-  "state_code": zod.union([zod.string().max(userProfileStateCodeOneMax),zod.null()]).optional(),
-  "organization": zod.union([zod.string().max(userProfileOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(userProfileJobTitleOneMax),zod.null()]).optional(),
-  "starting_view_version": zod.union([zod.literal(1),zod.null()]).optional().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
+  "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
+  "state_code": zod.string().max(userProfileStateCodeMax).nullish(),
+  "organization": zod.string().max(userProfileOrganizationMax).nullish(),
+  "job_title": zod.string().max(userProfileJobTitleMax).nullish(),
+  "starting_view_version": zod.union([zod.literal(1),zod.literal(null)]).nullish().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 })
 
 export type UserProfile = zod.input<typeof UserProfile>;

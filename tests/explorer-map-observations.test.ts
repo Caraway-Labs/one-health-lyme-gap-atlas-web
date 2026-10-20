@@ -276,6 +276,7 @@ describe("Explorer map observations", () => {
     const suppressed = {
       ...dated({ fips: "08005", state: ValueState.SUPPRESSED, value: null }),
       limitations: ["Privacy suppression applies to this county."],
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       methodology_version: "semantic_county_assembly_v1",
     };
     const ready = acceptExplorerMapObservations({

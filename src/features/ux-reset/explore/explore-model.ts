@@ -9,8 +9,8 @@ import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observa
 import type { Measure, Observation } from "@/generated/models";
 import { ValueState } from "@/generated/models";
 import {
-  observationsV1ObservationsGetQueryYearOneMax,
-  observationsV1ObservationsGetQueryYearOneMin,
+  observationsV1ObservationsGetQueryYearMax,
+  observationsV1ObservationsGetQueryYearMin,
 } from "@/generated/zod/atlas";
 import { isCountyFips } from "@/lib/county-geography";
 
@@ -180,8 +180,8 @@ export function resolveExploreTimeBound(
   if (GOVERNED_YEAR_SEMANTICS.test(semantics)) {
     const year = Number(semantics);
     if (
-      year < observationsV1ObservationsGetQueryYearOneMin ||
-      year > observationsV1ObservationsGetQueryYearOneMax
+      year < observationsV1ObservationsGetQueryYearMin ||
+      year > observationsV1ObservationsGetQueryYearMax
     ) {
       return null;
     }

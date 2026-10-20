@@ -11,5 +11,6 @@ export interface StandardsMapping {
   version: string;
   target: string;
   relationship: string;
+  /** @nullable */
   mapping_reference?: string | null;
 }

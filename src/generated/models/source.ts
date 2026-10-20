@@ -10,6 +10,7 @@ export interface Source {
   /** Public source resource key; distinct from lineage_source_id and dataset_id. */
   source_id: string;
   label: string;
+  /** @nullable */
   publisher: string | null;
   lineage_source_id: string;
   dataset_id: string;
@@ -17,19 +18,32 @@ export interface Source {
   semantic_version: string;
   /** Governed current-release relationship version. */
   release_version: string;
+  /** @nullable */
   source_url?: string | null;
+  /** @nullable */
   source_vintage?: string | null;
+  /** @nullable */
   source_version?: string | null;
-  /** @deprecated */
+  /**
+     * @deprecated
+     * @nullable
+     */
   published_at?: string | null;
   /**
      * Atlas acquisition time when governed; distinct from source publication and processing.
      * @deprecated
+     * @nullable
      */
   atlas_acquired_at?: string | null;
-  /** Governed publisher update time; null when unavailable. */
+  /**
+     * Governed publisher update time; null when unavailable.
+     * @nullable
+     */
   upstream_updated_at?: string | null;
-  /** Governed source retrieval time; null when unavailable. */
+  /**
+     * Governed source retrieval time; null when unavailable.
+     * @nullable
+     */
   source_retrieved_at?: string | null;
   /** Governed interpretation limitations; preserve alongside values and versions. */
   limitations?: string[];

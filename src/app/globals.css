@@ -5255,3 +5255,9 @@ select:focus-visible {
     font-size: 26px;
   }
 }
+
+/* Deprecated API parameter labels retain readable contrast in generated docs. */
+.prose .text-fd-primary.line-through {
+  color: var(--color-fd-foreground);
+  opacity: 1;
+}

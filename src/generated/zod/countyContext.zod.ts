@@ -12,7 +12,7 @@ export const CountyContext = zod.object({
   "vintage_year": zod.int().describe('Source product\/classification vintage, not an annual date.'),
   "source_field": zod.string(),
   "value_type": zod.enum(['integer', 'number']),
-  "category_label": zod.union([zod.string(),zod.null()]).describe('Authoritative category label; null for quantities.'),
+  "category_label": zod.string().nullable().describe('Authoritative category label; null for quantities.'),
   "definition": zod.string(),
   "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),
   "metadata_methodology_version": zod.string()

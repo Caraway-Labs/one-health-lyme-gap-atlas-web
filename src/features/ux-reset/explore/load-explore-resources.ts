@@ -35,9 +35,9 @@ import {
   MeasuresV1MeasuresGetResponse,
   ObservationsV1ObservationsGetResponse,
   ScoresV1AtlasScoresGetResponse,
-  measuresV1MeasuresGetQueryPageSizeOneMax,
+  measuresV1MeasuresGetQueryPageSizeMax,
   observationsV1ObservationsGetQueryGeographyIdMax,
-  observationsV1ObservationsGetQueryPageSizeOneMax,
+  observationsV1ObservationsGetQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -142,7 +142,7 @@ export function exploreMeasuresPageParams(input: {
 }): MeasuresV1MeasuresGetParams {
   const params: MeasuresV1MeasuresGetParams = {
     geography_type: input.geographySemantics,
-    page_size: measuresV1MeasuresGetQueryPageSizeOneMax,
+    page_size: measuresV1MeasuresGetQueryPageSizeMax,
   };
   if (input.pageToken) {
     params.page_token = input.pageToken;
@@ -160,7 +160,7 @@ export function exploreObservationPageParams(input: {
     geography_id: [...input.fips],
     geography_type: "county",
     measure_id: input.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeOneMax,
+    page_size: observationsV1ObservationsGetQueryPageSizeMax,
   };
   switch (input.timeBound.kind) {
     case "year": {

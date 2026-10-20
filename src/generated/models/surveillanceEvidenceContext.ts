@@ -13,7 +13,10 @@ import type { SurveillanceEvidenceContextState } from './surveillanceEvidenceCon
  */
 export interface SurveillanceEvidenceContext {
   contract_version: 'atlas-surveillance-evidence-v3';
-  /** Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value. */
+  /**
+     * Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.
+     * @nullable
+     */
   normalized_state?: SurveillanceEvidenceContextNormalizedState;
   state: SurveillanceEvidenceContextState;
   /** @minItems 1 */

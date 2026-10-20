@@ -12,6 +12,7 @@ export interface MethodologyComparisonContext {
   comparison_state: MethodologyComparisonContextComparisonState;
   reason_codes: string[];
   methodology_era_ids: (string | null)[];
+  /** @nullable */
   jurisdiction_class: string | null;
   references: string[];
   limitations: string[];

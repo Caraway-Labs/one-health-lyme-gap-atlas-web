@@ -10,18 +10,18 @@ import * as zod from 'zod';
 export const Source = zod.object({
   "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
   "label": zod.string(),
-  "publisher": zod.union([zod.string(),zod.null()]),
+  "publisher": zod.string().nullable(),
   "lineage_source_id": zod.string(),
   "dataset_id": zod.string(),
   "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
   "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.union([zod.string(),zod.null()]).optional(),
-  "source_vintage": zod.union([zod.string(),zod.null()]).optional(),
-  "source_version": zod.union([zod.string(),zod.null()]).optional(),
-  "published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
-  "atlas_acquired_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Governed source retrieval time; null when unavailable.'),
+  "source_url": zod.string().nullish(),
+  "source_vintage": zod.string().nullish(),
+  "source_version": zod.string().nullish(),
+  "published_at": zod.iso.datetime({"offset":true}).nullish(),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
   "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
 })
 

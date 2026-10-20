@@ -34,6 +34,7 @@ import type {
   CollectionEnvelopeSource,
   CountyDetail,
   CountyReportPdfV1CountiesFipsReportPdfGetParams,
+  CountySurveillanceSituations,
   CountyV1CountiesFipsGetParams,
   FeedItems,
   FeedSources,
@@ -83,13 +84,6 @@ import type {
 } from './models';
 
 import { apiMutator } from '../lib/api-mutator';
-
-export type HTTPStatusCode1xx = 100 | 101 | 102 | 103;
-export type HTTPStatusCode2xx = 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207;
-export type HTTPStatusCode3xx = 300 | 301 | 302 | 303 | 304 | 305 | 307 | 308;
-export type HTTPStatusCode4xx = 400 | 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 419 | 420 | 421 | 422 | 423 | 424 | 426 | 428 | 429 | 431 | 451;
-export type HTTPStatusCode5xx = 500 | 501 | 502 | 503 | 504 | 505 | 507 | 511;
-export type HTTPStatusCodes = HTTPStatusCode1xx | HTTPStatusCode2xx | HTTPStatusCode3xx | HTTPStatusCode4xx | HTTPStatusCode5xx;
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -146,15 +140,10 @@ export type indicatorsV1IndicatorsGetResponse503 = {
   status: 503
 }
 
-export type indicatorsV1IndicatorsGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type indicatorsV1IndicatorsGetResponseSuccess = (indicatorsV1IndicatorsGetResponse200) & {
   headers: Headers;
 };
-export type indicatorsV1IndicatorsGetResponseError = (indicatorsV1IndicatorsGetResponse400 | indicatorsV1IndicatorsGetResponse404 | indicatorsV1IndicatorsGetResponse413 | indicatorsV1IndicatorsGetResponse414 | indicatorsV1IndicatorsGetResponse429 | indicatorsV1IndicatorsGetResponse503 | indicatorsV1IndicatorsGetResponse4xx) & {
+export type indicatorsV1IndicatorsGetResponseError = (indicatorsV1IndicatorsGetResponse400 | indicatorsV1IndicatorsGetResponse404 | indicatorsV1IndicatorsGetResponse413 | indicatorsV1IndicatorsGetResponse414 | indicatorsV1IndicatorsGetResponse429 | indicatorsV1IndicatorsGetResponse503) & {
   headers: Headers;
 };
 
@@ -309,15 +298,10 @@ export type indicatorV1IndicatorsIndicatorIdGetResponse503 = {
   status: 503
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type indicatorV1IndicatorsIndicatorIdGetResponseSuccess = (indicatorV1IndicatorsIndicatorIdGetResponse200) & {
   headers: Headers;
 };
-export type indicatorV1IndicatorsIndicatorIdGetResponseError = (indicatorV1IndicatorsIndicatorIdGetResponse304 | indicatorV1IndicatorsIndicatorIdGetResponse400 | indicatorV1IndicatorsIndicatorIdGetResponse404 | indicatorV1IndicatorsIndicatorIdGetResponse413 | indicatorV1IndicatorsIndicatorIdGetResponse414 | indicatorV1IndicatorsIndicatorIdGetResponse429 | indicatorV1IndicatorsIndicatorIdGetResponse503 | indicatorV1IndicatorsIndicatorIdGetResponse4xx) & {
+export type indicatorV1IndicatorsIndicatorIdGetResponseError = (indicatorV1IndicatorsIndicatorIdGetResponse304 | indicatorV1IndicatorsIndicatorIdGetResponse400 | indicatorV1IndicatorsIndicatorIdGetResponse404 | indicatorV1IndicatorsIndicatorIdGetResponse413 | indicatorV1IndicatorsIndicatorIdGetResponse414 | indicatorV1IndicatorsIndicatorIdGetResponse429 | indicatorV1IndicatorsIndicatorIdGetResponse503) & {
   headers: Headers;
 };
 
@@ -460,15 +444,10 @@ export type measuresV1MeasuresGetResponse503 = {
   status: 503
 }
 
-export type measuresV1MeasuresGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type measuresV1MeasuresGetResponseSuccess = (measuresV1MeasuresGetResponse200) & {
   headers: Headers;
 };
-export type measuresV1MeasuresGetResponseError = (measuresV1MeasuresGetResponse400 | measuresV1MeasuresGetResponse404 | measuresV1MeasuresGetResponse413 | measuresV1MeasuresGetResponse414 | measuresV1MeasuresGetResponse429 | measuresV1MeasuresGetResponse503 | measuresV1MeasuresGetResponse4xx) & {
+export type measuresV1MeasuresGetResponseError = (measuresV1MeasuresGetResponse400 | measuresV1MeasuresGetResponse404 | measuresV1MeasuresGetResponse413 | measuresV1MeasuresGetResponse414 | measuresV1MeasuresGetResponse429 | measuresV1MeasuresGetResponse503) & {
   headers: Headers;
 };
 
@@ -623,15 +602,10 @@ export type measureV1MeasuresMeasureIdGetResponse503 = {
   status: 503
 }
 
-export type measureV1MeasuresMeasureIdGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type measureV1MeasuresMeasureIdGetResponseSuccess = (measureV1MeasuresMeasureIdGetResponse200) & {
   headers: Headers;
 };
-export type measureV1MeasuresMeasureIdGetResponseError = (measureV1MeasuresMeasureIdGetResponse304 | measureV1MeasuresMeasureIdGetResponse400 | measureV1MeasuresMeasureIdGetResponse404 | measureV1MeasuresMeasureIdGetResponse413 | measureV1MeasuresMeasureIdGetResponse414 | measureV1MeasuresMeasureIdGetResponse429 | measureV1MeasuresMeasureIdGetResponse503 | measureV1MeasuresMeasureIdGetResponse4xx) & {
+export type measureV1MeasuresMeasureIdGetResponseError = (measureV1MeasuresMeasureIdGetResponse304 | measureV1MeasuresMeasureIdGetResponse400 | measureV1MeasuresMeasureIdGetResponse404 | measureV1MeasuresMeasureIdGetResponse413 | measureV1MeasuresMeasureIdGetResponse414 | measureV1MeasuresMeasureIdGetResponse429 | measureV1MeasuresMeasureIdGetResponse503) & {
   headers: Headers;
 };
 
@@ -774,15 +748,10 @@ export type sourcesV1SourcesGetResponse503 = {
   status: 503
 }
 
-export type sourcesV1SourcesGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type sourcesV1SourcesGetResponseSuccess = (sourcesV1SourcesGetResponse200) & {
   headers: Headers;
 };
-export type sourcesV1SourcesGetResponseError = (sourcesV1SourcesGetResponse400 | sourcesV1SourcesGetResponse404 | sourcesV1SourcesGetResponse413 | sourcesV1SourcesGetResponse414 | sourcesV1SourcesGetResponse429 | sourcesV1SourcesGetResponse503 | sourcesV1SourcesGetResponse4xx) & {
+export type sourcesV1SourcesGetResponseError = (sourcesV1SourcesGetResponse400 | sourcesV1SourcesGetResponse404 | sourcesV1SourcesGetResponse413 | sourcesV1SourcesGetResponse414 | sourcesV1SourcesGetResponse429 | sourcesV1SourcesGetResponse503) & {
   headers: Headers;
 };
 
@@ -937,15 +906,10 @@ export type sourceV1SourcesSourceIdGetResponse503 = {
   status: 503
 }
 
-export type sourceV1SourcesSourceIdGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type sourceV1SourcesSourceIdGetResponseSuccess = (sourceV1SourcesSourceIdGetResponse200) & {
   headers: Headers;
 };
-export type sourceV1SourcesSourceIdGetResponseError = (sourceV1SourcesSourceIdGetResponse304 | sourceV1SourcesSourceIdGetResponse400 | sourceV1SourcesSourceIdGetResponse404 | sourceV1SourcesSourceIdGetResponse413 | sourceV1SourcesSourceIdGetResponse414 | sourceV1SourcesSourceIdGetResponse429 | sourceV1SourcesSourceIdGetResponse503 | sourceV1SourcesSourceIdGetResponse4xx) & {
+export type sourceV1SourcesSourceIdGetResponseError = (sourceV1SourcesSourceIdGetResponse304 | sourceV1SourcesSourceIdGetResponse400 | sourceV1SourcesSourceIdGetResponse404 | sourceV1SourcesSourceIdGetResponse413 | sourceV1SourcesSourceIdGetResponse414 | sourceV1SourcesSourceIdGetResponse429 | sourceV1SourcesSourceIdGetResponse503) & {
   headers: Headers;
 };
 
@@ -1093,15 +1057,10 @@ export type methodologyV1MethodologiesMethodologyIdGetResponse503 = {
   status: 503
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type methodologyV1MethodologiesMethodologyIdGetResponseSuccess = (methodologyV1MethodologiesMethodologyIdGetResponse200) & {
   headers: Headers;
 };
-export type methodologyV1MethodologiesMethodologyIdGetResponseError = (methodologyV1MethodologiesMethodologyIdGetResponse304 | methodologyV1MethodologiesMethodologyIdGetResponse400 | methodologyV1MethodologiesMethodologyIdGetResponse404 | methodologyV1MethodologiesMethodologyIdGetResponse413 | methodologyV1MethodologiesMethodologyIdGetResponse414 | methodologyV1MethodologiesMethodologyIdGetResponse429 | methodologyV1MethodologiesMethodologyIdGetResponse503 | methodologyV1MethodologiesMethodologyIdGetResponse4xx) & {
+export type methodologyV1MethodologiesMethodologyIdGetResponseError = (methodologyV1MethodologiesMethodologyIdGetResponse304 | methodologyV1MethodologiesMethodologyIdGetResponse400 | methodologyV1MethodologiesMethodologyIdGetResponse404 | methodologyV1MethodologiesMethodologyIdGetResponse413 | methodologyV1MethodologiesMethodologyIdGetResponse414 | methodologyV1MethodologiesMethodologyIdGetResponse429 | methodologyV1MethodologiesMethodologyIdGetResponse503) & {
   headers: Headers;
 };
 
@@ -1244,15 +1203,10 @@ export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse503 = {
   status: 503
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseSuccess = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse200) & {
   headers: Headers;
 };
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseError = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse503 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse4xx) & {
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseError = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse503) & {
   headers: Headers;
 };
 
@@ -1403,15 +1357,10 @@ export type canonicalGeographyAvailabilityResponse503 = {
   status: 503
 }
 
-export type canonicalGeographyAvailabilityResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type canonicalGeographyAvailabilityResponseSuccess = (canonicalGeographyAvailabilityResponse200) & {
   headers: Headers;
 };
-export type canonicalGeographyAvailabilityResponseError = (canonicalGeographyAvailabilityResponse400 | canonicalGeographyAvailabilityResponse404 | canonicalGeographyAvailabilityResponse413 | canonicalGeographyAvailabilityResponse414 | canonicalGeographyAvailabilityResponse429 | canonicalGeographyAvailabilityResponse503 | canonicalGeographyAvailabilityResponse4xx) & {
+export type canonicalGeographyAvailabilityResponseError = (canonicalGeographyAvailabilityResponse400 | canonicalGeographyAvailabilityResponse404 | canonicalGeographyAvailabilityResponse413 | canonicalGeographyAvailabilityResponse414 | canonicalGeographyAvailabilityResponse429 | canonicalGeographyAvailabilityResponse503) & {
   headers: Headers;
 };
 
@@ -1562,15 +1511,10 @@ export type observationsV1ObservationsGetResponse503 = {
   status: 503
 }
 
-export type observationsV1ObservationsGetResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type observationsV1ObservationsGetResponseSuccess = (observationsV1ObservationsGetResponse200) & {
   headers: Headers;
 };
-export type observationsV1ObservationsGetResponseError = (observationsV1ObservationsGetResponse400 | observationsV1ObservationsGetResponse404 | observationsV1ObservationsGetResponse413 | observationsV1ObservationsGetResponse414 | observationsV1ObservationsGetResponse429 | observationsV1ObservationsGetResponse503 | observationsV1ObservationsGetResponse4xx) & {
+export type observationsV1ObservationsGetResponseError = (observationsV1ObservationsGetResponse400 | observationsV1ObservationsGetResponse404 | observationsV1ObservationsGetResponse413 | observationsV1ObservationsGetResponse414 | observationsV1ObservationsGetResponse429 | observationsV1ObservationsGetResponse503) & {
   headers: Headers;
 };
 
@@ -1580,7 +1524,7 @@ export const getObservationsV1ObservationsGetUrl = (params: ObservationsV1Observ
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    const explodeParameters = ["geography_id","stratification"];
+    const explodeParameters = ["geography_id"];
 
     if (Array.isArray(value) && explodeParameters.includes(key)) {
       value.forEach((v) => {
@@ -1718,6 +1662,11 @@ export type listIntelligenceItemsResponse414 = {
   status: 414
 }
 
+export type listIntelligenceItemsResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
 export type listIntelligenceItemsResponse429 = {
   data: ProblemDetails
   status: 429
@@ -1728,15 +1677,10 @@ export type listIntelligenceItemsResponse503 = {
   status: 503
 }
 
-export type listIntelligenceItemsResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type listIntelligenceItemsResponseSuccess = (listIntelligenceItemsResponse200) & {
   headers: Headers;
 };
-export type listIntelligenceItemsResponseError = (listIntelligenceItemsResponse400 | listIntelligenceItemsResponse404 | listIntelligenceItemsResponse413 | listIntelligenceItemsResponse414 | listIntelligenceItemsResponse429 | listIntelligenceItemsResponse503 | listIntelligenceItemsResponse4xx) & {
+export type listIntelligenceItemsResponseError = (listIntelligenceItemsResponse400 | listIntelligenceItemsResponse404 | listIntelligenceItemsResponse413 | listIntelligenceItemsResponse414 | listIntelligenceItemsResponse422 | listIntelligenceItemsResponse429 | listIntelligenceItemsResponse503) & {
   headers: Headers;
 };
 
@@ -1876,6 +1820,11 @@ export type listIntelligenceSourcesResponse414 = {
   status: 414
 }
 
+export type listIntelligenceSourcesResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
 export type listIntelligenceSourcesResponse429 = {
   data: ProblemDetails
   status: 429
@@ -1886,15 +1835,10 @@ export type listIntelligenceSourcesResponse503 = {
   status: 503
 }
 
-export type listIntelligenceSourcesResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type listIntelligenceSourcesResponseSuccess = (listIntelligenceSourcesResponse200) & {
   headers: Headers;
 };
-export type listIntelligenceSourcesResponseError = (listIntelligenceSourcesResponse400 | listIntelligenceSourcesResponse404 | listIntelligenceSourcesResponse413 | listIntelligenceSourcesResponse414 | listIntelligenceSourcesResponse429 | listIntelligenceSourcesResponse503 | listIntelligenceSourcesResponse4xx) & {
+export type listIntelligenceSourcesResponseError = (listIntelligenceSourcesResponse400 | listIntelligenceSourcesResponse404 | listIntelligenceSourcesResponse413 | listIntelligenceSourcesResponse414 | listIntelligenceSourcesResponse422 | listIntelligenceSourcesResponse429 | listIntelligenceSourcesResponse503) & {
   headers: Headers;
 };
 
@@ -2034,6 +1978,11 @@ export type listIntelligenceFeedResponse414 = {
   status: 414
 }
 
+export type listIntelligenceFeedResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
 export type listIntelligenceFeedResponse429 = {
   data: ProblemDetails
   status: 429
@@ -2044,15 +1993,10 @@ export type listIntelligenceFeedResponse503 = {
   status: 503
 }
 
-export type listIntelligenceFeedResponse4xx = {
-  data: ProblemDetails
-  status: HTTPStatusCode4xx
-}
-
 export type listIntelligenceFeedResponseSuccess = (listIntelligenceFeedResponse200) & {
   headers: Headers;
 };
-export type listIntelligenceFeedResponseError = (listIntelligenceFeedResponse400 | listIntelligenceFeedResponse404 | listIntelligenceFeedResponse413 | listIntelligenceFeedResponse414 | listIntelligenceFeedResponse429 | listIntelligenceFeedResponse503 | listIntelligenceFeedResponse4xx) & {
+export type listIntelligenceFeedResponseError = (listIntelligenceFeedResponse400 | listIntelligenceFeedResponse404 | listIntelligenceFeedResponse413 | listIntelligenceFeedResponse414 | listIntelligenceFeedResponse422 | listIntelligenceFeedResponse429 | listIntelligenceFeedResponse503) & {
   headers: Headers;
 };
 
@@ -3850,6 +3794,142 @@ export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof cou
 
 
 
+export type countySurveillanceSituationsGetResponse200 = {
+  data: CountySurveillanceSituations
+  status: 200
+}
+
+export type countySurveillanceSituationsGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type countySurveillanceSituationsGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type countySurveillanceSituationsGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type countySurveillanceSituationsGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type countySurveillanceSituationsGetResponseSuccess = (countySurveillanceSituationsGetResponse200) & {
+  headers: Headers;
+};
+export type countySurveillanceSituationsGetResponseError = (countySurveillanceSituationsGetResponse404 | countySurveillanceSituationsGetResponse422 | countySurveillanceSituationsGetResponse429 | countySurveillanceSituationsGetResponse503) & {
+  headers: Headers;
+};
+
+export type countySurveillanceSituationsGetResponse = (countySurveillanceSituationsGetResponseSuccess | countySurveillanceSituationsGetResponseError)
+
+export const getCountySurveillanceSituationsGetUrl = (fips: string,) => {
+
+
+
+
+  return `/v1/counties/${fips}/surveillance-situations`
+}
+
+/**
+ * Primary four_state includes human surveillance; secondary tick_pathogen excludes it. Returns reviewed labels, four membership probabilities per model (0-1, sum 1 within 1e-6), immutable model/batch lineage, source vintages and interpretation limits. Unknown is an available class; No records does not establish absence. Membership is not disease risk, incidence, pathogen presence, causation or Tier 1 priority. HTTP 200 can contain typed UNAVAILABLE variants with null data, including an incompatible release. Unknown county 404; malformed FIPS 422; dependency, malformed persisted data or changing release 503. Cache-Control: no-store; no fallback or inference.
+ * @summary Get both persisted county surveillance-situation classifications
+ */
+export const countySurveillanceSituationsGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countySurveillanceSituationsGetResponse> => {
+
+  return apiMutator<countySurveillanceSituationsGetResponse>(getCountySurveillanceSituationsGetUrl(fips),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCountySurveillanceSituationsGetQueryKey = (fips: string,) => {
+    return [
+    `/v1/counties/${fips}/surveillance-situations`
+    ] as const;
+    }
+
+
+export const getCountySurveillanceSituationsGetQueryOptions = <TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCountySurveillanceSituationsGetQueryKey(fips);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>> = ({ signal }) => countySurveillanceSituationsGet(fips, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CountySurveillanceSituationsGetQueryResult = NonNullable<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>>
+export type CountySurveillanceSituationsGetQueryError = ProblemDetails
+
+
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>,
+          TError,
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>,
+          TError,
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get both persisted county surveillance-situation classifications
+ */
+
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCountySurveillanceSituationsGetQueryOptions(fips,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type countyTier1SurveillancePriorityGetResponse200 = {
   data: Tier1CountyPriority
   status: 200
@@ -4176,14 +4256,6 @@ export const getCountyReportPdfV1CountiesFipsReportPdfGetUrl = (fips: string,
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    const explodeParameters = ["measure_id"];
-
-    if (Array.isArray(value) && explodeParameters.includes(key)) {
-      value.forEach((v) => {
-        normalizedParams.append(key, v === null ? 'null' : String(v));
-      });
-      return;
-    }
 
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : String(value))
@@ -4196,7 +4268,7 @@ export const getCountyReportPdfV1CountiesFipsReportPdfGetUrl = (fips: string,
 }
 
 /**
- * PDF attachment using the immutable county-v1 registered template by default. Optional dataset_version and score settings bind report inputs. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. V1 rejects observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; V1 public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+ * PDF attachment. The default template is county-v3, the two-page County Data Brief for the published gap score and Explorer follow-up. county-v3 ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. Explicit county-v1 remains the immutable legacy county report and still binds score settings. Optional dataset_version selects a release. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. county-v1 and county-v3 reject observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; published briefs use public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
  * @summary Download a county report
  */
 export const countyReportPdfV1CountiesFipsReportPdfGet = async (fips: string,

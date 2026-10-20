@@ -13,7 +13,7 @@ type ScorePreset = (typeof presets)[number];
 
 const initialSettings: ScoreSettings = {
   ecological_share: 60,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 70,
 };
 

@@ -1114,7 +1114,7 @@ const COUNTY_REPORT_OPERATION_ID =
 const COUNTY_REPORT_TEMPLATE_TABS = ["county-v1 scoring", "county-v2 evidence"];
 const COUNTY_REPORT_SCORE_PARAMETERS = [
   "ecological_share",
-  "low_incidence_breakpoint",
+  "smooth_k",
   "missing_human_weakness",
 ] as const;
 const COUNTY_REPORT_EVIDENCE_PARAMETERS = [
@@ -1154,11 +1154,11 @@ function renderCountyReportTemplateGuide(
   const template = countyReportSchemaFacts(parameters.get("template")?.schema);
   const measure = countyReportSchemaFacts(parameters.get("measure_id")?.schema);
   if (
-    template.stringDefault !== "county-v1" ||
+    !["county-v1", "county-v3"].includes(template.stringDefault ?? "") ||
     template.pattern === undefined
   ) {
     throw new Error(
-      "County report template schema no longer matches county-v1."
+      "County report template schema no longer matches registered county-v1/v3."
     );
   }
   if (measure.maxItems === undefined) {
@@ -1186,6 +1186,8 @@ function renderCountyReportTemplateGuide(
     "### Template selection",
     "",
     `Choose \`template\` on \`${operation.method} ${operation.path}\`. The default is \`${template.stringDefault}\`. Use a county FIPS in the lower 48 states or the District of Columbia. A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim.`,
+    "",
+    "The default county-v3 brief uses published Surveillance Gap Score v1.1 with Smooth k=50 and ignores scenario overrides. Scoring and data-release methodologies remain distinct.",
     "",
     "The same selector rules, with the requests checked against the published API, are in the [workflow guides](/docs/develop/workflows#download-a-county-report).",
     "",
@@ -1251,9 +1253,9 @@ function joinProseList(items: readonly string[]): string {
 function assertCountyReportContract(operation: OperationView): void {
   const requiredSentences = [
     "Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id",
-    "V1 rejects observation selectors with 422",
+    "county-v1 and county-v3 reject observation selectors with 422",
     "V2 responses use no-store",
-    "V1 public cache TTL 300 seconds with revalidation",
+    "published briefs use public cache TTL 300 seconds with revalidation",
     "Unknown templates return 422",
   ];
   const missing = requiredSentences.filter(

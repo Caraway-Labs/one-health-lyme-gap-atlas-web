@@ -9,6 +9,7 @@ import type { CountyScoreSummary } from './countyScoreSummary';
 import type { ScoreCollectionSettings } from './scoreCollectionSettings';
 
 export interface ScoreCollection {
+  scoring_methodology_version?: 'surveillance-gap-score-v1.1';
   release_id: string;
   methodology_version: string;
   settings: ScoreCollectionSettings;

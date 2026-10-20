@@ -7,20 +7,20 @@
  */
 import * as zod from 'zod';
 
-export const userProfileResponseProfileOneStateCodeOneMax = 2;
+export const userProfileResponseProfileOneStateCodeMax = 2;
 
-export const userProfileResponseProfileOneOrganizationOneMax = 120;
+export const userProfileResponseProfileOneOrganizationMax = 120;
 
-export const userProfileResponseProfileOneJobTitleOneMax = 120;
+export const userProfileResponseProfileOneJobTitleMax = 120;
 
 
 export const UserProfileResponse = zod.object({
   "profile": zod.union([zod.object({
-  "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
-  "state_code": zod.union([zod.string().max(userProfileResponseProfileOneStateCodeOneMax),zod.null()]).optional(),
-  "organization": zod.union([zod.string().max(userProfileResponseProfileOneOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(userProfileResponseProfileOneJobTitleOneMax),zod.null()]).optional(),
-  "starting_view_version": zod.union([zod.literal(1),zod.null()]).optional().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
+  "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
+  "state_code": zod.string().max(userProfileResponseProfileOneStateCodeMax).nullish(),
+  "organization": zod.string().max(userProfileResponseProfileOneOrganizationMax).nullish(),
+  "job_title": zod.string().max(userProfileResponseProfileOneJobTitleMax).nullish(),
+  "starting_view_version": zod.union([zod.literal(1),zod.literal(null)]).nullish().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 }),zod.null()])
 })
 

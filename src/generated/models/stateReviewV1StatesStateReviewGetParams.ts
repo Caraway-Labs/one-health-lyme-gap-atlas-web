@@ -7,6 +7,13 @@
  */
 
 export type StateReviewV1StatesStateReviewGetParams = {
+/**
+ * @maxLength 80
+ * @nullable
+ */
 observation_context?: string | null;
+/**
+ * @nullable
+ */
 dataset_version?: string | null;
 };

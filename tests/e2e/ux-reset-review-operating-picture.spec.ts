@@ -425,6 +425,7 @@ test.describe("Review operating picture", () => {
           configuration_sha256: insufficientHash,
           data_release_version: dataset,
           evaluated_at: insufficientEvaluatedAt,
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           methodology_version: "2.0.0",
         };
       }
@@ -444,6 +445,7 @@ test.describe("Review operating picture", () => {
           configuration_sha256: unsupportedHash,
           data_release_version: dataset,
           evaluated_at: unsupportedEvaluatedAt,
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           methodology_version: "2.1.0",
         };
       }
@@ -457,6 +459,7 @@ test.describe("Review operating picture", () => {
           data_release_version: dataset,
           effective_observation_context: "Human snapshot 2022",
           evaluated_at: newYorkEvaluatedAt,
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           methodology_version: "1.1.0",
         };
       }

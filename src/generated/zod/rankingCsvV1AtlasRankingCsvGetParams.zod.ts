@@ -18,9 +18,9 @@ export const rankingCsvV1AtlasRankingCsvGetParamsEcologicalShareMin = 40;
 export const rankingCsvV1AtlasRankingCsvGetParamsEcologicalShareMax = 85;
 export const rankingCsvV1AtlasRankingCsvGetParamsEcologicalShareMultipleOf = 5;
 
-export const rankingCsvV1AtlasRankingCsvGetParamsLowIncidenceBreakpointDefault = 10;
-export const rankingCsvV1AtlasRankingCsvGetParamsLowIncidenceBreakpointMin = 5;
-export const rankingCsvV1AtlasRankingCsvGetParamsLowIncidenceBreakpointMax = 25;
+export const rankingCsvV1AtlasRankingCsvGetParamsSmoothKDefault = 50;
+export const rankingCsvV1AtlasRankingCsvGetParamsSmoothKMin = 5;
+export const rankingCsvV1AtlasRankingCsvGetParamsSmoothKMax = 200;
 
 export const rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessDefault = 75;
 export const rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessMin = 40;
@@ -33,8 +33,9 @@ export const RankingCsvV1AtlasRankingCsvGetParams = zod.object({
   "q": zod.string().max(rankingCsvV1AtlasRankingCsvGetParamsQMax).default(rankingCsvV1AtlasRankingCsvGetParamsQDefault),
   "evidence": zod.enum(['all', 'ecological', 'human', 'complete']).default(rankingCsvV1AtlasRankingCsvGetParamsEvidenceDefault),
   "ecological_share": zod.int().min(rankingCsvV1AtlasRankingCsvGetParamsEcologicalShareMin).max(rankingCsvV1AtlasRankingCsvGetParamsEcologicalShareMax).multipleOf(rankingCsvV1AtlasRankingCsvGetParamsEcologicalShareMultipleOf).default(rankingCsvV1AtlasRankingCsvGetParamsEcologicalShareDefault),
-  "low_incidence_breakpoint": zod.int().min(rankingCsvV1AtlasRankingCsvGetParamsLowIncidenceBreakpointMin).max(rankingCsvV1AtlasRankingCsvGetParamsLowIncidenceBreakpointMax).default(rankingCsvV1AtlasRankingCsvGetParamsLowIncidenceBreakpointDefault),
-  "missing_human_weakness": zod.int().min(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessMin).max(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessMax).multipleOf(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessMultipleOf).default(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessDefault)
+  "smooth_k": zod.int().min(rankingCsvV1AtlasRankingCsvGetParamsSmoothKMin).max(rankingCsvV1AtlasRankingCsvGetParamsSmoothKMax).default(rankingCsvV1AtlasRankingCsvGetParamsSmoothKDefault),
+  "missing_human_weakness": zod.int().min(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessMin).max(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessMax).multipleOf(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessMultipleOf).default(rankingCsvV1AtlasRankingCsvGetParamsMissingHumanWeaknessDefault),
+  "low_incidence_breakpoint": zod.int().nullish()
 })
 
 export type RankingCsvV1AtlasRankingCsvGetParams = zod.input<typeof RankingCsvV1AtlasRankingCsvGetParams>;

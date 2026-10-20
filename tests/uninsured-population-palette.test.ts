@@ -212,6 +212,7 @@ describe("Uninsured population palette", () => {
           county: "Adams",
           evidence_completeness: 40,
           fips: "08001",
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           human_status: "published_count_floor",
           in_contiguous_tick_scope: true,
           priority: "Highest review priority",

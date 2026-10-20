@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const GetProfileV1MeProfileGetHeaders = zod.object({
-  "authorization": zod.union([zod.string(),zod.null()]).optional()
+  "authorization": zod.string().nullish()
 })
 
 export type GetProfileV1MeProfileGetHeaders = zod.input<typeof GetProfileV1MeProfileGetHeaders>;

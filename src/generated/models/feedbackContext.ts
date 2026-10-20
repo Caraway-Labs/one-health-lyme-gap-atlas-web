@@ -13,18 +13,72 @@ import type { FeedbackContextExplorerView } from './feedbackContextExplorerView'
  * Closed geography and view context for a feedback submission.
  */
 export interface FeedbackContext {
+  /** @nullable */
   state?: string | null;
+  /**
+     * @nullable
+     * @pattern ^\d{5}$
+     */
   county_fips?: string | null;
+  /**
+     * @nullable
+     * @pattern ^\d{5}$
+     */
   compare_county_fips?: string | null;
+  /**
+     * @maxItems 5
+     * @nullable
+     */
   selected_county_fips?: string[] | null;
+  /**
+     * @maxLength 64
+     * @nullable
+     * @pattern ^[A-Za-z0-9._-]{1,64}$
+     */
   dataset?: string | null;
+  /** @nullable */
   evidence_view?: FeedbackContextEvidenceView;
+  /** @nullable */
   explorer_view?: FeedbackContextExplorerView;
+  /** @nullable */
   explorer_metric?: FeedbackContextExplorerMetric;
+  /**
+     * @minimum 40
+     * @maximum 85
+     * @nullable
+     */
   ecological_share?: number | null;
+  /**
+     * @minimum 5
+     * @maximum 25
+     * @nullable
+     */
   low_incidence_breakpoint?: number | null;
+  /**
+     * @minimum 5
+     * @maximum 200
+     * @nullable
+     */
+  smooth_k?: number | null;
+  /**
+     * @minimum 40
+     * @maximum 90
+     * @nullable
+     */
   missing_human_weakness?: number | null;
+  /**
+     * @maxItems 8
+     * @nullable
+     */
   source_ids?: string[] | null;
+  /**
+     * @maxItems 8
+     * @nullable
+     */
   evidence_item_ids?: string[] | null;
+  /**
+     * @maxItems 8
+     * @nullable
+     */
   item_ids?: string[] | null;
 }

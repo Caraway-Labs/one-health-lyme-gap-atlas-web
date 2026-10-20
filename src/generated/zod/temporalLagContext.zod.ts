@@ -11,8 +11,8 @@ export const TemporalLagContext = zod.object({
   "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
   "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
   "offset_days": zod.int(),
-  "window_days": zod.union([zod.int(),zod.null()]).optional(),
-  "season_id": zod.union([zod.string(),zod.null()]).optional()
+  "window_days": zod.int().nullish(),
+  "season_id": zod.string().nullish()
 })
 
 export type TemporalLagContext = zod.input<typeof TemporalLagContext>;

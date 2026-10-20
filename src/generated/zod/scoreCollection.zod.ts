@@ -7,6 +7,10 @@
  */
 import * as zod from 'zod';
 
+export const scoreCollectionScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const scoreCollectionCountiesItemScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const scoreCollectionCountiesItemIncidenceFloor2023Min = 0;
+
 export const scoreCollectionCountiesItemScoreScoreMin = 0;
 export const scoreCollectionCountiesItemScoreScoreMax = 100;
 
@@ -36,10 +40,16 @@ export const scoreCollectionCountiesItemScoreRuralSignalMax = 100;
 
 
 export const ScoreCollection = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(scoreCollectionScoringMethodologyVersionDefault),
   "release_id": zod.string(),
   "methodology_version": zod.string(),
   "settings": zod.record(zod.string(), zod.int()),
   "counties": zod.array(zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(scoreCollectionCountiesItemScoringMethodologyVersionDefault),
+  "incidence_floor_2023": zod.number().min(scoreCollectionCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000; null is not zero.'),
+  "svi_percentile": zod.number().nullish(),
+  "uninsured_percentile": zod.number().nullish(),
+  "rucc_2023": zod.int().nullish(),
   "fips": zod.string(),
   "county": zod.string(),
   "state": zod.string(),

@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetHeaders = zod.object({
-  "authorization": zod.union([zod.string(),zod.null()]).optional()
+  "authorization": zod.string().nullish()
 })
 
 export type DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetHeaders = zod.input<typeof DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetHeaders>;

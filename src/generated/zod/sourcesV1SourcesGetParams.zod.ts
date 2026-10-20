@@ -7,12 +7,12 @@
  */
 import * as zod from 'zod';
 
-export const sourcesV1SourcesGetParamsPageSizeOneMax = 500;
+export const sourcesV1SourcesGetParamsPageSizeMax = 500;
 
 
 export const SourcesV1SourcesGetParams = zod.object({
-  "page_size": zod.union([zod.int().min(1).max(sourcesV1SourcesGetParamsPageSizeOneMax),zod.null()]).optional().describe('Items per page; defaults to 100, configured maximum at most 500.'),
-  "page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque next_page_token; retain query filters and release.')
+  "page_size": zod.int().min(1).max(sourcesV1SourcesGetParamsPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
 export type SourcesV1SourcesGetParams = zod.input<typeof SourcesV1SourcesGetParams>;

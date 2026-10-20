@@ -66,6 +66,7 @@ function scoreCounty(fips: string, tickStatus: string): CountyScoreSummary {
     county: "County",
     evidence_completeness: 40,
     fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     in_contiguous_tick_scope: true,
     priority: "Lower Atlas priority — Not a safety finding",
@@ -205,6 +206,7 @@ function cachedClient(): QueryClient {
     ["ux-reset-review-scores", RELEASE_ID, EXPLORER_SCORE_SETTINGS],
     {
       counties: COUNTIES.map(([fips, status]) => scoreCounty(fips, status)),
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       methodology_version: "semantic-1.0.0",
       release_id: RELEASE_ID,
       settings: EXPLORER_SCORE_SETTINGS,

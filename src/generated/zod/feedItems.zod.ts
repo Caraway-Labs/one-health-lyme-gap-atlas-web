@@ -11,33 +11,33 @@ export const feedItemsDataItemItemOneItemIdRegExp = new RegExp('^[a-f0-9]{64}$')
 export const feedItemsDataItemItemOneRevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const feedItemsDataItemItemOneSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 
-export const feedItemsDataItemItemOneCanonicalUrlOneMax = 4096;
+export const feedItemsDataItemItemOneCanonicalUrlMax = 4096;
 
-export const feedItemsDataItemItemOneTitleOneMax = 1000;
-
-
-export const feedItemsDataItemItemOneTitleOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const feedItemsDataItemItemOnePublishedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const feedItemsDataItemItemOneUpdatedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const feedItemsDataItemItemOneEventAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const feedItemsDataItemItemOneExcerptOneMax = 5000;
+export const feedItemsDataItemItemOneTitleMax = 1000;
 
 
-export const feedItemsDataItemItemOneExcerptOneRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
+export const feedItemsDataItemItemOneTitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const feedItemsDataItemItemOnePublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedItemsDataItemItemOneUpdatedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedItemsDataItemItemOneEventAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedItemsDataItemItemOneExcerptMax = 5000;
+
+
+export const feedItemsDataItemItemOneExcerptRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
 export const feedItemsDataItemItemOneFetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const feedItemsDataItemItemOneGeographiesItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemOneGeographiesItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemOneGeographiesItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemOneGeographiesItemConfidenceOneMin = 0;
-export const feedItemsDataItemItemOneGeographiesItemConfidenceOneMax = 1;
+export const feedItemsDataItemItemOneGeographiesItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemOneGeographiesItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemOneGeographiesItemConfidenceMin = 0;
+export const feedItemsDataItemItemOneGeographiesItemConfidenceMax = 1;
 
 export const feedItemsDataItemItemOneGeographiesMax = 100;
 
 export const feedItemsDataItemItemOneTopicsItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemOneTopicsItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemOneTopicsItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemOneTopicsItemConfidenceOneMin = 0;
-export const feedItemsDataItemItemOneTopicsItemConfidenceOneMax = 1;
+export const feedItemsDataItemItemOneTopicsItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemOneTopicsItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemOneTopicsItemConfidenceMin = 0;
+export const feedItemsDataItemItemOneTopicsItemConfidenceMax = 1;
 
 export const feedItemsDataItemItemOneTopicsMax = 100;
 
@@ -59,33 +59,33 @@ export const feedItemsDataItemItemTwoItemIdRegExp = new RegExp('^[a-f0-9]{64}$')
 export const feedItemsDataItemItemTwoRevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const feedItemsDataItemItemTwoSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 
-export const feedItemsDataItemItemTwoCanonicalUrlOneMax = 4096;
+export const feedItemsDataItemItemTwoCanonicalUrlMax = 4096;
 
-export const feedItemsDataItemItemTwoTitleOneMax = 1000;
-
-
-export const feedItemsDataItemItemTwoTitleOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const feedItemsDataItemItemTwoPublishedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const feedItemsDataItemItemTwoUpdatedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const feedItemsDataItemItemTwoEventAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const feedItemsDataItemItemTwoExcerptOneMax = 5000;
+export const feedItemsDataItemItemTwoTitleMax = 1000;
 
 
-export const feedItemsDataItemItemTwoExcerptOneRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
+export const feedItemsDataItemItemTwoTitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const feedItemsDataItemItemTwoPublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedItemsDataItemItemTwoUpdatedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedItemsDataItemItemTwoEventAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedItemsDataItemItemTwoExcerptMax = 5000;
+
+
+export const feedItemsDataItemItemTwoExcerptRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
 export const feedItemsDataItemItemTwoFetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const feedItemsDataItemItemTwoGeographiesItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemTwoGeographiesItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemTwoGeographiesItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemTwoGeographiesItemConfidenceOneMin = 0;
-export const feedItemsDataItemItemTwoGeographiesItemConfidenceOneMax = 1;
+export const feedItemsDataItemItemTwoGeographiesItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemTwoGeographiesItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemTwoGeographiesItemConfidenceMin = 0;
+export const feedItemsDataItemItemTwoGeographiesItemConfidenceMax = 1;
 
 export const feedItemsDataItemItemTwoGeographiesMax = 100;
 
 export const feedItemsDataItemItemTwoTopicsItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemTwoTopicsItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemTwoTopicsItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const feedItemsDataItemItemTwoTopicsItemConfidenceOneMin = 0;
-export const feedItemsDataItemItemTwoTopicsItemConfidenceOneMax = 1;
+export const feedItemsDataItemItemTwoTopicsItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemTwoTopicsItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const feedItemsDataItemItemTwoTopicsItemConfidenceMin = 0;
+export const feedItemsDataItemItemTwoTopicsItemConfidenceMax = 1;
 
 export const feedItemsDataItemItemTwoTopicsMax = 100;
 
@@ -102,14 +102,14 @@ export const feedItemsDataItemItemTwoLimitationsItemMax = 1000;
 export const feedItemsDataItemItemTwoLimitationsItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedItemsDataItemItemTwoLimitationsMax = 100;
 
-export const feedItemsDataItemItemTwoPublisherMetadataPublisherOneMax = 1000;
+export const feedItemsDataItemItemTwoPublisherMetadataPublisherMax = 1000;
 
 
-export const feedItemsDataItemItemTwoPublisherMetadataPublisherOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const feedItemsDataItemItemTwoPublisherMetadataSourceItemIdOneMax = 4096;
+export const feedItemsDataItemItemTwoPublisherMetadataPublisherRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const feedItemsDataItemItemTwoPublisherMetadataSourceItemIdMax = 4096;
 
 
-export const feedItemsDataItemItemTwoPublisherMetadataSourceItemIdOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const feedItemsDataItemItemTwoPublisherMetadataSourceItemIdRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedItemsDataItemItemTwoPublisherMetadataAuthorsItemMax = 4096;
 
 
@@ -122,10 +122,10 @@ export const feedItemsDataItemItemTwoPublisherMetadataCategoriesItemMax = 4096;
 export const feedItemsDataItemItemTwoPublisherMetadataCategoriesItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedItemsDataItemItemTwoPublisherMetadataCategoriesMax = 100;
 
-export const feedItemsDataItemItemTwoPublisherMetadataLanguageOneMax = 64;
+export const feedItemsDataItemItemTwoPublisherMetadataLanguageMax = 64;
 
 
-export const feedItemsDataItemItemTwoPublisherMetadataLanguageOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const feedItemsDataItemItemTwoPublisherMetadataLanguageRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedItemsDataItemItemTwoPublisherMetadataMediaItemUrlMax = 4096;
 
 export const feedItemsDataItemItemTwoPublisherMetadataMediaMax = 100;
@@ -147,12 +147,12 @@ export const FeedItems = zod.object({
   "revision_id": zod.string().regex(feedItemsDataItemItemOneRevisionIdRegExp),
   "source_id": zod.string().regex(feedItemsDataItemItemOneSourceIdRegExp),
   "registry_version": zod.int().min(1),
-  "canonical_url": zod.union([zod.string().max(feedItemsDataItemItemOneCanonicalUrlOneMax),zod.null()]),
-  "title": zod.union([zod.string().min(1).max(feedItemsDataItemItemOneTitleOneMax).regex(feedItemsDataItemItemOneTitleOneRegExp),zod.null()]),
-  "published_at": zod.union([zod.string().regex(feedItemsDataItemItemOnePublishedAtOneRegExp),zod.null()]),
-  "updated_at": zod.union([zod.string().regex(feedItemsDataItemItemOneUpdatedAtOneRegExp),zod.null()]),
-  "event_at": zod.union([zod.string().regex(feedItemsDataItemItemOneEventAtOneRegExp),zod.null()]),
-  "excerpt": zod.union([zod.string().min(1).max(feedItemsDataItemItemOneExcerptOneMax).regex(feedItemsDataItemItemOneExcerptOneRegExp),zod.null()]),
+  "canonical_url": zod.string().max(feedItemsDataItemItemOneCanonicalUrlMax).nullable(),
+  "title": zod.string().min(1).max(feedItemsDataItemItemOneTitleMax).regex(feedItemsDataItemItemOneTitleRegExp).nullable(),
+  "published_at": zod.string().regex(feedItemsDataItemItemOnePublishedAtRegExp).nullable(),
+  "updated_at": zod.string().regex(feedItemsDataItemItemOneUpdatedAtRegExp).nullable(),
+  "event_at": zod.string().regex(feedItemsDataItemItemOneEventAtRegExp).nullable(),
+  "excerpt": zod.string().min(1).max(feedItemsDataItemItemOneExcerptMax).regex(feedItemsDataItemItemOneExcerptRegExp).nullable(),
   "fetched_at": zod.string().regex(feedItemsDataItemItemOneFetchedAtRegExp),
   "field_states": zod.object({
   "canonical_url": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
@@ -165,16 +165,16 @@ export const FeedItems = zod.object({
   "geographies": zod.array(zod.object({
   "value": zod.string().regex(feedItemsDataItemItemOneGeographiesItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(feedItemsDataItemItemOneGeographiesItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(feedItemsDataItemItemOneGeographiesItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(feedItemsDataItemItemOneGeographiesItemConfidenceOneMin).max(feedItemsDataItemItemOneGeographiesItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(feedItemsDataItemItemOneGeographiesItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(feedItemsDataItemItemOneGeographiesItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(feedItemsDataItemItemOneGeographiesItemConfidenceMin).max(feedItemsDataItemItemOneGeographiesItemConfidenceMax).nullable()
 })).max(feedItemsDataItemItemOneGeographiesMax),
   "topics": zod.array(zod.object({
   "value": zod.string().regex(feedItemsDataItemItemOneTopicsItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(feedItemsDataItemItemOneTopicsItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(feedItemsDataItemItemOneTopicsItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(feedItemsDataItemItemOneTopicsItemConfidenceOneMin).max(feedItemsDataItemItemOneTopicsItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(feedItemsDataItemItemOneTopicsItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(feedItemsDataItemItemOneTopicsItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(feedItemsDataItemItemOneTopicsItemConfidenceMin).max(feedItemsDataItemItemOneTopicsItemConfidenceMax).nullable()
 })).max(feedItemsDataItemItemOneTopicsMax),
   "transport": zod.enum(['rss', 'atom', 'email', 'web']),
   "transport_identity_sha256": zod.string().regex(feedItemsDataItemItemOneTransportIdentitySha256RegExp),
@@ -196,12 +196,12 @@ export const FeedItems = zod.object({
   "revision_id": zod.string().regex(feedItemsDataItemItemTwoRevisionIdRegExp),
   "source_id": zod.string().regex(feedItemsDataItemItemTwoSourceIdRegExp),
   "registry_version": zod.int().min(1),
-  "canonical_url": zod.union([zod.string().max(feedItemsDataItemItemTwoCanonicalUrlOneMax),zod.null()]),
-  "title": zod.union([zod.string().min(1).max(feedItemsDataItemItemTwoTitleOneMax).regex(feedItemsDataItemItemTwoTitleOneRegExp),zod.null()]),
-  "published_at": zod.union([zod.string().regex(feedItemsDataItemItemTwoPublishedAtOneRegExp),zod.null()]),
-  "updated_at": zod.union([zod.string().regex(feedItemsDataItemItemTwoUpdatedAtOneRegExp),zod.null()]),
-  "event_at": zod.union([zod.string().regex(feedItemsDataItemItemTwoEventAtOneRegExp),zod.null()]),
-  "excerpt": zod.union([zod.string().min(1).max(feedItemsDataItemItemTwoExcerptOneMax).regex(feedItemsDataItemItemTwoExcerptOneRegExp),zod.null()]),
+  "canonical_url": zod.string().max(feedItemsDataItemItemTwoCanonicalUrlMax).nullable(),
+  "title": zod.string().min(1).max(feedItemsDataItemItemTwoTitleMax).regex(feedItemsDataItemItemTwoTitleRegExp).nullable(),
+  "published_at": zod.string().regex(feedItemsDataItemItemTwoPublishedAtRegExp).nullable(),
+  "updated_at": zod.string().regex(feedItemsDataItemItemTwoUpdatedAtRegExp).nullable(),
+  "event_at": zod.string().regex(feedItemsDataItemItemTwoEventAtRegExp).nullable(),
+  "excerpt": zod.string().min(1).max(feedItemsDataItemItemTwoExcerptMax).regex(feedItemsDataItemItemTwoExcerptRegExp).nullable(),
   "fetched_at": zod.string().regex(feedItemsDataItemItemTwoFetchedAtRegExp),
   "field_states": zod.object({
   "canonical_url": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
@@ -214,16 +214,16 @@ export const FeedItems = zod.object({
   "geographies": zod.array(zod.object({
   "value": zod.string().regex(feedItemsDataItemItemTwoGeographiesItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(feedItemsDataItemItemTwoGeographiesItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(feedItemsDataItemItemTwoGeographiesItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(feedItemsDataItemItemTwoGeographiesItemConfidenceOneMin).max(feedItemsDataItemItemTwoGeographiesItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(feedItemsDataItemItemTwoGeographiesItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(feedItemsDataItemItemTwoGeographiesItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(feedItemsDataItemItemTwoGeographiesItemConfidenceMin).max(feedItemsDataItemItemTwoGeographiesItemConfidenceMax).nullable()
 })).max(feedItemsDataItemItemTwoGeographiesMax),
   "topics": zod.array(zod.object({
   "value": zod.string().regex(feedItemsDataItemItemTwoTopicsItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(feedItemsDataItemItemTwoTopicsItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(feedItemsDataItemItemTwoTopicsItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(feedItemsDataItemItemTwoTopicsItemConfidenceOneMin).max(feedItemsDataItemItemTwoTopicsItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(feedItemsDataItemItemTwoTopicsItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(feedItemsDataItemItemTwoTopicsItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(feedItemsDataItemItemTwoTopicsItemConfidenceMin).max(feedItemsDataItemItemTwoTopicsItemConfidenceMax).nullable()
 })).max(feedItemsDataItemItemTwoTopicsMax),
   "transport": zod.enum(['rss', 'atom']),
   "transport_identity_sha256": zod.string().regex(feedItemsDataItemItemTwoTransportIdentitySha256RegExp),
@@ -240,12 +240,12 @@ export const FeedItems = zod.object({
   "limitations": zod.array(zod.string().min(1).max(feedItemsDataItemItemTwoLimitationsItemMax).regex(feedItemsDataItemItemTwoLimitationsItemRegExp)).max(feedItemsDataItemItemTwoLimitationsMax),
   "content_is_untrusted": zod.literal(true),
   "publisher_metadata": zod.object({
-  "publisher": zod.union([zod.string().min(1).max(feedItemsDataItemItemTwoPublisherMetadataPublisherOneMax).regex(feedItemsDataItemItemTwoPublisherMetadataPublisherOneRegExp),zod.null()]),
+  "publisher": zod.string().min(1).max(feedItemsDataItemItemTwoPublisherMetadataPublisherMax).regex(feedItemsDataItemItemTwoPublisherMetadataPublisherRegExp).nullable(),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']),
-  "source_item_id": zod.union([zod.string().max(feedItemsDataItemItemTwoPublisherMetadataSourceItemIdOneMax).regex(feedItemsDataItemItemTwoPublisherMetadataSourceItemIdOneRegExp),zod.null()]),
+  "source_item_id": zod.string().max(feedItemsDataItemItemTwoPublisherMetadataSourceItemIdMax).regex(feedItemsDataItemItemTwoPublisherMetadataSourceItemIdRegExp).nullable(),
   "authors": zod.array(zod.string().max(feedItemsDataItemItemTwoPublisherMetadataAuthorsItemMax).regex(feedItemsDataItemItemTwoPublisherMetadataAuthorsItemRegExp)).max(feedItemsDataItemItemTwoPublisherMetadataAuthorsMax),
   "categories": zod.array(zod.string().max(feedItemsDataItemItemTwoPublisherMetadataCategoriesItemMax).regex(feedItemsDataItemItemTwoPublisherMetadataCategoriesItemRegExp)).max(feedItemsDataItemItemTwoPublisherMetadataCategoriesMax),
-  "language": zod.union([zod.string().max(feedItemsDataItemItemTwoPublisherMetadataLanguageOneMax).regex(feedItemsDataItemItemTwoPublisherMetadataLanguageOneRegExp),zod.null()]),
+  "language": zod.string().max(feedItemsDataItemItemTwoPublisherMetadataLanguageMax).regex(feedItemsDataItemItemTwoPublisherMetadataLanguageRegExp).nullable(),
   "media": zod.array(zod.object({
   "url": zod.string().min(1).max(feedItemsDataItemItemTwoPublisherMetadataMediaItemUrlMax),
   "origin": zod.literal("publisher")
@@ -267,7 +267,7 @@ export const FeedItems = zod.object({
 })
 })),
   "meta": zod.object({
-  "next_page_token": zod.union([zod.string(),zod.null()]).describe('Opaque filter\/state-bound continuation.'),
+  "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(feedItemsMetaProjectionVersionDefault),
   "source_health_available": zod.literal(false).default(feedItemsMetaSourceHealthAvailableDefault),
   "limitations": zod.array(zod.string()).default(feedItemsMetaLimitationsDefault)

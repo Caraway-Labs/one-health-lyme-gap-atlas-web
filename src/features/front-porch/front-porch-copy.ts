@@ -151,7 +151,7 @@ export const FRONT_PORCH_SYNTHESIS = {
   priorityRest:
     " in this release. This relative priority is calculated using versioned scoring rules to help organize county review. It does not mean low Lyme disease risk or low disease burden.",
   priorityStart: "Montgomery County has a ",
-  priorityTerm: "Lower Atlas priority",
+  priorityTerm: "Watch priority",
   question:
     "What do local exposure histories and tick sampling records add to our understanding of the reported cases?",
   questionLabel: "A question for local review",

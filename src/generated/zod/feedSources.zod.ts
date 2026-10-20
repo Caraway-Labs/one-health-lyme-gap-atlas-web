@@ -29,7 +29,7 @@ export const FeedSources = zod.object({
   "diagnostic": zod.literal("SOURCE_HEALTH_NOT_PUBLISHED").default(feedSourcesDataItemDiagnosticDefault)
 })),
   "meta": zod.object({
-  "next_page_token": zod.union([zod.string(),zod.null()]).describe('Opaque filter\/state-bound continuation.'),
+  "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(feedSourcesMetaProjectionVersionDefault),
   "source_health_available": zod.literal(false).default(feedSourcesMetaSourceHealthAvailableDefault),
   "limitations": zod.array(zod.string()).default(feedSourcesMetaLimitationsDefault)

@@ -7,6 +7,7 @@
  */
 import type { Tier1CountyPriority } from './tier1CountyPriority';
 import type { Tier1CountyPriorityAvailabilityAvailability } from './tier1CountyPriorityAvailabilityAvailability';
+import type { Tier1CountyPriorityAvailabilityReason } from './tier1CountyPriorityAvailabilityReason';
 
 /**
  * Availability lookup that separates confirmed absence from request failure.
@@ -19,8 +20,11 @@ export interface Tier1CountyPriorityAvailability {
      * @minLength 1
      */
   geography_release_id: string;
-  /** Stable reason when no persisted result is published; null when data is available. */
-  reason: 'NO_PUBLISHED_MODEL' | null;
+  /**
+     * Stable reason when no persisted result is published; null when data is available.
+     * @nullable
+     */
+  reason: Tier1CountyPriorityAvailabilityReason;
   /** The exact persisted Tier 1 result, or null when none is published. */
   data: Tier1CountyPriority | null;
 }

@@ -10,32 +10,35 @@ import * as zod from 'zod';
 export const feedbackSubmissionRequestMessageMin = 10;
 export const feedbackSubmissionRequestMessageMax = 2000;
 
-export const feedbackSubmissionRequestContactEmailOneMax = 254;
+export const feedbackSubmissionRequestContactEmailMax = 254;
 
-export const feedbackSubmissionRequestContextOneCountyFipsOneRegExp = new RegExp('^\\d{5}$');
-export const feedbackSubmissionRequestContextOneCompareCountyFipsOneRegExp = new RegExp('^\\d{5}$');
-export const feedbackSubmissionRequestContextOneSelectedCountyFipsOneMax = 5;
+export const feedbackSubmissionRequestContextOneCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const feedbackSubmissionRequestContextOneCompareCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const feedbackSubmissionRequestContextOneSelectedCountyFipsMax = 5;
 
-export const feedbackSubmissionRequestContextOneDatasetOneMax = 64;
+export const feedbackSubmissionRequestContextOneDatasetMax = 64;
 
 
-export const feedbackSubmissionRequestContextOneDatasetOneRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
-export const feedbackSubmissionRequestContextOneEcologicalShareOneMin = 40;
-export const feedbackSubmissionRequestContextOneEcologicalShareOneMax = 85;
-export const feedbackSubmissionRequestContextOneEcologicalShareOneMultipleOf = 5;
+export const feedbackSubmissionRequestContextOneDatasetRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
+export const feedbackSubmissionRequestContextOneEcologicalShareMin = 40;
+export const feedbackSubmissionRequestContextOneEcologicalShareMax = 85;
+export const feedbackSubmissionRequestContextOneEcologicalShareMultipleOf = 5;
 
-export const feedbackSubmissionRequestContextOneLowIncidenceBreakpointOneMin = 5;
-export const feedbackSubmissionRequestContextOneLowIncidenceBreakpointOneMax = 25;
+export const feedbackSubmissionRequestContextOneLowIncidenceBreakpointMin = 5;
+export const feedbackSubmissionRequestContextOneLowIncidenceBreakpointMax = 25;
 
-export const feedbackSubmissionRequestContextOneMissingHumanWeaknessOneMin = 40;
-export const feedbackSubmissionRequestContextOneMissingHumanWeaknessOneMax = 90;
-export const feedbackSubmissionRequestContextOneMissingHumanWeaknessOneMultipleOf = 5;
+export const feedbackSubmissionRequestContextOneSmoothKMin = 5;
+export const feedbackSubmissionRequestContextOneSmoothKMax = 200;
 
-export const feedbackSubmissionRequestContextOneSourceIdsOneMax = 8;
+export const feedbackSubmissionRequestContextOneMissingHumanWeaknessMin = 40;
+export const feedbackSubmissionRequestContextOneMissingHumanWeaknessMax = 90;
+export const feedbackSubmissionRequestContextOneMissingHumanWeaknessMultipleOf = 5;
 
-export const feedbackSubmissionRequestContextOneEvidenceItemIdsOneMax = 8;
+export const feedbackSubmissionRequestContextOneSourceIdsMax = 8;
 
-export const feedbackSubmissionRequestContextOneItemIdsOneMax = 8;
+export const feedbackSubmissionRequestContextOneEvidenceItemIdsMax = 8;
+
+export const feedbackSubmissionRequestContextOneItemIdsMax = 8;
 
 export const feedbackSubmissionRequestAppVersionRegExp = new RegExp('^atlas-web/[A-Za-z0-9._-]{1,32}$');
 
@@ -43,23 +46,24 @@ export const FeedbackSubmissionRequest = zod.object({
   "submission_token": zod.uuid(),
   "category": zod.enum(['data_issue', 'usability', 'bug', 'feature_idea', 'general']),
   "message": zod.string().min(feedbackSubmissionRequestMessageMin).max(feedbackSubmissionRequestMessageMax),
-  "contact_email": zod.union([zod.string().max(feedbackSubmissionRequestContactEmailOneMax),zod.null()]).optional(),
+  "contact_email": zod.string().max(feedbackSubmissionRequestContactEmailMax).nullish(),
   "route_id": zod.enum(['overview', 'geographic_explorer', 'evidence_library', 'assistant', 'account', 'privacy', 'ai_ethics']),
   "context": zod.union([zod.object({
-  "state": zod.union([zod.string(),zod.null()]).optional(),
-  "county_fips": zod.union([zod.string().regex(feedbackSubmissionRequestContextOneCountyFipsOneRegExp),zod.null()]).optional(),
-  "compare_county_fips": zod.union([zod.string().regex(feedbackSubmissionRequestContextOneCompareCountyFipsOneRegExp),zod.null()]).optional(),
-  "selected_county_fips": zod.union([zod.array(zod.string()).max(feedbackSubmissionRequestContextOneSelectedCountyFipsOneMax),zod.null()]).optional(),
-  "dataset": zod.union([zod.string().max(feedbackSubmissionRequestContextOneDatasetOneMax).regex(feedbackSubmissionRequestContextOneDatasetOneRegExp),zod.null()]).optional(),
-  "evidence_view": zod.union([zod.enum(['all', 'ecological', 'human', 'complete']),zod.null()]).optional(),
-  "explorer_view": zod.union([zod.enum(['tiles', 'multiples', 'matrix', 'ranking', 'maps', 'scatter', 'compare', 'trends']),zod.null()]).optional(),
-  "explorer_metric": zod.union([zod.enum(['score', 'completeness']),zod.null()]).optional(),
-  "ecological_share": zod.union([zod.int().min(feedbackSubmissionRequestContextOneEcologicalShareOneMin).max(feedbackSubmissionRequestContextOneEcologicalShareOneMax).multipleOf(feedbackSubmissionRequestContextOneEcologicalShareOneMultipleOf),zod.null()]).optional(),
-  "low_incidence_breakpoint": zod.union([zod.int().min(feedbackSubmissionRequestContextOneLowIncidenceBreakpointOneMin).max(feedbackSubmissionRequestContextOneLowIncidenceBreakpointOneMax),zod.null()]).optional(),
-  "missing_human_weakness": zod.union([zod.int().min(feedbackSubmissionRequestContextOneMissingHumanWeaknessOneMin).max(feedbackSubmissionRequestContextOneMissingHumanWeaknessOneMax).multipleOf(feedbackSubmissionRequestContextOneMissingHumanWeaknessOneMultipleOf),zod.null()]).optional(),
-  "source_ids": zod.union([zod.array(zod.string()).max(feedbackSubmissionRequestContextOneSourceIdsOneMax),zod.null()]).optional(),
-  "evidence_item_ids": zod.union([zod.array(zod.string()).max(feedbackSubmissionRequestContextOneEvidenceItemIdsOneMax),zod.null()]).optional(),
-  "item_ids": zod.union([zod.array(zod.string()).max(feedbackSubmissionRequestContextOneItemIdsOneMax),zod.null()]).optional()
+  "state": zod.string().nullish(),
+  "county_fips": zod.string().regex(feedbackSubmissionRequestContextOneCountyFipsRegExp).nullish(),
+  "compare_county_fips": zod.string().regex(feedbackSubmissionRequestContextOneCompareCountyFipsRegExp).nullish(),
+  "selected_county_fips": zod.array(zod.string()).max(feedbackSubmissionRequestContextOneSelectedCountyFipsMax).nullish(),
+  "dataset": zod.string().max(feedbackSubmissionRequestContextOneDatasetMax).regex(feedbackSubmissionRequestContextOneDatasetRegExp).nullish(),
+  "evidence_view": zod.union([zod.literal('all'),zod.literal('ecological'),zod.literal('human'),zod.literal('complete'),zod.literal(null)]).nullish(),
+  "explorer_view": zod.union([zod.literal('tiles'),zod.literal('multiples'),zod.literal('matrix'),zod.literal('ranking'),zod.literal('maps'),zod.literal('scatter'),zod.literal('compare'),zod.literal('trends'),zod.literal(null)]).nullish(),
+  "explorer_metric": zod.union([zod.literal('score'),zod.literal('completeness'),zod.literal(null)]).nullish(),
+  "ecological_share": zod.int().min(feedbackSubmissionRequestContextOneEcologicalShareMin).max(feedbackSubmissionRequestContextOneEcologicalShareMax).multipleOf(feedbackSubmissionRequestContextOneEcologicalShareMultipleOf).nullish(),
+  "low_incidence_breakpoint": zod.int().min(feedbackSubmissionRequestContextOneLowIncidenceBreakpointMin).max(feedbackSubmissionRequestContextOneLowIncidenceBreakpointMax).nullish(),
+  "smooth_k": zod.int().min(feedbackSubmissionRequestContextOneSmoothKMin).max(feedbackSubmissionRequestContextOneSmoothKMax).nullish(),
+  "missing_human_weakness": zod.int().min(feedbackSubmissionRequestContextOneMissingHumanWeaknessMin).max(feedbackSubmissionRequestContextOneMissingHumanWeaknessMax).multipleOf(feedbackSubmissionRequestContextOneMissingHumanWeaknessMultipleOf).nullish(),
+  "source_ids": zod.array(zod.string()).max(feedbackSubmissionRequestContextOneSourceIdsMax).nullish(),
+  "evidence_item_ids": zod.array(zod.string()).max(feedbackSubmissionRequestContextOneEvidenceItemIdsMax).nullish(),
+  "item_ids": zod.array(zod.string()).max(feedbackSubmissionRequestContextOneItemIdsMax).nullish()
 }).describe('Closed geography and view context for a feedback submission.'),zod.null()]).optional(),
   "app_version": zod.string().regex(feedbackSubmissionRequestAppVersionRegExp)
 })

@@ -7,13 +7,13 @@
  */
 import * as zod from 'zod';
 
-export const indicatorsV1IndicatorsGetParamsPageSizeOneMax = 500;
+export const indicatorsV1IndicatorsGetParamsPageSizeMax = 500;
 
 
 export const IndicatorsV1IndicatorsGetParams = zod.object({
-  "indicator_id": zod.union([zod.string(),zod.null()]).optional(),
-  "page_size": zod.union([zod.int().min(1).max(indicatorsV1IndicatorsGetParamsPageSizeOneMax),zod.null()]).optional().describe('Items per page; defaults to 100, configured maximum at most 500.'),
-  "page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque next_page_token; retain query filters and release.')
+  "indicator_id": zod.string().nullish(),
+  "page_size": zod.int().min(1).max(indicatorsV1IndicatorsGetParamsPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
 export type IndicatorsV1IndicatorsGetParams = zod.input<typeof IndicatorsV1IndicatorsGetParams>;

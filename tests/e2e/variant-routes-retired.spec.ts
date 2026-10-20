@@ -12,7 +12,7 @@ const retiredRoutes = [
   "/variant_5",
   "/variant_5?county=08001&compare=06037",
   "/variant_6",
-  "/variant_6?state=CO&county=08001&evidence=ecological&eco=70&breakpoint=15&missing=80",
+  "/variant_6?state=CO&county=08001&evidence=ecological&eco=70&smooth=15&missing=80",
   "/variant_7",
   "/variant_7?view=ranking&county=08001",
 ] as const;

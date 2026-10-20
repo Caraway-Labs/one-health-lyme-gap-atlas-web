@@ -7,7 +7,10 @@
  */
 
 export interface FeedMeta {
-  /** Opaque filter/state-bound continuation. */
+  /**
+     * Opaque filter/state-bound continuation.
+     * @nullable
+     */
   next_page_token: string | null;
   projection_version?: 'intelligence-feed-read-v2';
   source_health_available?: false;

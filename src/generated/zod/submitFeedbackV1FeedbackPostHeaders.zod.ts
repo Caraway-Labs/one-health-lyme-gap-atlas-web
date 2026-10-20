@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const SubmitFeedbackV1FeedbackPostHeaders = zod.object({
-  "authorization": zod.union([zod.string(),zod.null()]).optional()
+  "authorization": zod.string().nullish()
 })
 
 export type SubmitFeedbackV1FeedbackPostHeaders = zod.input<typeof SubmitFeedbackV1FeedbackPostHeaders>;

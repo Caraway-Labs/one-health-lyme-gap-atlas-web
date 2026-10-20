@@ -1,0 +1,13 @@
+# Surveillance Gap Score v1.1 consumer contract
+
+Approved authority: Shared Python #32, Smooth k=50. Browser official values come from the API only. E/C weights, six color bands, category thresholds and all ML outputs are unchanged. Existing follow-up evidence reference 10 is independent of the incidence attenuation k and is not retuned by this change.
+
+Explorer, Compare Counties and legacy consumers request smooth_k=50 by default. Generated types/validators come from API e88887877440c00de0e23301f0a3eac2353134d9. Scoring method is surveillance-gap-score-v1.1, separate from the governed data release method. Responses lacking that scoring identity fail closed before rendering official values or adjusted scenarios. A stale API/cache therefore produces an explicit recoverable error, never a mixed scoring experience.
+
+What-if uses original typed published 2023 minimum incidence and community inputs from the API. No inverse-H reconstruction. Missing source inputs remain limited; known null human observations retain the explicitly labelled legacy H75 assumption. Published zero remains distinct from null. Scenario calculations retain unrounded intermediates and exactly reproduce Python one-decimal rounding. Slider changes remain local exploratory assumptions; they do not publish a new methodology.
+
+URL parameter smooth represents the exploratory k; default 50 is omitted. Legacy breakpoint URLs reset eco/missing/smooth to 65/75/50 and remove breakpoint in Explorer. Legacy analytical callers also reset settings on old URLs. They never interpret breakpoint=10 as k=10. County selection, filters and release context stay shareable. Compare uses authoritative published values.
+
+Research regression fixtures contain the exact #31 governed snapshot, all 3,144 source records, original inputs and authoritative Python k50/k100 outputs. They are test fixtures rather than fresh production observations. Unit tests cover numerical, missingness, ranks and fixed map colors. Browser cases cover NY/PA/MA/ME, an emerging county, missing-human data, sliders and URL reload/migration. Existing tests cover comparison summaries, exports, error/loading and responsive accessibility.
+
+Deployment/rollback is coordinated with API docs/gap-score-v11-release.md. Before merge, require green CI and independent review. After dependency-order promotion verify exact ACTIVE commits and actual API/browser values. Roll back Web/API together through protected PR/CI, wait the HTTP cache TTL, then verify prior method identities and exact commits. Never substitute fixture evidence for production acceptance.

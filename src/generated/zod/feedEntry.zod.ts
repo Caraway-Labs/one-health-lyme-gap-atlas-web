@@ -9,13 +9,13 @@ import * as zod from 'zod';
 
 export const feedEntryItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const feedEntryRevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
-export const feedEntryTitleOneMax = 1000;
+export const feedEntryTitleMax = 1000;
 
 
-export const feedEntryTitleOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const feedEntryCanonicalUrlOneMax = 4096;
+export const feedEntryTitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const feedEntryCanonicalUrlMax = 4096;
 
-export const feedEntryPublishedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedEntryPublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const feedEntryFetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const feedEntryProvenanceRunIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 export const feedEntryProvenanceArtifactIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
@@ -27,10 +27,10 @@ export const feedEntryLimitationsItemMax = 1000;
 export const feedEntryLimitationsItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedEntryLimitationsMax = 100;
 
-export const feedEntryPublisherOneMax = 1000;
+export const feedEntryPublisherMax = 1000;
 
 
-export const feedEntryPublisherOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const feedEntryPublisherRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedEntrySourceSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 
 export const feedEntrySourceOrganizationMax = 1000;
@@ -41,9 +41,9 @@ export const feedEntrySourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$
 export const FeedEntry = zod.object({
   "item_id": zod.string().regex(feedEntryItemIdRegExp),
   "revision_id": zod.string().regex(feedEntryRevisionIdRegExp),
-  "title": zod.union([zod.string().min(1).max(feedEntryTitleOneMax).regex(feedEntryTitleOneRegExp),zod.null()]),
-  "canonical_url": zod.union([zod.string().max(feedEntryCanonicalUrlOneMax),zod.null()]),
-  "published_at": zod.union([zod.string().regex(feedEntryPublishedAtOneRegExp),zod.null()]),
+  "title": zod.string().min(1).max(feedEntryTitleMax).regex(feedEntryTitleRegExp).nullable(),
+  "canonical_url": zod.string().max(feedEntryCanonicalUrlMax).nullable(),
+  "published_at": zod.string().regex(feedEntryPublishedAtRegExp).nullable(),
   "fetched_at": zod.string().regex(feedEntryFetchedAtRegExp),
   "provenance": zod.object({
   "run_id": zod.string().regex(feedEntryProvenanceRunIdRegExp),
@@ -56,7 +56,7 @@ export const FeedEntry = zod.object({
   "limitations": zod.array(zod.string().min(1).max(feedEntryLimitationsItemMax).regex(feedEntryLimitationsItemRegExp)).max(feedEntryLimitationsMax),
   "contract_version": zod.literal("2.0.0"),
   "publication_date_state": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
-  "publisher": zod.union([zod.string().min(1).max(feedEntryPublisherOneMax).regex(feedEntryPublisherOneRegExp),zod.null()]),
+  "publisher": zod.string().min(1).max(feedEntryPublisherMax).regex(feedEntryPublisherRegExp).nullable(),
   "source": zod.object({
   "source_id": zod.string().regex(feedEntrySourceSourceIdRegExp),
   "registry_version": zod.int().min(1),
