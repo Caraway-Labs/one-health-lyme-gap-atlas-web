@@ -325,6 +325,7 @@ describe("Published Review county exploration", () => {
   ])("keeps human status $status and floor $floor conservative", (entry) => {
     const model = reviewHumanFloorEvidence({
       ...CountyV1CountiesFipsGetResponse.parse(baldwin),
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: entry.status,
       case_count_floor_2023: entry.floor,
     });

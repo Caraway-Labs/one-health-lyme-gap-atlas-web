@@ -7,5 +7,8 @@
  */
 
 export type GeometryV1AtlasGeometryGetParams = {
+/**
+ * @nullable
+ */
 dataset_version?: string | null;
 };

@@ -127,7 +127,7 @@ describe("UX Reset cross-page context contract", () => {
 
   it("drops Review scenario assumptions on handoff to Compare", () => {
     const source = new URLSearchParams(
-      "scope=CO&county=08021&eco=40&breakpoint=20&missing=40"
+      "scope=CO&county=08021&eco=40&smooth=20&missing=40"
     );
     const { dropped, params } = uxResetContextHandoffSearchParams(
       UX_RESET_ROUTE_PATHS.review,

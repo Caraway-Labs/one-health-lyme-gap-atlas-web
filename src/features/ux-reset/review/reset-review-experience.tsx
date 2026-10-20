@@ -168,16 +168,16 @@ function ResetReviewExperienceInner() {
   const scenarioSettings = useMemo<ScoreSettings>(
     () => ({
       ecological_share: urlState.eco,
-      low_incidence_breakpoint: urlState.breakpoint,
+      smooth_k: urlState.smooth,
       missing_human_weakness: urlState.missing,
     }),
-    [urlState.breakpoint, urlState.eco, urlState.missing]
+    [urlState.smooth, urlState.eco, urlState.missing]
   );
   const setScenarioSettings = useCallback(
     (next: ScoreSettings) => {
       void setUrlState(
         {
-          breakpoint: next.low_incidence_breakpoint,
+          smooth: next.smooth_k,
           eco: next.ecological_share,
           missing: next.missing_human_weakness,
         },

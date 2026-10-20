@@ -7,5 +7,8 @@
  */
 
 export type MetadataV1AtlasMetadataGetParams = {
+/**
+ * @nullable
+ */
 dataset_version?: string | null;
 };

@@ -10,26 +10,26 @@ import * as zod from 'zod';
 
 export const observationsV1ObservationsGetParamsGeographyIdMax = 500;
 
-export const observationsV1ObservationsGetParamsVintageYearOneMin = 1900;
-export const observationsV1ObservationsGetParamsVintageYearOneMax = 2100;
+export const observationsV1ObservationsGetParamsVintageYearMin = 1900;
+export const observationsV1ObservationsGetParamsVintageYearMax = 2100;
 
-export const observationsV1ObservationsGetParamsYearOneMin = 1900;
-export const observationsV1ObservationsGetParamsYearOneMax = 2100;
+export const observationsV1ObservationsGetParamsYearMin = 1900;
+export const observationsV1ObservationsGetParamsYearMax = 2100;
 
-export const observationsV1ObservationsGetParamsPageSizeOneMax = 500;
+export const observationsV1ObservationsGetParamsPageSizeMax = 500;
 
 
 export const ObservationsV1ObservationsGetParams = zod.object({
   "measure_id": zod.string().min(1).describe('Exact discovery measure ID.'),
   "geography_type": zod.enum(['county', 'state']),
   "geography_id": zod.array(zod.string()).min(1).max(observationsV1ObservationsGetParamsGeographyIdMax).describe('Repeat for 1-500 county FIPS strings; preserve leading zeros.'),
-  "vintage_year": zod.union([zod.int().min(observationsV1ObservationsGetParamsVintageYearOneMin).max(observationsV1ObservationsGetParamsVintageYearOneMax),zod.null()]).optional().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
-  "year": zod.union([zod.int().min(observationsV1ObservationsGetParamsYearOneMin).max(observationsV1ObservationsGetParamsYearOneMax),zod.null()]).optional().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),
-  "start_date": zod.union([zod.iso.date(),zod.null()]).optional().describe('Inclusive period start; requires end_date and excludes year.'),
-  "end_date": zod.union([zod.iso.date(),zod.null()]).optional().describe('Inclusive period end; requires start_date and excludes year.'),
-  "stratification": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Current release has no strata; unsupported selections fail explicitly.'),
-  "page_size": zod.union([zod.int().min(1).max(observationsV1ObservationsGetParamsPageSizeOneMax),zod.null()]).optional().describe('Items per page; defaults to 100, configured maximum at most 500.'),
-  "page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque next_page_token; retain query filters and release.')
+  "vintage_year": zod.int().min(observationsV1ObservationsGetParamsVintageYearMin).max(observationsV1ObservationsGetParamsVintageYearMax).nullish().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
+  "year": zod.int().min(observationsV1ObservationsGetParamsYearMin).max(observationsV1ObservationsGetParamsYearMax).nullish().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),
+  "start_date": zod.iso.date().nullish().describe('Inclusive period start; requires end_date and excludes year.'),
+  "end_date": zod.iso.date().nullish().describe('Inclusive period end; requires start_date and excludes year.'),
+  "stratification": zod.array(zod.string()).nullish().describe('Current release has no strata; unsupported selections fail explicitly.'),
+  "page_size": zod.int().min(1).max(observationsV1ObservationsGetParamsPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
 export type ObservationsV1ObservationsGetParams = zod.input<typeof ObservationsV1ObservationsGetParams>;

@@ -35,7 +35,7 @@ export const uiControlIds = [
   "csv_download",
   "results_table_toggle",
   "score_ecological_share",
-  "score_low_incidence_breakpoint",
+  "score_smooth_k",
   "score_missing_human_weakness",
   "ranked_county_select",
   "county_summary_copy",
@@ -134,7 +134,7 @@ export type GeographySelectionSurface =
 
 export const scoreControlIds = [
   "score_ecological_share",
-  "score_low_incidence_breakpoint",
+  "score_smooth_k",
   "score_missing_human_weakness",
 ] as const;
 
@@ -389,8 +389,8 @@ export function isValidScoreValue(
   if (scoreControl === "score_ecological_share") {
     return scoreValue >= 40 && scoreValue <= 85 && scoreValue % 5 === 0;
   }
-  if (scoreControl === "score_low_incidence_breakpoint") {
-    return scoreValue >= 5 && scoreValue <= 25;
+  if (scoreControl === "score_smooth_k") {
+    return scoreValue >= 5 && scoreValue <= 200 && scoreValue % 5 === 0;
   }
   return scoreValue >= 40 && scoreValue <= 90 && scoreValue % 5 === 0;
 }

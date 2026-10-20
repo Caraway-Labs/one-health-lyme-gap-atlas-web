@@ -13,15 +13,15 @@ export const PrivacyRequestCreated = zod.object({
   "action": zod.enum(['export', 'deletion']),
   "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
   "created_at": zod.iso.datetime({"offset":true}),
-  "completed_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "completed_at": zod.iso.datetime({"offset":true}).nullish(),
   "download_available": zod.boolean().default(privacyRequestCreatedDownloadAvailableDefault),
   "omissions": zod.array(zod.object({
   "system": zod.string(),
   "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
   "detail": zod.string()
 })).optional(),
-  "support_reason": zod.union([zod.string(),zod.null()]).optional(),
-  "confirmation_expires_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
+  "support_reason": zod.string().nullish(),
+  "confirmation_expires_at": zod.iso.datetime({"offset":true}).nullish(),
   "confirmation_nonce": zod.string()
 })
 

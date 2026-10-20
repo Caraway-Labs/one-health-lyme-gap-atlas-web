@@ -12,6 +12,8 @@ export interface TemporalLagContext {
   kind: TemporalLagContextKind;
   anchor: TemporalLagContextAnchor;
   offset_days: number;
+  /** @nullable */
   window_days?: number | null;
+  /** @nullable */
   season_id?: string | null;
 }

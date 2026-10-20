@@ -7,47 +7,51 @@
  */
 import * as zod from 'zod';
 
-export const feedbackContextCountyFipsOneRegExp = new RegExp('^\\d{5}$');
-export const feedbackContextCompareCountyFipsOneRegExp = new RegExp('^\\d{5}$');
-export const feedbackContextSelectedCountyFipsOneMax = 5;
+export const feedbackContextCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const feedbackContextCompareCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const feedbackContextSelectedCountyFipsMax = 5;
 
-export const feedbackContextDatasetOneMax = 64;
+export const feedbackContextDatasetMax = 64;
 
 
-export const feedbackContextDatasetOneRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
-export const feedbackContextEcologicalShareOneMin = 40;
-export const feedbackContextEcologicalShareOneMax = 85;
-export const feedbackContextEcologicalShareOneMultipleOf = 5;
+export const feedbackContextDatasetRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
+export const feedbackContextEcologicalShareMin = 40;
+export const feedbackContextEcologicalShareMax = 85;
+export const feedbackContextEcologicalShareMultipleOf = 5;
 
-export const feedbackContextLowIncidenceBreakpointOneMin = 5;
-export const feedbackContextLowIncidenceBreakpointOneMax = 25;
+export const feedbackContextLowIncidenceBreakpointMin = 5;
+export const feedbackContextLowIncidenceBreakpointMax = 25;
 
-export const feedbackContextMissingHumanWeaknessOneMin = 40;
-export const feedbackContextMissingHumanWeaknessOneMax = 90;
-export const feedbackContextMissingHumanWeaknessOneMultipleOf = 5;
+export const feedbackContextSmoothKMin = 5;
+export const feedbackContextSmoothKMax = 200;
 
-export const feedbackContextSourceIdsOneMax = 8;
+export const feedbackContextMissingHumanWeaknessMin = 40;
+export const feedbackContextMissingHumanWeaknessMax = 90;
+export const feedbackContextMissingHumanWeaknessMultipleOf = 5;
 
-export const feedbackContextEvidenceItemIdsOneMax = 8;
+export const feedbackContextSourceIdsMax = 8;
 
-export const feedbackContextItemIdsOneMax = 8;
+export const feedbackContextEvidenceItemIdsMax = 8;
+
+export const feedbackContextItemIdsMax = 8;
 
 
 export const FeedbackContext = zod.object({
-  "state": zod.union([zod.string(),zod.null()]).optional(),
-  "county_fips": zod.union([zod.string().regex(feedbackContextCountyFipsOneRegExp),zod.null()]).optional(),
-  "compare_county_fips": zod.union([zod.string().regex(feedbackContextCompareCountyFipsOneRegExp),zod.null()]).optional(),
-  "selected_county_fips": zod.union([zod.array(zod.string()).max(feedbackContextSelectedCountyFipsOneMax),zod.null()]).optional(),
-  "dataset": zod.union([zod.string().max(feedbackContextDatasetOneMax).regex(feedbackContextDatasetOneRegExp),zod.null()]).optional(),
-  "evidence_view": zod.union([zod.enum(['all', 'ecological', 'human', 'complete']),zod.null()]).optional(),
-  "explorer_view": zod.union([zod.enum(['tiles', 'multiples', 'matrix', 'ranking', 'maps', 'scatter', 'compare', 'trends']),zod.null()]).optional(),
-  "explorer_metric": zod.union([zod.enum(['score', 'completeness']),zod.null()]).optional(),
-  "ecological_share": zod.union([zod.int().min(feedbackContextEcologicalShareOneMin).max(feedbackContextEcologicalShareOneMax).multipleOf(feedbackContextEcologicalShareOneMultipleOf),zod.null()]).optional(),
-  "low_incidence_breakpoint": zod.union([zod.int().min(feedbackContextLowIncidenceBreakpointOneMin).max(feedbackContextLowIncidenceBreakpointOneMax),zod.null()]).optional(),
-  "missing_human_weakness": zod.union([zod.int().min(feedbackContextMissingHumanWeaknessOneMin).max(feedbackContextMissingHumanWeaknessOneMax).multipleOf(feedbackContextMissingHumanWeaknessOneMultipleOf),zod.null()]).optional(),
-  "source_ids": zod.union([zod.array(zod.string()).max(feedbackContextSourceIdsOneMax),zod.null()]).optional(),
-  "evidence_item_ids": zod.union([zod.array(zod.string()).max(feedbackContextEvidenceItemIdsOneMax),zod.null()]).optional(),
-  "item_ids": zod.union([zod.array(zod.string()).max(feedbackContextItemIdsOneMax),zod.null()]).optional()
+  "state": zod.string().nullish(),
+  "county_fips": zod.string().regex(feedbackContextCountyFipsRegExp).nullish(),
+  "compare_county_fips": zod.string().regex(feedbackContextCompareCountyFipsRegExp).nullish(),
+  "selected_county_fips": zod.array(zod.string()).max(feedbackContextSelectedCountyFipsMax).nullish(),
+  "dataset": zod.string().max(feedbackContextDatasetMax).regex(feedbackContextDatasetRegExp).nullish(),
+  "evidence_view": zod.union([zod.literal('all'),zod.literal('ecological'),zod.literal('human'),zod.literal('complete'),zod.literal(null)]).nullish(),
+  "explorer_view": zod.union([zod.literal('tiles'),zod.literal('multiples'),zod.literal('matrix'),zod.literal('ranking'),zod.literal('maps'),zod.literal('scatter'),zod.literal('compare'),zod.literal('trends'),zod.literal(null)]).nullish(),
+  "explorer_metric": zod.union([zod.literal('score'),zod.literal('completeness'),zod.literal(null)]).nullish(),
+  "ecological_share": zod.int().min(feedbackContextEcologicalShareMin).max(feedbackContextEcologicalShareMax).multipleOf(feedbackContextEcologicalShareMultipleOf).nullish(),
+  "low_incidence_breakpoint": zod.int().min(feedbackContextLowIncidenceBreakpointMin).max(feedbackContextLowIncidenceBreakpointMax).nullish(),
+  "smooth_k": zod.int().min(feedbackContextSmoothKMin).max(feedbackContextSmoothKMax).nullish(),
+  "missing_human_weakness": zod.int().min(feedbackContextMissingHumanWeaknessMin).max(feedbackContextMissingHumanWeaknessMax).multipleOf(feedbackContextMissingHumanWeaknessMultipleOf).nullish(),
+  "source_ids": zod.array(zod.string()).max(feedbackContextSourceIdsMax).nullish(),
+  "evidence_item_ids": zod.array(zod.string()).max(feedbackContextEvidenceItemIdsMax).nullish(),
+  "item_ids": zod.array(zod.string()).max(feedbackContextItemIdsMax).nullish()
 }).describe('Closed geography and view context for a feedback submission.')
 
 export type FeedbackContext = zod.input<typeof FeedbackContext>;

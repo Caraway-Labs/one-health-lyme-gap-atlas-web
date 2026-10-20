@@ -704,7 +704,7 @@ function pathogenTickWhy(evidence: SuggestedFollowUpEvidence): string {
     evidence.caseCountFloor2023 === 0
       ? " The published case-count floor is zero, which is an observed zero and is distinct from a missing record."
       : "";
-  return `Observed finding: the published Lyme-pathogen status is Present, and the published incidence floor is below the active low-incidence breakpoint.${observedZero} Missing information: collection timing and sampling location are not in this county record. Question for local verification: confirm the tick record’s timing and location before treating it as current countywide evidence.`;
+  return `Observed finding: the published Lyme-pathogen status is Present, and the published incidence floor is below the existing follow-up reference of 10 per 100,000.${observedZero} Missing information: collection timing and sampling location are not in this county record. Question for local verification: confirm the tick record’s timing and location before treating it as current countywide evidence.`;
 }
 
 function pathogenHumanWhy(evidence: SuggestedFollowUpEvidence): string {
@@ -712,7 +712,7 @@ function pathogenHumanWhy(evidence: SuggestedFollowUpEvidence): string {
     evidence.caseCountFloor2023 === 0
       ? "Observed finding: the published case-count floor is zero."
       : "Observed finding: a published incidence floor is available.";
-  return `${observedCount} It is below the active low-incidence breakpoint, alongside a documented Lyme-pathogen record. Question for local verification: review the human reporting context and available exposure information. This does not establish local transmission.`;
+  return `${observedCount} It is below the existing follow-up reference of 10 per 100,000, alongside a documented Lyme-pathogen record. Question for local verification: review the human reporting context and available exposure information. This does not establish local transmission.`;
 }
 
 function tickWithoutPathogenRecord(

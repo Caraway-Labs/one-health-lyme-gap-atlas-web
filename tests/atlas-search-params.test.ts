@@ -24,8 +24,8 @@ describe("Atlas search-parameter contract", () => {
   it("accepts bounded score settings and rejects invalid values", () => {
     expect(atlasSearchParams.eco.parse("70")).toBe(70);
     expect(atlasSearchParams.eco.parse("71")).toBeNull();
-    expect(atlasSearchParams.breakpoint.parse("25")).toBe(25);
-    expect(atlasSearchParams.breakpoint.parse("26")).toBeNull();
+    expect(atlasSearchParams.smooth.parse("25")).toBe(25);
+    expect(atlasSearchParams.smooth.parse("26")).toBeNull();
     expect(atlasSearchParams.missing.parse("80")).toBe(80);
   });
 });

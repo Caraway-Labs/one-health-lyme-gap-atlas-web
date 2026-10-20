@@ -8,13 +8,45 @@
 import type { StructuredContextGeographyType } from './structuredContextGeographyType';
 
 export interface StructuredContext {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     * @nullable
+     */
   measure_id?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     * @nullable
+     */
   indicator_id?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     * @nullable
+     */
   search_text?: string | null;
   geography_type?: StructuredContextGeographyType;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     * @nullable
+     */
   geography_ids?: string[] | null;
+  /**
+     * @minimum 1900
+     * @maximum 2100
+     * @nullable
+     */
   year?: number | null;
+  /** @nullable */
   start_date?: string | null;
+  /** @nullable */
   end_date?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     * @nullable
+     */
   expected_observation_id?: string | null;
 }

@@ -7,6 +7,7 @@
  */
 import * as zod from 'zod';
 
+export const countyDetailScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 export const countyDetailScoreScoreMin = 0;
 export const countyDetailScoreScoreMax = 100;
 
@@ -34,8 +35,13 @@ export const countyDetailScoreAccessSignalMax = 100;
 export const countyDetailScoreRuralSignalMin = 0;
 export const countyDetailScoreRuralSignalMax = 100;
 
-
+export const countyDetailReleaseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 export const CountyDetail = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyDetailScoringMethodologyVersionDefault),
+  "incidence_floor_2023": zod.number().nullable(),
+  "svi_percentile": zod.number().nullable(),
+  "uninsured_percentile": zod.number().nullable(),
+  "rucc_2023": zod.int().nullable(),
   "fips": zod.string(),
   "county": zod.string(),
   "state": zod.string(),
@@ -58,17 +64,14 @@ export const CountyDetail = zod.object({
 }),
   "priority": zod.string(),
   "color": zod.string(),
-  "population": zod.union([zod.int(),zod.null()]),
-  "case_count_floor_2023": zod.union([zod.int(),zod.null()]),
-  "incidence_floor_2023": zod.union([zod.number(),zod.null()]),
-  "state_unallocated_records_2023": zod.union([zod.int(),zod.null()]),
-  "scapularis_status": zod.union([zod.string(),zod.null()]),
-  "pacificus_status": zod.union([zod.string(),zod.null()]),
-  "svi_percentile": zod.union([zod.number(),zod.null()]),
-  "uninsured_percentile": zod.union([zod.number(),zod.null()]),
-  "uninsured_percent": zod.union([zod.number(),zod.null()]),
-  "rucc_2023": zod.union([zod.int(),zod.null()]),
+  "population": zod.int().nullable(),
+  "case_count_floor_2023": zod.int().nullable(),
+  "state_unallocated_records_2023": zod.int().nullable(),
+  "scapularis_status": zod.string().nullable(),
+  "pacificus_status": zod.string().nullable(),
+  "uninsured_percent": zod.number().nullable(),
   "release": zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyDetailReleaseScoringMethodologyVersionDefault),
   "release_id": zod.string(),
   "schema_version": zod.string(),
   "generated_at": zod.iso.datetime({"offset":true}),

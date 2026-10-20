@@ -17,11 +17,18 @@ export interface KnowledgeCitation {
   /** @minItems 1 */
   passage_ids: string[];
   source_label?: string;
+  /** @nullable */
   pmcid?: string | null;
+  /** @nullable */
   corpus_unit_ids?: string[] | null;
+  /** @nullable */
   section_labels?: string[] | null;
+  /** @nullable */
   corpus_rules_version?: string | null;
+  /** @nullable */
   artifact_id?: string | null;
+  /** @nullable */
   contribution_sha256?: string | null;
+  /** @nullable */
   jats_sha256?: string | null;
 }

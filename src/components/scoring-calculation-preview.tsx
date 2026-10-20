@@ -20,8 +20,8 @@ export function ScoringCalculationPreview({
         <dd>{settings.ecological_share}%</dd>
       </div>
       <div className="score-accordion-preview-item">
-        <dt>Published-record threshold</dt>
-        <dd>{settings.low_incidence_breakpoint} per 100,000</dd>
+        <dt>Smooth incidence attenuation (k)</dt>
+        <dd>{settings.smooth_k} per 100,000</dd>
       </div>
       <div className="score-accordion-preview-item">
         <dt>Missing county-record value</dt>

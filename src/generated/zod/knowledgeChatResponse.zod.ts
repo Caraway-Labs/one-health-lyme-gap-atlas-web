@@ -15,14 +15,14 @@ export const knowledgeChatResponseCitationsItemSourceLabelDefault = `PubMed / PM
 export const KnowledgeChatResponse = zod.object({
   "request_id": zod.string(),
   "conversation_id": zod.string(),
-  "conversation_token": zod.union([zod.string(),zod.null()]).optional(),
+  "conversation_token": zod.string().nullish(),
   "configuration_version": zod.string(),
   "assistant_policy_version": zod.string(),
   "status": zod.enum(['answered', 'no_evidence', 'evidence_unavailable', 'safety_refusal', 'capacity_limited']),
   "answer": zod.string(),
   "evidence_state": zod.enum(['single_study', 'consistent', 'limited', 'mixed', 'conflicting', 'insufficient_to_compare', 'no_relevant_corpus_evidence', 'evidence_unavailable', 'not_applicable']),
   "source_used": zod.literal("literature_evidence"),
-  "model_id": zod.union([zod.string(),zod.null()]).optional(),
+  "model_id": zod.string().nullish(),
   "claims": zod.array(zod.object({
   "claim_id": zod.string(),
   "text": zod.string(),
@@ -36,13 +36,13 @@ export const KnowledgeChatResponse = zod.object({
   "claim_ids": zod.array(zod.string()).min(1),
   "passage_ids": zod.array(zod.string()).min(1),
   "source_label": zod.string().default(knowledgeChatResponseCitationsItemSourceLabelDefault),
-  "pmcid": zod.union([zod.string(),zod.null()]).optional(),
-  "corpus_unit_ids": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "section_labels": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "corpus_rules_version": zod.union([zod.string(),zod.null()]).optional(),
-  "artifact_id": zod.union([zod.string(),zod.null()]).optional(),
-  "contribution_sha256": zod.union([zod.string(),zod.null()]).optional(),
-  "jats_sha256": zod.union([zod.string(),zod.null()]).optional()
+  "pmcid": zod.string().nullish(),
+  "corpus_unit_ids": zod.array(zod.string()).nullish(),
+  "section_labels": zod.array(zod.string()).nullish(),
+  "corpus_rules_version": zod.string().nullish(),
+  "artifact_id": zod.string().nullish(),
+  "contribution_sha256": zod.string().nullish(),
+  "jats_sha256": zod.string().nullish()
 })).optional()
 })
 

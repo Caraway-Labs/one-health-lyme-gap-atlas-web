@@ -42,7 +42,7 @@ const COLORADO_STATE_PDF_TEXT =
 const coloradoStatePdf = buildPdfFixture(COLORADO_STATE_PDF_TEXT);
 const legacySettings: ScoreSettings = {
   ecological_share: 65,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 75,
 };
 

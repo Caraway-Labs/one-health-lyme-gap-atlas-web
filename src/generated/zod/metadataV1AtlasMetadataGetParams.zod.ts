@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const MetadataV1AtlasMetadataGetParams = zod.object({
-  "dataset_version": zod.union([zod.string(),zod.null()]).optional()
+  "dataset_version": zod.string().nullish()
 })
 
 export type MetadataV1AtlasMetadataGetParams = zod.input<typeof MetadataV1AtlasMetadataGetParams>;

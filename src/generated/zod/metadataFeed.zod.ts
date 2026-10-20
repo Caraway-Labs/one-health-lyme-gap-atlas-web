@@ -9,13 +9,13 @@ import * as zod from 'zod';
 
 export const metadataFeedDataItemItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const metadataFeedDataItemRevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
-export const metadataFeedDataItemTitleOneMax = 1000;
+export const metadataFeedDataItemTitleMax = 1000;
 
 
-export const metadataFeedDataItemTitleOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const metadataFeedDataItemCanonicalUrlOneMax = 4096;
+export const metadataFeedDataItemTitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const metadataFeedDataItemCanonicalUrlMax = 4096;
 
-export const metadataFeedDataItemPublishedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const metadataFeedDataItemPublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const metadataFeedDataItemFetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const metadataFeedDataItemProvenanceRunIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 export const metadataFeedDataItemProvenanceArtifactIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
@@ -27,10 +27,10 @@ export const metadataFeedDataItemLimitationsItemMax = 1000;
 export const metadataFeedDataItemLimitationsItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const metadataFeedDataItemLimitationsMax = 100;
 
-export const metadataFeedDataItemPublisherOneMax = 1000;
+export const metadataFeedDataItemPublisherMax = 1000;
 
 
-export const metadataFeedDataItemPublisherOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const metadataFeedDataItemPublisherRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const metadataFeedDataItemSourceSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 
 export const metadataFeedDataItemSourceOrganizationMax = 1000;
@@ -44,9 +44,9 @@ export const MetadataFeed = zod.object({
   "data": zod.array(zod.object({
   "item_id": zod.string().regex(metadataFeedDataItemItemIdRegExp),
   "revision_id": zod.string().regex(metadataFeedDataItemRevisionIdRegExp),
-  "title": zod.union([zod.string().min(1).max(metadataFeedDataItemTitleOneMax).regex(metadataFeedDataItemTitleOneRegExp),zod.null()]),
-  "canonical_url": zod.union([zod.string().max(metadataFeedDataItemCanonicalUrlOneMax),zod.null()]),
-  "published_at": zod.union([zod.string().regex(metadataFeedDataItemPublishedAtOneRegExp),zod.null()]),
+  "title": zod.string().min(1).max(metadataFeedDataItemTitleMax).regex(metadataFeedDataItemTitleRegExp).nullable(),
+  "canonical_url": zod.string().max(metadataFeedDataItemCanonicalUrlMax).nullable(),
+  "published_at": zod.string().regex(metadataFeedDataItemPublishedAtRegExp).nullable(),
   "fetched_at": zod.string().regex(metadataFeedDataItemFetchedAtRegExp),
   "provenance": zod.object({
   "run_id": zod.string().regex(metadataFeedDataItemProvenanceRunIdRegExp),
@@ -59,7 +59,7 @@ export const MetadataFeed = zod.object({
   "limitations": zod.array(zod.string().min(1).max(metadataFeedDataItemLimitationsItemMax).regex(metadataFeedDataItemLimitationsItemRegExp)).max(metadataFeedDataItemLimitationsMax),
   "contract_version": zod.literal("2.0.0"),
   "publication_date_state": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
-  "publisher": zod.union([zod.string().min(1).max(metadataFeedDataItemPublisherOneMax).regex(metadataFeedDataItemPublisherOneRegExp),zod.null()]),
+  "publisher": zod.string().min(1).max(metadataFeedDataItemPublisherMax).regex(metadataFeedDataItemPublisherRegExp).nullable(),
   "source": zod.object({
   "source_id": zod.string().regex(metadataFeedDataItemSourceSourceIdRegExp),
   "registry_version": zod.int().min(1),
@@ -68,7 +68,7 @@ export const MetadataFeed = zod.object({
 })
 })),
   "meta": zod.object({
-  "next_page_token": zod.union([zod.string(),zod.null()]).describe('Opaque filter\/state-bound continuation.'),
+  "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(metadataFeedMetaProjectionVersionDefault),
   "source_health_available": zod.literal(false).default(metadataFeedMetaSourceHealthAvailableDefault),
   "limitations": zod.array(zod.string()).default(metadataFeedMetaLimitationsDefault)

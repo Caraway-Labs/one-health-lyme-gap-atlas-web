@@ -388,6 +388,7 @@ describe("selected county preview", () => {
           detail={CountyV1CountiesFipsGetResponse.parse({
             ...autauga,
             case_count_floor_2023: count,
+            scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
             human_status: humanStatus,
             incidence_floor_2023: rate,
           })}

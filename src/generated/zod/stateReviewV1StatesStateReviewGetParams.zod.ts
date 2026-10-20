@@ -7,12 +7,12 @@
  */
 import * as zod from 'zod';
 
-export const stateReviewV1StatesStateReviewGetParamsObservationContextOneMax = 80;
+export const stateReviewV1StatesStateReviewGetParamsObservationContextMax = 80;
 
 
 export const StateReviewV1StatesStateReviewGetParams = zod.object({
-  "observation_context": zod.union([zod.string().max(stateReviewV1StatesStateReviewGetParamsObservationContextOneMax),zod.null()]).optional(),
-  "dataset_version": zod.union([zod.string(),zod.null()]).optional()
+  "observation_context": zod.string().max(stateReviewV1StatesStateReviewGetParamsObservationContextMax).nullish(),
+  "dataset_version": zod.string().nullish()
 })
 
 export type StateReviewV1StatesStateReviewGetParams = zod.input<typeof StateReviewV1StatesStateReviewGetParams>;

@@ -7,13 +7,20 @@
  */
 
 export interface Replay {
+  /** @nullable */
   provider_id?: string | null;
+  /** @nullable */
   model_id?: string | null;
+  /** @nullable */
   prompt_version?: string | null;
   tool_contract_version?: 'ask-atlas-v1';
   routing_policy_version?: string;
+  /** @nullable */
   configuration_version?: string | null;
+  /** @nullable */
   assistant_policy_version?: string | null;
+  /** @nullable */
   release_id?: string | null;
+  /** @nullable */
   literature_retrieval_configuration_version?: string | null;
 }

@@ -10,8 +10,19 @@ import type { PublisherMedia } from './publisherMedia';
 import type { PublisherMetadataSourceFamily } from './publisherMetadataSourceFamily';
 
 export interface PublisherMetadata {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     * @nullable
+     * @pattern ^[^<>\x00-\x1f]*$
+     */
   publisher: string | null;
   source_family: PublisherMetadataSourceFamily;
+  /**
+     * @maxLength 4096
+     * @nullable
+     * @pattern ^[^<>\x00-\x1f]*$
+     */
   source_item_id: string | null;
   /**
      * @maxItems 100
@@ -25,6 +36,11 @@ export interface PublisherMetadata {
      * @items.pattern ^[^<>\x00-\x1f]*$
      */
   categories: string[];
+  /**
+     * @maxLength 64
+     * @nullable
+     * @pattern ^[^<>\x00-\x1f]*$
+     */
   language: string | null;
   /** @maxItems 100 */
   media: PublisherMedia[];

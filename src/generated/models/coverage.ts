@@ -13,6 +13,7 @@ export interface Coverage {
   period_start: string;
   period_end: string;
   state: CoverageState;
+  /** @nullable */
   observation_id: string | null;
   coverage_id: string;
   measure_id: string;

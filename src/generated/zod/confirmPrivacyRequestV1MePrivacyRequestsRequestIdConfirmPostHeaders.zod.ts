@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostHeaders = zod.object({
-  "authorization": zod.union([zod.string(),zod.null()]).optional()
+  "authorization": zod.string().nullish()
 })
 
 export type ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostHeaders = zod.input<typeof ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostHeaders>;

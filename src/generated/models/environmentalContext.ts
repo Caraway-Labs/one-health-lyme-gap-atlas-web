@@ -18,15 +18,28 @@ export interface EnvironmentalContext {
      * @minLength 1
      */
   day_convention: string;
+  /** @nullable */
   expected_area_m2: number | string | null;
+  /** @nullable */
   intersected_area_m2: number | string | null;
+  /** @nullable */
   source_supported_area_m2: number | string | null;
+  /** @nullable */
   valid_area_m2: number | string | null;
-  /** Monthly source-supported/legal county area; separate from daily completeness. */
+  /**
+     * Monthly source-supported/legal county area; separate from daily completeness.
+     * @nullable
+     */
   source_coverage_fraction: number | string | null;
-  /** Daily valid/source-supported area; completeness threshold 0.95. */
+  /**
+     * Daily valid/source-supported area; completeness threshold 0.95.
+     * @nullable
+     */
   valid_fraction_of_supported_area: number | string | null;
-  /** Upstream modification metadata; never original publication or first availability. */
+  /**
+     * Upstream modification metadata; never original publication or first availability.
+     * @nullable
+     */
   upstream_date_modified: string | null;
   weight_version: string;
   /** Analysis geometry identity only; no polygons. */

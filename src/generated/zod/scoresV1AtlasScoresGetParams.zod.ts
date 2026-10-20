@@ -12,9 +12,9 @@ export const scoresV1AtlasScoresGetParamsEcologicalShareMin = 40;
 export const scoresV1AtlasScoresGetParamsEcologicalShareMax = 85;
 export const scoresV1AtlasScoresGetParamsEcologicalShareMultipleOf = 5;
 
-export const scoresV1AtlasScoresGetParamsLowIncidenceBreakpointDefault = 10;
-export const scoresV1AtlasScoresGetParamsLowIncidenceBreakpointMin = 5;
-export const scoresV1AtlasScoresGetParamsLowIncidenceBreakpointMax = 25;
+export const scoresV1AtlasScoresGetParamsSmoothKDefault = 50;
+export const scoresV1AtlasScoresGetParamsSmoothKMin = 5;
+export const scoresV1AtlasScoresGetParamsSmoothKMax = 200;
 
 export const scoresV1AtlasScoresGetParamsMissingHumanWeaknessDefault = 75;
 export const scoresV1AtlasScoresGetParamsMissingHumanWeaknessMin = 40;
@@ -23,10 +23,11 @@ export const scoresV1AtlasScoresGetParamsMissingHumanWeaknessMultipleOf = 5;
 
 
 export const ScoresV1AtlasScoresGetParams = zod.object({
-  "dataset_version": zod.union([zod.string(),zod.null()]).optional(),
+  "dataset_version": zod.string().nullish(),
   "ecological_share": zod.int().min(scoresV1AtlasScoresGetParamsEcologicalShareMin).max(scoresV1AtlasScoresGetParamsEcologicalShareMax).multipleOf(scoresV1AtlasScoresGetParamsEcologicalShareMultipleOf).default(scoresV1AtlasScoresGetParamsEcologicalShareDefault),
-  "low_incidence_breakpoint": zod.int().min(scoresV1AtlasScoresGetParamsLowIncidenceBreakpointMin).max(scoresV1AtlasScoresGetParamsLowIncidenceBreakpointMax).default(scoresV1AtlasScoresGetParamsLowIncidenceBreakpointDefault),
-  "missing_human_weakness": zod.int().min(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMin).max(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMax).multipleOf(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMultipleOf).default(scoresV1AtlasScoresGetParamsMissingHumanWeaknessDefault)
+  "smooth_k": zod.int().min(scoresV1AtlasScoresGetParamsSmoothKMin).max(scoresV1AtlasScoresGetParamsSmoothKMax).default(scoresV1AtlasScoresGetParamsSmoothKDefault),
+  "missing_human_weakness": zod.int().min(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMin).max(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMax).multipleOf(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMultipleOf).default(scoresV1AtlasScoresGetParamsMissingHumanWeaknessDefault),
+  "low_incidence_breakpoint": zod.int().nullish()
 })
 
 export type ScoresV1AtlasScoresGetParams = zod.input<typeof ScoresV1AtlasScoresGetParams>;

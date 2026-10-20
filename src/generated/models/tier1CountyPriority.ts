@@ -18,11 +18,22 @@ export interface Tier1CountyPriority {
      * @pattern ^\d{5}$
      */
   county_fips: string;
-  /** HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE. */
+  /**
+     * HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.
+     * @nullable
+     */
   priority_tier: Tier1CountyPriorityPriorityTier;
-  /** Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE. */
+  /**
+     * Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
   priority_percentile: number | null;
-  /** Model-native anomaly score; not a probability, incidence estimate, or clinical/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE. */
+  /**
+     * Model-native anomaly score; not a probability, incidence estimate, or clinical/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.
+     * @nullable
+     */
   raw_model_score: number | null;
   /** Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score. */
   evidence_sufficiency: Tier1CountyPriorityEvidenceSufficiency;

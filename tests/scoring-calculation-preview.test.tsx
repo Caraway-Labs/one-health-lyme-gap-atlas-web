@@ -6,7 +6,7 @@ import type { ScoreSettings } from "../src/lib/atlas-ui";
 
 const defaultSettings: ScoreSettings = {
   ecological_share: 65,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 75,
 };
 
@@ -32,7 +32,7 @@ describe("Collapsed scoring assumptions preview", () => {
   it("reflects a changed settings triple with no extra state", () => {
     const changedSettings: ScoreSettings = {
       ecological_share: 70,
-      low_incidence_breakpoint: 15,
+      smooth_k: 15,
       missing_human_weakness: 80,
     };
 

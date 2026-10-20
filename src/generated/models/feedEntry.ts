@@ -14,8 +14,22 @@ export interface FeedEntry {
   item_id: string;
   /** @pattern ^[a-f0-9]{64}$ */
   revision_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     * @nullable
+     * @pattern ^[^<>\x00-\x1f]*$
+     */
   title: string | null;
+  /**
+     * @maxLength 4096
+     * @nullable
+     */
   canonical_url: string | null;
+  /**
+     * @nullable
+     * @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$
+     */
   published_at: string | null;
   /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$ */
   fetched_at: string;
@@ -29,6 +43,12 @@ export interface FeedEntry {
   limitations: string[];
   contract_version: '2.0.0';
   publication_date_state: FeedEntryPublicationDateState;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     * @nullable
+     * @pattern ^[^<>\x00-\x1f]*$
+     */
   publisher: string | null;
   source: BriefingSource;
 }

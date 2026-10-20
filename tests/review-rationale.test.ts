@@ -11,6 +11,7 @@ function detail(overrides: Partial<CountyDetail> = {}): CountyDetail {
     county: "Example",
     evidence_completeness: 50,
     fips: "01001",
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     in_contiguous_tick_scope: true,
     incidence_floor_2023: 2.14,
@@ -20,6 +21,7 @@ function detail(overrides: Partial<CountyDetail> = {}): CountyDetail {
     release: {
       limitations: "",
       loaded_at: "2026-01-01",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       methodology_version: "1",
       release_id: "test",
       sources: [],

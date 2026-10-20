@@ -10,34 +10,34 @@ import * as zod from 'zod';
 export const mixedAssistantRequestQuestionMax = 1000;
 
 export const mixedAssistantRequestSourceModeDefault = `Both`;
-export const mixedAssistantRequestContextMeasureIdOneMax = 120;
+export const mixedAssistantRequestContextMeasureIdMax = 120;
 
-export const mixedAssistantRequestContextIndicatorIdOneMax = 120;
+export const mixedAssistantRequestContextIndicatorIdMax = 120;
 
-export const mixedAssistantRequestContextSearchTextOneMax = 120;
+export const mixedAssistantRequestContextSearchTextMax = 120;
 
 export const mixedAssistantRequestContextGeographyTypeDefault = `county`;
-export const mixedAssistantRequestContextGeographyIdsOneMax = 20;
+export const mixedAssistantRequestContextGeographyIdsMax = 20;
 
-export const mixedAssistantRequestContextYearOneMin = 1900;
-export const mixedAssistantRequestContextYearOneMax = 2100;
+export const mixedAssistantRequestContextYearMin = 1900;
+export const mixedAssistantRequestContextYearMax = 2100;
 
-export const mixedAssistantRequestContextExpectedObservationIdOneMax = 200;
+export const mixedAssistantRequestContextExpectedObservationIdMax = 200;
 
 
 export const MixedAssistantRequest = zod.object({
   "question": zod.string().min(1).max(mixedAssistantRequestQuestionMax),
   "source_mode": zod.enum(['Literature', 'Structured', 'Both']).default(mixedAssistantRequestSourceModeDefault),
   "context": zod.object({
-  "measure_id": zod.union([zod.string().min(1).max(mixedAssistantRequestContextMeasureIdOneMax),zod.null()]).optional(),
-  "indicator_id": zod.union([zod.string().min(1).max(mixedAssistantRequestContextIndicatorIdOneMax),zod.null()]).optional(),
-  "search_text": zod.union([zod.string().min(1).max(mixedAssistantRequestContextSearchTextOneMax),zod.null()]).optional(),
+  "measure_id": zod.string().min(1).max(mixedAssistantRequestContextMeasureIdMax).nullish(),
+  "indicator_id": zod.string().min(1).max(mixedAssistantRequestContextIndicatorIdMax).nullish(),
+  "search_text": zod.string().min(1).max(mixedAssistantRequestContextSearchTextMax).nullish(),
   "geography_type": zod.enum(['county', 'state']).default(mixedAssistantRequestContextGeographyTypeDefault),
-  "geography_ids": zod.union([zod.array(zod.string()).min(1).max(mixedAssistantRequestContextGeographyIdsOneMax),zod.null()]).optional(),
-  "year": zod.union([zod.int().min(mixedAssistantRequestContextYearOneMin).max(mixedAssistantRequestContextYearOneMax),zod.null()]).optional(),
-  "start_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "end_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "expected_observation_id": zod.union([zod.string().min(1).max(mixedAssistantRequestContextExpectedObservationIdOneMax),zod.null()]).optional()
+  "geography_ids": zod.array(zod.string()).min(1).max(mixedAssistantRequestContextGeographyIdsMax).nullish(),
+  "year": zod.int().min(mixedAssistantRequestContextYearMin).max(mixedAssistantRequestContextYearMax).nullish(),
+  "start_date": zod.iso.date().nullish(),
+  "end_date": zod.iso.date().nullish(),
+  "expected_observation_id": zod.string().min(1).max(mixedAssistantRequestContextExpectedObservationIdMax).nullish()
 }).optional()
 })
 

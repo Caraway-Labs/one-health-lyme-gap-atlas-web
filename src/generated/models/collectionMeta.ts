@@ -6,18 +6,34 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CollectionMetaAvailability } from './collectionMetaAvailability';
+import type { CollectionMetaReason } from './collectionMetaReason';
 
 export interface CollectionMeta {
-  /** Opaque query/release-bound continuation. Null means exhaustion; tokens may expire on restart. */
+  /**
+     * Opaque query/release-bound continuation. Null means exhaustion; tokens may expire on restart.
+     * @nullable
+     */
   next_page_token?: string | null;
   /** UTC response construction time; not source freshness or observation time. */
   response_at?: string;
-  /** Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE. */
+  /**
+     * Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.
+     * @nullable
+     */
   availability?: CollectionMetaAvailability;
-  /** No published rows after a successful initial non-CDC query; otherwise omitted. */
-  reason?: 'NO_PUBLISHED_RESULTS' | null;
-  /** Current governed release actually read for this query. */
+  /**
+     * No published rows after a successful initial non-CDC query; otherwise omitted.
+     * @nullable
+     */
+  reason?: CollectionMetaReason;
+  /**
+     * Current governed release actually read for this query.
+     * @nullable
+     */
   release_id?: string | null;
-  /** Selection availability caveats; observations only. */
+  /**
+     * Selection availability caveats; observations only.
+     * @nullable
+     */
   limitations?: string[] | null;
 }

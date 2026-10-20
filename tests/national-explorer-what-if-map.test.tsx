@@ -46,6 +46,7 @@ function score(
     county: countyName,
     evidence_completeness: 50,
     fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: humanStatus,
     in_contiguous_tick_scope: true,
     priority: "Lower Atlas priority — Not a safety finding",
@@ -117,6 +118,7 @@ function client(): QueryClient {
     ["ux-reset-review-scores", RELEASE_ID, EXPLORER_SCORE_SETTINGS],
     {
       counties: COUNTIES,
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       methodology_version: "1",
       release_id: RELEASE_ID,
       settings: EXPLORER_SCORE_SETTINGS,
@@ -217,7 +219,7 @@ describe("national Explorer what-if map", () => {
     render(
       picture(
         queryClient,
-        { ...SCENARIO_SCORE_DEFAULTS, low_incidence_breakpoint: 20 },
+        { ...SCENARIO_SCORE_DEFAULTS, smooth_k: 20 },
         "gap_score"
       )
     );

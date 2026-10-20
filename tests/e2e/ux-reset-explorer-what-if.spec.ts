@@ -27,7 +27,12 @@ const scenarioScores = {
       county: "Conejos County",
       evidence_completeness: 50,
       fips: "08021",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "no_county_linked_record",
+      svi_percentile: 0.838,
+      uninsured_percentile: 0.848,
+      rucc_2023: 9,
+      incidence_floor_2023: null,
       in_contiguous_tick_scope: true,
       priority: "Lower Atlas priority — Not a safety finding",
       score: conejosScore,
@@ -36,11 +41,12 @@ const scenarioScores = {
       tick_status: "No records",
     },
   ],
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   methodology_version: "1",
   release_id: "alpha-2026",
   settings: {
     ecological_share: 65,
-    low_incidence_breakpoint: 10,
+    smooth_k: 50,
     missing_human_weakness: 75,
   },
 };
@@ -253,6 +259,7 @@ test.describe("Explorer what-if scenario", () => {
       county,
       evidence_completeness: 50,
       fips,
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
       in_contiguous_tick_scope: true,
       priority: lower,
@@ -307,6 +314,7 @@ test.describe("Explorer what-if scenario", () => {
           publishedZero("08030", "Thirty County", 30),
           publishedZero("08001", "Clamped County"),
         ],
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: "alpha-2026",
         settings: scenarioScores.settings,
@@ -320,10 +328,10 @@ test.describe("Explorer what-if scenario", () => {
     const panel = page.getByTestId("explorer-what-if-scenario");
     await page.getByTestId("explorer-what-if-summary").click();
     const threshold = page.getByRole("slider", {
-      name: "Reported Lyme disease rate reference point",
+      name: "Smooth incidence attenuation (k)",
     });
     await threshold.fill("20");
-    await expect(page).toHaveURL(/[?&]breakpoint=20(?:&|$)/);
+    await expect(page).toHaveURL(/[?&]smooth=20(?:&|$)/);
 
     const twelve = page.locator(
       "[data-testid='review-candidate'][data-fips='08012']"
@@ -498,6 +506,7 @@ test.describe("Explorer what-if scenario", () => {
       county,
       evidence_completeness: 80,
       fips,
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
       in_contiguous_tick_scope: true,
       priority,
@@ -543,6 +552,7 @@ test.describe("Explorer what-if scenario", () => {
           scoreFor("08013", "Boulder County", review, 100, 65),
           scoreFor("08065", "Lake County", lower, 0, 0),
         ],
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: "alpha-2026",
         settings: scenarioScores.settings,
@@ -619,6 +629,7 @@ test.describe("Explorer what-if scenario", () => {
             county: "Lake County",
             evidence_completeness: 80,
             fips: "08065",
+            scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
             human_status: "published_count_floor",
             in_contiguous_tick_scope: true,
             priority: lower,
@@ -638,6 +649,7 @@ test.describe("Explorer what-if scenario", () => {
             tick_status: "Established",
           },
         ],
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: "alpha-2026",
         settings: scenarioScores.settings,
@@ -705,6 +717,7 @@ test.describe("Explorer what-if scenario", () => {
             county: "Boulder County",
             evidence_completeness: 80,
             fips: "08013",
+            scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
             human_status: "published_count_floor",
             in_contiguous_tick_scope: true,
             priority: review,
@@ -725,6 +738,7 @@ test.describe("Explorer what-if scenario", () => {
           },
           scenarioScores.counties[0],
         ],
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: "alpha-2026",
         settings: scenarioScores.settings,
@@ -877,6 +891,7 @@ test.describe("Explorer what-if scenario", () => {
             county: "Adams County",
             evidence_completeness: 80,
             fips: "08001",
+            scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
             human_status: "published_count_floor",
             in_contiguous_tick_scope: true,
             priority: lower,
@@ -896,13 +911,14 @@ test.describe("Explorer what-if scenario", () => {
             tick_status: "Established",
           },
         ],
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: "alpha-2026",
         settings: scenarioScores.settings,
       },
     });
 
-    await page.goto("/app/review?scope=ALL&county=08001&breakpoint=20");
+    await page.goto("/app/review?scope=ALL&county=08001&smooth=20");
     const summary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(summary).toContainText(
       "Published Atlas score 0.0 · Score with your changes unavailable"
@@ -918,8 +934,108 @@ test.describe("Explorer what-if scenario", () => {
       page.getByTestId("review-national-map-region")
     ).toHaveAttribute("data-map-colors", /08001:#a9d2db/i);
 
-    await page.goto("/app/review?scope=AK&breakpoint=20");
+    await page.goto("/app/review?scope=AK&smooth=20");
     await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
     await expect(page.getByTestId("review-scope-unsupported")).toBeVisible();
   });
+});
+import sourceFixtures from "../fixtures/gap-score-v11-parity.json" with { type: "json" };
+
+for (const fips of ["36027", "42017", "25007", "23009", "18097", "08021"]) {
+  test(`v1.1 source-backed score, k slider and URL parity for ${fips}`, async ({
+    page,
+  }) => {
+    const row = sourceFixtures.find((item) => item.inputs.fips === fips);
+    if (!row) throw new Error(`Missing source fixture ${fips}`);
+    const county = {
+      ...row.inputs,
+      county: row.county,
+      state: row.state,
+      state_name: row.state,
+      score: row.expected,
+      priority: row.priority,
+      color: row.color,
+      scoring_methodology_version: "surveillance-gap-score-v1.1",
+      evidence_completeness: 100,
+    };
+    await installExplorer(page, {
+      scores: {
+        counties: [county],
+        scoring_methodology_version: "surveillance-gap-score-v1.1",
+        methodology_version: "1",
+        release_id: "alpha-2026",
+        settings: scenarioScores.settings,
+      },
+      geometry: {
+        type: "FeatureCollection",
+        features: [countyBox(fips, -72, 42)],
+      },
+    });
+    await page.route("**/v1/atlas/metadata**", (route) =>
+      route.fulfill({
+        json: {
+          ...reviewScopeMetadataFixture,
+          states: [{ code: row.state, name: row.state }],
+        },
+      })
+    );
+    await page.route("**/v1/states/*/review**", (route) =>
+      route.fulfill({
+        json: buildStateReview({
+          candidates: [
+            reviewCandidate({
+              countyName: row.county,
+              fips,
+              caveat: "Pinned research regression fixture.",
+              reasonText: "Source-backed scoring regression.",
+            }),
+          ],
+          resultState: "candidates_found",
+          state: row.state,
+        }),
+      })
+    );
+    await page.goto(`/app/review?scope=${row.state}&county=${fips}`);
+    const candidate = page.locator(
+      `[data-testid='review-candidate'][data-fips='${fips}']`
+    );
+    await expect(candidate).toContainText(
+      `Published score ${row.expected.score}`
+    );
+    await page.getByTestId("explorer-what-if-summary").click();
+    const slider = page.getByRole("slider", {
+      name: "Smooth incidence attenuation (k)",
+    });
+    await expect(slider).toHaveValue("50");
+    await slider.fill("100");
+    await expect(page).toHaveURL(/[?&]smooth=100(?:&|$)/);
+    if (row.inputs.human_status === "published_count_floor") {
+      await expect(candidate).toContainText(
+        `Adjusted scenario ${row.expected_k100.score}`
+      );
+    } else {
+      await expect(candidate).toContainText(
+        `Published score ${row.expected.score}`
+      );
+    }
+    await page.reload();
+    await page.getByTestId("explorer-what-if-summary").click();
+    await expect(slider).toHaveValue("100");
+    await page.screenshot({
+      path: `test-results/v11-${fips}.png`,
+      fullPage: true,
+    });
+  });
+}
+
+test("v1.1 legacy URL reset does not reinterpret breakpoint=10 as k=10", async ({
+  page,
+}) => {
+  await installExplorer(page);
+  await page.goto("/app/review?scope=CO&breakpoint=10&eco=85&missing=40");
+  await expect(page).not.toHaveURL(/[?&]breakpoint=/);
+  await page.getByTestId("explorer-what-if-summary").click();
+  await expect(
+    page.getByRole("slider", { name: "Smooth incidence attenuation (k)" })
+  ).toHaveValue("50");
 });

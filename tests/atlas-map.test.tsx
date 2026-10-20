@@ -177,6 +177,7 @@ const adams: CountyScoreSummary = {
   county: "Adams",
   evidence_completeness: 6,
   fips: "08001",
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "no_county_linked_record",
   in_contiguous_tick_scope: true,
   priority: "Review",
@@ -748,7 +749,7 @@ describe("AtlasMap county camera", () => {
         selectedState="CA"
         settings={{
           ecological_share: 65,
-          low_incidence_breakpoint: 10,
+          smooth_k: 50,
           missing_human_weakness: 75,
         }}
         showTable={false}
