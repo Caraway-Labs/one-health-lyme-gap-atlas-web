@@ -24,6 +24,25 @@ export const LYME_INCIDENCE_HIGH_LABEL = "Higher published incidence";
 
 export const LYME_INCIDENCE_UNIT_LABEL = "per 100,000 residents";
 
+/**
+ * Uninsured population (#749) is a continuous ramp on the existing 0 to 100
+ * percent scale. Anchor positions are 0, 0.25, 0.5, 0.75, and 1.
+ * They are not percentage cutoffs.
+ */
+export const UNINSURED_POPULATION_RAMP = [
+  "#FCE4EC",
+  "#F7B6CF",
+  "#E66A9A",
+  "#BA3167",
+  "#740D3D",
+] as const;
+
+export const UNINSURED_POPULATION_MISSING_COLOR = "#D1D5DB";
+
+export const UNINSURED_POPULATION_LOW_LABEL = "Lower uninsured percentage";
+
+export const UNINSURED_POPULATION_HIGH_LABEL = "Higher uninsured percentage";
+
 const HEX_COLOR = /^#(?<hex>[0-9A-Fa-f]{6})$/;
 
 function hexToHsl(color: string): [number, number, number] | null {

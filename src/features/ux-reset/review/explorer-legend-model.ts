@@ -3,6 +3,8 @@ import {
   LYME_INCIDENCE_LOW_LABEL,
   LYME_INCIDENCE_UNIT_LABEL,
   mixExplorerRampColor,
+  UNINSURED_POPULATION_HIGH_LABEL,
+  UNINSURED_POPULATION_LOW_LABEL,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import type {
@@ -265,7 +267,31 @@ function legendUnit(paint: ExplorerMapPaint): string {
   return paint.unit?.trim() ?? "";
 }
 
-function incidenceEndpointCopy(
+function quantityPhrase(layerId: ExplorerMapLayerId): {
+  highLabel: string;
+  lowLabel: string;
+  scaleSentence: string;
+} | null {
+  if (layerId === "incidence_floor") {
+    return {
+      highLabel: LYME_INCIDENCE_HIGH_LABEL,
+      lowLabel: LYME_INCIDENCE_LOW_LABEL,
+      scaleSentence:
+        "Color runs from pale green to deep green between these published ends. Palette anchors are not new epidemiologic cutoffs.",
+    };
+  }
+  if (layerId === "uninsured") {
+    return {
+      highLabel: UNINSURED_POPULATION_HIGH_LABEL,
+      lowLabel: UNINSURED_POPULATION_LOW_LABEL,
+      scaleSentence:
+        "Color runs from pale rose to deep burgundy on the 0 to 100 percent scale. Palette anchors are not new percentage cutoffs.",
+    };
+  }
+  return null;
+}
+
+function endpointPhraseCopy(
   entry: ExplorerMapLegendEntry,
   phrase: string
 ): string {
@@ -287,18 +313,18 @@ function constantNumericSwatch(
   const displayUnit = legendUnit(paint);
   const unit = displayUnit ? ` ${displayUnit}` : "";
   const detail = low.detail?.trim();
-  const incidence = paint.layerId === "incidence_floor";
-  const text = incidence
+  const phrase = quantityPhrase(paint.layerId);
+  const text = phrase
     ? detail
-      ? `${LYME_INCIDENCE_LOW_LABEL} ${value}${unit}. ${detail}`
-      : `${LYME_INCIDENCE_LOW_LABEL} ${value}${unit}.`
+      ? `${phrase.lowLabel} ${value}${unit}. ${detail}`
+      : `${phrase.lowLabel} ${value}${unit}.`
     : detail
       ? `${value}${unit}. ${detail}`
       : `${value}${unit}.`;
   const swatch = toSegment(low, missing.length, paint.layerId);
   return {
     gradient: null,
-    leftCaption: incidence ? `${LYME_INCIDENCE_LOW_LABEL}\n${value}` : value,
+    leftCaption: phrase ? `${phrase.lowLabel}\n${value}` : value,
     rightCaption: null,
     segments: [
       ...missing,
@@ -343,11 +369,11 @@ function gradientModel(
   const highest = note
     ? ` ${note.label}. ${note.detail ?? "Not a separate class."}`
     : "";
-  const incidence = paint.layerId === "incidence_floor";
+  const phrase = quantityPhrase(paint.layerId);
   const lowNumber = endpointCaption(low.label);
   const highNumber = endpointCaption(high.label);
-  const tooltip = incidence
-    ? `${LYME_INCIDENCE_LOW_LABEL} ${lowNumber} to ${LYME_INCIDENCE_HIGH_LABEL} ${highNumber}${unitSuffix}. Color runs from pale green to deep green between these published ends. Palette anchors are not new epidemiologic cutoffs.${zero}${highest} Missing is not drawn as zero.`
+  const tooltip = phrase
+    ? `${phrase.lowLabel} ${lowNumber} to ${phrase.highLabel} ${highNumber}${unitSuffix}. ${phrase.scaleSentence}${zero}${highest} Missing is not drawn as zero.`
     : `${lowNumber} to ${highNumber}${unitSuffix}. Color is mixed between these ends.${zero}${highest} Missing is not drawn as zero.`;
   return {
     gradient: {
@@ -357,12 +383,8 @@ function gradientModel(
       stops: scaleGradientStops(low.color, high.color, paint.ramp),
       tooltip,
     },
-    leftCaption: incidence
-      ? `${LYME_INCIDENCE_LOW_LABEL}\n${lowNumber}`
-      : lowNumber,
-    rightCaption: incidence
-      ? `${LYME_INCIDENCE_HIGH_LABEL}\n${highNumber}`
-      : highNumber,
+    leftCaption: phrase ? `${phrase.lowLabel}\n${lowNumber}` : lowNumber,
+    rightCaption: phrase ? `${phrase.highLabel}\n${highNumber}` : highNumber,
     segments: missing,
   };
 }
@@ -380,17 +402,12 @@ function aboutSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
   const classes = paint.entries
     .filter((entry) => entry.role !== "note")
     .map((entry) => {
-      if (
-        paint.layerId === "incidence_floor" &&
-        entry.role === "endpoint-low"
-      ) {
-        return incidenceEndpointCopy(entry, LYME_INCIDENCE_LOW_LABEL);
+      const phrase = quantityPhrase(paint.layerId);
+      if (phrase && entry.role === "endpoint-low") {
+        return endpointPhraseCopy(entry, phrase.lowLabel);
       }
-      if (
-        paint.layerId === "incidence_floor" &&
-        entry.role === "endpoint-high"
-      ) {
-        return incidenceEndpointCopy(entry, LYME_INCIDENCE_HIGH_LABEL);
+      if (phrase && entry.role === "endpoint-high") {
+        return endpointPhraseCopy(entry, phrase.highLabel);
       }
       return methodologyCopy(entry);
     });

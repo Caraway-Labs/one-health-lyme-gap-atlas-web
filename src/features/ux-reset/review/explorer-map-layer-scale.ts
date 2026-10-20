@@ -3,6 +3,8 @@ import {
   LYME_INCIDENCE_MISSING_COLOR,
   LYME_INCIDENCE_RAMP,
   mixExplorerRampColor,
+  UNINSURED_POPULATION_MISSING_COLOR,
+  UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
 import type {
   ExplorerMapLegendEntry,
@@ -39,8 +41,8 @@ const NUMERIC_SCALE = {
     minimum: 0,
   },
   uninsured: {
-    high: "hsl(266, 48%, 30%)",
-    low: "hsl(266, 38%, 91%)",
+    high: UNINSURED_POPULATION_RAMP.at(-1) ?? UNINSURED_POPULATION_RAMP[0],
+    low: UNINSURED_POPULATION_RAMP[0],
     maximum: 100,
     minimum: 0,
   },
@@ -192,8 +194,13 @@ function stateColor(
   layerId: ExplorerObservationLayerId,
   state: ValueState
 ): string | undefined {
-  if (layerId === "incidence_floor" && state === ValueState.MISSING) {
-    return LYME_INCIDENCE_MISSING_COLOR;
+  if (state === ValueState.MISSING) {
+    if (layerId === "incidence_floor") {
+      return LYME_INCIDENCE_MISSING_COLOR;
+    }
+    if (layerId === "uninsured") {
+      return UNINSURED_POPULATION_MISSING_COLOR;
+    }
   }
   return STATE_COLOR[state];
 }
@@ -303,13 +310,26 @@ export function paintReadyObservationLayer(input: {
   });
 }
 
+function quantityRamp(
+  layerId: Exclude<ExplorerObservationLayerId, "rurality">
+): readonly string[] | undefined {
+  if (layerId === "incidence_floor") {
+    return LYME_INCIDENCE_RAMP;
+  }
+  if (layerId === "uninsured") {
+    return UNINSURED_POPULATION_RAMP;
+  }
+  return undefined;
+}
+
 function quantityColor(
   layerId: Exclude<ExplorerObservationLayerId, "rurality">,
   scale: { high: string; low: string },
   ratio: number
 ): string {
-  if (layerId === "incidence_floor") {
-    return mixExplorerRampColor(LYME_INCIDENCE_RAMP, ratio);
+  const ramp = quantityRamp(layerId);
+  if (ramp) {
+    return mixExplorerRampColor(ramp, ratio);
   }
   return mixExplorerScaleColor(scale.low, scale.high, ratio);
 }
@@ -427,7 +447,7 @@ function paintQuantity(input: {
       "2023 published values are minimums per 100,000 residents, not all infections and not an exact total incidence. Color runs from pale green at the lowest published value to deep green at the highest. The green anchors are a continuous ramp, not new epidemiologic cutoffs. Missing is not drawn as zero. A wide published range keeps most counties near the low end. The county list stays the review ranking.",
     svi: "National county percentile from the 2022 SVI product, on a 0 to 1 scale. Not a percentage of people. Observed zero is the low end of that scale. Values between the legend ends use a mix of those two colors. Missing is not drawn as zero. The county list stays the review ranking.",
     uninsured:
-      "Percent of the civilian noninstitutionalized population on a 0 to 100 scale. Observed zero is 0 percent, not a missing value. Values between the legend ends use a mix of those two colors. The county list stays the review ranking.",
+      "Percent of the civilian noninstitutionalized population on a 0 to 100 scale. This is the uninsured percentage, not the uninsured percentile. Observed zero is 0 percent, not a missing value. Color runs from pale rose at 0 percent to deep burgundy at 100 percent. The rose anchors are a continuous ramp, not new percentage cutoffs. This percentage does not establish healthcare access, reporting completeness, or Lyme risk. Missing is not drawn as zero. The county list stays the review ranking.",
   }[input.layerId];
   return paintBase({
     colorsByFips,
@@ -435,7 +455,7 @@ function paintQuantity(input: {
     kind: "choropleth",
     layerId: input.layerId,
     note: `${note} ${coverageSentence(input.rows, input.omitted)}`,
-    ramp: input.layerId === "incidence_floor" ? LYME_INCIDENCE_RAMP : undefined,
+    ramp: quantityRamp(input.layerId),
     scale: "gradient",
     period: input.period,
     selection: input.selection,
