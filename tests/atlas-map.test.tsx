@@ -6,13 +6,21 @@ import { AtlasMap, type AtlasMapFillColor } from "@/components/atlas-map";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { CountyScoreSummary } from "@/generated/models";
 import { estimatedFitZoom } from "@/lib/atlas-map-camera";
+import { parseCountyDisplayGeometry } from "@/lib/county-geography";
 
 const engine = vi.hoisted(() => {
   const instances: FakeMap[] = [];
   const webgl = { fail: false };
   class FakeMap {
     handlers = new Map<string, ((event?: unknown) => void)[]>();
-    sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
+    sources = new Map<
+      string,
+      {
+        data?: unknown;
+        promoteId?: string;
+        setData: ReturnType<typeof vi.fn>;
+      }
+    >();
     layers = new Set<string>();
     paint = new Map<string, Record<string, unknown>>();
     filters = new Map<string, unknown>();
@@ -89,12 +97,14 @@ const engine = vi.hoisted(() => {
     addControl() {
       this.layers.add("navigation-control");
     }
-    addSource(id: string, spec?: { data?: unknown }) {
+    addSource(id: string, spec?: { data?: unknown; promoteId?: string }) {
       const record: {
         data?: unknown;
+        promoteId?: string;
         setData: ReturnType<typeof vi.fn>;
       } = {
         data: spec?.data,
+        promoteId: spec?.promoteId,
         setData: vi.fn<(data: unknown) => void>(),
       };
       record.setData.mockImplementation((data: unknown) => {
@@ -155,6 +165,21 @@ const engine = vi.hoisted(() => {
     remove() {
       this.removed = true;
     }
+    removeLayer(id: string) {
+      this.layers.delete(id);
+      this.paint.delete(id);
+      this.filters.delete(id);
+    }
+    removeSource(id: string) {
+      this.sources.delete(id);
+    }
+    setFeatureState =
+      vi.fn<
+        (
+          target: { id: number | string; source: string },
+          state: { hover?: boolean }
+        ) => void
+      >();
   }
   return { FakeMap, instances, webgl };
 });
@@ -1571,4 +1596,467 @@ describe("AtlasMap county camera", () => {
       loadMap();
     }).not.toThrow();
   });
+
+  it("draws neutral county boundaries without recoloring the shared county stroke", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        geographicStateOutline
+        geometry={geometry}
+        neutralCountyBoundaries
+        scores={[
+          { ...adams, color: "#F3F4F6" },
+          { ...losAngeles, color: "#F3F4F6" },
+        ]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    const stateSource = map?.sources.get("state-boundary-lines") as
+      | { data?: GeoJSON.FeatureCollection }
+      | undefined;
+    const selectedSource = map?.sources.get("selected-state-perimeter") as
+      | { data?: GeoJSON.FeatureCollection }
+      | undefined;
+    expect({
+      countyStroke: map?.paint.get("county-boundary-lines")?.["line-color"],
+      layers: [
+        map?.layers.has("county-boundary-lines"),
+        map?.layers.has("selected-state-perimeter"),
+        map?.layers.has("state-boundary-lines"),
+      ],
+      selectedCounty: map?.paint.get("selected-outline"),
+      selectedPerimeter: map?.paint.get("selected-state-perimeter"),
+      selectedStateOpacity: map?.paint.get("selected-state-outline")?.[
+        "line-opacity"
+      ],
+      stateStroke: map?.paint.get("state-boundary-lines")?.["line-color"],
+    }).toStrictEqual({
+      countyStroke: "#4B5563",
+      layers: [true, true, true],
+      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+      selectedPerimeter: { "line-color": "#000000", "line-width": 2.5 },
+      selectedStateOpacity: 0,
+      stateStroke: "#1F2937",
+    });
+    expect({
+      selectedLines: selectedSource?.data?.features.length,
+      stateLines: stateSource?.data?.features.length,
+    }).toStrictEqual({ selectedLines: 1, stateLines: 1 });
+
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    expect({
+      countyLines: map?.layers.has("county-boundary-lines"),
+      selectedCounty: map?.paint.get("selected-outline"),
+      selectedStateOpacity: map?.paint.get("selected-state-outline")?.[
+        "line-opacity"
+      ],
+    }).toStrictEqual({
+      countyLines: false,
+      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+      selectedStateOpacity: 1,
+    });
+  });
+
+  it("hovers parsed counties by five-digit FIPS across pointer moves and filtering", () => {
+    stubPrefersReducedMotion(false);
+    const parsed = parseCountyDisplayGeometry({
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-105, 39],
+                [-104, 39],
+                [-104, 40],
+                [-105, 40],
+                [-105, 39],
+              ],
+            ],
+            type: "Polygon",
+          },
+          id: 8001,
+          properties: { fips: "08001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-104, 39],
+                [-103, 39],
+                [-103, 40],
+                [-104, 40],
+                [-104, 39],
+              ],
+            ],
+            type: "Polygon",
+          },
+          id: "08005",
+          properties: { fips: "08005" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    });
+    const parsedIds = parsed.features.map((feature) => "id" in feature);
+    const arapahoe = {
+      ...adams,
+      county: "Arapahoe",
+      fips: "08005",
+    };
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        geometry={parsed}
+        neutralCountyBoundaries
+        scores={[adams, arapahoe]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    if (!map) {
+      throw new Error("expected a map instance");
+    }
+    const adamsPointer = countyPointerFeature(map, "08001");
+    const arapahoePointer = countyPointerFeature(map, "08005");
+    expect({
+      adamsId: adamsPointer.id,
+      arapahoeId: arapahoePointer.id,
+      parsedIds,
+    }).toStrictEqual({
+      adamsId: "08001",
+      arapahoeId: "08005",
+      parsedIds: [false, false],
+    });
+    act(() => {
+      map.emit("mousemove:counties-fill", { features: [adamsPointer] });
+      map.emit("mousemove:counties-fill", { features: [arapahoePointer] });
+      map.emit("mouseleave:counties-fill");
+      map.emit("mousemove:counties-fill", { features: [adamsPointer] });
+    });
+    expect(map.setFeatureState.mock.calls).toStrictEqual([
+      [{ id: "08001", source: "counties" }, { hover: true }],
+      [{ id: "08001", source: "counties" }, { hover: false }],
+      [{ id: "08005", source: "counties" }, { hover: true }],
+      [{ id: "08005", source: "counties" }, { hover: false }],
+      [{ id: "08001", source: "counties" }, { hover: true }],
+    ]);
+
+    map.setFeatureState.mockClear();
+    view.rerender(
+      <AtlasMap
+        geometry={parsed}
+        includeUnscoredCounties={false}
+        neutralCountyBoundaries
+        scores={[arapahoe]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    expect({
+      calls: map.setFeatureState.mock.calls,
+      fill: fillFips(map),
+      remainingId: resolvedCountyFeatureId(map, "08005"),
+    }).toStrictEqual({
+      calls: [[{ id: "08001", source: "counties" }, { hover: true }]],
+      fill: ["08005"],
+      remainingId: "08005",
+    });
+
+    act(() => {
+      map.emit("mouseleave:counties-fill");
+    });
+    view.rerender(
+      <AtlasMap
+        geometry={parsed}
+        neutralCountyBoundaries
+        scores={[adams, arapahoe]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const restored = countyPointerFeature(map, "08001");
+    act(() => {
+      map.emit("mousemove:counties-fill", { features: [restored] });
+    });
+    expect({
+      id: restored.id,
+      lastCall: map.setFeatureState.mock.calls.at(-1),
+    }).toStrictEqual({
+      id: "08001",
+      lastCall: [{ id: "08001", source: "counties" }, { hover: true }],
+    });
+  });
+
+  it("keeps state perimeters on the unfiltered display geometry", () => {
+    stubPrefersReducedMotion(false);
+    const adjacent = parseCountyDisplayGeometry({
+      features: [
+        squareCounty("08001", -105, 39),
+        squareCounty("08005", -104, 39),
+      ],
+      type: "FeatureCollection",
+    });
+    const shifted = parseCountyDisplayGeometry({
+      features: [
+        squareCounty("08001", -95, 39),
+        squareCounty("08005", -94, 39),
+      ],
+      type: "FeatureCollection",
+    });
+    const arapahoe = { ...adams, county: "Arapahoe", fips: "08005" };
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const sharedEdge = "-104,39|-104,40";
+    const view = render(
+      <AtlasMap
+        geographicStateOutline
+        geometry={adjacent}
+        neutralCountyBoundaries
+        scores={[adams, arapahoe]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    if (!map) {
+      throw new Error("expected a map instance");
+    }
+    const nationalPerimeter = boundarySegments(map, "state-boundary-lines");
+    expect({
+      eastEdge: nationalPerimeter.includes("-103,39|-103,40"),
+      fill: fillFips(map),
+      selected: boundarySegments(map, "selected-state-perimeter"),
+      sharedEdge: nationalPerimeter.includes(sharedEdge),
+      westEdge: nationalPerimeter.includes("-105,39|-105,40"),
+    }).toStrictEqual({
+      eastEdge: true,
+      fill: ["08001", "08005"],
+      selected: [],
+      sharedEdge: false,
+      westEdge: true,
+    });
+
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={adjacent}
+        includeUnscoredCounties={false}
+        neutralCountyBoundaries
+        scores={[adams]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    const filteredNational = boundarySegments(map, "state-boundary-lines");
+    expect({
+      fill: fillFips(map),
+      sharedEdge: filteredNational.includes(sharedEdge),
+      state: filteredNational,
+    }).toStrictEqual({
+      fill: ["08001"],
+      sharedEdge: false,
+      state: nationalPerimeter,
+    });
+
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={adjacent}
+        includeUnscoredCounties={false}
+        neutralCountyBoundaries
+        scores={[adams]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const filteredStatePerimeter = boundarySegments(
+      map,
+      "selected-state-perimeter"
+    );
+    expect({
+      selected: filteredStatePerimeter,
+      sharedEdge: filteredStatePerimeter.includes(sharedEdge),
+      state: boundarySegments(map, "state-boundary-lines"),
+    }).toStrictEqual({
+      selected: nationalPerimeter,
+      sharedEdge: false,
+      state: nationalPerimeter,
+    });
+
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={adjacent}
+        neutralCountyBoundaries
+        scores={[adams, arapahoe]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const clearedStatePerimeter = boundarySegments(
+      map,
+      "selected-state-perimeter"
+    );
+    const clearedFill = fillFips(map);
+
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={adjacent}
+        neutralCountyBoundaries
+        scores={[adams, arapahoe]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    expect({
+      clearedFill,
+      clearedStatePerimeter,
+      nationalSelected: boundarySegments(map, "selected-state-perimeter"),
+      nationalState: boundarySegments(map, "state-boundary-lines"),
+    }).toStrictEqual({
+      clearedFill: ["08001", "08005"],
+      clearedStatePerimeter: filteredStatePerimeter,
+      nationalSelected: [],
+      nationalState: nationalPerimeter,
+    });
+
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={shifted}
+        neutralCountyBoundaries
+        scores={[adams, arapahoe]}
+        selectedFips=""
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const shiftedPerimeter = boundarySegments(map, "selected-state-perimeter");
+    expect({
+      changed: shiftedPerimeter.join(";") !== filteredStatePerimeter.join(";"),
+      oldWestEdge: shiftedPerimeter.includes("-105,39|-105,40"),
+      sharedEdge: shiftedPerimeter.includes("-94,39|-94,40"),
+      westEdge: shiftedPerimeter.includes("-95,39|-95,40"),
+    }).toStrictEqual({
+      changed: true,
+      oldWestEdge: false,
+      sharedEdge: false,
+      westEdge: true,
+    });
+  });
 });
+
+function squareCounty(fips: string, west: number, south: number) {
+  return {
+    geometry: {
+      coordinates: [
+        [
+          [west, south],
+          [west + 1, south],
+          [west + 1, south + 1],
+          [west, south + 1],
+          [west, south],
+        ],
+      ],
+      type: "Polygon" as const,
+    },
+    id: fips,
+    properties: { extra: "stripped", fips },
+    type: "Feature" as const,
+  };
+}
+
+type LoadedMap = NonNullable<ReturnType<typeof loadMap>>;
+
+function resolvedCountyFeatureId(
+  map: LoadedMap,
+  fips: string
+): number | string | undefined {
+  const source = map.sources.get("counties");
+  const data = source?.data as GeoJSON.FeatureCollection | undefined;
+  const feature = data?.features.find((item) => item.properties?.fips === fips);
+  if (!feature) {
+    return undefined;
+  }
+  if (source?.promoteId) {
+    const promoted = feature.properties?.[source.promoteId];
+    if (typeof promoted === "string" || typeof promoted === "number") {
+      return promoted;
+    }
+    return undefined;
+  }
+  if (typeof feature.id === "string") {
+    const parsed = Number.parseInt(feature.id, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  if (typeof feature.id === "number") {
+    return feature.id;
+  }
+  return undefined;
+}
+
+function countyPointerFeature(map: LoadedMap, fips: string) {
+  const id = resolvedCountyFeatureId(map, fips);
+  return {
+    ...(typeof id === "string" || typeof id === "number" ? { id } : {}),
+    properties: { fips },
+  };
+}
+
+function fillFips(map: LoadedMap): string[] {
+  const source = map.sources.get("counties");
+  const data = source?.data as
+    | GeoJSON.FeatureCollection<GeoJSON.Geometry, { fips?: string }>
+    | undefined;
+  return (data?.features ?? []).flatMap((feature) => {
+    const fips = feature.properties?.fips;
+    return typeof fips === "string" ? [fips] : [];
+  });
+}
+
+function boundarySegments(map: LoadedMap, sourceId: string): string[] {
+  const source = map.sources.get(sourceId);
+  const data = source?.data as GeoJSON.FeatureCollection | undefined;
+  const segments: string[] = [];
+  for (const feature of data?.features ?? []) {
+    if (feature.geometry?.type !== "MultiLineString") {
+      continue;
+    }
+    for (const line of feature.geometry.coordinates) {
+      for (let index = 0; index < line.length - 1; index += 1) {
+        const start = line[index];
+        const end = line[index + 1];
+        if (!(start && end)) {
+          continue;
+        }
+        const left = `${start[0]},${start[1]}`;
+        const right = `${end[0]},${end[1]}`;
+        segments.push(left < right ? `${left}|${right}` : `${right}|${left}`);
+      }
+    }
+  }
+  return segments.sort();
+}
