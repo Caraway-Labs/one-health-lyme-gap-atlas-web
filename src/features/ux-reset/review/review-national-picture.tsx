@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
+import { COUNTY_BOUNDARIES_FILL } from "@/features/ux-reset/review/county-boundaries-palette";
 import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import {
   countyPassesAvailableData,
@@ -275,9 +276,11 @@ export function ReviewNationalPicture({
     // load stays on the boundary color so it is not read as No data.
     // Social vulnerability uses its own no-data gray from the legend entry.
     const missingColor =
-      mapPaint.layerId === "rurality" && mapPaint.kind === "categorical"
-        ? RURALITY_NO_DATA_COLOR
-        : (unpaintedCountyColor ?? noPublishedValueColor());
+      mapPaint.layerId === "boundaries"
+        ? COUNTY_BOUNDARIES_FILL
+        : mapPaint.layerId === "rurality" && mapPaint.kind === "categorical"
+          ? RURALITY_NO_DATA_COLOR
+          : (unpaintedCountyColor ?? noPublishedValueColor());
     return geometryFeatures.flatMap((feature) => {
       const fips = feature.properties.fips;
       const state = postalForFips(fips);
@@ -526,6 +529,7 @@ export function ReviewNationalPicture({
               fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
               fitSignal={fitSignal}
               geographicStateOutline={mapFocus !== null}
+              neutralCountyBoundaries={mapLayer === "boundaries"}
               geometry={{
                 ...geometryQuery.data,
                 features: geometryFeatures,

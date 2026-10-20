@@ -5,6 +5,7 @@ const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
 const HEX_ALLOWED = new Set([
   "src/app/globals.css",
   "src/components/atlas-map.tsx",
+  "src/features/ux-reset/review/county-boundaries-palette.ts",
   "src/features/geographic-explorer/explorer.css",
   "src/features/geographic-explorer/maps.tsx",
   "src/features/ux-reset/review/explorer-layer-palettes.ts",
