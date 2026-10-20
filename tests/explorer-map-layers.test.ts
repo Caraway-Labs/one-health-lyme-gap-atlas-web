@@ -337,8 +337,8 @@ describe("Explorer map layers", () => {
       ramp: paint.colorsByFips.get("08001")?.includes("map-ramp") ?? false,
       unit: paint.unit,
     }).toStrictEqual({
-      established: "#174B78",
-      noRecords: "#DDE4E7",
+      established: "#946200",
+      noRecords: "#D1D5DB",
       ramp: false,
       unit: "published status category",
     });

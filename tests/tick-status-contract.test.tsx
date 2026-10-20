@@ -6,9 +6,9 @@ import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-l
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import type { CountyScoreSummary } from "@/generated/models";
 
-const NO_RECORDS = "#DDE4E7";
-const REPORTED = "#35A6B8";
-const ESTABLISHED = "#174B78";
+const NO_RECORDS = "#D1D5DB";
+const REPORTED = "#E9B949";
+const ESTABLISHED = "#946200";
 
 function county(
   fips: string,
@@ -53,6 +53,47 @@ function tickPaint(counties: readonly CountyScoreSummary[]) {
 describe("tick status color and order contract", () => {
   afterEach(() => {
     cleanup();
+  });
+
+  it("paints the approved gray, amber, and ochre statuses and leaves other statuses off those fills", () => {
+    const paint = tickPaint([
+      county("08001", "No records"),
+      county("08003", "Reported"),
+      county("08005", "Established"),
+      county("08007", "Unknown"),
+      county("08009", "Suppressed"),
+      county("08011", "Unavailable"),
+      county("08013", "Missing"),
+      county("08015", "0"),
+    ]);
+    const primary = new Set([NO_RECORDS, REPORTED, ESTABLISHED]);
+    const extraFips = ["08007", "08009", "08011", "08013", "08015"];
+    expect({
+      colors: {
+        established: paint.colorsByFips.get("08005"),
+        noRecords: paint.colorsByFips.get("08001"),
+        reported: paint.colorsByFips.get("08003"),
+      },
+      extrasOffPrimary: extraFips.every((fips) => {
+        const color = paint.colorsByFips.get(fips);
+        return color !== undefined && !primary.has(color);
+      }),
+      lines: paint.entries
+        .filter((entry) => primary.has(entry.color))
+        .map((entry) => entry.visibleLines),
+    }).toStrictEqual({
+      colors: {
+        established: ESTABLISHED,
+        noRecords: NO_RECORDS,
+        reported: REPORTED,
+      },
+      extrasOffPrimary: true,
+      lines: [
+        ["No records", "(not zero, not confirmed absence)"],
+        ["Reported"],
+        ["Established"],
+      ],
+    });
   });
 
   it("orders primary categories no records, reported, established despite shuffle and frequency", () => {
