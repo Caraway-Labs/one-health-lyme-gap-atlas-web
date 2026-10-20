@@ -22,30 +22,43 @@ geography_type: GeographyType;
 geography_id: string[];
 /**
  * Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.
+ * @minimum 1900
+ * @maximum 2100
+ * @nullable
  */
 vintage_year?: number | null;
 /**
  * Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.
+ * @minimum 1900
+ * @maximum 2100
+ * @nullable
  */
 year?: number | null;
 /**
  * Inclusive period start; requires end_date and excludes year.
+ * @nullable
  */
 start_date?: string | null;
 /**
  * Inclusive period end; requires start_date and excludes year.
+ * @nullable
  */
 end_date?: string | null;
 /**
  * Current release has no strata; unsupported selections fail explicitly.
+ * @nullable
  */
 stratification?: string[] | null;
 /**
  * Items per page; defaults to 100, configured maximum at most 500.
+ * @minimum 1
+ * @maximum 500
+ * @nullable
  */
 page_size?: number | null;
 /**
  * Opaque next_page_token; retain query filters and release.
+ * @nullable
  */
 page_token?: string | null;
 };

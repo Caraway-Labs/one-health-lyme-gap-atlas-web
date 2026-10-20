@@ -7,18 +7,18 @@
  */
 import * as zod from 'zod';
 
-export const countyReportPdfV1CountiesFipsReportPdfGetParamsMeasureIdOneMax = 20;
+export const countyReportPdfV1CountiesFipsReportPdfGetParamsMeasureIdMax = 20;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetParamsTemplateDefault = `county-v1`;
+export const countyReportPdfV1CountiesFipsReportPdfGetParamsTemplateDefault = `county-v3`;
 export const countyReportPdfV1CountiesFipsReportPdfGetParamsTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
 export const countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareDefault = 65;
 export const countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareMin = 40;
 export const countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareMax = 85;
 export const countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareMultipleOf = 5;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointDefault = 10;
-export const countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointMin = 5;
-export const countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointMax = 25;
+export const countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKDefault = 50;
+export const countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKMin = 5;
+export const countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKMax = 200;
 
 export const countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessDefault = 75;
 export const countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessMin = 40;
@@ -27,14 +27,15 @@ export const countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeakness
 
 
 export const CountyReportPdfV1CountiesFipsReportPdfGetParams = zod.object({
-  "dataset_version": zod.union([zod.string(),zod.null()]).optional(),
-  "period_start": zod.union([zod.iso.date(),zod.null()]).optional().describe('Exact inclusive observation start for county-v2.'),
-  "period_end": zod.union([zod.iso.date(),zod.null()]).optional().describe('Exact inclusive observation end for county-v2.'),
-  "measure_id": zod.union([zod.array(zod.string()).max(countyReportPdfV1CountiesFipsReportPdfGetParamsMeasureIdOneMax),zod.null()]).optional().describe('1–20 measure IDs; repeated or comma-separated for county-v2.'),
+  "dataset_version": zod.string().nullish(),
+  "period_start": zod.iso.date().nullish().describe('Exact inclusive observation start for county-v2.'),
+  "period_end": zod.iso.date().nullish().describe('Exact inclusive observation end for county-v2.'),
+  "measure_id": zod.array(zod.string()).max(countyReportPdfV1CountiesFipsReportPdfGetParamsMeasureIdMax).nullish().describe('1–20 measure IDs; repeated or comma-separated for county-v2.'),
   "template": zod.string().regex(countyReportPdfV1CountiesFipsReportPdfGetParamsTemplateRegExp).default(countyReportPdfV1CountiesFipsReportPdfGetParamsTemplateDefault),
   "ecological_share": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareMin).max(countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareDefault),
-  "low_incidence_breakpoint": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointMin).max(countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointMax).default(countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointDefault),
-  "missing_human_weakness": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessMin).max(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessDefault)
+  "smooth_k": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKMin).max(countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKMax).default(countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKDefault),
+  "missing_human_weakness": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessMin).max(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessDefault),
+  "low_incidence_breakpoint": zod.int().nullish()
 })
 
 export type CountyReportPdfV1CountiesFipsReportPdfGetParams = zod.input<typeof CountyReportPdfV1CountiesFipsReportPdfGetParams>;

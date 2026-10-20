@@ -122,10 +122,10 @@ describe("county PDF download", () => {
       template: null,
     });
     expect({
-      breakpoint: request.searchParams.get("low_incidence_breakpoint"),
+      smooth: request.searchParams.get("smooth_k"),
       weakness: request.searchParams.get("missing_human_weakness"),
     }).toStrictEqual({
-      breakpoint: String(governed.low_incidence_breakpoint),
+      smooth: String(governed.smooth_k),
       weakness: String(governed.missing_human_weakness),
     });
   });

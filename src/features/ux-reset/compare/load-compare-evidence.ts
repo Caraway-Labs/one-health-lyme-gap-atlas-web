@@ -31,7 +31,7 @@ import type {
 } from "@/generated/models";
 import {
   ObservationsV1ObservationsGetResponse,
-  observationsV1ObservationsGetQueryPageSizeOneMax,
+  observationsV1ObservationsGetQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -256,7 +256,7 @@ export function buildCompareObservationParams(input: {
     geography_id: [input.pair[0], input.pair[1]],
     geography_type: "county",
     measure_id: input.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeOneMax,
+    page_size: observationsV1ObservationsGetQueryPageSizeMax,
   };
   switch (input.timeBound.kind) {
     case "year": {

@@ -7,6 +7,9 @@
  */
 import * as zod from 'zod';
 
+export const countyScoreSummaryScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const countyScoreSummaryIncidenceFloor2023Min = 0;
+
 export const countyScoreSummaryScoreScoreMin = 0;
 export const countyScoreSummaryScoreScoreMax = 100;
 
@@ -36,6 +39,11 @@ export const countyScoreSummaryScoreRuralSignalMax = 100;
 
 
 export const CountyScoreSummary = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyScoreSummaryScoringMethodologyVersionDefault),
+  "incidence_floor_2023": zod.number().min(countyScoreSummaryIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000; null is not zero.'),
+  "svi_percentile": zod.number().nullish(),
+  "uninsured_percentile": zod.number().nullish(),
+  "rucc_2023": zod.int().nullish(),
   "fips": zod.string(),
   "county": zod.string(),
   "state": zod.string(),

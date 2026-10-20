@@ -7,6 +7,7 @@ import { useEffect, type ReactNode } from "react";
 import { SignInIdentity } from "@/app/auth/sign-in/sign-in-entrance";
 import { Button } from "@/components/ui/button";
 import { frontPorchHeroFont } from "@/features/front-porch/front-porch-font";
+import { WorkspaceConnectingScreen } from "@/features/ux-reset/workspace-connecting-screen";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { SIGN_IN_COPY } from "@/lib/auth/sign-in-recovery";
 import { getDocsUrl } from "@/lib/docs-config";
@@ -20,7 +21,6 @@ import {
 } from "./starting-view-completion";
 
 const COPY = {
-  checking: "Checking your starting view…",
   retry: "Try again",
   signIn: "Sign in",
   unavailable:
@@ -127,5 +127,5 @@ export function StartingViewContinuation({
     );
   }
 
-  return <EntranceStatus message={COPY.checking} />;
+  return <WorkspaceConnectingScreen />;
 }

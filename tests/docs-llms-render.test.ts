@@ -61,7 +61,8 @@ function mdxFiles(directory: string): string[] {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...mdxFiles(entryPath));
-    else if (entry.name.endsWith(".mdx")) files.push(entryPath);
+    else if (entry.name.endsWith(".mdx"))
+      files.push(entryPath.split(path.sep).join("/"));
   }
   return files;
 }

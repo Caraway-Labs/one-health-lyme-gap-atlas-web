@@ -10,12 +10,12 @@ import * as zod from 'zod';
 export const EvidenceReference = zod.object({
   "resource_type": zod.string(),
   "resource_id": zod.string(),
-  "source_id": zod.union([zod.string(),zod.null()]).optional().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.union([zod.string(),zod.null()]).optional().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.union([zod.string(),zod.null()]).optional().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Governed release identity for reproducibility.'),
-  "uri": zod.union([zod.string(),zod.null()]).optional()
+  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
+  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
+  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
+  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
+  "uri": zod.string().nullish()
 })
 
 export type EvidenceReference = zod.input<typeof EvidenceReference>;

@@ -10,20 +10,20 @@ import * as zod from 'zod';
 export const Indicator = zod.object({
   "indicator_id": zod.string(),
   "label": zod.string(),
-  "definition": zod.union([zod.string(),zod.null()]),
+  "definition": zod.string().nullable(),
   "measure_ids": zod.array(zod.string()),
   "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed current-release relationship version.'),
-  "domain": zod.union([zod.string(),zod.null()]).optional(),
-  "category": zod.union([zod.string(),zod.null()]).optional(),
+  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
+  "domain": zod.string().nullish(),
+  "category": zod.string().nullish(),
   "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "standards_mappings": zod.union([zod.array(zod.object({
+  "standards_mappings": zod.array(zod.object({
   "standard": zod.string(),
   "version": zod.string(),
   "target": zod.string(),
   "relationship": zod.string(),
-  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
-})),zod.null()]).optional()
+  "mapping_reference": zod.string().nullish()
+})).nullish()
 })
 
 export type Indicator = zod.input<typeof Indicator>;

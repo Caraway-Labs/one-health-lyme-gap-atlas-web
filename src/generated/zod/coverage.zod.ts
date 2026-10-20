@@ -15,7 +15,7 @@ export const Coverage = zod.object({
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "state": zod.enum(['present', 'absent']),
-  "observation_id": zod.union([zod.string(),zod.null()]),
+  "observation_id": zod.string().nullable(),
   "coverage_id": zod.string(),
   "measure_id": zod.string(),
   "release_id": zod.string()

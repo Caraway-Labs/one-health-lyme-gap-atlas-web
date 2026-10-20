@@ -100,7 +100,8 @@ function AtlasPage() {
     scoreChange: { controlId: ScoreControlId; value: number }
   ) => {
     setUrlState({
-      breakpoint: next.low_incidence_breakpoint,
+      breakpoint: null,
+      smooth: next.smooth_k,
       eco: next.ecological_share,
       missing: next.missing_human_weakness,
     });

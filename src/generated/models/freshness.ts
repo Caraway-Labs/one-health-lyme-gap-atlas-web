@@ -10,7 +10,10 @@ import type { FreshnessState } from './freshnessState';
 export interface Freshness {
   observation_id: string;
   state?: FreshnessState;
+  /** @nullable */
   policy_id?: string | null;
+  /** @nullable */
   source_timestamp?: string | null;
+  /** @nullable */
   compared_at?: string | null;
 }

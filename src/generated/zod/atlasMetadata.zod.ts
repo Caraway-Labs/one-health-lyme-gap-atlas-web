@@ -7,7 +7,9 @@
  */
 import * as zod from 'zod';
 
+export const atlasMetadataScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 export const AtlasMetadata = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(atlasMetadataScoringMethodologyVersionDefault),
   "release_id": zod.string(),
   "schema_version": zod.string(),
   "generated_at": zod.iso.datetime({"offset":true}),

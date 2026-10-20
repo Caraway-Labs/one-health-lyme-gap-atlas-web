@@ -147,7 +147,15 @@ function LegendSegmentButton({
           }
         }}
       >
-        <span aria-hidden="true" style={{ background }} />
+        <span
+          aria-hidden="true"
+          style={{
+            background,
+            boxShadow: segment?.outline
+              ? `inset 0 0 0 2px ${segment.outline}`
+              : undefined,
+          }}
+        />
         {segment?.visibleLines?.map((line) => (
           <small
             className="ux-reset-explorer-legend-segment-label"

@@ -22,8 +22,8 @@ import {
 import * as atlasClient from "@/generated/atlas";
 import { CountyV1CountiesFipsGetResponse } from "@/generated/zod/atlas";
 
-import autauga from "./fixtures/review-al-01001.json";
-import baldwin from "./fixtures/review-al-01003.json";
+import autauga from "./fixtures/review-al-v11-01001.json";
+import baldwin from "./fixtures/review-al-v11-01003.json";
 import { reviewScopeScoresFixture } from "./fixtures/review-scope-api-fixtures";
 
 vi.mock(import("next/navigation"), async (original) => ({
@@ -367,7 +367,7 @@ describe("selected county preview", () => {
       cases.map(() => ({
         legacyBadge: false,
         pills: 1,
-        title: "Elevated review priority",
+        title: "Moderate review priority",
       }))
     );
     expect(
@@ -388,6 +388,7 @@ describe("selected county preview", () => {
           detail={CountyV1CountiesFipsGetResponse.parse({
             ...autauga,
             case_count_floor_2023: count,
+            scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
             human_status: humanStatus,
             incidence_floor_2023: rate,
           })}

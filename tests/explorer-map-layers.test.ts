@@ -112,6 +112,7 @@ function county(
     county: "Cedar",
     evidence_completeness: 40,
     fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     in_contiguous_tick_scope: true,
     priority: "Priority 2",
@@ -413,14 +414,28 @@ describe("Explorer map layers", () => {
       scoresStatus: "ready",
       sources: legendSources,
     });
-    expect(boundaries.period).toMatch(/not an evidence layer/);
-    expect(boundaries.entries).toStrictEqual([
-      {
-        color: "var(--explorer-boundary)",
-        detail: null,
-        label: "County boundary",
-      },
-    ]);
+    expect({
+      entries: boundaries.entries,
+      note: boundaries.note,
+      period: boundaries.period,
+      ramp: boundaries.ramp,
+      scale: boundaries.scale,
+    }).toStrictEqual({
+      entries: [
+        {
+          color: "#F3F4F6",
+          detail:
+            "Neutral county fill with charcoal county outlines and darker state outlines. Not a score, not disease data, and not a missing value.",
+          label: "County boundary",
+          outline: "#4B5563",
+        },
+      ],
+      note: expect.stringMatching(/not a missing value/),
+      period: expect.stringMatching(/not an evidence layer/),
+      ramp: undefined,
+      scale: "segments",
+    });
+    expect(boundaries.note).toMatch(/not colored by Atlas gap score/);
   });
 
   it("says the source vintage is unavailable instead of inventing one", () => {

@@ -11,33 +11,33 @@ export const briefingEvidenceItemItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const briefingEvidenceItemRevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const briefingEvidenceItemSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 
-export const briefingEvidenceItemCanonicalUrlOneMax = 4096;
+export const briefingEvidenceItemCanonicalUrlMax = 4096;
 
-export const briefingEvidenceItemTitleOneMax = 1000;
-
-
-export const briefingEvidenceItemTitleOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const briefingEvidenceItemPublishedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const briefingEvidenceItemUpdatedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const briefingEvidenceItemEventAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const briefingEvidenceItemExcerptOneMax = 5000;
+export const briefingEvidenceItemTitleMax = 1000;
 
 
-export const briefingEvidenceItemExcerptOneRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
+export const briefingEvidenceItemTitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const briefingEvidenceItemPublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const briefingEvidenceItemUpdatedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const briefingEvidenceItemEventAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const briefingEvidenceItemExcerptMax = 5000;
+
+
+export const briefingEvidenceItemExcerptRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
 export const briefingEvidenceItemFetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const briefingEvidenceItemGeographiesItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const briefingEvidenceItemGeographiesItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const briefingEvidenceItemGeographiesItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const briefingEvidenceItemGeographiesItemConfidenceOneMin = 0;
-export const briefingEvidenceItemGeographiesItemConfidenceOneMax = 1;
+export const briefingEvidenceItemGeographiesItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const briefingEvidenceItemGeographiesItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const briefingEvidenceItemGeographiesItemConfidenceMin = 0;
+export const briefingEvidenceItemGeographiesItemConfidenceMax = 1;
 
 export const briefingEvidenceItemGeographiesMax = 100;
 
 export const briefingEvidenceItemTopicsItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const briefingEvidenceItemTopicsItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const briefingEvidenceItemTopicsItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const briefingEvidenceItemTopicsItemConfidenceOneMin = 0;
-export const briefingEvidenceItemTopicsItemConfidenceOneMax = 1;
+export const briefingEvidenceItemTopicsItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const briefingEvidenceItemTopicsItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const briefingEvidenceItemTopicsItemConfidenceMin = 0;
+export const briefingEvidenceItemTopicsItemConfidenceMax = 1;
 
 export const briefingEvidenceItemTopicsMax = 100;
 
@@ -70,12 +70,12 @@ export const BriefingEvidence = zod.object({
   "revision_id": zod.string().regex(briefingEvidenceItemRevisionIdRegExp),
   "source_id": zod.string().regex(briefingEvidenceItemSourceIdRegExp),
   "registry_version": zod.int().min(1),
-  "canonical_url": zod.union([zod.string().max(briefingEvidenceItemCanonicalUrlOneMax),zod.null()]),
-  "title": zod.union([zod.string().min(1).max(briefingEvidenceItemTitleOneMax).regex(briefingEvidenceItemTitleOneRegExp),zod.null()]),
-  "published_at": zod.union([zod.string().regex(briefingEvidenceItemPublishedAtOneRegExp),zod.null()]),
-  "updated_at": zod.union([zod.string().regex(briefingEvidenceItemUpdatedAtOneRegExp),zod.null()]),
-  "event_at": zod.union([zod.string().regex(briefingEvidenceItemEventAtOneRegExp),zod.null()]),
-  "excerpt": zod.union([zod.string().min(1).max(briefingEvidenceItemExcerptOneMax).regex(briefingEvidenceItemExcerptOneRegExp),zod.null()]),
+  "canonical_url": zod.string().max(briefingEvidenceItemCanonicalUrlMax).nullable(),
+  "title": zod.string().min(1).max(briefingEvidenceItemTitleMax).regex(briefingEvidenceItemTitleRegExp).nullable(),
+  "published_at": zod.string().regex(briefingEvidenceItemPublishedAtRegExp).nullable(),
+  "updated_at": zod.string().regex(briefingEvidenceItemUpdatedAtRegExp).nullable(),
+  "event_at": zod.string().regex(briefingEvidenceItemEventAtRegExp).nullable(),
+  "excerpt": zod.string().min(1).max(briefingEvidenceItemExcerptMax).regex(briefingEvidenceItemExcerptRegExp).nullable(),
   "fetched_at": zod.string().regex(briefingEvidenceItemFetchedAtRegExp),
   "field_states": zod.object({
   "canonical_url": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
@@ -88,16 +88,16 @@ export const BriefingEvidence = zod.object({
   "geographies": zod.array(zod.object({
   "value": zod.string().regex(briefingEvidenceItemGeographiesItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(briefingEvidenceItemGeographiesItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(briefingEvidenceItemGeographiesItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(briefingEvidenceItemGeographiesItemConfidenceOneMin).max(briefingEvidenceItemGeographiesItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(briefingEvidenceItemGeographiesItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(briefingEvidenceItemGeographiesItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(briefingEvidenceItemGeographiesItemConfidenceMin).max(briefingEvidenceItemGeographiesItemConfidenceMax).nullable()
 })).max(briefingEvidenceItemGeographiesMax),
   "topics": zod.array(zod.object({
   "value": zod.string().regex(briefingEvidenceItemTopicsItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(briefingEvidenceItemTopicsItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(briefingEvidenceItemTopicsItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(briefingEvidenceItemTopicsItemConfidenceOneMin).max(briefingEvidenceItemTopicsItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(briefingEvidenceItemTopicsItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(briefingEvidenceItemTopicsItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(briefingEvidenceItemTopicsItemConfidenceMin).max(briefingEvidenceItemTopicsItemConfidenceMax).nullable()
 })).max(briefingEvidenceItemTopicsMax),
   "transport": zod.enum(['rss', 'atom', 'email', 'web']),
   "transport_identity_sha256": zod.string().regex(briefingEvidenceItemTransportIdentitySha256RegExp),

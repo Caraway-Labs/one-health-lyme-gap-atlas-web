@@ -10,15 +10,15 @@ import * as zod from 'zod';
 export const replayToolContractVersionDefault = `ask-atlas-v1`;
 export const replayRoutingPolicyVersionDefault = `ask-atlas-structured-routing-v1`;
 export const Replay = zod.object({
-  "provider_id": zod.union([zod.string(),zod.null()]).optional(),
-  "model_id": zod.union([zod.string(),zod.null()]).optional(),
-  "prompt_version": zod.union([zod.string(),zod.null()]).optional(),
+  "provider_id": zod.string().nullish(),
+  "model_id": zod.string().nullish(),
+  "prompt_version": zod.string().nullish(),
   "tool_contract_version": zod.literal("ask-atlas-v1").default(replayToolContractVersionDefault),
   "routing_policy_version": zod.string().default(replayRoutingPolicyVersionDefault),
-  "configuration_version": zod.union([zod.string(),zod.null()]).optional(),
-  "assistant_policy_version": zod.union([zod.string(),zod.null()]).optional(),
-  "release_id": zod.union([zod.string(),zod.null()]).optional(),
-  "literature_retrieval_configuration_version": zod.union([zod.string(),zod.null()]).optional()
+  "configuration_version": zod.string().nullish(),
+  "assistant_policy_version": zod.string().nullish(),
+  "release_id": zod.string().nullish(),
+  "literature_retrieval_configuration_version": zod.string().nullish()
 })
 
 export type Replay = zod.input<typeof Replay>;

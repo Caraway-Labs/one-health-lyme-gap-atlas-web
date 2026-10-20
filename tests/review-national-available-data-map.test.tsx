@@ -129,10 +129,12 @@ vi.mock(
 
 const publishedDenver = {
   ...reviewScopeScoresFixture.counties[0],
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "published_count_floor",
 };
 const unpublishedAlbany = {
   ...reviewScopeScoresFixture.counties[2],
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "missing",
 };
 const scoreCounties = [publishedDenver, unpublishedAlbany];

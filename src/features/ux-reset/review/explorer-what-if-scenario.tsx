@@ -48,16 +48,17 @@ export const EXPLORER_SCENARIO_WEIGHT_NOTE =
 export const EXPLORER_SCENARIO_WEIGHT_TOOLTIP =
   "Reported Lyme disease data is a separate multiplier. It is not part of these two percentages. Tick status is 60% of the tick-and-pathogen signal and pathogen presence is 40%. Those shares stay fixed. Community context is 50% social vulnerability, 30% uninsured share, and 20% rurality. The published default is 65% tick and pathogen data and 35% community context.";
 
-export const EXPLORER_SCENARIO_RATE_NOTE = "This is a scoring reference point.";
+export const EXPLORER_SCENARIO_RATE_NOTE =
+  "Smooth attenuation k; the published v1.1 default is 50.";
 
 export const EXPLORER_SCENARIO_RATE_TOOLTIP =
-  "A published rate at this reference point sets the case-data term to 0. A published rate of 0 sets that term to 100. Rates in between are scaled. The unit is cases per 100,000 people. The published default is 10 per 100,000, with a range of 5 to 25.";
+  "The human term is 100 / (1 + I / k), using the published 2023 minimum incidence floor. At I=k the term is 50; higher incidence reduces it smoothly. The governed default is k=50. Scenario adjustments do not change published results.";
 
 export const EXPLORER_SCENARIO_MISSING_NOTE =
   "Used when a county has no published case count.";
 
 export const EXPLORER_SCENARIO_MISSING_TOOLTIP =
-  "On the 0–100 case-data term, 100 matches a published rate of 0 and 0 matches a rate at or above the reference point. This number is that term when no county count was published. The published default is 75.";
+  "Legacy H=75 is an assumption for missing county human observations, not an observed rate or an incidence estimate. Published numeric zero gives H=100. Smooth attenuation has no hard incidence cutoff.";
 
 export type ExplorerWhatIfImpactState =
   | { status: "none" }
@@ -163,7 +164,7 @@ function collectionSettingsRecord(
   }
   return {
     ecological_share: settings.ecological_share,
-    low_incidence_breakpoint: settings.low_incidence_breakpoint,
+    smooth_k: settings.smooth_k,
     missing_human_weakness: settings.missing_human_weakness,
   };
 }
@@ -808,16 +809,16 @@ export function ExplorerWhatIfScenario({
                 }}
               />
               <ScenarioControl
-                label="Reported Lyme disease rate reference point"
-                max={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.max}
-                min={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.min}
+                label="Smooth incidence attenuation (k)"
+                max={SCENARIO_CONTROL_RANGES.smooth_k.max}
+                min={SCENARIO_CONTROL_RANGES.smooth_k.min}
                 note={EXPLORER_SCENARIO_RATE_NOTE}
-                step={SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.step}
+                step={SCENARIO_CONTROL_RANGES.smooth_k.step}
                 technical={EXPLORER_SCENARIO_RATE_TOOLTIP}
-                value={settings.low_incidence_breakpoint}
-                valueLabel={`${settings.low_incidence_breakpoint} per 100,000`}
+                value={settings.smooth_k}
+                valueLabel={`${settings.smooth_k} per 100,000`}
                 onChange={(value) => {
-                  onChange({ ...settings, low_incidence_breakpoint: value });
+                  onChange({ ...settings, smooth_k: value });
                 }}
               />
               <ScenarioControl

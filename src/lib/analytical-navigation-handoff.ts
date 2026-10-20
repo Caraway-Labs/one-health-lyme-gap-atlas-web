@@ -17,7 +17,7 @@ const ANALYTICAL_NAVIGATION_PATH_SET = new Set<string>(
 
 /** Shared URL state across Overview and Investigation Workspace. */
 export const OVERVIEW_INVESTIGATE_HANDOFF_PARAMS = [
-  "breakpoint",
+  "smooth",
   "compare",
   "county",
   "dataset",

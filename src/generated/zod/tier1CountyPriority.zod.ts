@@ -8,8 +8,8 @@
 import * as zod from 'zod';
 
 export const tier1CountyPriorityCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const tier1CountyPriorityPriorityPercentileOneMin = 0;
-export const tier1CountyPriorityPriorityPercentileOneMax = 100;
+export const tier1CountyPriorityPriorityPercentileMin = 0;
+export const tier1CountyPriorityPriorityPercentileMax = 100;
 
 
 
@@ -24,9 +24,9 @@ export const tier1CountyPriorityReasonsMax = 3;
 
 export const Tier1CountyPriority = zod.object({
   "county_fips": zod.string().regex(tier1CountyPriorityCountyFipsRegExp).describe('Five-digit county FIPS for this persisted result.'),
-  "priority_tier": zod.union([zod.enum(['HIGH', 'MEDIUM', 'LOW']),zod.null()]).describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
-  "priority_percentile": zod.union([zod.number().min(tier1CountyPriorityPriorityPercentileOneMin).max(tier1CountyPriorityPriorityPercentileOneMax),zod.null()]).describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
-  "raw_model_score": zod.union([zod.number(),zod.null()]).describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
+  "priority_tier": zod.union([zod.literal('HIGH'),zod.literal('MEDIUM'),zod.literal('LOW'),zod.literal(null)]).nullable().describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
+  "priority_percentile": zod.number().min(tier1CountyPriorityPriorityPercentileMin).max(tier1CountyPriorityPriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
+  "raw_model_score": zod.number().nullable().describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
   "evidence_sufficiency": zod.enum(['SUFFICIENT', 'INSUFFICIENT', 'NOT_ESTIMABLE']).describe('Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.'),
   "model_version": zod.string().min(1).describe('Version of the model that generated this result.'),
   "release_id": zod.string().min(1).describe('Governed source release for this batch.'),

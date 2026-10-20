@@ -7,18 +7,18 @@
  */
 import * as zod from 'zod';
 
-export const userProfileWriteStateCodeOneMax = 2;
+export const userProfileWriteStateCodeMax = 2;
 
-export const userProfileWriteOrganizationOneMax = 120;
+export const userProfileWriteOrganizationMax = 120;
 
-export const userProfileWriteJobTitleOneMax = 120;
+export const userProfileWriteJobTitleMax = 120;
 
 
 export const UserProfileWrite = zod.object({
-  "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
-  "state_code": zod.union([zod.string().max(userProfileWriteStateCodeOneMax),zod.null()]).optional(),
-  "organization": zod.union([zod.string().max(userProfileWriteOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(userProfileWriteJobTitleOneMax),zod.null()]).optional(),
+  "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
+  "state_code": zod.string().max(userProfileWriteStateCodeMax).nullish(),
+  "organization": zod.string().max(userProfileWriteOrganizationMax).nullish(),
+  "job_title": zod.string().max(userProfileWriteJobTitleMax).nullish(),
   "complete_starting_view": zod.literal(true).optional().describe('Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version.')
 })
 

@@ -14,6 +14,10 @@ export interface RankedBriefingItem {
   item_id: string;
   /** @minimum 0 */
   matching_values: number;
+  /**
+     * @nullable
+     * @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$
+     */
   publisher_recency: string | null;
   evidence: BriefingEvidence[];
 }

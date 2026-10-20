@@ -16,6 +16,7 @@ export interface ToolResult {
   kind?: 'tool_result';
   tool: ToolResultTool;
   status: ToolResultStatus;
+  /** @nullable */
   release_id?: string | null;
   /** @maxItems 20 */
   measures?: Measure[];
@@ -25,5 +26,6 @@ export interface ToolResult {
   coverage?: Coverage[];
   /** @maxItems 20 */
   metadata?: MetadataItem[];
+  /** @nullable */
   error_code?: string | null;
 }

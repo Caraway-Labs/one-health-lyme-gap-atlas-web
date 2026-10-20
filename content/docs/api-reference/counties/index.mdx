@@ -26,7 +26,9 @@ Operation ID: `county_report_pdf_v1_counties__fips__report_pdf_get`
 
 ### Template selection
 
-Choose `template` on `GET /v1/counties/{fips}/report.pdf`. The default is `county-v1`. Use a county FIPS in the lower 48 states or the District of Columbia. A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim.
+Choose `template` on `GET /v1/counties/{fips}/report.pdf`. The default is `county-v3`. Use a county FIPS in the lower 48 states or the District of Columbia. A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim.
+
+The default county-v3 brief uses published Surveillance Gap Score v1.1 with Smooth k=50 and ignores scenario overrides. Scoring and data-release methodologies remain distinct.
 
 The same selector rules, with the requests checked against the published API, are in the [workflow guides](/docs/develop/workflows#download-a-county-report).
 
@@ -38,7 +40,7 @@ The same selector rules, with the requests checked against the published API, ar
 | Parameter | Default | Bounds |
 | --- | --- | --- |
 | `ecological_share` | 65 | 40–85, multiple of 5 |
-| `low_incidence_breakpoint` | 10 | 5–25 |
+| `smooth_k` | 50 | 5–200 |
 | `missing_human_weakness` | 75 | 40–90, multiple of 5 |
 
 `period_start`, `period_end`, and `measure_id` are forbidden on `county-v1`. Sending one of them returns HTTP `422`. Checked on 18 October 2026 for FIPS `36061`:
@@ -98,6 +100,14 @@ The same checked requests are in the [workflow guides](https://onehealthatlas.or
 
   </Tab>
 </Tabs>
+
+## Get both persisted county surveillance-situation classifications [#county_surveillance_situations_get]
+
+`GET /v1/counties/{fips}/surveillance-situations`
+
+Operation ID: `county_surveillance_situations_get`
+
+[Parameters, responses, and schema](/docs/api-reference/counties/county_surveillance_situations_get).
 
 ## Get persisted Tier 1 model-assisted surveillance review priority [#county_tier1_surveillance_priority_get]
 

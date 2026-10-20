@@ -7,5 +7,6 @@
  */
 
 export interface CollectionLinks {
+  /** @nullable */
   self?: string | null;
 }

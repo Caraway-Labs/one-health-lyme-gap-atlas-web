@@ -96,7 +96,8 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   };
   const setSettings = (next: ScoreSettings) =>
     setUrlState({
-      breakpoint: next.low_incidence_breakpoint,
+      breakpoint: null,
+      smooth: next.smooth_k,
       eco: next.ecological_share,
       missing: next.missing_human_weakness,
     });
@@ -576,14 +577,13 @@ export function ScoringAssumptions({
           }
         />
         <ScoreAssumption
-          label="Published-record threshold"
-          value={`${settings.low_incidence_breakpoint} per 100,000`}
+          label="Smooth incidence attenuation (k)"
+          value={`${settings.smooth_k} per 100,000`}
           min={5}
-          max={25}
-          note="At this published incidence value, the human-signal weakness is zero."
-          onChange={(value) =>
-            onChange({ ...settings, low_incidence_breakpoint: value })
-          }
+          max={200}
+          step={5}
+          note="H=100/(1+minimum incidence/k). Published v1.1 uses k=50."
+          onChange={(value) => onChange({ ...settings, smooth_k: value })}
         />
         <ScoreAssumption
           label="Missing county-record value"
@@ -646,7 +646,7 @@ export function ScoringAssumptions({
       </details>
       <Link
         className="adjust-link"
-        href={`/?county=${detail.fips}&eco=${settings.ecological_share}&breakpoint=${settings.low_incidence_breakpoint}&missing=${settings.missing_human_weakness}#scoring`}
+        href={`/?county=${detail.fips}&eco=${settings.ecological_share}&smooth=${settings.smooth_k}&missing=${settings.missing_human_weakness}#scoring`}
       >
         Open the full scoring lab
       </Link>

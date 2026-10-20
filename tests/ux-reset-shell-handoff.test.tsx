@@ -50,6 +50,7 @@ vi.mock(import("@/generated/atlas"), () => ({
           generated_at: "2026-01-01T00:00:00Z",
           limitations: "",
           loaded_at: "2026-01-01T00:00:00Z",
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           methodology_version: "1",
           release_id: "alpha-2026-08-06",
           schema_version: "1",

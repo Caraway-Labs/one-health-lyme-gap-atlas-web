@@ -10,34 +10,34 @@ import * as zod from 'zod';
 export const askAtlasMixedBodyQuestionMax = 1000;
 
 export const askAtlasMixedBodySourceModeDefault = `Both`;
-export const askAtlasMixedBodyContextMeasureIdOneMax = 120;
+export const askAtlasMixedBodyContextMeasureIdMax = 120;
 
-export const askAtlasMixedBodyContextIndicatorIdOneMax = 120;
+export const askAtlasMixedBodyContextIndicatorIdMax = 120;
 
-export const askAtlasMixedBodyContextSearchTextOneMax = 120;
+export const askAtlasMixedBodyContextSearchTextMax = 120;
 
 export const askAtlasMixedBodyContextGeographyTypeDefault = `county`;
-export const askAtlasMixedBodyContextGeographyIdsOneMax = 20;
+export const askAtlasMixedBodyContextGeographyIdsMax = 20;
 
-export const askAtlasMixedBodyContextYearOneMin = 1900;
-export const askAtlasMixedBodyContextYearOneMax = 2100;
+export const askAtlasMixedBodyContextYearMin = 1900;
+export const askAtlasMixedBodyContextYearMax = 2100;
 
-export const askAtlasMixedBodyContextExpectedObservationIdOneMax = 200;
+export const askAtlasMixedBodyContextExpectedObservationIdMax = 200;
 
 
 export const AskAtlasMixedBody = zod.object({
   "question": zod.string().min(1).max(askAtlasMixedBodyQuestionMax),
   "source_mode": zod.enum(['Literature', 'Structured', 'Both']).default(askAtlasMixedBodySourceModeDefault),
   "context": zod.object({
-  "measure_id": zod.union([zod.string().min(1).max(askAtlasMixedBodyContextMeasureIdOneMax),zod.null()]).optional(),
-  "indicator_id": zod.union([zod.string().min(1).max(askAtlasMixedBodyContextIndicatorIdOneMax),zod.null()]).optional(),
-  "search_text": zod.union([zod.string().min(1).max(askAtlasMixedBodyContextSearchTextOneMax),zod.null()]).optional(),
+  "measure_id": zod.string().min(1).max(askAtlasMixedBodyContextMeasureIdMax).nullish(),
+  "indicator_id": zod.string().min(1).max(askAtlasMixedBodyContextIndicatorIdMax).nullish(),
+  "search_text": zod.string().min(1).max(askAtlasMixedBodyContextSearchTextMax).nullish(),
   "geography_type": zod.enum(['county', 'state']).default(askAtlasMixedBodyContextGeographyTypeDefault),
-  "geography_ids": zod.union([zod.array(zod.string()).min(1).max(askAtlasMixedBodyContextGeographyIdsOneMax),zod.null()]).optional(),
-  "year": zod.union([zod.int().min(askAtlasMixedBodyContextYearOneMin).max(askAtlasMixedBodyContextYearOneMax),zod.null()]).optional(),
-  "start_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "end_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "expected_observation_id": zod.union([zod.string().min(1).max(askAtlasMixedBodyContextExpectedObservationIdOneMax),zod.null()]).optional()
+  "geography_ids": zod.array(zod.string()).min(1).max(askAtlasMixedBodyContextGeographyIdsMax).nullish(),
+  "year": zod.int().min(askAtlasMixedBodyContextYearMin).max(askAtlasMixedBodyContextYearMax).nullish(),
+  "start_date": zod.iso.date().nullish(),
+  "end_date": zod.iso.date().nullish(),
+  "expected_observation_id": zod.string().min(1).max(askAtlasMixedBodyContextExpectedObservationIdMax).nullish()
 }).optional()
 })
 

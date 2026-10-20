@@ -10,12 +10,12 @@ import * as zod from 'zod';
 export const listIntelligenceSourcesParamsPageSizeDefault = 100;
 export const listIntelligenceSourcesParamsPageSizeMax = 500;
 
-export const listIntelligenceSourcesParamsPageTokenOneMax = 2048;
+export const listIntelligenceSourcesParamsPageTokenMax = 2048;
 
 
 export const ListIntelligenceSourcesParams = zod.object({
   "page_size": zod.int().min(1).max(listIntelligenceSourcesParamsPageSizeMax).default(listIntelligenceSourcesParamsPageSizeDefault),
-  "page_token": zod.union([zod.string().max(listIntelligenceSourcesParamsPageTokenOneMax),zod.null()]).optional()
+  "page_token": zod.string().max(listIntelligenceSourcesParamsPageTokenMax).nullish()
 })
 
 export type ListIntelligenceSourcesParams = zod.input<typeof ListIntelligenceSourcesParams>;

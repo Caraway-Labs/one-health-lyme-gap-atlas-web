@@ -13,7 +13,15 @@ export interface KnowledgeChatRequest {
      * @maxLength 1000
      */
   message: string;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
   conversation_id?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
   conversation_token?: string | null;
   /** @maxItems 12 */
   history?: ChatHistoryTurn[];

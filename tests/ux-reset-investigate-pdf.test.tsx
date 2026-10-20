@@ -144,7 +144,7 @@ describe("Investigate canonical PDF", () => {
       }),
       "https://example.com"
     );
-    expect(url.searchParams.getAll("measure_id")).toStrictEqual([
+    expect(url.searchParams.get("measure_id")?.split(",")).toStrictEqual([
       "tick_survey",
       "cases",
     ]);

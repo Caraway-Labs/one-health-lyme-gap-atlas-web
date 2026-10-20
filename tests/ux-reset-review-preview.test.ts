@@ -30,6 +30,7 @@ function county(
     color: "#a9d2db",
     county: "Albany",
     evidence_completeness: 100,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     in_contiguous_tick_scope: true,
     priority: "Lower",
@@ -83,6 +84,7 @@ describe("Review county preview", () => {
         county: "Suffolk",
         evidence_completeness: 20,
         fips: "36103",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "missing",
         priority: "Priority 1 — Review",
         tick_status: "No records",
@@ -93,6 +95,7 @@ describe("Review county preview", () => {
         burgdorferi_status: "No records",
         evidence_completeness: 0,
         fips: "36091",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "missing",
         tick_status: "No records",
       })
@@ -127,6 +130,7 @@ describe("Review county preview", () => {
         burgdorferi_status: "Present",
         evidence_completeness: 100,
         fips: "36001",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "SUPPRESSED",
         tick_status: "Established",
       })
@@ -136,6 +140,7 @@ describe("Review county preview", () => {
         burgdorferi_status: "suppressed",
         evidence_completeness: 100,
         fips: "36003",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "suppressed",
         tick_status: "suppressed",
       })
@@ -165,6 +170,7 @@ describe("Review county preview", () => {
         burgdorferi_status: "Present",
         evidence_completeness: 100,
         fips: "36001",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "published_count_floor",
         tick_status: "No records",
       })
@@ -174,6 +180,7 @@ describe("Review county preview", () => {
         burgdorferi_status: "Present",
         evidence_completeness: 40,
         fips: "36005",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "published_count_floor",
         tick_status: "Established",
       })
@@ -207,6 +214,7 @@ describe("Review county preview", () => {
         burgdorferi_status: "SUPPRESSED",
         evidence_completeness: 100,
         fips: "36001",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "missing",
         tick_status: "Established",
       })
@@ -236,6 +244,7 @@ describe("Review county preview", () => {
       county: "Suffolk",
       evidence_completeness: 20,
       fips: "36103",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "missing",
       priority: "Priority 1 — Review",
       tick_status: "No records",

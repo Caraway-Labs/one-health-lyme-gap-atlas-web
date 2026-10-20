@@ -11,31 +11,31 @@ export const CollectionEnvelopeIndicator = zod.object({
   "data": zod.array(zod.object({
   "indicator_id": zod.string(),
   "label": zod.string(),
-  "definition": zod.union([zod.string(),zod.null()]),
+  "definition": zod.string().nullable(),
   "measure_ids": zod.array(zod.string()),
   "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed current-release relationship version.'),
-  "domain": zod.union([zod.string(),zod.null()]).optional(),
-  "category": zod.union([zod.string(),zod.null()]).optional(),
+  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
+  "domain": zod.string().nullish(),
+  "category": zod.string().nullish(),
   "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "standards_mappings": zod.union([zod.array(zod.object({
+  "standards_mappings": zod.array(zod.object({
   "standard": zod.string(),
   "version": zod.string(),
   "target": zod.string(),
   "relationship": zod.string(),
-  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
-})),zod.null()]).optional()
+  "mapping_reference": zod.string().nullish()
+})).nullish()
 })),
   "meta": zod.object({
-  "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
+  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
   "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
-  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
-  "self": zod.union([zod.string(),zod.null()]).optional()
+  "self": zod.string().nullish()
 })
 })
 

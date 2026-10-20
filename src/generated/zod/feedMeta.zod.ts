@@ -11,7 +11,7 @@ export const feedMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const feedMetaSourceHealthAvailableDefault = false;
 export const feedMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
 export const FeedMeta = zod.object({
-  "next_page_token": zod.union([zod.string(),zod.null()]).describe('Opaque filter\/state-bound continuation.'),
+  "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(feedMetaProjectionVersionDefault),
   "source_health_available": zod.literal(false).default(feedMetaSourceHealthAvailableDefault),
   "limitations": zod.array(zod.string()).default(feedMetaLimitationsDefault)

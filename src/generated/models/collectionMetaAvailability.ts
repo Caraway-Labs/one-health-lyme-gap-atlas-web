@@ -8,6 +8,7 @@
 
 /**
  * Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.
+ * @nullable
  */
 export type CollectionMetaAvailability = typeof CollectionMetaAvailability[keyof typeof CollectionMetaAvailability] | null;
 

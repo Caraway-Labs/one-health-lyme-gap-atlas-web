@@ -7,31 +7,31 @@
  */
 import * as zod from 'zod';
 
-export const structuredContextMeasureIdOneMax = 120;
+export const structuredContextMeasureIdMax = 120;
 
-export const structuredContextIndicatorIdOneMax = 120;
+export const structuredContextIndicatorIdMax = 120;
 
-export const structuredContextSearchTextOneMax = 120;
+export const structuredContextSearchTextMax = 120;
 
 export const structuredContextGeographyTypeDefault = `county`;
-export const structuredContextGeographyIdsOneMax = 20;
+export const structuredContextGeographyIdsMax = 20;
 
-export const structuredContextYearOneMin = 1900;
-export const structuredContextYearOneMax = 2100;
+export const structuredContextYearMin = 1900;
+export const structuredContextYearMax = 2100;
 
-export const structuredContextExpectedObservationIdOneMax = 200;
+export const structuredContextExpectedObservationIdMax = 200;
 
 
 export const StructuredContext = zod.object({
-  "measure_id": zod.union([zod.string().min(1).max(structuredContextMeasureIdOneMax),zod.null()]).optional(),
-  "indicator_id": zod.union([zod.string().min(1).max(structuredContextIndicatorIdOneMax),zod.null()]).optional(),
-  "search_text": zod.union([zod.string().min(1).max(structuredContextSearchTextOneMax),zod.null()]).optional(),
+  "measure_id": zod.string().min(1).max(structuredContextMeasureIdMax).nullish(),
+  "indicator_id": zod.string().min(1).max(structuredContextIndicatorIdMax).nullish(),
+  "search_text": zod.string().min(1).max(structuredContextSearchTextMax).nullish(),
   "geography_type": zod.enum(['county', 'state']).default(structuredContextGeographyTypeDefault),
-  "geography_ids": zod.union([zod.array(zod.string()).min(1).max(structuredContextGeographyIdsOneMax),zod.null()]).optional(),
-  "year": zod.union([zod.int().min(structuredContextYearOneMin).max(structuredContextYearOneMax),zod.null()]).optional(),
-  "start_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "end_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "expected_observation_id": zod.union([zod.string().min(1).max(structuredContextExpectedObservationIdOneMax),zod.null()]).optional()
+  "geography_ids": zod.array(zod.string()).min(1).max(structuredContextGeographyIdsMax).nullish(),
+  "year": zod.int().min(structuredContextYearMin).max(structuredContextYearMax).nullish(),
+  "start_date": zod.iso.date().nullish(),
+  "end_date": zod.iso.date().nullish(),
+  "expected_observation_id": zod.string().min(1).max(structuredContextExpectedObservationIdMax).nullish()
 })
 
 export type StructuredContext = zod.input<typeof StructuredContext>;
