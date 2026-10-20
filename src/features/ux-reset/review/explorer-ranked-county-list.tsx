@@ -16,7 +16,6 @@ export function ExplorerRankedCountyList({
   scenarios,
   scopeKey,
   selectedFips,
-  showEyebrow = true,
   testId,
 }: {
   candidateFips?: ReadonlySet<string>;
@@ -27,7 +26,6 @@ export function ExplorerRankedCountyList({
   scenarios?: ReadonlyMap<string, AdjustedCountyScenario> | null;
   scopeKey: string;
   selectedFips: string;
-  showEyebrow?: boolean;
   testId: string;
 }) {
   const scored = rows.filter((row) => row.rank !== null);
@@ -35,17 +33,8 @@ export function ExplorerRankedCountyList({
 
   return (
     <div className="ux-reset-ranked-counties">
-      <header
-        className={
-          showEyebrow
-            ? "ux-reset-ranked-counties-header"
-            : "ux-reset-ranked-counties-header is-compact"
-        }
-      >
-        {showEyebrow ? (
-          <p className="ux-reset-ranked-counties-eyebrow">Counties</p>
-        ) : null}
-        <h2>Choose a county</h2>
+      <header className="ux-reset-ranked-counties-header">
+        <h2 data-testid="explorer-counties-heading">Counties</h2>
       </header>
       {note ? (
         <p

@@ -599,7 +599,7 @@ test.describe("Explorer same-route history during hydration", () => {
     });
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Choose a county" })
+      page.getByRole("heading", { exact: true, name: "Counties" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-county-evidence")).toHaveCount(0);
 
