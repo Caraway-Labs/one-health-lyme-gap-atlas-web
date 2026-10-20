@@ -7,7 +7,13 @@ import type {
   Map as MapLibreMap,
 } from "maplibre-gl";
 import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
-import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Ref } from "react";
 
 import {
@@ -373,6 +379,11 @@ export function AtlasMap({
     },
   }));
 
+  const statePerimeterFeatures = useMemo(
+    () => contiguousUsGeometry(geometry).features,
+    [geometry]
+  );
+
   const enriched = (): GeoJSON.FeatureCollection => {
     const byFips = new Map(scores.map((county) => [county.fips, county]));
     const contiguousGeometry = contiguousUsGeometry(geometry);
@@ -659,7 +670,7 @@ export function AtlasMap({
       enabled: neutralCountyBoundaries,
       // State perimeters follow the full display geometry for this scope.
       // `data.features` is the evidence-filtered fill and interaction set.
-      features: contiguousUsGeometry(geometry).features,
+      features: statePerimeterFeatures,
       selectedStateFips:
         selectedState === "ALL" ? null : stateFipsPrefix(selectedState),
     });

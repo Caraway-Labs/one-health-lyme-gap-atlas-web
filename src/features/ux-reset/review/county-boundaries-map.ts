@@ -33,6 +33,7 @@ const DEFAULT_FILL_OUTLINE = "rgba(255,255,255,.9)";
 const appliedChrome = new WeakSet<object>();
 
 let cachedFeatureKey = "";
+let cachedFeatures: readonly GeoJSON.Feature[] | null = null;
 let cachedStateFips: string | null = null;
 let cachedLines: ReturnType<typeof stateBoundaryCollections> | null = null;
 
@@ -109,15 +110,24 @@ function boundaryLines(
   features: readonly GeoJSON.Feature[],
   selectedStateFips: string | null
 ): ReturnType<typeof stateBoundaryCollections> {
+  if (
+    cachedLines &&
+    cachedFeatures === features &&
+    cachedStateFips === selectedStateFips
+  ) {
+    return cachedLines;
+  }
   const key = featureKey(features);
   if (
     cachedLines &&
     cachedFeatureKey === key &&
     cachedStateFips === selectedStateFips
   ) {
+    cachedFeatures = features;
     return cachedLines;
   }
   cachedFeatureKey = key;
+  cachedFeatures = features;
   cachedStateFips = selectedStateFips;
   cachedLines = stateBoundaryCollections(features, selectedStateFips);
   return cachedLines;
