@@ -2640,6 +2640,14 @@
   white-space: pre-line;
 }
 
+.ux-reset-explorer-legend[data-legend-layer="svi"]
+  .ux-reset-explorer-legend-caption {
+  flex: 0 1 8rem;
+  max-width: 8rem;
+  line-height: 1.05;
+  white-space: pre-line;
+}
+
 .ux-reset-explorer-legend[data-legend-layer="uninsured"]
   .ux-reset-explorer-legend-caption {
   flex: 0 1 8.5rem;

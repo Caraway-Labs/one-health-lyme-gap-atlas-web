@@ -45,6 +45,7 @@ import {
   explorerMapLayerById,
   explorerMapLayerGates,
   isExplorerObservationLayer,
+  explorerUnpaintedFillColor,
   paintExplorerMapLayer,
   resolveExplorerMapColor,
   type ExplorerMapLayerId,
@@ -548,6 +549,9 @@ export function ReviewOperatingPicture({
     selectedFips,
     sources,
   ]);
+  const unpaintedCountyColor = resolveExplorerMapColor(
+    explorerUnpaintedFillColor(mapPaint)
+  );
   const inStateMapCounties = useMemo(
     () =>
       reviewMapCounties({
@@ -555,9 +559,11 @@ export function ReviewOperatingPicture({
         scopeCode,
       }).map((county) => ({
         ...county,
-        color: resolveExplorerMapColor(mapPaint.colorsByFips.get(county.fips)),
+        color:
+          resolveExplorerMapColor(mapPaint.colorsByFips.get(county.fips)) ??
+          unpaintedCountyColor,
       })),
-    [geometryFips, mapPaint.colorsByFips, scopeCode]
+    [geometryFips, mapPaint.colorsByFips, scopeCode, unpaintedCountyColor]
   );
   const mapCounties = useMemo(() => {
     switch (availableDataGate.kind) {

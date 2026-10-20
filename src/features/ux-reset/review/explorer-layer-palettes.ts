@@ -50,6 +50,25 @@ export const UNINSURED_POPULATION_LOW_LABEL = "Lower uninsured percentage";
 
 export const UNINSURED_POPULATION_HIGH_LABEL = "Higher uninsured percentage";
 
+/**
+ * Social vulnerability (#748) is a continuous ramp on the existing 0 to 1
+ * national county percentile. Anchor positions are 0, 0.25, 0.5, 0.75, and 1.
+ * They are not new percentile cutoffs.
+ */
+export const SVI_RAMP = [
+  "#FEEBE2",
+  "#FDC9A9",
+  "#FDA06B",
+  "#E56B2F",
+  "#A63603",
+] as const;
+
+export const SVI_NO_DATA_COLOR = "#D1D5DB";
+
+export const SVI_LOW_LABEL = "Lower social vulnerability";
+
+export const SVI_HIGH_LABEL = "Higher social vulnerability";
+
 const HEX_COLOR = /^#(?<hex>[0-9A-Fa-f]{6})$/;
 
 function hexToHsl(color: string): [number, number, number] | null {

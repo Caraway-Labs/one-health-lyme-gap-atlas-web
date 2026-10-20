@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   mixExplorerRampColor,
+  SVI_NO_DATA_COLOR,
+  SVI_RAMP,
   UNINSURED_POPULATION_MISSING_COLOR,
   UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
@@ -197,10 +199,10 @@ describe("Uninsured population palette", () => {
       missing: svi.colorsByFips.get("08014"),
       ramp: svi.ramp,
     }).toStrictEqual({
-      high: "hsl(152, 58%, 22%)",
-      low: "hsl(142, 38%, 88%)",
-      missing: "var(--mint)",
-      ramp: undefined,
+      high: SVI_RAMP.at(-1),
+      low: SVI_RAMP[0],
+      missing: SVI_NO_DATA_COLOR,
+      ramp: SVI_RAMP,
     });
     const gap = paintExplorerMapLayer({
       counties: [
