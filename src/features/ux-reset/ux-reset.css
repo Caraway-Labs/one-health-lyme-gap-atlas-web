@@ -1919,49 +1919,29 @@
 }
 
 .ux-reset-page-introduction.ux-reset-explorer-introduction {
-  grid-template-columns: minmax(0, 55fr) minmax(0, 40fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(17.5rem, 1fr);
   align-items: center;
-  column-gap: 0.75rem;
-  row-gap: 0;
-  padding: 0.125rem 0.75rem;
+  column-gap: 1.125rem;
+  padding: 0.5rem 1.125rem;
   border-radius: var(--radius-lg);
   background: var(--explorer-intro-surface);
   color: var(--white);
 }
 
-.ux-reset-explorer-introduction-copy {
-  display: contents;
-}
-
-.ux-reset-explorer-introduction .eyebrow {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.ux-reset-pro-main .ux-reset-explorer-introduction h1 {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.ux-reset-explorer-introduction-copy > p:not(.eyebrow) {
-  grid-column: 1;
-  grid-row: 3;
-}
-
-.ux-reset-explorer-introduction-copy > p:last-child {
-  grid-column: 1 / -1;
-  grid-row: 4;
-}
-
+.ux-reset-explorer-introduction-copy,
 .ux-reset-explorer-introduction-score {
-  grid-column: 2;
-  grid-row: 1 / 4;
-  align-self: stretch;
+  display: grid;
+  align-content: center;
+  min-width: 0;
+}
+
+.ux-reset-explorer-introduction-copy {
+  gap: 0.05rem 0;
 }
 
 .ux-reset-explorer-introduction .eyebrow {
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .ux-reset-pro-main .ux-reset-explorer-introduction h1 {
@@ -1970,7 +1950,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: -0.02em;
-  line-height: 1.05;
+  line-height: 1.15;
 }
 
 .ux-reset-explorer-introduction-copy > p:not(.eyebrow) {
@@ -1978,19 +1958,24 @@
   max-width: none;
   color: var(--explorer-intro-copy);
   font-size: 0.875rem;
-  line-height: 1.25;
+  line-height: 1.3;
+  text-wrap: pretty;
 }
 
-.ux-reset-explorer-introduction-copy strong {
-  color: var(--white);
-  font-weight: 700;
+.ux-reset-explorer-introduction-helper {
+  max-width: none;
+  color: color-mix(
+    in srgb,
+    var(--explorer-intro-copy) 82%,
+    var(--explorer-intro-surface)
+  );
+  font-size: 0.8125rem;
+  line-height: 1.35;
 }
 
 .ux-reset-explorer-introduction-score {
-  display: grid;
-  align-content: center;
-  min-width: 0;
-  padding: 0.15rem 0.7rem;
+  gap: 0.05rem;
+  padding: 0.5rem 0.75rem;
   border-radius: var(--radius-md);
   background: var(--explorer-intro-inset);
 }
@@ -2001,7 +1986,7 @@
   font-family: var(--font-sans);
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .ux-reset-explorer-introduction-score p {
@@ -2009,29 +1994,22 @@
   max-width: none;
   color: var(--explorer-intro-copy);
   font-size: 0.8125rem;
-  line-height: 1.25;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.ux-reset-explorer-introduction-qualifier {
+  margin-top: 0.2rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgb(215 228 238 / 28%);
+  font-size: 0.8125rem;
+  line-height: 1.3;
 }
 
 @media (max-width: 800px) {
   .ux-reset-page-introduction.ux-reset-explorer-introduction {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .ux-reset-explorer-introduction-copy {
-    display: grid;
-    grid-column: 1;
-    grid-row: 1;
-    gap: 0;
-    min-width: 0;
-  }
-
-  .ux-reset-explorer-introduction .eyebrow,
-  .ux-reset-pro-main .ux-reset-explorer-introduction h1,
-  .ux-reset-explorer-introduction-copy > p:not(.eyebrow),
-  .ux-reset-explorer-introduction-copy > p:last-child,
-  .ux-reset-explorer-introduction-score {
-    grid-column: auto;
-    grid-row: auto;
+    row-gap: 0.5rem;
   }
 }
 

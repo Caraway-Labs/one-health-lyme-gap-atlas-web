@@ -17,13 +17,14 @@ export function PageIntroduction({ page }: { page: PageIntroductionId }) {
           <p className="eyebrow light">{copy.eyebrow}</p>
           <h1>{copy.headline}</h1>
           <p>{copy.supporting}</p>
-          <p>
-            <strong>{copy.instructionLead}</strong> {copy.instruction}
-          </p>
+          <p className="ux-reset-explorer-introduction-helper">{copy.helper}</p>
         </div>
         <div className="ux-reset-explorer-introduction-score">
           <h2>{copy.scoreHeading}</h2>
           <p>{copy.scoreBody}</p>
+          <p className="ux-reset-explorer-introduction-qualifier">
+            {copy.scoreQualifier}
+          </p>
         </div>
       </header>
     );

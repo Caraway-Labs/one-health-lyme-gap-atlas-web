@@ -201,12 +201,12 @@ test.describe("Explorer and Compare introductions", () => {
       page.getByRole("heading", { level: 1, name: explorer.headline })
     ).toBeVisible();
     await expect(page.getByText(explorer.supporting)).toBeVisible();
-    await expect(page.getByText(explorer.instructionLead)).toBeVisible();
-    await expect(page.getByText(explorer.instruction)).toBeVisible();
+    await expect(page.getByText(explorer.helper)).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 2, name: explorer.scoreHeading })
     ).toBeVisible();
     await expect(page.getByText(explorer.scoreBody)).toBeVisible();
+    await expect(page.getByText(explorer.scoreQualifier)).toBeVisible();
     await expect(page.getByText("Explore the One Health Atlas")).toHaveCount(0);
     await expect(
       page.getByText("Explore potential Lyme surveillance gaps")
