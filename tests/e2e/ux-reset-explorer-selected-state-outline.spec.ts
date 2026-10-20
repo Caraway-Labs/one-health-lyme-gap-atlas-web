@@ -362,7 +362,7 @@ test.describe("State-scoped Explorer boundaries", () => {
       "Blacklegged tick status",
       "B. burgdorferi status",
       "County boundaries",
-      "Atlas gap score",
+      "Gap review score",
     ]) {
       await chooseLayer(page, layerName);
       await expect
