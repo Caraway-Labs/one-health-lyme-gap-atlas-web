@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { LYME_INCIDENCE_RAMP } from "@/features/ux-reset/review/explorer-layer-palettes";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
@@ -220,7 +221,7 @@ describe("rurality sequential palette", () => {
     });
   });
 
-  it("leaves the incidence ramp on its existing blue scale", () => {
+  it("leaves the Lyme incidence ramp on the shared green anchors", () => {
     const paint = paintExplorerMapLayer({
       counties: [],
       layerId: "incidence_floor",
@@ -238,8 +239,8 @@ describe("rurality sequential palette", () => {
       scoresStatus: "ready",
     });
     expect(paint.entries.map((entry) => entry.color)).toStrictEqual([
-      "hsl(204, 45%, 88%)",
-      "hsl(210, 72%, 24%)",
+      LYME_INCIDENCE_RAMP[0],
+      LYME_INCIDENCE_RAMP.at(-1),
     ]);
   });
 });
