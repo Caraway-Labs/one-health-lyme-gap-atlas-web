@@ -155,6 +155,21 @@ const engine = vi.hoisted(() => {
     remove() {
       this.removed = true;
     }
+    removeLayer(id: string) {
+      this.layers.delete(id);
+      this.paint.delete(id);
+      this.filters.delete(id);
+    }
+    removeSource(id: string) {
+      this.sources.delete(id);
+    }
+    setFeatureState =
+      vi.fn<
+        (
+          target: { id: number | string; source: string },
+          state: { hover?: boolean }
+        ) => void
+      >();
   }
   return { FakeMap, instances, webgl };
 });
@@ -1570,5 +1585,78 @@ describe("AtlasMap county camera", () => {
       );
       loadMap();
     }).not.toThrow();
+  });
+
+  it("draws neutral county boundaries without recoloring the shared county stroke", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        geographicStateOutline
+        geometry={geometry}
+        neutralCountyBoundaries
+        scores={[
+          { ...adams, color: "#F3F4F6" },
+          { ...losAngeles, color: "#F3F4F6" },
+        ]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    const stateSource = map?.sources.get("state-boundary-lines") as
+      | { data?: GeoJSON.FeatureCollection }
+      | undefined;
+    const selectedSource = map?.sources.get("selected-state-perimeter") as
+      | { data?: GeoJSON.FeatureCollection }
+      | undefined;
+    expect({
+      countyStroke: map?.paint.get("county-boundary-lines")?.["line-color"],
+      layers: [
+        map?.layers.has("county-boundary-lines"),
+        map?.layers.has("selected-state-perimeter"),
+        map?.layers.has("state-boundary-lines"),
+      ],
+      selectedCounty: map?.paint.get("selected-outline"),
+      selectedPerimeter: map?.paint.get("selected-state-perimeter"),
+      selectedStateOpacity: map?.paint.get("selected-state-outline")?.[
+        "line-opacity"
+      ],
+      stateStroke: map?.paint.get("state-boundary-lines")?.["line-color"],
+    }).toStrictEqual({
+      countyStroke: "#4B5563",
+      layers: [true, true, true],
+      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+      selectedPerimeter: { "line-color": "#000000", "line-width": 2.5 },
+      selectedStateOpacity: 0,
+      stateStroke: "#1F2937",
+    });
+    expect({
+      selectedLines: selectedSource?.data?.features.length,
+      stateLines: stateSource?.data?.features.length,
+    }).toStrictEqual({ selectedLines: 1, stateLines: 1 });
+
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    expect({
+      countyLines: map?.layers.has("county-boundary-lines"),
+      selectedCounty: map?.paint.get("selected-outline"),
+      selectedStateOpacity: map?.paint.get("selected-state-outline")?.[
+        "line-opacity"
+      ],
+    }).toStrictEqual({
+      countyLines: false,
+      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+      selectedStateOpacity: 1,
+    });
   });
 });

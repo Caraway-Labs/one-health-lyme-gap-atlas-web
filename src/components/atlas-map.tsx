@@ -10,8 +10,14 @@ import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Ref } from "react";
 
+import {
+  applyCountyBoundaryChrome,
+  clearCountyBoundaryHover,
+  setCountyBoundaryHover,
+} from "@/features/ux-reset/review/county-boundaries-map";
 import { explorerStateGeometryBounds } from "@/features/ux-reset/review/explorer-map-focus";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
+import { stateFipsPrefix } from "@/features/ux-reset/review/review-state-fips";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
 import {
   CONTIGUOUS_US_INITIAL_VIEW,
@@ -229,6 +235,7 @@ export function AtlasMap({
   resetNationalView = false,
   fitSelectedCounty = false,
   geographicStateOutline = false,
+  neutralCountyBoundaries = false,
   doubleClickZoom = true,
   selectedDistrict = "ALL",
   onCountyPointer,
@@ -271,6 +278,11 @@ export function AtlasMap({
    * Maps with no selected state keep the accent outline.
    */
   geographicStateOutline?: boolean;
+  /**
+   * County boundaries layer. Neutral fills, charcoal county strokes, and
+   * darker state perimeters. Other layers omit this.
+   */
+  neutralCountyBoundaries?: boolean;
   /** National Explorer drill disables double-click zoom so one gesture cannot take both steps. */
   doubleClickZoom?: boolean;
   selectedDistrict?: string;
@@ -302,6 +314,8 @@ export function AtlasMap({
   const cameraFrameStateRef = useRef(cameraFrameState);
   const doubleClickZoomRef = useRef(doubleClickZoom);
   const geographicStateOutlineRef = useRef(geographicStateOutline);
+  const neutralCountyBoundariesRef = useRef(neutralCountyBoundaries);
+  const hoveredCountyIdRef = useRef<number | string | null>(null);
   const selectedStateRef = useRef(selectedState);
   const userAdjustedNationalRef = useRef(false);
   const initialNationalFitRef = useRef(false);
@@ -324,6 +338,7 @@ export function AtlasMap({
     cameraFrameStateRef.current = cameraFrameState;
     doubleClickZoomRef.current = doubleClickZoom;
     geographicStateOutlineRef.current = geographicStateOutline;
+    neutralCountyBoundariesRef.current = neutralCountyBoundaries;
     selectedStateRef.current = selectedState;
   });
   fitNationalViewRef.current = (instance) => {
@@ -527,8 +542,25 @@ export function AtlasMap({
       instance.on("mouseenter", "counties-fill", () => {
         instance.getCanvas().style.cursor = "pointer";
       });
+      instance.on("mousemove", "counties-fill", (event) => {
+        if (!neutralCountyBoundariesRef.current) {
+          return;
+        }
+        const nextId = event.features?.[0]?.id;
+        if (typeof nextId !== "string" && typeof nextId !== "number") {
+          return;
+        }
+        const previousId = hoveredCountyIdRef.current;
+        if (previousId !== null && previousId !== nextId) {
+          clearCountyBoundaryHover(instance, previousId);
+        }
+        hoveredCountyIdRef.current = nextId;
+        setCountyBoundaryHover(instance, nextId);
+      });
       instance.on("mouseleave", "counties-fill", () => {
         instance.getCanvas().style.cursor = "";
+        clearCountyBoundaryHover(instance, hoveredCountyIdRef.current);
+        hoveredCountyIdRef.current = null;
       });
       instance.once("idle", () => {
         onIdleRef.current?.();
@@ -573,7 +605,8 @@ export function AtlasMap({
     if (!source || !map.current?.getLayer("selected-outline")) {
       return;
     }
-    source.setData(enriched());
+    const data = enriched();
+    source.setData(data);
     map.current.setPaintProperty("counties-fill", "fill-color", fillColor);
     if (map.current.getLayer("selected-state-outline")) {
       const outline = stateOutlinePaint(
@@ -612,6 +645,19 @@ export function AtlasMap({
       ["get", "selected"],
       true,
     ]);
+    if (!neutralCountyBoundaries) {
+      clearCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
+      hoveredCountyIdRef.current = null;
+    }
+    applyCountyBoundaryChrome(map.current, {
+      enabled: neutralCountyBoundaries,
+      features: data.features,
+      selectedStateFips:
+        selectedState === "ALL" ? null : stateFipsPrefix(selectedState),
+    });
+    if (neutralCountyBoundaries && hoveredCountyIdRef.current !== null) {
+      setCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
+    }
   });
 
   useEffect(() => {
@@ -767,6 +813,7 @@ export function AtlasMap({
           : undefined
       }
       data-double-click-zoom={doubleClickZoom ? "true" : "false"}
+      data-boundary-palette={neutralCountyBoundaries ? "neutral" : undefined}
       data-state-outline={geographicStateOutline ? "black" : "accent"}
     />
   );
