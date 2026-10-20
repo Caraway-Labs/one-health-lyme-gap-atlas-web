@@ -3,6 +3,7 @@ import { Suspense, type ReactNode } from "react";
 
 import { StartingViewGate } from "@/features/ux-reset/onboarding/starting-view-gate";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
+import { WorkspaceConnectingScreen } from "@/features/ux-reset/workspace-connecting-screen";
 
 export const professionalWorkspaceMetadata: Metadata = {
   description:
@@ -17,13 +18,7 @@ export function ProfessionalWorkspaceLayout({
   children: ReactNode;
 }) {
   return (
-    <Suspense
-      fallback={
-        <main className="app-content ux-reset-pro-main">
-          Loading workspace…
-        </main>
-      }
-    >
+    <Suspense fallback={<WorkspaceConnectingScreen />}>
       <StartingViewGate>
         <ResetProfessionalShell>{children}</ResetProfessionalShell>
       </StartingViewGate>

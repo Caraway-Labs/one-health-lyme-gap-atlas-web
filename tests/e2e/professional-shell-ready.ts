@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
 const PROFESSIONAL_SHELL = ".ux-reset-pro-app";
-const STARTING_VIEW_STATUS = "Checking your starting view…";
+const STARTING_VIEW_STATUS = "Connecting the data.";
 
 /**
  * The starting-view gate keeps workspace actions unmounted until the profile

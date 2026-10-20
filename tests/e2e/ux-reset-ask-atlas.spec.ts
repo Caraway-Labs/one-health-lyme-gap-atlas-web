@@ -578,9 +578,7 @@ test.describe("Ask Atlas dedicated page", () => {
         Promise.withResolvers<void>();
       await installExploreMocks(page, { holdProfile: profileHeld });
       await page.goto(EXPLORE_URL);
-      await expect(
-        page.getByText("Checking your starting view…")
-      ).toBeVisible();
+      await expect(page.getByText("Connecting the data.")).toBeVisible();
       await expect(page.locator(".ux-reset-pro-app")).toHaveCount(0);
       releaseProfile();
       await openAskAtlasFromSidebar(page);
