@@ -149,3 +149,71 @@ test("keeps an empty feed distinct from failure and unavailability", async ({
     path: testInfo.outputPath("intelligence-feed-error.png"),
   });
 });
+
+test("keeps loaded items when the next page fails", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name.includes("mobile"), "Desktop feed coverage");
+  const [first, second] = mixedIntelligenceFeedItems;
+  let nextPageAttempts = 0;
+  await page.route(FEED_URL, async (route) => {
+    const token = new URL(route.request().url()).searchParams.get("page_token");
+    if (token) {
+      nextPageAttempts += 1;
+      if (nextPageAttempts === 1) {
+        await route.fulfill({
+          contentType: "application/json",
+          json: {
+            detail: "Request failed",
+            instance: "/v1/intelligence/feed",
+            status: 500,
+            title: "Request failed",
+            type: "https://carawaylabs.com/problems/http-500",
+          },
+          status: 500,
+        });
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        json: intelligenceFeedEnvelope([second]),
+        status: 200,
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      json: intelligenceFeedEnvelope([first], "page-2"),
+      status: 200,
+    });
+  });
+
+  await page.goto("/app/feed");
+  await expect(
+    page.getByRole("heading", { name: /Lyme disease surveillance update/ })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Show more items" }).click();
+  await expect(
+    page.getByRole("heading", { name: "More items could not be loaded" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Intelligence feed request failed" })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: /Lyme disease surveillance update/ })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(
+    page.getByRole("heading", { name: /County-level Lyme reporting, a review/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Lyme disease surveillance update/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "More items could not be loaded" })
+  ).toHaveCount(0);
+  expect(nextPageAttempts).toBe(2);
+  await page.screenshot({
+    path: testInfo.outputPath("intelligence-feed-next-page-recovered.png"),
+  });
+});

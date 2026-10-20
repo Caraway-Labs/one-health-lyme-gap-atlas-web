@@ -112,7 +112,16 @@ export function IntelligenceFeedExperience() {
   const pages = feed.data?.pages ?? [];
   const items = pages.flatMap((page) => page.data);
   const limitations = pages[0]?.meta.limitations ?? [];
-  const failure = feed.isError ? feedRequestFailure(feed.error) : null;
+  // A failed "Show more" is isError and isFetchNextPageError together.
+  // Keep the pages already on screen; only a failure with no items replaces the page.
+  const nextPageFailure =
+    items.length > 0 && feed.isFetchNextPageError
+      ? feedRequestFailure(feed.error)
+      : null;
+  const failure =
+    feed.isError && nextPageFailure === null
+      ? feedRequestFailure(feed.error)
+      : null;
 
   let body: ReactNode;
   let state: "empty" | "error" | "loading" | "ready" | "unavailable";
@@ -163,9 +172,6 @@ export function IntelligenceFeedExperience() {
     );
   } else {
     state = "ready";
-    const nextPageFailure = feed.isFetchNextPageError
-      ? feedRequestFailure(feed.error)
-      : null;
     body = (
       <>
         <FeedLimitations limitations={limitations} />

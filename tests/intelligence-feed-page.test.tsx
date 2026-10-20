@@ -49,6 +49,53 @@ function succeed(data: ReturnType<typeof intelligenceFeedEnvelope>) {
   });
 }
 
+type FeedItem = (typeof mixedIntelligenceFeedItems)[number];
+
+function pageTokenCalls() {
+  return listIntelligenceFeed.mock.calls.filter(
+    (call) => call[0]?.page_token === "page-2"
+  );
+}
+
+function loadedItemTitles(): (string | null)[] {
+  return screen
+    .getAllByRole("heading", { level: 2 })
+    .map((heading) => heading.textContent);
+}
+
+function mockNextPageFailure(
+  first: FeedItem,
+  second: FeedItem,
+  status: 500 | 503
+) {
+  let attempts = 0;
+  listIntelligenceFeed.mockImplementation(
+    async (params?: { page_token?: string }) => {
+      if (params?.page_token) {
+        attempts += 1;
+        if (attempts === 1) {
+          throw new AtlasApiError(
+            status === 503 ? "disabled" : "failed",
+            "/v1/intelligence/feed",
+            status,
+            "req-next"
+          );
+        }
+        return {
+          data: intelligenceFeedEnvelope([second]),
+          headers: new Headers(),
+          status: 200,
+        };
+      }
+      return {
+        data: intelligenceFeedEnvelope([first], "page-2"),
+        headers: new Headers(),
+        status: 200,
+      };
+    }
+  );
+}
+
 describe("intelligence feed page", () => {
   afterEach(() => {
     cleanup();
@@ -207,5 +254,71 @@ describe("intelligence feed page", () => {
       { page_token: "page-2" },
       expect.anything()
     );
+  });
+
+  it("keeps page one when the next page returns 500", async () => {
+    const [first, second] = mixedIntelligenceFeedItems;
+    mockNextPageFailure(first, second, 500);
+    renderFeed();
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", {
+      name: "More items could not be loaded",
+    });
+    expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
+      "ready"
+    );
+    expect(
+      screen.queryByRole("heading", {
+        name: "Intelligence feed request failed",
+      })
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: /Lyme disease surveillance update/ })
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await screen.findByRole("heading", {
+      name: /County-level Lyme reporting, a review/,
+    });
+    expect(loadedItemTitles()).toStrictEqual([
+      expect.stringContaining("Lyme disease surveillance update"),
+      expect.stringContaining("County-level Lyme reporting, a review"),
+    ]);
+    expect(pageTokenCalls()).toHaveLength(2);
+  });
+
+  it("keeps page one when the next page returns 503", async () => {
+    const [first, second] = mixedIntelligenceFeedItems;
+    mockNextPageFailure(first, second, 503);
+    renderFeed();
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", { name: "More items are unavailable" });
+    expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
+      "ready"
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Intelligence feed unavailable" })
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: /Lyme disease surveillance update/ })
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await screen.findByRole("heading", {
+      name: /County-level Lyme reporting, a review/,
+    });
+    expect(loadedItemTitles()).toStrictEqual([
+      expect.stringContaining("Lyme disease surveillance update"),
+      expect.stringContaining("County-level Lyme reporting, a review"),
+    ]);
+    expect(pageTokenCalls()).toHaveLength(2);
   });
 });
