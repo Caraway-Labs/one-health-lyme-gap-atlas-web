@@ -185,14 +185,16 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Action | One Health Lyme Gap Atlas",
   },
   {
-    description: "Activity and updates across your professional workspace.",
+    description:
+      "Scan recent items from approved trusted sources and open the publisher page.",
     href: RESET_FEED_PATH,
     icon: Bell,
     id: "feed",
     label: "Feed",
     match: "prefix",
     navGroup: "access",
-    pageDescription: "Placeholder for the professional Feed destination.",
+    pageDescription:
+      "Scan recent items from approved trusted sources and open the publisher page.",
     pageTitle: "Feed | One Health Lyme Gap Atlas",
     tooltipDetail:
       "Track new findings and updates that may inform Lyme surveillance and research.",
