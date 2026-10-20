@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { LYME_INCIDENCE_RAMP } from "@/features/ux-reset/review/explorer-layer-palettes";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
@@ -86,8 +87,14 @@ describe("pathogen status color and order contract", () => {
     const presentEntries = paint.entries.filter(
       (entry) => entry.label === "Present"
     );
+    const gapColors = new Set(SCORE_COLOR_BANDS.map((band) => band.color));
     expect({
       gapColor: gap.colorsByFips.get("08013"),
+      gapContainsNoRecords: gapColors.has(NO_RECORDS),
+      gapContainsPresent: gapColors.has(PRESENT),
+      incidenceContainsPresent: (
+        LYME_INCIDENCE_RAMP as readonly string[]
+      ).includes(PRESENT),
       noRecords: paint.colorsByFips.get("08013"),
       present: paint.colorsByFips.get("08001"),
       presentClasses: presentEntries.map((entry) => entry.color),
@@ -95,17 +102,15 @@ describe("pathogen status color and order contract", () => {
       unknown: paint.colorsByFips.get("08014"),
     }).toStrictEqual({
       gapColor: "#e9602b",
+      gapContainsNoRecords: false,
+      gapContainsPresent: false,
+      incidenceContainsPresent: false,
       noRecords: NO_RECORDS,
       present: PRESENT,
       presentClasses: [PRESENT],
       scale: "segments",
       unknown: "hsl(270,46%,40%)",
     });
-    const gapColors = SCORE_COLOR_BANDS.map((band) => band.color);
-    expect(gapColors).not.toContain(PRESENT);
-    expect(gapColors).not.toContain(NO_RECORDS);
-    expect(paint.colorsByFips.get("08014")).not.toBe(NO_RECORDS);
-    expect(paint.colorsByFips.get("08014")).not.toBe(PRESENT);
   });
 
   it("orders no records then present before other statuses despite shuffle and frequency", () => {

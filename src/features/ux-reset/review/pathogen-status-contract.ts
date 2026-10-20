@@ -1,3 +1,8 @@
+import {
+  BURGDORFERI_NO_RECORDS_COLOR,
+  BURGDORFERI_PRESENT_COLOR,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
+
 /**
  * B. burgdorferi status presentation. Map fills and legend swatches both
  * read this module. Tick status and the gap-score ramp stay on their own
@@ -9,8 +14,8 @@
  * Unknown, and other published categories stay distinct from those two and
  * from each other.
  */
-export const PATHOGEN_STATUS_NO_RECORDS_COLOR = "#D1D5DB";
-export const PATHOGEN_STATUS_PRESENT_COLOR = "#4F46E5";
+export const PATHOGEN_STATUS_NO_RECORDS_COLOR = BURGDORFERI_NO_RECORDS_COLOR;
+export const PATHOGEN_STATUS_PRESENT_COLOR = BURGDORFERI_PRESENT_COLOR;
 
 export const PATHOGEN_STATUS_EXTRA_COLORS = {
   Absent: "hsl(16,72%,42%)",

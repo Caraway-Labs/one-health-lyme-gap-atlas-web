@@ -24,6 +24,13 @@ export const LYME_INCIDENCE_HIGH_LABEL = "Higher published incidence";
 
 export const LYME_INCIDENCE_UNIT_LABEL = "per 100,000 residents";
 
+/**
+ * B. burgdorferi status is categorical. No records uses the coordinated light
+ * gray. Present is one indigo and is not a stop on the incidence ramp.
+ */
+export const BURGDORFERI_NO_RECORDS_COLOR = "#D1D5DB";
+export const BURGDORFERI_PRESENT_COLOR = "#4F46E5";
+
 const HEX_COLOR = /^#(?<hex>[0-9A-Fa-f]{6})$/;
 
 function hexToHsl(color: string): [number, number, number] | null {
