@@ -261,27 +261,23 @@ test.describe("Explorer what-if scenario", () => {
       fips,
       scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
-      incidence_floor_2023: 0,
-      svi_percentile: 0,
-      uninsured_percentile: 0,
-      rucc_2023: 1,
       in_contiguous_tick_scope: true,
       priority: lower,
       score: {
-        access_signal: 100,
-        community: 100,
-        ecological: 100,
-        human_weakness: 0,
-        pathogen_signal: score === 0 ? 0 : 100,
-        rural_signal: 100,
+        access_signal: 0,
+        community: 0,
+        ecological: 0,
+        human_weakness: 100,
+        pathogen_signal: 0,
+        rural_signal: 0,
         score: 0,
-        svi_signal: 100,
-        tick_signal: score === 0 ? 0 : 100,
+        svi_signal: 0,
+        tick_signal: 0,
       },
       state: "CO",
       state_name: "Colorado",
-      tick_status: "Established",
-      ...(incidence === undefined ? {} : { incidence_floor_2023: incidence }),
+      tick_status: "No records",
+      ...(incidence === undefined ? {} : { untrusted_incidence: incidence }),
     });
     await installExplorer(page, {
       candidates: [
@@ -502,7 +498,6 @@ test.describe("Explorer what-if scenario", () => {
       fips: string,
       county: string,
       priority: string,
-      human: number,
       score: number
     ) => ({
       burgdorferi_status: "Present",
@@ -557,8 +552,8 @@ test.describe("Explorer what-if scenario", () => {
       },
       scores: {
         counties: [
-          scoreFor("08013", "Boulder County", review, 100, 65),
-          scoreFor("08065", "Lake County", lower, 0, 0),
+          scoreFor("08013", "Boulder County", review, 65),
+          scoreFor("08065", "Lake County", lower, 0),
         ],
         scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
