@@ -23,9 +23,9 @@ import { releaseViewportRuns } from "./release-phone-viewport";
 
 function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
   if (band.maxExclusive === null) {
-    return `Atlas gap score: ${band.minInclusive} or higher`;
+    return `Gap review score: ${band.minInclusive} or higher`;
   }
-  return `Atlas gap score: ${band.minInclusive} to <${band.maxExclusive}`;
+  return `Gap review score: ${band.minInclusive} to <${band.maxExclusive}`;
 }
 
 function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
@@ -542,7 +542,8 @@ test.describe("Atlas Explorer layer legends", () => {
     await page.goto("/explore?scope=ALL");
     const legend = page.getByTestId("explorer-map-legend");
     await expect(legend).toBeVisible();
-    await expect(legend).toContainText("Atlas gap score");
+    await expect(legend).toContainText("Gap review score");
+    await expect(legend).not.toContainText(/atlas gap score/i);
     await expect(legend).toContainText("review-priority score");
     await expect(legend).toContainText("Gap score unavailable");
     await expect(legend).toContainText(">=75");
@@ -571,8 +572,12 @@ test.describe("Atlas Explorer layer legends", () => {
       "aria-label",
       `${operationalBandCopy(bandByMinimum(75)).title}. ${operationalBandCopy(bandByMinimum(75)).category}. ${operationalBandCopy(bandByMinimum(75)).action}`
     );
-    await legend.getByRole("button", { name: "About Atlas gap score" }).click();
-    const about = page.getByRole("dialog", { name: "About Atlas gap score" });
+    await legend
+      .getByRole("button", { name: "About Gap review score" })
+      .click();
+    const about = page.getByRole("dialog", { name: "About Gap review score" });
+    await expect(about).toContainText("Gap review score");
+    await expect(about).not.toContainText(/atlas gap score/i);
     await expect(about).toContainText("CDC Lyme surveillance 2023");
     await expect(about).not.toContainText("not personal disease risk");
     await expect(about).toContainText("Not zero");
@@ -616,7 +621,7 @@ test.describe("Atlas Explorer layer legends", () => {
       "aria-label",
       new RegExp(operationalBandCopy(bandByMinimum(35)).action)
     );
-    await expect(legend).toContainText("Atlas gap score");
+    await expect(legend).toContainText("Gap review score");
 
     await chooseLayer(page, "Blacklegged tick status");
     await expect(page).toHaveURL(/layer=tick_status/);
@@ -778,7 +783,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend.locator("[data-legend-segment]")).toHaveCount(5);
 
     await chooseLayer(page, "Gap review score");
-    await expect(legend).toContainText("Atlas gap score");
+    await expect(legend).toContainText("Gap review score");
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })
     ).toBeVisible();
@@ -792,7 +797,9 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-gap-strip.png"),
     });
-    await legend.getByRole("button", { name: "About Atlas gap score" }).click();
+    await legend
+      .getByRole("button", { name: "About Gap review score" })
+      .click();
     await page.screenshot({
       path: testInfo.outputPath("legend-after-gap-about.png"),
     });
@@ -911,7 +918,9 @@ test.describe("Atlas Explorer layer legends", () => {
     await page.mouse.move(0, 0);
     await page.keyboard.press("Escape");
 
-    await legend.getByRole("button", { name: "About Atlas gap score" }).focus();
+    await legend
+      .getByRole("button", { name: "About Gap review score" })
+      .focus();
     await page.keyboard.press("Tab");
     const focused = page.getByRole("dialog", { name: /Gap score unavailable/ });
     await expect(focused).toBeVisible();

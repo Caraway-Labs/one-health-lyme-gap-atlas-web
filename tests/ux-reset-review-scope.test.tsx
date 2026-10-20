@@ -4061,10 +4061,10 @@ describe("Reset Review scope UI", () => {
         expect(fips).not.toContain("02013");
       });
       fireEvent.click(
-        screen.getByRole("button", { name: "About Atlas gap score" })
+        screen.getByRole("button", { name: "About Gap review score" })
       );
       expect(
-        screen.getByRole("dialog", { name: "About Atlas gap score" })
+        screen.getByRole("dialog", { name: "About Gap review score" })
           .textContent
       ).toContain("published score colors");
       expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();

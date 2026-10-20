@@ -286,10 +286,18 @@ export function explorerMapLayerById(
   );
 }
 
-/** Menu text only. Legends, cards, and the layer id keep the official name. */
+/**
+ * User-facing name for the gap-score layer menu and its legend.
+ * Cards, availability copy, and the `gap_score` id keep their existing names.
+ */
 export const GAP_REVIEW_SCORE_MENU_LABEL = "Gap review score";
 
 export function explorerMapLayerMenuLabel(layer: ExplorerMapLayer): string {
+  return layer.id === "gap_score" ? GAP_REVIEW_SCORE_MENU_LABEL : layer.label;
+}
+
+/** Legend title for this layer. Other layers keep their published labels. */
+function explorerLegendTitle(layer: ExplorerMapLayer): string {
   return layer.id === "gap_score" ? GAP_REVIEW_SCORE_MENU_LABEL : layer.label;
 }
 
@@ -307,7 +315,7 @@ function noPublishedValueEntry(): ExplorerMapLegendEntry {
   return {
     color: BOUNDARY_COLOR,
     detail:
-      "Available published data do not support calculation of an Atlas gap score for this county. Not zero, not low priority, and not confirmed absence.",
+      "Available published data do not support calculation of a Gap review score for this county. Not zero, not low priority, and not confirmed absence.",
     label: "Gap score unavailable",
     role: "missing",
   };
@@ -526,7 +534,7 @@ function unavailablePaint(input: PaintInput): ExplorerMapPaint {
       "This layer has no published map color scale. The map shows county boundaries only.",
     period: "Source vintage unavailable.",
     scale: "segments",
-    title: layer.label,
+    title: explorerLegendTitle(layer),
     unit: null,
   };
 }
@@ -627,7 +635,7 @@ function gapScorePaint(input: PaintInput): ExplorerMapPaint {
     note: "Colors are the published score colors. Every governed band stays on the legend. A band keeps its numeric range only when every score painted in that color already falls inside it. Priority labels can span more than one color. The county list stays the review ranking.",
     period: legendPeriod(input, layer.id),
     scale: "segments",
-    title: "Atlas gap score",
+    title: explorerLegendTitle(layer),
     unit: "review-priority score",
   };
 }
@@ -710,7 +718,7 @@ function loadingPaint(input: PaintInput, note: string): ExplorerMapPaint {
     note,
     period: legendPeriod(input, layer.id),
     scale: "segments",
-    title: layer.label,
+    title: explorerLegendTitle(layer),
     unit: null,
   };
 }
@@ -796,13 +804,13 @@ export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
       if (input.scoresStatus === "loading") {
         return loadingPaint(
           input,
-          `Loading ${layer.label} from the published scores collection.`
+          `Loading ${explorerLegendTitle(layer)} from the published scores collection.`
         );
       }
       if (input.scoresStatus === "error" || input.counties.length === 0) {
         return boundaryPaint(
           input,
-          `${layer.label} could not be loaded from the scores collection. The map shows county boundaries only.`,
+          `${explorerLegendTitle(layer)} could not be loaded from the scores collection. The map shows county boundaries only.`,
           "County boundaries",
           "unavailable"
         );

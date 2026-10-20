@@ -223,7 +223,7 @@ describe("Explorer map layers", () => {
     }).toStrictEqual({
       color: "#123456",
       missing: false,
-      title: "Atlas gap score",
+      title: "Gap review score",
       unit: "review-priority score",
     });
     expect(paint.note).not.toMatch(/not zero/);
