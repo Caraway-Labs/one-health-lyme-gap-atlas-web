@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useRef } from "react";
+import { Fragment, type ReactNode, useRef } from "react";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
@@ -282,37 +282,50 @@ export function CompareEvidenceGroup({
 }
 
 export function CompareProfileGroups({
+  afterContent = null,
+  afterGroupId,
   alignment,
   groups,
   leftLabel,
+  openFirst = true,
   rightLabel,
 }: {
+  afterContent?: ReactNode;
+  afterGroupId?: string;
   alignment: CompareProfileAlignment;
   groups: readonly CompareProfileGroup[];
   leftLabel: string;
+  openFirst?: boolean;
   rightLabel: string;
 }) {
   const visible = groups.flatMap((group) => {
     const rows = profileRowsFor(alignment, group.rowIds);
     return rows.length > 0 ? [{ group, rows }] : [];
   });
+  const anchored = visible.some((entry) => entry.group.id === afterGroupId);
+  const anchorId = anchored ? afterGroupId : visible[0]?.group.id;
+  if (visible.length === 0) {
+    return afterContent;
+  }
   return visible.map(({ group }, index) => (
-    <CompareEvidenceGroup
-      columnLabels={[leftLabel, rightLabel]}
-      defaultOpen={index === 0}
-      description={group.description}
-      key={group.id}
-      testId={`compare-group-${group.id}`}
-      title={group.title}
-    >
-      <CompareProfileRows
-        alignment={alignment}
-        leftLabel={leftLabel}
-        rightLabel={rightLabel}
-        rowIds={group.rowIds}
-        rowNote={group.rowNote}
-      />
-    </CompareEvidenceGroup>
+    <Fragment key={group.id}>
+      <CompareEvidenceGroup
+        columnLabels={[leftLabel, rightLabel]}
+        defaultOpen={openFirst && index === 0}
+        description={group.description}
+        testId={`compare-group-${group.id}`}
+        title={group.title}
+      >
+        <CompareProfileRows
+          alignment={alignment}
+          leftLabel={leftLabel}
+          rightLabel={rightLabel}
+          rowIds={group.rowIds}
+          rowNote={group.rowNote}
+        />
+      </CompareEvidenceGroup>
+      {afterContent && group.id === anchorId ? afterContent : null}
+    </Fragment>
   ));
 }
 

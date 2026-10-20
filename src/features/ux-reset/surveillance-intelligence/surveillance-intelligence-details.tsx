@@ -4,26 +4,37 @@ import { Button } from "@/components/ui/button";
 import type { IntelligencePerspectiveView } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-model";
 
 export function SurveillanceIntelligenceDetails({
+  fips,
+  heading,
+  headingId,
   id,
   labelledBy,
   onRetry,
   perspective,
+  retryLabel,
 }: {
+  fips?: string;
+  heading?: string;
+  headingId?: string;
   id: string;
   labelledBy: string;
   onRetry: () => void;
   perspective: IntelligencePerspectiveView;
+  retryLabel?: string;
 }) {
   return (
     <section
-      aria-labelledby={labelledBy}
+      aria-labelledby={headingId ?? labelledBy}
       className="bg-card text-card-foreground ring-foreground/10 mt-3 flex flex-col gap-3 rounded-xl p-4 ring-1"
+      data-fips={fips}
       data-fips-bound="true"
       data-perspective={perspective.id}
       data-testid="surveillance-intelligence-details"
       id={id}
     >
-      <h3 className="type-card m-0">{`${perspective.label} details`}</h3>
+      <h3 className="type-card m-0" id={headingId}>
+        {heading ?? `${perspective.label} details`}
+      </h3>
       <p className="type-body m-0">{perspective.overview}</p>
       {perspective.qualifier ? (
         <p className="type-small m-0">{perspective.qualifier}</p>
@@ -68,7 +79,7 @@ export function SurveillanceIntelligenceDetails({
           variant="secondary"
           onClick={onRetry}
         >
-          {`Retry ${perspective.label}`}
+          {retryLabel ?? `Retry ${perspective.label}`}
         </Button>
       ) : null}
       {perspective.disclosure.length > 0 ? (

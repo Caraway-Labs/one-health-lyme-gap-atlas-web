@@ -44,6 +44,7 @@ import {
   CompareProfileGroups,
   type CompareProfileGroup,
 } from "@/features/ux-reset/compare/compare-county-profile-section";
+import { CompareSurveillanceIntelligence } from "@/features/ux-reset/compare/compare-surveillance-intelligence";
 import {
   COMPARE_COMMUNITY_ROW_IDS,
   COMPARE_HUMAN_ROW_IDS,
@@ -70,6 +71,7 @@ import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explor
 import { PageIntroduction } from "@/features/ux-reset/page-introduction";
 import { PAGE_INTRODUCTION_COPY } from "@/features/ux-reset/page-introduction-copy";
 import { RESET_COMPARE_PATH } from "@/features/ux-reset/routes";
+import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { cn } from "@/lib/utils";
 
 function relationText(relation: CompareRelation): string {
@@ -331,6 +333,21 @@ function CompareExperienceInner() {
   const overviewCounts = counts && reconciledRows.length > 0 ? counts : null;
   const leftLabel = leftOption?.label ?? leftFips;
   const rightLabel = rightOption?.label ?? rightFips;
+  const tier1Release = tier1ReleaseFromMetadata({
+    isError: Boolean(workspace.metadataError),
+    isLoading: workspace.metadataLoading,
+    releaseId: workspace.releaseId,
+  });
+  const surveillanceIntelligence =
+    pair.length === 2 ? (
+      <CompareSurveillanceIntelligence
+        leftFips={leftFips}
+        leftLabel={leftLabel}
+        release={tier1Release}
+        rightFips={rightFips}
+        rightLabel={rightLabel}
+      />
+    ) : null;
   const profileGroups: CompareProfileGroup[] = workspace.profile
     ? [
         {
@@ -659,12 +676,17 @@ function CompareExperienceInner() {
                 >
                   {workspace.profile ? (
                     <CompareProfileGroups
+                      afterContent={surveillanceIntelligence}
+                      afterGroupId="human"
                       alignment={workspace.profile}
                       groups={profileGroups}
                       leftLabel={leftLabel}
                       rightLabel={rightLabel}
                     />
                   ) : null}
+                  {!workspace.profile && workspace.profileError
+                    ? surveillanceIntelligence
+                    : null}
                   {reconciledRows.length > 0 ? (
                     <CompareEvidenceGroup
                       columnLabels={[leftLabel, rightLabel]}
@@ -739,6 +761,8 @@ function CompareExperienceInner() {
               ) : null}
               <ComparePeriodQualification period={workspace.period} />
             </>
+          ) : workspace.profileError ? (
+            surveillanceIntelligence
           ) : null}
         </section>
       ) : null}
