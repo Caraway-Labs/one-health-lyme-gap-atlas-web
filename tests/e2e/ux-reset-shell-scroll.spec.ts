@@ -2,6 +2,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
+  intelligenceFeedEnvelope,
+  mixedIntelligenceFeedItems,
+} from "../fixtures/intelligence-feed-fixtures";
+import {
   buildStateReview,
   reviewCandidate,
 } from "../fixtures/review-operating-picture-fixtures";
@@ -362,6 +366,13 @@ test.describe("professional shell scroll containment", () => {
   }) => {
     await page.setViewportSize(DESKTOP);
     await installArizonaReview(page);
+    await page.route("**/v1/intelligence/feed**", async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        json: intelligenceFeedEnvelope([mixedIntelligenceFeedItems[0]]),
+        status: 200,
+      });
+    });
     await page.goto("/explore?scope=AZ");
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
 
@@ -411,7 +422,12 @@ test.describe("professional shell scroll containment", () => {
 
     await page.getByRole("link", { exact: true, name: "Feed" }).click();
     await expect(page).toHaveURL(/\/app\/feed$/);
-    await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { exact: true, name: "Feed" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Lyme disease surveillance update" })
+    ).toBeVisible();
     await expect.poll(() => mainScrollTop(page)).toBe(0);
     const feed = await footerFlow(page);
     expectFooterInMainPane(feed, boxRight(await box(sidebar)));
@@ -1044,7 +1060,9 @@ test.describe("professional shell scroll containment mobile", () => {
     ).toBe(0);
 
     await page.goto("/app/feed");
-    await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { exact: true, name: "Feed" })
+    ).toBeVisible();
     await expect.poll(() => mainScrollTop(page)).toBe(0);
     const feed = await footerFlow(page);
     expect(feed.position).not.toBe("fixed");
