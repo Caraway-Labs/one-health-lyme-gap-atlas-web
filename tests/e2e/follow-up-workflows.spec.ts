@@ -116,7 +116,7 @@ test.describe("five-category suggested follow-up", () => {
     const followUp = card.getByTestId("suggested-follow-up");
     await expect(followUp).toBeVisible();
     await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
-      "Verify with local information"
+      "Conduct targeted follow-up"
     );
     for (const label of [
       "Human disease surveillance",

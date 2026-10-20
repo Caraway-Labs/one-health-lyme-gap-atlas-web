@@ -172,18 +172,18 @@ test.describe("selected county response tier", () => {
     const pill = preview.getByTestId("selected-county-response-tier");
     const followUp = page.getByTestId("explorer-follow-up-response");
     await expect(pill).toBeVisible();
-    await expect(followUp).toHaveText("Verify with local information");
+    await expect(followUp).toHaveText("Conduct targeted follow-up");
     await expect(pill.locator(".response-tier-pill-title")).toHaveText(
-      "Elevated review priority"
+      "Moderate review priority"
     );
     await expect(pill.locator(".response-tier-pill-detail")).toHaveText(
-      "Verify with local information"
+      "Conduct targeted follow-up"
     );
-    await expect(pill).toHaveAttribute("data-ramp", "map-ramp-3");
+    await expect(pill).toHaveAttribute("data-ramp", "map-ramp-4");
     await expect(preview.locator(".priority-pill")).toHaveCount(0);
     await expect(
       preview.getByTestId("selected-county-gap-score")
-    ).toContainText("41.6");
+    ).toContainText("50.7");
     await expect(
       preview.getByTestId("selected-county-gap-score")
     ).toContainText("/100");
@@ -223,7 +223,7 @@ test.describe("selected county response tier", () => {
     });
     expect(placed?.clipped).toBe(false);
     expect(placed?.overlaps).toBe(false);
-    expect(placed?.text).toContain("Verify with local information");
+    expect(placed?.text).toContain("Conduct targeted follow-up");
     const result = await new AxeBuilder({ page })
       .include(".ux-reset-explorer-preview")
       .analyze();

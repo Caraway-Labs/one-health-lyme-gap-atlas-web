@@ -367,7 +367,7 @@ describe("selected county preview", () => {
       cases.map(() => ({
         legacyBadge: false,
         pills: 1,
-        title: "Elevated review priority",
+        title: "Moderate review priority",
       }))
     );
     expect(

@@ -61,7 +61,8 @@ function mdxFiles(directory: string): string[] {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...mdxFiles(entryPath));
-    else if (entry.name.endsWith(".mdx")) files.push(entryPath);
+    else if (entry.name.endsWith(".mdx"))
+      files.push(entryPath.split(path.sep).join("/"));
   }
   return files;
 }
@@ -267,7 +268,7 @@ describe("rendered documentation markdown", () => {
     expect(full).toContain("#### geography_id");
     expect(
       constraintRow(constraintTables(observations), "Default", "100")
-    ).toBeUndefined();
+    ).toStrictEqual(["Default", "100"]);
     expect(full).toContain("Missing is not zero.");
     expect(full).toContain("import httpx");
     expect(full).not.toContain("<OpenAPIPage");
