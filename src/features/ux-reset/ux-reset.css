@@ -1919,26 +1919,49 @@
 }
 
 .ux-reset-page-introduction.ux-reset-explorer-introduction {
-  grid-template-columns: minmax(0, 1fr) minmax(16.5rem, 21rem);
-  align-items: stretch;
-  gap: 0.375rem var(--space-3);
-  padding: 0.375rem var(--space-3);
+  grid-template-columns: minmax(0, 55fr) minmax(0, 40fr);
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0;
+  padding: 0.125rem 0.75rem;
   border-radius: var(--radius-lg);
   background: var(--explorer-intro-surface);
   color: var(--white);
 }
 
-.ux-reset-explorer-introduction-copy,
+.ux-reset-explorer-introduction-copy {
+  display: contents;
+}
+
+.ux-reset-explorer-introduction .eyebrow {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.ux-reset-pro-main .ux-reset-explorer-introduction h1 {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.ux-reset-explorer-introduction-copy > p:not(.eyebrow) {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.ux-reset-explorer-introduction-copy > p:last-child {
+  grid-column: 1 / -1;
+  grid-row: 4;
+}
+
 .ux-reset-explorer-introduction-score {
-  display: grid;
-  align-content: center;
-  gap: 0;
-  min-width: 0;
+  grid-column: 2;
+  grid-row: 1 / 4;
+  align-self: stretch;
 }
 
 .ux-reset-explorer-introduction .eyebrow {
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .ux-reset-pro-main .ux-reset-explorer-introduction h1 {
@@ -1947,7 +1970,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 
 .ux-reset-explorer-introduction-copy > p:not(.eyebrow) {
@@ -1964,7 +1987,10 @@
 }
 
 .ux-reset-explorer-introduction-score {
-  padding: 0.25rem var(--space-3);
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding: 0.15rem 0.7rem;
   border-radius: var(--radius-md);
   background: var(--explorer-intro-inset);
 }
@@ -1989,6 +2015,23 @@
 @media (max-width: 800px) {
   .ux-reset-page-introduction.ux-reset-explorer-introduction {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ux-reset-explorer-introduction-copy {
+    display: grid;
+    grid-column: 1;
+    grid-row: 1;
+    gap: 0;
+    min-width: 0;
+  }
+
+  .ux-reset-explorer-introduction .eyebrow,
+  .ux-reset-pro-main .ux-reset-explorer-introduction h1,
+  .ux-reset-explorer-introduction-copy > p:not(.eyebrow),
+  .ux-reset-explorer-introduction-copy > p:last-child,
+  .ux-reset-explorer-introduction-score {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 
