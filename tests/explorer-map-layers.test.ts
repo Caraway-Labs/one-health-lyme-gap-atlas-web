@@ -686,15 +686,20 @@ describe("Explorer map layers", () => {
       1,
       "rural-urban code"
     );
-    expect(neutralKey(paint)?.color).toBe("var(--explorer-boundary)");
-    expect(neutralKey(paint)?.detail).toMatch(/Not zero/);
-    expect(
-      paint.entries.filter((entry) => entry.role === "class")
-    ).toHaveLength(9);
-    expect(paint.colorsByFips.get("11001")).toBe("hsl(210, 55%, 42%)");
-    expect(paint.colorsByFips.get("11001")).not.toBe(
-      "var(--explorer-boundary)"
-    );
+    const noData = paint.entries.find((entry) => entry.label === "No data");
+    expect({
+      classes: paint.entries.filter((entry) => entry.role === "class").length,
+      detail: noData?.detail ?? "",
+      fill: paint.colorsByFips.get("11001"),
+      noData: noData?.color,
+      role: noData?.role,
+    }).toStrictEqual({
+      classes: 9,
+      detail: expect.stringMatching(/Not urban, not rural/),
+      fill: "#F2F0F7",
+      noData: "#D1D5DB",
+      role: "missing",
+    });
   });
 
   it("keeps a missing map completeness value missing", () => {

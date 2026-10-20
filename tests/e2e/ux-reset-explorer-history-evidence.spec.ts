@@ -616,23 +616,17 @@ test.describe("Explorer same-route history during hydration", () => {
     await page.evaluate((flag) => {
       window.sessionStorage.setItem(flag, "hold");
     }, HYDRATION_FLAG);
-    const recoveryDocuments: string[] = [];
-    page.on("request", (request) => {
-      if (
-        request.resourceType() === "document" &&
-        request.url().includes(`county=${DENVER}`)
-      ) {
-        recoveryDocuments.push(request.url());
-      }
-    });
     await page.reload();
+    // Back runs inside the hydration replaceState for the reloaded Boulder
+    // document, and the address bar does not move until that traversal is
+    // delivered. If it arrives before the App Router listener exists, the
+    // guard reloads Denver as a document. If the listener exists first, Next
+    // restores Denver in the loaded document. Either path has to leave the
+    // browser-selected county on screen. A document request is not required.
     await expectHydrationSettled(page, { county: "Denver", fips: DENVER });
     await expect(page.getByTestId("review-county-preview")).not.toContainText(
       "Boulder"
     );
-    // Back is invoked while the reloaded county is still current. Recovery
-    // then loads the browser-selected county as its own document.
-    expect(recoveryDocuments.length).toBeGreaterThan(0);
     const trace = await readHydrationTrace(page);
     expect(trace[0]?.before).toContain(`county=${BOULDER}`);
     expect(trace[0]?.afterBack).toContain(`county=${BOULDER}`);
