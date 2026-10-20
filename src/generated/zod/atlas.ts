@@ -1700,6 +1700,145 @@ export const CountyTier1SurveillancePriorityAvailabilityGetResponse = zod.object
 
 
 /**
+ * Primary four_state includes human surveillance; secondary tick_pathogen excludes it. Returns reviewed labels, four membership probabilities per model (0-1, sum 1 within 1e-6), immutable model/batch lineage, source vintages and interpretation limits. Unknown is an available class; No records does not establish absence. Membership is not disease risk, incidence, pathogen presence, causation or Tier 1 priority. HTTP 200 can contain typed UNAVAILABLE variants with null data, including an incompatible release. Unknown county 404; malformed FIPS 422; dependency, malformed persisted data or changing release 503. Cache-Control: no-store; no fallback or inference.
+ * @summary Get both persisted county surveillance-situation classifications
+ */
+export const countySurveillanceSituationsGetPathFipsRegExp = new RegExp('^[0-9]{5}$');
+
+
+export const CountySurveillanceSituationsGetParams = zod.object({
+  "fips": zod.string().regex(countySurveillanceSituationsGetPathFipsRegExp)
+})
+
+export const countySurveillanceSituationsGetResponseCountyFipsRegExp = new RegExp('^[0-9]{5}$');
+
+export const countySurveillanceSituationsGetResponseBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+
+
+
+
+
+export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMin = 0;
+export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMax = 1;
+
+export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMin = 4;
+export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMax = 4;
+
+
+
+
+export const countySurveillanceSituationsGetResponseFourStateDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const countySurveillanceSituationsGetResponseFourStateDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+export const countySurveillanceSituationsGetResponseFourStateDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+
+
+
+
+
+
+
+
+export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMin = 0;
+export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMax = 1;
+
+export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMin = 4;
+export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMax = 4;
+
+
+
+
+export const countySurveillanceSituationsGetResponseTickPathogenDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const countySurveillanceSituationsGetResponseTickPathogenDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+export const countySurveillanceSituationsGetResponseTickPathogenDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+
+
+
+
+export const CountySurveillanceSituationsGetResponse = zod.object({
+  "county_fips": zod.string().regex(countySurveillanceSituationsGetResponseCountyFipsRegExp),
+  "release_id": zod.string().min(1).describe('Active governed presentation release.'),
+  "bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseBundleSha256RegExp),
+  "four_state": zod.object({
+  "model_id": zod.string(),
+  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']),
+  "unavailable_reason": zod.union([zod.literal('DEACTIVATED'),zod.literal('NOT_PUBLISHED'),zod.literal('UNAPPROVED_BATCH'),zod.literal('INCOMPATIBLE_RELEASE'),zod.literal('MISSING_ASSIGNMENT'),zod.literal(null)]).nullable(),
+  "compatibility": zod.enum(['EXACT_INPUT', 'ADMITTED_CARRY_FORWARD', 'UNAVAILABLE']),
+  "batch_id": zod.string().nullable(),
+  "batch_version": zod.string().nullable(),
+  "input_release_id": zod.string().nullable(),
+  "data": zod.union([zod.object({
+  "model_id": zod.string().min(1),
+  "model_version": zod.string().min(1),
+  "class_id": zod.string().min(1),
+  "class_name": zod.string().min(1).describe('Reviewed persisted display label, verbatim.'),
+  "class_description": zod.string().min(1).describe('Reviewed persisted explanation, verbatim.'),
+  "probabilities": zod.array(zod.object({
+  "class_id": zod.string().min(1).describe('Version-scoped persisted class identity.'),
+  "probability": zod.number().min(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMin).max(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMax).describe('Latent-class membership on 0–1 scale; never disease risk.')
+})).min(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMin).max(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMax),
+  "limitations": zod.array(zod.string()).min(1).describe('Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.'),
+  "batch_id": zod.string().min(1),
+  "batch_version": zod.string().min(1),
+  "county_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneCountySha256RegExp),
+  "dictionary_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneDictionarySha256RegExp),
+  "input_release_id": zod.string().min(1),
+  "input_bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneInputBundleSha256RegExp),
+  "fit_git_sha": zod.string().min(1),
+  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('Persisted feature\/config contract.'),
+  "model_provenance": zod.record(zod.string(), zod.unknown()),
+  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Persisted sources and source vintages.'),
+  "handoff_approval": zod.record(zod.string(), zod.unknown()),
+  "data_publication_authorization": zod.record(zod.string(), zod.unknown()),
+  "data_authorization_id": zod.string().min(1),
+  "staging_attempt": zod.string().min(1),
+  "activated_at": zod.iso.datetime({"offset":true}).describe('Data activation time, not source vintage or request time.')
+}),zod.null()])
+}).describe('Primary model, including human surveillance.'),
+  "tick_pathogen": zod.object({
+  "model_id": zod.string(),
+  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']),
+  "unavailable_reason": zod.union([zod.literal('DEACTIVATED'),zod.literal('NOT_PUBLISHED'),zod.literal('UNAPPROVED_BATCH'),zod.literal('INCOMPATIBLE_RELEASE'),zod.literal('MISSING_ASSIGNMENT'),zod.literal(null)]).nullable(),
+  "compatibility": zod.enum(['EXACT_INPUT', 'ADMITTED_CARRY_FORWARD', 'UNAVAILABLE']),
+  "batch_id": zod.string().nullable(),
+  "batch_version": zod.string().nullable(),
+  "input_release_id": zod.string().nullable(),
+  "data": zod.union([zod.object({
+  "model_id": zod.string().min(1),
+  "model_version": zod.string().min(1),
+  "class_id": zod.string().min(1),
+  "class_name": zod.string().min(1).describe('Reviewed persisted display label, verbatim.'),
+  "class_description": zod.string().min(1).describe('Reviewed persisted explanation, verbatim.'),
+  "probabilities": zod.array(zod.object({
+  "class_id": zod.string().min(1).describe('Version-scoped persisted class identity.'),
+  "probability": zod.number().min(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMin).max(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMax).describe('Latent-class membership on 0–1 scale; never disease risk.')
+})).min(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMin).max(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMax),
+  "limitations": zod.array(zod.string()).min(1).describe('Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.'),
+  "batch_id": zod.string().min(1),
+  "batch_version": zod.string().min(1),
+  "county_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneCountySha256RegExp),
+  "dictionary_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneDictionarySha256RegExp),
+  "input_release_id": zod.string().min(1),
+  "input_bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneInputBundleSha256RegExp),
+  "fit_git_sha": zod.string().min(1),
+  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('Persisted feature\/config contract.'),
+  "model_provenance": zod.record(zod.string(), zod.unknown()),
+  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Persisted sources and source vintages.'),
+  "handoff_approval": zod.record(zod.string(), zod.unknown()),
+  "data_publication_authorization": zod.record(zod.string(), zod.unknown()),
+  "data_authorization_id": zod.string().min(1),
+  "staging_attempt": zod.string().min(1),
+  "activated_at": zod.iso.datetime({"offset":true}).describe('Data activation time, not source vintage or request time.')
+}),zod.null()])
+}).describe('Secondary model, excluding human surveillance.')
+}).describe('Two distinct model outputs; Unknown is a valid available classification.')
+
+
+/**
  * PDF attachment using the immutable county-v1 registered template by default. Optional dataset_version and score settings bind report inputs. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. V1 rejects observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; V1 public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
  * @summary Download a county report
  */

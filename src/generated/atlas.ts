@@ -34,6 +34,7 @@ import type {
   CollectionEnvelopeSource,
   CountyDetail,
   CountyReportPdfV1CountiesFipsReportPdfGetParams,
+  CountySurveillanceSituations,
   CountyV1CountiesFipsGetParams,
   FeedItems,
   FeedSources,
@@ -4110,6 +4111,142 @@ export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaite
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCountyTier1SurveillancePriorityAvailabilityGetQueryOptions(fips,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type countySurveillanceSituationsGetResponse200 = {
+  data: CountySurveillanceSituations
+  status: 200
+}
+
+export type countySurveillanceSituationsGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type countySurveillanceSituationsGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type countySurveillanceSituationsGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type countySurveillanceSituationsGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type countySurveillanceSituationsGetResponseSuccess = (countySurveillanceSituationsGetResponse200) & {
+  headers: Headers;
+};
+export type countySurveillanceSituationsGetResponseError = (countySurveillanceSituationsGetResponse404 | countySurveillanceSituationsGetResponse422 | countySurveillanceSituationsGetResponse429 | countySurveillanceSituationsGetResponse503) & {
+  headers: Headers;
+};
+
+export type countySurveillanceSituationsGetResponse = (countySurveillanceSituationsGetResponseSuccess | countySurveillanceSituationsGetResponseError)
+
+export const getCountySurveillanceSituationsGetUrl = (fips: string,) => {
+
+
+
+
+  return `/v1/counties/${fips}/surveillance-situations`
+}
+
+/**
+ * Primary four_state includes human surveillance; secondary tick_pathogen excludes it. Returns reviewed labels, four membership probabilities per model (0-1, sum 1 within 1e-6), immutable model/batch lineage, source vintages and interpretation limits. Unknown is an available class; No records does not establish absence. Membership is not disease risk, incidence, pathogen presence, causation or Tier 1 priority. HTTP 200 can contain typed UNAVAILABLE variants with null data, including an incompatible release. Unknown county 404; malformed FIPS 422; dependency, malformed persisted data or changing release 503. Cache-Control: no-store; no fallback or inference.
+ * @summary Get both persisted county surveillance-situation classifications
+ */
+export const countySurveillanceSituationsGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countySurveillanceSituationsGetResponse> => {
+
+  return apiMutator<countySurveillanceSituationsGetResponse>(getCountySurveillanceSituationsGetUrl(fips),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCountySurveillanceSituationsGetQueryKey = (fips: string,) => {
+    return [
+    `/v1/counties/${fips}/surveillance-situations`
+    ] as const;
+    }
+
+
+export const getCountySurveillanceSituationsGetQueryOptions = <TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCountySurveillanceSituationsGetQueryKey(fips);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>> = ({ signal }) => countySurveillanceSituationsGet(fips, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CountySurveillanceSituationsGetQueryResult = NonNullable<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>>
+export type CountySurveillanceSituationsGetQueryError = ProblemDetails
+
+
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>,
+          TError,
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>,
+          TError,
+          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get both persisted county surveillance-situation classifications
+ */
+
+export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCountySurveillanceSituationsGetQueryOptions(fips,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -43,6 +43,7 @@ import { PopulationRuralityContextSection } from "@/features/ux-reset/review/pop
 import { isGovernedReviewResultState } from "@/features/ux-reset/review/review-operating-state";
 import { selectSuggestedFollowUp } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
+import { ExplorerSurveillanceIntelligence } from "@/features/ux-reset/surveillance-intelligence/explorer-surveillance-intelligence";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
@@ -334,6 +335,13 @@ export function ExplorerCountyEvidence({
     followUpStatus === "ready" && workspace.suggestedFollowUpEvidence
       ? selectSuggestedFollowUp(workspace.suggestedFollowUpEvidence)
       : null;
+  const tier1Release = tier1ReleaseFromMetadata({
+    isError:
+      Boolean(workspace.metadataError) ||
+      workspace.recovery === "release_mismatch",
+    isLoading: workspace.metadataLoading,
+    releaseId: workspace.releaseId,
+  });
   usePublishAskAtlasInheritedContext(
     inheritedContextFromInvestigate({
       bundle: workspace.bundle,
@@ -403,13 +411,13 @@ export function ExplorerCountyEvidence({
             fips={workspace.requestedFips}
             headingLevel="h3"
             showInterpretiveNotes={false}
-            release={tier1ReleaseFromMetadata({
-              isError:
-                Boolean(workspace.metadataError) ||
-                workspace.recovery === "release_mismatch",
-              isLoading: workspace.metadataLoading,
-              releaseId: workspace.releaseId,
-            })}
+            release={tier1Release}
+          />
+        ) : null}
+        {workspace.requestedFips ? (
+          <ExplorerSurveillanceIntelligence
+            fips={workspace.requestedFips}
+            release={tier1Release}
           />
         ) : null}
         <div className="ux-reset-explorer-actions">
