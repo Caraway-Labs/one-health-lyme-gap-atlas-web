@@ -31,6 +31,10 @@ import {
   EXPLORER_AVAILABLE_DATA_OPEN,
   type ExplorerAvailableDataGate,
 } from "@/features/ux-reset/review/explorer-county-reference";
+import {
+  COUNTY_BOUNDARIES_BACKGROUND,
+  COUNTY_BOUNDARIES_FILL,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
 import { ExplorerLowerWorkspace } from "@/features/ux-reset/review/explorer-lower-workspace";
 import {
   ExplorerMapSectionHeader,
@@ -549,9 +553,10 @@ export function ReviewOperatingPicture({
     selectedFips,
     sources,
   ]);
-  const unpaintedCountyColor = resolveExplorerMapColor(
-    explorerUnpaintedFillColor(mapPaint)
-  );
+  const unpaintedCountyColor =
+    mapPaint.kind === "boundaries"
+      ? COUNTY_BOUNDARIES_FILL
+      : resolveExplorerMapColor(explorerUnpaintedFillColor(mapPaint));
   const inStateMapCounties = useMemo(
     () =>
       reviewMapCounties({
@@ -903,6 +908,11 @@ export function ReviewOperatingPicture({
           ) : null}
           <div
             className="map-wrap"
+            style={
+              mapLayer === "boundaries"
+                ? { background: COUNTY_BOUNDARIES_BACKGROUND }
+                : undefined
+            }
             data-include-unscored={
               availableDataGate.kind === "open" ? "true" : "false"
             }
@@ -940,6 +950,7 @@ export function ReviewOperatingPicture({
                 fitSignal={fitSignal}
                 geometry={geometryQuery.data as never}
                 includeUnscoredCounties={availableDataGate.kind === "open"}
+                neutralGeography={mapLayer === "boundaries"}
                 scores={mapCounties}
                 selectedFips={selectedFips}
                 selectedState={scopeCode}

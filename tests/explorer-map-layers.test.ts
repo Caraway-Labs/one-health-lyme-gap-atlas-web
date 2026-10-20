@@ -414,13 +414,18 @@ describe("Explorer map layers", () => {
       sources: legendSources,
     });
     expect(boundaries.period).toMatch(/not an evidence layer/);
-    expect(boundaries.entries).toStrictEqual([
-      {
-        color: "var(--explorer-boundary)",
-        detail: null,
-        label: "County boundary",
-      },
+    expect(boundaries.entries.map((entry) => entry.label)).toStrictEqual([
+      "County fill",
+      "County outline",
+      "State outline",
     ]);
+    expect(boundaries.entries.map((entry) => entry.color)).toStrictEqual([
+      "#F3F4F6",
+      "#4B5563",
+      "#1F2937",
+    ]);
+    expect(boundaries.scale).toBe("segments");
+    expect(boundaries.unit).toBeNull();
   });
 
   it("says the source vintage is unavailable instead of inventing one", () => {

@@ -69,6 +69,69 @@ export const SVI_LOW_LABEL = "Lower social vulnerability";
 
 export const SVI_HIGH_LABEL = "Higher social vulnerability";
 
+/**
+ * County boundaries (#751) are geography only. These colors are not a score
+ * ramp and are not the gray used for unavailable disease data.
+ *
+ * Stroke widths are zoom stops, not a data scale. The national Explorer pane
+ * is about zoom 2.3–3.5. County strokes stay exactly zero through zoom 3.8.
+ * A fractional width still rasterizes as a visible hairline, and that hairline
+ * turns the national view into a dark mass. State and coast lines carry the
+ * geography there. County strokes start at zoom 4.2 and thicken toward a
+ * state frame (about zoom 5–6) and the map's maximum zoom (8). State strokes
+ * stay heavier than county strokes. A selected state's perimeter stays black
+ * at width 2.5. Hover and the selected county use a heavier stroke, and the
+ * selected county adds a light casing.
+ */
+export const COUNTY_BOUNDARIES_BACKGROUND = "#F8FAFC";
+
+export const COUNTY_BOUNDARIES_FILL = "#F3F4F6";
+
+export const COUNTY_BOUNDARIES_STROKE = "#4B5563";
+
+export const COUNTY_BOUNDARIES_STATE_STROKE = "#1F2937";
+
+export const COUNTY_BOUNDARIES_SELECTED_STATE_STROKE = "#000000";
+
+export const COUNTY_BOUNDARIES_SELECTED_COUNTY_STROKE = "#111827";
+
+export const COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING = "#FFFFFF";
+
+export const COUNTY_BOUNDARIES_SELECTED_STATE_WIDTH = 2.5;
+
+export const COUNTY_BOUNDARIES_SELECTED_COUNTY_WIDTH = 2.75;
+
+export const COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING_WIDTH = 5.5;
+
+export const COUNTY_BOUNDARIES_COUNTY_STROKE_STOPS = [
+  [2, 0],
+  [3.8, 0],
+  [4.2, 0.45],
+  [5.5, 0.9],
+  [8, 1.35],
+] as const;
+
+export const COUNTY_BOUNDARIES_STATE_STROKE_STOPS = [
+  [2, 0.7],
+  [3.2, 0.95],
+  [5, 1.35],
+  [8, 1.9],
+] as const;
+
+export const COUNTY_BOUNDARIES_HOVER_STROKE_STOPS = [
+  [2, 0],
+  [3.8, 0],
+  [4.2, 1.35],
+  [5.5, 1.8],
+  [8, 2.4],
+] as const;
+
+export const COUNTY_BOUNDARIES_FILL_LABEL = "County fill";
+
+export const COUNTY_BOUNDARIES_STROKE_LABEL = "County outline";
+
+export const COUNTY_BOUNDARIES_STATE_LABEL = "State outline";
+
 const HEX_COLOR = /^#(?<hex>[0-9A-Fa-f]{6})$/;
 
 function hexToHsl(color: string): [number, number, number] | null {

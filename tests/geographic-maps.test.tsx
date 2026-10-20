@@ -37,6 +37,7 @@ const engine = vi.hoisted(() => {
       }
     );
     setFilter = vi.fn<(...args: unknown[]) => void>();
+    setLayoutProperty = vi.fn<(...args: unknown[]) => void>();
     setPaintProperty = vi.fn<(...args: unknown[]) => void>();
     constructor() {
       instances.push(this);

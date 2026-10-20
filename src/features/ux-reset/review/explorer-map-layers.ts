@@ -1,5 +1,13 @@
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import {
+  COUNTY_BOUNDARIES_FILL,
+  COUNTY_BOUNDARIES_FILL_LABEL,
+  COUNTY_BOUNDARIES_STATE_LABEL,
+  COUNTY_BOUNDARIES_STATE_STROKE,
+  COUNTY_BOUNDARIES_STROKE,
+  COUNTY_BOUNDARIES_STROKE_LABEL,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
+import {
   paintReadyCompletenessLayer,
   paintReadyObservationLayer,
 } from "@/features/ux-reset/review/explorer-map-layer-scale";
@@ -768,12 +776,41 @@ export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
   const layerId = layer.id;
   switch (layerId) {
     case "boundaries": {
-      return boundaryPaint(
+      const paint = boundaryPaint(
         input,
-        "County boundaries only. This map is not colored by Atlas gap score.",
+        "County boundaries only. Neutral fill and charcoal outlines show geography. This map is not colored by Atlas gap score, and the county fill is not missing disease data.",
         "County boundaries",
         "boundaries"
       );
+      return {
+        ...paint,
+        entries: [
+          {
+            color: COUNTY_BOUNDARIES_FILL,
+            detail:
+              "Neutral county fill for geography. Not a score, not a disease measure, and not missing data.",
+            label: COUNTY_BOUNDARIES_FILL_LABEL,
+            role: "class",
+            visibleLines: [COUNTY_BOUNDARIES_FILL_LABEL],
+          },
+          {
+            color: COUNTY_BOUNDARIES_STROKE,
+            detail:
+              "Charcoal county borders. They stay thin at the national view and thicken when the map is framed to a state.",
+            label: COUNTY_BOUNDARIES_STROKE_LABEL,
+            role: "class",
+            visibleLines: [COUNTY_BOUNDARIES_STROKE_LABEL],
+          },
+          {
+            color: COUNTY_BOUNDARIES_STATE_STROKE,
+            detail:
+              "State borders are darker than county borders. A selected state stays black.",
+            label: COUNTY_BOUNDARIES_STATE_LABEL,
+            role: "class",
+            visibleLines: [COUNTY_BOUNDARIES_STATE_LABEL],
+          },
+        ],
+      };
     }
     case "incidence_floor":
     case "rurality":

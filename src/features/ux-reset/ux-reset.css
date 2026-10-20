@@ -2656,6 +2656,42 @@
   white-space: pre-line;
 }
 
+/* County boundaries only. Separate geography keys, not a connected color scale. */
+.ux-reset-explorer-legend[data-legend-layer="boundaries"]
+  .ux-reset-explorer-legend-strip {
+  justify-content: flex-start;
+  height: auto;
+  gap: 0.85rem;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="boundaries"]
+  .ux-reset-explorer-legend-segment {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  height: auto;
+  gap: 0.35rem;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="boundaries"]
+  .ux-reset-explorer-legend-segment
+  > span {
+  flex: none;
+  width: 0.9rem;
+  height: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: 0.15rem;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="boundaries"]
+  .ux-reset-explorer-legend-segment-label {
+  color: var(--foreground);
+  font-size: 0.65rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
 .ux-reset-explorer-legend-strip {
   display: flex;
   flex: 1 1 auto;

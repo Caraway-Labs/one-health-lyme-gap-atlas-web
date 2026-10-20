@@ -3,13 +3,42 @@
 import type {
   ExpressionSpecification,
   FillLayerSpecification,
+  FilterSpecification,
   GeoJSONSource,
   Map as MapLibreMap,
 } from "maplibre-gl";
 import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
-import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Ref } from "react";
 
+import {
+  stateBoundaryLines,
+  type StateBoundaryFeatureCollection,
+} from "@/features/ux-reset/review/county-boundary-lines";
+import {
+  countyBoundaryCountyLineWidth,
+  countyBoundaryHoverLineWidth,
+  countyBoundaryHoverOpacity,
+  countyBoundaryStateLineWidth,
+} from "@/features/ux-reset/review/county-boundary-paint";
+import {
+  COUNTY_BOUNDARIES_BACKGROUND,
+  COUNTY_BOUNDARIES_FILL,
+  COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING,
+  COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING_WIDTH,
+  COUNTY_BOUNDARIES_SELECTED_COUNTY_STROKE,
+  COUNTY_BOUNDARIES_SELECTED_COUNTY_WIDTH,
+  COUNTY_BOUNDARIES_SELECTED_STATE_STROKE,
+  COUNTY_BOUNDARIES_SELECTED_STATE_WIDTH,
+  COUNTY_BOUNDARIES_STATE_STROKE,
+  COUNTY_BOUNDARIES_STROKE,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
 import { explorerStateGeometryBounds } from "@/features/ux-reset/review/explorer-map-focus";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
@@ -194,6 +223,19 @@ const DEFAULT_FILL_COLOR: AtlasMapFillColor = [
   "#e4e9ea",
 ];
 
+const EMPTY_STATE_LINES: StateBoundaryFeatureCollection = {
+  features: [],
+  type: "FeatureCollection",
+};
+
+const SELECTED_COUNTY_STROKE = "#061f3d";
+const SELECTED_COUNTY_WIDTH = 3;
+const HIDDEN_STATE_OUTLINE_FILTER: FilterSpecification = [
+  "==",
+  ["get", "fips"],
+  "",
+];
+
 function atlasMapContainerRole(role: "img" | "none"): "img" | undefined {
   switch (role) {
     case "img": {
@@ -229,6 +271,11 @@ export function AtlasMap({
   resetNationalView = false,
   fitSelectedCounty = false,
   geographicStateOutline = false,
+  /**
+   * County boundaries layer only. Neutral land, charcoal county strokes, and
+   * darker state perimeters. Other layers keep the shared outline treatment.
+   */
+  neutralGeography = false,
   doubleClickZoom = true,
   selectedDistrict = "ALL",
   onCountyPointer,
@@ -271,6 +318,8 @@ export function AtlasMap({
    * Maps with no selected state keep the accent outline.
    */
   geographicStateOutline?: boolean;
+  /** Geography-only Explorer layer. Does not recolor thematic fills. */
+  neutralGeography?: boolean;
   /** National Explorer drill disables double-click zoom so one gesture cannot take both steps. */
   doubleClickZoom?: boolean;
   selectedDistrict?: string;
@@ -302,6 +351,7 @@ export function AtlasMap({
   const cameraFrameStateRef = useRef(cameraFrameState);
   const doubleClickZoomRef = useRef(doubleClickZoom);
   const geographicStateOutlineRef = useRef(geographicStateOutline);
+  const neutralGeographyRef = useRef(neutralGeography);
   const selectedStateRef = useRef(selectedState);
   const userAdjustedNationalRef = useRef(false);
   const initialNationalFitRef = useRef(false);
@@ -324,8 +374,19 @@ export function AtlasMap({
     cameraFrameStateRef.current = cameraFrameState;
     doubleClickZoomRef.current = doubleClickZoom;
     geographicStateOutlineRef.current = geographicStateOutline;
+    neutralGeographyRef.current = neutralGeography;
     selectedStateRef.current = selectedState;
   });
+  const geometryFeatures = geometry.features;
+  const stateLines = useMemo(
+    () =>
+      neutralGeography
+        ? stateBoundaryLines({ features: geometryFeatures })
+        : EMPTY_STATE_LINES,
+    [geometryFeatures, neutralGeography]
+  );
+  const stateLinesRef = useRef(stateLines);
+  stateLinesRef.current = stateLines;
   fitNationalViewRef.current = (instance) => {
     const element = container.current;
     if (!element) {
@@ -373,7 +434,11 @@ export function AtlasMap({
             ...feature,
             properties: {
               ...feature.properties,
-              color: county?.color ?? "#e4e9ea",
+              color:
+                county?.color ??
+                (neutralGeographyRef.current
+                  ? COUNTY_BOUNDARIES_FILL
+                  : "#e4e9ea"),
               completeness: mapFeatureCompleteness(
                 county?.evidence_completeness
               ),
@@ -461,7 +526,21 @@ export function AtlasMap({
       });
     });
     instance.on("load", () => {
-      instance.addSource("counties", { data: enriched(), type: "geojson" });
+      instance.addSource("counties", {
+        data: enriched(),
+        promoteId: "fips",
+        type: "geojson",
+      });
+      instance.addSource("state-boundaries", {
+        data: stateLinesRef.current,
+        type: "geojson",
+      });
+      instance.addLayer({
+        id: "atlas-background",
+        layout: { visibility: "none" },
+        paint: { "background-color": COUNTY_BOUNDARIES_BACKGROUND },
+        type: "background",
+      });
       instance.addLayer({
         id: "counties-fill",
         paint: {
@@ -471,6 +550,48 @@ export function AtlasMap({
         },
         source: "counties",
         type: "fill",
+      });
+      instance.addLayer({
+        id: "county-boundary-lines",
+        layout: { visibility: "none" },
+        paint: {
+          "line-color": COUNTY_BOUNDARIES_STROKE,
+          "line-width": countyBoundaryCountyLineWidth(),
+        },
+        source: "counties",
+        type: "line",
+      });
+      instance.addLayer({
+        id: "county-boundary-hover",
+        layout: { visibility: "none" },
+        paint: {
+          "line-color": COUNTY_BOUNDARIES_STROKE,
+          "line-opacity": countyBoundaryHoverOpacity(),
+          "line-width": countyBoundaryHoverLineWidth(),
+        },
+        source: "counties",
+        type: "line",
+      });
+      instance.addLayer({
+        id: "state-boundary-lines",
+        layout: { visibility: "none" },
+        paint: {
+          "line-color": COUNTY_BOUNDARIES_STATE_STROKE,
+          "line-width": countyBoundaryStateLineWidth(),
+        },
+        source: "state-boundaries",
+        type: "line",
+      });
+      instance.addLayer({
+        filter: ["==", ["get", "state"], ""],
+        id: "selected-state-boundary",
+        layout: { visibility: "none" },
+        paint: {
+          "line-color": COUNTY_BOUNDARIES_SELECTED_STATE_STROKE,
+          "line-width": COUNTY_BOUNDARIES_SELECTED_STATE_WIDTH,
+        },
+        source: "state-boundaries",
+        type: "line",
       });
       if (showOverlays) {
         instance.addLayer({
@@ -504,8 +625,22 @@ export function AtlasMap({
       }
       instance.addLayer({
         filter: ["==", ["get", "selected"], true],
+        id: "selected-outline-casing",
+        layout: { visibility: "none" },
+        paint: {
+          "line-color": COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING,
+          "line-width": COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING_WIDTH,
+        },
+        source: "counties",
+        type: "line",
+      });
+      instance.addLayer({
+        filter: ["==", ["get", "selected"], true],
         id: "selected-outline",
-        paint: { "line-color": "#061f3d", "line-width": 3 },
+        paint: {
+          "line-color": SELECTED_COUNTY_STROKE,
+          "line-width": SELECTED_COUNTY_WIDTH,
+        },
         source: "counties",
         type: "line",
       });
@@ -527,8 +662,40 @@ export function AtlasMap({
       instance.on("mouseenter", "counties-fill", () => {
         instance.getCanvas().style.cursor = "pointer";
       });
+      let hoveredFips: string | null = null;
+      const clearHover = () => {
+        if (!hoveredFips) {
+          return;
+        }
+        instance.setFeatureState(
+          { id: hoveredFips, source: "counties" },
+          { hover: false }
+        );
+        hoveredFips = null;
+      };
+      instance.on("mousemove", "counties-fill", (event) => {
+        if (!neutralGeographyRef.current) {
+          clearHover();
+          return;
+        }
+        const fips = event.features?.[0]?.properties?.fips;
+        if (typeof fips !== "string") {
+          clearHover();
+          return;
+        }
+        if (hoveredFips === fips) {
+          return;
+        }
+        clearHover();
+        hoveredFips = fips;
+        instance.setFeatureState(
+          { id: fips, source: "counties" },
+          { hover: true }
+        );
+      });
       instance.on("mouseleave", "counties-fill", () => {
         instance.getCanvas().style.cursor = "";
+        clearHover();
       });
       instance.once("idle", () => {
         onIdleRef.current?.();
@@ -575,6 +742,71 @@ export function AtlasMap({
     }
     source.setData(enriched());
     map.current.setPaintProperty("counties-fill", "fill-color", fillColor);
+    const geographyVisibility = neutralGeography ? "visible" : "none";
+    for (const layerId of [
+      "atlas-background",
+      "county-boundary-lines",
+      "county-boundary-hover",
+      "state-boundary-lines",
+      "selected-state-boundary",
+      "selected-outline-casing",
+    ]) {
+      if (map.current.getLayer(layerId)) {
+        map.current.setLayoutProperty(
+          layerId,
+          "visibility",
+          geographyVisibility
+        );
+      }
+    }
+    const stateSource = map.current.getSource("state-boundaries") as
+      | GeoJSONSource
+      | undefined;
+    stateSource?.setData(
+      neutralGeography ? stateLinesRef.current : EMPTY_STATE_LINES
+    );
+    if (map.current.getLayer("counties-fill")) {
+      map.current.setPaintProperty(
+        "counties-fill",
+        "fill-opacity",
+        neutralGeography ? 1 : 0.92
+      );
+      map.current.setPaintProperty(
+        "counties-fill",
+        "fill-outline-color",
+        neutralGeography ? "rgba(0,0,0,0)" : "rgba(255,255,255,.9)"
+      );
+    }
+    if (map.current.getLayer("selected-outline")) {
+      map.current.setPaintProperty(
+        "selected-outline",
+        "line-color",
+        neutralGeography
+          ? COUNTY_BOUNDARIES_SELECTED_COUNTY_STROKE
+          : SELECTED_COUNTY_STROKE
+      );
+      map.current.setPaintProperty(
+        "selected-outline",
+        "line-width",
+        neutralGeography
+          ? COUNTY_BOUNDARIES_SELECTED_COUNTY_WIDTH
+          : SELECTED_COUNTY_WIDTH
+      );
+    }
+    if (map.current.getLayer("state-boundary-lines")) {
+      map.current.setFilter("state-boundary-lines", [
+        "!=",
+        ["get", "state"],
+        selectedState,
+      ]);
+    }
+    if (map.current.getLayer("selected-state-boundary")) {
+      map.current.setFilter("selected-state-boundary", [
+        "==",
+        ["get", "state"],
+        selectedState,
+      ]);
+    }
     if (map.current.getLayer("selected-state-outline")) {
       const outline = stateOutlinePaint(
         stateOutlineTreatment({
@@ -584,20 +816,28 @@ export function AtlasMap({
           selectedState,
         })
       );
-      map.current.setFilter("selected-state-outline", [
-        "==",
-        ["get", "selectedState"],
-        true,
-      ]);
+      // The neutral layer draws state perimeters from dissolved lines. Keep
+      // this shared layer's black paint so other layers can restore it, and
+      // hide its county-edge stroke so it does not redraw a dark county grid.
+      map.current.setFilter(
+        "selected-state-outline",
+        neutralGeography
+          ? HIDDEN_STATE_OUTLINE_FILTER
+          : ["==", ["get", "selectedState"], true]
+      );
       map.current.setPaintProperty(
         "selected-state-outline",
         "line-color",
-        outline["line-color"]
+        neutralGeography
+          ? COUNTY_BOUNDARIES_SELECTED_STATE_STROKE
+          : outline["line-color"]
       );
       map.current.setPaintProperty(
         "selected-state-outline",
         "line-width",
-        outline["line-width"]
+        neutralGeography
+          ? COUNTY_BOUNDARIES_SELECTED_STATE_WIDTH
+          : outline["line-width"]
       );
     }
     if (map.current.getLayer("selected-district-outline")) {
@@ -767,6 +1007,7 @@ export function AtlasMap({
           : undefined
       }
       data-double-click-zoom={doubleClickZoom ? "true" : "false"}
+      data-boundary-palette={neutralGeography ? "neutral" : "thematic"}
       data-state-outline={geographicStateOutline ? "black" : "accent"}
     />
   );

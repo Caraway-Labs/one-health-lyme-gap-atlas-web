@@ -459,7 +459,7 @@ describe("pathogen status color and order contract", () => {
       },
       tickLabels: tick.entries.map((entry) => entry.label),
     }).toStrictEqual({
-      boundaries: ["County boundary"],
+      boundaries: ["County fill", "County outline", "State outline"],
       gapColor: "#e9602b",
       gapLabels: false,
       tickColors: {

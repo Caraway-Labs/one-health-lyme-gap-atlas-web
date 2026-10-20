@@ -16,6 +16,7 @@ const engine = vi.hoisted(() => {
     layers = new Set<string>();
     paint = new Map<string, Record<string, unknown>>();
     filters = new Map<string, unknown>();
+    layout = new Map<string, Record<string, unknown>>();
     center = { lat: 38.5, lng: -96.5 };
     zoom = 3.05;
     bearing = 0;
@@ -64,6 +65,19 @@ const engine = vi.hoisted(() => {
       const current = this.paint.get(layer) ?? {};
       this.paint.set(layer, { ...current, [name]: value });
     });
+    setLayoutProperty = vi.fn<
+      (layer: string, name: string, value: unknown) => void
+    >((layer, name, value) => {
+      const current = this.layout.get(layer) ?? {};
+      this.layout.set(layer, { ...current, [name]: value });
+    });
+    setFeatureState =
+      vi.fn<
+        (
+          target: { id?: string; source: string },
+          state: Record<string, unknown>
+        ) => void
+      >();
     options: Record<string, unknown>;
     constructor(options?: Record<string, unknown>) {
       this.options = options ?? {};
@@ -1534,6 +1548,107 @@ describe("AtlasMap county camera", () => {
       document.querySelector<HTMLElement>(".maplibre-atlas")?.dataset
         .stateOutline
     ).toBe("black");
+  });
+
+  it("paints neutral county and state boundaries without a thematic fill", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geographicStateOutline
+        geometry={{
+          features: [
+            {
+              geometry: {
+                coordinates: [
+                  [
+                    [0, 0],
+                    [1, 0],
+                    [1, 1],
+                    [0, 1],
+                    [0, 0],
+                  ],
+                ],
+                type: "Polygon",
+              },
+              properties: { fips: "08001" },
+              type: "Feature",
+            },
+            {
+              geometry: {
+                coordinates: [
+                  [
+                    [1, 0],
+                    [2, 0],
+                    [2, 1],
+                    [1, 1],
+                    [1, 0],
+                  ],
+                ],
+                type: "Polygon",
+              },
+              properties: { fips: "08005" },
+              type: "Feature",
+            },
+          ],
+          type: "FeatureCollection",
+        }}
+        neutralGeography
+        resetNationalView
+        scores={[
+          { ...adams, fips: "08001" },
+          { ...adams, county: "Arapahoe", fips: "08005" },
+        ]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    const stateSource = map?.sources.get("state-boundaries") as
+      | { data?: GeoJSON.FeatureCollection }
+      | undefined;
+    const states = (stateSource?.data?.features ?? [])
+      .map((feature) => feature.properties?.state)
+      .toSorted();
+    expect({
+      background: map?.paint.get("atlas-background")?.["background-color"],
+      countyLine: map?.paint.get("county-boundary-lines")?.["line-color"],
+      countyVisibility: map?.layout.get("county-boundary-lines")?.visibility,
+      fillOpacity: map?.paint.get("counties-fill")?.["fill-opacity"],
+      outlineColor: map?.paint.get("counties-fill")?.["fill-outline-color"],
+      palette:
+        document.querySelector<HTMLElement>(".maplibre-atlas")?.dataset
+          .boundaryPalette,
+      selectedCasing: map?.paint.get("selected-outline-casing")?.["line-color"],
+      selectedCounty: map?.paint.get("selected-outline")?.["line-color"],
+      selectedState: map?.paint.get("selected-state-boundary")?.["line-color"],
+      selectedStateWidth: map?.paint.get("selected-state-boundary")?.[
+        "line-width"
+      ],
+      sharedStateColor: map?.paint.get("selected-state-outline")?.[
+        "line-color"
+      ],
+      sharedStateFilter: map?.filters.get("selected-state-outline"),
+      stateLine: map?.paint.get("state-boundary-lines")?.["line-color"],
+      states,
+    }).toStrictEqual({
+      background: "#F8FAFC",
+      countyLine: "#4B5563",
+      countyVisibility: "visible",
+      fillOpacity: 1,
+      outlineColor: "rgba(0,0,0,0)",
+      palette: "neutral",
+      selectedCasing: "#FFFFFF",
+      selectedCounty: "#111827",
+      selectedState: "#000000",
+      selectedStateWidth: 2.5,
+      sharedStateColor: "#000000",
+      sharedStateFilter: ["==", ["get", "fips"], ""],
+      stateLine: "#1F2937",
+      states: ["CO"],
+    });
   });
 
   it("reports WebGL failure and empty geometry without throwing", () => {

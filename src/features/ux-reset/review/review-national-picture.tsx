@@ -21,6 +21,10 @@ import {
   type ExplorerAvailableDataGate,
   type ExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
+import {
+  COUNTY_BOUNDARIES_BACKGROUND,
+  COUNTY_BOUNDARIES_FILL,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
 import { ExplorerLowerWorkspace } from "@/features/ux-reset/review/explorer-lower-workspace";
 import {
   ExplorerMapSectionHeader,
@@ -274,10 +278,13 @@ export function ReviewNationalPicture({
     // Gray means a governed rurality response omitted a county. A failed
     // load stays on the boundary color so it is not read as No data.
     // Social vulnerability uses its own no-data gray from the legend entry.
+    // The geography layer uses its own neutral fill, which is not that gray.
     const missingColor =
-      mapPaint.layerId === "rurality" && mapPaint.kind === "categorical"
-        ? RURALITY_NO_DATA_COLOR
-        : (unpaintedCountyColor ?? noPublishedValueColor());
+      mapPaint.kind === "boundaries"
+        ? COUNTY_BOUNDARIES_FILL
+        : mapPaint.layerId === "rurality" && mapPaint.kind === "categorical"
+          ? RURALITY_NO_DATA_COLOR
+          : (unpaintedCountyColor ?? noPublishedValueColor());
     return geometryFeatures.flatMap((feature) => {
       const fips = feature.properties.fips;
       const state = postalForFips(fips);
@@ -500,6 +507,11 @@ export function ReviewNationalPicture({
             geometryPending || valuesPending || mapPaint.kind === "loading"
           }
           className="map-wrap"
+          style={
+            mapLayer === "boundaries"
+              ? { background: COUNTY_BOUNDARIES_BACKGROUND }
+              : undefined
+          }
           data-map-colors={mapCounties
             .map((entry) => `${entry.fips}:${entry.color ?? ""}`)
             .join(" ")}
@@ -526,6 +538,7 @@ export function ReviewNationalPicture({
               fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
               fitSignal={fitSignal}
               geographicStateOutline={mapFocus !== null}
+              neutralGeography={mapLayer === "boundaries"}
               geometry={{
                 ...geometryQuery.data,
                 features: geometryFeatures,

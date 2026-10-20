@@ -683,14 +683,24 @@ test.describe("Atlas Explorer layer legends", () => {
 
     await chooseLayer(page, "County boundaries");
     await expect(
-      legend.getByRole("button", { name: "County boundary" })
+      legend.getByRole("button", { name: "County fill" })
     ).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: "County outline" })
+    ).toBeVisible();
+    await expect(
+      legend.getByRole("button", { name: "State outline" })
+    ).toBeVisible();
+    await expect(legend).toHaveAttribute("data-legend-scale", "segments");
     await legend
       .getByRole("button", { name: "About County boundaries" })
       .click();
     await expect(
       page.getByRole("dialog", { name: "About County boundaries" })
     ).toContainText("not an evidence layer");
+    await expect(
+      page.getByRole("dialog", { name: "About County boundaries" })
+    ).toContainText("not missing disease data");
     await expect(legend.getByRole("button", { name: "Present" })).toHaveCount(
       0
     );
@@ -704,7 +714,7 @@ test.describe("Atlas Explorer layer legends", () => {
       legend.getByRole("button", { name: /0 to <20/ })
     ).toBeVisible();
     await expect(
-      legend.getByRole("button", { name: "County boundary" })
+      legend.getByRole("button", { name: "County fill" })
     ).toHaveCount(0);
   });
 
