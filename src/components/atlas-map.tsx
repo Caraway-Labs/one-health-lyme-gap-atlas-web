@@ -134,6 +134,17 @@ function stateOutlineTreatment(input: {
   if (nationallyFramed && input.selectedState !== "ALL") {
     return "national-selection";
   }
+  // State-scoped Explorer frames the camera to the selected state. Those
+  // county edges are the perimeter and the internal boundaries.
+  const stateScoped =
+    input.selectedState !== "ALL" &&
+    frame !== undefined &&
+    frame !== null &&
+    frame !== "ALL" &&
+    frame === input.selectedState;
+  if (stateScoped) {
+    return "national-selection";
+  }
   return "accent";
 }
 
@@ -255,9 +266,9 @@ export function AtlasMap({
   fitSelectedCounty?: boolean;
   /**
    * Focused-state camera stage. County lines for that stage stay black and
-   * use the zoom-based width. A selected state at national framing is also
-   * black, at the shared national stroke width. Other maps keep the accent
-   * outline.
+   * use the zoom-based width. A selected state is also black at the shared
+   * stroke width when the camera is the national frame or that state's frame.
+   * Maps with no selected state keep the accent outline.
    */
   geographicStateOutline?: boolean;
   /** National Explorer drill disables double-click zoom so one gesture cannot take both steps. */
