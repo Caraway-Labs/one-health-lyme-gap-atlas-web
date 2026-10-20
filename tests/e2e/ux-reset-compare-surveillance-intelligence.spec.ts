@@ -111,7 +111,11 @@ async function installIntelligence(page: Page) {
           ? tier1LowInsufficientFixture
           : tier1HighSufficientFixture;
       await route.fulfill({
-        json: { ...fixture, county_fips: fips },
+        json: {
+          ...fixture,
+          county_fips: fips,
+          release_id: compareScoresFixture.release_id,
+        },
         status: 200,
       });
     }

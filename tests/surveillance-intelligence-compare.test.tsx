@@ -20,6 +20,7 @@ import {
   SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER,
 } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import type { Tier1CountyPriority } from "@/generated/models/tier1CountyPriority";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import { reviewScopeScoresFixture } from "./fixtures/review-scope-api-fixtures";
@@ -27,10 +28,12 @@ import {
   tier1HighSufficientFixture,
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
+  tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
 
+const PAGE_RELEASE = reviewScopeScoresFixture.release_id;
 const release: Tier1ActiveRelease = {
-  releaseId: reviewScopeScoresFixture.release_id,
+  releaseId: PAGE_RELEASE,
   status: "ready",
 };
 
@@ -139,13 +142,14 @@ function situationsBody(
     | ReturnType<typeof unavailableVariant>,
   tick:
     | ReturnType<typeof availableVariant>
-    | ReturnType<typeof unavailableVariant>
+    | ReturnType<typeof unavailableVariant>,
+  releaseId = reviewScopeScoresFixture.release_id
 ) {
   return {
     bundle_sha256: SHA,
     county_fips: fips,
     four_state: four,
-    release_id: reviewScopeScoresFixture.release_id,
+    release_id: releaseId,
     tick_pathogen: tick,
   };
 }
@@ -161,13 +165,25 @@ function situationsResponse(
     | ReturnType<typeof unavailableVariant>,
   tick:
     | ReturnType<typeof availableVariant>
-    | ReturnType<typeof unavailableVariant>
+    | ReturnType<typeof unavailableVariant>,
+  releaseId = reviewScopeScoresFixture.release_id
 ) {
-  return ok(situationsBody(fips, four, tick)) as Awaited<
+  return ok(situationsBody(fips, four, tick, releaseId)) as Awaited<
     ReturnType<
       typeof import("@/generated/atlas").countySurveillanceSituationsGet
     >
   >;
+}
+
+function pageTier1(
+  result: Tier1CountyPriority,
+  fips: string,
+  releaseId = PAGE_RELEASE
+) {
+  return tier1PriorityForRelease(
+    tier1PriorityForCounty(result, fips),
+    releaseId
+  );
 }
 
 function scoresResponse(counties: readonly { fips: string; score: number }[]) {
@@ -249,9 +265,9 @@ function installHappyPath() {
   );
   tier1Get.mockImplementation(async (fips: string) => {
     if (fips === LEFT) {
-      return ok(tier1PriorityForCounty(tier1LowInsufficientFixture, fips));
+      return ok(pageTier1(tier1LowInsufficientFixture, fips));
     }
-    return ok(tier1PriorityForCounty(tier1HighSufficientFixture, fips));
+    return ok(pageTier1(tier1HighSufficientFixture, fips));
   });
   situationsGet.mockImplementation(async (fips: string) => {
     if (fips === LEFT) {
@@ -304,7 +320,7 @@ describe("Compare County Surveillance Intelligence", () => {
       ...SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER,
     ]);
     expect(scoresGet).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ dataset_version: release.releaseId }),
+      expect.objectContaining({ dataset_version: PAGE_RELEASE }),
       expect.anything()
     );
     expect(tier1Get.mock.calls.map((call) => call[0]).sort()).toStrictEqual([
@@ -396,7 +412,7 @@ describe("Compare County Surveillance Intelligence", () => {
   it("keeps a missing county score distinct from zero", async () => {
     scoresGet.mockResolvedValue(scoresResponse([{ fips: RIGHT, score: 0 }]));
     tier1Get.mockResolvedValue(
-      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, LEFT))
+      ok(pageTier1(tier1LowInsufficientFixture, LEFT))
     );
     situationsGet.mockResolvedValue(
       situationsResponse(
@@ -488,7 +504,8 @@ describe("Compare County Surveillance Intelligence", () => {
       screen.getByRole("button", { name: "ML Review Priority" })
     );
     const priority = screen.getAllByTestId("surveillance-intelligence-details");
-    expect(priority[0]).toHaveTextContent(
+    expect(priority[0]).toHaveTextContent(PAGE_RELEASE);
+    expect(priority[0]).not.toHaveTextContent(
       "governed-2026-09-18-unknown-coverage"
     );
     await user.click(
@@ -500,6 +517,105 @@ describe("Compare County Surveillance Intelligence", () => {
     expect(ecological[1]).toHaveTextContent("other-release");
     expect(ecological[0]).toHaveTextContent("Not published");
     expect(ecological[1]).toHaveTextContent("99.9% (full value 0.999)");
+  });
+
+  it("does not load situations while the page release is still pending", async () => {
+    installHappyPath();
+    renderView(
+      <CompareSurveillanceIntelligence
+        leftFips={LEFT}
+        leftLabel="Autauga"
+        release={{ status: "pending" }}
+        rightFips={RIGHT}
+        rightLabel="Adams"
+      />
+    );
+    await expect(
+      screen.findAllByText("Class membership is loading.")
+    ).resolves.toHaveLength(4);
+    expect(situationsGet).not.toHaveBeenCalled();
+    expect(tier1Get).not.toHaveBeenCalled();
+  });
+
+  it("withholds situation classes when the response release differs from the page", async () => {
+    scoresGet.mockResolvedValue(
+      scoresResponse([
+        { fips: LEFT, score: 36.6 },
+        { fips: RIGHT, score: 14.8 },
+      ])
+    );
+    tier1Get.mockImplementation(async (fips: string) =>
+      ok(pageTier1(tier1LowInsufficientFixture, fips))
+    );
+    situationsGet.mockImplementation(async (fips: string) =>
+      situationsResponse(
+        fips,
+        availableVariant(
+          classification("class-3", `${fips} class`, 0.2),
+          "four"
+        ),
+        unavailableVariant("NOT_PUBLISHED"),
+        fips === LEFT ? "other-situation-release" : PAGE_RELEASE
+      )
+    );
+    renderPair();
+    const leftSituation = await screen.findByTestId(
+      `compare-surveillance-cell-surveillance-situation-${LEFT}`
+    );
+    await waitFor(() => {
+      expect(leftSituation).toHaveTextContent(
+        "Not shown for this page release"
+      );
+    });
+    expect(leftSituation).not.toHaveTextContent(`${LEFT} class`);
+    expect(
+      screen.getByTestId(
+        `compare-surveillance-cell-ecological-situation-${LEFT}`
+      )
+    ).toHaveTextContent("Not shown for this page release");
+    expect(
+      screen.getByTestId(
+        `compare-surveillance-cell-surveillance-situation-${RIGHT}`
+      )
+    ).toHaveTextContent(`${RIGHT} class`);
+  });
+
+  it("withholds a tier when the model release differs from the page", async () => {
+    scoresGet.mockResolvedValue(
+      scoresResponse([
+        { fips: LEFT, score: 36.6 },
+        { fips: RIGHT, score: 14.8 },
+      ])
+    );
+    tier1Get.mockImplementation(async (fips: string) =>
+      ok(
+        pageTier1(
+          tier1LowInsufficientFixture,
+          fips,
+          fips === RIGHT ? "other-tier-release" : PAGE_RELEASE
+        )
+      )
+    );
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        LEFT,
+        unavailableVariant("NOT_PUBLISHED"),
+        unavailableVariant("NOT_PUBLISHED")
+      )
+    );
+    renderPair();
+    const rightPriority = await screen.findByTestId(
+      `compare-surveillance-cell-ml-review-priority-${RIGHT}`
+    );
+    await waitFor(() => {
+      expect(rightPriority).toHaveTextContent(
+        "Not shown for this page release"
+      );
+    });
+    expect(rightPriority).not.toHaveTextContent("LOW");
+    expect(
+      screen.getByTestId(`compare-surveillance-cell-ml-review-priority-${LEFT}`)
+    ).toHaveTextContent("LOW");
   });
 
   it("retries one county without clearing the other county's result", async () => {
@@ -521,7 +637,7 @@ describe("Compare County Surveillance Intelligence", () => {
         );
       }
       return ok(
-        tier1PriorityForCounty(
+        pageTier1(
           fips === LEFT
             ? tier1LowInsufficientFixture
             : tier1HighSufficientFixture,
@@ -586,7 +702,7 @@ describe("Compare County Surveillance Intelligence", () => {
       ])
     );
     tier1Get.mockImplementation(async (fips: string) =>
-      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, fips))
+      ok(pageTier1(tier1LowInsufficientFixture, fips))
     );
     situationsGet.mockImplementation(
       async (fips: string, options?: RequestInit) => {
@@ -660,7 +776,7 @@ describe("Compare County Surveillance Intelligence", () => {
   it("drops an in-flight county when the section unmounts", async () => {
     scoresGet.mockResolvedValue(scoresResponse([{ fips: LEFT, score: 1 }]));
     tier1Get.mockResolvedValue(
-      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, LEFT))
+      ok(pageTier1(tier1LowInsufficientFixture, LEFT))
     );
     situationsGet.mockImplementation(
       async (_fips: string, options?: RequestInit) => {
