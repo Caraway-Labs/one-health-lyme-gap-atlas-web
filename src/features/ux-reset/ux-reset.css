@@ -2697,6 +2697,89 @@
   outline-offset: 2px;
 }
 
+/* Rurality only. Other layers keep the unlabeled swatch strip. */
+.ux-reset-explorer-legend-rurality {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-legend-rurality-main {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-legend-rurality-scale {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-legend-rurality-captions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-legend-rurality-explanation {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  line-height: 1.25;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="rurality"]
+  .ux-reset-explorer-legend-strip,
+.ux-reset-explorer-legend[data-legend-layer="rurality"]
+  .ux-reset-explorer-legend-segment[data-legend-role="class"] {
+  height: 0.7rem;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="rurality"]
+  .ux-reset-explorer-legend-segment[data-legend-role="class"]
+  > span {
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+
+.ux-reset-explorer-legend-rurality-missing {
+  flex: none;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="rurality"]
+  .ux-reset-explorer-legend-rurality-missing
+  .ux-reset-explorer-legend-segment {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  height: auto;
+  gap: 0.3rem;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="rurality"]
+  .ux-reset-explorer-legend-rurality-missing
+  .ux-reset-explorer-legend-segment
+  > span {
+  width: 0.85rem;
+  height: 0.55rem;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
+  border-radius: 0.15rem;
+}
+
+.ux-reset-explorer-legend[data-legend-layer="rurality"]
+  .ux-reset-explorer-legend-segment-label {
+  color: var(--foreground);
+  font-size: 0.65rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
 /* Tick status only. Other layers keep the unlabeled swatch strip. */
 .ux-reset-explorer-legend[data-legend-layer="tick_status"]
   .ux-reset-explorer-legend-row {

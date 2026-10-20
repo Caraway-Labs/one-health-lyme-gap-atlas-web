@@ -17,6 +17,7 @@ import {
   type ExplorerLegendSegment,
 } from "@/features/ux-reset/review/explorer-legend-model";
 import type { ExplorerMapPaint } from "@/features/ux-reset/review/explorer-map-layers";
+import { RURALITY_LEGEND_EXPLANATION } from "@/features/ux-reset/review/rurality-palette";
 
 function LegendDisclosure({
   color,
@@ -135,6 +136,72 @@ function LegendSegmentButton({
   );
 }
 
+function RuralityLegendScale({
+  model,
+  onOpenChange,
+  openId,
+}: {
+  model: ReturnType<typeof buildExplorerLegendModel>;
+  onOpenChange: (id: string | null) => void;
+  openId: string | null;
+}) {
+  const classes = model.segments.filter((segment) => segment.role === "class");
+  const missing = model.segments.filter(
+    (segment) => segment.role === "missing"
+  );
+  return (
+    <div className="ux-reset-explorer-legend-rurality">
+      <div className="ux-reset-explorer-legend-rurality-main">
+        <div className="ux-reset-explorer-legend-rurality-scale">
+          <div className="ux-reset-explorer-legend-strip">
+            {classes.map((segment) => (
+              <LegendSegmentButton
+                key={segment.id}
+                layerTitle={model.title}
+                open={openId === segment.id}
+                segment={segment}
+                onOpenChange={(next) => {
+                  onOpenChange(next ? segment.id : null);
+                }}
+              />
+            ))}
+          </div>
+          <div className="ux-reset-explorer-legend-rurality-captions">
+            {model.leftCaption ? (
+              <span className="ux-reset-explorer-legend-caption">
+                {model.leftCaption}
+              </span>
+            ) : null}
+            {model.rightCaption ? (
+              <span className="ux-reset-explorer-legend-caption">
+                {model.rightCaption}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        {missing.length > 0 ? (
+          <div className="ux-reset-explorer-legend-rurality-missing">
+            {missing.map((segment) => (
+              <LegendSegmentButton
+                key={segment.id}
+                layerTitle={model.title}
+                open={openId === segment.id}
+                segment={segment}
+                onOpenChange={(next) => {
+                  onOpenChange(next ? segment.id : null);
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <p className="ux-reset-explorer-legend-rurality-explanation">
+        {RURALITY_LEGEND_EXPLANATION}
+      </p>
+    </div>
+  );
+}
+
 function legendIdentity(paint: ExplorerMapPaint): string {
   return `${paint.layerId}:${paint.kind}:${paint.period ?? ""}:${paint.title}`;
 }
@@ -206,7 +273,13 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
       {model.status ? (
         <p className="ux-reset-explorer-legend-status">{model.status}</p>
       ) : null}
-      {model.mode === "message" ? null : (
+      {model.mode === "message" ? null : paint.layerId === "rurality" ? (
+        <RuralityLegendScale
+          model={model}
+          openId={openId}
+          onOpenChange={setOpenId}
+        />
+      ) : (
         <div className="ux-reset-explorer-legend-row">
           {model.leftCaption ? (
             <span className="ux-reset-explorer-legend-caption">

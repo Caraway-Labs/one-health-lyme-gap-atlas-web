@@ -7,6 +7,11 @@ import {
   PATHOGEN_STATUS_PRESENT_COLOR,
 } from "@/features/ux-reset/review/pathogen-status-contract";
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
+import {
+  RURALITY_LEGEND_EXPLANATION,
+  RURALITY_MORE_RURAL_LABEL,
+  RURALITY_MORE_URBAN_LABEL,
+} from "@/features/ux-reset/review/rurality-palette";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
   TICK_STATUS_ESTABLISHED_COLOR,
@@ -768,9 +773,16 @@ test.describe("Atlas Explorer layer legends", () => {
 
     await chooseLayer(page, "Rurality");
     await expect(legend).toHaveAttribute("data-legend-scale", "segments");
-    await expect(legend).toContainText("1");
-    await expect(legend).toContainText("9");
-    await expect(legend.locator("[data-legend-segment]")).toHaveCount(9);
+    await expect(legend).toContainText(RURALITY_MORE_URBAN_LABEL);
+    await expect(legend).toContainText(RURALITY_MORE_RURAL_LABEL);
+    await expect(legend).toContainText(RURALITY_LEGEND_EXPLANATION);
+    await expect(legend.locator("[data-legend-role='class']")).toHaveCount(9);
+    await expect(
+      legend.locator("[data-legend-role='class']").first().locator("span")
+    ).toHaveCSS("background-color", "rgb(242, 240, 247)");
+    await expect(
+      legend.locator("[data-legend-role='class']").last().locator("span")
+    ).toHaveCSS("background-color", "rgb(70, 33, 110)");
     await expect(
       legend.getByRole("button", { name: /metro area of 1 million or more/ })
     ).toBeVisible();
@@ -805,7 +817,9 @@ test.describe("Atlas Explorer layer legends", () => {
     });
     await page.keyboard.press("Escape");
     await chooseLayer(page, "Rurality");
-    await expect(legend.locator("[data-legend-segment]")).toHaveCount(9);
+    await expect(legend.locator("[data-legend-role='class']")).toHaveCount(9);
+    await expect(legend).toContainText(RURALITY_LEGEND_EXPLANATION);
+    await expect(legend).not.toContainText("per 100,000");
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-rucc.png"),
     });

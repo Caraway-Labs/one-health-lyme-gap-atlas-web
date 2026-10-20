@@ -13,6 +13,10 @@ import type {
   ExplorerMapLegendEntry,
   ExplorerMapPaint,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import {
+  RURALITY_MORE_RURAL_LABEL,
+  RURALITY_MORE_URBAN_LABEL,
+} from "@/features/ux-reset/review/rurality-palette";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { responseTierPresentationForColor } from "@/lib/response-tier";
 
@@ -223,8 +227,8 @@ function captionsForSegments(
   }
   if (paint.layerId === "rurality") {
     return {
-      left: missing.length > 0 ? "No data" : "1",
-      right: "9",
+      left: RURALITY_MORE_URBAN_LABEL,
+      right: RURALITY_MORE_RURAL_LABEL,
     };
   }
   if (paint.layerId === "completeness" && classes.length > 0) {

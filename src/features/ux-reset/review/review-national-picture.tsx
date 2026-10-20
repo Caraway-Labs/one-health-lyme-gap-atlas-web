@@ -69,6 +69,7 @@ import {
   isLower48ReviewScope,
   postalCodeForStateFips,
 } from "@/features/ux-reset/review/review-state-fips";
+import { RURALITY_NO_DATA_COLOR } from "@/features/ux-reset/review/rurality-palette";
 import {
   knownEmptyMapSelection,
   observationGate,
@@ -266,7 +267,12 @@ export function ReviewNationalPicture({
   );
   const mapCounties = useMemo(() => {
     const awaitingLayer = mapPaint.kind === "loading";
-    const missingColor = noPublishedValueColor();
+    // Gray means a governed rurality response omitted a county. A failed
+    // load stays on the boundary color so it is not read as No data.
+    const missingColor =
+      mapPaint.layerId === "rurality" && mapPaint.kind === "categorical"
+        ? RURALITY_NO_DATA_COLOR
+        : noPublishedValueColor();
     return geometryFeatures.flatMap((feature) => {
       const fips = feature.properties.fips;
       const state = postalForFips(fips);
@@ -299,6 +305,7 @@ export function ReviewNationalPicture({
     geometryFeatures,
     mapPaint.colorsByFips,
     mapPaint.kind,
+    mapPaint.layerId,
   ]);
   const identityByFips = useMemo(() => {
     const identities = new Map<string, ExploreCountyIdentity>();
