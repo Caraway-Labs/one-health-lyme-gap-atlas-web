@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import { explicitInternalDestination } from "@/features/ux-reset/onboarding/starting-view-completion";
 import { StartingViewContinuation } from "@/features/ux-reset/onboarding/starting-view-continuation";
+import { WorkspaceConnectingScreen } from "@/features/ux-reset/workspace-connecting-screen";
 
 export default async function StartingViewContinuePage({
   searchParams,
@@ -13,13 +14,7 @@ export default async function StartingViewContinuePage({
   const requested = explicitInternalDestination(raw ?? null);
 
   return (
-    <Suspense
-      fallback={
-        <main>
-          <p>Checking your starting view…</p>
-        </main>
-      }
-    >
+    <Suspense fallback={<WorkspaceConnectingScreen />}>
       <StartingViewContinuation requested={requested} />
     </Suspense>
   );
