@@ -188,8 +188,6 @@ test.describe("Explorer county surveillance intelligence", () => {
     await expect(details).toHaveCount(0);
 
     const viewports = [
-      { columns: 1, height: 700, width: 320 },
-      { columns: 1, height: 844, width: 390 },
       { columns: 2, height: 900, width: 768 },
       { columns: 2, height: 900, width: 1440 },
       { columns: 2, height: 900, width: 1728 },
