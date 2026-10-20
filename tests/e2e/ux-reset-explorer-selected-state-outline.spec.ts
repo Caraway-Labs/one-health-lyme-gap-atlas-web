@@ -289,6 +289,148 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
+async function chooseScope(page: Page, name: string) {
+  await page.getByTestId("review-scope-select").click();
+  await page.getByRole("option", { name, exact: true }).click();
+}
+
+async function nudgeStateCamera(page: Page) {
+  await page.locator(".maplibre-atlas").evaluate((element) => {
+    const map = Reflect.get(element, "atlasCountyMap") as
+      | {
+          panBy: (offset: [number, number]) => void;
+          zoomIn: (delta?: number) => void;
+        }
+      | undefined;
+    map?.panBy([48, -24]);
+    map?.zoomIn(0.6);
+  });
+}
+
+test.describe("State-scoped Explorer boundaries", () => {
+  test("keeps black state and county boundaries across layers, scope changes, and history", async ({
+    page,
+  }) => {
+    await installOutlineApi(page);
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/explore?scope=ID");
+    await expect(page.getByTestId("review-state-map-region")).toBeVisible();
+    await expect
+      .poll(async () => {
+        const outline = await readOutline(page);
+        return {
+          lineColor: outline.lineColor,
+          lineWidth: outline.lineWidth,
+          selected: outline.selected,
+        };
+      })
+      .toEqual({
+        lineColor: "#000000",
+        lineWidth: 2.5,
+        selected: ["16001", "16085"],
+      });
+    const idaho = await readOutline(page);
+    expect(idaho.selected).not.toContain("08001");
+    expect(idaho.selectedCountyColor).toBe("#061f3d");
+    expect(idaho.selectedCountyWidth).toBe(3);
+
+    await page.getByRole("button", { name: /Ada, ID/ }).click();
+    await expect(page).toHaveURL(/county=16001/);
+    await expect
+      .poll(async () => (await readOutline(page)).lineColor)
+      .toBe("#000000");
+    expect((await readOutline(page)).selectedCountyColor).toBe("#061f3d");
+
+    await nudgeStateCamera(page);
+    await expect
+      .poll(async () => (await readOutline(page)).lineColor)
+      .toBe("#000000");
+
+    await chooseLayer(page, "Uninsured population");
+    await expect(page.getByTestId("explorer-map-legend")).toContainText(
+      "percent"
+    );
+    await expect
+      .poll(async () => (await readOutline(page)).colors["16001"])
+      .not.toBe(idaho.colors["16001"]);
+    const uninsured = await readOutline(page);
+    expect(uninsured.lineColor).toBe("#000000");
+    expect(uninsured.lineWidth).toBe(2.5);
+    expect(JSON.stringify(uninsured.fill)).not.toContain("#000000");
+
+    for (const layerName of [
+      "Blacklegged tick status",
+      "B. burgdorferi status",
+      "County boundaries",
+      "Atlas gap score",
+    ]) {
+      await chooseLayer(page, layerName);
+      await expect
+        .poll(async () => (await readOutline(page)).lineColor)
+        .toBe("#000000");
+    }
+    await chooseScope(page, "Colorado (CO)");
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect
+      .poll(async () => (await readOutline(page)).selected)
+      .toEqual(["08001"]);
+    expect((await readOutline(page)).lineColor).toBe("#000000");
+    expect((await readOutline(page)).selected).not.toContain("16001");
+
+    await chooseScope(page, "Idaho (ID)");
+    await expect(page).toHaveURL(/scope=ID/);
+    await expect
+      .poll(async () => (await readOutline(page)).selected)
+      .toEqual(["16001", "16085"]);
+    expect((await readOutline(page)).lineColor).toBe("#000000");
+
+    await page.reload();
+    await expect
+      .poll(async () => {
+        const outline = await readOutline(page);
+        return {
+          lineColor: outline.lineColor,
+          selected: outline.selected,
+        };
+      })
+      .toEqual({
+        lineColor: "#000000",
+        selected: ["16001", "16085"],
+      });
+
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/scope=CO/);
+    await expect
+      .poll(async () => (await readOutline(page)).selected)
+      .toEqual(["08001"]);
+    expect((await readOutline(page)).lineColor).toBe("#000000");
+    await page.goForward({ waitUntil: "commit" });
+    await expect(page).toHaveURL(/scope=ID/);
+    await expect
+      .poll(async () => (await readOutline(page)).selected)
+      .toEqual(["16001", "16085"]);
+    expect((await readOutline(page)).lineColor).toBe("#000000");
+
+    await chooseScope(page, "United States");
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect
+      .poll(async () => {
+        const outline = await readOutline(page);
+        return {
+          lineColor: outline.lineColor,
+          selected: outline.selected,
+          stage: outline.stage,
+        };
+      })
+      .toEqual({
+        lineColor: "#0b7285",
+        selected: [],
+        stage: "national",
+      });
+    await expectNoHorizontalOverflow(page);
+  });
+});
+
 test.describe("Selected state outlines at U.S. zoom", () => {
   test("keeps black state and county strokes across layers, state changes, and history", async ({
     page,
