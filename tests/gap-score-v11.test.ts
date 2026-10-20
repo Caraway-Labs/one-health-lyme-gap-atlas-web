@@ -11,6 +11,13 @@ import { validateApiResponse } from "../src/lib/api-response-validation";
 import fixtures from "./fixtures/gap-score-v11-parity.json";
 
 describe("Surveillance Gap Score v1.1 Python/TypeScript/research parity", () => {
+  it("reconciles the public Montgomery walkthrough with the cited source inputs", () => {
+    const record = fixtures.find((row) => row.inputs.fips === "51121");
+    expect(record?.inputs.incidence_floor_2023).toBe(71.45);
+    expect(record?.expected.score).toBe(30.4);
+    expect(record?.priority).toBe("Watch — Monitor signals");
+  });
+
   it("matches every authoritative county and component with actual source inputs", () => {
     expect(fixtures).toHaveLength(3144);
     for (const { inputs, expected, research_score } of fixtures) {
