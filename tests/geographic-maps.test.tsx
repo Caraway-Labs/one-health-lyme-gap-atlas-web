@@ -86,6 +86,7 @@ const engine = vi.hoisted(() => {
     getCanvas() {
       return { style: { cursor: this.removed ? "" : "" } };
     }
+    triggerRepaint() {}
     remove() {
       this.removed = true;
     }

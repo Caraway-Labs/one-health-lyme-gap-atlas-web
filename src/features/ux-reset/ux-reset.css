@@ -2456,8 +2456,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .explorer-map-loading-icon,
-  .explorer-map-loading-dots span {
+  .ux-reset-explorer-map .map-wrap .explorer-map-loading-icon,
+  .ux-reset-explorer-map .map-wrap .explorer-map-loading-dots span {
     animation: none;
     transform: none;
     opacity: 1;

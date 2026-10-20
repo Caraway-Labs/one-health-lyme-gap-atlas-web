@@ -55,9 +55,10 @@ import {
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
   acceptExplorerMapPaintSettlement,
-  explorerMapColorSignature,
+  explorerMapFrameReady,
   explorerMapLoadingMode,
   explorerMapPaintRevision,
+  explorerMapRenderedFrameSignature,
   explorerScoresLoadStatus,
 } from "@/features/ux-reset/review/explorer-map-loading";
 import {
@@ -608,7 +609,13 @@ export function ReviewOperatingPicture({
     }
   }, [availableDataGate, inStateMapCounties]);
   const paintRevision = explorerMapPaintRevision({
-    colorSignature: explorerMapColorSignature(mapPaint.colorsByFips),
+    frameReady: explorerMapFrameReady({
+      availableDataKind: availableDataGate.kind,
+      geometryFailed: geometryQuery.isError,
+      geometryPending: Boolean(releaseId) && geometryQuery.isPending,
+      geometryPresent: Boolean(geometryQuery.data),
+    }),
+    frameSignature: explorerMapRenderedFrameSignature(mapCounties),
     layerId: mapPaint.layerId,
     paintKind: mapPaint.kind,
     releaseId: releaseId ?? "",

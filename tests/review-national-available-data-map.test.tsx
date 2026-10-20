@@ -58,6 +58,16 @@ const engine = vi.hoisted(() => {
     once(event: string, handler: (event?: unknown) => void) {
       this.on(event, handler);
     }
+    off(event: string, handler: (event?: unknown) => void) {
+      for (const [key, callbacks] of this.handlers) {
+        if (key === event) {
+          this.handlers.set(
+            key,
+            callbacks.filter((callback) => callback !== handler)
+          );
+        }
+      }
+    }
     addControl() {
       this.layers.add("navigation-control");
     }
@@ -108,6 +118,7 @@ const engine = vi.hoisted(() => {
     getCanvas() {
       return { style: { cursor: this.removed ? "" : "" } };
     }
+    triggerRepaint() {}
     remove() {
       this.removed = true;
     }

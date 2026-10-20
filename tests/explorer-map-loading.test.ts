@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   EXPLORER_MAP_LOADING_DELAY_MS,
   acceptExplorerMapPaintSettlement,
+  explorerMapFrameReady,
   explorerMapLoadView,
   explorerMapLoadingMode,
+  explorerMapPaintRevision,
+  explorerMapRenderedFrameSignature,
   initialExplorerMapLoadState,
   reduceExplorerMapLoad,
   type ExplorerMapLoadState,
@@ -180,5 +183,47 @@ describe("explorer map loading lifecycle", () => {
         settledRevision: null,
       })
     ).toBe("idle");
+  });
+});
+
+describe("explorer map publication identity", () => {
+  it("changes when rendered membership changes and stays null until geometry is ready", () => {
+    const open = [
+      { color: "#112233", fips: "08001" },
+      { color: "#112233", fips: "36001" },
+    ];
+    const subset = [{ color: "#112233", fips: "08001" }];
+    const ready = {
+      frameReady: explorerMapFrameReady({
+        availableDataKind: "ready",
+        geometryFailed: false,
+        geometryPending: false,
+        geometryPresent: true,
+      }),
+      layerId: "gap_score",
+      paintKind: "choropleth",
+      releaseId: "alpha-2026",
+      scope: "US",
+    };
+    const openRevision = explorerMapPaintRevision({
+      ...ready,
+      frameSignature: explorerMapRenderedFrameSignature(open),
+    });
+    const subsetRevision = explorerMapPaintRevision({
+      ...ready,
+      frameSignature: explorerMapRenderedFrameSignature(subset),
+    });
+    const unresolved = explorerMapPaintRevision({
+      ...ready,
+      frameReady: explorerMapFrameReady({
+        availableDataKind: "ready",
+        geometryFailed: false,
+        geometryPending: true,
+        geometryPresent: false,
+      }),
+      frameSignature: explorerMapRenderedFrameSignature([]),
+    });
+    expect(openRevision).not.toBe(subsetRevision);
+    expect(unresolved).toBeNull();
   });
 });

@@ -73,5 +73,5 @@ export function usePublishedExplorerMapFrame<T>(
   if (published?.revision === revision) {
     return published;
   }
-  return { frame, revision: null };
+  return { frame, revision };
 }

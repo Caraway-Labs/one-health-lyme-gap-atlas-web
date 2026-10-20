@@ -261,25 +261,49 @@ export function explorerScoresLoadStatus(query: {
   return "ready";
 }
 
+/** Counties actually passed to the map, including filter membership and fallback colors. */
+export function explorerMapRenderedFrameSignature(
+  counties: readonly { color?: string; fips: string }[]
+): string {
+  const parts = [String(counties.length)];
+  for (const county of counties) {
+    parts.push(county.fips, county.color ?? "");
+  }
+  return parts.join(":");
+}
+
+/**
+ * A frame is publishable only when geometry has arrived and the Available data
+ * gate has settled. An empty array before that is unresolved, not a new map.
+ */
+export function explorerMapFrameReady(input: {
+  availableDataKind: "error" | "loading" | "open" | "ready";
+  geometryFailed: boolean;
+  geometryPending: boolean;
+  geometryPresent: boolean;
+}): boolean {
+  return (
+    input.geometryPresent &&
+    !input.geometryPending &&
+    !input.geometryFailed &&
+    (input.availableDataKind === "open" || input.availableDataKind === "ready")
+  );
+}
+
 export function explorerMapPaintRevision(input: {
-  colorSignature: string;
+  frameReady: boolean;
+  frameSignature: string;
   layerId: string;
   paintKind: string;
   releaseId: string;
   scope: string;
 }): string | null {
-  if (input.paintKind === "loading" || input.paintKind === "unavailable") {
+  if (
+    !input.frameReady ||
+    input.paintKind === "loading" ||
+    input.paintKind === "unavailable"
+  ) {
     return null;
   }
-  return `${input.scope}:${input.releaseId}:${input.layerId}:${input.paintKind}:${input.colorSignature}`;
-}
-
-export function explorerMapColorSignature(
-  colors: ReadonlyMap<string, string>
-): string {
-  const parts = [String(colors.size)];
-  for (const [fips, color] of colors) {
-    parts.push(fips, color);
-  }
-  return parts.join(":");
+  return `${input.scope}:${input.releaseId}:${input.layerId}:${input.paintKind}:${input.frameSignature}`;
 }

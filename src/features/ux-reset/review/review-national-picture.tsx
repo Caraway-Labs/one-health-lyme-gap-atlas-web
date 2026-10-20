@@ -46,9 +46,10 @@ import {
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
   acceptExplorerMapPaintSettlement,
-  explorerMapColorSignature,
+  explorerMapFrameReady,
   explorerMapLoadingMode,
   explorerMapPaintRevision,
+  explorerMapRenderedFrameSignature,
   explorerScoresLoadStatus,
 } from "@/features/ux-reset/review/explorer-map-loading";
 import {
@@ -488,7 +489,13 @@ export function ReviewNationalPicture({
   const geometryPending = geometryQuery.isPending;
   const valuesPending = layer.needsScores && scoresStatus === "loading";
   const paintRevision = explorerMapPaintRevision({
-    colorSignature: explorerMapColorSignature(mapPaint.colorsByFips),
+    frameReady: explorerMapFrameReady({
+      availableDataKind: availableDataGate.kind,
+      geometryFailed: geometryError,
+      geometryPending,
+      geometryPresent: Boolean(geometryQuery.data),
+    }),
+    frameSignature: explorerMapRenderedFrameSignature(mapCounties),
     layerId: mapPaint.layerId,
     paintKind: mapPaint.kind,
     releaseId,
