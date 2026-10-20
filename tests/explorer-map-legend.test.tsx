@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   LYME_INCIDENCE_RAMP,
   mixExplorerRampColor,
+  UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
@@ -603,14 +604,24 @@ describe("Explorer map legend", () => {
     const high = paint.entries.find((entry) => entry.role === "endpoint-high");
     const quarter = paint.colorsByFips.get("08005") ?? "";
     const midpoint = paint.colorsByFips.get("08013") ?? "";
-    const style = swatchStyle(/Color is mixed/);
-    expect(quarter).toBe(
-      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.25)
-    );
-    expect(midpoint).toBe(
-      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.5)
-    );
+    const style = swatchStyle(/pale rose to deep burgundy/);
+    expect({
+      high: high?.color,
+      low: low?.color,
+      midpoint,
+      quarter,
+    }).toStrictEqual({
+      high: UNINSURED_POPULATION_RAMP.at(-1),
+      low: UNINSURED_POPULATION_RAMP[0],
+      midpoint: mixExplorerRampColor(UNINSURED_POPULATION_RAMP, 0.5),
+      quarter: mixExplorerRampColor(UNINSURED_POPULATION_RAMP, 0.25),
+    });
     expect(style).toContain(`${quarter} 25%`);
     expect(style).toContain(`${midpoint} 50%`);
+    expect({
+      higher: screen.queryByText(/Higher uninsured percentage/) !== null,
+      lower: screen.queryByText(/Lower uninsured percentage/) !== null,
+      unit: screen.queryByText(/· percent/) !== null,
+    }).toStrictEqual({ higher: true, lower: true, unit: true });
   });
 });

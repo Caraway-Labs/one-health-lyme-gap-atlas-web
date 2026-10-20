@@ -760,9 +760,16 @@ test.describe("Atlas Explorer layer legends", () => {
     await chooseLayer(page, "Uninsured population");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await expect(legend).toContainText("percent");
+    await expect(legend).toContainText("Lower uninsured percentage");
+    await expect(legend).toContainText("Higher uninsured percentage");
     await expect(
-      legend.getByRole("button", { name: /0 to 100 percent/ })
+      legend.getByRole("button", {
+        name: /Lower uninsured percentage 0 to Higher uninsured percentage 100 percent/,
+      })
     ).toBeVisible();
+    await expect
+      .poll(() => legendSwatchesFit(legend))
+      .toEqual({ clipped: false, tall: false, visible: true });
 
     await chooseLayer(page, "Rurality");
     await expect(legend).toHaveAttribute("data-legend-scale", "segments");
