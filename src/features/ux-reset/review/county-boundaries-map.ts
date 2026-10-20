@@ -36,14 +36,73 @@ let cachedFeatureKey = "";
 let cachedStateFips: string | null = null;
 let cachedLines: ReturnType<typeof stateBoundaryCollections> | null = null;
 
+const GEOMETRY_HASH_OFFSET = 2_166_136_261;
+const GEOMETRY_HASH_MODULUS = 1_000_000_007;
+
+function mixHash(hash: number, value: number): number {
+  return (hash * 33 + value) % GEOMETRY_HASH_MODULUS;
+}
+
+function mixString(hash: number, value: string): number {
+  let next = hash;
+  for (const character of value) {
+    next = mixHash(next, character.codePointAt(0) ?? 0);
+  }
+  return next;
+}
+
+function mixCoordinates(hash: number, value: unknown): number {
+  if (typeof value === "number") {
+    return mixString(hash, String(value));
+  }
+  if (!Array.isArray(value)) {
+    return hash;
+  }
+  let next = hash;
+  for (const item of value) {
+    next = mixCoordinates(next, item);
+  }
+  return next;
+}
+
+function mixGeometry(hash: number, geometry: GeoJSON.Geometry): number {
+  switch (geometry.type) {
+    case "GeometryCollection": {
+      let next = mixString(hash, geometry.type);
+      for (const child of geometry.geometries) {
+        next = mixGeometry(next, child);
+      }
+      return next;
+    }
+    case "LineString":
+    case "MultiLineString":
+    case "MultiPoint":
+    case "MultiPolygon":
+    case "Point":
+    case "Polygon": {
+      return mixCoordinates(
+        mixString(hash, geometry.type),
+        geometry.coordinates
+      );
+    }
+    default: {
+      const exhaustive: never = geometry;
+      return exhaustive;
+    }
+  }
+}
+
+/** Cache identity for the polygons actually drawn, not the FIPS list alone. */
 function featureKey(features: readonly GeoJSON.Feature[]): string {
-  let key = "";
+  let hash = GEOMETRY_HASH_OFFSET;
   for (const feature of features) {
     const fips = feature.properties?.fips;
-    key += typeof fips === "string" ? fips : "";
-    key += ",";
+    hash = mixString(hash, typeof fips === "string" ? fips : "");
+    hash = feature.geometry
+      ? mixGeometry(hash, feature.geometry)
+      : mixString(hash, "none");
   }
-  return key;
+  return `${features.length}:${hash}`;
 }
 
 function boundaryLines(

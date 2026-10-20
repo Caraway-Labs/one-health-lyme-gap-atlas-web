@@ -476,7 +476,13 @@ export function AtlasMap({
       });
     });
     instance.on("load", () => {
-      instance.addSource("counties", { data: enriched(), type: "geojson" });
+      instance.addSource("counties", {
+        data: enriched(),
+        // FIPS stays a string here. A top-level feature id would be parsed as
+        // an integer and drop leading zeros, so hover state would miss.
+        promoteId: "fips",
+        type: "geojson",
+      });
       instance.addLayer({
         id: "counties-fill",
         paint: {
@@ -651,7 +657,9 @@ export function AtlasMap({
     }
     applyCountyBoundaryChrome(map.current, {
       enabled: neutralCountyBoundaries,
-      features: data.features,
+      // State perimeters follow the full display geometry for this scope.
+      // `data.features` is the evidence-filtered fill and interaction set.
+      features: contiguousUsGeometry(geometry).features,
       selectedStateFips:
         selectedState === "ALL" ? null : stateFipsPrefix(selectedState),
     });
