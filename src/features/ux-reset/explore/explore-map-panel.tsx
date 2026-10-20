@@ -7,6 +7,7 @@ import type { AtlasMapCounty } from "@/components/atlas-map";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import type { ExploreCommittedSelection } from "@/features/ux-reset/explore/explore-model";
+import { MAP_VIEWPORT_LOADING_BOUNDARY } from "@/features/ux-reset/workspace-loading-boundary";
 import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
 
 const AtlasMap = dynamic(
@@ -85,6 +86,7 @@ function ExploreMapFrame({
   return (
     <div
       className="map-wrap"
+      data-loading-boundary={MAP_VIEWPORT_LOADING_BOUNDARY}
       data-measure-id={measureId}
       data-testid="explore-map-region"
     >

@@ -1,5 +1,12 @@
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import {
+  COUNTY_BOUNDARIES_COUNTY_STROKE,
+  COUNTY_BOUNDARIES_FILL,
+  COUNTY_BOUNDARIES_LEGEND_DETAIL,
+  COUNTY_BOUNDARIES_LEGEND_LABEL,
+  COUNTY_BOUNDARIES_NOTE,
+} from "@/features/ux-reset/review/county-boundaries-palette";
+import {
   paintReadyCompletenessLayer,
   paintReadyObservationLayer,
 } from "@/features/ux-reset/review/explorer-map-layer-scale";
@@ -152,6 +159,8 @@ export type ExplorerMapLegendEntry = {
   color: string;
   detail: string | null;
   label: string;
+  /** Inset stroke so a neutral fill still shows its geographic outline. */
+  outline?: string;
   role?: ExplorerMapLegendRole;
   /** Persistent legend lines. Omitted swatches stay unlabeled. */
   visibleLines?: readonly string[];
@@ -526,6 +535,26 @@ function boundaryPaint(
   };
 }
 
+function countyBoundariesPaint(input: PaintInput): ExplorerMapPaint {
+  const paint = boundaryPaint(
+    input,
+    COUNTY_BOUNDARIES_NOTE,
+    "County boundaries",
+    "boundaries"
+  );
+  return {
+    ...paint,
+    entries: [
+      {
+        color: COUNTY_BOUNDARIES_FILL,
+        detail: COUNTY_BOUNDARIES_LEGEND_DETAIL,
+        label: COUNTY_BOUNDARIES_LEGEND_LABEL,
+        outline: COUNTY_BOUNDARIES_COUNTY_STROKE,
+      },
+    ],
+  };
+}
+
 function unavailablePaint(input: PaintInput): ExplorerMapPaint {
   const layer = explorerMapLayerById(input.layerId);
   return {
@@ -768,12 +797,7 @@ export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
   const layerId = layer.id;
   switch (layerId) {
     case "boundaries": {
-      return boundaryPaint(
-        input,
-        "County boundaries only. This map is not colored by Atlas gap score.",
-        "County boundaries",
-        "boundaries"
-      );
+      return countyBoundariesPaint(input);
     }
     case "incidence_floor":
     case "rurality":
