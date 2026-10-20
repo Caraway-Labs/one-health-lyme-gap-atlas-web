@@ -462,6 +462,18 @@ function nextExtraColor(used: ReadonlySet<string>): string {
  * Value MapLibre can paint. Known status tokens resolve from CSS variables.
  * Expressions such as color-mix are dropped instead of being sent to the map.
  */
+const NO_PUBLISHED_VALUE_LABEL = "No published value";
+
+/** Legend color for a county the layer did not paint. Other layers keep the boundary token. */
+export function explorerUnpaintedFillColor(paint: {
+  entries: readonly { color: string; label: string }[];
+}): string {
+  return (
+    paint.entries.find((entry) => entry.label === NO_PUBLISHED_VALUE_LABEL)
+      ?.color ?? "var(--explorer-boundary)"
+  );
+}
+
 export function resolveExplorerMapColor(
   color: string | undefined
 ): string | undefined {

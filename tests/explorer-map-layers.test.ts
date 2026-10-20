@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { mapFeatureCompleteness } from "@/components/atlas-map";
+import { SVI_NO_DATA_COLOR } from "@/features/ux-reset/review/explorer-layer-palettes";
 import {
   EXPLORER_MAP_LAYERS,
   explorerMapLayerMenuLabel,
@@ -585,7 +586,7 @@ describe("Explorer map layers", () => {
       svi: ["Missing (not zero and not a low value)"],
     });
     expect(incidence.colorsByFips.get("01001")).toBe("#D1D5DB");
-    expect(svi.colorsByFips.get("08001")).toBe("var(--mint)");
+    expect(svi.colorsByFips.get("08001")).toBe(SVI_NO_DATA_COLOR);
   });
 
   it("drops the previous layer's scale on the next paint", () => {
@@ -670,7 +671,7 @@ describe("Explorer map layers", () => {
       uninsured: neutralKey(uninsured)?.color,
     }).toStrictEqual({
       incidence: boundary,
-      svi: boundary,
+      svi: SVI_NO_DATA_COLOR,
       uninsured: boundary,
     });
     expect(neutralKey(incidence)?.detail).toMatch(/Not zero/);

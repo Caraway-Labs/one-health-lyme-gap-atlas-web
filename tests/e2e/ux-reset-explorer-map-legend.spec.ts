@@ -753,9 +753,16 @@ test.describe("Atlas Explorer layer legends", () => {
     await chooseLayer(page, "Social vulnerability");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await expect(legend).toContainText("percentile");
+    await expect(legend).toContainText("Lower social vulnerability");
+    await expect(legend).toContainText("Higher social vulnerability");
     await expect(
-      legend.getByRole("button", { name: /0 to 1 percentile/ })
+      legend.getByRole("button", {
+        name: /Lower social vulnerability 0 to Higher social vulnerability 1 percentile/,
+      })
     ).toBeVisible();
+    await expect
+      .poll(() => legendSwatchesFit(legend))
+      .toEqual({ clipped: false, tall: false, visible: true });
 
     await chooseLayer(page, "Uninsured population");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");

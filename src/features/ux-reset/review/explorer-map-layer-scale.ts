@@ -3,6 +3,8 @@ import {
   LYME_INCIDENCE_MISSING_COLOR,
   LYME_INCIDENCE_RAMP,
   mixExplorerRampColor,
+  SVI_NO_DATA_COLOR,
+  SVI_RAMP,
   UNINSURED_POPULATION_MISSING_COLOR,
   UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
@@ -35,8 +37,8 @@ const NUMERIC_SCALE = {
     low: LYME_INCIDENCE_RAMP[0],
   },
   svi: {
-    high: "hsl(152, 58%, 22%)",
-    low: "hsl(142, 38%, 88%)",
+    high: SVI_RAMP.at(-1) ?? SVI_RAMP[0],
+    low: SVI_RAMP[0],
     maximum: 1,
     minimum: 0,
   },
@@ -198,6 +200,9 @@ function stateColor(
     if (layerId === "incidence_floor") {
       return LYME_INCIDENCE_MISSING_COLOR;
     }
+    if (layerId === "svi") {
+      return SVI_NO_DATA_COLOR;
+    }
     if (layerId === "uninsured") {
       return UNINSURED_POPULATION_MISSING_COLOR;
     }
@@ -315,6 +320,9 @@ function quantityRamp(
 ): readonly string[] | undefined {
   if (layerId === "incidence_floor") {
     return LYME_INCIDENCE_RAMP;
+  }
+  if (layerId === "svi") {
+    return SVI_RAMP;
   }
   if (layerId === "uninsured") {
     return UNINSURED_POPULATION_RAMP;
@@ -437,6 +445,13 @@ function paintQuantity(input: {
   }
   entries.push(...stateEntries(input.layerId, input.rows));
   appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
+  if (input.layerId === "svi") {
+    for (const entry of entries) {
+      if (entry.label === NO_PUBLISHED_VALUE) {
+        entry.color = SVI_NO_DATA_COLOR;
+      }
+    }
+  }
   const title = {
     incidence_floor: "Lyme incidence floor",
     svi: "Social vulnerability",
@@ -445,7 +460,7 @@ function paintQuantity(input: {
   const note = {
     incidence_floor:
       "2023 published values are minimums per 100,000 residents, not all infections and not an exact total incidence. Color runs from pale green at the lowest published value to deep green at the highest. The green anchors are a continuous ramp, not new epidemiologic cutoffs. Missing is not drawn as zero. A wide published range keeps most counties near the low end. The county list stays the review ranking.",
-    svi: "National county percentile from the 2022 SVI product, on a 0 to 1 scale. Not a percentage of people. Observed zero is the low end of that scale. Values between the legend ends use a mix of those two colors. Missing is not drawn as zero. The county list stays the review ranking.",
+    svi: "2022 CDC/ATSDR Social Vulnerability Index overall percentile (RPL_THEMES). It ranks this county among U.S. counties in that product on a fixed 0 to 1 scale. It is not a percent of residents who are vulnerable, and it is not individual vulnerability or Lyme disease risk. Color runs from pale peach at the low end to burnt orange at the high end. The anchors are a continuous ramp, not new percentile cutoffs. Observed zero stays on that scale. Missing is gray, not zero. The county list stays the review ranking.",
     uninsured:
       "Percent of the civilian noninstitutionalized population on a 0 to 100 scale. This is the uninsured percentage, not the uninsured percentile. Observed zero is 0 percent, not a missing value. Color runs from pale rose at 0 percent to deep burgundy at 100 percent. The rose anchors are a continuous ramp, not new percentage cutoffs. This percentage does not establish healthcare access, reporting completeness, or Lyme risk. Missing is not drawn as zero. The county list stays the review ranking.",
   }[input.layerId];

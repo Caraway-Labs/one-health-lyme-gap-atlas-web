@@ -36,6 +36,7 @@ import {
   explorerMapLayerById,
   explorerMapLayerGates,
   isExplorerObservationLayer,
+  explorerUnpaintedFillColor,
   paintExplorerMapLayer,
   resolveExplorerMapColor,
   type ExplorerMapLayerId,
@@ -265,14 +266,18 @@ export function ReviewNationalPicture({
       ),
     [geometryQuery.data]
   );
+  const unpaintedCountyColor = resolveExplorerMapColor(
+    explorerUnpaintedFillColor(mapPaint)
+  );
   const mapCounties = useMemo(() => {
     const awaitingLayer = mapPaint.kind === "loading";
     // Gray means a governed rurality response omitted a county. A failed
     // load stays on the boundary color so it is not read as No data.
+    // Social vulnerability uses its own no-data gray from the legend entry.
     const missingColor =
       mapPaint.layerId === "rurality" && mapPaint.kind === "categorical"
         ? RURALITY_NO_DATA_COLOR
-        : noPublishedValueColor();
+        : (unpaintedCountyColor ?? noPublishedValueColor());
     return geometryFeatures.flatMap((feature) => {
       const fips = feature.properties.fips;
       const state = postalForFips(fips);
@@ -306,6 +311,7 @@ export function ReviewNationalPicture({
     mapPaint.colorsByFips,
     mapPaint.kind,
     mapPaint.layerId,
+    unpaintedCountyColor,
   ]);
   const identityByFips = useMemo(() => {
     const identities = new Map<string, ExploreCountyIdentity>();

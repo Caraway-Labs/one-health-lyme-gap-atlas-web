@@ -3,6 +3,8 @@ import {
   LYME_INCIDENCE_LOW_LABEL,
   LYME_INCIDENCE_UNIT_LABEL,
   mixExplorerRampColor,
+  SVI_HIGH_LABEL,
+  SVI_LOW_LABEL,
   UNINSURED_POPULATION_HIGH_LABEL,
   UNINSURED_POPULATION_LOW_LABEL,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
@@ -286,6 +288,14 @@ function quantityPhrase(layerId: ExplorerMapLayerId): {
       lowLabel: UNINSURED_POPULATION_LOW_LABEL,
       scaleSentence:
         "Color runs from pale rose to deep burgundy on the 0 to 100 percent scale. Palette anchors are not new percentage cutoffs.",
+    };
+  }
+  if (layerId === "svi") {
+    return {
+      highLabel: SVI_HIGH_LABEL,
+      lowLabel: SVI_LOW_LABEL,
+      scaleSentence:
+        "National county percentile rank among U.S. counties in the 2022 CDC/ATSDR SVI, not a percent of residents. Color runs from pale peach to burnt orange.",
     };
   }
   return null;

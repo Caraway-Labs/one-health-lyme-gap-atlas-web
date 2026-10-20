@@ -6,6 +6,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   LYME_INCIDENCE_RAMP,
   mixExplorerRampColor,
+  SVI_HIGH_LABEL,
+  SVI_LOW_LABEL,
+  SVI_RAMP,
   UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
@@ -577,15 +580,40 @@ describe("Explorer map legend", () => {
     const high = paint.entries.find((entry) => entry.role === "endpoint-high");
     const quarter = paint.colorsByFips.get("08005") ?? "";
     const midpoint = paint.colorsByFips.get("08013") ?? "";
-    const style = swatchStyle(/Color is mixed/);
-    expect(quarter).toBe(
-      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.25)
-    );
-    expect(midpoint).toBe(
-      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.5)
-    );
-    expect(style).toContain(`${quarter} 25%`);
-    expect(style).toContain(`${midpoint} 50%`);
+    const style = swatchStyle(/Lower social vulnerability/);
+    expect({
+      high: high?.color,
+      low: low?.color,
+      midpoint,
+      quarter,
+    }).toStrictEqual({
+      high: SVI_RAMP.at(-1),
+      low: SVI_RAMP[0],
+      midpoint: mixExplorerRampColor(SVI_RAMP, 0.5),
+      quarter: mixExplorerRampColor(SVI_RAMP, 0.25),
+    });
+    expect({
+      high: style.includes(SVI_RAMP.at(-1) ?? ""),
+      low: style.includes(SVI_RAMP[0]),
+      midpoint: style.includes(`${midpoint} 50%`),
+      quarter: style.includes(`${quarter} 25%`),
+    }).toStrictEqual({
+      high: true,
+      low: true,
+      midpoint: true,
+      quarter: true,
+    });
+    expect({
+      higher: screen.queryByText(new RegExp(SVI_HIGH_LABEL)) !== null,
+      lower: screen.queryByText(new RegExp(SVI_LOW_LABEL)) !== null,
+      percentOfResidents: screen.queryByText(/percent of residents/) !== null,
+      unit: screen.queryByText(/percentile/) !== null,
+    }).toStrictEqual({
+      higher: true,
+      lower: true,
+      percentOfResidents: false,
+      unit: true,
+    });
   });
 
   it("matches uninsured quarter and midpoint colors to the map", () => {
