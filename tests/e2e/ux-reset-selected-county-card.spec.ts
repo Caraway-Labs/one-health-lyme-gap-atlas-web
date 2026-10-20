@@ -268,11 +268,34 @@ async function expectCard(
         card.clientWidth -
         Number.parseFloat(style.paddingLeft) -
         Number.parseFloat(style.paddingRight);
+      const header = card.querySelector(".ux-reset-selected-county-header");
+      const surveillance = rationale.querySelector("h3");
+      const summaries = [
+        ...rationale.querySelectorAll(".ux-reset-evidence-provenance summary"),
+      ];
+      const indicatorName = rationale.querySelector("h4");
+      if (
+        !(header instanceof HTMLElement) ||
+        !(surveillance instanceof HTMLElement) ||
+        !(indicatorName instanceof HTMLElement)
+      ) {
+        return null;
+      }
       const rationaleBox = rationale.getBoundingClientRect();
       const lockupBox = scoreLockup.getBoundingClientRect();
       const pillBox = pill.getBoundingClientRect();
       const scoreBox = score.getBoundingClientRect();
       const headingBox = heading.getBoundingClientRect();
+      const headerBox = header.getBoundingClientRect();
+      const surveillanceBox = surveillance.getBoundingClientRect();
+      const summaryStyles = summaries.map((node) => {
+        const summaryStyle = getComputedStyle(node);
+        return {
+          fontWeight: summaryStyle.fontWeight,
+          textDecorationLine: summaryStyle.textDecorationLine,
+          whiteSpace: summaryStyle.whiteSpace,
+        };
+      });
       const overlapsHeading = !(
         pillBox.right <= headingBox.left ||
         pillBox.left >= headingBox.right ||
@@ -290,11 +313,20 @@ async function expectCard(
         lockupBesideEvidence: lockupBox.bottom > rationaleBox.top + 1,
         overflow: card.scrollWidth > card.clientWidth + 1,
         overlapsHeading,
+        evidenceGap: Math.round(surveillanceBox.top - headerBox.bottom),
+        indicatorWeight: getComputedStyle(indicatorName).fontWeight,
         pillAboveScore: pillBox.bottom <= scoreBox.top + 2,
         sameRow,
         pillColor: getComputedStyle(pill).backgroundColor,
         pillWidth: pillBox.width,
         rationaleWidth: rationaleBox.width,
+        summaryStyles,
+        provenanceRows: [1, 2, 3, 4, 5, 6].map(
+          (number) =>
+            rationale.querySelectorAll(
+              `[data-testid='review-rationale-${number}'] summary`
+            ).length
+        ),
         swatchColor: getComputedStyle(swatch).backgroundColor,
       };
     },
@@ -315,6 +347,16 @@ async function expectCard(
   expect(colors?.pillWidth ?? 0).toBeLessThan(
     (colors?.contentWidth ?? 1) * 0.95
   );
+  expect(colors?.evidenceGap ?? 0).toBeGreaterThanOrEqual(12);
+  expect(colors?.evidenceGap ?? 99).toBeLessThanOrEqual(16);
+  expect(Number(colors?.indicatorWeight)).toBeGreaterThan(400);
+  expect(colors?.summaryStyles?.length ?? 0).toBeGreaterThanOrEqual(6);
+  expect(colors?.provenanceRows?.every((count) => count > 0)).toBe(true);
+  for (const summary of colors?.summaryStyles ?? []) {
+    expect(summary.fontWeight).toBe("400");
+    expect(summary.textDecorationLine).toContain("underline");
+    expect(summary.whiteSpace).not.toBe("nowrap");
+  }
 }
 
 async function capture(page: Page, testInfo: TestInfo, name: string) {
@@ -355,6 +397,17 @@ test.describe("selected county summary card", () => {
     await page.setViewportSize({ height: 1100, width: 1440 });
     await page.goto(`/explore?scope=IN&dataset=${release}&county=18057`);
     await expectCard(page, "18057", "49.8", "#87b982");
+    const provenance = page
+      .getByTestId("review-published-county-preview")
+      .locator(".ux-reset-evidence-provenance")
+      .first();
+    const provenanceSummary = provenance.locator("> summary");
+    await provenanceSummary.focus();
+    await expect(provenanceSummary).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(provenance).toHaveJSProperty("open", true);
+    await provenanceSummary.click();
+    await expect(provenance).toHaveJSProperty("open", false);
     await capture(page, testInfo, "hamilton-desktop");
     await page.goto(`/explore?scope=IN&dataset=${release}&county=18097`);
     await expectCard(page, "18097", "75.1", "#e9602b");

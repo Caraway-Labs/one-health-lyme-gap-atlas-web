@@ -3009,7 +3009,9 @@
 }
 
 .ux-reset-review-rationale {
-  margin-top: 0.85rem;
+  /* The card grid gap is the space under the selected-county header.
+     An extra section margin left a vacant band above Surveillance evidence. */
+  margin-top: 0;
 }
 
 .ux-reset-review-preview-support {
@@ -3025,6 +3027,10 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.ux-reset-review-rationale > h3:first-child {
+  margin-top: 0;
 }
 
 .ux-reset-review-rationale ol {
@@ -3084,6 +3090,24 @@
 
 .ux-reset-review-rationale .ux-reset-evidence-provenance {
   margin-top: 0.45rem;
+}
+
+.ux-reset-review-rationale .ux-reset-evidence-provenance summary {
+  color: var(--muted-foreground);
+  font-weight: 400;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+  white-space: normal;
+}
+
+.ux-reset-review-rationale .ux-reset-evidence-provenance summary:hover {
+  color: var(--foreground);
+}
+
+.ux-reset-review-rationale .ux-reset-evidence-provenance summary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 2px;
 }
 
 .ux-reset-ranking-influence {
