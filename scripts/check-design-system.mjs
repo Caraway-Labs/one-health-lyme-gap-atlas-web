@@ -7,6 +7,7 @@ const HEX_ALLOWED = new Set([
   "src/components/atlas-map.tsx",
   "src/features/geographic-explorer/explorer.css",
   "src/features/geographic-explorer/maps.tsx",
+  "src/features/ux-reset/review/explorer-layer-palettes.ts",
   "src/features/ux-reset/review/pathogen-status-contract.ts",
   "src/features/ux-reset/review/tick-status-contract.ts",
   "src/lib/atlas-ui.ts",

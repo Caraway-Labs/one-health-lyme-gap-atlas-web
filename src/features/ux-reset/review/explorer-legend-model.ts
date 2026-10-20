@@ -1,3 +1,9 @@
+import {
+  LYME_INCIDENCE_HIGH_LABEL,
+  LYME_INCIDENCE_LOW_LABEL,
+  LYME_INCIDENCE_UNIT_LABEL,
+  mixExplorerRampColor,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import type {
   ExplorerLegendScale,
@@ -233,12 +239,36 @@ function captionsForSegments(
 
 function scaleGradientStops(
   low: string,
-  high: string
+  high: string,
+  ramp: readonly string[] | undefined
 ): ExplorerLegendGradientStop[] {
   return GRADIENT_STOP_PERCENTS.map((percent) => ({
-    color: mixExplorerScaleColor(low, high, percent / 100),
+    color:
+      ramp && ramp.length >= 2
+        ? mixExplorerRampColor(ramp, percent / 100)
+        : mixExplorerScaleColor(low, high, percent / 100),
     percent,
   }));
+}
+
+function legendUnit(paint: ExplorerMapPaint): string {
+  if (
+    paint.layerId === "incidence_floor" &&
+    paint.unit?.trim() === "per 100,000"
+  ) {
+    return LYME_INCIDENCE_UNIT_LABEL;
+  }
+  return paint.unit?.trim() ?? "";
+}
+
+function incidenceEndpointCopy(
+  entry: ExplorerMapLegendEntry,
+  phrase: string
+): string {
+  const number = endpointCaption(entry.label);
+  const detail = entry.detail?.trim();
+  const base = `${phrase} (${number})`;
+  return detail ? `${base}. ${detail}` : base;
 }
 
 function constantNumericSwatch(
@@ -250,13 +280,21 @@ function constantNumericSwatch(
   "gradient" | "leftCaption" | "rightCaption" | "segments"
 > {
   const value = endpointCaption(low.label);
-  const unit = paint.unit ? ` ${paint.unit}` : "";
+  const displayUnit = legendUnit(paint);
+  const unit = displayUnit ? ` ${displayUnit}` : "";
   const detail = low.detail?.trim();
-  const text = detail ? `${value}${unit}. ${detail}` : `${value}${unit}.`;
+  const incidence = paint.layerId === "incidence_floor";
+  const text = incidence
+    ? detail
+      ? `${LYME_INCIDENCE_LOW_LABEL} ${value}${unit}. ${detail}`
+      : `${LYME_INCIDENCE_LOW_LABEL} ${value}${unit}.`
+    : detail
+      ? `${value}${unit}. ${detail}`
+      : `${value}${unit}.`;
   const swatch = toSegment(low, missing.length, paint.layerId);
   return {
     gradient: null,
-    leftCaption: value,
+    leftCaption: incidence ? `${LYME_INCIDENCE_LOW_LABEL}\n${value}` : value,
     rightCaption: null,
     segments: [
       ...missing,
@@ -294,23 +332,33 @@ function gradientModel(
   if (!high) {
     return constantNumericSwatch(paint, low, missing);
   }
-  const unit = paint.unit ? ` ${paint.unit}` : "";
+  const unit = legendUnit(paint);
+  const unitSuffix = unit ? ` ${unit}` : "";
   const zero =
     low.detail && low.label.includes("observed zero") ? ` ${low.detail}` : "";
   const highest = note
     ? ` ${note.label}. ${note.detail ?? "Not a separate class."}`
     : "";
-  const tooltip = `${endpointCaption(low.label)} to ${endpointCaption(high.label)}${unit}. Color is mixed between these ends.${zero}${highest} Missing is not drawn as zero.`;
+  const incidence = paint.layerId === "incidence_floor";
+  const lowNumber = endpointCaption(low.label);
+  const highNumber = endpointCaption(high.label);
+  const tooltip = incidence
+    ? `${LYME_INCIDENCE_LOW_LABEL} ${lowNumber} to ${LYME_INCIDENCE_HIGH_LABEL} ${highNumber}${unitSuffix}. Color runs from pale green to deep green between these published ends. Palette anchors are not new epidemiologic cutoffs.${zero}${highest} Missing is not drawn as zero.`
+    : `${lowNumber} to ${highNumber}${unitSuffix}. Color is mixed between these ends.${zero}${highest} Missing is not drawn as zero.`;
   return {
     gradient: {
       accessibleName: tooltip,
       highColor: high.color,
       lowColor: low.color,
-      stops: scaleGradientStops(low.color, high.color),
+      stops: scaleGradientStops(low.color, high.color, paint.ramp),
       tooltip,
     },
-    leftCaption: endpointCaption(low.label),
-    rightCaption: endpointCaption(high.label),
+    leftCaption: incidence
+      ? `${LYME_INCIDENCE_LOW_LABEL}\n${lowNumber}`
+      : lowNumber,
+    rightCaption: incidence
+      ? `${LYME_INCIDENCE_HIGH_LABEL}\n${highNumber}`
+      : highNumber,
     segments: missing,
   };
 }
@@ -327,7 +375,21 @@ function aboutSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
   }
   const classes = paint.entries
     .filter((entry) => entry.role !== "note")
-    .map((entry) => methodologyCopy(entry));
+    .map((entry) => {
+      if (
+        paint.layerId === "incidence_floor" &&
+        entry.role === "endpoint-low"
+      ) {
+        return incidenceEndpointCopy(entry, LYME_INCIDENCE_LOW_LABEL);
+      }
+      if (
+        paint.layerId === "incidence_floor" &&
+        entry.role === "endpoint-high"
+      ) {
+        return incidenceEndpointCopy(entry, LYME_INCIDENCE_HIGH_LABEL);
+      }
+      return methodologyCopy(entry);
+    });
   if (classes.length > 0) {
     sections.push({ heading: "Colors", paragraphs: classes });
   }
@@ -341,7 +403,8 @@ function aboutSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
 export function buildExplorerLegendModel(
   paint: ExplorerMapPaint
 ): ExplorerLegendModel {
-  const unitLabel = paint.unit?.trim() ? paint.unit.trim() : null;
+  const unitText = legendUnit(paint);
+  const unitLabel = unitText.length > 0 ? unitText : null;
   const base = {
     aboutLabel: `About ${paint.title}`,
     aboutSections: aboutSections(paint),

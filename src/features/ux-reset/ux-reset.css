@@ -2632,6 +2632,14 @@
   white-space: nowrap;
 }
 
+.ux-reset-explorer-legend[data-legend-layer="incidence_floor"]
+  .ux-reset-explorer-legend-caption {
+  flex: 0 1 7.25rem;
+  max-width: 7.25rem;
+  line-height: 1.05;
+  white-space: pre-line;
+}
+
 .ux-reset-explorer-legend-strip {
   display: flex;
   flex: 1 1 auto;
