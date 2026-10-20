@@ -132,7 +132,7 @@ test.describe("Explorer what-if scenario", () => {
     page,
   }) => {
     await installExplorer(page);
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
 
     const panel = page.getByTestId("explorer-what-if-scenario");
     await expect(panel).toBeVisible();
@@ -149,7 +149,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByTestId("explorer-scenario-impact-summary")
     ).toContainText("Published Atlas score 22.9 · No adjustments");
     await page.screenshot({
-      path: "/opt/cursor/artifacts/what-if-collapsed.png",
+      path: "test-results/what-if-collapsed.png",
       fullPage: true,
     });
 
@@ -201,12 +201,12 @@ test.describe("Explorer what-if scenario", () => {
       page.getByTestId("explorer-what-if-scenario")
     ).not.toContainText("do not measure individual Lyme disease risk");
     await page.screenshot({
-      path: "/opt/cursor/artifacts/what-if-expanded-changed.png",
+      path: "test-results/what-if-expanded-changed.png",
       fullPage: true,
     });
     await candidate.scrollIntoViewIfNeeded();
     await candidate.screenshot({
-      path: "/opt/cursor/artifacts/what-if-county-adjusted.png",
+      path: "test-results/what-if-county-adjusted.png",
     });
 
     await page.reload();
@@ -237,10 +237,10 @@ test.describe("Explorer what-if scenario", () => {
     page,
   }) => {
     await installExplorer(page);
-    await page.goto("/app/review?scope=DC");
+    await page.goto("/explore?scope=DC");
     await expect(page.getByTestId("explorer-what-if-scenario")).toBeVisible();
 
-    await page.goto("/app/review?scope=AK");
+    await page.goto("/explore?scope=AK");
     await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
     await expect(page.getByTestId("review-scope-unsupported")).toBeVisible();
   });
@@ -320,7 +320,7 @@ test.describe("Explorer what-if scenario", () => {
         settings: scenarioScores.settings,
       },
     });
-    await page.goto("/app/review?scope=CO");
+    await page.goto("/explore?scope=CO");
     const map = page.getByTestId("review-state-map-region");
     await expect(page.locator(".maplibregl-canvas")).toBeVisible();
     await expect(map).toHaveAttribute("data-map-colors", /08012:#a9d2db/i);
@@ -419,7 +419,7 @@ test.describe("Explorer what-if scenario", () => {
         type: "FeatureCollection",
       },
     });
-    await page.goto("/app/review?scope=CO&layer=boundaries");
+    await page.goto("/explore?scope=CO&layer=boundaries");
 
     const map = page.getByTestId("review-state-map-region");
     await expect(page.locator(".maplibregl-canvas")).toBeVisible();
@@ -470,7 +470,7 @@ test.describe("Explorer what-if scenario", () => {
     page,
   }) => {
     await installExplorer(page);
-    await page.goto("/app/review?scope=CO&missing=41&eco=39");
+    await page.goto("/explore?scope=CO&missing=41&eco=39");
     await expect(page).not.toHaveURL(/[?&]missing=/);
     await expect(page).not.toHaveURL(/[?&]eco=/);
     await page.getByTestId("explorer-what-if-summary").click();
@@ -560,7 +560,7 @@ test.describe("Explorer what-if scenario", () => {
     });
 
     await page.setViewportSize({ width: 1711, height: 900 });
-    await page.goto("/app/review?scope=CO&county=08013&eco=85");
+    await page.goto("/explore?scope=CO&county=08013&eco=85");
     const summary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(
       page.getByTestId("explorer-scenario-impact-description")
@@ -656,7 +656,7 @@ test.describe("Explorer what-if scenario", () => {
       },
     });
 
-    await page.goto("/app/review?scope=CO&county=08065&eco=85");
+    await page.goto("/explore?scope=CO&county=08065&eco=85");
     const summary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
     await expect(summary).not.toContainText("No adjustments");
@@ -746,7 +746,7 @@ test.describe("Explorer what-if scenario", () => {
     });
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/app/review?scope=ALL");
+    await page.goto("/explore?scope=ALL");
     const panel = page.getByTestId("explorer-what-if-scenario");
     await expect(panel).toBeVisible();
     await expect(panel).not.toHaveAttribute("open", "");
@@ -769,7 +769,7 @@ test.describe("Explorer what-if scenario", () => {
     );
     await page.screenshot({
       fullPage: true,
-      path: "/opt/cursor/artifacts/national-explorer-what-if-after-collapsed.png",
+      path: "test-results/national-explorer-what-if-after-collapsed.png",
     });
 
     const summary = page.getByTestId("explorer-what-if-summary");
@@ -826,7 +826,7 @@ test.describe("Explorer what-if scenario", () => {
     ).toBeVisible();
     await expect(missing).toHaveValue("75");
 
-    await page.goto("/app/review?scope=ALL&county=08013&eco=85");
+    await page.goto("/explore?scope=ALL&county=08013&eco=85");
     await expect(panel).not.toHaveAttribute("open", "");
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
@@ -840,7 +840,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(impact).not.toContainText("Conejos");
     await page.screenshot({
       fullPage: true,
-      path: "/opt/cursor/artifacts/national-explorer-what-if-after-selected.png",
+      path: "test-results/national-explorer-what-if-after-selected.png",
     });
     const axe = await new AxeBuilder({ page })
       .include("[data-testid='explorer-what-if-scenario']")
@@ -867,10 +867,10 @@ test.describe("Explorer what-if scenario", () => {
     ).toContainText("65.0 → 85.0 · +20.0 points");
     await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(1);
 
-    await page.goto("/app/review?scope=ALL&county=08013&mode=evidence&eco=85");
+    await page.goto("/explore?scope=ALL&county=08013&mode=evidence&eco=85");
     await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
 
-    await page.goto("/app/review?scope=ALL&county=08013&mode=follow-up&eco=85");
+    await page.goto("/explore?scope=ALL&county=08013&mode=follow-up&eco=85");
     await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
   });
 
@@ -918,7 +918,7 @@ test.describe("Explorer what-if scenario", () => {
       },
     });
 
-    await page.goto("/app/review?scope=ALL&county=08001&smooth=20");
+    await page.goto("/explore?scope=ALL&county=08001&smooth=20");
     const summary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(summary).toContainText(
       "Published Atlas score 0.0 · Score with your changes unavailable"
@@ -934,7 +934,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByTestId("review-national-map-region")
     ).toHaveAttribute("data-map-colors", /08001:#a9d2db/i);
 
-    await page.goto("/app/review?scope=AK&smooth=20");
+    await page.goto("/explore?scope=AK&smooth=20");
     await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
     await expect(page.getByTestId("review-scope-unsupported")).toBeVisible();
   });
@@ -995,7 +995,7 @@ for (const fips of ["36027", "42017", "25007", "23009", "18097", "08021"]) {
         }),
       })
     );
-    await page.goto(`/app/review?scope=${row.state}&county=${fips}`);
+    await page.goto(`/explore?scope=${row.state}&county=${fips}`);
     const candidate = page.locator(
       `[data-testid='review-candidate'][data-fips='${fips}']`
     );
@@ -1032,7 +1032,7 @@ test("v1.1 legacy URL reset does not reinterpret breakpoint=10 as k=10", async (
   page,
 }) => {
   await installExplorer(page);
-  await page.goto("/app/review?scope=CO&breakpoint=10&eco=85&missing=40");
+  await page.goto("/explore?scope=CO&breakpoint=10&eco=85&missing=40");
   await expect(page).not.toHaveURL(/[?&]breakpoint=/);
   await page.getByTestId("explorer-what-if-summary").click();
   await expect(

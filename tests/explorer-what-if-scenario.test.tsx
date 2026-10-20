@@ -215,6 +215,7 @@ describe(ExplorerWhatIfScenario, () => {
       fips: "01003",
       scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,
@@ -974,6 +975,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       fips: "01003",
       scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,
@@ -1145,6 +1147,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       fips: "11001",
       scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       priority: REVIEW,
       score: published.score,
       state: "DC",
@@ -1163,6 +1166,7 @@ describe(resolveExplorerWhatIfImpact, () => {
       fips: "01003",
       scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,
@@ -1233,6 +1237,7 @@ describe(applyGapScoreScenarioColors, () => {
       fips: "08001",
       scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "published_count_floor",
+      incidence_floor_2023: undefined,
       score: {
         access_signal: 0,
         community: 0,

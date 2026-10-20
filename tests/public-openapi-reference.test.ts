@@ -2111,7 +2111,7 @@ describe("public OpenAPI drift", () => {
       grainType: "string",
       noRecords: true,
       sha256:
-        "a0b5805e7e9a6ae8db04ca0d93694094baa9f0b73411380f799c8685172044f4",
+        "dfa540f57f0c359f5adc0a0d8b851d964008fbea72c84f9d5f09bcdf1152fbf0",
       sourceCommit: "e88887877440c00de0e23301f0a3eac2353134d9",
     });
   });

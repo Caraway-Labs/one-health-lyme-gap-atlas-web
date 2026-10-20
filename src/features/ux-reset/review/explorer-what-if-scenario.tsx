@@ -58,7 +58,7 @@ export const EXPLORER_SCENARIO_MISSING_NOTE =
   "Used when a county has no published case count.";
 
 export const EXPLORER_SCENARIO_MISSING_TOOLTIP =
-  "On the 0–100 case-data term, 100 matches a published rate of 0 and 0 matches a rate at or above the reference point. This number is that term when no county count was published. The published default is 75.";
+  "Legacy H=75 is an assumption for missing county human observations, not an observed rate or an incidence estimate. Published numeric zero gives H=100. Smooth attenuation has no hard incidence cutoff.";
 
 export type ExplorerWhatIfImpactState =
   | { status: "none" }

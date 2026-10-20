@@ -27,6 +27,23 @@ function county(fips: string): CountyScoreSummary {
 }
 
 describe("approved v1.1 scenario behavior", () => {
+  it("retains a real score change even when rounded H is unchanged", () => {
+    const record = {
+      ...county("36027"),
+      incidence_floor_2023: 0.1,
+      svi_percentile: 0.5,
+      uninsured_percentile: 0.5,
+      rucc_2023: 5,
+      score: { ...county("36027").score, human_weakness: 99.8, score: 82.3 },
+    };
+    const result = adjustCountyScenarios([record], {
+      ...SCENARIO_SCORE_DEFAULTS,
+      smooth_k: 55,
+    })?.get(record.fips);
+    expect(result?.kind).toBe("adjusted");
+    expect(result && "score" in result ? result.score : null).toBe(82.4);
+  });
+
   it("keeps governed values at defaults", () => {
     expect(
       adjustCountyScenarios([county("36027")], SCENARIO_SCORE_DEFAULTS)

@@ -329,12 +329,10 @@ function scenarioDraft(
   }
   const human = round1(rawHuman);
   const governedHuman = round1(county.score.human_weakness);
-  const shareChanged = settings.ecological_share !== baseline.ecological_share;
-  const shareAffectsScore = shareChanged && human !== 0;
-  if (!shareAffectsScore && human === governedHuman) {
+  const score = scenarioScore(county, settings, rawHuman);
+  if (score === county.score.score && human === governedHuman) {
     return { kind: "unchanged" };
   }
-  const score = scenarioScore(county, settings, rawHuman);
   return {
     colorToken: scenarioColorToken(score, county.in_contiguous_tick_scope),
     humanWeakness: human,

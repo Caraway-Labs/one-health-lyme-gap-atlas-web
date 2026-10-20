@@ -96,6 +96,7 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
   };
   const setSettings = (next: ScoreSettings) =>
     setUrlState({
+      breakpoint: null,
       smooth: next.smooth_k,
       eco: next.ecological_share,
       missing: next.missing_human_weakness,
