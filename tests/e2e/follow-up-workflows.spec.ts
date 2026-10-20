@@ -137,7 +137,7 @@ test.describe("five-category suggested follow-up", () => {
       "compare the published county case-count floor"
     );
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
-      "Do locally held case records agree with the published county count"
+      "Which specific inconsistency in the published or locally verified evidence warrants targeted follow-up?"
     );
     await expect(followUp.getByTestId("follow-up-what-if-note")).toHaveCount(0);
     await expect(followUp).toContainText("not documented negative findings");
