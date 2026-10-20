@@ -1295,23 +1295,220 @@ describe("AtlasMap county camera", () => {
     view.unmount();
   });
 
-  it("keeps accent outlines for a selected state that is not nationally framed", () => {
+  it("paints state-scoped boundaries black across state changes, layers, and camera updates", () => {
     stubPrefersReducedMotion(false);
-    render(
+    const arapahoe = {
+      ...adams,
+      county: "Arapahoe",
+      fips: "08005",
+      state: "CO",
+    };
+    const idaho = { ...adams, county: "Ada", fips: "16001", state: "ID" };
+    const valley = { ...adams, county: "Valley", fips: "16085", state: "ID" };
+    const scopedGeometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        geometry.features[0],
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-105.2, 39.2],
+                [-104.2, 39.2],
+                [-104.2, 39.8],
+                [-105.2, 39.8],
+                [-105.2, 39.2],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "08005" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117, 42.6],
+                [-114.4, 42.6],
+                [-114.4, 44],
+                [-117, 44],
+                [-117, 42.6],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117.2, 44],
+                [-111, 44],
+                [-111, 48.9],
+                [-117.2, 48.9],
+                [-117.2, 44],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16085" },
+          type: "Feature",
+        },
+        geometry.features[1],
+      ],
+      type: "FeatureCollection",
+    };
+    const gapFill: AtlasMapFillColor = [
+      "coalesce",
+      ["get", "color"],
+      "#e4e9ea",
+    ];
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
       <AtlasMap
         cameraFrameState="CO"
-        geometry={geometry}
-        scores={[adams, losAngeles]}
-        selectedFips=""
+        fillColor={gapFill}
+        geometry={scopedGeometry}
+        scores={[adams, arapahoe, idaho, valley, losAngeles]}
+        selectedFips="08001"
         selectedState="CO"
-        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+        onSelect={onSelect}
       />
     );
     const map = loadMap();
-    expect(map?.paint.get("selected-state-outline")).toMatchObject({
-      "line-color": "#0b7285",
-      "line-width": 2.5,
+    const selectedFips = () => {
+      const source = map?.sources.get("counties") as
+        | { data?: GeoJSON.FeatureCollection }
+        | undefined;
+      return (source?.data?.features ?? [])
+        .filter((feature) => feature.properties?.selectedState === true)
+        .map((feature) => feature.properties?.fips)
+        .toSorted();
+    };
+    const initial = {
+      attribute:
+        document.querySelector<HTMLElement>(".maplibre-atlas")?.dataset
+          .stateOutline,
+      countyOutline: map?.paint.get("selected-outline"),
+      fill: map?.paint.get("counties-fill")?.["fill-color"],
+      filter: map?.filters.get("selected-state-outline"),
+      outline: map?.paint.get("selected-state-outline"),
+      selectedFips: selectedFips(),
+    };
+    const tickFill: AtlasMapFillColor = [
+      "match",
+      ["get", "tick"],
+      "established",
+      "#1d4e89",
+      "#f4f1ea",
+    ];
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="CO"
+        fillColor={tickFill}
+        geometry={scopedGeometry}
+        scores={[adams, arapahoe, idaho, valley, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const layered = {
+      fill: map?.paint.get("counties-fill")?.["fill-color"],
+      outline: map?.paint.get("selected-state-outline"),
+    };
+    act(() => {
+      map?.emit("move");
+      map?.jumpTo({ center: [-104.8, 39.5], zoom: 6 });
     });
+    const moved = map?.paint.get("selected-state-outline");
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fillColor={tickFill}
+        geometry={scopedGeometry}
+        scores={[adams, arapahoe, idaho, valley, losAngeles]}
+        selectedFips=""
+        selectedState="ID"
+        onSelect={onSelect}
+      />
+    );
+    const idahoFrame = {
+      countyOutline: map?.paint.get("selected-outline"),
+      outline: map?.paint.get("selected-state-outline"),
+      selectedFips: selectedFips(),
+    };
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="CO"
+        fillColor={gapFill}
+        geometry={scopedGeometry}
+        scores={[adams, arapahoe, idaho, valley, losAngeles]}
+        selectedFips="08005"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const coloradoAgain = {
+      outline: map?.paint.get("selected-state-outline")?.["line-color"],
+      selectedFips: selectedFips(),
+    };
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        fillColor={gapFill}
+        geometry={scopedGeometry}
+        resetNationalView
+        scores={[adams, arapahoe, idaho, valley, losAngeles]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    const black = { "line-color": "#000000", "line-width": 2.5 };
+    expect({
+      cleared: {
+        outline: map?.paint.get("selected-state-outline"),
+        selectedFips: selectedFips(),
+      },
+      coloradoAgain,
+      idahoFrame,
+      initial,
+      layered,
+      moved,
+      selections: onSelect.mock.calls,
+    }).toStrictEqual({
+      cleared: {
+        outline: { "line-color": "#0b7285", "line-width": 2.5 },
+        selectedFips: [],
+      },
+      coloradoAgain: {
+        outline: "#000000",
+        selectedFips: ["08001", "08005"],
+      },
+      idahoFrame: {
+        countyOutline: { "line-color": "#061f3d", "line-width": 3 },
+        outline: black,
+        selectedFips: ["16001", "16085"],
+      },
+      initial: {
+        attribute: "accent",
+        countyOutline: { "line-color": "#061f3d", "line-width": 3 },
+        fill: gapFill,
+        filter: ["==", ["get", "selectedState"], true],
+        outline: black,
+        selectedFips: ["08001", "08005"],
+      },
+      layered: { fill: tickFill, outline: black },
+      moved: black,
+      selections: [],
+    });
+    view.unmount();
   });
 
   it("keeps the focused-state outline black and lighter than the national selection stroke", () => {
