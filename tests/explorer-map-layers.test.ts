@@ -534,13 +534,15 @@ describe("Explorer map layers", () => {
       ),
       unpainted: paint.colorsByFips.get("08001"),
     }).toStrictEqual({
-      alabama: "var(--mint)",
+      alabama: "#D1D5DB",
       gap: false,
-      losAngeles: "hsl(204, 45%, 88%)",
+      losAngeles: "#E5F5E0",
       missing: true,
       unpainted: undefined,
     });
-    expect(paint.note).toMatch(/lower bound/);
+    expect(paint.note).toMatch(/minimums/);
+    expect(paint.note).toMatch(/not all infections/);
+    expect(paint.note).toMatch(/not an exact total incidence/);
     expect(paint.note).toMatch(/review ranking/);
   });
 
@@ -582,7 +584,7 @@ describe("Explorer map layers", () => {
       incidence: ["Missing (not zero and not a low value)"],
       svi: ["Missing (not zero and not a low value)"],
     });
-    expect(incidence.colorsByFips.get("01001")).toBe("var(--mint)");
+    expect(incidence.colorsByFips.get("01001")).toBe("#D1D5DB");
     expect(svi.colorsByFips.get("08001")).toBe("var(--mint)");
   });
 

@@ -3,6 +3,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  LYME_INCIDENCE_RAMP,
+  mixExplorerRampColor,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
@@ -514,7 +518,7 @@ describe("Explorer map legend", () => {
     await user.click(screen.getByRole("button", { name: /4\.2 per 100,000/ }));
     expect(
       screen.getByRole("dialog", {
-        name: "Lyme incidence floor: 4.2 per 100,000. Every published number in this load is this value.",
+        name: "Lyme incidence floor: Lower published incidence 4.2 per 100,000 residents. Every published number in this load is this value.",
       })
     ).toBeTruthy();
   });
@@ -535,15 +539,25 @@ describe("Explorer map legend", () => {
     const high = paint.entries.find((entry) => entry.role === "endpoint-high");
     const quarter = paint.colorsByFips.get("08005") ?? "";
     const midpoint = paint.colorsByFips.get("08013") ?? "";
-    const style = swatchStyle(/Color is mixed/);
-    expect(quarter).toBe(
-      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.25)
-    );
-    expect(midpoint).toBe(
-      mixExplorerScaleColor(low?.color ?? "", high?.color ?? "", 0.5)
-    );
+    const style = swatchStyle(/pale green to deep green/);
+    expect({
+      high: high?.color,
+      low: low?.color,
+      midpoint,
+      quarter,
+    }).toStrictEqual({
+      high: LYME_INCIDENCE_RAMP.at(-1),
+      low: LYME_INCIDENCE_RAMP[0],
+      midpoint: mixExplorerRampColor(LYME_INCIDENCE_RAMP, 0.5),
+      quarter: mixExplorerRampColor(LYME_INCIDENCE_RAMP, 0.25),
+    });
     expect(style).toContain(`${quarter} 25%`);
     expect(style).toContain(`${midpoint} 50%`);
+    expect({
+      higher: screen.queryByText(/Higher published incidence/) !== null,
+      lower: screen.queryByText(/Lower published incidence/) !== null,
+      unit: screen.queryByText(/per 100,000 residents/) !== null,
+    }).toStrictEqual({ higher: true, lower: true, unit: true });
   });
 
   it("matches social vulnerability quarter and midpoint colors to the map", () => {

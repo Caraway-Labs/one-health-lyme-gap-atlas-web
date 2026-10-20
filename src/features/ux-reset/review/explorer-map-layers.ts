@@ -168,6 +168,11 @@ export type ExplorerMapPaint = {
   /** Whether map paint interpolates or uses discrete governed classes. */
   scale: ExplorerLegendScale;
   period: string;
+  /**
+   * Low-to-high anchors for a continuous ramp. Equal steps of the existing
+   * numeric ratio. Omitted ramps mix the two endpoint colors.
+   */
+  ramp?: readonly string[];
   /** Exact published value for the selected county, when one is selected. */
   selection?: string | null;
   /** Shared evidence contract for the selected county on an observation layer. */

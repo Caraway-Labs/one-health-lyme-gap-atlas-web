@@ -1,4 +1,9 @@
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
+import {
+  LYME_INCIDENCE_MISSING_COLOR,
+  LYME_INCIDENCE_RAMP,
+  mixExplorerRampColor,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
 import type {
   ExplorerMapLegendEntry,
   ExplorerMapPaint,
@@ -17,8 +22,8 @@ const BOUNDARY_COLOR = "var(--explorer-boundary)";
 
 const NUMERIC_SCALE = {
   incidence_floor: {
-    high: "hsl(210, 72%, 24%)",
-    low: "hsl(204, 45%, 88%)",
+    high: LYME_INCIDENCE_RAMP.at(-1) ?? LYME_INCIDENCE_RAMP[0],
+    low: LYME_INCIDENCE_RAMP[0],
   },
   svi: {
     high: "hsl(152, 58%, 22%)",
@@ -189,7 +194,18 @@ function scaleRatio(value: number, minimum: number, maximum: number): number {
   return (value - minimum) / (maximum - minimum);
 }
 
+function stateColor(
+  layerId: ExplorerObservationLayerId,
+  state: ValueState
+): string | undefined {
+  if (layerId === "incidence_floor" && state === ValueState.MISSING) {
+    return LYME_INCIDENCE_MISSING_COLOR;
+  }
+  return STATE_COLOR[state];
+}
+
 function stateEntries(
+  layerId: ExplorerObservationLayerId,
   rows: readonly ExplorerMapNumericRow[]
 ): ExplorerMapLegendEntry[] {
   const present = new Set(rows.map((row) => row.valueState));
@@ -205,7 +221,7 @@ function stateEntries(
       continue;
     }
     entries.push({
-      color: STATE_COLOR[state] ?? "var(--atlas-muted-text)",
+      color: stateColor(layerId, state) ?? "var(--atlas-muted-text)",
       detail: null,
       label: STATE_LABEL[state] ?? state,
       role: "missing",
@@ -224,6 +240,7 @@ function paintBase(input: {
   unit: string | null;
   colorsByFips: Map<string, string>;
   scale: ExplorerMapPaint["scale"];
+  ramp?: readonly string[];
   selection: string | null;
   selectionEvidence?: EvidenceObjectModel | null;
 }): ExplorerMapPaint {
@@ -234,6 +251,7 @@ function paintBase(input: {
     layerId: input.layerId,
     note: input.note,
     period: input.period,
+    ramp: input.ramp,
     scale: input.scale,
     selection: input.selection,
     selectionEvidence: input.selectionEvidence ?? null,
@@ -291,6 +309,17 @@ export function paintReadyObservationLayer(input: {
   });
 }
 
+function quantityColor(
+  layerId: Exclude<ExplorerObservationLayerId, "rurality">,
+  scale: { high: string; low: string },
+  ratio: number
+): string {
+  if (layerId === "incidence_floor") {
+    return mixExplorerRampColor(LYME_INCIDENCE_RAMP, ratio);
+  }
+  return mixExplorerScaleColor(scale.low, scale.high, ratio);
+}
+
 function paintQuantity(input: {
   layerId: Exclude<ExplorerObservationLayerId, "rurality">;
   omitted: number;
@@ -321,17 +350,14 @@ function paintQuantity(input: {
       (row.valueState !== ValueState.OBSERVED &&
         row.valueState !== ValueState.ZERO)
     ) {
-      const color = STATE_COLOR[row.valueState];
+      const color = stateColor(input.layerId, row.valueState);
       if (color) {
         colorsByFips.set(row.fips, color);
       }
       continue;
     }
     const ratio = scaleRatio(row.numeric, domain.minimum, domain.maximum);
-    colorsByFips.set(
-      row.fips,
-      mixExplorerScaleColor(scale.low, scale.high, ratio)
-    );
+    colorsByFips.set(row.fips, quantityColor(input.layerId, scale, ratio));
   }
   const entries: ExplorerMapLegendEntry[] = [];
   const lowRaw = domain
@@ -384,9 +410,9 @@ function paintQuantity(input: {
     });
     if (highest?.numeric != null && !highIsEndpoint && highest.raw) {
       entries.push({
-        color: mixExplorerScaleColor(
-          scale.low,
-          scale.high,
+        color: quantityColor(
+          input.layerId,
+          scale,
           scaleRatio(highest.numeric, domain.minimum, domain.maximum)
         ),
         detail: "Highest published value in this load. Not a separate class.",
@@ -395,7 +421,7 @@ function paintQuantity(input: {
       });
     }
   }
-  entries.push(...stateEntries(input.rows));
+  entries.push(...stateEntries(input.layerId, input.rows));
   appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
   const title = {
     incidence_floor: "Lyme incidence floor",
@@ -404,7 +430,7 @@ function paintQuantity(input: {
   }[input.layerId];
   const note = {
     incidence_floor:
-      "2023 published lower bound per 100,000, not an exact incidence estimate. Color runs in a straight line from the lowest to the highest published value. Values between the legend ends use a mix of those two colors. Missing is not drawn as zero. A wide published range keeps most counties near the low end. The county list stays the review ranking.",
+      "2023 published values are minimums per 100,000 residents, not all infections and not an exact total incidence. Color runs from pale green at the lowest published value to deep green at the highest. The green anchors are a continuous ramp, not new epidemiologic cutoffs. Missing is not drawn as zero. A wide published range keeps most counties near the low end. The county list stays the review ranking.",
     svi: "National county percentile from the 2022 SVI product, on a 0 to 1 scale. Not a percentage of people. Observed zero is the low end of that scale. Values between the legend ends use a mix of those two colors. Missing is not drawn as zero. The county list stays the review ranking.",
     uninsured:
       "Percent of the civilian noninstitutionalized population on a 0 to 100 scale. Observed zero is 0 percent, not a missing value. Values between the legend ends use a mix of those two colors. The county list stays the review ranking.",
@@ -415,6 +441,7 @@ function paintQuantity(input: {
     kind: "choropleth",
     layerId: input.layerId,
     note: `${note} ${coverageSentence(input.rows, input.omitted)}`,
+    ramp: input.layerId === "incidence_floor" ? LYME_INCIDENCE_RAMP : undefined,
     scale: "gradient",
     period: input.period,
     selection: input.selection,
@@ -466,7 +493,7 @@ function paintRurality(input: {
       classes.set(code, row.categoryLabel);
       continue;
     }
-    const color = STATE_COLOR[row.valueState];
+    const color = stateColor("rurality", row.valueState);
     if (color) {
       colorsByFips.set(row.fips, color);
     }
@@ -486,7 +513,7 @@ function paintRurality(input: {
       role: "class",
     });
   }
-  entries.push(...stateEntries(input.rows));
+  entries.push(...stateEntries("rurality", input.rows));
   appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
   return paintBase({
     colorsByFips,

@@ -729,14 +729,21 @@ test.describe("Atlas Explorer layer legends", () => {
 
     await chooseLayer(page, "Lyme incidence floor");
     await expect(legend).toContainText("Lyme incidence floor");
-    await expect(legend).toContainText("per 100,000");
+    await expect(legend).toContainText("per 100,000 residents");
+    await expect(legend).toContainText("Lower published incidence");
+    await expect(legend).toContainText("Higher published incidence");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await expect(
       legend.getByRole("button", { name: /Missing \(not zero/ })
     ).toBeVisible();
     await expect(
-      legend.getByRole("button", { name: /0 to 12\.4 per 100,000/ })
+      legend.getByRole("button", {
+        name: /Lower published incidence 0 to Higher published incidence 12\.4 per 100,000 residents/,
+      })
     ).toBeVisible();
+    await expect
+      .poll(() => legendSwatchesFit(legend))
+      .toEqual({ clipped: false, tall: false, visible: true });
 
     await chooseLayer(page, "Social vulnerability");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
