@@ -24,17 +24,17 @@ County-card rurality text, review rationale, scoring, and `rucc_2023` values sta
 
 Paint is `paintRurality` in `src/features/ux-reset/review/explorer-map-layer-scale.ts`. Map fills and legend swatches both read `RUCC_COLORS`. The legend model is `buildExplorerLegendModel` in `src/features/ux-reset/review/explorer-legend-model.ts`, rendered by `ExplorerMapLegend`.
 
-| RUCC | Current fill |
-| --- | --- |
-| 1 | `hsl(210, 55%, 42%)` |
-| 2 | `hsl(28, 78%, 48%)` |
-| 3 | `hsl(140, 40%, 36%)` |
-| 4 | `hsl(350, 62%, 50%)` |
-| 5 | `hsl(174, 42%, 36%)` |
-| 6 | `hsl(280, 28%, 46%)` |
-| 7 | `hsl(330, 52%, 62%)` |
-| 8 | `hsl(24, 32%, 40%)` |
-| 9 | `hsl(200, 8%, 52%)` |
+| RUCC | Current fill         |
+| ---- | -------------------- |
+| 1    | `hsl(210, 55%, 42%)` |
+| 2    | `hsl(28, 78%, 48%)`  |
+| 3    | `hsl(140, 40%, 36%)` |
+| 4    | `hsl(350, 62%, 50%)` |
+| 5    | `hsl(174, 42%, 36%)` |
+| 6    | `hsl(280, 28%, 46%)` |
+| 7    | `hsl(330, 52%, 62%)` |
+| 8    | `hsl(24, 32%, 40%)`  |
+| 9    | `hsl(200, 8%, 52%)`  |
 
 These are nine unrelated hues. The legend is a contiguous nine-swatch strip with endpoint captions `1` and `9` (or `No data` and `9` when a missing key is present). Hover exposes `"{code}. {published or fallback label}"`.
 
@@ -50,17 +50,17 @@ County and state outlines are shared map chrome in `src/components/atlas-map.tsx
 
 One shared definition, `src/features/ux-reset/review/rurality-palette.ts`, supplies map fills and legend swatches. Codes stay discrete. Nothing is interpolated, combined, or reclassified.
 
-| RUCC | Fill |
-| --- | --- |
-| 1 | `#F2F0F7` |
-| 2 | `#E5E0EF` |
-| 3 | `#D5CCE5` |
-| 4 | `#BFB1D5` |
-| 5 | `#A590C4` |
-| 6 | `#8B6EB0` |
-| 7 | `#74529B` |
-| 8 | `#5D3985` |
-| 9 | `#46216E` |
+| RUCC | Fill      |
+| ---- | --------- |
+| 1    | `#F2F0F7` |
+| 2    | `#E5E0EF` |
+| 3    | `#D5CCE5` |
+| 4    | `#BFB1D5` |
+| 5    | `#A590C4` |
+| 6    | `#8B6EB0` |
+| 7    | `#74529B` |
+| 8    | `#5D3985` |
+| 9    | `#46216E` |
 
 Legend:
 
