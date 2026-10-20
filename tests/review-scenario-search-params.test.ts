@@ -16,6 +16,15 @@ describe("Review scenario URL params", () => {
     ).toStrictEqual({ breakpoint: null, eco: 65, smooth: 50, missing: 75 });
   });
 
+  it("retains the legacy raw URL value until the explicit default-reset migration", () => {
+    const legacy = reviewSearchParams.breakpoint.parse("10");
+    expect(legacy).toBe("10");
+    expect(reviewSearchParams.breakpoint.serialize(legacy ?? "")).toBe("10");
+    expect(
+      scenarioSearchParamPatch(new URLSearchParams("smooth=50"))
+    ).toStrictEqual({ smooth: 50 });
+  });
+
   it("accepts slider steps and rejects values off the range", () => {
     const eco = SCENARIO_CONTROL_RANGES.ecological_share;
     expect(parseScenarioAssumption("40", eco)).toBe(40);
