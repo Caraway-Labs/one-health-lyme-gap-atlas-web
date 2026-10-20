@@ -47,6 +47,7 @@ export type ExplorerLegendSegment = {
   disclosure: ExplorerLegendDisclosure | null;
   id: string;
   label: string;
+  outline?: string;
   role: ExplorerMapLegendEntry["role"];
   tooltip: string;
   visibleLines?: readonly string[];
@@ -188,6 +189,7 @@ function toSegment(
     disclosure,
     id: `${index}-${entry.label}`,
     label: entry.label,
+    outline: entry.outline,
     role: entry.role,
     tooltip: accessibleName,
     visibleLines: entry.visibleLines,
