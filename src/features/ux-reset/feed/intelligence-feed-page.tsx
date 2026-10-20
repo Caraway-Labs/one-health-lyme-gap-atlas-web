@@ -112,16 +112,20 @@ export function IntelligenceFeedExperience() {
   const pages = feed.data?.pages ?? [];
   const items = pages.flatMap((page) => page.data);
   const limitations = pages[0]?.meta.limitations ?? [];
-  // A failed "Show more" is isError and isFetchNextPageError together.
-  // Keep the pages already on screen; only a failure with no items replaces the page.
+  // TanStack Query keeps feed.data when a later fetch fails and sets isError.
+  // A failed "Show more" is also isFetchNextPageError. A window-focus, remount,
+  // or explicit refetch is isRefetchError. Replace the page only when no items
+  // have loaded; otherwise keep the list and show the failure beside it.
   const nextPageFailure =
     items.length > 0 && feed.isFetchNextPageError
       ? feedRequestFailure(feed.error)
       : null;
-  const failure =
-    feed.isError && nextPageFailure === null
+  const refreshFailure =
+    items.length > 0 && feed.isRefetchError
       ? feedRequestFailure(feed.error)
       : null;
+  const failure =
+    items.length === 0 && feed.isError ? feedRequestFailure(feed.error) : null;
 
   let body: ReactNode;
   let state: "empty" | "error" | "loading" | "ready" | "unavailable";
@@ -175,6 +179,22 @@ export function IntelligenceFeedExperience() {
     body = (
       <>
         <FeedLimitations limitations={limitations} />
+        {refreshFailure ? (
+          <AtlasStatusMessage
+            action={<FeedRetry onRetry={() => feed.refetch()} />}
+            title={
+              refreshFailure === "unavailable"
+                ? "A feed refresh is unavailable"
+                : "The feed could not be refreshed"
+            }
+            titleAs="h2"
+            tone="error"
+          >
+            {refreshFailure === "unavailable"
+              ? "The feed is disabled or temporarily unavailable. The last loaded items are still shown."
+              : "The last loaded items are still shown."}
+          </AtlasStatusMessage>
+        ) : null}
         <ul className="ux-reset-feed-list">
           {items.map((entry) => (
             <FeedItem

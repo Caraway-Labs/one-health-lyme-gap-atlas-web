@@ -1,5 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -38,7 +45,10 @@ function renderFeed() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return render(<IntelligenceFeedExperience />, { wrapper });
+  return {
+    client,
+    ...render(<IntelligenceFeedExperience />, { wrapper }),
+  };
 }
 
 function succeed(data: ReturnType<typeof intelligenceFeedEnvelope>) {
@@ -320,5 +330,106 @@ describe("intelligence feed page", () => {
       expect.stringContaining("County-level Lyme reporting, a review"),
     ]);
     expect(pageTokenCalls()).toHaveLength(2);
+  });
+
+  it("keeps loaded items when a refresh fails", async () => {
+    const [first] = mixedIntelligenceFeedItems;
+    let calls = 0;
+    listIntelligenceFeed.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 2) {
+        throw new AtlasApiError(
+          "failed",
+          "/v1/intelligence/feed",
+          500,
+          "req-refresh"
+        );
+      }
+      return {
+        data: intelligenceFeedEnvelope([first]),
+        headers: new Headers(),
+        status: 200,
+      };
+    });
+    const { client } = renderFeed();
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    await act(async () => {
+      await client.refetchQueries();
+    });
+
+    await expect(
+      screen.findByRole("heading", {
+        name: "The feed could not be refreshed",
+      })
+    ).resolves.toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain(
+      "The last loaded items are still shown."
+    );
+    expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
+      "ready"
+    );
+    expect(
+      screen.getByRole("heading", { name: /Lyme disease surveillance update/ })
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => {
+      expect({
+        calls,
+        refreshError: screen.queryByRole("heading", {
+          name: "The feed could not be refreshed",
+        }),
+      }).toStrictEqual({ calls: 3, refreshError: null });
+    });
+  });
+
+  it("keeps loaded items when a refresh is unavailable", async () => {
+    const [first] = mixedIntelligenceFeedItems;
+    let calls = 0;
+    listIntelligenceFeed.mockImplementation(async () => {
+      calls += 1;
+      if (calls > 1) {
+        throw new AtlasApiError(
+          "disabled",
+          "/v1/intelligence/feed",
+          503,
+          "req-refresh-unavailable"
+        );
+      }
+      return {
+        data: intelligenceFeedEnvelope([first]),
+        headers: new Headers(),
+        status: 200,
+      };
+    });
+    const { client } = renderFeed();
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    await act(async () => {
+      await client.refetchQueries();
+    });
+
+    await expect(
+      screen.findByRole("heading", {
+        name: "A feed refresh is unavailable",
+      })
+    ).resolves.toBeTruthy();
+    expect(
+      screen.getByText(/The last loaded items are still shown/)
+    ).toBeTruthy();
+    expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
+      "ready"
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Intelligence feed unavailable" })
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: /Lyme disease surveillance update/ })
+    ).toBeTruthy();
   });
 });
