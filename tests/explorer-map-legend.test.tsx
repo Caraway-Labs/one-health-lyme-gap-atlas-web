@@ -12,7 +12,6 @@ import {
   UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
-import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
