@@ -200,6 +200,26 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 200,
         }) as never
     ),
+    countySurveillanceSituationsGet: vi.fn<
+      typeof import("@/generated/atlas").countySurveillanceSituationsGet
+    >(
+      async () =>
+        ({
+          data: null,
+          headers: new Headers(),
+          status: 404,
+        }) as never
+    ),
+    countyTier1SurveillancePriorityGet: vi.fn<
+      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+    >(
+      async () =>
+        ({
+          data: null,
+          headers: new Headers(),
+          status: 404,
+        }) as never
+    ),
   };
 });
 
@@ -340,6 +360,28 @@ describe("two-county aligned comparison", () => {
       "second county"
     );
     expect(observationRequests).toStrictEqual([]);
+    expect(
+      screen.queryByTestId("compare-surveillance-intelligence")
+    ).toBeNull();
+  });
+
+  it("places surveillance intelligence after human disease surveillance", async () => {
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const human = await screen.findByTestId("compare-group-human");
+    const intelligence = await screen.findByTestId(
+      "compare-surveillance-intelligence"
+    );
+    const vector = screen.getByTestId("compare-group-vector");
+    expect(human.compareDocumentPosition(intelligence)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(intelligence.compareDocumentPosition(vector)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(screen.getByTestId("compare-group-review")).toBeTruthy();
+    expect(intelligence.textContent ?? "").not.toMatch(
+      /differ by|winner|loser|delta/i
+    );
   });
 
   it("describes withheld counts as not comparable, including failed requests", async () => {
