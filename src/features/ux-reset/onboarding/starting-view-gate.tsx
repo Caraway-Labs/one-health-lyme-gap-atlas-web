@@ -1,10 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
+import {
+  WorkspaceConnectingScreen,
+  WorkspaceReadinessRecovery,
+} from "@/features/ux-reset/workspace-connecting-screen";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 
 import { useSavedProfile } from "../profile/use-saved-profile";
@@ -12,16 +14,6 @@ import {
   isStartingViewComplete,
   STARTING_VIEW_PATH,
 } from "./starting-view-completion";
-
-const COPY = {
-  checking: "Checking your starting view…",
-  retry: "Try again",
-  signIn: "Sign in",
-  unavailable:
-    "We couldn’t load your starting view. Nothing was changed. Try again.",
-  unsigned:
-    "Your session expired. Sign in again before continuing. Nothing was changed.",
-} as const;
 
 /**
  * The requested URL stays in place until a profile read classifies the
@@ -50,37 +42,26 @@ export function StartingViewGate({ children }: { children: ReactNode }) {
 
   if (profile.sessionRejected) {
     return (
-      <main className="app-content ux-reset-pro-main">
-        <p role="alert">{COPY.unsigned}</p>
-        <Link href={signInHrefForReturnPath(returnPath)}>{COPY.signIn}</Link>
-      </main>
+      <WorkspaceReadinessRecovery
+        kind="session-rejected"
+        signInHref={signInHrefForReturnPath(returnPath)}
+      />
     );
   }
 
   if (profile.isError) {
     return (
-      <main className="app-content ux-reset-pro-main">
-        <p role="alert">{COPY.unavailable}</p>
-        <Button
-          onClick={() => {
-            void profile.refetch();
-          }}
-          type="button"
-        >
-          {COPY.retry}
-        </Button>
-      </main>
+      <WorkspaceReadinessRecovery
+        kind="error"
+        onRetry={() => {
+          void profile.refetch();
+        }}
+      />
     );
   }
 
   if (!profile.data || !complete) {
-    return (
-      <main className="app-content ux-reset-pro-main">
-        <p aria-live="polite" role="status">
-          {COPY.checking}
-        </p>
-      </main>
-    );
+    return <WorkspaceConnectingScreen />;
   }
 
   return children;
