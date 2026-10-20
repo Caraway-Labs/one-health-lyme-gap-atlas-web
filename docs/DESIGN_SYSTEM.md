@@ -70,6 +70,7 @@ These compose primitives and domain CSS. They are not rename-wrappers:
 - `AtlasDataStamp` — governed snapshot / version stamp
 - `AtlasStatusMessage` — loading, error, and empty copy
 - `AtlasMapLegend` — review-priority ramp with non-map caption
+- `ExplorerMapLegend` — Explorer map color key. Discrete layers share one segmented pill. The seven-color gap-score bar is the reference for bar height (0.55rem), fully rounded outer ends, and segment width. Fewer categories make a shorter pill and are not stretched to that seven-color width. At a normal desktop width each discrete segment is one seventh of the legend. Segments meet inside the rounded clip; category colors stay discrete. End captions for a discrete pill sit under that pill. Continuous ramps keep one rounded gradient, with a thin gray no-data segment when that layer already has one. Colors, order, labels, thresholds, popovers, and no-data meaning stay on the layer contract. Segment hit targets stay at least 1.75rem tall. Rurality's ordered ramp uses the same pill; its separate "No data" control stays beside that ramp and uses one fully rounded segment.
 - `AtlasPriorityBadge` — `Badge` plus `.priority-pill` severity colors
 - `EvidenceObject`, `EvidenceStateStrip`, `EvidenceProvenanceInspect` — UX Reset shared evidence/provenance presentation (`src/features/ux-reset/evidence/`; see [ux-reset-evidence-contract.md](./ux-reset-evidence-contract.md))
 
