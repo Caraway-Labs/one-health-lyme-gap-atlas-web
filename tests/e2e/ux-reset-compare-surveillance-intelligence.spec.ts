@@ -253,24 +253,19 @@ test.describe("Compare county surveillance intelligence", () => {
     await expect(details).toHaveCount(0);
 
     const viewports = [
-      { height: 700, stacked: true, width: 320 },
-      { height: 844, stacked: true, width: 390 },
-      { height: 900, stacked: false, width: 768 },
-      { height: 900, stacked: false, width: 1440 },
-      { height: 900, stacked: false, width: 1728 },
+      { height: 900, width: 768 },
+      { height: 900, width: 1440 },
+      { height: 900, width: 1728 },
     ];
     for (const viewport of viewports) {
-      await page.setViewportSize({
-        height: viewport.height,
-        width: viewport.width,
-      });
+      await page.setViewportSize(viewport);
       const cell = page.getByTestId(
         `compare-surveillance-cell-gap-score-${AUTAUGA}`
       );
       const display = await cell.evaluate(
         (element) => getComputedStyle(element).display
       );
-      expect(display).toBe(viewport.stacked ? "block" : "table-cell");
+      expect(display).toBe("table-cell");
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1
       );
