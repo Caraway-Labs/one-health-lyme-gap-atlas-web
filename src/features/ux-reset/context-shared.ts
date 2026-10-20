@@ -70,7 +70,7 @@ export const UX_RESET_PAGE_LOCAL_PARAM_KEYS = {
   compare: ["metric", "mode", "return"] as const,
   explore: ["view", "metric", "page", "selected", "map_scope"] as const,
   feed: ["tab"] as const,
-  investigate: ["evidence", "eco", "breakpoint", "missing", "q"] as const,
+  investigate: ["evidence", "eco", "smooth", "missing", "q"] as const,
   review: [
     "sort",
     "page",
@@ -78,7 +78,7 @@ export const UX_RESET_PAGE_LOCAL_PARAM_KEYS = {
     "selection",
     "layer",
     "eco",
-    "breakpoint",
+    "smooth",
     "missing",
     "focus",
   ] as const,

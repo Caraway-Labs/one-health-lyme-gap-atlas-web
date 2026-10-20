@@ -10,15 +10,22 @@ import type { StandardsMapping } from './standardsMapping';
 export interface Indicator {
   indicator_id: string;
   label: string;
+  /** @nullable */
   definition: string | null;
   measure_ids: string[];
   /** Governed semantic contract version, separate from HTTP V1 and application version. */
   semantic_version: string;
-  /** Governed current-release relationship version. */
+  /**
+     * Governed current-release relationship version.
+     * @nullable
+     */
   release_version?: string | null;
+  /** @nullable */
   domain?: string | null;
+  /** @nullable */
   category?: string | null;
   /** Governed interpretation limitations; preserve alongside values and versions. */
   limitations?: string[];
+  /** @nullable */
   standards_mappings?: StandardsMapping[] | null;
 }

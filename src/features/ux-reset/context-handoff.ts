@@ -43,7 +43,7 @@ const ALL_TRACKED_SOURCE_KEYS = [
   "map_scope",
   "evidence",
   "eco",
-  "breakpoint",
+  "smooth",
   "missing",
   "q",
   "sort",

@@ -6,7 +6,7 @@ import type { ScoreSettings } from "../src/lib/atlas-ui";
 
 const defaultSettings: ScoreSettings = {
   ecological_share: 65,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 75,
 };
 
@@ -18,8 +18,8 @@ describe("Collapsed scoring assumptions preview", () => {
 
     expect(screen.getByText("Tick/pathogen share")).toBeTruthy();
     expect(screen.getByText("65%")).toBeTruthy();
-    expect(screen.getByText("Published-record threshold")).toBeTruthy();
-    expect(screen.getByText("10 per 100,000")).toBeTruthy();
+    expect(screen.getByText("Smooth incidence attenuation (k)")).toBeTruthy();
+    expect(screen.getByText("50 per 100,000")).toBeTruthy();
   });
 
   it("renders the current missing county-record value", () => {
@@ -32,7 +32,7 @@ describe("Collapsed scoring assumptions preview", () => {
   it("reflects a changed settings triple with no extra state", () => {
     const changedSettings: ScoreSettings = {
       ecological_share: 70,
-      low_incidence_breakpoint: 15,
+      smooth_k: 15,
       missing_human_weakness: 80,
     };
 

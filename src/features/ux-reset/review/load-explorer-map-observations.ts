@@ -28,7 +28,7 @@ import type {
 import {
   ObservationsV1ObservationsGetResponse,
   observationsV1ObservationsGetQueryGeographyIdMax,
-  observationsV1ObservationsGetQueryPageSizeOneMax,
+  observationsV1ObservationsGetQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 
@@ -43,7 +43,7 @@ function pageParams(input: {
     geography_id: [...input.fips],
     geography_type: "county",
     measure_id: input.spec.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeOneMax,
+    page_size: observationsV1ObservationsGetQueryPageSizeMax,
   };
   if (input.spec.context) {
     params.vintage_year = input.spec.vintageYear;

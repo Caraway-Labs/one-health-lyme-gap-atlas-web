@@ -8,18 +8,18 @@
 import * as zod from 'zod';
 
 export const intelligenceTagValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceTagMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceTagMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceTagConfidenceOneMin = 0;
-export const intelligenceTagConfidenceOneMax = 1;
+export const intelligenceTagMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceTagMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceTagConfidenceMin = 0;
+export const intelligenceTagConfidenceMax = 1;
 
 
 export const IntelligenceTag = zod.object({
   "value": zod.string().regex(intelligenceTagValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(intelligenceTagMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(intelligenceTagMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(intelligenceTagConfidenceOneMin).max(intelligenceTagConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(intelligenceTagMethodRegExp).nullable(),
+  "method_version": zod.string().regex(intelligenceTagMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(intelligenceTagConfidenceMin).max(intelligenceTagConfidenceMax).nullable()
 })
 
 export type IntelligenceTag = zod.input<typeof IntelligenceTag>;

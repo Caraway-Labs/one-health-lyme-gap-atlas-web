@@ -10,34 +10,34 @@ import * as zod from 'zod';
 export const askAtlasStructuredBodyQuestionMax = 1000;
 
 export const askAtlasStructuredBodySourceModeDefault = `Structured`;
-export const askAtlasStructuredBodyContextMeasureIdOneMax = 120;
+export const askAtlasStructuredBodyContextMeasureIdMax = 120;
 
-export const askAtlasStructuredBodyContextIndicatorIdOneMax = 120;
+export const askAtlasStructuredBodyContextIndicatorIdMax = 120;
 
-export const askAtlasStructuredBodyContextSearchTextOneMax = 120;
+export const askAtlasStructuredBodyContextSearchTextMax = 120;
 
 export const askAtlasStructuredBodyContextGeographyTypeDefault = `county`;
-export const askAtlasStructuredBodyContextGeographyIdsOneMax = 20;
+export const askAtlasStructuredBodyContextGeographyIdsMax = 20;
 
-export const askAtlasStructuredBodyContextYearOneMin = 1900;
-export const askAtlasStructuredBodyContextYearOneMax = 2100;
+export const askAtlasStructuredBodyContextYearMin = 1900;
+export const askAtlasStructuredBodyContextYearMax = 2100;
 
-export const askAtlasStructuredBodyContextExpectedObservationIdOneMax = 200;
+export const askAtlasStructuredBodyContextExpectedObservationIdMax = 200;
 
 
 export const AskAtlasStructuredBody = zod.object({
   "question": zod.string().min(1).max(askAtlasStructuredBodyQuestionMax),
   "source_mode": zod.enum(['Literature', 'Structured', 'Both']).default(askAtlasStructuredBodySourceModeDefault),
   "context": zod.object({
-  "measure_id": zod.union([zod.string().min(1).max(askAtlasStructuredBodyContextMeasureIdOneMax),zod.null()]).optional(),
-  "indicator_id": zod.union([zod.string().min(1).max(askAtlasStructuredBodyContextIndicatorIdOneMax),zod.null()]).optional(),
-  "search_text": zod.union([zod.string().min(1).max(askAtlasStructuredBodyContextSearchTextOneMax),zod.null()]).optional(),
+  "measure_id": zod.string().min(1).max(askAtlasStructuredBodyContextMeasureIdMax).nullish(),
+  "indicator_id": zod.string().min(1).max(askAtlasStructuredBodyContextIndicatorIdMax).nullish(),
+  "search_text": zod.string().min(1).max(askAtlasStructuredBodyContextSearchTextMax).nullish(),
   "geography_type": zod.enum(['county', 'state']).default(askAtlasStructuredBodyContextGeographyTypeDefault),
-  "geography_ids": zod.union([zod.array(zod.string()).min(1).max(askAtlasStructuredBodyContextGeographyIdsOneMax),zod.null()]).optional(),
-  "year": zod.union([zod.int().min(askAtlasStructuredBodyContextYearOneMin).max(askAtlasStructuredBodyContextYearOneMax),zod.null()]).optional(),
-  "start_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "end_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "expected_observation_id": zod.union([zod.string().min(1).max(askAtlasStructuredBodyContextExpectedObservationIdOneMax),zod.null()]).optional()
+  "geography_ids": zod.array(zod.string()).min(1).max(askAtlasStructuredBodyContextGeographyIdsMax).nullish(),
+  "year": zod.int().min(askAtlasStructuredBodyContextYearMin).max(askAtlasStructuredBodyContextYearMax).nullish(),
+  "start_date": zod.iso.date().nullish(),
+  "end_date": zod.iso.date().nullish(),
+  "expected_observation_id": zod.string().min(1).max(askAtlasStructuredBodyContextExpectedObservationIdMax).nullish()
 }).optional()
 })
 

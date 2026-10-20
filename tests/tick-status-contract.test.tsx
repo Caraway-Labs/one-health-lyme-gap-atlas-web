@@ -21,6 +21,7 @@ function county(
     county: "County",
     evidence_completeness: 40,
     fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     in_contiguous_tick_scope: true,
     priority: "Lower Atlas priority — Not a safety finding",

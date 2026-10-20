@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * @nullable
+ */
 export type FeedbackContextExplorerMetric = typeof FeedbackContextExplorerMetric[keyof typeof FeedbackContextExplorerMetric] | null;
 
 

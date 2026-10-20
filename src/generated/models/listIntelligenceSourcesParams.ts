@@ -12,5 +12,9 @@ export type ListIntelligenceSourcesParams = {
  * @maximum 500
  */
 page_size?: number;
+/**
+ * @maxLength 2048
+ * @nullable
+ */
 page_token?: string | null;
 };

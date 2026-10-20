@@ -14,15 +14,15 @@ This page is generated from the public OpenAPI contract. It is not a second hand
 | Application version | `0.1.0` |
 | HTTP contract | `/v1` |
 | Source repository | `Caraway-Labs/one-health-lyme-gap-atlas-api` |
-| Source commit | `d0472707cfc2badae714a797ec54c83d4f7ad79b` |
+| Source commit | `e88887877440c00de0e23301f0a3eac2353134d9` |
 | Source file | `openapi.json` |
-| Checksum | `c0a4e2ea4f15a543c3fc1e7705e2e4691cbc7e3ace9910d159b3814d3c049d6a` |
+| Checksum | `dfa540f57f0c359f5adc0a0d8b851d964008fbea72c84f9d5f09bcdf1152fbf0` |
 
 Application version `0.1.0` identifies the OpenAPI `info.version` field. The HTTP contract is `/v1`. Those identifiers are different. This reference build is identified by the source commit and checksum.
 
 Raw spec: [OpenAPI schema](https://api.onehealthatlas.org/openapi.json).
 
-Pinned source: [Caraway-Labs/one-health-lyme-gap-atlas-api@d0472707cfc2badae714a797ec54c83d4f7ad79b](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api/blob/d0472707cfc2badae714a797ec54c83d4f7ad79b/openapi.json).
+Pinned source: [Caraway-Labs/one-health-lyme-gap-atlas-api@e88887877440c00de0e23301f0a3eac2353134d9](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api/blob/e88887877440c00de0e23301f0a3eac2353134d9/openapi.json).
 
 ## Servers
 
@@ -121,6 +121,7 @@ Existing county details and versioned PDF reports.
 
 - [`GET /v1/counties/{fips}`](/docs/api-reference/counties/county_v1_counties__fips__get) — Get county analytics and provenance — `county_v1_counties__fips__get`
 - [`GET /v1/counties/{fips}/report.pdf`](/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get) — Download a county report — `county_report_pdf_v1_counties__fips__report_pdf_get`
+- [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/county_surveillance_situations_get) — Get both persisted county surveillance-situation classifications — `county_surveillance_situations_get`
 - [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/county_tier1_surveillance_priority_get) — Get persisted Tier 1 model-assisted surveillance review priority — `county_tier1_surveillance_priority_get`
 - [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/county_tier1_surveillance_priority_availability_get) — Get Tier 1 result availability and persisted data — `county_tier1_surveillance_priority_availability_get`
 
@@ -131,4 +132,4 @@ Existing state PDF reports.
 - [`GET /v1/states/{state}/report.pdf`](/docs/api-reference/states/state_report_pdf_v1_states__state__report_pdf_get) — Download a state report — `state_report_pdf_v1_states__state__report_pdf_get`
 - [`GET /v1/states/{state}/review`](/docs/api-reference/states/state_review_v1_states__state__review_get) — Review a state's county evidence — `state_review_v1_states__state__review_get`
 
-Component schemas: [Schemas](/docs/api-reference/schemas) (50).
+Component schemas: [Schemas](/docs/api-reference/schemas) (54).

@@ -9,6 +9,15 @@ import type { AtlasMetadata } from './atlasMetadata';
 import type { Score } from './score';
 
 export interface CountyDetail {
+  scoring_methodology_version?: 'surveillance-gap-score-v1.1';
+  /** @nullable */
+  incidence_floor_2023: number | null;
+  /** @nullable */
+  svi_percentile: number | null;
+  /** @nullable */
+  uninsured_percentile: number | null;
+  /** @nullable */
+  rucc_2023: number | null;
   fips: string;
   county: string;
   state: string;
@@ -21,15 +30,17 @@ export interface CountyDetail {
   score: Score;
   priority: string;
   color: string;
+  /** @nullable */
   population: number | null;
+  /** @nullable */
   case_count_floor_2023: number | null;
-  incidence_floor_2023: number | null;
+  /** @nullable */
   state_unallocated_records_2023: number | null;
+  /** @nullable */
   scapularis_status: string | null;
+  /** @nullable */
   pacificus_status: string | null;
-  svi_percentile: number | null;
-  uninsured_percentile: number | null;
+  /** @nullable */
   uninsured_percent: number | null;
-  rucc_2023: number | null;
   release: AtlasMetadata;
 }

@@ -8,6 +8,7 @@ const metadata = {
   generated_at: "2026-08-06T05:37:16Z",
   limitations: "Not individual risk.",
   loaded_at: "2026-08-15T00:00:00Z",
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   methodology_version: "alpha-0.2.0",
   release_id: "alpha-2026-08-06",
   schema_version: "0.2.0",
@@ -23,6 +24,7 @@ const summary = {
   county: "Adams",
   evidence_completeness: 6,
   fips: "08001",
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "no_county_linked_record",
   in_contiguous_tick_scope: true,
   priority: "Priority 2 — Review",
@@ -51,6 +53,7 @@ test.beforeEach(async ({ page }) => {
     } else if (url.pathname.endsWith("/scores")) {
       body = {
         release_id: metadata.release_id,
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: metadata.methodology_version,
         settings: {},
         counties: [summary],

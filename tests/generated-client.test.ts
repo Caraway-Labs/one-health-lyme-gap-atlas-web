@@ -11,7 +11,7 @@ describe("generated API client", () => {
       getScoresV1AtlasScoresGetUrl({
         dataset_version: "alpha-2026-08-06",
         ecological_share: 65,
-        low_incidence_breakpoint: 10,
+        smooth_k: 50,
         missing_human_weakness: 75,
       })
     ).toContain("dataset_version=alpha-2026-08-06");

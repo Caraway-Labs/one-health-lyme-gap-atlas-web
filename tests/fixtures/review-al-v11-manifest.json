@@ -1,0 +1,21 @@
+{
+  "note": "Locally recomputed v1.1 regression projections of captured original county inputs, NOT fresh production responses. Raw captures retained unchanged.",
+  "shared_commit": "1663267c6a3121d7cbb1d40b95a6dc50ee5e1642",
+  "sources": [
+    {
+      "source": "review-al-01001.json",
+      "sha256": "2b73701bdee5ba48d8b28c034e9e198efb3937e97eba7517d5691ace2f044e88",
+      "release": "governed-2026-10-06-nlcd-demo-cohort"
+    },
+    {
+      "source": "review-al-01003.json",
+      "sha256": "9b12c17e3fe468accd0d2642c4a3ab92ff0df1f826a5e81d708ec7574f12b9f7",
+      "release": "governed-2026-10-06-nlcd-demo-cohort"
+    },
+    {
+      "source": "review-al-01005.json",
+      "sha256": "2eb3d6840f3f3bf9f6cee77ddcb3e101ce80931a5cf01f8db6f72328baf9e394",
+      "release": "governed-2026-10-06-nlcd-demo-cohort"
+    }
+  ]
+}

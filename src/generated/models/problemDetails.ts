@@ -5,7 +5,7 @@
  * Build artifact for existing first-party Web client and validator generation. Not an external developer contract or HTTP surface. Use the public openapi.json for external documentation.
  * OpenAPI spec version: 0.1.0
  */
-import type { ProblemDetailsErrors } from './problemDetailsErrors';
+import type { ProblemDetailsErrorsItem } from './problemDetailsErrorsItem';
 
 /**
  * RFC 9457 error. Stable codes are included when the response contract defines one.
@@ -17,6 +17,8 @@ export interface ProblemDetails {
   detail: string;
   instance: string;
   request_id: string;
+  /** @nullable */
   code?: string | null;
-  errors?: ProblemDetailsErrors;
+  /** @nullable */
+  errors?: ProblemDetailsErrorsItem[] | null;
 }

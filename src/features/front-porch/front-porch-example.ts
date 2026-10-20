@@ -91,6 +91,6 @@ export const FRONT_PORCH_CONTEXT_OBSERVATION = {
 } as const;
 
 export const FRONT_PORCH_RELEASE_DETAIL = [
-  `Example snapshot for ${FRONT_PORCH_EXAMPLE_COUNTY.name}. Technical release id: ${FRONT_PORCH_EXAMPLE_RELEASE_ID}. The scoring explanation for this worked example uses methodology ${FRONT_PORCH_EXAMPLE_METHODOLOGY}. The county record was loaded on 15 October 2026, and these findings were checked on 17 October 2026.`,
+  `Example snapshot for ${FRONT_PORCH_EXAMPLE_COUNTY.name}. Technical release id: ${FRONT_PORCH_EXAMPLE_RELEASE_ID}. Data-release methodology is ${FRONT_PORCH_EXAMPLE_METHODOLOGY}. Scoring methodology is surveillance-gap-score-v1.1, Smooth k=50. Applying the approved scorer to these cited inputs gives 30.4, in the Watch band. The county record was loaded on 15 October 2026, and the source findings were checked on 17 October 2026. The score was reconciled against the approved shared scorer on 20 October 2026.`,
   "Virginia has 293 state-unallocated 2023 records. They cannot be assigned to Montgomery County, and they are not part of the county count of 71.",
 ] as const;

@@ -10,34 +10,34 @@ import * as zod from 'zod';
 export const structuredAssistantRequestQuestionMax = 1000;
 
 export const structuredAssistantRequestSourceModeDefault = `Structured`;
-export const structuredAssistantRequestContextMeasureIdOneMax = 120;
+export const structuredAssistantRequestContextMeasureIdMax = 120;
 
-export const structuredAssistantRequestContextIndicatorIdOneMax = 120;
+export const structuredAssistantRequestContextIndicatorIdMax = 120;
 
-export const structuredAssistantRequestContextSearchTextOneMax = 120;
+export const structuredAssistantRequestContextSearchTextMax = 120;
 
 export const structuredAssistantRequestContextGeographyTypeDefault = `county`;
-export const structuredAssistantRequestContextGeographyIdsOneMax = 20;
+export const structuredAssistantRequestContextGeographyIdsMax = 20;
 
-export const structuredAssistantRequestContextYearOneMin = 1900;
-export const structuredAssistantRequestContextYearOneMax = 2100;
+export const structuredAssistantRequestContextYearMin = 1900;
+export const structuredAssistantRequestContextYearMax = 2100;
 
-export const structuredAssistantRequestContextExpectedObservationIdOneMax = 200;
+export const structuredAssistantRequestContextExpectedObservationIdMax = 200;
 
 
 export const StructuredAssistantRequest = zod.object({
   "question": zod.string().min(1).max(structuredAssistantRequestQuestionMax),
   "source_mode": zod.enum(['Literature', 'Structured', 'Both']).default(structuredAssistantRequestSourceModeDefault),
   "context": zod.object({
-  "measure_id": zod.union([zod.string().min(1).max(structuredAssistantRequestContextMeasureIdOneMax),zod.null()]).optional(),
-  "indicator_id": zod.union([zod.string().min(1).max(structuredAssistantRequestContextIndicatorIdOneMax),zod.null()]).optional(),
-  "search_text": zod.union([zod.string().min(1).max(structuredAssistantRequestContextSearchTextOneMax),zod.null()]).optional(),
+  "measure_id": zod.string().min(1).max(structuredAssistantRequestContextMeasureIdMax).nullish(),
+  "indicator_id": zod.string().min(1).max(structuredAssistantRequestContextIndicatorIdMax).nullish(),
+  "search_text": zod.string().min(1).max(structuredAssistantRequestContextSearchTextMax).nullish(),
   "geography_type": zod.enum(['county', 'state']).default(structuredAssistantRequestContextGeographyTypeDefault),
-  "geography_ids": zod.union([zod.array(zod.string()).min(1).max(structuredAssistantRequestContextGeographyIdsOneMax),zod.null()]).optional(),
-  "year": zod.union([zod.int().min(structuredAssistantRequestContextYearOneMin).max(structuredAssistantRequestContextYearOneMax),zod.null()]).optional(),
-  "start_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "end_date": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "expected_observation_id": zod.union([zod.string().min(1).max(structuredAssistantRequestContextExpectedObservationIdOneMax),zod.null()]).optional()
+  "geography_ids": zod.array(zod.string()).min(1).max(structuredAssistantRequestContextGeographyIdsMax).nullish(),
+  "year": zod.int().min(structuredAssistantRequestContextYearMin).max(structuredAssistantRequestContextYearMax).nullish(),
+  "start_date": zod.iso.date().nullish(),
+  "end_date": zod.iso.date().nullish(),
+  "expected_observation_id": zod.string().min(1).max(structuredAssistantRequestContextExpectedObservationIdMax).nullish()
 }).optional()
 })
 

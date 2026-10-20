@@ -9,8 +9,8 @@ import * as zod from 'zod';
 
 
 export const tier1CountyPriorityAvailabilityDataOneCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const tier1CountyPriorityAvailabilityDataOnePriorityPercentileOneMin = 0;
-export const tier1CountyPriorityAvailabilityDataOnePriorityPercentileOneMax = 100;
+export const tier1CountyPriorityAvailabilityDataOnePriorityPercentileMin = 0;
+export const tier1CountyPriorityAvailabilityDataOnePriorityPercentileMax = 100;
 
 
 
@@ -26,12 +26,12 @@ export const tier1CountyPriorityAvailabilityDataOneReasonsMax = 3;
 export const Tier1CountyPriorityAvailability = zod.object({
   "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a persisted Tier 1 result exists for this supported current geography.'),
   "geography_release_id": zod.string().min(1).describe('Current governed geography release used to validate the requested FIPS.'),
-  "reason": zod.union([zod.literal("NO_PUBLISHED_MODEL"),zod.null()]).describe('Stable reason when no persisted result is published; null when data is available.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_MODEL'),zod.literal(null)]).nullable().describe('Stable reason when no persisted result is published; null when data is available.'),
   "data": zod.union([zod.object({
   "county_fips": zod.string().regex(tier1CountyPriorityAvailabilityDataOneCountyFipsRegExp).describe('Five-digit county FIPS for this persisted result.'),
-  "priority_tier": zod.union([zod.enum(['HIGH', 'MEDIUM', 'LOW']),zod.null()]).describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
-  "priority_percentile": zod.union([zod.number().min(tier1CountyPriorityAvailabilityDataOnePriorityPercentileOneMin).max(tier1CountyPriorityAvailabilityDataOnePriorityPercentileOneMax),zod.null()]).describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
-  "raw_model_score": zod.union([zod.number(),zod.null()]).describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
+  "priority_tier": zod.union([zod.literal('HIGH'),zod.literal('MEDIUM'),zod.literal('LOW'),zod.literal(null)]).nullable().describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
+  "priority_percentile": zod.number().min(tier1CountyPriorityAvailabilityDataOnePriorityPercentileMin).max(tier1CountyPriorityAvailabilityDataOnePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
+  "raw_model_score": zod.number().nullable().describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
   "evidence_sufficiency": zod.enum(['SUFFICIENT', 'INSUFFICIENT', 'NOT_ESTIMABLE']).describe('Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.'),
   "model_version": zod.string().min(1).describe('Version of the model that generated this result.'),
   "release_id": zod.string().min(1).describe('Governed source release for this batch.'),

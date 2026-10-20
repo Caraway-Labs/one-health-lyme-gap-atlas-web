@@ -11,7 +11,7 @@ import { observationsV1ObservationsGet } from "@/generated/atlas";
 import type { CountyContextObservation } from "@/generated/models";
 import {
   ObservationsV1ObservationsGetResponse,
-  observationsV1ObservationsGetQueryPageSizeOneMax,
+  observationsV1ObservationsGetQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
@@ -73,7 +73,7 @@ export async function fetchPopulationRuralityMeasure(input: {
           geography_id: [input.fips],
           geography_type: "county",
           measure_id: input.measureId,
-          page_size: observationsV1ObservationsGetQueryPageSizeOneMax,
+          page_size: observationsV1ObservationsGetQueryPageSizeMax,
           ...(pageToken ? { page_token: pageToken } : {}),
           vintage_year: input.vintageYear,
         },

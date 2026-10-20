@@ -45,8 +45,8 @@ import { useSettingsStateOptions } from "@/features/ux-reset/settings/use-settin
 import type { UserProfileWrite } from "@/generated/models/userProfileWrite";
 import type { UserProfileWriteRole } from "@/generated/models/userProfileWriteRole";
 import {
-  userProfileWriteJobTitleOneMax,
-  userProfileWriteOrganizationOneMax,
+  userProfileWriteJobTitleMax,
+  userProfileWriteOrganizationMax,
 } from "@/generated/zod/userProfileWrite.zod";
 import {
   type AtlasStateOption,
@@ -649,7 +649,7 @@ export function SettingsProfileForm() {
               data-testid="settings-organization"
               disabled={saving}
               id="settings-organization"
-              maxLength={userProfileWriteOrganizationOneMax}
+              maxLength={userProfileWriteOrganizationMax}
               value={draft.organization}
               onChange={(event) =>
                 updateDraft({ ...draft, organization: event.target.value })
@@ -665,7 +665,7 @@ export function SettingsProfileForm() {
               data-testid="settings-job-title"
               disabled={saving}
               id="settings-job-title"
-              maxLength={userProfileWriteJobTitleOneMax}
+              maxLength={userProfileWriteJobTitleMax}
               value={draft.jobTitle}
               onChange={(event) =>
                 updateDraft({ ...draft, jobTitle: event.target.value })

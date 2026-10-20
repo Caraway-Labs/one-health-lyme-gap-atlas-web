@@ -13,28 +13,44 @@ import type { SurveillanceContext } from './surveillanceContext';
 import type { ValueState } from './valueState';
 
 export interface Observation {
-  /** Reviewed consumer-safe metadata revision; not private lineage. */
+  /**
+     * Reviewed consumer-safe metadata revision; not private lineage.
+     * @nullable
+     */
   metadata_revision_id?: string | null;
   /** Stable observation identity and compact provenance reference. */
   observation_id: string;
   measure_id: string;
   geography: GeographyIdentity;
   temporal_grain: string;
-  /** Read with value_state and unit; null never means zero. */
+  /**
+     * Read with value_state and unit; null never means zero.
+     * @nullable
+     */
   value: number | string | null;
   /** OBSERVED is nonzero; ZERO is numeric zero; MISSING/SUPPRESSED/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC's No records. Neither establishes biological absence. */
   value_state: ValueState;
   unit: string;
-  /** Governed denominator; null means it is not supplied and must not be inferred. */
+  /**
+     * Governed denominator; null means it is not supplied and must not be inferred.
+     * @nullable
+     */
   denominator: string | null;
   strata?: ObservationStrata;
   /** Public source resource key; distinct from lineage_source_id and dataset_id. */
   source_id: string;
+  /** @nullable */
   lineage_source_id?: string | null;
+  /** @nullable */
   dataset_id?: string | null;
-  /** Exact governed methodology resource ID; null when not governed. */
+  /**
+     * Exact governed methodology resource ID; null when not governed.
+     * @nullable
+     */
   methodology_id: string | null;
+  /** @nullable */
   methodology?: string | null;
+  /** @nullable */
   release_methodology_version?: string | null;
   /** Transformation version, distinct from methodology resource version. */
   methodology_version: string;
@@ -44,14 +60,26 @@ export interface Observation {
   release_id: string;
   /** Structured observation provenance identity; not a literature citation. */
   provenance_ref: string;
+  /** @nullable */
   source_label?: string | null;
+  /** @nullable */
   source_vintage?: string | null;
+  /** @nullable */
   source_url?: string | null;
-  /** Publisher timestamp when governed; null is not inferred freshness. */
+  /**
+     * Publisher timestamp when governed; null is not inferred freshness.
+     * @nullable
+     */
   source_published_at?: string | null;
-  /** Atlas acquisition time when governed; distinct from source publication and processing. */
+  /**
+     * Atlas acquisition time when governed; distinct from source publication and processing.
+     * @nullable
+     */
   atlas_acquired_at?: string | null;
-  /** Atlas processing time when governed; distinct from response time. */
+  /**
+     * Atlas processing time when governed; distinct from response time.
+     * @nullable
+     */
   atlas_processed_at?: string | null;
   /** Governed interpretation limitations; preserve alongside values and versions. */
   limitations: string[];

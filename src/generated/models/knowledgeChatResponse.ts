@@ -13,6 +13,7 @@ import type { KnowledgeClaim } from './knowledgeClaim';
 export interface KnowledgeChatResponse {
   request_id: string;
   conversation_id: string;
+  /** @nullable */
   conversation_token?: string | null;
   configuration_version: string;
   assistant_policy_version: string;
@@ -20,6 +21,7 @@ export interface KnowledgeChatResponse {
   answer: string;
   evidence_state: KnowledgeChatResponseEvidenceState;
   source_used: 'literature_evidence';
+  /** @nullable */
   model_id?: string | null;
   claims?: KnowledgeClaim[];
   citations?: KnowledgeCitation[];

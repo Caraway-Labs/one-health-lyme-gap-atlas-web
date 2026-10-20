@@ -11,9 +11,9 @@ export const freshnessStateDefault = `unknown`;
 export const Freshness = zod.object({
   "observation_id": zod.string(),
   "state": zod.enum(['current', 'stale', 'unknown']).default(freshnessStateDefault),
-  "policy_id": zod.union([zod.string(),zod.null()]).optional(),
-  "source_timestamp": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
-  "compared_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional()
+  "policy_id": zod.string().nullish(),
+  "source_timestamp": zod.iso.datetime({"offset":true}).nullish(),
+  "compared_at": zod.iso.datetime({"offset":true}).nullish()
 })
 
 export type Freshness = zod.input<typeof Freshness>;

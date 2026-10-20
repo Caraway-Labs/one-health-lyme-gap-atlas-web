@@ -14,7 +14,10 @@ export interface CountyContext {
   vintage_year: number;
   source_field: string;
   value_type: CountyContextValueType;
-  /** Authoritative category label; null for quantities. */
+  /**
+     * Authoritative category label; null for quantities.
+     * @nullable
+     */
   category_label: string | null;
   definition: string;
   allowed_value_states: ValueState[];

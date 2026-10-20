@@ -29,7 +29,8 @@ function boundedInteger(
 }
 
 export const atlasSearchParams = {
-  breakpoint: boundedInteger(10, 5, 25),
+  breakpoint: parseAsString,
+  smooth: boundedInteger(50, 5, 200, 5),
   compare: fips,
   county: fips.withDefault("06037"),
   dataset: parseAsString,
@@ -43,13 +44,17 @@ export const atlasSearchParams = {
 };
 
 export function toScoreSettings(values: {
-  breakpoint: number;
+  smooth: number;
+  breakpoint?: string | null;
   eco: number;
   missing: number;
 }): ScoreSettings {
+  if (values.breakpoint != null) {
+    return { ecological_share: 65, smooth_k: 50, missing_human_weakness: 75 };
+  }
   return {
     ecological_share: values.eco,
-    low_incidence_breakpoint: values.breakpoint,
+    smooth_k: values.smooth,
     missing_human_weakness: values.missing,
   };
 }

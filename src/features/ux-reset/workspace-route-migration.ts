@@ -64,7 +64,6 @@ export const EXPLORER_FOLLOW_UP_MODE = "follow-up" as const;
  * and `layer`.
  */
 export const WORKSPACE_MIGRATION_UNSUPPORTED_KEYS = [
-  "breakpoint",
   "conversation",
   "eco",
   "evidence",
@@ -78,6 +77,7 @@ export const WORKSPACE_MIGRATION_UNSUPPORTED_KEYS = [
   "release",
   "return",
   "role",
+  "smooth",
   "sort",
   "tab",
   "view",

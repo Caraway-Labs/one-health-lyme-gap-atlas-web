@@ -7,9 +7,9 @@ import {
   type TestInfo,
 } from "@playwright/test";
 
-import autauga from "../fixtures/review-al-01001.json" with { type: "json" };
-import baldwin from "../fixtures/review-al-01003.json" with { type: "json" };
 import identities from "../fixtures/review-al-published-identities.json" with { type: "json" };
+import autauga from "../fixtures/review-al-v11-01001.json" with { type: "json" };
+import baldwin from "../fixtures/review-al-v11-01003.json" with { type: "json" };
 import {
   buildStateReview,
   reviewCandidate,
@@ -184,7 +184,7 @@ test.describe("Explorer Download PDF", () => {
       );
     });
     await page.goto(
-      `/explore?scope=CO&dataset=${reviewedRelease}&county=08001&eco=40&breakpoint=25&missing=40`
+      `/explore?scope=CO&dataset=${reviewedRelease}&county=08001&eco=40&smooth=25&missing=40`
     );
     const button = page
       .getByTestId("review-county-preview")
@@ -220,7 +220,7 @@ test.describe("Explorer Download PDF", () => {
     expect(reportUrl.pathname).toBe("/v1/counties/08001/report.pdf");
     expect(reportUrl.searchParams.get("dataset_version")).toBe(reviewedRelease);
     expect(reportUrl.searchParams.get("ecological_share")).toBe("65");
-    expect(reportUrl.searchParams.get("low_incidence_breakpoint")).toBe("10");
+    expect(reportUrl.searchParams.get("smooth_k")).toBe("50");
     expect(reportUrl.searchParams.get("missing_human_weakness")).toBe("75");
     expect(reportUrl.searchParams.has("eco")).toBe(false);
     const result = await new AxeBuilder({ page })

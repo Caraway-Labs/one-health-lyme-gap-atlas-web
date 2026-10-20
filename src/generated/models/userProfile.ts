@@ -6,12 +6,29 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UserProfileRole } from './userProfileRole';
+import type { UserProfileStartingViewVersion } from './userProfileStartingViewVersion';
 
 export interface UserProfile {
+  /** @nullable */
   role?: UserProfileRole;
+  /**
+     * @maxLength 2
+     * @nullable
+     */
   state_code?: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
   organization?: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
   job_title?: string | null;
-  /** Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key. */
-  starting_view_version?: 1 | null;
+  /**
+     * Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.
+     * @nullable
+     */
+  starting_view_version?: UserProfileStartingViewVersion;
 }

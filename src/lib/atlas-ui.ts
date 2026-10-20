@@ -18,7 +18,7 @@ export const MOST_DATA_FIELDS_COMPLETENESS_PERCENT = 83;
 
 export interface ScoreSettings {
   ecological_share: number;
-  low_incidence_breakpoint: number;
+  smooth_k: number;
   missing_human_weakness: number;
 }
 

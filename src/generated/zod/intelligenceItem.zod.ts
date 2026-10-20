@@ -11,33 +11,33 @@ export const intelligenceItemItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const intelligenceItemRevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const intelligenceItemSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 
-export const intelligenceItemCanonicalUrlOneMax = 4096;
+export const intelligenceItemCanonicalUrlMax = 4096;
 
-export const intelligenceItemTitleOneMax = 1000;
-
-
-export const intelligenceItemTitleOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const intelligenceItemPublishedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const intelligenceItemUpdatedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const intelligenceItemEventAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const intelligenceItemExcerptOneMax = 5000;
+export const intelligenceItemTitleMax = 1000;
 
 
-export const intelligenceItemExcerptOneRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
+export const intelligenceItemTitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const intelligenceItemPublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const intelligenceItemUpdatedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const intelligenceItemEventAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const intelligenceItemExcerptMax = 5000;
+
+
+export const intelligenceItemExcerptRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
 export const intelligenceItemFetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const intelligenceItemGeographiesItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemGeographiesItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemGeographiesItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemGeographiesItemConfidenceOneMin = 0;
-export const intelligenceItemGeographiesItemConfidenceOneMax = 1;
+export const intelligenceItemGeographiesItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemGeographiesItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemGeographiesItemConfidenceMin = 0;
+export const intelligenceItemGeographiesItemConfidenceMax = 1;
 
 export const intelligenceItemGeographiesMax = 100;
 
 export const intelligenceItemTopicsItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemTopicsItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemTopicsItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemTopicsItemConfidenceOneMin = 0;
-export const intelligenceItemTopicsItemConfidenceOneMax = 1;
+export const intelligenceItemTopicsItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemTopicsItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemTopicsItemConfidenceMin = 0;
+export const intelligenceItemTopicsItemConfidenceMax = 1;
 
 export const intelligenceItemTopicsMax = 100;
 
@@ -62,12 +62,12 @@ export const IntelligenceItem = zod.object({
   "revision_id": zod.string().regex(intelligenceItemRevisionIdRegExp),
   "source_id": zod.string().regex(intelligenceItemSourceIdRegExp),
   "registry_version": zod.int().min(1),
-  "canonical_url": zod.union([zod.string().max(intelligenceItemCanonicalUrlOneMax),zod.null()]),
-  "title": zod.union([zod.string().min(1).max(intelligenceItemTitleOneMax).regex(intelligenceItemTitleOneRegExp),zod.null()]),
-  "published_at": zod.union([zod.string().regex(intelligenceItemPublishedAtOneRegExp),zod.null()]),
-  "updated_at": zod.union([zod.string().regex(intelligenceItemUpdatedAtOneRegExp),zod.null()]),
-  "event_at": zod.union([zod.string().regex(intelligenceItemEventAtOneRegExp),zod.null()]),
-  "excerpt": zod.union([zod.string().min(1).max(intelligenceItemExcerptOneMax).regex(intelligenceItemExcerptOneRegExp),zod.null()]),
+  "canonical_url": zod.string().max(intelligenceItemCanonicalUrlMax).nullable(),
+  "title": zod.string().min(1).max(intelligenceItemTitleMax).regex(intelligenceItemTitleRegExp).nullable(),
+  "published_at": zod.string().regex(intelligenceItemPublishedAtRegExp).nullable(),
+  "updated_at": zod.string().regex(intelligenceItemUpdatedAtRegExp).nullable(),
+  "event_at": zod.string().regex(intelligenceItemEventAtRegExp).nullable(),
+  "excerpt": zod.string().min(1).max(intelligenceItemExcerptMax).regex(intelligenceItemExcerptRegExp).nullable(),
   "fetched_at": zod.string().regex(intelligenceItemFetchedAtRegExp),
   "field_states": zod.object({
   "canonical_url": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
@@ -80,16 +80,16 @@ export const IntelligenceItem = zod.object({
   "geographies": zod.array(zod.object({
   "value": zod.string().regex(intelligenceItemGeographiesItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(intelligenceItemGeographiesItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(intelligenceItemGeographiesItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(intelligenceItemGeographiesItemConfidenceOneMin).max(intelligenceItemGeographiesItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(intelligenceItemGeographiesItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(intelligenceItemGeographiesItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(intelligenceItemGeographiesItemConfidenceMin).max(intelligenceItemGeographiesItemConfidenceMax).nullable()
 })).max(intelligenceItemGeographiesMax),
   "topics": zod.array(zod.object({
   "value": zod.string().regex(intelligenceItemTopicsItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(intelligenceItemTopicsItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(intelligenceItemTopicsItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(intelligenceItemTopicsItemConfidenceOneMin).max(intelligenceItemTopicsItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(intelligenceItemTopicsItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(intelligenceItemTopicsItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(intelligenceItemTopicsItemConfidenceMin).max(intelligenceItemTopicsItemConfidenceMax).nullable()
 })).max(intelligenceItemTopicsMax),
   "transport": zod.enum(['rss', 'atom', 'email', 'web']),
   "transport_identity_sha256": zod.string().regex(intelligenceItemTransportIdentitySha256RegExp),

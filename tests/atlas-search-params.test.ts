@@ -1,8 +1,28 @@
 import { describe, expect, it } from "vitest";
 
-import { atlasSearchParams } from "../src/lib/atlas-search-params";
+import {
+  atlasSearchParams,
+  toScoreSettings,
+} from "../src/lib/atlas-search-params";
 
 describe("Atlas search-parameter contract", () => {
+  it("resets a legacy parameter and permits the next v1.1 slider state", () => {
+    expect(
+      toScoreSettings({ breakpoint: "10", smooth: 50, eco: 85, missing: 40 })
+    ).toStrictEqual({
+      smooth_k: 50,
+      ecological_share: 65,
+      missing_human_weakness: 75,
+    });
+    expect(
+      toScoreSettings({ breakpoint: null, smooth: 100, eco: 85, missing: 40 })
+    ).toStrictEqual({
+      smooth_k: 100,
+      ecological_share: 85,
+      missing_human_weakness: 40,
+    });
+  });
+
   it("parses state, evidence, and county values", () => {
     expect(atlasSearchParams.state.parse("CO")).toBe("CO");
     expect(atlasSearchParams.evidence.parse("human")).toBe("human");
@@ -24,8 +44,8 @@ describe("Atlas search-parameter contract", () => {
   it("accepts bounded score settings and rejects invalid values", () => {
     expect(atlasSearchParams.eco.parse("70")).toBe(70);
     expect(atlasSearchParams.eco.parse("71")).toBeNull();
-    expect(atlasSearchParams.breakpoint.parse("25")).toBe(25);
-    expect(atlasSearchParams.breakpoint.parse("26")).toBeNull();
+    expect(atlasSearchParams.smooth.parse("25")).toBe(25);
+    expect(atlasSearchParams.smooth.parse("26")).toBeNull();
     expect(atlasSearchParams.missing.parse("80")).toBe(80);
   });
 });

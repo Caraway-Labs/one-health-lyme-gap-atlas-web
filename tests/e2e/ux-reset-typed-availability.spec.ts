@@ -6,7 +6,7 @@ import {
   investigateMeasuresFixture,
   investigateObservationsFor,
 } from "../fixtures/investigate-api-fixtures";
-import autaugaCounty from "../fixtures/review-al-01001.json" with { type: "json" };
+import autaugaCounty from "../fixtures/review-al-v11-01001.json" with { type: "json" };
 import {
   buildStateReview,
   reviewCandidate,

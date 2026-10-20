@@ -7,13 +7,27 @@
  */
 
 export type ListIntelligenceFeedParams = {
+/**
+ * @nullable
+ * @pattern ^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$
+ */
 source_id?: string | null;
+/**
+ * @nullable
+ */
 published_from?: string | null;
+/**
+ * @nullable
+ */
 published_to?: string | null;
 /**
  * @minimum 1
  * @maximum 500
  */
 page_size?: number;
+/**
+ * @maxLength 2048
+ * @nullable
+ */
 page_token?: string | null;
 };

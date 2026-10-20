@@ -7,14 +7,14 @@
  */
 import * as zod from 'zod';
 
-export const publisherMetadataPublisherOneMax = 1000;
+export const publisherMetadataPublisherMax = 1000;
 
 
-export const publisherMetadataPublisherOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const publisherMetadataSourceItemIdOneMax = 4096;
+export const publisherMetadataPublisherRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const publisherMetadataSourceItemIdMax = 4096;
 
 
-export const publisherMetadataSourceItemIdOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const publisherMetadataSourceItemIdRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const publisherMetadataAuthorsItemMax = 4096;
 
 
@@ -27,22 +27,22 @@ export const publisherMetadataCategoriesItemMax = 4096;
 export const publisherMetadataCategoriesItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const publisherMetadataCategoriesMax = 100;
 
-export const publisherMetadataLanguageOneMax = 64;
+export const publisherMetadataLanguageMax = 64;
 
 
-export const publisherMetadataLanguageOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const publisherMetadataLanguageRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const publisherMetadataMediaItemUrlMax = 4096;
 
 export const publisherMetadataMediaMax = 100;
 
 
 export const PublisherMetadata = zod.object({
-  "publisher": zod.union([zod.string().min(1).max(publisherMetadataPublisherOneMax).regex(publisherMetadataPublisherOneRegExp),zod.null()]),
+  "publisher": zod.string().min(1).max(publisherMetadataPublisherMax).regex(publisherMetadataPublisherRegExp).nullable(),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']),
-  "source_item_id": zod.union([zod.string().max(publisherMetadataSourceItemIdOneMax).regex(publisherMetadataSourceItemIdOneRegExp),zod.null()]),
+  "source_item_id": zod.string().max(publisherMetadataSourceItemIdMax).regex(publisherMetadataSourceItemIdRegExp).nullable(),
   "authors": zod.array(zod.string().max(publisherMetadataAuthorsItemMax).regex(publisherMetadataAuthorsItemRegExp)).max(publisherMetadataAuthorsMax),
   "categories": zod.array(zod.string().max(publisherMetadataCategoriesItemMax).regex(publisherMetadataCategoriesItemRegExp)).max(publisherMetadataCategoriesMax),
-  "language": zod.union([zod.string().max(publisherMetadataLanguageOneMax).regex(publisherMetadataLanguageOneRegExp),zod.null()]),
+  "language": zod.string().max(publisherMetadataLanguageMax).regex(publisherMetadataLanguageRegExp).nullable(),
   "media": zod.array(zod.object({
   "url": zod.string().min(1).max(publisherMetadataMediaItemUrlMax),
   "origin": zod.literal("publisher")

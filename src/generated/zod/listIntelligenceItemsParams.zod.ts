@@ -7,19 +7,19 @@
  */
 import * as zod from 'zod';
 
-export const listIntelligenceItemsParamsSourceIdOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const listIntelligenceItemsParamsSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 export const listIntelligenceItemsParamsPageSizeDefault = 100;
 export const listIntelligenceItemsParamsPageSizeMax = 500;
 
-export const listIntelligenceItemsParamsPageTokenOneMax = 2048;
+export const listIntelligenceItemsParamsPageTokenMax = 2048;
 
 
 export const ListIntelligenceItemsParams = zod.object({
-  "source_id": zod.union([zod.string().regex(listIntelligenceItemsParamsSourceIdOneRegExp),zod.null()]).optional(),
-  "published_from": zod.union([zod.iso.date(),zod.null()]).optional(),
-  "published_to": zod.union([zod.iso.date(),zod.null()]).optional(),
+  "source_id": zod.string().regex(listIntelligenceItemsParamsSourceIdRegExp).nullish(),
+  "published_from": zod.iso.date().nullish(),
+  "published_to": zod.iso.date().nullish(),
   "page_size": zod.int().min(1).max(listIntelligenceItemsParamsPageSizeMax).default(listIntelligenceItemsParamsPageSizeDefault),
-  "page_token": zod.union([zod.string().max(listIntelligenceItemsParamsPageTokenOneMax),zod.null()]).optional()
+  "page_token": zod.string().max(listIntelligenceItemsParamsPageTokenMax).nullish()
 })
 
 export type ListIntelligenceItemsParams = zod.input<typeof ListIntelligenceItemsParams>;

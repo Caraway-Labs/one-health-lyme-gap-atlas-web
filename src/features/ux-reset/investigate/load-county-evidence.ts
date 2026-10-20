@@ -39,11 +39,11 @@ import {
   CountyV1CountiesFipsGetResponse,
   IndicatorsV1IndicatorsGetResponse,
   ObservationsV1ObservationsGetResponse,
-  indicatorsV1IndicatorsGetQueryPageSizeOneMax,
+  indicatorsV1IndicatorsGetQueryPageSizeMax,
   observationsV1ObservationsGetQueryGeographyIdMax,
-  observationsV1ObservationsGetQueryPageSizeOneMax,
-  observationsV1ObservationsGetQueryYearOneMax,
-  observationsV1ObservationsGetQueryYearOneMin,
+  observationsV1ObservationsGetQueryPageSizeMax,
+  observationsV1ObservationsGetQueryYearMax,
+  observationsV1ObservationsGetQueryYearMin,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -177,8 +177,8 @@ export function investigateObservationRequestRejection(
     hasYear &&
     params.year !== null &&
     params.year !== undefined &&
-    params.year >= observationsV1ObservationsGetQueryYearOneMin &&
-    params.year <= observationsV1ObservationsGetQueryYearOneMax;
+    params.year >= observationsV1ObservationsGetQueryYearMin &&
+    params.year <= observationsV1ObservationsGetQueryYearMax;
   const hasRange = hasCompleteDateRange(params);
   const partialRange = Boolean(params.start_date) !== Boolean(params.end_date);
   const stratification = params.stratification ?? null;
@@ -226,7 +226,7 @@ export function buildInvestigateObservationParams(input: {
     geography_id: [input.fips],
     geography_type: "county",
     measure_id: input.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeOneMax,
+    page_size: observationsV1ObservationsGetQueryPageSizeMax,
   };
   switch (input.timeBound.kind) {
     case "year": {
@@ -350,10 +350,10 @@ export async function fetchInvestigateIndicators(
     const response = await indicatorsV1IndicatorsGet(
       pageToken
         ? {
-            page_size: indicatorsV1IndicatorsGetQueryPageSizeOneMax,
+            page_size: indicatorsV1IndicatorsGetQueryPageSizeMax,
             page_token: pageToken,
           }
-        : { page_size: indicatorsV1IndicatorsGetQueryPageSizeOneMax },
+        : { page_size: indicatorsV1IndicatorsGetQueryPageSizeMax },
       { signal }
     );
     if (response.status !== 200) {

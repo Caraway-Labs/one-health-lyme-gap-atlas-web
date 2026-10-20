@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const CollectionLinks = zod.object({
-  "self": zod.union([zod.string(),zod.null()]).optional()
+  "self": zod.string().nullish()
 })
 
 export type CollectionLinks = zod.input<typeof CollectionLinks>;

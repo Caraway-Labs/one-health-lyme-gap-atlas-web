@@ -14,10 +14,13 @@ export interface PrivacyRequestCreated {
   action: PrivacyRequestCreatedAction;
   state: PrivacyRequestCreatedState;
   created_at: string;
+  /** @nullable */
   completed_at?: string | null;
   download_available?: boolean;
   omissions?: PrivacyOmission[];
+  /** @nullable */
   support_reason?: string | null;
+  /** @nullable */
   confirmation_expires_at?: string | null;
   confirmation_nonce: string;
 }

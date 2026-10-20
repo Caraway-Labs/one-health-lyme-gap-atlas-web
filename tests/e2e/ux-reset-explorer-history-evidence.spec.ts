@@ -45,6 +45,7 @@ type ScoreCounty = {
   county: string;
   evidence_completeness: number;
   fips: string;
+  scoring_methodology_version?: "surveillance-gap-score-v1.1";
   human_status: string;
   in_contiguous_tick_scope: boolean;
   priority: string;
@@ -83,6 +84,7 @@ function scoreCounty(input: CountyCase): ScoreCounty {
     county: input.county,
     evidence_completeness: input.completeness,
     fips: input.fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: input.human,
     in_contiguous_tick_scope: true,
     priority: "Priority 3 — Review",
@@ -207,6 +209,7 @@ function detailFor(county: ScoreCounty) {
     county: county.county,
     evidence_completeness: county.evidence_completeness,
     fips: county.fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: county.human_status,
     incidence_floor_2023: zero ? 0 : absent ? null : 4.2,
     pacificus_status: "No records",
@@ -274,11 +277,12 @@ async function installExplorer(page: Page, options: RouteOptions) {
   };
   const scores = {
     counties: options.counties,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     methodology_version: "1",
     release_id: RELEASE_ID,
     settings: {
       ecological_share: 65,
-      low_incidence_breakpoint: 10,
+      smooth_k: 50,
       missing_human_weakness: 75,
     },
   };

@@ -132,6 +132,7 @@ describe("county display versus analysis geography semantics", () => {
         denominator: null,
         source_id: "noaa",
         methodology_id: "climate-v1",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1.0.0",
         semantic_version: "2023.1",
         release_id: "alpha",

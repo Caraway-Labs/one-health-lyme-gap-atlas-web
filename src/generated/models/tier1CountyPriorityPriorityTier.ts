@@ -8,6 +8,7 @@
 
 /**
  * HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.
+ * @nullable
  */
 export type Tier1CountyPriorityPriorityTier = typeof Tier1CountyPriorityPriorityTier[keyof typeof Tier1CountyPriorityPriorityTier] | null;
 

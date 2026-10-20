@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const GeometryV1AtlasGeometryGetParams = zod.object({
-  "dataset_version": zod.union([zod.string(),zod.null()]).optional()
+  "dataset_version": zod.string().nullish()
 })
 
 export type GeometryV1AtlasGeometryGetParams = zod.input<typeof GeometryV1AtlasGeometryGetParams>;

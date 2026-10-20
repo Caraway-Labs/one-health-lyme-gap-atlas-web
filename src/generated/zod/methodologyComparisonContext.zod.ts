@@ -11,8 +11,8 @@ export const MethodologyComparisonContext = zod.object({
   "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
   "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
   "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.union([zod.string(),zod.null()])),
-  "jurisdiction_class": zod.union([zod.string(),zod.null()]),
+  "methodology_era_ids": zod.array(zod.string().nullable()),
+  "jurisdiction_class": zod.string().nullable(),
   "references": zod.array(zod.string()),
   "limitations": zod.array(zod.string()),
   "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')

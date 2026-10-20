@@ -17,6 +17,7 @@ export interface StateReview {
   configuration_sha256: string;
   data_release_version: string;
   evaluated_at: string;
+  /** @nullable */
   requested_observation_context: string | null;
   effective_observation_context: string;
   result_state: StateReviewResultState;

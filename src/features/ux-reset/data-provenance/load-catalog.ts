@@ -8,9 +8,9 @@ import {
   IndicatorsV1IndicatorsGetResponse,
   MeasuresV1MeasuresGetResponse,
   SourcesV1SourcesGetResponse,
-  indicatorsV1IndicatorsGetQueryPageSizeOneMax,
-  measuresV1MeasuresGetQueryPageSizeOneMax,
-  sourcesV1SourcesGetQueryPageSizeOneMax,
+  indicatorsV1IndicatorsGetQueryPageSizeMax,
+  measuresV1MeasuresGetQueryPageSizeMax,
+  sourcesV1SourcesGetQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -96,10 +96,10 @@ async function readSources(signal: AbortSignal): Promise<PagedRead<Source>> {
       sourcesV1SourcesGet(
         pageToken
           ? {
-              page_size: sourcesV1SourcesGetQueryPageSizeOneMax,
+              page_size: sourcesV1SourcesGetQueryPageSizeMax,
               page_token: pageToken,
             }
-          : { page_size: sourcesV1SourcesGetQueryPageSizeOneMax },
+          : { page_size: sourcesV1SourcesGetQueryPageSizeMax },
         { signal: requestSignal }
       ),
     resource: "Sources",
@@ -115,10 +115,10 @@ async function readMeasures(signal: AbortSignal): Promise<PagedRead<Measure>> {
       measuresV1MeasuresGet(
         pageToken
           ? {
-              page_size: measuresV1MeasuresGetQueryPageSizeOneMax,
+              page_size: measuresV1MeasuresGetQueryPageSizeMax,
               page_token: pageToken,
             }
-          : { page_size: measuresV1MeasuresGetQueryPageSizeOneMax },
+          : { page_size: measuresV1MeasuresGetQueryPageSizeMax },
         { signal: requestSignal }
       ),
     resource: "Measures",
@@ -136,10 +136,10 @@ async function readIndicators(
       indicatorsV1IndicatorsGet(
         pageToken
           ? {
-              page_size: indicatorsV1IndicatorsGetQueryPageSizeOneMax,
+              page_size: indicatorsV1IndicatorsGetQueryPageSizeMax,
               page_token: pageToken,
             }
-          : { page_size: indicatorsV1IndicatorsGetQueryPageSizeOneMax },
+          : { page_size: indicatorsV1IndicatorsGetQueryPageSizeMax },
         { signal: requestSignal }
       ),
     resource: "Indicators",

@@ -11,30 +11,30 @@ export const CollectionEnvelopeSource = zod.object({
   "data": zod.array(zod.object({
   "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
   "label": zod.string(),
-  "publisher": zod.union([zod.string(),zod.null()]),
+  "publisher": zod.string().nullable(),
   "lineage_source_id": zod.string(),
   "dataset_id": zod.string(),
   "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
   "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.union([zod.string(),zod.null()]).optional(),
-  "source_vintage": zod.union([zod.string(),zod.null()]).optional(),
-  "source_version": zod.union([zod.string(),zod.null()]).optional(),
-  "published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
-  "atlas_acquired_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Governed source retrieval time; null when unavailable.'),
+  "source_url": zod.string().nullish(),
+  "source_vintage": zod.string().nullish(),
+  "source_version": zod.string().nullish(),
+  "published_at": zod.iso.datetime({"offset":true}).nullish(),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
   "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
 })),
   "meta": zod.object({
-  "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
+  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
   "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
-  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
-  "self": zod.union([zod.string(),zod.null()]).optional()
+  "self": zod.string().nullish()
 })
 })
 

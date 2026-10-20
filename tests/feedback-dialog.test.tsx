@@ -97,7 +97,7 @@ describe("feedback dialog", () => {
       view: "maps",
       metric: "score",
       eco: 65,
-      breakpoint: 10,
+      smooth: 10,
       missing: 75,
       selected: ["08001", "06037"],
     });

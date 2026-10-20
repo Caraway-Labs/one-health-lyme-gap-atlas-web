@@ -56,7 +56,7 @@ function jsonResponse(
 describe("api playground proxy", () => {
   it("allowlists the pinned public GET operations", () => {
     const operations = publishedOperations(pinnedDocument);
-    expect(operations).toHaveLength(20);
+    expect(operations).toHaveLength(21);
     expect(operations.map((operation) => operation.template)).toContain(
       "/v1/observations"
     );

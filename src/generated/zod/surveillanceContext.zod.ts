@@ -13,7 +13,7 @@ import * as zod from 'zod';
 export const SurveillanceContext = zod.object({
   "evidence": zod.union([zod.object({
   "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.enum(['established', 'detected', 'unknown']),zod.null()]).optional().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
   "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
   "reason_codes": zod.array(zod.string()).min(1),
   "evidence_tier": zod.literal("GOVERNED_MAPPING"),
@@ -28,8 +28,8 @@ export const SurveillanceContext = zod.object({
   "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
   "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
   "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.union([zod.string(),zod.null()])),
-  "jurisdiction_class": zod.union([zod.string(),zod.null()]),
+  "methodology_era_ids": zod.array(zod.string().nullable()),
+  "jurisdiction_class": zod.string().nullable(),
   "references": zod.array(zod.string()),
   "limitations": zod.array(zod.string()),
   "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
@@ -62,8 +62,8 @@ export const SurveillanceContext = zod.object({
   "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
   "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
   "offset_days": zod.int(),
-  "window_days": zod.union([zod.int(),zod.null()]).optional(),
-  "season_id": zod.union([zod.string(),zod.null()]).optional()
+  "window_days": zod.int().nullish(),
+  "season_id": zod.string().nullish()
 }),
   "coverage": zod.object({
   "expected": zod.union([zod.int(),zod.number()]),

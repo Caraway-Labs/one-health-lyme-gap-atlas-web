@@ -73,7 +73,7 @@ export type FeedbackContextInput = {
   view?: string | null;
   metric?: string | null;
   eco?: number | null;
-  breakpoint?: number | null;
+  smooth?: number | null;
   missing?: number | null;
 };
 
@@ -110,8 +110,8 @@ export function buildFeedbackContext(
     if (typeof input.eco === "number") {
       context.ecological_share = input.eco;
     }
-    if (typeof input.breakpoint === "number") {
-      context.low_incidence_breakpoint = input.breakpoint;
+    if (typeof input.smooth === "number") {
+      context.smooth_k = input.smooth;
     }
     if (typeof input.missing === "number") {
       context.missing_human_weakness = input.missing;
@@ -173,8 +173,8 @@ export function readFeedbackExplorerInput(): Omit<
       params.get("metric") ?? undefined
     ),
     eco: explorerParams.eco.parseServerSide(params.get("eco") ?? undefined),
-    breakpoint: explorerParams.breakpoint.parseServerSide(
-      params.get("breakpoint") ?? undefined
+    smooth: explorerParams.smooth.parseServerSide(
+      params.get("smooth") ?? undefined
     ),
     missing: explorerParams.missing.parseServerSide(
       params.get("missing") ?? undefined

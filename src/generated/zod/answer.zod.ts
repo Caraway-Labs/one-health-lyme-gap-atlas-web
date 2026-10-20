@@ -25,12 +25,12 @@ export const Answer = zod.object({
   "structured_refs": zod.array(zod.object({
   "resource_type": zod.string(),
   "resource_id": zod.string(),
-  "source_id": zod.union([zod.string(),zod.null()]).optional().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.union([zod.string(),zod.null()]).optional().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.union([zod.string(),zod.null()]).optional().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Governed release identity for reproducibility.'),
-  "uri": zod.union([zod.string(),zod.null()]).optional()
+  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
+  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
+  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
+  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
+  "uri": zod.string().nullish()
 })).optional(),
   "measure_ids": zod.array(zod.string()).optional(),
   "coverage_ids": zod.array(zod.string()).optional(),
@@ -40,62 +40,62 @@ export const Answer = zod.object({
   "structured_evidence_refs": zod.array(zod.object({
   "resource_type": zod.string(),
   "resource_id": zod.string(),
-  "source_id": zod.union([zod.string(),zod.null()]).optional().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.union([zod.string(),zod.null()]).optional().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.union([zod.string(),zod.null()]).optional().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Governed release identity for reproducibility.'),
-  "uri": zod.union([zod.string(),zod.null()]).optional()
+  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
+  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
+  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
+  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
+  "uri": zod.string().nullish()
 })).optional(),
   "literature_citations": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "cross_source_state": zod.null().optional(),
   "freshness": zod.array(zod.object({
   "observation_id": zod.string(),
   "state": zod.enum(['current', 'stale', 'unknown']).default(answerFreshnessItemStateDefault),
-  "policy_id": zod.union([zod.string(),zod.null()]).optional(),
-  "source_timestamp": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional(),
-  "compared_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional()
+  "policy_id": zod.string().nullish(),
+  "source_timestamp": zod.iso.datetime({"offset":true}).nullish(),
+  "compared_at": zod.iso.datetime({"offset":true}).nullish()
 })).optional(),
   "limitations": zod.array(zod.string()).optional(),
   "replay": zod.object({
-  "provider_id": zod.union([zod.string(),zod.null()]).optional(),
-  "model_id": zod.union([zod.string(),zod.null()]).optional(),
-  "prompt_version": zod.union([zod.string(),zod.null()]).optional(),
+  "provider_id": zod.string().nullish(),
+  "model_id": zod.string().nullish(),
+  "prompt_version": zod.string().nullish(),
   "tool_contract_version": zod.literal("ask-atlas-v1").default(answerReplayToolContractVersionDefault),
   "routing_policy_version": zod.string().default(answerReplayRoutingPolicyVersionDefault),
-  "configuration_version": zod.union([zod.string(),zod.null()]).optional(),
-  "assistant_policy_version": zod.union([zod.string(),zod.null()]).optional(),
-  "release_id": zod.union([zod.string(),zod.null()]).optional(),
-  "literature_retrieval_configuration_version": zod.union([zod.string(),zod.null()]).optional()
+  "configuration_version": zod.string().nullish(),
+  "assistant_policy_version": zod.string().nullish(),
+  "release_id": zod.string().nullish(),
+  "literature_retrieval_configuration_version": zod.string().nullish()
 }).optional(),
   "structured_measures": zod.array(zod.object({
   "measure_id": zod.string(),
   "indicator_id": zod.string(),
   "label": zod.string(),
-  "definition": zod.union([zod.string(),zod.null()]),
+  "definition": zod.string().nullable(),
   "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed current-release relationship version.'),
-  "measure_type": zod.union([zod.string(),zod.null()]).optional(),
-  "unit": zod.union([zod.string(),zod.null()]).optional(),
-  "denominator": zod.union([zod.string(),zod.null()]).optional().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.union([zod.array(zod.enum(['county', 'state'])),zod.null()]).optional(),
-  "temporal_grains": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "geography_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "temporal_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "allowed_value_states": zod.union([zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),zod.null()]).optional(),
-  "allowed_strata": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "missingness_semantics": zod.union([zod.string(),zod.null()]).optional(),
-  "methodology_id": zod.union([zod.string(),zod.null()]).optional().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.union([zod.string(),zod.null()]).optional(),
-  "source_ids": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
+  "measure_type": zod.string().nullish(),
+  "unit": zod.string().nullish(),
+  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
+  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
+  "temporal_grains": zod.array(zod.string()).nullish(),
+  "geography_semantics": zod.string().nullish(),
+  "temporal_semantics": zod.string().nullish(),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
+  "allowed_strata": zod.array(zod.string()).nullish(),
+  "missingness_semantics": zod.string().nullish(),
+  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
+  "methodology": zod.string().nullish(),
+  "source_ids": zod.array(zod.string()).nullish(),
   "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "standards_mappings": zod.union([zod.array(zod.object({
+  "standards_mappings": zod.array(zod.object({
   "standard": zod.string(),
   "version": zod.string(),
   "target": zod.string(),
   "relationship": zod.string(),
-  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
-})),zod.null()]).optional()
+  "mapping_reference": zod.string().nullish()
+})).nullish()
 })).optional(),
   "structured_coverage": zod.array(zod.object({
   "geography": zod.object({
@@ -105,7 +105,7 @@ export const Answer = zod.object({
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "state": zod.enum(['present', 'absent']),
-  "observation_id": zod.union([zod.string(),zod.null()]),
+  "observation_id": zod.string().nullable(),
   "coverage_id": zod.string(),
   "measure_id": zod.string(),
   "release_id": zod.string()

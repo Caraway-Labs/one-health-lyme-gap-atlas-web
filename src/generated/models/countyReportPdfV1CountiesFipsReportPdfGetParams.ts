@@ -7,17 +7,24 @@
  */
 
 export type CountyReportPdfV1CountiesFipsReportPdfGetParams = {
+/**
+ * @nullable
+ */
 dataset_version?: string | null;
 /**
  * Exact inclusive observation start for county-v2.
+ * @nullable
  */
 period_start?: string | null;
 /**
  * Exact inclusive observation end for county-v2.
+ * @nullable
  */
 period_end?: string | null;
 /**
  * 1–20 measure IDs; repeated or comma-separated for county-v2.
+ * @maxItems 20
+ * @nullable
  */
 measure_id?: string[] | null;
 /**
@@ -31,12 +38,17 @@ template?: string;
 ecological_share?: number;
 /**
  * @minimum 5
- * @maximum 25
+ * @maximum 200
  */
-low_incidence_breakpoint?: number;
+smooth_k?: number;
 /**
  * @minimum 40
  * @maximum 90
  */
 missing_human_weakness?: number;
+/**
+ * @deprecated
+ * @nullable
+ */
+low_incidence_breakpoint?: number | null;
 };

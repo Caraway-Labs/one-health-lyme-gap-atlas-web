@@ -19,7 +19,7 @@ import type { ScoreSettings } from "@/lib/atlas-ui";
 
 const DEFAULT_SCORE_SETTINGS: ScoreSettings = {
   ecological_share: 65,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 75,
 };
 

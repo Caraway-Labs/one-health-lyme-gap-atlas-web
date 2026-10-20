@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import autauga from "../fixtures/review-al-01001.json" with { type: "json" };
-import baldwin from "../fixtures/review-al-01003.json" with { type: "json" };
-import barbour from "../fixtures/review-al-01005.json" with { type: "json" };
 import identities from "../fixtures/review-al-published-identities.json" with { type: "json" };
+import autauga from "../fixtures/review-al-v11-01001.json" with { type: "json" };
+import baldwin from "../fixtures/review-al-v11-01003.json" with { type: "json" };
+import barbour from "../fixtures/review-al-v11-01005.json" with { type: "json" };
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
 
@@ -116,7 +116,7 @@ test.describe("five-category suggested follow-up", () => {
     const followUp = card.getByTestId("suggested-follow-up");
     await expect(followUp).toBeVisible();
     await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
-      "Verify with local information"
+      "Conduct targeted follow-up"
     );
     for (const label of [
       "Human disease surveillance",
@@ -137,7 +137,7 @@ test.describe("five-category suggested follow-up", () => {
       "compare the published county case-count floor"
     );
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
-      "Do locally held case records agree with the published county count"
+      "Which specific inconsistency in the published or locally verified evidence warrants targeted follow-up?"
     );
     await expect(followUp.getByTestId("follow-up-what-if-note")).toHaveCount(0);
     await expect(followUp).toContainText("not documented negative findings");

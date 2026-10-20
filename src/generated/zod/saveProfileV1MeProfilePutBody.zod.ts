@@ -7,18 +7,18 @@
  */
 import * as zod from 'zod';
 
-export const saveProfileV1MeProfilePutBodyStateCodeOneMax = 2;
+export const saveProfileV1MeProfilePutBodyStateCodeMax = 2;
 
-export const saveProfileV1MeProfilePutBodyOrganizationOneMax = 120;
+export const saveProfileV1MeProfilePutBodyOrganizationMax = 120;
 
-export const saveProfileV1MeProfilePutBodyJobTitleOneMax = 120;
+export const saveProfileV1MeProfilePutBodyJobTitleMax = 120;
 
 
 export const SaveProfileV1MeProfilePutBody = zod.object({
-  "role": zod.union([zod.enum(['general_public_citizen', 'district_level_epidemiologist', 'state_level_epidemiologist', 'state_director_level_epidemiologist', 'national_level_epidemiologist']),zod.null()]).optional(),
-  "state_code": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyStateCodeOneMax),zod.null()]).optional(),
-  "organization": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyOrganizationOneMax),zod.null()]).optional(),
-  "job_title": zod.union([zod.string().max(saveProfileV1MeProfilePutBodyJobTitleOneMax),zod.null()]).optional(),
+  "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
+  "state_code": zod.string().max(saveProfileV1MeProfilePutBodyStateCodeMax).nullish(),
+  "organization": zod.string().max(saveProfileV1MeProfilePutBodyOrganizationMax).nullish(),
+  "job_title": zod.string().max(saveProfileV1MeProfilePutBodyJobTitleMax).nullish(),
   "complete_starting_view": zod.literal(true).optional().describe('Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version.')
 })
 

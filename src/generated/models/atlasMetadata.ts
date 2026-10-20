@@ -10,6 +10,7 @@ import type { AtlasMetadataStatesItem } from './atlasMetadataStatesItem';
 import type { SourceMetadata } from './sourceMetadata';
 
 export interface AtlasMetadata {
+  scoring_methodology_version?: 'surveillance-gap-score-v1.1';
   release_id: string;
   schema_version: string;
   generated_at: string;

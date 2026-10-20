@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
-import baldwin from "../fixtures/review-al-01003.json" with { type: "json" };
+import baldwin from "../fixtures/review-al-v11-01003.json" with { type: "json" };
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
@@ -16,6 +16,7 @@ const worth = {
   county: "Worth County",
   evidence_completeness: 50,
   fips: "19195",
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "no_county_linked_record",
   incidence_floor_2023: null,
   pacificus_status: "No records",
@@ -50,6 +51,7 @@ const district = {
   county: "District of Columbia",
   evidence_completeness: 100,
   fips: "11001",
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "published_count_floor",
   incidence_floor_2023: 16.11,
   pacificus_status: "No records",
@@ -94,6 +96,7 @@ async function installRankingFixtures(page: Page) {
           county: entry.county,
           evidence_completeness: entry.evidence_completeness,
           fips: entry.fips,
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           human_status: entry.human_status,
           priority: entry.priority,
           score: entry.score,
