@@ -67,6 +67,9 @@ vi.mock(import("@/lib/county-geography"), async (importOriginal) => {
 
 vi.mock(import("@/generated/atlas"), () => {
   const atlas = {
+    countySurveillanceSituationsGet: vi.fn<
+      () => Promise<{ data: null; status: number }>
+    >(async () => ({ data: null, status: 503 })),
     countyTier1SurveillancePriorityGet: vi.fn<
       () => Promise<{ data: null; status: number }>
     >(async () => ({ data: null, status: 404 })),
