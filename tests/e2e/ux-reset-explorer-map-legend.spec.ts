@@ -694,7 +694,7 @@ test.describe("Atlas Explorer layer legends", () => {
     ).toHaveCount(0);
     await page.keyboard.press("Escape");
 
-    await chooseLayer(page, "Atlas gap score");
+    await chooseLayer(page, "Gap review score");
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })
     ).toBeVisible();
@@ -716,7 +716,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "B. burgdorferi status" }).click();
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "Atlas gap score" }).click();
+    await page.getByRole("option", { name: "Gap review score" }).click();
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })
     ).toBeVisible();
@@ -770,7 +770,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend).toHaveAttribute("data-legend-scale", "segments");
     await expect(legend.locator("[data-legend-segment]")).toHaveCount(5);
 
-    await chooseLayer(page, "Atlas gap score");
+    await chooseLayer(page, "Gap review score");
     await expect(legend).toContainText("Atlas gap score");
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })

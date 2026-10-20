@@ -16,7 +16,7 @@ test("retired Geographic Explorer view bookmarks open Atlas Explorer browse", as
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Explore the One Health Atlas",
+        name: "Explore county Lyme data",
       })
     ).toBeVisible();
     await expect(

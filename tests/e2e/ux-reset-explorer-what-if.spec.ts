@@ -378,7 +378,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Atlas gap score"
+      "Gap review score"
     );
     await page.getByRole("button", { name: "About Adjusted scenario" }).click();
     const scenarioAbout = page.getByRole("dialog", {
@@ -440,12 +440,12 @@ test.describe("Explorer what-if scenario", () => {
     );
 
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "Atlas gap score" }).click();
+    await page.getByRole("option", { name: "Gap review score" }).click();
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Atlas gap score"
+      "Gap review score"
     );
     await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
 
@@ -777,7 +777,7 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Atlas gap score"
+      "Gap review score"
     );
     const map = page.getByTestId("review-national-map-region");
     await expect(map).toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
@@ -797,12 +797,12 @@ test.describe("Explorer what-if scenario", () => {
     await expect(map).not.toHaveAttribute("data-map-colors", /08021:#a9d2db/i);
 
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "Atlas gap score" }).click();
+    await page.getByRole("option", { name: "Gap review score" }).click();
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "Atlas gap score"
+      "Gap review score"
     );
 
     await page.getByTestId("explorer-scenario-reset").click();

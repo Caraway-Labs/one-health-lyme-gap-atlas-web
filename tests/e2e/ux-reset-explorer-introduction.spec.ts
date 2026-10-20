@@ -195,12 +195,23 @@ test.describe("Explorer and Compare introductions", () => {
     await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto("/explore?scope=AL");
     const explorer = PAGE_INTRODUCTION_COPY.explorer;
+    await expect(page.getByTestId("page-introduction-explorer")).toHaveCount(1);
+    await expect(page.getByText(explorer.eyebrow)).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 1, name: explorer.headline })
     ).toBeVisible();
     await expect(page.getByText(explorer.supporting)).toBeVisible();
-    await expect(page.getByText(explorer.guidanceLead)).toBeVisible();
-    await expect(page.getByText(explorer.guidance)).toBeVisible();
+    await expect(page.getByText(explorer.helper)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 2, name: explorer.scoreHeading })
+    ).toBeVisible();
+    await expect(page.getByText(explorer.scoreBody)).toBeVisible();
+    await expect(page.getByText(explorer.scoreQualifier)).toBeVisible();
+    await expect(page.getByText("Explore the One Health Atlas")).toHaveCount(0);
+    await expect(
+      page.getByText("Explore potential Lyme surveillance gaps")
+    ).toHaveCount(0);
+    await expect(page.getByText("Surveillance gap score")).toHaveCount(0);
     await expect(
       page.getByRole("heading", { level: 2, name: "Explore county patterns" })
     ).toBeVisible();

@@ -12,7 +12,7 @@ const HEADER_LABEL = ".app-header-label";
 
 const CANONICAL_DESTINATIONS = [
   {
-    heading: "Explore the One Health Atlas",
+    heading: "Explore county Lyme data",
     path: "/explore",
     title: "Atlas Explorer",
   },
@@ -85,7 +85,7 @@ test.describe("workspace header titles", () => {
     await page.setViewportSize({ height: 900, width: 1280 });
     await page.goto("/explore?scope=CO");
     await expect(page.locator("h1").first()).toHaveText(
-      "Explore the One Health Atlas"
+      "Explore county Lyme data"
     );
     await expectHeaderTitle(page, "Atlas Explorer");
     await expect(
@@ -133,7 +133,7 @@ test.describe("workspace header titles", () => {
     await page.reload();
     await expectHeaderTitle(page, "Atlas Explorer");
     await expect(page.locator("h1").first()).toHaveText(
-      "Explore the One Health Atlas"
+      "Explore county Lyme data"
     );
   });
 

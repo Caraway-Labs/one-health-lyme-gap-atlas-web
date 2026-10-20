@@ -281,6 +281,13 @@ export function explorerMapLayerById(
   );
 }
 
+/** Menu text only. Legends, cards, and the layer id keep the official name. */
+export const GAP_REVIEW_SCORE_MENU_LABEL = "Gap review score";
+
+export function explorerMapLayerMenuLabel(layer: ExplorerMapLayer): string {
+  return layer.id === "gap_score" ? GAP_REVIEW_SCORE_MENU_LABEL : layer.label;
+}
+
 export function parseExplorerMapLayerId(
   value: string
 ): ExplorerMapLayerId | null {
