@@ -58,7 +58,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "B. burgdorferi status legend. Swatches use the pathogen-only contract, with persistent category labels. No records stays distinct from Absent and Unknown.",
+          "B. burgdorferi status legend. Categories share one segmented pill, with persistent labels under each segment. No records stays distinct from Absent and Unknown.",
       },
     },
   },
