@@ -15,6 +15,13 @@ import {
   type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
+import {
+  RURALITY_LEGEND_EXPLANATION,
+  RURALITY_NO_DATA_COLOR,
+  RURALITY_NO_DATA_LABEL,
+  RURALITY_RUCC_FILLS,
+  ruralityFillForCode,
+} from "@/features/ux-reset/review/rurality-palette";
 import { ValueState } from "@/generated/models";
 
 const NO_PUBLISHED_VALUE = "No published value";
@@ -37,19 +44,6 @@ const NUMERIC_SCALE = {
     maximum: 100,
     minimum: 0,
   },
-} as const;
-
-/** Qualitative classes. These hues are not a severity ramp. */
-const RUCC_COLORS = {
-  1: "hsl(210, 55%, 42%)",
-  2: "hsl(28, 78%, 48%)",
-  3: "hsl(140, 40%, 36%)",
-  4: "hsl(350, 62%, 50%)",
-  5: "hsl(174, 42%, 36%)",
-  6: "hsl(280, 28%, 46%)",
-  7: "hsl(330, 52%, 62%)",
-  8: "hsl(24, 32%, 40%)",
-  9: "hsl(200, 8%, 52%)",
 } as const;
 
 /**
@@ -471,6 +465,17 @@ function endpointRaw(
   return rows.find((row) => row.numeric === endpoint && row.raw)?.raw ?? null;
 }
 
+function observedRuralityFill(row: ExplorerMapNumericRow): string | null {
+  if (
+    row.valueState !== ValueState.OBSERVED ||
+    row.numeric === null ||
+    !row.categoryLabel
+  ) {
+    return null;
+  }
+  return ruralityFillForCode(row.numeric);
+}
+
 function paintRurality(input: {
   omitted: number;
   period: string;
@@ -481,46 +486,49 @@ function paintRurality(input: {
 }): ExplorerMapPaint {
   const colorsByFips = new Map<string, string>();
   const classes = new Map<number, string>();
+  let needsNoData = input.omitted > 0;
   for (const row of input.rows) {
-    if (
-      row.valueState === ValueState.OBSERVED &&
-      row.numeric !== null &&
-      row.categoryLabel &&
-      row.numeric in RUCC_COLORS
-    ) {
-      const code = row.numeric as keyof typeof RUCC_COLORS;
-      colorsByFips.set(row.fips, RUCC_COLORS[code]);
-      classes.set(code, row.categoryLabel);
+    const fill = observedRuralityFill(row);
+    if (fill && row.numeric !== null && row.categoryLabel) {
+      colorsByFips.set(row.fips, fill);
+      classes.set(row.numeric, row.categoryLabel);
       continue;
     }
-    const color = stateColor("rurality", row.valueState);
-    if (color) {
-      colorsByFips.set(row.fips, color);
-    }
+    needsNoData = true;
+    colorsByFips.set(row.fips, RURALITY_NO_DATA_COLOR);
   }
   const entries: ExplorerMapLegendEntry[] = [];
   for (let code = 1; code <= 9; code += 1) {
     const published = classes.get(code);
     const catalog = RUCC_2023_LABELS[code];
     const label = published ?? catalog;
+    const color = RURALITY_RUCC_FILLS[code as keyof typeof RURALITY_RUCC_FILLS];
     if (!label) {
       continue;
     }
     entries.push({
-      color: RUCC_COLORS[code as keyof typeof RUCC_COLORS],
+      color,
       detail: null,
       label: `${code}. ${label}`,
       role: "class",
     });
   }
-  entries.push(...stateEntries("rurality", input.rows));
-  appendUnpaintedKey(entries, input.rows, colorsByFips, input.omitted);
+  if (needsNoData) {
+    entries.push({
+      color: RURALITY_NO_DATA_COLOR,
+      detail:
+        "Not a rural-urban code. Not urban, not rural, not zero, and not confirmed absence.",
+      label: RURALITY_NO_DATA_LABEL,
+      role: "missing",
+      visibleLines: [RURALITY_NO_DATA_LABEL],
+    });
+  }
   return paintBase({
     colorsByFips,
     entries,
     kind: "categorical",
     layerId: "rurality",
-    note: `2023 USDA ERS rural-urban codes. Nine source categories with their published labels. Colors are separate classes, not a risk gradient and not distances. This vintage has no observation dates. The county list stays the review ranking. ${coverageSentence(input.rows, input.omitted)}`,
+    note: `${RURALITY_LEGEND_EXPLANATION} Nine 2023 USDA ERS source categories keep their published labels. Darker purple marks a higher code. That order is not a proportional increase in rurality, Lyme risk, or review priority, and the colors are not a risk gradient. This vintage has no observation dates. The county list stays the review ranking. ${coverageSentence(input.rows, input.omitted)}`,
     period: input.period,
     scale: "segments",
     selection: input.selection,

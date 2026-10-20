@@ -190,9 +190,13 @@ describe("Explorer map observations", () => {
       observation: { ...ready, status: "ready" },
       scoresStatus: "ready",
     });
-    expect(paint.colorsByFips.get("01001")).not.toBe(
-      paint.colorsByFips.get("08001")
-    );
+    expect({
+      adams: paint.colorsByFips.get("08001"),
+      autauga: paint.colorsByFips.get("01001"),
+    }).toStrictEqual({
+      adams: "#F2F0F7",
+      autauga: "#E5E0EF",
+    });
     expect(paint.entries.map((entry) => entry.label)).toStrictEqual([
       "1. Metro: area population at least 1 million",
       "2. Metro: area population 250,000 to 1 million",
@@ -205,7 +209,9 @@ describe("Explorer map observations", () => {
       "9. completely rural or less than 2,500 urban population, not adjacent to a metro area",
     ]);
     expect(paint.period).toMatch(/No observation dates/);
-    expect(paint.note).toMatch(/not a risk gradient/);
+    expect(paint.note).toMatch(
+      /not a proportional increase[\s\S]*not a risk gradient/
+    );
   });
 
   it("does not manufacture a date for county context passed to a dated consumer", () => {
