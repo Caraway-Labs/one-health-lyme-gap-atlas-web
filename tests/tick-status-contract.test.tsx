@@ -309,8 +309,8 @@ describe("tick status color and order contract", () => {
       gapHasHigh: true,
       pathogenColors: {
         absent: "hsl(16,72%,42%)",
-        noRecords: "#DDE4E7",
-        present: "#36B65E",
+        noRecords: "#D1D5DB",
+        present: "#4F46E5",
         unknown: "hsl(270,46%,40%)",
       },
       pathogenLabels: [

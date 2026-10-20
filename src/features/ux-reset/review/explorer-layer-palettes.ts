@@ -25,6 +25,13 @@ export const LYME_INCIDENCE_HIGH_LABEL = "Higher published incidence";
 export const LYME_INCIDENCE_UNIT_LABEL = "per 100,000 residents";
 
 /**
+ * B. burgdorferi status is categorical. No records uses the coordinated light
+ * gray. Present is one indigo and is not a stop on the incidence ramp.
+ */
+export const BURGDORFERI_NO_RECORDS_COLOR = "#D1D5DB";
+export const BURGDORFERI_PRESENT_COLOR = "#4F46E5";
+
+/**
  * Uninsured population (#749) is a continuous ramp on the existing 0 to 100
  * percent scale. Anchor positions are 0, 0.25, 0.5, 0.75, and 1.
  * They are not percentage cutoffs.

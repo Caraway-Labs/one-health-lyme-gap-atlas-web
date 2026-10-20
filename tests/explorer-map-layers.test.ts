@@ -366,7 +366,7 @@ describe("Explorer map layers", () => {
       scoresStatus: "ready",
     });
     expect(paint.colorsByFips.get("08001")).toBe("hsl(16,72%,42%)");
-    expect(paint.colorsByFips.get("08013")).toBe("#DDE4E7");
+    expect(paint.colorsByFips.get("08013")).toBe("#D1D5DB");
     expect(paint.colorsByFips.get("11001")).toBe("hsl(270,46%,40%)");
     expect(paint.colorsByFips.get("08001")).not.toBe(
       paint.colorsByFips.get("08013")

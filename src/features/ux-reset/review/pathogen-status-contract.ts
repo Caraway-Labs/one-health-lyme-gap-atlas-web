@@ -1,14 +1,21 @@
+import {
+  BURGDORFERI_NO_RECORDS_COLOR,
+  BURGDORFERI_PRESENT_COLOR,
+} from "@/features/ux-reset/review/explorer-layer-palettes";
+
 /**
  * B. burgdorferi status presentation. Map fills and legend swatches both
  * read this module. Tick status and the gap-score ramp stay on their own
  * scales.
  *
- * Approved Option A colors: No records #DDE4E7, Present #36B65E. Known extra
- * statuses use fixed hues so Absent, Unknown, and other published categories
- * stay distinct from those two and from each other.
+ * Approved October 19, 2026 coordinated palette: No records #D1D5DB on the
+ * left, Present indigo #4F46E5 on the right. Present is one categorical color,
+ * not an incidence gradient. Known extra statuses use fixed hues so Absent,
+ * Unknown, and other published categories stay distinct from those two and
+ * from each other.
  */
-export const PATHOGEN_STATUS_NO_RECORDS_COLOR = "#DDE4E7";
-export const PATHOGEN_STATUS_PRESENT_COLOR = "#36B65E";
+export const PATHOGEN_STATUS_NO_RECORDS_COLOR = BURGDORFERI_NO_RECORDS_COLOR;
+export const PATHOGEN_STATUS_PRESENT_COLOR = BURGDORFERI_PRESENT_COLOR;
 
 export const PATHOGEN_STATUS_EXTRA_COLORS = {
   Absent: "hsl(16,72%,42%)",
