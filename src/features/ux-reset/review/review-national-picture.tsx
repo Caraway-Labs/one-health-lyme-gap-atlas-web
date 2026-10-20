@@ -653,7 +653,6 @@ export function ReviewNationalPicture({
             scenarios={scenarioByFips}
             scopeKey={listState ?? "ALL"}
             selectedFips={selectedFips}
-            showEyebrow={false}
             testId="national-published-county"
             onSelect={chooseCounty}
           />

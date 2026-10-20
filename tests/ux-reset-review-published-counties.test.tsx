@@ -128,7 +128,7 @@ describe("Published Review county exploration", () => {
 
   it("keeps all 67 published AL counties mouse-selectable with zero candidates", async () => {
     picture();
-    await screen.findByRole("heading", { name: "Choose a county" });
+    await screen.findByRole("heading", { name: "Counties" });
     await waitFor(() => {
       expect(document.querySelectorAll(".ux-reset-ranked-row")).toHaveLength(
         67

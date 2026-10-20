@@ -261,13 +261,13 @@ describe("national available-data map source", () => {
     });
   });
 
-  it("starts the county card at Choose a county without a local state filter", () => {
+  it("starts the county card at Counties without a local state filter", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     render(nationalPicture("all", client));
     const card = document.querySelector(".ux-reset-explorer-list");
-    const heading = screen.getByRole("heading", { name: "Choose a county" });
+    const heading = screen.getByRole("heading", { name: "Counties" });
     expect({
       browseLabel: screen.queryByText("Browse a state"),
       browseState: screen.queryByTestId("national-browse-state"),
