@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
+import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
   TICK_STATUS_ESTABLISHED_COLOR,
   TICK_STATUS_NO_RECORDS_COLOR,
@@ -11,8 +12,8 @@ import {
 } from "@/features/ux-reset/review/tick-status-contract";
 import type { CountyScoreSummary } from "@/generated/models";
 
-const NO_RECORDS = "#DDE4E7";
-const PRESENT = "#36B65E";
+const NO_RECORDS = "#D1D5DB";
+const PRESENT = "#4F46E5";
 
 function county(
   fips: string,
@@ -63,6 +64,48 @@ function visibleLines(paint: ReturnType<typeof pathogenPaint>) {
 describe("pathogen status color and order contract", () => {
   afterEach(() => {
     cleanup();
+  });
+
+  it("paints no records light gray and present as one indigo class", () => {
+    const paint = pathogenPaint([
+      county("08001", "Present"),
+      county("08013", "No records"),
+      county("08014", "Unknown"),
+    ]);
+    const gap = paintExplorerMapLayer({
+      counties: [
+        county("08013", "No records", {
+          color: "#e9602b",
+          priority: "Priority 1 — Investigate",
+          score: { ...county("08013", "No records").score, score: 80 },
+        }),
+      ],
+      layerId: "gap_score",
+      scoresStatus: "ready",
+    });
+    const presentEntries = paint.entries.filter(
+      (entry) => entry.label === "Present"
+    );
+    expect({
+      gapColor: gap.colorsByFips.get("08013"),
+      noRecords: paint.colorsByFips.get("08013"),
+      present: paint.colorsByFips.get("08001"),
+      presentClasses: presentEntries.map((entry) => entry.color),
+      scale: paint.scale,
+      unknown: paint.colorsByFips.get("08014"),
+    }).toStrictEqual({
+      gapColor: "#e9602b",
+      noRecords: NO_RECORDS,
+      present: PRESENT,
+      presentClasses: [PRESENT],
+      scale: "segments",
+      unknown: "hsl(270,46%,40%)",
+    });
+    const gapColors = SCORE_COLOR_BANDS.map((band) => band.color);
+    expect(gapColors).not.toContain(PRESENT);
+    expect(gapColors).not.toContain(NO_RECORDS);
+    expect(paint.colorsByFips.get("08014")).not.toBe(NO_RECORDS);
+    expect(paint.colorsByFips.get("08014")).not.toBe(PRESENT);
   });
 
   it("orders no records then present before other statuses despite shuffle and frequency", () => {
