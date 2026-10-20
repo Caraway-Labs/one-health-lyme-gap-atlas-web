@@ -14,6 +14,7 @@ import {
 } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import {
   sufficiencyLabel,
+  TIER1_RELEASE_MISMATCH_MESSAGE,
   type Tier1ActiveRelease,
 } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { CountySurveillanceSituations } from "@/generated/models/countySurveillanceSituations";
@@ -96,6 +97,8 @@ export type GapScoreQueryState = {
 export type Tier1QueryState = {
   errorStatus: number | null;
   phase: IntelligenceQueryPhase;
+  /** Governed page release the Tier 1 result must match before a tier is shown. */
+  release: Tier1ActiveRelease;
   result: Tier1CountyPriority | null;
 };
 
@@ -375,16 +378,37 @@ function mapGapScore(
   };
 }
 
+function tier1ReleaseMismatch(
+  result: Tier1CountyPriority,
+  pageReleaseId: string
+): IntelligencePerspectiveView {
+  return {
+    ...emptyPerspective(
+      "ml-review-priority",
+      "unavailable",
+      UNAVAILABLE_PRIMARY,
+      "Not shown for this page release",
+      TIER1_RELEASE_MISMATCH_MESSAGE,
+      false
+    ),
+    disclosure: [
+      { label: "Response release", value: result.release_id },
+      { label: "Page release", value: pageReleaseId },
+    ],
+  };
+}
+
 function mapTier1(
   fips: string,
   state: Tier1QueryState
 ): IntelligencePerspectiveView {
   const id = "ml-review-priority" as const;
   const supportingLoading = "Percentile and evidence sufficiency are loading.";
-  if (state.phase === "loading") {
+  const release = state.release;
+  if (release.status === "pending" || state.phase === "loading") {
     return loadingPerspective(id, supportingLoading);
   }
-  if (state.phase === "idle") {
+  if (release.status === "unknown" || state.phase === "idle") {
     return emptyPerspective(
       id,
       "unavailable",
@@ -420,6 +444,9 @@ function mapTier1(
       "This ML review priority did not match the selected county, so it was not shown.",
       false
     );
+  }
+  if (result.release_id !== release.releaseId) {
+    return tier1ReleaseMismatch(result, release.releaseId);
   }
   const supporting = `${percentileFact(result.priority_percentile)} · ${sufficiencyFact(result.evidence_sufficiency)}`;
   const disclosure: IntelligenceField[] = [

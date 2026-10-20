@@ -26,6 +26,7 @@ import type { SituationVariant } from "@/generated/models/situationVariant";
 import type { Tier1CountyPriority } from "@/generated/models/tier1CountyPriority";
 
 import {
+  tier1HighSufficientFixture,
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
   tier1PriorityForRelease,
@@ -116,8 +117,16 @@ function readyGap(result: PublishedGapScoreSource | null): GapScoreQueryState {
   };
 }
 
-function readyTier(result: Tier1CountyPriority | null): Tier1QueryState {
-  return { errorStatus: null, phase: "success", result };
+function readyTier(
+  result: Tier1CountyPriority | null,
+  releaseId = result?.release_id ?? TIER1_RELEASE
+): Tier1QueryState {
+  return {
+    errorStatus: null,
+    phase: "success",
+    release: { releaseId, status: "ready" },
+    result,
+  };
 }
 
 function readySituations(
@@ -486,6 +495,49 @@ describe("County Surveillance Intelligence mapping", () => {
     expect(views[2]?.overview).not.toContain("did not match this page release");
   });
 
+  it("withholds a matched county tier when its release differs from the page", () => {
+    const priority = mapped({
+      tier1: readyTier(
+        tier1PriorityForCounty(tier1HighSufficientFixture, "01001"),
+        PAGE_RELEASE
+      ),
+    })[1];
+
+    expect(priority).toMatchObject({
+      disclosure: [
+        {
+          label: "Response release",
+          value: tier1HighSufficientFixture.release_id,
+        },
+        { label: "Page release", value: PAGE_RELEASE },
+      ],
+      kind: "unavailable",
+      primary: "Unavailable",
+      supporting: "Not shown for this page release",
+    });
+    expect(priority?.overview).toContain("different release");
+    expect(priority?.overview).toContain("not low priority");
+    expect(JSON.stringify(priority)).not.toContain("HIGH");
+    expect(JSON.stringify(priority)).not.toContain("98.56824689786828");
+  });
+
+  it("withholds a tier when the governed page release is unknown", () => {
+    const priority = mapped({
+      tier1: {
+        errorStatus: null,
+        phase: "idle",
+        release: { status: "unknown" },
+        result: tier1PriorityForCounty(tier1HighSufficientFixture, "01001"),
+      },
+    })[1];
+
+    expect(priority?.kind).toBe("unavailable");
+    expect(priority?.overview).toContain(
+      "governed release for this page is not known"
+    );
+    expect(JSON.stringify(priority)).not.toContain("HIGH");
+  });
+
   it("does not invent a score when a model request fails", () => {
     const views = mapped({
       gap: {
@@ -499,7 +551,12 @@ describe("County Surveillance Intelligence mapping", () => {
         release: { releaseId: PAGE_RELEASE, status: "ready" },
         result: null,
       },
-      tier1: { errorStatus: 404, phase: "error", result: null },
+      tier1: {
+        errorStatus: 404,
+        phase: "error",
+        release: { releaseId: TIER1_RELEASE, status: "ready" },
+        result: null,
+      },
     });
     expect(views[0]).toMatchObject({ kind: "error", retryable: true });
     expect(views[1]).toMatchObject({ kind: "unavailable", retryable: false });

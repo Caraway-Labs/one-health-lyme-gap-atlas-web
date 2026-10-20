@@ -303,7 +303,7 @@ describe("Explorer County Surveillance Intelligence", () => {
       ok(
         tier1PriorityForRelease(
           tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
-          "governed-2026-09-18-unknown-coverage"
+          reviewScopeScoresFixture.release_id
         )
       )
     );
@@ -666,15 +666,43 @@ describe("Explorer county evidence owns one Tier 1 presentation", () => {
     return priority;
   }
 
-  it("shows LOW and Insufficient once when the model release differs", async () => {
-    const priority = await showPriority(TIER1_MODEL_RELEASE);
-    expect(priority).toHaveTextContent("Evidence sufficiency Insufficient");
+  it("withholds the tier when the model release differs from the page", async () => {
+    scoresGet.mockResolvedValue(
+      ok({ ...reviewScopeScoresFixture, release_id: PAGE_RELEASE })
+    );
+    tier1Get.mockResolvedValue(
+      ok(
+        tier1PriorityForRelease(
+          tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"),
+          TIER1_MODEL_RELEASE
+        )
+      )
+    );
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        "01001",
+        classification("class-3", "Pathogen not recorded", 0.2),
+        classification("class-0", "Established blacklegged tick", 0.2),
+        PAGE_RELEASE
+      )
+    );
+    renderCountyEvidence(PAGE_RELEASE);
+    const priority = await screen.findByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
+    await waitFor(() => {
+      expect(priority).toHaveTextContent("Not shown for this page release");
+    });
+    expect(priority).not.toHaveTextContent("LOW");
+    await userEvent.click(
+      within(priority).getByRole("button", { name: /ML Review Priority/ })
+    );
     expect(
       screen.queryByTestId("tier1-surveillance-priority")
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/different release than the evidence on screen/)
-    ).not.toBeInTheDocument();
+      screen.getAllByText(/different release than the evidence on screen/)
+    ).toHaveLength(1);
     expect(tier1Get).toHaveBeenCalledOnce();
   });
 

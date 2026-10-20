@@ -242,10 +242,27 @@ async function installTier1Review(
   );
 }
 
-function evidenceTier(page: Page): Locator {
+function investigatePriority(page: Page): Locator {
   return page
     .getByTestId("explorer-county-evidence")
-    .getByTestId("tier1-surveillance-priority");
+    .getByTestId("surveillance-intelligence-card-ml-review-priority");
+}
+
+async function openInvestigatePriority(page: Page): Promise<Locator> {
+  const card = investigatePriority(page);
+  const toggle = card.getByRole("button", { name: /ML Review Priority/ });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+  const details = page
+    .getByTestId("explorer-county-evidence")
+    .getByTestId("surveillance-intelligence-details");
+  await expect(details).toHaveAttribute(
+    "data-perspective",
+    "ml-review-priority"
+  );
+  return details;
 }
 
 async function openReviewScore(page: Page) {
@@ -314,15 +331,15 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await page.getByTestId("review-investigate").click();
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36001/);
-    const investigate = page
-      .getByTestId("explorer-county-evidence")
-      .getByTestId("tier1-surveillance-priority");
-    await expect(investigate).toHaveAttribute("data-tier", "HIGH");
-    await expect(investigate).toHaveAttribute("data-sufficiency", "SUFFICIENT");
-    await expect(investigate).toContainText(
+    const investigate = investigatePriority(page);
+    await expect(investigate).toHaveAttribute("data-kind", "ready");
+    await expect(investigate).toContainText("HIGH");
+    await expect(investigate).toContainText("Evidence sufficiency Sufficient");
+    const investigateDetails = await openInvestigatePriority(page);
+    await expect(investigateDetails).toContainText(
       "Publisher reports pathogen Present."
     );
-    await expect(investigate).not.toContainText(
+    await expect(investigateDetails).not.toContainText(
       "does not replace governed evidence"
     );
     await expect(page.getByTestId("investigate-evidence")).toBeVisible();
@@ -431,17 +448,16 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await page.goto(
       "/app/investigate?county=36001&scope=NY&dataset=historical-2024"
     );
-    const investigate = evidenceTier(page);
-    await expect(investigate).toHaveAttribute(
-      "data-state",
-      "release-unaligned"
-    );
-    await expect(investigate).toHaveAttribute(
-      "data-release-reason",
-      "mismatch"
+    const investigate = investigatePriority(page);
+    await expect(investigate).toHaveAttribute("data-kind", "unavailable");
+    await expect(investigate).toContainText("Not shown for this page release");
+    const investigateDetails = await openInvestigatePriority(page);
+    await expect(investigateDetails).toContainText(
+      "different release than the evidence on screen"
     );
     await expectNoLowTier(investigate);
     await expect(investigate).not.toContainText("HIGH");
+    await expect(investigateDetails).not.toContainText("HIGH");
   });
 
   test("drops a matched tier when the same county changes release", async ({
@@ -477,7 +493,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await page.goto(
       "/app/investigate?county=36001&scope=NY&dataset=alpha-2026"
     );
-    await expect(evidenceTier(page)).toHaveAttribute("data-tier", "HIGH");
+    await expect(investigatePriority(page)).toContainText("HIGH");
     await page.evaluate(() => {
       const link = document.createElement("a");
       link.href =
@@ -488,16 +504,15 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.getByTestId("tier1-dataset-switch").click();
     await expect(page).toHaveURL(/dataset=historical-2024/);
-    const investigate = evidenceTier(page);
-    await expect(investigate).toHaveAttribute(
-      "data-state",
-      "release-unaligned"
+    const investigate = investigatePriority(page);
+    await expect(investigate).toHaveAttribute("data-kind", "unavailable");
+    await expect(investigate).toContainText("Not shown for this page release");
+    await expect(investigate).not.toContainText("HIGH");
+    const investigateDetails = await openInvestigatePriority(page);
+    await expect(investigateDetails).toContainText(
+      "different release than the evidence on screen"
     );
-    await expect(investigate).toHaveAttribute(
-      "data-release-reason",
-      "mismatch"
-    );
-    await expect(investigate).not.toHaveAttribute("data-tier", "HIGH");
+    await expect(investigateDetails).not.toContainText("HIGH");
     await expectNoLowTier(investigate);
   });
 
@@ -525,13 +540,14 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await page.goto(
       "/app/investigate?county=36001&scope=NY&dataset=alpha-2026"
     );
-    const investigate = evidenceTier(page);
-    await expect(investigate).toHaveAttribute(
-      "data-state",
-      "release-unaligned"
+    const investigate = investigatePriority(page);
+    const investigateDetails = await openInvestigatePriority(page);
+    await expect(investigateDetails).toContainText(
+      "governed release for this page is not known"
     );
-    await expect(investigate).toHaveAttribute("data-release-reason", "unknown");
+    await expect(investigate).toHaveAttribute("data-kind", "unavailable");
     await expectNoLowTier(investigate);
     await expect(investigate).not.toContainText("HIGH");
+    await expect(investigateDetails).not.toContainText("HIGH");
   });
 });

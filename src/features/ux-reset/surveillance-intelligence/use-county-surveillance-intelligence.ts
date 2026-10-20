@@ -129,6 +129,7 @@ export function useCountySurveillanceIntelligence(input: {
     tier1: {
       errorStatus: errorStatus(tier1Query.error),
       phase: tier1Phase(input.release, tier1Query),
+      release: input.release,
       result: tier1Query.isSuccess ? tier1Query.data : null,
     },
   });
