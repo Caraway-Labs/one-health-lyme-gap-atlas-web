@@ -166,6 +166,19 @@ describe("selected county preview", () => {
     });
   });
 
+  it("keeps an Inspect provenance trigger on each numbered rationale row", async () => {
+    renderPublished(baldwin);
+    await screen.findByText(/case-count floor is 5/);
+    expect(
+      [1, 2, 3, 4, 5, 6].map(
+        (number) =>
+          within(screen.getByTestId(`review-rationale-${number}`)).getAllByText(
+            /^Inspect provenance for /
+          ).length
+      )
+    ).toStrictEqual([1, 2, 1, 1, 1, 1]);
+  });
+
   it("inspects claim provenance and governed source urls", async () => {
     const tickUrl =
       "https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html";
